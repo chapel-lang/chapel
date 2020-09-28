@@ -37,8 +37,6 @@
 #include "symbol.h"
 #include "wellknown.h"
 
-static void addType(BaseAST* ast);
-
 static void cleanup(ModuleSymbol* module);
 
 static void normalizeNestedFunctionExpressions(FnSymbol* fn);
@@ -65,40 +63,56 @@ void cleanup() {
 
 /************************************* | **************************************
 *                                                                             *
+    if (DefExpr* def = toDefExpr(ast)) {
+
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-static void addType(BaseAST* ast){
-  if (BlockStmt* block = toBlockStmt(ast)) {
+static bool areMultiDefExprsInAList(AList& list){ 
+
+   int numStmts = 0;
+
+    for_alist(stmt, list){
+      if (isDefExpr(stmt)) numStmts++;
+    }
+    
+    return numStmts > 1;
+}
+ 
+
+static void backPropagateInFunction(BlockStmt* block){
 
     Expr* init = NULL;
     Expr* type = NULL;
-    int numStmts = 0;
+    //int numStmts = 0;
     //DefExpr* prev = NULL;
 
       //For one variable declarations, there's no need to add temporaries
-    for_alist(stmt, block->body){
+    /*for_alist(stmt, block->body){
       if (isDefExpr(stmt)) numStmts++;
     }
     if (numStmts <= 1) return;
+    */
+
+    if (!areMultiDefExprsInAList(block->body)) return;
 
     VarSymbol* typeTmp = NULL;
     BlockStmt* tmpBlock = new BlockStmt();
 
     for_alist_backward(stmt, block->body){
       if (DefExpr* def = toDefExpr(stmt)) {
+        /*
+	if(def->sym->id == 212199 || def->sym->name == astr("left")){
         //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
-        if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
+        //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
           //printf("in addType\n");
-          //gdbShouldBreakHere();
+          gdbShouldBreakHere();
 	}
+        */
 	//check if not in record
         if(def->parentSymbol->astTag != E_TypeSymbol) {
 	  if (def->init || def->exprType) {
-
-            //init = def->init;
-            //type = def->exprType;
 
             if(def->exprType){
               typeTmp = NULL;
@@ -129,35 +143,24 @@ static void addType(BaseAST* ast){
 	    //def->exprType = type;
 	  }
 
-         // if (def->exprType == NULL) {
-         //  if(typeTmp){
-         //     def->exprType = new SymExpr(typeTmp);
-         //   } else {
-         //     def->exprType = type;
-         //     }
-         // }
-	  if (def->exprType && typeTmp == NULL) {
-          typeTmp = newTemp("type_tmp");
-	  typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-	  DefExpr* tmpDef = new DefExpr(typeTmp);
-	  Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
-	  type = def->exprType;
-	  def->exprType = new SymExpr(typeTmp);
-	  tmpBlock->insertAtTail(tmpDef);
-	  tmpBlock->insertAtTail(move);
-	  //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
-            //printf("in addType\n");
-          //  gdbShouldBreakHere();
-	  //}
-	  }
+          if (def->exprType && typeTmp == NULL) {
+            typeTmp = newTemp("type_tmp");
+            typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+            DefExpr* tmpDef = new DefExpr(typeTmp);
+            Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
+            type = def->exprType;
+            def->exprType = new SymExpr(typeTmp);
+            tmpBlock->insertAtTail(tmpDef);
+            tmpBlock->insertAtTail(move);
+          }
 	  
-       //else {
-	  //if(def->init && typeTmp){
-          //  def->exprType = new SymExpr(typeTmp);
-	  //}
-	//}
+       } else {
+         if (def->init || def->exprType) {
+           type = def->exprType;
+         } else {
+           def->exprType = type;
        }
- 
+       }
       }
     }
       
@@ -195,7 +198,73 @@ static void addType(BaseAST* ast){
         //}
     //}
   //}
+
 }
+/*
+static void setFieldHelper(BaseAST* parent, Expr*& field, Expr* setTo){
+  if(field != NULL) {
+    field->remove();
+  }
+
+  field = setTo;
+
+  if(setTo != NULL){
+    parent_insert_help(parent, field);
+
+  }
+
+}
+*/
+/*
+static void backPropagateInAggregate(AggregateType* at){
+  Expr* init = NULL;
+  Expr* type = NULL;
+  DefExpr* prev = NULL;
+
+  if (!areMultiDefExprsInAList(at->fields)) return;
+
+  for_alist_backward(stmt, at->fields) {
+    if (DefExpr* def = toDefExpr(stmt)) {
+      if (def->init || def->exprType) {
+        init = def->init;
+        type = def->exprType;
+      } else {
+        if (type) {
+          setFieldHelper(prev, prev->exprType, 
+            new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name)));
+        }
+        if (init) {
+          if (init->isNoInitExpr()) {
+            setFieldHelper(prev, prev->init, init->copy());
+          } else if (type) {
+            setFieldHelper(prev, prev->init, new CallExpr("chpl__readXX",
+                                      new UnresolvedSymExpr(def->sym->name)));
+          } else
+            setFieldHelper(prev, prev->init, new UnresolvedSymExpr(def->sym->name));
+        }
+        setFieldHelper(prev, def->init, init->copy());
+        setFieldHelper(prev, def->exprType, type->copy());
+      }
+      prev = def;
+    } else
+      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+  }
+
+}
+*/
+static void backPropagate(BaseAST* ast){
+  if (BlockStmt* block = toBlockStmt(ast)) {
+    backPropagateInFunction(block);
+  }
+/*
+  if (DefExpr* def = toDefExpr(ast)) {
+    if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
+      if(AggregateType* at = toAggregateType(ts->type)) {
+        backPropagateInAggregate(at);
+      }
+    }
+  }
+*/
 }
 
 
@@ -206,10 +275,21 @@ static void cleanup(ModuleSymbol* module) {
 
   for_vector(BaseAST, ast, asts) {
     SET_LINENO(ast);
+    //if (DefExpr* def = toDefExpr(ast)) {
+      /*
+        if(def->sym->id == 212199 || def->sym->name == astr("left")){
+        //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
+        //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
+          //printf("in addType\n");
+          gdbShouldBreakHere();
+        }
+      */
+     //}
 
 	  //call to function to fix
-    addType(ast);
+    backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
+
 	    //add new funciton to  remove backprop, going to visit defexpr in random order, get parent expr, parentSymbol field if def->ParentSymbol is typeSymbol
 	    //if AST is a block
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
