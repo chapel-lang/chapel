@@ -1453,16 +1453,16 @@ static void
 //add argument that states in class/record
 //or move this to later part of compilation
 backPropagateInitsTypes(BlockStmt* stmts) {
-
   Expr* init = NULL;
   Expr* type = NULL;
   DefExpr* prev = NULL;
-
   for_alist_backward(stmt, stmts->body) {
-
-   if (DefExpr* def = toDefExpr(stmt)) {
+    if(isEndOfStatementMarker(stmt)){
+      continue;
+    }
+    if (DefExpr* def = toDefExpr(stmt)) {
       if (def->init || def->exprType) {
-       // init = def->init;
+        init = def->init;
         type = def->exprType;
       } else {
         if (type)
@@ -1470,25 +1470,27 @@ backPropagateInitsTypes(BlockStmt* stmts) {
             new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
         if (init) {
           if (init->isNoInitExpr()) {
-            //prev->init = init->copy();
+            prev->init = init->copy();
           } else if (type) {
-            //prev->init = new CallExpr("chpl__readXX",
-            //                          new UnresolvedSymExpr(def->sym->name));
-          } //else
-            //prev->init = new UnresolvedSymExpr(def->sym->name);
+            prev->init = new CallExpr("chpl__readXX",
+                                      new UnresolvedSymExpr(def->sym->name));
+          } else
+            prev->init = new UnresolvedSymExpr(def->sym->name);
         }
-        //def->init = init;
-        def->exprType = type; //<---- this line
+        def->init = init;
+        def->exprType = type;
       }
       prev = def;
-    } else
-      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+    } else {
+      //handle forwarding statements to uncomment line below
+      //INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+    }
   }
-
 }
 
 
 std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
+
   // this will be deleted in buildVarDecls()
   std::set<Flag>* flags = new std::set<Flag>();
 
@@ -1618,7 +1620,7 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
-  backPropagateInitsTypes(stmts);
+  //backPropagateInitsTypes(stmts);
   //
   // If blockInfo is set, this is a tuple variable declaration.
   // Add checks that the expression on the right is a tuple and that
@@ -1727,6 +1729,12 @@ DefExpr* buildClassDefExpr(const char*  name,
     if (inherit != NULL)
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
+  }
+
+  for_alist(stmt, decls->body){
+    if(BlockStmt* block = toBlockStmt(stmt)) {
+      backPropagateInitsTypes(block);
+    }
   }
 
   ct->addDeclarations(decls);
