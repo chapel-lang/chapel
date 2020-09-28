@@ -179,8 +179,8 @@ module Version {
         } else if v2.commit == "" then {
           return -1;
         } else {
-          compilerError("can't compare sourceVersions that only differ by commit IDs", errorDepth=2);
-          return 0;
+          // sentinel for "not comparable"
+          return 2;
         }
       }
     }
@@ -202,15 +202,24 @@ module Version {
   }
 
   proc <(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
-    return spaceship(v1, v2) < 0;
+    param retval = spaceship(v1, v2);
+    if (retval == 2) then
+      compilerError("can't compare versions that only differ by commit IDs");
+    return retval < 0;
   }
 
   proc <=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
-    return spaceship(v1, v2) <= 0;
+    param retval = spaceship(v1, v2);
+    if (retval == 2) then
+      compilerError("can't compare versions that only differ by commit IDs");
+    return retval <= 0;
   }
 
   proc >(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
-    return spaceship(v1, v2) > 0;
+    param retval = spaceship(v1, v2);
+    if (retval == 2) then
+      compilerError("can't compare versions that only differ by commit IDs");
+    return retval > 0 && retval != 2;
   }
 
   /*
@@ -227,6 +236,9 @@ module Version {
     pre-release.
   */
   proc >=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
-    return spaceship(v1, v2) >= 0;
+    param retval = spaceship(v1, v2);
+    if (retval == 2) then
+      compilerError("can't compare versions that only differ by commit IDs");
+    return retval >= 0 && retval != 2;
   }
 }
