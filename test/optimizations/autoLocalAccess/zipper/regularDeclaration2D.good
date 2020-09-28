@@ -1,117 +1,53 @@
-**** Start forall ****
-	regularDeclaration2D.chpl:14
 
-Iterated symbol
-	regularDeclaration2D.chpl:4
+Start analyzing forall (regularDeclaration2D.chpl:14)
+| Found loop domain (regularDeclaration2D.chpl:4)
+| Will attempt static and dynamic optimizations (regularDeclaration2D.chpl:14)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:15)
+|   Found the domain of the access base (regularDeclaration2D.chpl:4)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:15)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:15)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:15)
+|   Found the domain of the access base (regularDeclaration2D.chpl:4)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:15)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:15)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:15)
+|   Found the domain of the access base (regularDeclaration2D.chpl:4)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:15)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:15)
+|
+End analyzing forall (regularDeclaration2D.chpl:14)
 
-Loop is suitable for static and dynamic analysis
-	regularDeclaration2D.chpl:14
 
-Potential access
-	regularDeclaration2D.chpl:15
+Start analyzing forall (regularDeclaration2D.chpl:31)
+| Found loop domain (regularDeclaration2D.chpl:21)
+| Will attempt static and dynamic optimizations (regularDeclaration2D.chpl:31)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:32)
+|   Found the domain of the access base (regularDeclaration2D.chpl:21)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:32)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:32)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:32)
+|   Found the domain of the access base (regularDeclaration2D.chpl:21)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:32)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:32)
+|
+|  Start analyzing call (regularDeclaration2D.chpl:32)
+|   Found the domain of the access base (regularDeclaration2D.chpl:21)
+|   Can optimize: Access base's domain is the iterator (regularDeclaration2D.chpl:32)
+|  This call is a static optimization candidate (regularDeclaration2D.chpl:32)
+|
+End analyzing forall (regularDeclaration2D.chpl:31)
 
-	with domain defined at
-	regularDeclaration2D.chpl:4
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:15
-
-Potential access
-	regularDeclaration2D.chpl:15
-
-	with domain defined at
-	regularDeclaration2D.chpl:4
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:15
-
-Potential access
-	regularDeclaration2D.chpl:15
-
-	with domain defined at
-	regularDeclaration2D.chpl:4
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:15
-
-	Marking static candidate
-	regularDeclaration2D.chpl:15
-
-	Marking static candidate
-	regularDeclaration2D.chpl:15
-
-	Marking static candidate
-	regularDeclaration2D.chpl:15
-
-**** End forall ****
-	regularDeclaration2D.chpl:14
-
-**** Start forall ****
-	regularDeclaration2D.chpl:31
-
-Iterated symbol
-	regularDeclaration2D.chpl:21
-
-Loop is suitable for static and dynamic analysis
-	regularDeclaration2D.chpl:31
-
-Potential access
-	regularDeclaration2D.chpl:32
-
-	with domain defined at
-	regularDeclaration2D.chpl:21
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:32
-
-Potential access
-	regularDeclaration2D.chpl:32
-
-	with domain defined at
-	regularDeclaration2D.chpl:21
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:32
-
-Potential access
-	regularDeclaration2D.chpl:32
-
-	with domain defined at
-	regularDeclaration2D.chpl:21
-
-	Can optimize: Access base's domain is the iterator
-	regularDeclaration2D.chpl:32
-
-	Marking static candidate
-	regularDeclaration2D.chpl:32
-
-	Marking static candidate
-	regularDeclaration2D.chpl:32
-
-	Marking static candidate
-	regularDeclaration2D.chpl:32
-
-**** End forall ****
-	regularDeclaration2D.chpl:31
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:15
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:15
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:15
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:32
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:32
-
-Static check successful. Using localAccess
-	regularDeclaration2D.chpl:32
-
+Static check successful. Using localAccess (regularDeclaration2D.chpl:15)
+Static check successful. Using localAccess (regularDeclaration2D.chpl:15)
+Static check successful. Using localAccess (regularDeclaration2D.chpl:15)
+Static check successful. Using localAccess (regularDeclaration2D.chpl:32)
+Static check successful. Using localAccess (regularDeclaration2D.chpl:32)
+Static check successful. Using localAccess (regularDeclaration2D.chpl:32)
 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0 10.0
 17.0 17.0 17.0 17.0 17.0 17.0 17.0 17.0 17.0 17.0
 24.0 24.0 24.0 24.0 24.0 24.0 24.0 24.0 24.0 24.0
