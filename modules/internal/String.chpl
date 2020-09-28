@@ -1099,13 +1099,6 @@ module String {
 
   } // end record string
                                         
-  /* Deprecated - please use :proc:`string.size`. */
-  inline proc string.length {
-    compilerWarning("'string.length' is deprecated - " +
-                    "please use 'string.size' instead");
-    return numCodepoints;
-  }
-
   /*
     :returns: The number of codepoints in the string.
   */
@@ -2212,13 +2205,6 @@ module String {
   pragma "no doc"
   inline proc param string.numCodepoints param
     return __primitive("string_length_codepoints", this);
-
-  pragma "no doc"
-  inline proc param string.length param {
-    compilerWarning("'string.length' is deprecated - " +
-                    "please use 'string.size' instead");
-    return this.numCodepoints;
-  }
 
   pragma "no doc"
   inline proc param string.size param
