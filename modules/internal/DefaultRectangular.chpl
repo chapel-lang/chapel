@@ -1956,9 +1956,6 @@ module DefaultRectangular {
     const isFullyLocal = Alocid == Blocid;
     const isSrcLocal = Blocid == here.id;
 
-    writeln(here, "ifl ", isFullyLocal, " size " , len);
-    writeln(here, "isl ", isSrcLocal, " size " , len);
-
     if isSizeAboveThreshold && (isFullyLocal || isSrcLocal) {
       _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
     }
