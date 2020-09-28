@@ -42,9 +42,10 @@ public:
   std::vector<BlockStmt*> instnPoints;   // one per POI depth
   int poiDepth;
   CallExpr* call;
+  bool useMethodVisibility;
 
-  VisibilityInfo(CallExpr* call_) :
-    currStart(NULL), nextPOI(NULL), poiDepth(-1), call(call_) { }
+  VisibilityInfo(const CallInfo& info);
+  VisibilityInfo(const VisibilityInfo& src);
 
   bool inPOI() { return poiDepth > 0; }
 };
@@ -63,7 +64,7 @@ void       findVisibleFunctions(CallInfo&             info,
                                 int*                  numVisitedP,
                                 Vec<FnSymbol*>&       visibleFns);
 
-void       getVisibleFunctions(const char*                name,
+void       getMoreVisibleFunctionsOrMethods(const char*  name,
                                 CallExpr*                call,
                                 VisibilityInfo*          visInfo,
                                 std::set<BlockStmt*>*    visited,

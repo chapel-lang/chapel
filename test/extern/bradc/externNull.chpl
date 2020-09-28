@@ -1,3 +1,4 @@
+use CPtr;
 extern type sPtr;
 extern proc getNullSPtr(): sPtr;
 extern proc getNonNullSPtr(): sPtr;

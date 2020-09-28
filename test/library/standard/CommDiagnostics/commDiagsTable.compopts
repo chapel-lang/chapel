@@ -1,1 +1,1 @@
--scommDiagsPrintUnstable=false
+-scommDiagsPrintUnstable=false --no-cache-remote

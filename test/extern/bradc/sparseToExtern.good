@@ -1,1 +1,1 @@
-sparseToExtern.chpl:12: error: c_ptrTo unsupported array type
+sparseToExtern.chpl:12: error: Only single-locale rectangular arrays can be passed to an external routine argument with array type

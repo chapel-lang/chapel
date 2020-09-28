@@ -728,7 +728,7 @@ void computeNoAliasSets() {
   forv_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
       calls.clear();
-      collectFnCalls(p, calls);
+      collectVirtualAndFnCalls(p, calls);
 
       for_vector(CallExpr, call, calls) {
         FnSymbol* q = call->resolvedOrVirtualFunction();
@@ -926,7 +926,7 @@ void computeNoAliasSets() {
     INT_ASSERT(f1 != f2);
 
     calls.clear();
-    collectFnCalls(p, calls);
+    collectVirtualAndFnCalls(p, calls);
 
     for_vector(CallExpr, call, calls) {
       FnSymbol* q = call->resolvedOrVirtualFunction();

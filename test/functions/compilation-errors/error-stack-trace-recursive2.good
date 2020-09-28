@@ -1,0 +1,9 @@
+error-stack-trace-recursive2.chpl:29: In function 'badfn':
+error-stack-trace-recursive2.chpl:30: error: Cannot assign to string from int(64)
+  error-stack-trace-recursive2.chpl:25: called as badfn(arg: string) from function 'c'
+  error-stack-trace-recursive2.chpl:20: called as c(arg: string) from function 'b'
+  error-stack-trace-recursive2.chpl:16: called as b(arg: string) from function 'a'
+  error-stack-trace-recursive2.chpl:11: called as a(arg: string) from function 'h'
+  error-stack-trace-recursive2.chpl:6: called as h(arg: string) from function 'g'
+  error-stack-trace-recursive2.chpl:2: called as g(arg: string) from function 'f'
+  error-stack-trace-recursive2.chpl:33: called as f(arg: string)

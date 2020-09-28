@@ -8,6 +8,9 @@ true
 Slice with var domain
 false
 false
+Slice with const domain
+true
+true
 Reindex with tuple of ranges
 true
 true

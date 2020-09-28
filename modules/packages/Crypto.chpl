@@ -86,6 +86,7 @@ module Crypto {
 
   private use IO;
   private use SysCTypes;
+  private use CPtr;
 
   pragma "no doc"
   proc generateKeys(bits: int) {
@@ -1198,6 +1199,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
             "openssl/aes.h", "openssl/rand.h", "openssl/sha.h", "-lcrypto", "-lssl";
 
     use SysCTypes;
+    use CPtr;
 
     extern type EVP_PKEY_CTX;
     extern type EVP_PKEY;

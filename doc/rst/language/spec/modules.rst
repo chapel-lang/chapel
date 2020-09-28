@@ -272,10 +272,32 @@ naming (:ref:`Explicit_Naming`).
 Visibility Of A Module
 ~~~~~~~~~~~~~~~~~~~~~~
 
-A top-level module is available for use (:ref:`Using_Modules`) or
-import (:ref:`Importing_Modules`) anywhere. The visibility of a nested module is
-subject to the rules of :ref:`Visibility_Of_Symbols`, where the nested module is
-considered a "module-scope symbol" of its outer module.
+A top-level module is available for use (:ref:`Using_Modules`) or import
+(:ref:`Importing_Modules`) anywhere.  A module name is not accessible in other
+statements or expressions unless an ``import`` or ``use`` statement has brought
+the name into scope.
+
+Additionally, ``use`` and ``import`` can both name a module with a relative
+path; for example, ``this.Submodule`` or ``super.Siblingmodule``.  ``use`` and
+``import`` differ in their behavior towards a named module when two conditions
+are both true: when the named module is not a top-level module and when a
+relative path is not provided.
+
+For the purpose of ``use``, the visibility of a nested module is subject to the
+rules of :ref:`Visibility_Of_Symbols`, where the nested module is considered a
+"module-scope symbol" of its outer module.  If the module is currently in scope,
+then it may be used with just its name.  The module may alternatively be
+accessed explicitly with all the outer modules surrounding it to the top level,
+or relatively from the current scope with ``this`` or ``super`` components as
+has already been mentioned.
+
+Now, let's consider how ``import`` interacts with a nested module.  In order to
+``import`` it, either all the outer modules surrounding it to the top level must
+be provided as part of the path to the module, or a ``super`` or ``this`` prefix
+may be provided as has already been mentioned.  The nested module cannot be
+imported with just its name, even from the scope in which the module is defined,
+unless it has already been brought into scope by another ``use`` or ``import``
+statement.
 
 .. _Visibility_Of_Symbols:
 
@@ -292,17 +314,104 @@ it contains are accessible via the use statement (:ref:`Using_Modules`), import
 statement (:ref:`Importing_Modules`), or qualified
 naming (:ref:`Explicit_Naming`).
 
+.. _Using_And_Importing:
+
+Using and Importing
++++++++++++++++++++
+
+The ``use`` statement and the ``import`` statement are the two primary ways to
+access a module's symbols from outside of the module.  For top-level modules, a
+``use`` or ``import`` statement is required before referring to the module’s
+name or the symbols it contains within a given lexical scope.
+
+The names that are made visible by a ``use`` or ``import`` statement are
+inserted in to a new scope that immediately encloses the scope within which the
+statement appears.  This implies that the position of the ``use`` or ``import``
+statement within a scope has no effect on its behavior.  If a scope includes
+multiple ``use`` statements, multiple ``import`` statements, or a combination of
+``import`` and ``use`` statements, then the newly-visible names are inserted
+into a common enclosing scope.
+
+.. _Use_And_Import_Conflicts:
+
+Conflicts
++++++++++
+
+The implicit scope added by ``use`` and ``import`` described in the previous
+section follows the same rules about conflicting variables as other scopes (see
+:ref:`Variable_Conflicts`).  Thus an error will be signaled if multiple
+variables with the same name would be inserted into this enclosing scope and
+that name is accessed.  Remember that this does not apply to functions unless
+they are also indistinguishable in other ways, see :ref:`Function_Overloading`.
+
+Because symbols brought into scope by a ``use`` or ``import`` statement are
+placed at a scope enclosing where the statement appears, such symbols will be
+shadowed by other symbols with the same name defined in the scope with the
+statement.  The symbols that are shadowed will only be accessible via
+:ref:`Explicit_Naming`.
+
+Symbols defined by public ``use`` or ``import`` statements can impact the scope
+they are inserted into in different ways (see :ref:`Public_Use` and
+:ref:`Reexporting` for more information on the ``public`` keyword).  Symbols
+that are brought in by a ``public use`` for unqualified access are treated as
+at successive distances relative to how many ``public use`` statements were
+necessary to obtain them.  For instance,
+
+   *Example (conflict1.chpl)*.
+
+   .. code-block:: chapel
+
+      module A {
+        var x: int;
+      }
+
+      module B {
+        public use A;
+      }
+
+      module C {
+        var x: bool;
+      }
+
+      module MainMod {
+        use B, C;
+
+        proc main() {
+          writeln(x);
+        }
+      }
+
+   This code demonstrates a module (MainMod) using two modules, B and C.  Module
+   C defines a symbol named x, while module B publicly uses another module, A,
+   which also defines a symbol named x.  The program as written will compile and
+   will print out the value of ``C.x``, which is ``false``, because A's x is
+   considered further away (it is made available to MainMod through `two` use
+   statements instead of just one).  Thus, it will generate the following
+   output:
+
+   .. code-block:: printoutput
+
+      false
+
+   If, however, C had been publicly used by another module D and that was used
+   by MainMod instead, then the compiler cannot determine which of ``C.x`` and
+   ``A.x`` was intended for ``writeln(x);``.  The program must use qualified
+   access to indicate which x to access.
+
+Symbols brought in directly by a ``public import`` are treated as though defined
+*at* the scope with the ``public import`` for the purpose of determining
+conflicts (see :ref:`Reexporting`).  This means that if the ``public use`` in
+module B of the previous example was instead replaced with a ``public import
+A.x``, A's x would conflict with ``C.x`` when resolving the main function's
+body.
+
 .. _Using_Modules:
 
 Using Modules
 ~~~~~~~~~~~~~
 
-The ``use`` statement provides one of the two primary ways to access a module’s
-symbols from outside of the module, the other being the ``import`` statement.
-By default, use statements make both the module’s name and its public symbols
-available for access within a given scope. For top-level modules, a ``use``
-or ``import`` statement is required before referring to the module’s name or the
-symbols it contains within a given lexical scope.
+By default, use statements make both a module’s name and its public symbols
+available for access within a given scope.
 
 The syntax of the use statement is given by:
 
@@ -409,19 +518,6 @@ the following:
  * ``this`` to indicate the requested module is a submodule of the
    current module
 
-The names that are made visible by a ``use`` statement are inserted in to a new
-scope that immediately encloses the scope within which the statement
-appears. This implies that the position of the ``use`` statement within a scope
-has no effect on its behavior. If a scope includes multiple ``use`` statements
-or a combination of ``use`` and ``import`` statements, then the newly-visible
-names are inserted in to a common enclosing scope.
-
-An error is signaled if multiple conflicting enumeration constants or public
-module-level symbols would be inserted into this enclosing scope with the same
-name, and that name is accessed by other statements in the same scope as the
-use.  Remember that this does not apply to functions unless they are also
-indistinguishable in other ways, see :ref:`Function_Overloading`.
-
 A module or enum being used may optionally be given a new name using the ``as``
 keyword.  This new name will be usable from the scope of the use in place of the
 old name.  This new name does not affect uses or imports of that module from
@@ -430,6 +526,11 @@ other contexts.
 The ``as`` keyword can also be used to disable accesses to the module name while
 still allowing accesses to the symbols within the module.  See the
 :ref:`Disabling_Qualified` section for more information.
+
+.. _Public_Use:
+
+Public and Private Use Statements
++++++++++++++++++++++++++++++++++
 
 Use statements may be explicitly declared ``public`` or ``private``.
 By default, uses are ``private``.  Making a use ``public`` causes its
@@ -453,6 +554,11 @@ Making a use ``public`` additionally causes its symbols to be visible as though
 they were defined in the scope with the use.  This strategy is called
 `re-exporting`.  More information about re-exporting can be found in the
 relevant section (:ref:`Reexporting`).
+
+.. _Limitation_Clauses:
+
+Except and Only Lists
++++++++++++++++++++++
 
 An optional ``limitation-clause`` may be provided to limit the symbols made
 available by a given use statement. If an ``except`` list is provided, then all
@@ -530,6 +636,16 @@ mix of these symbols, only the last module or enumerated type can have a
 well - in the first example, if module A’s use of module B contains an
 ``except`` or ``only`` list, that list will also limit which of C’s
 symbols are visible to A.
+
+.. _Using_Enums:
+
+Using Enums
++++++++++++
+
+Aside from modules, only enums can be listed as the last portion of a ``use``
+statement's ``module-or-enum-name``.  Doing so enables its constants to be
+accessible without the enum's name as a prefix (see :ref:`Explicit_Naming` for
+how to access its constants normally).
 
 For more information on enumerated types, please see :ref:`Enumerated_Types`.
 
@@ -665,19 +781,6 @@ statement must begin with one of the following:
 A submodule may not be imported without either the full path to it, or a
 ``super`` or ``this`` prefix at the beginning of the path.
 
-The names that are made visible by an ``import`` statement are inserted in to a
-new scope that immediately encloses the scope within which the statement
-appears.  This implies that the position of the ``import`` statement within a
-scope has no effect on its behavior.  If a scope includes multiple ``import``
-statements, or a combination of ``import`` and ``use`` statements, then the
-newly-visible names are inserted into a common enclosing scope.
-
-An error is signaled if multiple public module-level symbols would be inserted
-into this enclosing scope with the same name, and that name is mentioned by
-other statements in the same scope as the import.  Remember that this does not
-apply to functions unless they are also indistinguishable in other ways, see
-:ref:`Function_Overloading`.
-
 A module or a public module-level symbol being imported may optionally be given
 a new name using the ``as`` keyword.  This new name will be usable from the
 scope of the import in place of the old name.  This new name does not affect
@@ -729,8 +832,8 @@ Qualified Naming of Module Symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a module’s symbol is visible—via a use or import statement, or lexically
-for nested modules—its public symbols can be referred to via qualified naming
-with the following syntax:
+for nested modules—its public symbols can be accessed via qualified naming with
+the following syntax:
 
 .. code-block:: syntax
 
@@ -746,9 +849,9 @@ based on the name of their module. Using qualified naming in a function
 call restricts the set of candidate functions to those in the specified
 module.
 
-If code refers to symbols that are defined by multiple modules, the
-compiler will issue an error. Qualified naming can be used to
-disambiguate the symbols in this case.
+If code tries to access a symbol that conflicts with one or more other symbols
+defined in other modules, the compiler will issue an error. Qualified naming can
+be used to disambiguate the symbols in this case.
 
    *Example (ambiguity.chpl)*.
 

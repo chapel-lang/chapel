@@ -28,7 +28,7 @@
     and big-endian formats.
  */
 module Endian {
-  use SysCTypes;
+  use SysCTypes, CPtr;
 
   private extern proc htole16(x: uint(16)): uint(16);
   private extern proc le16toh(x: uint(16)): uint(16);

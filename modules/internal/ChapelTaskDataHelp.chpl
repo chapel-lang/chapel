@@ -23,6 +23,7 @@
 module ChapelTaskDataHelp {
 
   private use ChapelStandard;
+  private use CPtr;
 
   extern type chpl_task_infoChapel_t;
   pragma "fn synchronization free"

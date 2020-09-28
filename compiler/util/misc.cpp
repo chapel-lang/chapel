@@ -223,9 +223,20 @@ static void print_user_internal_error() {
   print_error("chpl version %s", version);
 }
 
-// find a caller (direct or not) that is not in a task function,
-// for line number reporting
-static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
+static bool isTaskFunWrapper(FnSymbol* fn) {
+  return fn->hasFlag(FLAG_ON_BLOCK) ||
+         fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
+         fn->hasFlag(FLAG_BEGIN_BLOCK) ||
+         fn->hasFlag(FLAG_LOCAL_ON);
+}
+
+static bool isTaskFnOrWrapper(FnSymbol* fn) {
+  return isTaskFunWrapper(fn) || isTaskFun(fn);
+}
+
+// If it's not a task function, return it;
+// otherwise, find a function calling it that is not a task function.
+static FnSymbol* findNonTaskFn(FnSymbol* fn) {
 
   FnSymbol* lastFn = fn;
   while (true) {
@@ -234,7 +245,7 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
       return lastFn;
 
     // If it's not a task function, we are done
-    if (isTaskFun(fn) == false)
+    if (isTaskFnOrWrapper(fn) == false)
       return fn;
 
     // Otherwise, find the call site, and continue the search.
@@ -251,52 +262,196 @@ static FnSymbol* findNonTaskCaller(FnSymbol* fn) {
   return lastFn; // never reached
 }
 
+static void gatherFunctionsCalledTransitively(FnSymbol* fn,
+                                              std::set<FnSymbol*>& fns) {
+  if (fns.count(fn) == 0) {
+    fns.insert(fn);
+
+    // Gather calls from the function body & declaration
+    std::vector<CallExpr*> calls;
+    collectVirtualAndFnCalls(fn, calls);
+
+    // gather calls from the called functions (transitively)
+    for_vector(CallExpr, call, calls) {
+      FnSymbol* calledFn = call->resolvedOrVirtualFunction();
+      gatherFunctionsCalledTransitively(calledFn, fns);
+    }
+  }
+}
+
+static CallExpr* findACallSite(FnSymbol* fn, std::set<FnSymbol*> ignoreFns) {
+  for_SymbolSymExprs(se, fn) {
+    CallExpr* call = toCallExpr(se->parentExpr);
+    if (se == call->baseExpr) {
+      FnSymbol* inFn = call->getFunction();
+      if (inFn && ignoreFns.count(inFn) == 0)
+        return call;
+    }
+  }
+
+  return NULL;
+}
+
+static bool isModuleInitFunction(FnSymbol* fn) {
+  ModuleSymbol* mod = fn->getModule();
+  if (mod && mod->initFn == fn)
+    return true;
+  if (fn->hasFlag(FLAG_MODULE_INIT))
+    return true;
+
+  return false;
+}
+
+
+static const char* fnKindAndName(FnSymbol* fn) {
+  if (fn == NULL)
+    return "";
+
+  ModuleSymbol* mod = fn->getModule();
+  if (mod && mod->initFn == fn)
+    return astr("module ", "'", mod->name, "'");
+
+  if (strcmp(fn->name, "init") == 0)
+    return astr("initializer");
+
+  if (fn->isIterator())
+    return astr("iterator ", "'", fn->name, "'");
+  else if (fn->isMethod())
+    return astr("method ", "'", fn->name, "'");
+
+  return astr("function ", "'", fn->name, "'");
+}
+
+static bool isInternalFunction(FnSymbol* fn) {
+  ModuleSymbol* module = fn->getModule();
+  return (fn->hasFlag(FLAG_COMPILER_GENERATED) ||
+          strncmp(fn->name, "chpl_", 5) == 0 ||
+          module->modTag == MOD_INTERNAL);
+}
+
+static Expr* findBestCallSite(FnSymbol* errFn,
+                              std::set<FnSymbol*>& currentFns) {
+  // Gather functions called, transitively, so that we can rule out
+  // recursive calls when showing a stack trace.
+  gatherFunctionsCalledTransitively(errFn, currentFns);
+
+  // Find the first call to the function within the instantiation point,
+  // so that we can have a better error message line number.
+  BlockStmt* instantiationPoint = errFn->instantiationPoint();
+  Expr* bestPoint = instantiationPoint;
+
+  if (instantiationPoint != NULL) {
+    std::vector<CallExpr*> calls;
+    collectFnCalls(instantiationPoint, calls);
+    for_vector(CallExpr, call, calls) {
+      if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
+        if (fn == errFn) {
+          bestPoint = call;
+          break;
+        }
+      }
+    }
+  } else {
+    // Find a call to the function
+    bestPoint = findACallSite(errFn, currentFns);
+  }
+
+  return bestPoint;
+}
+
+// Note - this function is recursive.
+static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
+                           std::set<FnSymbol*>& currentFns,
+                           bool& printedUnderline,
+                           bool& lastHidden) {
+
+  // Stop now if it's a module init function
+  if (isModuleInitFunction(errFn))
+    return;
+
+  Expr* bestPoint = findBestCallSite(errFn, currentFns);
+
+  if (bestPoint != NULL) {
+    FnSymbol* inFn = findNonTaskFn(bestPoint->getFunction());
+    if (inFn == NULL)
+      return;
+
+    // Don't print "called from chpl_gen_main"
+    bool calledFromGenMain = inFn->hasFlag(FLAG_GEN_MAIN_FUNC);
+    if (calledFromGenMain == false) {
+      bool hideErrFn = false;
+      bool hideInFn = false;
+      if (developer == false && fPrintCallStackOnError == false) {
+        if (isInternalFunction(errFn))
+          hideErrFn = true;
+        if (isInternalFunction(inFn))
+          hideInFn = true;
+      }
+
+      // Continue printing stack frames until not generic;
+      // or, with --print-callstack-on-error, module/main is reached
+      bool recurse = (inFn->instantiatedFrom != NULL || fPrintCallStackOnError);
+
+      if (hideErrFn == false) {
+        std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
+                                                             printedUnderline);
+
+        if (nameAndArgs.empty()) {
+          print_error("  %s:%d: %s called ",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      fnKindAndName(errFn));
+        } else {
+          print_error("  %s:%d: called as %s",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      nameAndArgs.c_str());
+        }
+
+        if (recurse && hideInFn == false) {
+          // finish the current line
+          print_error(" from %s\n", fnKindAndName(inFn));
+          // continue to print call sites
+        } else {
+          // finish the current line
+          print_error("\n");
+        }
+        lastHidden = false;
+      } else {
+        if (lastHidden == false) {
+          print_error("  within internal functions "
+                      "(use --print-callstack-on-error to see)\n");
+        }
+        lastHidden = true;
+      }
+
+      if (recurse) {
+        printCallstack(inFn, errFn, currentFns,
+                       printedUnderline, lastHidden);
+      }
+    }
+  }
+}
+
 // Print instantiation information for err_fn.
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
-static void printInstantiationNoteForLastError() {
-  if (err_fn_header_printed && err_fn && err_fn->instantiatedFrom) {
+static void printCallstackForLastError() {
+  if (err_fn_header_printed && err_fn) {
+    bool printStack = false;
+    if (fAutoPrintCallStackOnError)
+      printStack = err_fn->instantiatedFrom != NULL;
+    else
+      printStack = fPrintCallStackOnError;
 
-    // Find the first call to the function within the instantiation point,
-    // so that we can have a better error message line number.
-    BlockStmt* instantiationPoint = err_fn->instantiationPoint();
-    Expr* bestPoint = instantiationPoint;
-
-    if (instantiationPoint != NULL) {
-      std::vector<CallExpr*> calls;
-      collectFnCalls(instantiationPoint, calls);
-      for_vector(CallExpr, call, calls) {
-        if (FnSymbol* fn = call->resolvedOrVirtualFunction()) {
-          if (fn == err_fn) {
-            bestPoint = call;
-            break;
-          }
-        }
-      }
-
-      const char* subsDesc = err_fn->substitutionsToString(", ");
-
-      const char* intro = "";
-      if (strcmp(err_fn->name, "init") == 0)
-        intro = "Initializer";
-      else if (err_fn->isIterator())
-        intro = astr("Iterator ", "'", err_fn->name, "'");
-      else
-        intro = astr("Function ", "'", err_fn->name, "'");
-
-      if (subsDesc == NULL || subsDesc[0] == '\0') {
-        print_error("%s:%d: %s instantiated here\n",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    intro);
-      } else {
-        print_error("%s:%d: %s instantiated as: %s(%s)\n",
-                    cleanFilename(bestPoint),
-                    bestPoint->linenum(),
-                    intro,
-                    err_fn->name,
-                    subsDesc);
-      }
+    if (printStack) {
+      std::set<FnSymbol*> currentFns;
+      bool printedUnderline = false;
+      bool lastHidden = false;
+      printCallstack(err_fn, NULL, currentFns,
+                             printedUnderline, lastHidden);
+      if (printedUnderline)
+        USR_PRINT("generic instantiations are underlined in the above callstack");
     }
   }
 
@@ -316,7 +471,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
     if (Expr* expr = toExpr(ast)) {
       FnSymbol* fn = NULL;
       if (expr && expr->parentSymbol != NULL)
-        fn = findNonTaskCaller(expr->getFunction());
+        fn = findNonTaskFn(expr->getFunction());
 
       // Don't consider functions that aren't in the tree
       if (fn != NULL)
@@ -324,7 +479,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
           fn = NULL;
 
       if (fn && fn->id != err_fn_id) {
-        printInstantiationNoteForLastError();
+        printCallstackForLastError();
         err_fn_header_printed = false;
         err_fn = fn;
 
@@ -339,8 +494,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
         // If the function is compiler-generated, or inlined, or doesn't match
         // the error function and line number, nothing is printed.
-        if (err_fn->getModule()->initFn != err_fn     &&
-            !err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+        if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
           bool suppress = false;
 
@@ -355,16 +509,10 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
           }
 
           if (suppress == false) {
-            print_error("%s:%d: In ", cleanFilename(err_fn), err_fn->linenum());
+            print_error("%s:%d: In %s:\n",
+                        cleanFilename(err_fn), err_fn->linenum(),
+                        fnKindAndName(err_fn));
 
-            if (strcmp(err_fn->name, "init") == 0) {
-              print_error("initializer:\n");
-
-            } else {
-              print_error("%s '%s':\n",
-                          (err_fn->isIterator() ? "iterator" : "function"),
-                          err_fn->name);
-            }
             // We printed the header, so can print instantiation notes.
             err_fn_header_printed = true;
           }
@@ -413,13 +561,17 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   if (err_print) {
     print_error("note: ");
   } else if (err_fatal) {
+    print_error("%s", boldErrorFormat());
     if (err_user) {
       print_error("error: ");
     } else {
       print_error("internal error: ");
     }
+    print_error("%s", clearErrorFormat());
   } else {
+    print_error("%s", boldErrorFormat());
     print_error("warning: ");
+    print_error("%s", clearErrorFormat());
   }
 
   if (!err_user) {
@@ -463,63 +615,10 @@ static void printErrorFooter(bool guess) {
     // and exit if it's fatal (isn't it always?)
     //
     if (err_fatal && !(err_user && ignore_user_errors)) {
-      printInstantiationNoteForLastError();
+      printCallstackForLastError();
       clean_exit(1);
     }
   }
-}
-
-
-//
-// Print the module name, line number, and function signature of each function
-// on the call stack. This can be called from a debugger to to see what the
-// call chain looks like e.g. after a resolution error.
-//
-static void printCallStack(bool force, bool shortModule, FILE* out) {
-  if (!force) {
-    if (!fPrintCallStackOnError || err_print || callStack.n <= 1)
-      return;
-  }
-
-  if (!developer) {
-    if (out == NULL)
-      print_error("while processing the following Chapel call chain:\n");
-    else
-      fprintf(out, "while processing the following Chapel call chain:\n");
-  }
-
-  for (int i = callStack.n-1; i >= 0; i--) {
-    CallExpr*     call   = callStack.v[i];
-    FnSymbol*     fn     = call->getFunction();
-    ModuleSymbol* module = call->getModule();
-
-    if (out == NULL)
-      print_error(
-              "  %s:%d: %s%s%s\n",
-              (shortModule ? module->name : cleanFilename(fn->fname())),
-              call->linenum(), toString(fn),
-              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
-    else
-      fprintf(out,
-              "  %s:%d: %s%s%s\n",
-              (shortModule ? module->name : cleanFilename(fn->fname())),
-              call->linenum(), toString(fn),
-              (module->modTag == MOD_INTERNAL ? " [internal module]" : ""),
-              (fn->hasFlag(FLAG_COMPILER_GENERATED) ? " [compiler-generated]" : ""));
-
-  }
-}
-
-static void printCallStackOnError() {
-  printCallStack(false, false, stderr);
-}
-
-//
-// debugging convenience
-//
-void printCallStack() {
-  printCallStack(true, true, stdout);
 }
 
 // another one
@@ -613,8 +712,6 @@ static void vhandleError(const BaseAST* ast,
 
   print_error("\n");
 
-  printCallStackOnError();
-
   if (!err_user && !developer) {
     return;
   }
@@ -623,7 +720,7 @@ static void vhandleError(const BaseAST* ast,
     if (ignore_errors_for_pass) {
       exit_end_of_pass = true;
     } else if (!ignore_errors && !(ignore_user_errors && err_user)) {
-      printInstantiationNoteForLastError();
+      printCallstackForLastError();
       clean_exit(1);
     }
   }
@@ -631,7 +728,7 @@ static void vhandleError(const BaseAST* ast,
 
 
 void exitIfFatalErrorsEncountered() {
-  printInstantiationNoteForLastError();
+  printCallstackForLastError();
 
   if (exit_eventually) {
     if (ignore_errors_for_pass) {
@@ -707,6 +804,75 @@ void stopCatchingSignals() {
   signal(SIGSEGV, SIG_DFL);
 }
 
+static const char* gErrorFormatBold = "";
+static const char* gErrorFormatUnderline = "";
+static const char* gErrorFormatClearAll = "";
+static bool gErrorFormatsSetup = false;
+
+static void setupErrorFormatEscapes() {
+  if (gErrorFormatsSetup == false) {
+    gErrorFormatsSetup = true;
+
+    // The normal configuration is
+    //   fUseColorTerminal=false
+    //   fDetectColorTerminal=true
+    // Other settings of these variables are for testing the formatting itself.
+    bool isColorTerm = fUseColorTerminal;
+    if (fDetectColorTerminal) {
+      // Check the TERM variable. This approach and these
+      // terminals are taken from googletest; see
+      // https://github.com/google/googletest/blob/master/googletest/src/gtest.cc#L3216
+      const char* term = getenv("TERM");
+      const char* colorTerms[] = {"xterm",
+                                  "xterm-color",
+                                  "xterm-256color",
+                                  "screen",
+                                  "screen-256color",
+                                  "tmux",
+                                  "tmux-256color",
+                                  "rxvt-unicode",
+                                  "rxvt-unicode-256color",
+                                  "linux",
+                                  "cygwin",
+                                  NULL};
+      if (term == NULL) term = "";
+      for (int i = 0; colorTerms[i] != NULL; i++) {
+        if (0 == strcmp(term, colorTerms[i]))
+          isColorTerm = true;
+      }
+
+      // Check if errors will be output to a tty. If not,
+      // the format codes will just store "" and have no effect.
+      if (isatty(fileno(stderr)) == 0) {
+        isColorTerm = false;
+      }
+    }
+
+    if (isColorTerm) {
+      gErrorFormatBold = "\x1B[1m";
+      gErrorFormatUnderline = "\x1B[4m";
+      gErrorFormatClearAll = "\x1B[0m";
+    } else {
+      gErrorFormatBold = "";
+      gErrorFormatUnderline = "";
+      gErrorFormatClearAll = "";
+    }
+  }
+}
+
+// These are specifically for output to stderr (from USR_PRINT etc)
+const char* boldErrorFormat() {
+  setupErrorFormatEscapes();
+  return gErrorFormatBold;
+}
+const char* underlineErrorFormat() {
+  setupErrorFormatEscapes();
+  return gErrorFormatUnderline;
+}
+const char* clearErrorFormat() {
+  setupErrorFormatEscapes();
+  return gErrorFormatClearAll;
+}
 
 //
 // Put this last to minimize the amount of code affected by this #undef
