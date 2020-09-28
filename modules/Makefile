@@ -80,7 +80,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
@@ -114,6 +113,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LinkedLists.chpl \
 	packages/LockFreeQueue.chpl \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
