@@ -171,8 +171,8 @@ module ChapelDistribution {
       return ret;
     }
 
-    proc trackArrays() {
-      return trackArraysForConstDomains || !this.definedConst;
+    inline proc trackArrays() {
+      return disableConstDomainOpt || !this.definedConst;
     }
 
     // Returns (dom, dist).
