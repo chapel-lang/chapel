@@ -826,7 +826,7 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       while ((int)formalIsGeneric.size() < count) {
         formalIsGeneric.push_back(0);
       }
-      formalIsGeneric.push_back(isGeneric?1:0);
+      formalIsGeneric.push_back(1);
     }
     count++;
   }
