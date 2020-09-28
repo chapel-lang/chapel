@@ -16,6 +16,7 @@ config const numMessages = 36;
 config const dptpl = 3;
 
 var taskCounters: [PrivateSpace] atomic int;
+taskCounters.write(1);
 proc nextLocalTaskCounter(hereId:int) {
   return taskCounters[hereId].fetchAdd(1);
 }
@@ -34,7 +35,7 @@ forall msg in MessageSpace with (const taskId = nextLocalTaskCounter(here.id)) {
 }
 
 assert(& reduce MessageVisited);
-taskCounters.write(0);
+taskCounters.write(1);
 
 // Ensure each TPV stays with its task.
 

@@ -1,0 +1,10 @@
+nt 2000   nt2 10
+uncaught TaskErrors: 2 errors: IllegalArgumentError: 10 ... IllegalArgumentError: 2000
+  int-no-tlvy.chpl:44: thrown here
+  int-no-tlvy.chpl:44: uncaught here
+starting task
+asdf(1), returning
+asdf(10), throwing
+asdf(2), returning
+asdf(20), returning
+asdf(2000), throwing

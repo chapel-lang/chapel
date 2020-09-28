@@ -735,10 +735,44 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 // 'map' is expected to be non-NULL if this function has been instantiated.
 //
 bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
+  bool anyGeneric = false;
+
+  std::vector<unsigned char> formalIsGeneric;
+
+  int count = 0;
   for_formals(formal, this) {
     bool isGeneric = false;
 
     if (formal->type == dtUnknown && formal->typeExpr != NULL) {
+
+      // If the type expression does not depend on a previous generic formal,
+      // we can resolve it now, even if there was a previous generic formal.
+
+      bool dependsOnPreviousGeneric = false;
+      int i = 0;
+      if (anyGeneric) {
+        for_formals(prevFormal, this) {
+          if (i >= count)
+            break;
+
+          int cursz = formalIsGeneric.size();
+          if (i < cursz && formalIsGeneric[i] == 1) {
+            // check to see if prevFormal is used in the typeExpr
+            // for the current formal.
+            if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
+              dependsOnPreviousGeneric = true;
+              break;
+            }
+          }
+          i++;
+        }
+        if (dependsOnPreviousGeneric) {
+          // Stop resolving formals.
+          INT_ASSERT(anyGeneric == true);
+          break;
+        }
+      }
+
       resolveBlockStmt(formal->typeExpr);
       formal->type = formal->typeExpr->body.tail->getValType();
     }
@@ -786,11 +820,18 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
         USR_PRINT(this,
                   "   formal argument '%s' causes it to be", formal->name);
       }
-      return true; // no need to examine the remaining formals
     }
+    anyGeneric = anyGeneric || isGeneric;
+    if (isGeneric) {
+      while ((int)formalIsGeneric.size() < count) {
+        formalIsGeneric.push_back(0);
+      }
+      formalIsGeneric.push_back(isGeneric?1:0);
+    }
+    count++;
   }
 
-  return false;
+  return anyGeneric;
 }
 
 bool FnSymbol::isNormalized() const {

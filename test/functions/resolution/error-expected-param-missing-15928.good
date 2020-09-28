@@ -1,0 +1,4 @@
+error-expected-param-missing-15928.chpl:6: error: unresolved call 'foo([domain(1,int(64),false)] int(64), bool)'
+error-expected-param-missing-15928.chpl:1: note: this candidate did not match: foo(a: [] int, param p = false)
+error-expected-param-missing-15928.chpl:6: note: because non-param call actual argument #2
+error-expected-param-missing-15928.chpl:1: note: is passed to param formal 'param p: bool'

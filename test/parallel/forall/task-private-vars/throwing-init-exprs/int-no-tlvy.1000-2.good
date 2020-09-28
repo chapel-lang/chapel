@@ -1,0 +1,9 @@
+nt 2   nt2 1000
+uncaught TaskErrors: 2 errors: IllegalArgumentError: 1000 ... IllegalArgumentError: 2
+  int-no-tlvy.chpl:44: thrown here
+  int-no-tlvy.chpl:44: uncaught here
+starting task
+asdf(1), returning
+asdf(10), returning
+asdf(1000), throwing
+asdf(2), throwing
