@@ -1,6 +1,92 @@
 Release Changes List
 ====================
 
+version 1.23.0
+==============
+
+Twenty-sixth public release of Chapel, October 15, 2020  
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Deprecated / Removed Library Features
+-------------------------------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+New Tools / Tool Changes
+------------------------
+
+Interoperability Improvements
+-----------------------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Cray-specific Performance Optimizations/Improvements
+----------------------------------------------------
+
+Memory Improvements
+-------------------
+
+Documentation
+-------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+Cray-specific Changes and Bug Fixes
+-----------------------------------
+
+Compiler Flags
+--------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Generated Executable Flags
+--------------------------
+
+Syntax Highlighting
+-------------------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Execution-time Checks
+---------------------
+
+Bug Fixes
+---------
+
 
 version 1.22.1
 ==============
