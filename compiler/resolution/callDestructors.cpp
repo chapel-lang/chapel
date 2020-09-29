@@ -714,7 +714,7 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   // of user variables. *or* it might come from handling `in` intent.
   if (copyExpr) {
     if (isRhsInitOrAutoCopy) {
-      removeInitOrAutoCopyPostResolution(copyExpr);
+      removeInitOrAutoCopyPostResolution(copyExpr, NULL);
     }
     else {
       copyExpr->replace(copyExpr->get(1)->remove());

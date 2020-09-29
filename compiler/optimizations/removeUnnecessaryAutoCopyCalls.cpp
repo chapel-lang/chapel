@@ -86,7 +86,7 @@ static void removePODinitDestroy()
           if (lhsType->getValType() != rhsType->getValType()) {
             INT_FATAL(actual, "Type mismatch in updateAutoCopy");
           } else {
-            removeInitOrAutoCopyPostResolution(call);
+            removeInitOrAutoCopyPostResolution(call, NULL);
           }
         }
       }

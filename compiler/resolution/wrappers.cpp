@@ -53,6 +53,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1628,20 +1629,18 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       // (don't destroy it here, it will be destroyed there).
       actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
 
-      // domain literals are constant by definition. If we are moving a domain
-      // literal into an `in` formal, we don't have any initCopy etc to fix
-      // constness. So, adjust the call that set that domain to be constant
+      // if we are moving a const domain into an in-intent argument, adjust its
+      // constness
       if (!isConstCopy) {
-        if (CallExpr *initCall = toCallExpr(actualSym->getInitialization())) {
-          if (initCall->isPrimitive(PRIM_MOVE)) {
-            if (CallExpr *rhsCall = toCallExpr(initCall->get(2))) {
-              if (rhsCall->isNamed("chpl__buildDomainExpr")) {
-                SymExpr *lastArg = toSymExpr(rhsCall->argList.last());
-                INT_ASSERT(lastArg);
-                INT_ASSERT(lastArg->symbol()->type == dtBool);
-                lastArg->replace(new SymExpr(gFalse));
-              }
-            }
+        // FIXME
+        Symbol *lhsSym = actualSym;
+        if (lhsSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (!lhsSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            Expr *nextExpr = new CallExpr(PRIM_NOOP);
+            anchor->insertBefore(nextExpr);
+            Expr *anchor2 = nextExpr;
+            setDefinedConstForDomainSymbol(lhsSym, nextExpr, anchor2, gFalse);
+            nextExpr->remove();
           }
         }
       }
