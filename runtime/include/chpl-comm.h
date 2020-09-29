@@ -512,6 +512,17 @@ void chpl_comm_unordered_task_fence(void) {
 }
 
 
+// This is a hook that's called when a task is creating a child task.
+#ifndef CHPL_COMM_IMPL_TASK_CREATE
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        return
+#endif
+static inline
+void chpl_comm_task_create(void) {
+  CHPL_COMM_IMPL_TASK_CREATE();
+}
+
+
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
 #ifndef CHPL_COMM_IMPL_TASK_END

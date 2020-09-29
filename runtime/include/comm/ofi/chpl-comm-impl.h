@@ -45,6 +45,10 @@ size_t chpl_comm_impl_regMemHeapPageSize(void);
         chpl_comm_impl_unordered_task_fence()
 void chpl_comm_impl_unordered_task_fence(void);
 
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        chpl_comm_impl_task_create()
+void chpl_comm_impl_task_create(void);
+
 #define CHPL_COMM_IMPL_TASK_END() \
         chpl_comm_impl_task_end()
 void chpl_comm_impl_task_end(void);
