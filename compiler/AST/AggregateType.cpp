@@ -2283,8 +2283,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
 
         DefExpr*    defPoint = field->defPoint;
         const char* name     = field->name;
-        IntentTag intent     = field->hasFlag(FLAG_CONST) ? INTENT_CONST_IN : INTENT_IN;
-        ArgSymbol*  arg      = new ArgSymbol(intent, name, dtUnknown);
+        ArgSymbol*  arg      = new ArgSymbol(INTENT_IN, name, dtUnknown);
 
         names.insert(name);
         fieldArgMap.put(field, arg);
