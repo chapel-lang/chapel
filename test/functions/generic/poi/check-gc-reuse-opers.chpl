@@ -1,13 +1,16 @@
-// Ensure generic-instantiations cache entries for libFun(1),
+// Ensure generic-instantiations cache entries for libIN(1) etc.
 // which use type operations, are not reused when reuse would be incorrect.
 //
 // This is an inverse of check-gc-reuse-inits.chpl -- here the
-// initializers and operators are called from libFun() through its POIs
+// initializers and operators are called from libIN() through its POIs
 // so it is the cache entries for the latter to be reused correctly.
 
 
 module Lib {
   record MyRecord { param rp; proc deinit() {} }
+  proc MyRecord.init(type t) { rp = 0; }
+  var r1 = new MyRecord(int);
+  var r2 = new MyRecord(int);
 
   proc note(param message, param depth) {
     compilerWarning(message, depth);
@@ -15,15 +18,13 @@ module Lib {
     writeln(message);
   }
 
-  // this invokes init, init=, =, <, _cast through POI
-  proc libFun(myArg) {
-    var r1 = new MyRecord(0); // init
-    var r2 = r1;              // init=
-    r1 = r2;                  // =
-    var lt = r1 < r2;         // <
-    var castF = r1: int;      // _cast from
-    var castT = 1: MyRecord;  // _cast to
-  }
+  // these invoke init, init=, =, <, _cast through POI
+  proc libIN(myArg) { var r1 = new MyRecord(0); } // init
+  proc libIE(myArg) { var r2 = r1;              } // init=
+  proc libAS(myArg) { r1 = r2;                  } // =
+  proc libLT(myArg) { var lt = r1 < r2;         } // <
+  proc libCF(myArg) { var castF = r1: int;      } // _cast from
+  proc libCT(myArg) { var castT = 1: MyRecord;  } // _cast to
 }
 
 module User {
@@ -37,12 +38,22 @@ module User {
                                            return new MyRecord(0); }
   proc u1() {
     note("User.u1", 1);
-    libFun(1);      // create a cache entry
+    libIN(1);      // create a cache entry
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
   proc u2() {
     {
       note("User.u2", 1);
-      libFun(1);    // reuse the cache entry
+      libIN(1);    // reuse the cache entry
+      libIE(1);
+      libAS(1);
+      libLT(1);
+      libCF(1);
+      libCT(1);
     }
   }
   proc u3() {
@@ -54,7 +65,12 @@ module User {
     proc _cast(type t:MyRecord,   rhs:int) { note("u3._castT", 2);
                                              return new MyRecord(0); }
     note("User.u3", 1);
-    libFun(1);      // cannot reuse the cache entry -> create a new one
+    libIN(1);      // cannot reuse the cache entry -> create a new one
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
 
   proc main {
@@ -94,11 +110,21 @@ module More1 {
                                            return new MyRecord(0); }
   proc m1con() {
     note("More1.m1con", 1);
-    libFun(1);      // cannot reuse the cache entry -> create a new one
+    libIN(1);      // cannot reuse the cache entry -> create a new one
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
   proc m1gen(param p) {
     note("More1.m1gen", 1);
-    libFun(1);      // can reuse the cache entry created for m1con
+    libIN(1);      // can reuse the cache entry created for m1con
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
 }
 
@@ -107,11 +133,16 @@ module More2 {
 
   proc m2con() {
     note("More2.m2con", 1);
-    // libFun(1);   // error: no visible = or <
+    // libIN(1);   // error: no visible = or <
   }
   proc m2gen(param p) {
     note("More2.m2gen", 1);
-    libFun(1);      // can reuse the cache entry created for u1
+    libIN(1);      // can reuse the cache entry created for u1
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
 }
 
@@ -130,7 +161,12 @@ module Combo1 {
   }
   proc combo1b(param p) {
     note("Combo1.combo1b", 1);
-    libFun(1);      // can reuse the cache entry created for combo1a->combo2a
+    libIN(1);      // can reuse the cache entry created for combo1a->combo2a
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
 }
 
@@ -139,7 +175,12 @@ module Combo2 {
 
   proc combo2a(param p) {
     note("Combo2.combo2a", 1);
-    libFun(1);      // create a fresh cache entry
+    libIN(1);      // create a fresh cache entry
+    libIE(1);
+    libAS(1);
+    libLT(1);
+    libCF(1);
+    libCT(1);
   }
   proc combo2b() {
     use Combo1;
