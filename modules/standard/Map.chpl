@@ -455,28 +455,23 @@ module Map {
     /*
       Iterates over the key-value pairs of this map.
 
-      :yields: A tuple of references to one of the key-value pairs contained in
-               this map.
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
     */
     pragma "order independent yielding loops"
-    iter items() const ref {
+    iter items() {
+      if !isCopyableType(keyType) then
+        compilerError('in map.items(): map key type ' + keyType:string +
+                      ' is not copyable');
+
+      if !isCopyableType(valType) then
+        compilerError('in map.items(): map value type ' + valType:string +
+                      ' is not copyable');
+
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
           yield (tabEntry.key, tabEntry.val);
-        }
-      }
-    }
-
-    pragma "no doc"
-    pragma "order independent yielding loops"
-    iter items() const ref where isNonNilableClass(valType) {
-      try! {
-        for slot in table.allSlots() {
-          if table.isSlotFull(slot) {
-            ref tabEntry = table.table[slot];
-            yield (tabEntry.key, tabEntry.val: valType);
-          }
         }
       }
     }
