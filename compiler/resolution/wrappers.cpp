@@ -1663,8 +1663,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
             Symbol *definedConst = isConstCopy ? gTrue : gFalse;
             Expr *nextExpr = new CallExpr(PRIM_NOOP);
             anchor->insertBefore(nextExpr);
-            Expr *anchor2 = nextExpr;
-            setDefinedConstForDomainSymbol(actualSym, nextExpr, anchor2, definedConst);
+            setDefinedConstForDomainSymbol(actualSym, nextExpr, definedConst);
             nextExpr->remove();
           }
         }
