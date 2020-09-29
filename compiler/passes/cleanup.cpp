@@ -82,12 +82,16 @@ static bool areMultiDefExprsInAList(AList& list){
 
 
 static bool isValidInit(Expr* initExpr){
+  if (initExpr == NULL) {
+    return false;
+  }
+
   if (SymExpr* se = toSymExpr(initExpr)) {
-    if (initExpr && se->symbol() == gSplitInit) {
-      return true;
+    if ( se->symbol() == gSplitInit) {
+      return false;
     }
   }
-  return false;
+  return true;
 }
 
 
@@ -102,207 +106,83 @@ static bool isgSplitInit(Expr* initExpr){
 
 static void backPropagateInFunction(BlockStmt* block){
 
-    Expr* init = NULL;
-    Expr* type = NULL;
-    //int numStmts = 0;
-    //DefExpr* prev = NULL;
-
-      //For one variable declarations, there's no need to add temporaries
-    /*for_alist(stmt, block->body){
-      if (isDefExpr(stmt)) numStmts++;
-    }
-    if (numStmts <= 1) return;
-    */
-
-    if (!areMultiDefExprsInAList(block->body)) return;
-
-    VarSymbol* typeTmp = NULL;
-    BlockStmt* tmpBlock = new BlockStmt();
-
-    for_alist_backward(stmt, block->body){
-      if (DefExpr* def = toDefExpr(stmt)) {
-        /*
-	if(def->sym->id == 212199 || def->sym->name == astr("left")){
-        //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
-        //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
-          //printf("in addType\n");
-          gdbShouldBreakHere();
-	}
-        */
-        if(def->sym->name == astr("lo_var")) gdbShouldBreakHere();
-	//check if not in record
-        if(def->parentSymbol->astTag != E_TypeSymbol) {
-	  if (def->init || def->exprType) {
-
-            if(def->exprType){
-              typeTmp = NULL;
-            } else {
-              if(typeTmp){
-                //for case var a = 1.0, b, c: int;
-                if (def->init == NULL || isgSplitInit(def->init)) {
-                  def->exprType = new SymExpr(typeTmp);
-                }
-              } else {
-		def->exprType = type;
-	      }
-            }
-
-	    //if(def->init && !isgSplitInit(def->init)){
-            if(isValidInit(def->init)){
-               def->init = NULL;
-              if(init){
-                //def->init = NULL;
-                def->init = init->copy();
-                //def->init = new UnresolvedSymExpr(prev->sym->name);
-              }
-              else {
-                //if does not have an def->init nor def->exprType nor previous initialization
-                if(def->exprType == NULL){
-                  def->init = new SymExpr(gSplitInit);
-                }
-              }
-            //  init = def->init;
-            }
-            /*
-	      if(init){
-		if((def->init)->isNoInitExpr()){
-                  def->init = init->copy();
-		}
-		else {
-	          init = new UnresolvedSymExpr(def->sym->name);
-	        }
-	      }
-            */
-
-            init = def->init;
-            type = def->exprType;
-            //prev = def;
-          }  else {
-	    //def->exprType = type;
-	  }
-
-          if (def->exprType && typeTmp == NULL) {
-            typeTmp = newTemp("type_tmp");
-            typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-            DefExpr* tmpDef = new DefExpr(typeTmp);
-            Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
-            type = def->exprType;
-            def->exprType = new SymExpr(typeTmp);
-            tmpBlock->insertAtTail(tmpDef);
-            tmpBlock->insertAtTail(move);
-          }
-	  
-       } else {
-         if (def->init || def->exprType) {
-           type = def->exprType;
-         } else {
-           def->exprType = type;
-       }
-       }
-      }
-    }
-      
-    if(tmpBlock){
-    block->insertAtHead(tmpBlock);
-    tmpBlock->flattenAndRemove();
-    }
-
-	/*
-        if (def->init || def->exprType) {
-          init = def->init;
-          type = def->exprType;
-        } else {
-          if (type)
-            prev->exprType =
-              new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
-          if (init) {
-            if (init->isNoInitExpr()) {
-              prev->init = init->copy();
-          } else if (type) {
-              prev->init = new CallExpr("chpl__readXX",
-                                      new UnresolvedSymExpr(def->sym->name));
-            } else
-              prev->init = new UnresolvedSymExpr(def->sym->name);
-          }
-          def->init = init;
-          def->exprType = type;
-        }
-        prev = def;
-        }
-	*/
-	//else if (toCallExpr(stmt)) {
-	//} else{
-        //  INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
-        //}
-    //}
-  //}
-
-}
-/*
-static void setFieldHelper(BaseAST* parent, Expr*& field, Expr* setTo){
-  if(field != NULL) {
-    field->remove();
-  }
-
-  field = setTo;
-
-  if(setTo != NULL){
-    parent_insert_help(parent, field);
-
-  }
-
-}
-*/
-/*
-static void backPropagateInAggregate(AggregateType* at){
   Expr* init = NULL;
   Expr* type = NULL;
-  DefExpr* prev = NULL;
 
-  if (!areMultiDefExprsInAList(at->fields)) return;
+  if (!areMultiDefExprsInAList(block->body)) return;
 
-  for_alist_backward(stmt, at->fields) {
+  VarSymbol* typeTmp = NULL;
+  BlockStmt* tmpBlock = new BlockStmt();
+
+  for_alist_backward(stmt, block->body){
     if (DefExpr* def = toDefExpr(stmt)) {
-      if (def->init || def->exprType) {
-        init = def->init;
-        type = def->exprType;
-      } else {
-        if (type) {
-          setFieldHelper(prev, prev->exprType, 
-            new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name)));
-        }
-        if (init) {
-          if (init->isNoInitExpr()) {
-            setFieldHelper(prev, prev->init, init->copy());
-          } else if (type) {
-            setFieldHelper(prev, prev->init, new CallExpr("chpl__readXX",
-                                      new UnresolvedSymExpr(def->sym->name)));
-          } else
-            setFieldHelper(prev, prev->init, new UnresolvedSymExpr(def->sym->name));
-        }
-        setFieldHelper(prev, def->init, init->copy());
-        setFieldHelper(prev, def->exprType, type->copy());
-      }
-      prev = def;
-    } else
-      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
-  }
 
-}
-*/
-static void backPropagate(BaseAST* ast){
-  if (BlockStmt* block = toBlockStmt(ast)) {
-    backPropagateInFunction(block);
-  }
-/*
-  if (DefExpr* def = toDefExpr(ast)) {
-    if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
-      if(AggregateType* at = toAggregateType(ts->type)) {
-        backPropagateInAggregate(at);
+      //if (def->sym->id == 212209 || def->sym->name == astr("RBlk")) gdbShouldBreakHere();
+      //1. set local variableis -- analysis
+      if (isValidInit(def->init) || def->exprType) {
+
+        if(isValidInit(def->init)){
+          init = def->init;
+        } else {
+          init = NULL;
+        }
+
+        type = def->exprType;
+
+      }
+
+      //2. create typetmp if necessary
+      if (def->exprType) {
+        typeTmp = newTemp("type_tmp");
+        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+        DefExpr* tmpDef = new DefExpr(typeTmp);
+        Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
+        def->exprType = NULL; //This is done with def->exprType->remove() above
+        type = new SymExpr(typeTmp);
+        tmpBlock->insertAtTail(tmpDef);
+        tmpBlock->insertAtTail(move);
+      }
+    
+      //3. update def
+      //update exprType
+      if(type != NULL && def->exprType == NULL) {
+        def->exprType = type->copy();
+        if(isgSplitInit(def->init)) {
+          def->init->remove();
+        }
+      }
+
+      if(init != NULL && !isValidInit(def->init)){
+        def->init = init->copy(); 
       }
     }
   }
-*/
+
+  if(tmpBlock){
+    block->insertAtHead(tmpBlock);
+    tmpBlock->flattenAndRemove();
+  }	   
+}
+
+static void backPropagate(BaseAST* ast){
+  if (BlockStmt* block = toBlockStmt(ast)) {
+    if (block->blockTag == BLOCK_SCOPELESS){
+      for_alist(stmt, block->body){
+        if(DefExpr* def = toDefExpr(stmt)){
+          if(isVarSymbol(def->sym)) {
+          } else {
+            return;
+          }
+        } else if(isEndOfStatementMarker(stmt)){
+        
+        } else {
+          return;
+        }
+      }
+
+      backPropagateInFunction(block);
+    }
+  }
 }
 
 
@@ -313,23 +193,10 @@ static void cleanup(ModuleSymbol* module) {
 
   for_vector(BaseAST, ast, asts) {
     SET_LINENO(ast);
-    //if (DefExpr* def = toDefExpr(ast)) {
-      /*
-        if(def->sym->id == 212199 || def->sym->name == astr("left")){
-        //if (def->sym->id == 212189 || def->sym->name == astr("avar")){
-        //if (def->sym->id == 212193 || def->sym->name == astr("bvar")){
-          //printf("in addType\n");
-          gdbShouldBreakHere();
-        }
-      */
-     //}
 
-	  //call to function to fix
     backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
 
-	    //add new funciton to  remove backprop, going to visit defexpr in random order, get parent expr, parentSymbol field if def->ParentSymbol is typeSymbol
-	    //if AST is a block
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         SET_LINENO(def);
 
@@ -346,37 +213,6 @@ static void cleanup(ModuleSymbol* module) {
 
     if (BlockStmt* block = toBlockStmt(ast)) {
       if (block->blockTag == BLOCK_SCOPELESS && block->list != NULL) {
-	      //here?
-        //Expr* init = NULL;
-        //Expr* type = NULL;
-	//DefExpr* prev = NULL;
-/*
-	for_alist(stmt, block->body){
-          if (DefExpr* def = toDefExpr(stmt)) {
-            if (def->init || def->exprType) {
-              init = def->init;
-              type = def->exprType;
-            } else {
-              if (type)
-                prev->exprType =
-                  new CallExpr(PRIM_TYPEOF, new UnresolvedSymExpr(def->sym->name));
-              if (init) {
-                if (init->isNoInitExpr()) {
-                  prev->init = init->copy();
-                } else if (type) {
-                  prev->init = new CallExpr("chpl__readXX",
-                                      new UnresolvedSymExpr(def->sym->name));
-                } else
-                  prev->init = new UnresolvedSymExpr(def->sym->name);
-              }
-              def->init = init;
-              def->exprType = type;
-            }
-            prev = def;
-            } else
-              INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
-        }
-	*/
         block->flattenAndRemove();
       }
 
