@@ -7992,10 +7992,14 @@ void resolveGenericActuals(CallExpr* call) {
   SET_LINENO(call);
 
   bool decayToBorrow = false;
-  if (SymExpr* baseSe = toSymExpr(call->baseExpr))
+  /*
+   should no longer be necessary because generic types can be passed
+     ... check classes primer
+   if (SymExpr* baseSe = toSymExpr(call->baseExpr))
     if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
       if (isManagedPtrType(ts->type))
         decayToBorrow = true;
+   */
 
   for_actuals(actual, call) {
     Expr* safeActual = actual;
@@ -10957,6 +10961,10 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       resolveExpr(tempCall->get(2));
       resolveExpr(tempCall);
       appendExpr = new SymExpr(temp);
+
+    } else if (isGenericField && hasDefault == true) {
+      USR_FATAL(call, "Default initializing a record type with "
+                      "generic fields with defaults is not yet supported");
 
     } else {
       INT_FATAL("Unhandled case for default-init");
