@@ -198,7 +198,7 @@ module BytesCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupForNumericCast(t, localX);
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -227,7 +227,7 @@ module BytesCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupForNumericCast(t, localX);
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
