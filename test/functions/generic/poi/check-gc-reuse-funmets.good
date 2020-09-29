@@ -1,0 +1,97 @@
+check-gc-reuse-funmets.chpl:31: In function 'u1':
+check-gc-reuse-funmets.chpl:32: warning: User.u1
+check-gc-reuse-funmets.chpl:16: In function 'libFun':
+check-gc-reuse-funmets.chpl:17: warning: User.workFun
+check-gc-reuse-funmets.chpl:18: warning: User.workMet
+  check-gc-reuse-funmets.chpl:33: called as libFun(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:20: In method 'libMet':
+check-gc-reuse-funmets.chpl:21: warning: User.workFun
+check-gc-reuse-funmets.chpl:22: warning: User.workMet
+  check-gc-reuse-funmets.chpl:34: called as borrowed MyClass.libMet(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:36: In function 'u2':
+check-gc-reuse-funmets.chpl:38: warning: User.u2
+check-gc-reuse-funmets.chpl:43: In function 'u3':
+check-gc-reuse-funmets.chpl:46: warning: User.u3
+check-gc-reuse-funmets.chpl:16: In function 'libFun':
+check-gc-reuse-funmets.chpl:17: warning: User.u3.workFun
+check-gc-reuse-funmets.chpl:18: warning: User.u3.workMet
+  check-gc-reuse-funmets.chpl:47: called as libFun(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:20: In method 'libMet':
+check-gc-reuse-funmets.chpl:21: warning: User.u3.workFun
+check-gc-reuse-funmets.chpl:22: warning: User.u3.workMet
+  check-gc-reuse-funmets.chpl:48: called as borrowed MyClass.libMet(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:81: In function 'm1con':
+check-gc-reuse-funmets.chpl:82: warning: More1.m1con
+check-gc-reuse-funmets.chpl:16: In function 'libFun':
+check-gc-reuse-funmets.chpl:17: warning: More1.workFun
+check-gc-reuse-funmets.chpl:18: warning: More1.workMet
+  check-gc-reuse-funmets.chpl:83: called as libFun(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:20: In method 'libMet':
+check-gc-reuse-funmets.chpl:21: warning: More1.workFun
+check-gc-reuse-funmets.chpl:22: warning: More1.workMet
+  check-gc-reuse-funmets.chpl:84: called as borrowed MyClass.libMet(myArg: owned MyClass)
+check-gc-reuse-funmets.chpl:86: In function 'm1gen':
+check-gc-reuse-funmets.chpl:87: warning: More1.m1gen
+  check-gc-reuse-funmets.chpl:58: called as m1gen(param p = 0)
+check-gc-reuse-funmets.chpl:96: In function 'm2con':
+check-gc-reuse-funmets.chpl:97: warning: More2.m2con
+check-gc-reuse-funmets.chpl:101: In function 'm2gen':
+check-gc-reuse-funmets.chpl:102: warning: More2.m2gen
+  check-gc-reuse-funmets.chpl:63: called as m2gen(param p = 0)
+check-gc-reuse-funmets.chpl:127: In function 'combo2a':
+check-gc-reuse-funmets.chpl:128: warning: Combo2.combo2a
+  check-gc-reuse-funmets.chpl:115: called as combo2a(param p = 0)
+check-gc-reuse-funmets.chpl:16: In function 'libFun':
+check-gc-reuse-funmets.chpl:17: warning: Combo1.workFun
+check-gc-reuse-funmets.chpl:18: warning: Combo1.workMet
+  check-gc-reuse-funmets.chpl:129: called as libFun(myArg: owned MyClass) from function 'combo2a'
+  check-gc-reuse-funmets.chpl:115: called as combo2a(param p = 0)
+check-gc-reuse-funmets.chpl:20: In method 'libMet':
+check-gc-reuse-funmets.chpl:21: warning: Combo1.workFun
+check-gc-reuse-funmets.chpl:22: warning: Combo1.workMet
+  check-gc-reuse-funmets.chpl:130: called as borrowed MyClass.libMet(myArg: owned MyClass) from function 'combo2a'
+  check-gc-reuse-funmets.chpl:115: called as combo2a(param p = 0)
+check-gc-reuse-funmets.chpl:117: In function 'combo1b':
+check-gc-reuse-funmets.chpl:118: warning: Combo1.combo1b
+  check-gc-reuse-funmets.chpl:134: called as combo1b(param p = 0)
+User.u1
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+User.u2
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+User.u3
+User.u3.workFun
+User.u3.workMet
+User.u3.workFun
+User.u3.workMet
+More1.m1con
+More1.workFun
+More1.workMet
+More1.workFun
+More1.workMet
+More1.m1gen
+More1.workFun
+More1.workMet
+More1.workFun
+More1.workMet
+More2.m2con
+More2.m2gen
+User.workFun
+User.workMet
+User.workFun
+User.workMet
+Combo2.combo2a
+Combo1.workFun
+Combo1.workMet
+Combo1.workFun
+Combo1.workMet
+Combo1.combo1b
+Combo1.workFun
+Combo1.workMet
+Combo1.workFun
+Combo1.workMet

@@ -293,12 +293,12 @@ freeCache(SymbolMapScopeCache& cache) {
 
 void createCacheInfoIfNeeded(FnSymbol* fn) {
   INT_ASSERT(fn->cacheInfo == NULL);
-  if (fn->instantiatedFrom == NULL ||  // a concrete function
-      cachedInstantiationIsAlwaysApplicable(fn)) {
-    // In these cases we will not be checking applicability
-    // of a cached instantiation. So, do not compute cacheInfo.
+  if (fn->instantiatedFrom == NULL)
+    // We will not be checking applicability for a concrete function
+    // because there will be no cached instantiations.
+    // So, do not compute cacheInfo.
     return;
-  }
+
   fn->cacheInfo = new GenericsCacheInfo();
 }
 
@@ -500,12 +500,6 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
   GenericsCacheInfo* cacheInfo = fn->cacheInfo;
   if (cacheInfo == NULL) return true;
   int sizeCI = cacheInfo->size();
-
-  if (cachedInstantiationIsAlwaysApplicable(visInfo.call)) {
-    // we are not checking these for now - see createCacheInfoIfNeeded()
-    INT_FATAL(visInfo.call, "unexpected");
-    return true;
-  }
 
   int remainingCFIs = sizeCI;
   std::vector<CalledFunInfo*> toProcess(sizeCI); // working copy

@@ -80,14 +80,10 @@ static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 
 static std::set<const char*> typeHelperNames;
 
-bool isTypeHelperName(const char* fnName) {
-  return typeHelperNames.count(fnName);
-}
-
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
           call->get(1)->typeInfo() == dtMethodToken)
-         || isTypeHelperName(name);
+         || typeHelperNames.count(name);
 }
 
 
@@ -108,20 +104,6 @@ VisibilityInfo::VisibilityInfo(const VisibilityInfo& src) :
 { }
 
 
-// Make type helpers always applicable for now.
-// To relax this, see how many false positives occur
-// when checking applicability of respective cache entries.
-bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn) {
-  return isTypeHelperName(fn->name);
-}
-bool cachedInstantiationIsAlwaysApplicable(CallExpr* call) {
-  if (FnSymbol* fn = call->resolvedFunction())
-    return cachedInstantiationIsAlwaysApplicable(fn);
-
-  const char* name = toUnresolvedSymExpr(call->baseExpr)->unresolved;
-  return isTypeHelperName(name);
-}
-
 // Might the 'scope' define a fn that might change resolution outcome?
 // Such fn has the same name as this CFI's function and
 // is not automatically applicable.
@@ -129,8 +111,7 @@ bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName) {
   if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(scope))
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fnName))
       forv_Vec(FnSymbol, fn, *fns)
-        if (!cachedInstantiationIsAlwaysApplicable(fn))
-          return true;
+        return true;
   return false;
 }
 
