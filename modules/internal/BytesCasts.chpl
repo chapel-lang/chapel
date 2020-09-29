@@ -28,7 +28,7 @@ module BytesCasts {
   //
   // Bool
   //
-  inline proc _cast(type t:bytes, x: bool) {
+  proc _cast(type t:bytes, x: bool) {
     if (x) {
       return b"true";
     } else {
@@ -84,7 +84,7 @@ module BytesCasts {
     return ret;
   }
 
-  inline proc _cast(type t:integral, x: bytes) throws {
+  proc _cast(type t:integral, x: bytes) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -157,7 +157,7 @@ module BytesCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : bytes {
+  proc _real_cast_helper(x: real(64), param isImag: bool) : bytes {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
@@ -173,7 +173,7 @@ module BytesCasts {
     return ret;
   }
 
-  proc _cast(type t:bytes, x:chpl_anyreal) {
+  inline proc _cast(type t:bytes, x:chpl_anyreal) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
@@ -186,7 +186,7 @@ module BytesCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cast(type t:chpl_anyreal, x: bytes) throws {
+  proc _cast(type t:chpl_anyreal, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -215,7 +215,7 @@ module BytesCasts {
     return retVal;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x: bytes) throws {
+  proc _cast(type t:chpl_anyimag, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -270,7 +270,7 @@ module BytesCasts {
   }
 
 
-  inline proc _cast(type t:chpl_anycomplex, x: bytes) throws {
+  proc _cast(type t:chpl_anycomplex, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);
