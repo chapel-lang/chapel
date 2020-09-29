@@ -35,6 +35,7 @@
 #include "ForallStmt.h"
 #include "expr.h"
 #include "errorHandling.h"
+#include "optimizations.h"
 #include "resolution.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -578,8 +579,28 @@ static void doElideCopies(VarToCopyElisionState &map) {
           call->get(2)->replace(new SymExpr(tmp));
         } else {
           // Change the copy into a move and don't destroy the variable.
+          
+          Symbol *definedConst = NULL;
+          if (call->isPrimitive(PRIM_MOVE)) {
+            if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
+              if (rhsCall->isNamedAstr(astr_initCopy) ||
+                  rhsCall->isNamedAstr(astr_autoCopy)) { // can it be autoCopy?
+                definedConst = toSymExpr(rhsCall->get(2))->symbol();
+                INT_ASSERT(definedConst->getValType() == dtBool);
+              }
+
+            }
+          }
+
           call->convertToNoop();
           call->insertBefore(new CallExpr(PRIM_ASSIGN_ELIDED_COPY, lhs, var));
+
+          if (definedConst != NULL) {
+            if (lhs->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+              Expr *anchor = call;
+              setDefinedConstForDomainSymbol(lhs, call, anchor, definedConst);
+            }
+          }
         }
 
         if (AggregateType* at = toAggregateType(lhs->getValType())) {
