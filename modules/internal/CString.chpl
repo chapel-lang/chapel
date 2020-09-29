@@ -25,6 +25,7 @@
 // representation, being in essence the common NUL-terminated C string.
 module CString {
   private use ChapelStandard, SysCTypes;
+  private use CPtr;
 
   //inline proc c_string.c_str() return this;
 
@@ -185,11 +186,6 @@ module CString {
   //
 
   inline proc c_string.size return __primitive("string_length_bytes", this);
-  inline proc c_string.length {
-    compilerWarning("'c_string.length' is deprecated - " +
-                    "please use 'c_string.size' instead");
-    return this.size;
-  }
 
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
@@ -200,12 +196,6 @@ module CString {
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 
-  pragma "last resort" // avoids param string to c_string coercion
-  inline proc param c_string.length param {
-    compilerWarning("'c_string.length' is deprecated - " +
-                    "please use 'c_string.size' instead");
-    return __primitive("string_length_bytes", this);
-  }
   pragma "last resort" // avoids param string to c_string coercion
   inline proc param c_string.size param {
     return __primitive("string_length_bytes", this);

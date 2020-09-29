@@ -1,11 +1,19 @@
 SysCTypes
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.SysCTypes
+SysBasic
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysBasic
+SysError
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.SysError
+HaltWrappers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.HaltWrappers
+Reflection
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr.Reflection
+CPtr
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CPtr
 ByteBufferHelpers
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.ByteBufferHelpers
 NVStringFactory
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.NVStringFactory
-SysBasic
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic
 BytesCasts
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes.BytesCasts
 Bytes
@@ -20,14 +28,10 @@ String
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String
 ChapelEnv
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv
-HaltWrappers
-  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.HaltWrappers
 ChapelTaskData
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
 ChapelBase
   from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase
-Reflection
-  from print-module-resolution.ChapelStandard.startInitCommDiags.CommDiagnostics.Reflection
 CommDiagnostics
   from print-module-resolution.ChapelStandard.startInitCommDiags.CommDiagnostics
 startInitCommDiags
@@ -80,8 +84,6 @@ ArrayViewRankChange
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewRankChange
 ArrayViewReindex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
-SysError
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.SysError
 Regexp
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.FormattedIO.Regexp
 FormattedIO
@@ -90,6 +92,8 @@ IO
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO
 ChapelDebugPrint
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint
+ChapelPrivatization
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelPrivatization
 List
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
 RadixSortHelp
@@ -156,8 +160,6 @@ MemTracking
   from print-module-resolution.ChapelStandard.MemTracking
 ChapelUtil
   from print-module-resolution.ChapelStandard.ChapelUtil
-CPtr
-  from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast.CPtr
 ChapelSerializedBroadcast
   from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast
 ExportWrappers

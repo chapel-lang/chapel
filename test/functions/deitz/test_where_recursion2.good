@@ -2,4 +2,4 @@ test_where_recursion2.chpl:1: In function 'foo':
 test_where_recursion2.chpl:1: error: illegal where clause due to infinite instantiation
 test_where_recursion2.chpl:1: note: evaluation of 'foo' where clause results in instantiation of 'bar'
 test_where_recursion2.chpl:1: note: evaluation of 'bar' where clause results in instantiation of 'foo'
-test_where_recursion2.chpl:1: Function 'foo' instantiated as: foo(i: int(64))
+  test_where_recursion2.chpl:1: called as foo(i: int(64))

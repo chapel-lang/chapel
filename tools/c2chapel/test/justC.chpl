@@ -2,6 +2,7 @@
 
 // Note: Generated with fake std headers
 
+use CPtr;
 extern proc foobar(x : c_int) : c_int;
 
 extern proc main() : c_int;

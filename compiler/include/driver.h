@@ -57,7 +57,7 @@ extern bool fEnableTaskTracking;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
-extern bool fAutoLocalAccessDynamic;
+extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
 extern bool fNoRemoteValueForwarding;
@@ -145,6 +145,7 @@ extern bool fParseOnly;
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
+extern bool fAutoPrintCallStackOnError;
 extern bool fPrintIDonError;
 extern bool fPrintModuleResolution;
 extern bool fPrintEmittedCodeSize;
@@ -153,6 +154,8 @@ extern bool fPrintDispatch;
 extern bool fPrintUnusedFns;
 extern bool fPrintUnusedInternalFns;
 extern bool fRegionVectorizer;
+extern bool fDetectColorTerminal;
+extern bool fUseColorTerminal;
 extern bool fGenIDS;
 extern bool fLocal;
 extern bool fIgnoreLocalClasses;

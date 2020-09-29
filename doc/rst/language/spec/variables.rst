@@ -629,6 +629,39 @@ Parameter constants and expressions cannot be aliased.
       myArr[3] = 73
       myConstRef = 52
 
+.. _Variable_Conflicts:
+
+Variable Conflicts
+------------------
+
+If multiple variables defined in the same scope share a name, then a compilation
+error will occur when that name is used.
+
+An error will not occur if the would-be conflicting symbols are defined within
+different scopes contained by the same outer scope.  For example, the following
+code will not encounter a conflict when writing the symbol x:
+
+   *Example (conflict1.chpl)*.
+
+   .. code-block:: chapel
+
+      var x: int;
+      writeln(x);
+      {
+        var x = 3; // Does not conflict with the earlier `x`
+        writeln(x);
+      }
+
+   .. BLOCK-test-chapeloutput
+
+      0
+      3
+
+A variable will also conflict with other symbols defined in the same scope that
+share a name with it.  While functions may share the same name (see
+:ref:`Function_Overloading`), a function sharing a name with a variable in the
+same scope will lead to conflicts.
+
 .. _Variable_Lifetimes:
 
 Variable Lifetimes

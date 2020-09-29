@@ -637,13 +637,6 @@ module ChapelRange {
   }
 
 
-  /* Deprecated - please use :proc:`range.size`. */
-  inline proc range.length: intIdxType {
-    compilerWarning("'range.length' is deprecated - " +
-                    "please use 'range.size' instead");
-    return this.size;
-  }
-
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed

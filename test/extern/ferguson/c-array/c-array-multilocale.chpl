@@ -1,3 +1,4 @@
+use CPtr;
 proc main() {
   var x: c_array(int, 4);
 

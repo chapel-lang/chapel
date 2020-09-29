@@ -27,6 +27,7 @@
 module ChapelError {
   private use ChapelStandard;
   private use ChapelLocks;
+  private use CPtr;
 
   // Base class for errors
   // TODO: should Error include list pointers for TaskErrors?

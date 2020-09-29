@@ -36,6 +36,7 @@
 module DateTime {
   import HaltWrappers;
   private use SysCTypes;
+  private use CPtr;
 
   /* The minimum year allowed in `date` objects */
   param MINYEAR = 1;
@@ -119,7 +120,7 @@ module DateTime {
 
     extern proc localtime_r(const ref t: time_t, ref resultp: tm): void;
 
-    const t1: time_t = __primitive("cast", time_t, t(1));
+    const t1: time_t = __primitive("cast", time_t, t(0));
     var breakDownTime: tm;
 
     localtime_r(t1, breakDownTime);

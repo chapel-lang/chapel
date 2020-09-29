@@ -1,9 +1,0 @@
-#! /usr/bin/env bash
-
-unset CHPL_TARGET_ARCH
-unset CHPL_TARGET_CPU
-unset CHPL_HOST_ARCH
-unset CHPL_HOST_CPU
-
-export CHPL_TARGET_ARCH=core2
-$CHPL_HOME/util/printchplenv --simple 2>&1 | grep -E 'Warning|CHPL_TARGET_ARCH|CHPL_TARGET_CPU' | grep -v 'The resultant binary may not run' > core2.good

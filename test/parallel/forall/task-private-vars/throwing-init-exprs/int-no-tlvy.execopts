@@ -1,0 +1,19 @@
+--nt=0      # int-no-tlvy.0
+--nt=1      # int-no-tlvy.1
+--nt=10     # int-no-tlvy.10
+--nt=1000   # int-no-tlvy.1000
+--nt=2      # int-no-tlvy.2
+--nt=20     # int-no-tlvy.20
+--nt=2000   # int-no-tlvy.2000
+
+--nt2=1      --nt=2  # int-no-tlvy.1-2
+--nt2=10     --nt=2  # int-no-tlvy.10-2
+--nt2=1000   --nt=2  # int-no-tlvy.1000-2
+
+--nt2=1      --nt=20  # int-no-tlvy.1-20
+--nt2=10     --nt=20  # int-no-tlvy.10-20
+--nt2=1000   --nt=20  # int-no-tlvy.1000-20
+
+--nt2=1      --nt=2000  # int-no-tlvy.1-2000
+--nt2=10     --nt=2000  # int-no-tlvy.10-2000
+--nt2=1000   --nt=2000  # int-no-tlvy.1000-2000

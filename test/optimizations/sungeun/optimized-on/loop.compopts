@@ -1,0 +1,2 @@
+--no-cache-remote # loop.no-cache.good
+--cache-remote    # loop.cache.good

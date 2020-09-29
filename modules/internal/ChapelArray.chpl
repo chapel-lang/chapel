@@ -170,6 +170,7 @@ module ChapelArray {
   import Reflection;
   use ChapelDebugPrint;
   use SysCTypes;
+  use ChapelPrivatization;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -186,6 +187,9 @@ module ChapelArray {
   config param useBulkTransferStride = true;
   pragma "no doc"
   config param useBulkPtrTransfer = useBulkTransfer;
+
+  pragma "no doc"
+  config param disableConstDomainOpt = false;
 
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
@@ -1762,12 +1766,6 @@ module ChapelArray {
 
     /* Return the number of indices in this domain */
     proc size return _value.dsiNumIndices;
-    /* Deprecated - please use :proc:`size`. */
-    proc numIndices {
-      compilerWarning("'domain.numIndices' is deprecated - " +
-                      "please use 'domain.size' instead");
-      return size;
-    }
     /* Return the lowest index in this domain */
     proc low return _value.dsiLow;
     /* Return the highest index in this domain */
@@ -2962,12 +2960,6 @@ module ChapelArray {
       }
     }
 
-    /* Deprecated - please use :proc:`size`. */
-    proc numElements {
-      compilerWarning("'array.numElements' is deprecated - " +
-                      "please use 'array.size' instead");
-      return size;
-    }
     /* Return the number of elements in the array */
     proc size return _value.dom.dsiNumIndices;
 
@@ -5266,5 +5258,26 @@ module ChapelArray {
 
       return A;
     }
+  }
+
+  // used for passing arrays to extern procs, e.g.
+  //   extern proc foo(X: []);
+  //   var A: [1..3] real;
+  //   foo(A);
+  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  pragma "no doc"
+  proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
+    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
+
+    if (arr._value.locale != here) then
+      halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+    
+    use CPtr;
+    const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
+    if castToVoidStar then
+      return ptr: c_void_ptr;
+    else
+      return ptr;
   }
 }

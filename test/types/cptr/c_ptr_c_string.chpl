@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 proc printit(arg:c_string) {

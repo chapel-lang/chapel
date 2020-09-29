@@ -293,12 +293,12 @@ freeCache(SymbolMapScopeCache& cache) {
 
 void createCacheInfoIfNeeded(FnSymbol* fn) {
   INT_ASSERT(fn->cacheInfo == NULL);
-  if (fn->instantiatedFrom == NULL ||  // a concrete function
-      cachedInstantiationIsAlwaysApplicable(fn)) {
-    // In these cases we will not be checking applicability
-    // of a cached instantiation. So, do not compute cacheInfo.
+  if (fn->instantiatedFrom == NULL)
+    // We will not be checking applicability for a concrete function
+    // because there will be no cached instantiations.
+    // So, do not compute cacheInfo.
     return;
-  }
+
   fn->cacheInfo = new GenericsCacheInfo();
 }
 
@@ -374,7 +374,8 @@ void updateCacheInfosForACall(VisibilityInfo& visInfo,
   parentInfos.reserve(visInfo.poiDepth);
 
   if (!addOneParentInfo(parentInfos, visInfo.call))
-    // We hit a method-like function. Currently these are always applicable.
+    // We hit a special method or a method-like function.
+    // Currently these are always applicable.
     // Do not impose CFI constraint on it or its callers.
     return;
 
@@ -468,15 +469,16 @@ static void visitMorePOIs(std::vector<CalledFunInfo*>& toProcess,
 
   int numVisitedVis = 0;
   const char* dummyName = astr("");
-  VisibilityInfo visInfo(visInfoOrig.call);
-  visInfo.currStart = visInfoOrig.nextPOI;
+  VisibilityInfo visInfo(visInfoOrig);
+  advanceCurrStart(visInfo);
+
   Vec<FnSymbol*> visibleFns;
   std::set<BlockStmt*> visited(visInfoOrig.visitedScopes.begin(),
                                visInfoOrig.visitedScopes.end());
   do {
     visInfo.poiDepth++;
 
-    getVisibleFunctions(dummyName, visInfoOrig.call,
+    getMoreVisibleFunctionsOrMethods(dummyName, visInfoOrig.call,
                         &visInfo, &visited, visibleFns);
 
     if (analyzeVisitedScopes(toProcess, visInfo, remainingCFIs, numVisitedVis))
@@ -498,12 +500,6 @@ static bool isApplicableInstantiation(VisibilityInfo& visInfo, FnSymbol* fn)
   GenericsCacheInfo* cacheInfo = fn->cacheInfo;
   if (cacheInfo == NULL) return true;
   int sizeCI = cacheInfo->size();
-
-  if (cachedInstantiationIsAlwaysApplicable(visInfo.call)) {
-    // we are not checking these for now - see createCacheInfoIfNeeded()
-    INT_FATAL(visInfo.call, "unexpected");
-    return true;
-  }
 
   int remainingCFIs = sizeCI;
   std::vector<CalledFunInfo*> toProcess(sizeCI); // working copy

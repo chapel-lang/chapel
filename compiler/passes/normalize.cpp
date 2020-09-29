@@ -99,7 +99,7 @@ static void        normalizeCallToTypeConstructor(CallExpr* call);
 
 static void        applyGetterTransform(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
-static void        insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
+static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
 static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
@@ -124,9 +124,9 @@ static bool        firstConstructorWarning = true;
 
 void normalize() {
 
-  doPreNormalizeArrayOptimizations();
-
   insertModuleInit();
+
+  doPreNormalizeArrayOptimizations();
 
   transformLogicalShortCircuit();
 
@@ -2178,13 +2178,18 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp);
 static bool moveMakesTypeAlias(CallExpr* call);
 static Expr* getCallTempInsertPoint(Expr* expr);
 
+Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall) {
+  return insertCallTempsWithStmt(call, forall);
+}
+
 static void insertCallTemps(CallExpr* call) {
   if (shouldInsertCallTemps(call)) {
     insertCallTempsWithStmt(call, getCallTempInsertPoint(call));
   }
 }
 
-static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
+// returns the added call temp's symbol
+static Symbol *insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   SET_LINENO(call);
 
   CallExpr*  parentCall = toCallExpr(call->parentExpr);
@@ -2229,6 +2234,8 @@ static void insertCallTempsWithStmt(CallExpr* call, Expr* stmt) {
   call->replace(new SymExpr(tmp));
 
   stmt->insertBefore(new CallExpr(PRIM_MOVE, tmp, call));
+
+  return tmp;
 }
 
 static bool shouldInsertCallTemps(CallExpr* call) {

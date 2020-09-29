@@ -1,2 +1,2 @@
-domainSliceConfusion.chpl:8: In function 'this':
+domainSliceConfusion.chpl:8: In method 'this':
 domainSliceConfusion.chpl:9: error: unresolved access of '[domain(1,int(32),false)] real(64)' by '(int(64))'

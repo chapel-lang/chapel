@@ -18,46 +18,80 @@
  * limitations under the License.
  */
 
-proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain) param {
-  if chpl__isArrayView(accessBase) then return false;
+module ChapelAutoLocalAccess {
+  use ChapelLocale;
 
-  return accessBase.domain.type == loopDomain.type &&
-         loopDomain.supportsAutoLocalAccess();
-}
+  // note that the compiler can pass an iterator to `loopDomain` argument. Make
+  // sure that we don't do anything with iterators as we cannot optimize such
+  // forall's and we don't want to mess up the iterator
+  proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
+    if chpl__isArrayView(accessBase) then return false;
 
-proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
-  return false;
-}
+    if accessBase.domain.type == loopDomain.type {
+      return loopDomain.supportsAutoLocalAccess();
+    }
 
-// these type overloads are for degenerate cases where the optimization can
-// break a meaningful error message without these
-proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain) param {
-  return false;
-}
-proc chpl__staticAutoLocalCheck(accessBase, type loopDomain) param {
-  return false;
-}
-proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
-  return false;
-}
-
-proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
-  if chpl__staticAutoLocalCheck(accessBase, loopDomain) then
-    return accessBase.domain == loopDomain &&
-           accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist);
-  else
+    // support forall i in a.domain.localSubdomain() do .... a[i] ....
+    if loopDomain._value.type.isDefaultRectangular() {
+      return accessBase.domain.supportsAutoLocalAccess();
+    }
+    
     return false;
-}
+  }
 
-// these type overloads are for degenerate cases where the optimization can
-// break a meaningful error message without these
-proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain) {
-  return false;
-}
-proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain) {
-  return false;
-}
-proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
-  return false;
-}
+  proc chpl__staticAutoLocalCheck(accessBase, loopDomain) param {
+    return false;
+  }
 
+  // these type overloads are for degenerate cases where the optimization can
+  // break a meaningful error message without these
+  proc chpl__staticAutoLocalCheck(type accessBase, type loopDomain) param {
+    return false;
+  }
+  proc chpl__staticAutoLocalCheck(accessBase, type loopDomain) param {
+    return false;
+  }
+  proc chpl__staticAutoLocalCheck(type accessBase, loopDomain) param {
+    return false;
+  }
+
+  proc chpl__dynamicAutoLocalCheck(accessBase, loopDomain) {
+    if chpl__staticAutoLocalCheck(accessBase, loopDomain) {
+      // if they're the same domain...
+      if accessBase.domain == loopDomain &&
+         accessBase.domain._value.dist.dsiEqualDMaps(loopDomain._value.dist) then 
+        return true;
+
+      // or at least if they were distributed the same way
+      if accessBase.domain.dist == loopDomain.dist then return true;
+
+      // if we are iterating over a rectangular that's:
+      // 1. not remote
+      // 2. falls within the localSubdomain of the array
+      //
+      // Be also aware that `subset` call below can be expensive if we are not
+      // calling on default rectangular
+      if loopDomain._value.type.isDefaultRectangular() {
+        if loopDomain.locale == here {
+          if loopDomain.isSubset(accessBase.localSubdomain()) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  }
+
+  // these type overloads are for degenerate cases where the optimization can
+  // break a meaningful error message without these
+  proc chpl__dynamicAutoLocalCheck(type accessBase, type loopDomain) {
+    return false;
+  }
+  proc chpl__dynamicAutoLocalCheck(accessBase, type loopDomain) {
+    return false;
+  }
+  proc chpl__dynamicAutoLocalCheck(type accessBase, loopDomain) {
+    return false;
+  }
+}

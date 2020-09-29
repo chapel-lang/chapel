@@ -637,7 +637,7 @@ static void filterInitCandidate(CallInfo&                  info,
                                 FnSymbol*                  fn,
                                 Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
-  VisibilityInfo visInfo(info.call);
+  VisibilityInfo visInfo(info);
 
   if (candidate->isApplicable(info, &visInfo) == true) {
     candidates.add(candidate);

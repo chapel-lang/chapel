@@ -1,0 +1,6 @@
+nt 2   nt2 1
+uncaught TaskErrors: 2 errors: IllegalArgumentError: 1 ... IllegalArgumentError: 2
+  int-no-tlvy.chpl:44: thrown here
+  int-no-tlvy.chpl:44: uncaught here
+asdf(1), throwing
+asdf(2), throwing
