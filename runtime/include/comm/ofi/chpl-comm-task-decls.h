@@ -34,9 +34,10 @@
 #define HAS_CHPL_CACHE_FNS
 
 typedef struct {
+  chpl_bool taskIsEnding;       // task is ending? (anticipate _downEndCount())
+  chpl_bool amDonePending;      // some delayed AM 'done' is expected?
+  uint8_t amDone;               // delayed 'done' indicator
   chpl_cache_taskPrvData_t cache_data;
-  void* pAmDone;
-  chpl_bool amDonePending;
   void* amo_nf_buff;
   void* get_buff;
   void* put_buff;

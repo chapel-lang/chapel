@@ -1215,6 +1215,9 @@ module ChapelBase {
     delete _to_unmanaged(e);
   }
 
+  pragma "no doc"
+  extern proc chpl_comm_task_create();
+
   // This function is called by the initiating task once for each new
   // task *before* any of the tasks are started.  As above, no on
   // statement needed.
@@ -1237,6 +1240,9 @@ module ChapelBase {
     }
     if countRunningTasks {
       here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     }
   }
 
@@ -1250,6 +1256,9 @@ module ChapelBase {
       if numTasks > 1 {
         here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
       }
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     } else {
       here.runningTaskCntSub(1);
     }

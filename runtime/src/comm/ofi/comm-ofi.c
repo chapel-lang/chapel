@@ -2471,6 +2471,7 @@ int mrGetLocalKey(void* addr, size_t size) {
 //
 
 static inline void amRequestNop(c_nodeid_t, chpl_bool);
+static inline chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 static inline void retireDelayedAmDone(chpl_bool);
 
 static inline
@@ -2536,6 +2537,12 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 
 void chpl_comm_impl_unordered_task_fence(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
+}
+
+
+inline
+void chpl_comm_impl_task_create(void) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
 }
 
 
@@ -2827,23 +2834,19 @@ void amRequestAMO(c_nodeid_t node, void* object,
   size_t resSize = size;
 
   //
-  // Do a normal blocking AM unless this is a non-fetching atomic and
-  // we can arrange to delay the blocking until sometime later, when
-  // the next thing with MCM implications comes along.
+  // If this is a non-fetching atomic and the task is ending (therefore
+  // this is the _downEndCount()) we do it as a regular nonblocking AM.
+  // If it's non-fetching and the task is not ending we may be able to
+  // do it as a blocking AM but delay waiting for the 'done' indicator
+  // until sometime later, when the next thing with MCM implications
+  // comes along.  Otherwise, we have to do it as a normal blocking AM.
   //
   chpl_bool delayBlocking = false;
   chpl_comm_taskPrvData_t* prvData = NULL;
-  if (myResult == NULL && (prvData = get_comm_taskPrvdata()) != NULL) {
-    if (prvData->pAmDone == NULL) {
-      prvData->pAmDone = allocBounceBuf(sizeof(amDone_t));
-    }
-    *(amDone_t*) prvData->pAmDone = 0;
-    chpl_atomic_thread_fence(memory_order_release);
-    prvData->amDonePending = true;
-    delayBlocking = true;
-  }
-
-  if (!delayBlocking) {
+  amDone_t* pAmDone = NULL;
+  if (myResult == NULL) {
+    delayBlocking = setUpDelayedAmDone(&prvData, (void**) &pAmDone);
+  } else {
     if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
       DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
@@ -2855,7 +2858,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
   amRequest_t req = { .amo = { .b = { .op = am_opAMO,
                                       .node = chpl_nodeID,
                                       .pAmDone = delayBlocking
-                                                 ? prvData->pAmDone
+                                                 ? pAmDone
                                                  : NULL, },
                                .ofiOp = ofiOp,
                                .ofiType = ofiType,
@@ -3044,6 +3047,40 @@ void amWaitForDone(amDone_t* pAmDone) {
 
 
 static inline
+chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t** pPrvData,
+                             void** ppAmDone) {
+  //
+  // Set up to record the completion of a delayed-blocking AM.
+  //
+  chpl_comm_taskPrvData_t* prvData;
+  if ((*pPrvData = prvData = get_comm_taskPrvdata()) == NULL) {
+    return false;
+  }
+
+  if (prvData->taskIsEnding) {
+    //
+    // This AMO is for our _downEndCount().  We don't care when that is
+    // done because we won't do anything after it, and our parent only
+    // cares about the effect on the endCount.  Therefore, send back
+    // *ppAmDone==NULL to make our caller do a regular non-blocking AM.
+    //
+    *ppAmDone = NULL;
+    return true;
+  }
+
+  //
+  // Otherwise, this will be an actual delayed-blocking AM, and we'll
+  // use the task-private 'done' indicator for it.
+  //
+  *ppAmDone = &prvData->amDone;
+  prvData->amDone = 0;
+  chpl_atomic_thread_fence(memory_order_release);
+  prvData->amDonePending = true;
+  return true;
+}
+
+
+static inline
 void retireDelayedAmDone(chpl_bool taskIsEnding) {
   //
   // Wait for the completion of any delayed-blocking AM.
@@ -3051,11 +3088,11 @@ void retireDelayedAmDone(chpl_bool taskIsEnding) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData != NULL) {
     if (prvData->amDonePending) {
-      amWaitForDone((amDone_t*) prvData->pAmDone);
+      amWaitForDone((amDone_t*) &prvData->amDone);
       prvData->amDonePending = false;
     }
     if (taskIsEnding) {
-      freeBounceBuf(prvData->pAmDone);
+      prvData->taskIsEnding = true;
     }
   }
 }
@@ -3088,6 +3125,14 @@ static inline void doCpuAMO(void*, const void*, const void*, void*,
 
 static
 void init_amHandling(void) {
+  //
+  // Sanity checks.
+  //
+  {
+    chpl_comm_taskPrvData_t pd;
+    CHK_TRUE(sizeof(pd.amDone) >= sizeof(amDone_t));
+  }
+
   //
   // Start AM handler thread(s).  Don't proceed from here until at
   // least one is running.
