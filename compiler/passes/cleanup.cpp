@@ -104,10 +104,21 @@ static bool isgSplitInit(Expr* initExpr){
   return false;
 }
 
+//parent: prev
+//lhs: prev->init
+//rhs: init->copy()
+static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs){
+  if(lhs){
+    lhs->remove();
+  }
+  lhs = rhs;
+  parent_insert_help(parent, lhs);
+}
+
 static void backPropagateInFunction(BlockStmt* block){
 
   Expr* init = NULL;
-  Expr* type = NULL;
+  DefExpr* prev = NULL;
 
   if (!areMultiDefExprsInAList(block->body)) return;
 
@@ -117,7 +128,7 @@ static void backPropagateInFunction(BlockStmt* block){
   for_alist_backward(stmt, block->body){
     if (DefExpr* def = toDefExpr(stmt)) {
 
-      //if (def->sym->id == 212209 || def->sym->name == astr("RBlk")) gdbShouldBreakHere();
+      if (def->sym->id == 212455 || def->sym->name == astr("lo_var")) gdbShouldBreakHere();
       //1. set local variableis -- analysis
       if (isValidInit(def->init) || def->exprType) {
 
@@ -127,34 +138,38 @@ static void backPropagateInFunction(BlockStmt* block){
           init = NULL;
         }
 
-        type = def->exprType;
+        typeTmp = NULL;
 
       }
 
-      //2. create typetmp if necessary
-      if (def->exprType) {
-        typeTmp = newTemp("type_tmp");
-        typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-        DefExpr* tmpDef = new DefExpr(typeTmp);
-        Expr* move = new CallExpr(PRIM_MOVE, typeTmp, def->exprType->remove());
-        def->exprType = NULL; //This is done with def->exprType->remove() above
-        type = new SymExpr(typeTmp);
-        tmpBlock->insertAtTail(tmpDef);
-        tmpBlock->insertAtTail(move);
+      //2. update prev if necessary
+      if (prev != NULL && !isValidInit(def->init) && def->exprType == NULL) {
+        if(prev->exprType != NULL && typeTmp == NULL){
+          typeTmp = newTemp("type_tmp");
+          typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+          DefExpr* tmpDef = new DefExpr(typeTmp);
+          Expr* move = new CallExpr(PRIM_MOVE, typeTmp, prev->exprType->copy());
+          prev->exprType->replace(new SymExpr(typeTmp));
+          tmpBlock->insertAtTail(tmpDef);
+          tmpBlock->insertAtTail(move);
+        }
+
+        if(prev->init != NULL && init != NULL){
+          setAstHelp(prev, prev->init, new SymExpr(def->sym));
+        }
       }
     
-      //3. update def
-      //update exprType
-      if(type != NULL && def->exprType == NULL) {
-        def->exprType = type->copy();
+      //3. update def, type then init
+      if(typeTmp != NULL && def->exprType == NULL) {
+        setAstHelp(def, def->exprType, prev->exprType->copy());
         if(isgSplitInit(def->init)) {
           def->init->remove();
         }
       }
-
       if(init != NULL && !isValidInit(def->init)){
-        def->init = init->copy(); 
+        setAstHelp(def, def->init, init->copy());
       }
+      prev = def;
     }
   }
 
