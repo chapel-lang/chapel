@@ -46,7 +46,7 @@ def get_jemalloc_config_file():
 
 @memoize
 def get_link_args(target_mem):
-    if target_mem == 'jemalloc':
+    if target_mem == 'bundled':
         jemalloc_config = get_jemalloc_config_file()
         libs = ['-ljemalloc']
         if os.access(jemalloc_config, os.X_OK):
