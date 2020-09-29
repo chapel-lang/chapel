@@ -53,7 +53,7 @@ def get_link_args(unwind):
       # libunwind with.
       libs = third_party_utils.pkgconfig_get_link_args(
                        'libunwind', system=True, static=True)
-    elif unwind == 'libunwind':
+    elif unwind == 'bundled':
       # the pkg-config file for libunwind is nice, but as of 1.1
       # it doesn't include -lzma when it probably should.
       # So try to get the libraries out of libunwind.la.

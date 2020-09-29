@@ -45,7 +45,7 @@ def get_uniq_cfg_path():
 @memoize
 def get_compile_args(libfabric=get()):
     flags = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         flags = third_party_utils.default_get_compile_args('libfabric',
                                                            ucp=get_uniq_cfg_path())
     elif libfabric == 'system':
