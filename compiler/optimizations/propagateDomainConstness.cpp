@@ -38,8 +38,6 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
                                  Expr *insBefore, Expr *&insAfter,
                                  bool asRef);
 static Expr *getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop);
-static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
-                                           Expr *anchor, Symbol *isConst);
 static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
                                           Expr *nextExpr, Symbol *isConst);
 
@@ -108,7 +106,7 @@ void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
 
 // help removing chpl__initCopy and chpl__autoCopy after resolution while
 // retaining constness information therein
-void removeInitOrAutoCopyPostResolution(CallExpr *call) {
+void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement) {
   Expr *parentExpr = call->parentExpr;
 
   bool createdNoop;
@@ -123,21 +121,29 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   INT_ASSERT(argSym);
   INT_ASSERT(argType);
 
-  call->replace(call->get(1)->remove());
-
-  // we removed the first argument already, so definedConst is the first
-  // argument now
-  SymExpr *secondArg = toSymExpr(call->get(1)->remove());
+  SymExpr *secondArg = toSymExpr(call->get(2)->remove());
   INT_ASSERT(secondArg);
 
   Symbol *isConst = secondArg->symbol();
   INT_ASSERT(isConst->type == dtBool);
 
+  if (replacement == NULL) {
+    call->replace(call->get(1)->remove());
+  }
+  else {
+    call->replace(replacement);
+  }
+
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
+    if (replacement) { std::cout << "1\n"; }
     Symbol *lhs = NULL;
+    if (replacement) { gdbShouldBreakHere(); }
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
+    if (replacement) { std::cout << "2\n"; }
       if (parentCall->isPrimitive(PRIM_MOVE)) {
+    if (replacement) { std::cout << "3\n"; }
         if (SymExpr *lhsSE = toSymExpr(parentCall->get(1))) {
+    if (replacement) { std::cout << "4\n"; }
           lhs = lhsSE->symbol();
         }
       }
@@ -152,6 +158,9 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
         nextExpr->remove();
       }
     }
+  }
+  else {
+    if (replacement) { nprint_view(argType); }
   }
 }
 
@@ -225,8 +234,8 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   return fieldRef;
 }
 
-static void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
-                                           Expr *anchor, Symbol *isConst) {
+void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                    Expr *anchor, Symbol *isConst) {
   VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
                                           nextExpr, anchor, /*asRef=*/ true);
 

@@ -79,7 +79,9 @@ void inferConstRefs();
 
 void computeNoAliasSets();
 
-void removeInitOrAutoCopyPostResolution(CallExpr *call);
+void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement);
+void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                    Expr *anchor, Symbol *isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
                                            std::set<Flag>* flags);
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
