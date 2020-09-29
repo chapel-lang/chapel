@@ -1,4 +1,4 @@
-use Random;
+use Random, Random.PCGRandomLib;
 
 config const seed = 42;
 
