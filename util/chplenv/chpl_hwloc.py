@@ -30,7 +30,7 @@ def get_uniq_cfg_path():
 
 @memoize
 def get_link_args(hwloc):
-    if hwloc == 'hwloc':
+    if hwloc == 'bundled':
         return third_party_utils.default_get_link_args('hwloc',
                                                        ucp=get_uniq_cfg_path())
     elif hwloc == 'system':
