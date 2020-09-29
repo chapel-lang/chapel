@@ -123,7 +123,7 @@ module StringCasts {
     _cleanupForNumericCast(localX);
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from string '"+ x + "' to " + t:string);
 
     if isIntType(t) {
       select numBits(t) {
