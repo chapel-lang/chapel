@@ -90,7 +90,7 @@ static bool isValidInit(Expr* initExpr){
   return false;
 }
 
-/*
+
 static bool isgSplitInit(Expr* initExpr){
   if (SymExpr* se = toSymExpr(initExpr)) {
     if (se->symbol() == gSplitInit) {
@@ -99,7 +99,7 @@ static bool isgSplitInit(Expr* initExpr){
   }
   return false;
 }
-*/
+
 static void backPropagateInFunction(BlockStmt* block){
 
     Expr* init = NULL;
@@ -138,7 +138,10 @@ static void backPropagateInFunction(BlockStmt* block){
               typeTmp = NULL;
             } else {
               if(typeTmp){
-                def->exprType = new SymExpr(typeTmp);
+                //for case var a = 1.0, b, c: int;
+                if (def->init == NULL || isgSplitInit(def->init)) {
+                  def->exprType = new SymExpr(typeTmp);
+                }
               } else {
 		def->exprType = type;
 	      }
