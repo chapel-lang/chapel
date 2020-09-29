@@ -30,7 +30,7 @@ Contributors to the Chapel 1.23 release
 * Ram Nad, individual contributor
 * Sarah Nguyen, [HPE]
 * Nikhil Padmanabhan, [Yale University]
-* Parth Prasad, individual contributor
+* Parth Sarthi Prasad, individual contributor
 * Yujia Qiao, [GSoC 2020] student from [Huazhong University of Science and Technology]
 * Elliot Ronaghan, [HPE]
 * Raj Shekhar, individual contributor
