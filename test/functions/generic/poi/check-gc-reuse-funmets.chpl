@@ -1,7 +1,8 @@
 // Ensure generic-instantiations cache entries for 'libFun' and 'libMet'
 // are not reused when reuse would be incorrect.
-//
-// This version uses compilerWarnings.
+
+
+
 
 module Lib {
   class MyClass { }
