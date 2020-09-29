@@ -332,6 +332,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 proc makeInput(myKeys, bucketID) {
   use Random;
+  use Random.PCGRandomLib;
 
   //
   // Seed RNG

@@ -340,6 +340,7 @@ proc verifyResults(bucketID, myBucketSize, myLocalKeyCounts) {
 
 proc makeInput(bucketID) {
   use Random;
+  use Random.PCGRandomLib;
 
   var myKeys: [0..#keysPerBucket] keyType;
 
