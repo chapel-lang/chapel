@@ -106,7 +106,7 @@ void setDefinedConstForFieldsInInitializer(FnSymbol *fn) {
 
 // help removing chpl__initCopy and chpl__autoCopy after resolution while
 // retaining constness information therein
-void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement) {
+void removeInitOrAutoCopyPostResolution(CallExpr *call) {
   Expr *parentExpr = call->parentExpr;
 
   bool createdNoop;
@@ -121,29 +121,21 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement) {
   INT_ASSERT(argSym);
   INT_ASSERT(argType);
 
-  SymExpr *secondArg = toSymExpr(call->get(2)->remove());
+  call->replace(call->get(1)->remove());
+
+  // we removed the first argument already, so definedConst is the first
+  // argument now
+  SymExpr *secondArg = toSymExpr(call->get(1)->remove());
   INT_ASSERT(secondArg);
 
   Symbol *isConst = secondArg->symbol();
   INT_ASSERT(isConst->type == dtBool);
 
-  if (replacement == NULL) {
-    call->replace(call->get(1)->remove());
-  }
-  else {
-    call->replace(replacement);
-  }
-
   if (argType->symbol->hasFlag(FLAG_DOMAIN)) {
-    if (replacement) { std::cout << "1\n"; }
     Symbol *lhs = NULL;
-    if (replacement) { gdbShouldBreakHere(); }
     if (CallExpr *parentCall = toCallExpr(parentExpr)) {
-    if (replacement) { std::cout << "2\n"; }
       if (parentCall->isPrimitive(PRIM_MOVE)) {
-    if (replacement) { std::cout << "3\n"; }
         if (SymExpr *lhsSE = toSymExpr(parentCall->get(1))) {
-    if (replacement) { std::cout << "4\n"; }
           lhs = lhsSE->symbol();
         }
       }
@@ -158,9 +150,6 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement) {
         nextExpr->remove();
       }
     }
-  }
-  else {
-    if (replacement) { nprint_view(argType); }
   }
 }
 

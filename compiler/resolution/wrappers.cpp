@@ -44,7 +44,6 @@
 #include "wrappers.h"
 
 #include "astutil.h"
-#include "view.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
