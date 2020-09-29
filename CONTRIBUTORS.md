@@ -31,7 +31,7 @@ Contributors to the Chapel 1.23 release
 * Sarah Nguyen, [HPE]
 * Nikhil Padmanabhan, [Yale University]
 * Parth Prasad, individual contributor
-* Yujia Qiao, [GSoC 2020] student from [TODO]
+* Yujia Qiao, [GSoC 2020] student from [Huazhong University of Science and Technology]
 * Elliot Ronaghan, [HPE]
 * Raj Shekhar, individual contributor
 * Jenna Hoole Starkey, [HPE]
@@ -211,13 +211,14 @@ implementation.
 [George Washington University]: https://www.gwu.edu/
 [Georgia Tech]: http://www.cc.gatech.edu/
 [Gonzaga University]: https://www.gonzaga.edu/
-[GSoC 2016]: https://summerofcode.withgoogle.com/organizations/6608321708556288/
-[GSoC 2017]: https://summerofcode.withgoogle.com/organizations/6472441615351808/
-[GSoC 2018]: https://summerofcode.withgoogle.com/organizations/4743716460298240/
-[GSoC 2019]: https://summerofcode.withgoogle.com/organizations/4892546359099392/
+[GSoC 2016]: https://summerofcode.withgoogle.com/archive/2016/organizations/4704629866627072/
+[GSoC 2017]: https://summerofcode.withgoogle.com/archive/2017/organizations/4757669491507200/
+[GSoC 2018]: https://summerofcode.withgoogle.com/archive/2018/organizations/4933265605525504/
+[GSoC 2019]: https://summerofcode.withgoogle.com/archive/2019/organizations/5677337046155264/
 [GSoC 2020]: https://summerofcode.withgoogle.com/archive/2020/organizations/6722154118250496/
 [Haverford College]: https://www.haverford.edu/
 [HPE]: https://www.hpe.com/
+[Huazhong University of Science and Technology]: http://english.hust.edu.cn/
 [Indian Institute of Information Technology, Sri City]: http://www.iiits.ac.in/
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indian Institute of Technology Roorkee]: https://www.iitr.ac.in/
