@@ -128,7 +128,6 @@ static void backPropagateInFunction(BlockStmt* block){
   for_alist_backward(stmt, block->body){
     if (DefExpr* def = toDefExpr(stmt)) {
 
-      if (def->sym->id == 212455 || def->sym->name == astr("lo_var")) gdbShouldBreakHere();
       //1. set local variableis -- analysis
       if (isValidInit(def->init) || def->exprType) {
 
