@@ -44,6 +44,7 @@
 #include "wrappers.h"
 
 #include "astutil.h"
+#include "view.h"
 #include "build.h"
 #include "caches.h"
 #include "callInfo.h"
@@ -1372,7 +1373,7 @@ static void addArgCoercion(FnSymbol*  fn,
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
 
       bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_CONST_IN ||
                          formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
@@ -1629,22 +1630,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       // (don't destroy it here, it will be destroyed there).
       actualSym->addFlag(FLAG_NO_AUTO_DESTROY);
 
-      // if we are moving a const domain into an in-intent argument, adjust its
-      // constness
-      if (!isConstCopy) {
-        // FIXME
-        Symbol *lhsSym = actualSym;
-        if (lhsSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
-          if (!lhsSym->hasFlag(FLAG_TYPE_VARIABLE)) {
-            Expr *nextExpr = new CallExpr(PRIM_NOOP);
-            anchor->insertBefore(nextExpr);
-            Expr *anchor2 = nextExpr;
-            setDefinedConstForDomainSymbol(lhsSym, nextExpr, anchor2, gFalse);
-            nextExpr->remove();
-          }
-        }
-      }
-
       if (coerceRuntimeTypes) {
         VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
         tmp->addFlag(FLAG_NO_AUTO_DESTROY);
@@ -1670,6 +1655,20 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         resolveCall(move);
 
         actual->setSymbol(tmp);
+      }
+      else {
+        if (actualSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (!actualSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            // we are moving a domain to an `in` formal without coercion. We
+            // should adjust its constness
+            Symbol *definedConst = isConstCopy ? gTrue : gFalse;
+            Expr *nextExpr = new CallExpr(PRIM_NOOP);
+            anchor->insertBefore(nextExpr);
+            Expr *anchor2 = nextExpr;
+            setDefinedConstForDomainSymbol(actualSym, nextExpr, anchor2, definedConst);
+            nextExpr->remove();
+          }
+        }
       }
     }
   }
