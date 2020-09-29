@@ -88,7 +88,6 @@ void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call) {
   if (createdNoop) {
     nextExpr->remove();
   }
-
 }
 
 // go through all PRIM_SET_MEMBER in an initializer, and adjust them if needed
@@ -143,8 +142,7 @@ void removeInitOrAutoCopyPostResolution(CallExpr *call) {
     INT_ASSERT(lhs);
 
     if (!isShadowVarSymbol(lhs)) {
-      Expr *anchor = nextExpr;
-      setDefinedConstForDomainSymbol(lhs, nextExpr, anchor, isConst);
+      setDefinedConstForDomainSymbol(lhs, nextExpr, isConst);
 
       if (createdNoop) {
         nextExpr->remove();
@@ -224,25 +222,29 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
 }
 
 void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
-                                    Expr *anchor, Symbol *isConst) {
+                                    Symbol *isConst) {
+  // insAfter is moved forward by the helpers called here;
+  // nextExpr stays where it was
+  Expr *insAfter = nextExpr;
+
   VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
-                                          nextExpr, anchor, /*asRef=*/ true);
+                                          nextExpr, insAfter, /*asRef=*/ true);
 
   VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
-                                                nextExpr, anchor,
+                                                nextExpr, insAfter,
                                                 true);
 
   CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
                                            isConst);
 
-  anchor->insertAfter(setDefinedConst);
+  insAfter->insertAfter(setDefinedConst);
 }
 
 static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
                                           Expr *nextExpr, Symbol *isConst) {
     Expr *anchor = nextExpr;
     VarSymbol *domSym = addFieldAccess(thisSym, fieldSym->name,
-                                       nextExpr, anchor, /*asRef=*/false);
-    setDefinedConstForDomainSymbol(domSym, nextExpr, anchor, isConst);
+                                       nextExpr, anchor, /* asRef = */false);
+    setDefinedConstForDomainSymbol(domSym, anchor, isConst);
 }
 

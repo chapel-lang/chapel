@@ -597,8 +597,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
 
           if (definedConst != NULL) {
             if (lhs->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
-              Expr *anchor = call;
-              setDefinedConstForDomainSymbol(lhs, call, anchor, definedConst);
+              setDefinedConstForDomainSymbol(lhs, call, definedConst);
             }
           }
         }
