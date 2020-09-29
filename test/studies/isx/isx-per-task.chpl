@@ -346,6 +346,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 
 proc makeInput(taskID) {
   use Random;
+  use Random.PCGRandomLib;
 
   var myKeys: [0..#keysPerTask] keyType;
 

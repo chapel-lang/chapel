@@ -773,7 +773,7 @@ module Random {
 
     use super.RandomSupport;
     private use Random;
-    public use PCGRandomLib;
+    private use PCGRandomLib;
     use ChapelLocks;
 
     // How many generators do we need for this type?
