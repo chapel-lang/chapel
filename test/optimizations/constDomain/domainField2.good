@@ -16,12 +16,12 @@ Generic const field, default initializer
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |true                |true                |
-var                 |true                |true                |
-const               |true                |true                |
-literal return      |true                |true                |
-var return          |true                |true                |
-const return        |true                |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Concrete var field, default initializer
@@ -40,12 +40,12 @@ Concrete const field, default initializer
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |true                |true                |
-var                 |true                |true                |
-const               |true                |true                |
-literal return      |true                |true                |
-var return          |true                |true                |
-const return        |true                |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Generic var field, generic user initializer with default intent
@@ -196,36 +196,36 @@ Generic const field, generic user initializer with default intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Generic const field, generic user initializer with in intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Generic const field, generic user initializer with const in intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Concrete const field, generic user initializer with default intent
@@ -268,36 +268,36 @@ Generic const field, concrete user initializer with default intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Generic const field, concrete user initializer with in intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Generic const field, concrete user initializer with const in intent
 
 arg                 |definedConst        |tracks arrays?      |
 --------------------|--------------------|--------------------|
-literal             |false               |true                |
-var                 |false               |true                |
-const               |false               |true                |
-literal return      |false               |true                |
-var return          |false               |true                |
-const return        |false               |true                |
+literal             |true                |false               |
+var                 |true                |false               |
+const               |true                |false               |
+literal return      |true                |false               |
+var return          |true                |false               |
+const return        |true                |false               |
 
 
 Concrete const field, concrete user initializer with default intent
