@@ -266,7 +266,7 @@ proc returnVar() {
   writeHeader("Generic const field, generic user initializer with default intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(d) { this.d = d; }
@@ -279,7 +279,7 @@ proc returnVar() {
   writeHeader("Generic const field, generic user initializer with in intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(in d) { this.d = d; }
@@ -292,7 +292,7 @@ proc returnVar() {
   writeHeader("Generic const field, generic user initializer with const in intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(const in d) { this.d = d; }
@@ -344,7 +344,7 @@ proc returnVar() {
   writeHeader("Generic const field, concrete user initializer with default intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(d: domain(1, int, false)) { this.d = d; }
@@ -357,7 +357,7 @@ proc returnVar() {
   writeHeader("Generic const field, concrete user initializer with in intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(in d: domain(1, int, false)) { this.d = d; }
@@ -370,7 +370,7 @@ proc returnVar() {
   writeHeader("Generic const field, concrete user initializer with const in intent");
 
   record R {
-    var d;
+    const d;
     var a: [d] int;
 
     proc init(const in d: domain(1, int, false)) { this.d = d; }
