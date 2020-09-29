@@ -79,7 +79,7 @@ void inferConstRefs();
 
 void computeNoAliasSets();
 
-void removeInitOrAutoCopyPostResolution(CallExpr *call, Expr *replacement);
+void removeInitOrAutoCopyPostResolution(CallExpr *call);
 void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
                                     Expr *anchor, Symbol *isConst);
 void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
