@@ -32,7 +32,7 @@ specifically.  In more detail, it features:
 * :type:`sourceVersion`: a type that can be used to represent a semantic
   version number plus an optional commit value.
 
-* :proc:`version`: a utility function for creating new version values
+* :proc:`createVersion`: a utility function for creating new version values
 
 Version numbers in this module are represented using ``param`` values
 to permit code specialization by being able to reason about versions
@@ -46,7 +46,7 @@ The :type:`sourceVersion` type supports:
   and ``>``.  Generally speaking, "less than" corresponds to "is an
   earlier version than."  For example::
 
-    if chplVersion < version(1,23) then
+    if chplVersion < createVersion(1,23) then
       compilerWarning("This package doesn't support 'chpl' prior to 1.23.0");
 
 */
@@ -70,7 +70,7 @@ module Version {
   */
 
   const chplVersion;
-  chplVersion = version(chplMajor, chplMinor, chplUpdate, chplSHA);
+  chplVersion = createVersion(chplMajor, chplMinor, chplUpdate, chplSHA);
 
 
   /*
@@ -91,8 +91,10 @@ module Version {
 
     :returns: A new version value of type :type:`sourceVersion`.
   */
-  proc version(param major: int, param minor: int,
-               param update: int = 0, param commit: string = ""): sourceVersion(?) {
+  proc createVersion(param major: int,
+                     param minor: int,
+                     param update: int = 0,
+                     param commit: string = ""): sourceVersion(?) {
     return new sourceVersion(major, minor, update, commit);
 
   }
