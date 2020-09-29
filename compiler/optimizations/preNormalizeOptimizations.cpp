@@ -41,8 +41,10 @@
 //     - Replaces `PRIM_MAYBE_LOCAL_THIS` with a regular array access or
 //     localAccess during resolution
 
+static int curLogDepth = 0;
+static void LOG(int depth, const char *msg, BaseAST *node);
+static void LOGLN(BaseAST *node);
 
-static void LOG(const char *msg, BaseAST *node);
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
@@ -57,7 +59,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
                                                  Symbol *baseSym);
 static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
-static bool canDetermineLoopDomainStatically(ForallStmt *forall);
+static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall);
 static Symbol *getCallBase(CallExpr *call);
 static void generateDynamicCheckForAccess(CallExpr *access,
@@ -130,16 +132,32 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
 
 
 // logging support for --report-auto-local-access
-static void LOG(const char *msg, BaseAST *node) {
+// during the first analysis phase depth is used roughly in the following way
+// 0: entering/exiting forall
+// 1: information about the forall
+// 2: entering/exiting call
+// 3: information about call
+//
+// during resolution, the output is much more straighforward, and depth 0 is
+// used always
+static void LOG(int depth, const char *msg, BaseAST *node) {
   if (fReportAutoLocalAccess) {
-    const bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
-                          node->getModule()->modTag != MOD_STANDARD);
+    bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
+                    node->getModule()->modTag != MOD_STANDARD);
 
     const bool veryVerbose = false;
     if (verbose) {
-      std::cout << msg << std::endl;
+      curLogDepth = depth;
+      if (curLogDepth > 0) {
+        std::cout << "|";
+      }
+      
+      for (int i = 0 ; i < depth; i++) {
+        std::cout << " ";
+      }
+      std::cout << msg;
       if (node != NULL) {
-        std::cout << "\t" << node->stringLoc() << std::endl;
+        std::cout << " (" << node->stringLoc() << ")";
         if (veryVerbose) {
           nprint_view(node);
         }
@@ -147,6 +165,19 @@ static void LOG(const char *msg, BaseAST *node) {
           std::cout << std::endl;
         }
       }
+    }
+  }
+}
+
+static void LOGLN(BaseAST *node) {
+  if (fReportAutoLocalAccess) {
+    bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
+                    node->getModule()->modTag != MOD_STANDARD);
+    if (verbose) {
+      if (curLogDepth > 0) {
+        std::cout << "|";
+      }
+      std::cout << std::endl;
     }
   }
 }
@@ -362,7 +393,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   // pattern.
   if (indexVarCount == -1 ||
       ((std::size_t)indexVarCount) != indexSymbols.size()) {
-    LOG("Can't recognize loop's index symbols", baseSym);
+    LOG(1, "Can't recognize loop's index symbols", baseSym);
     indexSymbols.clear();
   }
 
@@ -379,8 +410,6 @@ static void gatherForallInfo(ForallStmt *forall) {
   if (isUnresolvedSymExpr(iterExprs.head) || isSymExpr(iterExprs.head)) {
     if (SymExpr *iterSE = toSymExpr(iterExprs.head)) {
       forall->optInfo.iterSym = iterSE->symbol();
-
-      LOG("Iterated symbol", forall->optInfo.iterSym);
     }
   }
   // it might be in the form `A.domain` where A is used in the loop body
@@ -388,15 +417,6 @@ static void gatherForallInfo(ForallStmt *forall) {
     forall->optInfo.dotDomIterExpr = iterExprs.head;
     forall->optInfo.dotDomIterSym = dotDomBaseSym;
     forall->optInfo.dotDomIterSymDom = getDomSym(forall->optInfo.dotDomIterSym);
-
-    LOG("Iterated over the domain of", forall->optInfo.dotDomIterSym);
-    if (forall->optInfo.dotDomIterSymDom != NULL) {
-      LOG(", which is", forall->optInfo.dotDomIterSymDom);
-    }
-    else {
-      LOG(", whose domain cannot be determined statically",
-                    forall->optInfo.dotDomIterSym);
-    }
   }
   else if (CallExpr *iterCall = toCallExpr(iterExprs.head)) {
     // not sure how or why we should support forall i in zip((...tup))
@@ -404,10 +424,6 @@ static void gatherForallInfo(ForallStmt *forall) {
       if(Symbol *iterCallTmp = earlyNormalizeForallIterand(iterCall, forall)) {
         forall->optInfo.iterCall = iterCall;
         forall->optInfo.iterCallTmp = iterCallTmp;
-        LOG("Loop iterand is a call. Will attempt dynamic optimization.", iterCall);
-      }
-      else {
-        LOG("Loop iterand is a call. But it cannot be normalized early.", iterCall);
       }
     }
   }
@@ -442,11 +458,16 @@ static bool loopHasValidInductionVariables(ForallStmt *forall) {
   return forall->optInfo.multiDIndices.size() > 0;
 }
 
-static bool canDetermineLoopDomainStatically(ForallStmt *forall) {
+static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
   // a forall is suitable for static optimization only if it iterates over a
   // symbol (with the hopes that that symbol is a domain), or a foo.domain
-  return (forall->optInfo.iterSym != NULL ||
-          forall->optInfo.dotDomIterSym != NULL);
+  if (forall->optInfo.iterSym != NULL ){
+    return forall->optInfo.iterSym;
+  }
+  else if (forall->optInfo.dotDomIterSym != NULL) {
+    return forall->optInfo.dotDomIterSym;
+  }
+  return NULL;
 }
 
 // Bunch of checks to see if `call` is a candidate for optimization within
@@ -638,17 +659,12 @@ static void optimizeLoop(ForallStmt *forall,
     Symbol *checkSym = generateStaticCheckForAccess(candidate,
                                                     forall,
                                                     staticCond);
-    if (doStatic) {
-      LOG("\tMarking static candidate", candidate);
-    }
-    else {
+    if (!doStatic) {
       forall->optInfo.staticCheckSymsForDynamicCandidates.push_back(checkSym);
 
       generateDynamicCheckForAccess(candidate,
                                     forall,
                                     dynamicCond);
-
-      LOG("\tMarking dynamic candidate", candidate);
     }
 
     replaceCandidate(candidate, checkSym, doStatic);
@@ -725,10 +741,10 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 //
 // if (staticCheck1 || staticCheck2 || ... || staticCheckN) {
 //   
-//   const dynamicCheck = (!staticCheck1 || dynamicCheck(arr1, loopDomain)) &&
-//                        (!staticCheck2 || dynamicCheck(arr2, loopDomain)) &&
+//   const dynamicCheck = (!staticCheckX || dynamicCheck(arrX, loopDomain)) &&
+//                        (!staticCheckY || dynamicCheck(arrY, loopDomain)) &&
 //                        ...
-//                        (!staticCheckN || dynamicCheck(arrN, loopDomain));
+//                        (!staticCheckZ || dynamicCheck(arrZ, loopDomain));
 //
 //   if (staticCheckX || .. || staticCheckZ) && dynamicCheck {
 //     loop2
@@ -749,7 +765,7 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 //        failure
 // loop2: Optional. This is only created if there are some dynamic candidates
 //        and dynamic optimizations are enabled with the
-//        `--auto-local-access-dynamic` flag.
+//        `--dynamic-auto-local-access` flag.
 //
 // staticCheckX and staticCheckZ are static checks added for dynamic
 // candidates. OR'ed static checks in two `if`s are added so that we can fold
@@ -808,20 +824,26 @@ static void autoLocalAccess(ForallStmt *forall) {
   }
   forall->optInfo.autoLocalAccessChecked = true;
 
-  LOG("**** Start forall ****", forall);
+  LOGLN(forall);
+  LOG(0, "Start analyzing forall", forall);
 
   gatherForallInfo(forall);
 
   if (!loopHasValidInductionVariables(forall)) {
+    LOG(1, "Can't optimize this forall: invalid induction variables", forall);
     return;
   }
 
-  bool staticLoopDomain = canDetermineLoopDomainStatically(forall);
+  Symbol *loopDomain = canDetermineLoopDomainStatically(forall);
+  bool staticLoopDomain = loopDomain != NULL;
   if (staticLoopDomain) {
-    LOG("Loop is suitable for static and dynamic analysis", forall);
+    LOG(1, "Found loop domain", loopDomain);
+    LOG(1, "Will attempt static and dynamic optimizations", forall);
+    LOGLN(forall);
   }
   else {
-    LOG("Loop is suitable for dynamic analysis only", forall);
+    LOG(1, "Couldn't determine loop domain: will attempt dynamic optimizations only", forall);
+    LOGLN(forall);
   }
 
   std::vector<CallExpr *> allCallExprs;
@@ -834,7 +856,7 @@ static void autoLocalAccess(ForallStmt *forall) {
       continue;
     }
 
-    LOG("Potential access", call);
+    LOG(2, "Start analyzing call", call);
 
     bool canOptimizeStatically = false;
 
@@ -844,34 +866,36 @@ static void autoLocalAccess(ForallStmt *forall) {
       if (forall->optInfo.dotDomIterSym == accBaseSym) {
         canOptimizeStatically = true;
 
-        LOG("\tCan optimize: Access base is the iterator's base", call);
+        LOG(3, "Can optimize: Access base is the iterator's base", call);
       }
       else {
         Symbol *domSym = getDomSym(accBaseSym);
 
         if (domSym != NULL) {  //  I can find the domain of the array
-          LOG("\twith domain defined at", domSym);
+          LOG(3, "Found the domain of the access base", domSym);
           
           // forall i in A.domain do ... B[i] ... where B and A share domain
           if (forall->optInfo.dotDomIterSymDom == domSym) {
             canOptimizeStatically = true;
 
-            LOG("\tCan optimize: Access base has the same domain as iterator's base", call);
+            LOG(3, "Can optimize: Access base has the same domain as iterator's base", call);
           }
          
           // forall i in D do ... A[i] ... where D is A's domain
           else if (forall->optInfo.iterSym == domSym) {
             canOptimizeStatically = true;
 
-            LOG("\tCan optimize: Access base's domain is the iterator", call);
+            LOG(3, "Can optimize: Access base's domain is the iterator", call);
           }
         }
         else {
-          LOG("\tregular domain symbol was not found for array", accBaseSym);
+          LOG(3, "Can't determine the domain of access base", accBaseSym);
         }
       }
 
       if (canOptimizeStatically) {
+        LOG(2, "This call is a static optimization candidate", call);
+        LOGLN(call);
         forall->optInfo.staticCandidates.push_back(call);
       }
     }
@@ -887,13 +911,16 @@ static void autoLocalAccess(ForallStmt *forall) {
       // determine the symbol of the loop domain. But this call that I am
       // looking at still has potential because it is `A(i)` where `i` is
       // the loop index. So, add this call to dynamic candidates
+      LOG(2, "This call is a dynamic optimization candidate", call);
+      LOGLN(call);
       forall->optInfo.dynamicCandidates.push_back(call);
     }
   }
 
   generateOptimizedLoops(forall);
 
-  LOG("**** End forall ****", forall);
+  LOG(0, "End analyzing forall", forall);
+  LOGLN(forall);
 }
 
 
@@ -902,7 +929,7 @@ static void autoLocalAccess(ForallStmt *forall) {
 // Resolution support for auto-local-access
 //
 static CallExpr *revertAccess(CallExpr *call) {
-  LOG("Static check failed. Reverting optimization", call);
+  LOG(0, "Static check failed. Reverting optimization", call);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
@@ -919,10 +946,10 @@ static CallExpr *revertAccess(CallExpr *call) {
 
 static CallExpr *confirmAccess(CallExpr *call) {
   if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    LOG("Static check successful. Using localAccess", call);
+    LOG(0, "Static check successful. Using localAccess", call);
   }
   else {
-    LOG("Static check successful. Using localAccess with dynamic check", call);
+    LOG(0, "Static check successful. Using localAccess with dynamic check", call);
   }
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),

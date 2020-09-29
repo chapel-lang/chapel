@@ -1,23 +1,13 @@
-**** Start forall ****
-	elemAsIndex.chpl:19
 
-Iterated symbol
-	elemAsIndex.chpl:15
-
-Loop is suitable for static and dynamic analysis
-	elemAsIndex.chpl:19
-
-Potential access
-	elemAsIndex.chpl:20
-
-	regular domain symbol was not found for array
-	elemAsIndex.chpl:15
-
-	Marking dynamic candidate
-	elemAsIndex.chpl:20
-
-**** End forall ****
-	elemAsIndex.chpl:19
+Start analyzing forall (elemAsIndex.chpl:19)
+| Found loop domain (elemAsIndex.chpl:15)
+| Will attempt static and dynamic optimizations (elemAsIndex.chpl:19)
+|
+|  Start analyzing call (elemAsIndex.chpl:20)
+|   Can't determine the domain of access base (elemAsIndex.chpl:15)
+|  This call is a dynamic optimization candidate (elemAsIndex.chpl:20)
+|
+End analyzing forall (elemAsIndex.chpl:19)
 
 Custom this was called
 Custom this was called
