@@ -79,11 +79,6 @@ static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
 ************************************** | *************************************/
 
 static std::set<const char*> typeHelperNames;
-static std::set<const char*> internalTypeHelperNames;
-
-bool isInternalTypeHelperName(const char* fnName) {
-  return internalTypeHelperNames.count(fnName);
-}
 
 static bool useMethodVisibilityRules(CallExpr* call, const char* name) {
   return (call->numActuals() >=2 &&
@@ -109,19 +104,6 @@ VisibilityInfo::VisibilityInfo(const VisibilityInfo& src) :
 { }
 
 
-// Make certain predefined functions always applicable,
-// saving the isApplicableInstantiation overhead.
-bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn) {
-  return isInternalTypeHelperName(fn->name);
-}
-bool cachedInstantiationIsAlwaysApplicable(CallExpr* call) {
-  if (FnSymbol* fn = call->resolvedFunction())
-    return cachedInstantiationIsAlwaysApplicable(fn);
-
-  const char* name = toUnresolvedSymExpr(call->baseExpr)->unresolved;
-  return isInternalTypeHelperName(name);
-}
-
 // Might the 'scope' define a fn that might change resolution outcome?
 // Such fn has the same name as this CFI's function and
 // is not automatically applicable.
@@ -129,8 +111,7 @@ bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName) {
   if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(scope))
     if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fnName))
       forv_Vec(FnSymbol, fn, *fns)
-        if (!cachedInstantiationIsAlwaysApplicable(fn))
-          return true;
+        return true;
   return false;
 }
 
@@ -291,13 +272,6 @@ void initTypeHelperNames() {
   typeHelperNames.insert(astr_initCopy);
   typeHelperNames.insert(astr_autoCopy);
   typeHelperNames.insert(astr("chpl__autoDestroy"));
-
-  internalTypeHelperNames.insert(astr_cast);
-  internalTypeHelperNames.insert(astr_defaultOf);
-  internalTypeHelperNames.insert(astrNew);
-  internalTypeHelperNames.insert(astr_initCopy);
-  internalTypeHelperNames.insert(astr_autoCopy);
-  internalTypeHelperNames.insert(astr("chpl__autoDestroy"));
 }
 
 /************************************* | **************************************
