@@ -115,29 +115,16 @@ module BytesCasts {
     var isErr: bool;
     // localize the bytes and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find(b"_") != -1;
-
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the bytes only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from bytes '" + 
-                                             x.decode(decodePolicy.drop) +
-                                             "' to " + t:string);
-
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX.item(0) + localX[1..].replace(b"_", b"");
-    }
 
     if localX.isEmpty() then
       throw new owned IllegalArgumentError("bad cast from empty bytes to " +
                                            t:string);
+    _cleanupForNumericCast(localX);
+
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from bytes '" +
+                                           x.decode(decodePolicy.drop) +
+                                           "' to " + t:string);
 
     if isIntType(t) {
       select numBits(t) {
@@ -199,24 +186,6 @@ module BytesCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupBytesForRealCast(type t, ref s: bytes) throws {
-    var len = s.size;
-
-    if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty bytes to " +
-                                           t: string);
-
-    if len >= 2 && s[1..].find(b"_") != -1 {
-      // Don't remove a leading underscore in the string number,
-      // but remove the rest.
-      if len > 2 && s.item(1) == b"_" {
-        s = s.item(0) + s[1..].replace(b"_", b"");
-      } else {
-        s = s.replace(b"_", b"");
-      }
-    }
-  }
-
   inline proc _cast(type t:chpl_anyreal, x: bytes) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -229,7 +198,7 @@ module BytesCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupBytesForRealCast(t, localX);
+    _cleanupForNumericCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -258,7 +227,7 @@ module BytesCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupBytesForRealCast(t, localX);
+    _cleanupForNumericCast(t, localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);

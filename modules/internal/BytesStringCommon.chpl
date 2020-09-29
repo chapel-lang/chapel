@@ -1368,7 +1368,7 @@ module BytesStringCommon {
           // Don't remove a leading underscore in the string number,
           // but remove the rest.
           if len > 2 && x.byte(0) == underscore {
-            x = x[0] + x[1..].replace("_":t, "":t);
+            x = x.item(0) + x[1..].replace("_":t, "":t);
           } else {
             x = x.replace("_":t, "":t);
           }
