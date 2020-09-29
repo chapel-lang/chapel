@@ -10,11 +10,13 @@ proc r.refToFields2() ref: (int, int) {
   return (x, y);
 }
 
+var g1 = new r();
+
 // Return type is inferred.
 proc test1() {
   var foo = new r();
   writeln(foo);
-  var tup = foo.refToFields1();
+  ref tup = foo.refToFields1();
   tup[0] = 128;
   tup[1] = 256;
   writeln(foo);
@@ -25,10 +27,31 @@ test1();
 proc test2() {
   var foo = new r();
   writeln(foo);
-  var tup = foo.refToFields2();
+  ref tup = foo.refToFields2();
   tup[0] = 128;
   tup[1] = 256;
   writeln(foo);
 }
 test2();
+
+// Return type is inferred, using global.
+proc test3() {
+  writeln(g1);
+  ref tup = g1.refToFields1();
+  tup[0] = 128;
+  tup[1] = 256;
+  writeln(g1);
+}
+test3();
+
+g1 = new r();
+
+proc test4() {
+  writeln(g1);
+  ref tup = g1.refToFields2();
+  tup[0] = 128;
+  tup[1] = 256;
+  writeln(g1);
+}
+test4();
 

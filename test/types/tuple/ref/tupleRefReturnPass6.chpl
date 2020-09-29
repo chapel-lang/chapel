@@ -1,4 +1,4 @@
-// Return a global tuple and store it in a ref.
+// Return a ref to a global tuple and store it in a ref.
 
 record r { var x: int = 0; }
 
@@ -21,6 +21,8 @@ proc test1() {
   writeln(g1);
 }
 test1();
+
+g1 = (0, new r());
 
 // Return type is specified.
 proc test2() {

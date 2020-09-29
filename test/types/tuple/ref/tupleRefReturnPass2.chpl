@@ -15,21 +15,28 @@ proc specifyReturnType() ref: (int, r) {
 
 // Return type is inferred.
 proc test1() {
-  writeln(g1, g2);
+  writeln(g1);
+  writeln(g2);
   ref tup = inferReturnType();
   tup[0] = 128;
   tup[1] = new r(128);
-  writeln(g1, g2);
+  writeln(g1);
+  writeln(g2);
 }
 test1();
 
+g1 = 0;
+g2 = new r();
+
 // Return type is specified.
 proc test2() {
-  writeln(g1, g2);
+  writeln(g1);
+  writeln(g2);
   ref tup = specifyReturnType();
   tup[0] = 256;
   tup[1] = new r(256);
-  writeln(g1, g2);
+  writeln(g1);
+  writeln(g2);
 }
 test2();
 

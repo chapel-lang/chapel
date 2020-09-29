@@ -1,0 +1,4 @@
+tupleRefReturnFail1.chpl:7: In function 'inferReturnType':
+tupleRefReturnFail1.chpl:8: error: Tuple expression contains one or more elements that are not valid lvalues
+tupleRefReturnFail1.chpl:8: error: Element 0 of type int(64)
+tupleRefReturnFail1.chpl:8: error: Element 1 of type r

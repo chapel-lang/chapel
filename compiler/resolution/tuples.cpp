@@ -1431,7 +1431,9 @@ static CallExpr* getBuildTupleCall(Symbol* sym) {
   return NULL;
 }
 
-static Symbol* getFieldAccessTmpFromCoerceTmp(Symbol* coerce) {
+// TODO: Should we confirm that the access temp is actually a field access?
+static Symbol* getFieldAccessTmpFromCoerceTmp(Symbol* coerce,
+                                              bool doRemoveCoercion) {
   if (!coerce->hasFlag(FLAG_COERCE_TEMP)) {
     return NULL;
   }
@@ -1450,16 +1452,20 @@ static Symbol* getFieldAccessTmpFromCoerceTmp(Symbol* coerce) {
 
       CallExpr* deref = toCallExpr(move->get(2));
       if (deref != NULL && deref->isPrimitive(PRIM_DEREF)) {
-        SymExpr* accessTmp = toSymExpr(deref->get(1));
-        INT_ASSERT(accessTmp != NULL);
+        SymExpr* accessTmpSymExpr = toSymExpr(deref->get(1));
+        INT_ASSERT(accessTmpSymExpr != NULL);
+
+        Symbol* accessTmp = accessTmpSymExpr->symbol();
+        INT_ASSERT(accessTmp->hasFlag(FLAG_TEMP));
 
         // OK, found it.
-        result = accessTmp->symbol();
+        result = accessTmp;
 
-        // Remove the coerce tmp and the code initializing it.
         // TODO: Is this always safe?
-        coerce->defPoint->remove();
-        move->convertToNoop();
+        if (doRemoveCoercion) {
+          coerce->defPoint->remove();
+          move->convertToNoop();
+        }
       }
     }
   }
@@ -1520,8 +1526,17 @@ void confirmBuildCallActualsAreLvalues(CallExpr* buildCall) {
       Symbol* sym = se->symbol();
 
       bool isImmediate = sym->isImmediate();
-      bool isNonRefTmp = sym->hasFlag(FLAG_TEMP) && !se->isRef();
+      bool isNonRefTmp = sym->hasFlag(FLAG_TEMP) && !sym->isRef();
       bool isExprTmp = sym->hasFlag(FLAG_EXPR_TEMP);
+
+      // Don't warn if the actual is the coercion of a field access temp.
+      if (sym->hasFlag(FLAG_COERCE_TEMP)) {
+        if (Symbol* fa = getFieldAccessTmpFromCoerceTmp(sym, false)) {
+          INT_ASSERT(!isImmediate && !isExprTmp);
+          INT_ASSERT(isNonRefTmp);
+          isNonRefTmp = false;
+        }
+      }
 
       if (isImmediate || isNonRefTmp || isExprTmp) {
         if (!error) {
@@ -1749,7 +1764,7 @@ static void convertBuildCallToAllRef(CallExpr* call, CallExpr* buildCall) {
 
       // Case: Coercion introduced by field accessor. This call will
       // remove the coercion.
-      Symbol* uncoerce = getFieldAccessTmpFromCoerceTmp(actualSym);
+      Symbol* uncoerce = getFieldAccessTmpFromCoerceTmp(actualSym, true);
       if (uncoerce != NULL) {
         actualSymExpr->setSymbol(uncoerce);
       }

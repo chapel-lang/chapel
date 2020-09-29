@@ -1,6 +1,5 @@
 // Function yielding tuple of references to globals. Captured in a
-// variable, which means updates are not visible, and the iterator
-// contents are converted to an array.
+// variable, which means the iterator is converted into an array.
 
 record r { var x: int = 0; }
 

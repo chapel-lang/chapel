@@ -1,5 +1,4 @@
 // Return a reference to an unsafe tuple lvalue and store it in a var.
-
 record r { var x: int = 0; }
 
 var g1 = 0;

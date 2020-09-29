@@ -1,5 +1,5 @@
-// Function yielding tuple of references to globals. Captured in a
-// variable, which means updates are not visible.
+// Function yielding tuple of references to globals. Mutate the loop index
+// variable, which is ref.
 
 record r { var x: int = 0; }
 
