@@ -141,12 +141,13 @@ module Version {
 
   // cast from sourceVersion to string
   pragma "no doc"
-  proc _cast(type t: string, x: sourceVersion(?)) {
-    var str = "version " + x.major:string + "." + x.minor:string + "." +
-        x.update:string;
-    if (x.commit != "") then
-      str += " (" + x.commit + ")";
-    return str;
+  proc _cast(type t: string, x: sourceVersion(?)) param {
+    if (x.commit == "") then
+      return ("version " + x.major:string + "." + x.minor:string + "." +
+              x.update:string);
+    else
+      return ("version " + x.major:string + "." + x.minor:string + "." +
+              x.update:string + " (" + x.commit + ")");
   }
 
 
