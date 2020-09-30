@@ -1,4 +1,0 @@
-error message: instantiating the wrong type in an init= method
-
-bharsh 2018-11-09: not sure what the error message ought to be, but the current
-  error isn't very helpful
