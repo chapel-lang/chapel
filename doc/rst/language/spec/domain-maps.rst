@@ -29,15 +29,15 @@ Domain maps are presented as follows:
 -  domain maps are not retained upon domain assignment
    :ref:`Domain_Maps_Not_Assigned`
 
--  | standard layouts and distributions, such as Block and Cyclic, are
-     documented under *Standard Layouts and Distributions* in Chapel's online
-     documentation here:
-   | https://chapel-lang.org/docs/modules/layoutdist.html
+-  standard layouts and distributions, such as Block and Cyclic, are
+   documented under
+   :ref:`Standard Layouts and Distributions <layouts_and_distributions>`
+   in Chapel's online documentation.
 
--  | specification of user-defined domain maps is forthcoming; please
-     refer to the *Domain Map Standard Interface* page under *Technical
-     Notes* in Chapel's online documentation here:
-   | https://chapel-lang.org/docs/technotes/dsi.html
+-  specification of user-defined domain maps is forthcoming; please
+   refer to the
+   :ref:`Domain Map Standard Interface technical note <readme-dsi>`
+   in Chapel's online documentation.
 
 .. _Domain_Maps_For_Types:
 
