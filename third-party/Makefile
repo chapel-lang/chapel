@@ -135,10 +135,10 @@ $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	cd llvm && $(MAKE)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
-ifeq ($(CHPL_MAKE_HWLOC), hwloc)
+ifeq ($(CHPL_MAKE_HWLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
 endif
-ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
+ifeq ($(CHPL_MAKE_JEMALLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
 # Qthreads uses our memory allocator, trigger rebuilds if our interface changes
