@@ -40,6 +40,10 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
 static Expr *getNextExprOrCreateNoop(Expr *baseExpr, bool &createdNoop);
 static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
                                           Expr *nextExpr, Symbol *isConst);
+static void setDefinedConstForDomainSymbol(Symbol *domainSym,
+                                           Expr *insBeforeMarker,
+                                           Expr *&insAfterMarker,
+                                           Symbol *isConst) {
 
 // tries to determine if the DefExpr looks like a constant domain definition,
 // and changes pertinent arguments in the CallExprs as necessary
@@ -221,30 +225,48 @@ static VarSymbol *addFieldAccess(Symbol *receiver, const char *fieldName,
   return fieldRef;
 }
 
-void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
-                                    Symbol *isConst) {
-  // insAfter is moved forward by the helpers called here;
-  // nextExpr stays where it was
-  Expr *insAfter = nextExpr;
+static void setDefinedConstForDomainSymbol(Symbol *domainSym,
+                                           Expr *insBeforeMarker,
+                                           Expr *&insAfterMarker,
+                                           Symbol *isConst) {
 
   VarSymbol *domInstance = addFieldAccess(domainSym, "_instance",
-                                          nextExpr, insAfter, /*asRef=*/ true);
+                                          insBeforeMarker, insAfterMarker,
+                                          /*asRef=*/ true);
 
   VarSymbol *refToDefinedConst = addFieldAccess(domInstance, "definedConst",
-                                                nextExpr, insAfter,
-                                                true);
+                                                insBeforeMarker, insAfterMarker,
+                                                /*asRef=*/ true);
 
   CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
                                            isConst);
 
-  insAfter->insertAfter(setDefinedConst);
+  insAfterMarker->insertAfter(setDefinedConst);
+  insAfterMarker = insAfterMarker->next;
+}
+
+void setDefinedConstForDomainSymbol(Symbol *domainSym, Expr *nextExpr,
+                                    Symbol *isConst) {
+  CallExpr *noop = new CallExpr(PRIM_NOOP);
+  nextExpr->insertBefore(noop);
+
+  Expr *insBeforeMarker = noop;
+  Expr *insAfterMarker = noop;
+
+  setDefinedConstForDomainSymbol(domainSym, insBeforeMarker, insAfterMarker,
+                                 isConst);
+
+  noop->remove();
 }
 
 static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
                                           Expr *nextExpr, Symbol *isConst) {
-    Expr *anchor = nextExpr;
+    Expr *insBeforeMarker = nextExpr;
+    Expr *insAfterMarker = nextExpr;
     VarSymbol *domSym = addFieldAccess(thisSym, fieldSym->name,
-                                       nextExpr, anchor, /* asRef = */false);
-    setDefinedConstForDomainSymbol(domSym, anchor, isConst);
+                                       insBeforeMarker, insAfterMarker,
+                                       /* asRef = */false);
+    setDefinedConstForDomainSymbol(domSym, insBeforeMarker, insAfterMarker,
+                                   isConst);
 }
 
