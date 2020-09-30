@@ -15,7 +15,8 @@ proc =(ref lhs:R, rhs: R) {
   return new R();
 }
 
-var myR, myR2: R;
+var myR = new R(1);
+var myR2 = new R(2);
 
 myR = myR2;
 writeln("myR is: ", myR);
