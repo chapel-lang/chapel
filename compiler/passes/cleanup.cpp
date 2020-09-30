@@ -143,6 +143,7 @@ static void backPropagateInFunction(BlockStmt* block){
 
       //2. update prev if necessary
       if (prev != NULL && !isValidInit(def->init) && def->exprType == NULL) {
+        SET_LINENO(prev);
         if(prev->exprType != NULL && typeTmp == NULL){
           typeTmp = newTemp("type_tmp");
           typeTmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -159,14 +160,17 @@ static void backPropagateInFunction(BlockStmt* block){
       }
     
       //3. update def, type then init
-      if(typeTmp != NULL && def->exprType == NULL) {
-        setAstHelp(def, def->exprType, prev->exprType->copy());
-        if(isgSplitInit(def->init)) {
-          def->init->remove();
+      {
+        SET_LINENO(def);
+        if(typeTmp != NULL && def->exprType == NULL) {
+          setAstHelp(def, def->exprType, prev->exprType->copy());
+          //if(isgSplitInit(def->init)) {
+          //  def->init->remove();
+          //}
         }
-      }
-      if(init != NULL && !isValidInit(def->init)){
-        setAstHelp(def, def->init, init->copy());
+        if(init != NULL && !isValidInit(def->init)){
+          setAstHelp(def, def->init, init->copy());
+        }
       }
       prev = def;
     }
@@ -199,6 +203,31 @@ static void backPropagate(BaseAST* ast){
   }
 }
 
+static void handleNonTypedAndNonInitedVar(DefExpr* def) {
+  if (toVarSymbol(def->sym)) {
+    bool needsInit = false;
+    // The test for FLAG_TEMP allows compiler-generated (temporary) variables
+    // to be declared without an explicit type or initializer expression.
+    if ((!def->init || def->init->isNoInitExpr())
+        && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
+      if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
+        if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
+          if (!def->sym->hasFlag(FLAG_INDEX_VAR))
+            needsInit = true;
+
+    if (needsInit) {
+      if ((def->init && def->init->isNoInitExpr()) ||
+          def->sym->hasFlag(FLAG_CONFIG)) {
+        USR_FATAL_CONT(def->sym,
+                       "Variable '%s' is not initialized and has no type",
+                       def->sym->name);
+      } else {
+        SET_LINENO(def);
+        setAstHelp(def, def->init, new SymExpr(gSplitInit));
+      }
+    }
+  }
+}
 
 static void cleanup(ModuleSymbol* module) {
   std::vector<BaseAST*> asts;
@@ -206,7 +235,6 @@ static void cleanup(ModuleSymbol* module) {
   collect_asts(module, asts);
 
   for_vector(BaseAST, ast, asts) {
-    SET_LINENO(ast);
 
     backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
@@ -247,6 +275,8 @@ static void cleanup(ModuleSymbol* module) {
         }
 
         fixupVoidReturnFn(fn);
+      } else {
+        handleNonTypedAndNonInitedVar(def);
       }
     } else if (CatchStmt* catchStmt = toCatchStmt(ast)) {
       catchStmt->cleanup();

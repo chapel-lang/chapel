@@ -70,6 +70,7 @@ checkParsed() {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
+    /*
     if (toVarSymbol(def->sym)) {
       bool needsInit = false;
       // The test for FLAG_TEMP allows compiler-generated (temporary) variables
@@ -94,7 +95,7 @@ checkParsed() {
         }
       }
     }
-
+    */
     //
     // This test checks to see if query domains (e.g., '[?D]') are
     // used in places other than formal argument type specifiers.
