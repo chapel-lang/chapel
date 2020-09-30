@@ -589,3 +589,58 @@ generic (:ref:`Type_Aliases_in_Generic_Types`).
 
       2
 
+
+.. _Querying_the_Type_of_an_Expression:
+
+Querying the Type of an Expression
+----------------------------------
+
+The type of a an expression can be queried with ``.type``. This
+functionality is particularly useful when doing generic programming
+(see :ref:`Chapter-Generics`).
+
+   *Example (dot-type.chpl)*.
+
+   For example, this code uses ``.type`` to query the type of the
+   variable ``x`` and store that in the type alias ``t``:
+
+   .. code-block:: chapel
+
+      var x: int;
+      type t = x.type;
+
+   .. BLOCK-test-chapelpost
+
+      writeln(t:string);
+
+   .. BLOCK-test-chapeloutput
+
+      int
+
+.. _Operators_Available_on_Types:
+
+Operators Available on Types
+----------------------------
+
+There are several operators that can operate on type aliases or type
+expressions (such as the ``.type`` queries described above).
+
+Types can also be passed to a ``type`` formal of a generic function (see
+:ref:`Formal_Type_Arguments`).
+
+See also the :mod:`Types` module documentation which provides many
+methods to query properties of types.
+
+The language also provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
+:proc:`isSubtype <UtilMisc_forDocs.isSubtype>`, and
+:proc:`isProperSubtype <UtilMisc_forDocs.isProperSubtype>` for comparing types.
+The normal comparison operators are also available to compare types:
+
+ * ``==`` checks if two types are equivalent
+ * ``!=`` checks if two types are different
+ * ``<`` and ``>`` check if one type is a proper subtype of another (see
+   :proc:`< <UtilMisc_forDocs.<>`)
+ * ``<=`` and ``>=`` check if one type is a subtype of another (see
+   :proc:`<= <UtilMisc_forDocs.<=>`)
+
+Additionally, it is possible to cast a type to a string.
