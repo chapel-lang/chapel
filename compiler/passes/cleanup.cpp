@@ -77,19 +77,6 @@ static bool areMultiDefExprsInAList(AList& list) {
     return numStmts > 1;
 }
 
-static bool isValidInit(Expr* initExpr) {
-  if (initExpr == NULL) {
-    return false;
-  }
-
-  if (SymExpr* se = toSymExpr(initExpr)) {
-    if ( se->symbol() == gSplitInit) {
-      return false;
-    }
-  }
-  return true;
-}
-
 static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs) {
   if(lhs){
     lhs->remove();
@@ -115,9 +102,9 @@ static void backPropagateInFunction(BlockStmt* block) {
     if (DefExpr* def = toDefExpr(stmt)) {
 
       //1. set local variableis -- analysis
-      if (isValidInit(def->init) || def->exprType) {
+      if (def->init || def->exprType) {
 
-        if(isValidInit(def->init)) {
+        if(def->init != NULL) {
           init = def->init;
         } else {
           init = NULL;
@@ -131,7 +118,7 @@ static void backPropagateInFunction(BlockStmt* block) {
       //2. update prev if necessary. Since the defExprs in a block statement are
       //iterated in a reverse order, we use prev for cases like var x, y = 1.0, so
       //that x can be initialized with 1.0 and y is initialized with the x symbol.
-      if (prev != NULL && !isValidInit(def->init) && def->exprType == NULL) {
+      if (prev != NULL && def->init == NULL && def->exprType == NULL) {
         SET_LINENO(prev);
         if(prev->exprType != NULL && typeTmp == NULL){
           typeTmp = newTemp("type_tmp");
@@ -159,7 +146,7 @@ static void backPropagateInFunction(BlockStmt* block) {
           setAstHelp(def, def->exprType, prev->exprType->copy());
         }
 
-        if(init != NULL && !isValidInit(def->init)){
+        if(init != NULL && def->init == NULL){
           setAstHelp(def, def->init, init->copy());
         }
       }
