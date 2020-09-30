@@ -43,7 +43,7 @@ static void setDefinedConstForDomainField(Symbol *thisSym, Symbol *fieldSym,
 static void setDefinedConstForDomainSymbol(Symbol *domainSym,
                                            Expr *insBeforeMarker,
                                            Expr *&insAfterMarker,
-                                           Symbol *isConst) {
+                                           Symbol *isConst);
 
 // tries to determine if the DefExpr looks like a constant domain definition,
 // and changes pertinent arguments in the CallExprs as necessary
