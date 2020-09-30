@@ -1234,29 +1234,34 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
         // Attempt to instantiate a field with a default value
         retval->genericField = index;
 
-        Type* expected = resolveFieldTypeExpr(field, call, callString);
-        Symbol* value = resolveFieldDefault(field, call, callString);
-
-        if (expected != NULL && value != NULL) {
-          if (getInstantiationType(value->type, NULL,
-                                   expected, NULL, call) == NULL) {
-              USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
-              USR_PRINT(call, "field '%s' has type '%s' but default value "
-                              "is of incompatible type '%s'",
-                               field->name, expected->symbol->name,
-                               value->type->symbol->name);
-              USR_STOP();
+        if (field->hasFlag(FLAG_TYPE_VARIABLE)) {
+          if (Symbol* sym = resolveFieldDefault(field, call, callString)) {
+            retval = retval->getInstantiation(sym, index, insnPoint);
           }
-        }
+        } else if (field->defPoint->init != NULL) {
+          Type* expected = resolveFieldTypeExpr(field, call, callString);
+          Symbol* value = resolveFieldDefault(field, call, callString);
 
-        if (value == NULL) {
-          USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
-          USR_PRINT(call, "could not resolve default value for field '%s'",
-                           field->name);
-          USR_STOP();
-        }
+          if (expected != NULL && value != NULL) {
+            if (getInstantiationType(value->type, NULL,
+                                     expected, NULL, call) == NULL) {
+                USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
+                USR_PRINT(call, "field '%s' has type '%s' but default value "
+                                "is of incompatible type '%s'",
+                                 field->name, expected->symbol->name,
+                                 value->type->symbol->name);
+                USR_STOP();
+            }
+          }
+          if (value == NULL) {
+            USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
+            USR_PRINT(call, "could not resolve default value for field '%s'",
+                             field->name);
+            USR_STOP();
+          }
 
-        retval = retval->getInstantiation(value, index, insnPoint);
+          retval = retval->getInstantiation(value, index, insnPoint);
+        }
       }
     }
   }
