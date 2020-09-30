@@ -7987,25 +7987,15 @@ static void resolveCoerce(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials = false);
-static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow);
+static Type* resolveGenericActual(SymExpr* se, bool resolvePartials = false);
+static Type* resolveGenericActual(SymExpr* se, Type* type);
 
 Type* resolveDefaultGenericTypeSymExpr(SymExpr* se) {
-  return resolveGenericActual(se, false, true);
+  return resolveGenericActual(se, /* resolvePartials */ true);
 }
 
 void resolveGenericActuals(CallExpr* call) {
   SET_LINENO(call);
-
-  bool decayToBorrow = false;
-  /*
-   should no longer be necessary because generic types can be passed
-     ... check classes primer
-   if (SymExpr* baseSe = toSymExpr(call->baseExpr))
-    if (TypeSymbol* ts = toTypeSymbol(baseSe->symbol()))
-      if (isManagedPtrType(ts->type))
-        decayToBorrow = true;
-   */
 
   for_actuals(actual, call) {
     Expr* safeActual = actual;
@@ -8015,16 +8005,16 @@ void resolveGenericActuals(CallExpr* call) {
     }
 
     if (SymExpr*   se = toSymExpr(safeActual))   {
-      resolveGenericActual(se, decayToBorrow);
+      resolveGenericActual(se);
     }
   }
 }
 
-static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolvePartials) {
+static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
   Type* retval = se->typeInfo();
 
   if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-    retval = resolveGenericActual(se, ts->type, decayToBorrow);
+    retval = resolveGenericActual(se, ts->type);
 
   } else if (VarSymbol* vs = toVarSymbol(se->symbol())) {
     if (vs->hasFlag(FLAG_TYPE_VARIABLE) == true) {
@@ -8048,7 +8038,7 @@ static Type* resolveGenericActual(SymExpr* se, bool decayToBorrow, bool resolveP
   return retval;
 }
 
-static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow) {
+static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
@@ -8058,12 +8048,6 @@ static Type* resolveGenericActual(SymExpr* se, Type* type, bool decayToBorrow) {
     decorator = dt->getDecorator();
     if (isDecoratorUnknownManagement(decorator))
       isDecoratedGeneric = true;
-    if (decayToBorrow) {
-      if (isDecoratorNilable(decorator))
-        decorator = CLASS_TYPE_BORROWED_NILABLE;
-      else
-        decorator = CLASS_TYPE_BORROWED_NONNIL;
-    }
   }
 
   if (AggregateType* at = toAggregateType(type)) {
