@@ -53,6 +53,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1371,7 +1372,7 @@ static void addArgCoercion(FnSymbol*  fn,
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
 
       bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_CONST_IN ||
                          formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
@@ -1516,6 +1517,36 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
   return result;
 }
 
+static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
+  
+  // Today, if we generate a default initializer for a type with const fields,
+  // the formals that correspond to those fields have `in` intents. However, we
+  // still need to set those temporaries that will be passed to those formals to
+  // be constant before calling the initializer, in case the initializer have
+  // another argument that will use that temporary.
+  //
+  // This comes up in:
+  //
+  // record R {
+  //   const d;
+  //   var a: [d] int;
+  // }
+  //
+  // we ideally want to be able to make such formals have `const in` intent
+  // instead of `in`. But there may be complications with that and we are close
+  // to the release, so, we track the field symbol from the call in case it is a
+  // default initializer
+
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED) && fn->name == astrInit) {
+    Symbol *fieldSym = fn->getReceiverType()->getField(formal->name);
+    return fieldSym->hasFlag(FLAG_CONST);
+  }
+
+  return formal->intent == INTENT_CONST_IN ||
+         formal->originalIntent == INTENT_CONST_IN ||
+         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+}
+
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
                            SymbolMap& copyMap,
@@ -1602,10 +1633,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       
       CallExpr* copy = NULL;
 
-      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->originalIntent == INTENT_CONST_IN ||
-                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-      Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
+      Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
       if (coerceRuntimeTypes)
         copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
                             definedConst);
@@ -1637,10 +1665,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                           formal->originalIntent == INTENT_CONST_IN ||
-                           formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-        Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
+        Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
         CallExpr* copy = new CallExpr(astr_coerceMove,
                                       runtimeTypeTemp, actualSym, definedConst);
 
@@ -1652,6 +1677,21 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         resolveCall(move);
 
         actual->setSymbol(tmp);
+      }
+      else {
+        if (actualSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (!actualSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            // we are moving a domain to an `in` formal without coercion. We
+            // should adjust its constness
+            Symbol *definedConst = isFormalTempConst(fn, formal) ? gTrue : gFalse;
+
+
+            Expr *nextExpr = new CallExpr(PRIM_NOOP);
+            anchor->insertBefore(nextExpr);
+            setDefinedConstForDomainSymbol(actualSym, nextExpr, definedConst);
+            nextExpr->remove();
+          }
+        }
       }
     }
   }
