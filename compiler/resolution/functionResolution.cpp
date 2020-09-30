@@ -6454,7 +6454,7 @@ static void resolveInitField(CallExpr* call) {
   if (fs->type->getValType() != srcType->getValType()) {
     USR_FATAL_CONT(call, "Cannot replace an instantiated field "
                          "with another type");
-    USR_PRINT(call, "field %s has type %s but is set to %s",
+    USR_PRINT(call, "field '%s' has type '%s' but is set to '%s'",
                      fs->name,
                      toString(fs->getValType()),
                      toString(srcType->getValType()));
@@ -6476,7 +6476,7 @@ static void resolveInitField(CallExpr* call) {
           VarSymbol* dstVar = toVarSymbol(dstParam);
           VarSymbol* srcVar = toVarSymbol(srcParam);
           if (dstVar != NULL && srcVar != NULL)
-            USR_PRINT(call, "field %s has value %s but is set to %s",
+            USR_PRINT(call, "field '%s' has value '%s' but is set to '%s'",
                             fs->name, toString(dstVar), toString(srcVar));
           USR_STOP();
         }
@@ -10953,8 +10953,11 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       appendExpr = new SymExpr(temp);
 
     } else if (isGenericField && hasDefault == true) {
-      USR_FATAL(call, "Default initializing a record type with "
-                      "generic fields with defaults is not yet supported");
+      USR_FATAL_CONT(call, "this default-initialization is not yet supported");
+      USR_PRINT(field, "field '%s' is declared with a generic type "
+                       "and also a default value",
+                       field->name);
+      USR_STOP();
 
     } else {
       INT_FATAL("Unhandled case for default-init");
