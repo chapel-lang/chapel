@@ -12,10 +12,10 @@ a less-permissive mode intended for production code.
 
    *Implementation Notes*.
 
-   | Additional information about the current implementation of
-     error handling and the *strict* error handling mode, which is not
-     defined here, is available online in the technical note:
-   | https://chapel-lang.org/docs/technotes/errorHandling.html
+   Additional information about the current implementation of
+   error handling and the *strict* error handling mode, which is not
+   defined here, is available online in the errorHandling technical note
+   :ref:`readme-errorHandling`.
 
 .. _Throwing_Errors:
 
@@ -448,7 +448,7 @@ TaskErrors
 ``TaskErrors`` class helps coordinate errors among groups of tasks by
 collecting them for centralized handling. It can be iterated on and
 filtered for different kinds of errors. See also
-https://chapel-lang.org/docs/builtins/ChapelError.html#ChapelError.TaskErrors.
+the module documentation for :class:`TaskErrors <ChapelError.TaskErrors>`.
 
 Nested ``coforall`` statements do not produce nested ``TaskErrors``.
 Instead, the nested errors are flattened into the ``TaskErrors`` error
@@ -579,11 +579,11 @@ Creating New Error Types
 Errors in Chapel are implemented as classes, with a base class ``Error``
 defined in the standard modules. ``Error`` may be used directly, and new
 subclass hierarchies may be created from it. See also
-https://chapel-lang.org/docs/builtins/ChapelError.html.
+the module documentation for :mod:`ChapelError`.
 
 A hierarchy for system errors is included in the ``SysError`` module,
 accessed with a ``use`` statement. See also
-https://chapel-lang.org/docs/modules/standard/SysError.html
+the module documentation for :mod:`SysError`.
 
    *Example (defining-errors.chpl)*.
 
