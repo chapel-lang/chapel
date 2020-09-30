@@ -4,6 +4,7 @@ MAKEFLAGS = --no-print-directory
 CHPL = chpl
 
 TARGETS = \
+	parallelIO \
 	recordio \
 
 REALS = $(TARGETS:%=%_real)
