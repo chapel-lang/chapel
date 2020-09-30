@@ -81,11 +81,10 @@ record with a single generic field, which holds the domain map instance.
       use BlockDist;
       var MyBlockDist: dmap(Block(rank=2));
 
-   | declares a variable capable of storing dmap values for a
-     two-dimensional Block distribution. The Block distribution is
-     described in more detail in the standard library documentation.
-     See:
-   | https://chapel-lang.org/docs/modules/dists/BlockDist.html
+   declares a variable capable of storing dmap values for a
+   two-dimensional Block distribution. The Block distribution is
+   described in more detail in the standard library documentation.
+   See the module documentation for :mod:`BlockDist`.
 
 ..
 
