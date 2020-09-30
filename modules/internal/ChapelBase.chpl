@@ -1215,9 +1215,6 @@ module ChapelBase {
     delete _to_unmanaged(e);
   }
 
-  pragma "no doc"
-  extern proc chpl_comm_task_create();
-
   // This function is called by the initiating task once for each new
   // task *before* any of the tasks are started.  As above, no on
   // statement needed.
@@ -1265,6 +1262,8 @@ module ChapelBase {
   }
 
   extern proc chpl_comm_unordered_task_fence(): void;
+
+  extern proc chpl_comm_task_create();
 
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
