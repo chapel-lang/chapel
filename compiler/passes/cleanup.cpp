@@ -112,6 +112,8 @@ static void backPropagateInFunction(BlockStmt* block){
 
   if (!areMultiDefExprsInAList(block->body)) return;
 
+  SET_LINENO(block);
+
   VarSymbol* typeTmp = NULL;
   BlockStmt* tmpBlock = new BlockStmt();
 
@@ -139,15 +141,17 @@ static void backPropagateInFunction(BlockStmt* block){
         if(prev->exprType != NULL && typeTmp == NULL){
           typeTmp = newTemp("type_tmp");
           typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-          DefExpr* tmpDef = new DefExpr(typeTmp);
-          Expr* move = new CallExpr(PRIM_MOVE, typeTmp, prev->exprType->copy());
+          DefExpr* tmpDef = new DefExpr(typeTmp, prev->exprType->copy());
           prev->exprType->replace(new SymExpr(typeTmp));
           tmpBlock->insertAtTail(tmpDef);
-          tmpBlock->insertAtTail(move);
         }
 
         if(prev->init != NULL && init != NULL){
-          setAstHelp(prev, prev->init, new SymExpr(def->sym));
+          if (init->isNoInitExpr()){
+            setAstHelp(prev, prev->init, init->copy());
+          } else {
+            setAstHelp(prev, prev->init, new SymExpr(def->sym));
+          }
         }
       }
     
