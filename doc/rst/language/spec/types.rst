@@ -1,6 +1,6 @@
-.. _Chapter-Types:
-
 .. default-domain:: chpl
+
+.. _Chapter-Types:
 
 Types
 =====

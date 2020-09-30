@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Domain_Maps:
 
 Domain Maps

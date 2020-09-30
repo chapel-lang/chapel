@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Locales_Chapter:
 
 Locales
