@@ -70,32 +70,6 @@ checkParsed() {
   }
 
   forv_Vec(DefExpr, def, gDefExprs) {
-    /*
-    if (toVarSymbol(def->sym)) {
-      bool needsInit = false;
-      // The test for FLAG_TEMP allows compiler-generated (temporary) variables
-      // to be declared without an explicit type or initializer expression.
-      if ((!def->init || def->init->isNoInitExpr())
-          && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
-        if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
-          if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
-            if (!def->sym->hasFlag(FLAG_INDEX_VAR))
-              needsInit = true;
-
-      if (needsInit) {
-        if ((def->init && def->init->isNoInitExpr()) ||
-            def->sym->hasFlag(FLAG_CONFIG)) {
-          USR_FATAL_CONT(def->sym,
-                         "Variable '%s' is not initialized and has no type",
-                         def->sym->name);
-        } else {
-          SET_LINENO(def);
-          def->init = new SymExpr(gSplitInit);
-          parent_insert_help(def, def->init);
-        }
-      }
-    }
-    */
     //
     // This test checks to see if query domains (e.g., '[?D]') are
     // used in places other than formal argument type specifiers.

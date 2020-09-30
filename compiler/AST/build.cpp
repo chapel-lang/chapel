@@ -1450,8 +1450,6 @@ CallExpr* buildScanExpr(Expr* opExpr, Expr* dataExpr, bool zippered) {
 
 
 static void
-//add argument that states in class/record
-//or move this to later part of compilation
 backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* init = NULL;
   Expr* type = NULL;
@@ -1481,16 +1479,12 @@ backPropagateInitsTypes(BlockStmt* stmts) {
         def->exprType = type;
       }
       prev = def;
-    } else {
-      //handle forwarding statements to uncomment line below
-      //INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
     }
   }
 }
 
 
 std::set<Flag>* buildVarDeclFlags(Flag flag1, Flag flag2) {
-
   // this will be deleted in buildVarDecls()
   std::set<Flag>* flags = new std::set<Flag>();
 
@@ -1620,7 +1614,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
-  //backPropagateInitsTypes(stmts);
   //
   // If blockInfo is set, this is a tuple variable declaration.
   // Add checks that the expression on the right is a tuple and that
