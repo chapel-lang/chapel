@@ -141,7 +141,9 @@ static void backPropagateInFunction(BlockStmt* block){
 
       }
 
-      //2. update prev if necessary
+      //2. update prev if necessary. Since the defExprs in a block statement are
+      //iterated in a reverse order, we use prev for cases like var x, y = 1.0, so
+      //that x can be initialized with 1.0 and y is initialized with the x symbol.
       if (prev != NULL && !isValidInit(def->init) && def->exprType == NULL) {
         SET_LINENO(prev);
         if(prev->exprType != NULL && typeTmp == NULL){
