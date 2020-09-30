@@ -94,16 +94,6 @@ static bool isValidInit(Expr* initExpr){
   return true;
 }
 
-
-static bool isgSplitInit(Expr* initExpr){
-  if (SymExpr* se = toSymExpr(initExpr)) {
-    if (se->symbol() == gSplitInit) {
-      return true;
-    }
-  }
-  return false;
-}
-
 //parent: prev
 //lhs: prev->init
 //rhs: init->copy()
