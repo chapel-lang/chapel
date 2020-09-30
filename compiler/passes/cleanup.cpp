@@ -109,6 +109,7 @@ static void backPropagateInFunction(BlockStmt* block){
 
   Expr* init = NULL;
   DefExpr* prev = NULL;
+  Expr* type = NULL;
 
   if (!areMultiDefExprsInAList(block->body)) return;
 
@@ -129,6 +130,7 @@ static void backPropagateInFunction(BlockStmt* block){
           init = NULL;
         }
 
+        type = def->exprType;
         typeTmp = NULL;
 
       }
@@ -149,7 +151,9 @@ static void backPropagateInFunction(BlockStmt* block){
         if(prev->init != NULL && init != NULL){
           if (init->isNoInitExpr()){
             setAstHelp(prev, prev->init, init->copy());
-          } else {
+          } else if (type) {
+            prev->init = new CallExpr("chpl__readXX", new UnresolvedSymExpr(def->sym->name));
+          }else {
             setAstHelp(prev, prev->init, new SymExpr(def->sym));
           }
         }
@@ -160,10 +164,8 @@ static void backPropagateInFunction(BlockStmt* block){
         SET_LINENO(def);
         if(typeTmp != NULL && def->exprType == NULL) {
           setAstHelp(def, def->exprType, prev->exprType->copy());
-          //if(isgSplitInit(def->init)) {
-          //  def->init->remove();
-          //}
         }
+
         if(init != NULL && !isValidInit(def->init)){
           setAstHelp(def, def->init, init->copy());
         }
