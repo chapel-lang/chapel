@@ -872,14 +872,14 @@ The syntax of the task intent clause is:
      formal-intent identifier
      task-private-var-decl
 
-| where the following intents can be used as a ``formal-intent``:
-  ``ref``, ``in``, ``const``, ``const in``, ``const ref``.
-  ``task-private-var-decl`` is defined in
-  :ref:`Task_Private_Variables`. In addition,
-  ``task-intent-item`` may define a ``reduce`` intent. Reduce intents
-  are described in the *Reduce Intents* technical note in the online
-  documentation:
-| https://chapel-lang.org/docs/technotes/reduceIntents.html
+where the following intents can be used as a ``formal-intent``:
+``ref``, ``in``, ``const``, ``const in``, ``const ref``.
+``task-private-var-decl`` is defined in
+:ref:`Task_Private_Variables`. In addition,
+``task-intent-item`` may define a ``reduce`` intent. Reduce intents
+are described in the
+:ref:`Reduce Intents technical note <readme-reduceIntents>` in
+the online documentation.
 
 The implicit treatment of outer scope variables as the task function’s
 formal arguments applies to both module level and local variables. It
