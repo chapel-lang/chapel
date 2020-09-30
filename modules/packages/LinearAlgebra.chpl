@@ -1633,8 +1633,13 @@ proc cholesky(A: [] ?t, lower = true)
 
   var copy = A;
   const uploStr = if lower then "L" else "U";
-  LAPACK.potrf(lapack_memory_order.row_major, uploStr, copy);
-
+  var hasError = LAPACK.potrf(lapack_memory_order.row_major, uploStr, copy);
+  if(hasError >0){
+    if(isComplexType(t)) then
+      halt("Matrix passed must be hermitian positive definite ");
+    if(isRealType(t)) then
+      halt("Matrix passed must be symmetric positive definite");
+  }
   // tril and triu make/return an extra copy.  Should we zero the unused
   // triangle of the array manually instead to avoid the copy?
   return if lower then tril(copy) else triu(copy);
