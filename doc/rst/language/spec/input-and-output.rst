@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Input_and_Output:
 
 Input and Output

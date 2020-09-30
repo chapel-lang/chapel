@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Error_Handling:
 
 Error Handling

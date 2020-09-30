@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Task_Parallelism_and_Synchronization:
 
 Task Parallelism and Synchronization
