@@ -93,12 +93,12 @@ In practice, the number of tasks that will be used to evaluate a
 *leading* the execution of the loop, as is the mapping of iterations to
 tasks.
 
-| This concept will be formalized in future drafts of the Chapel
-  specification. For now, the primer on parallel iterators in the online
-  documentation provides a brief introduction:
-| https://chapel-lang.org/docs/primers/parIters.html
-| Please also refer to *User-Defined Parallel Zippered Iterators in
-  Chapel*, published in the PGAS 2011 workshop.
+This concept will be formalized in future drafts of the Chapel
+specification. For now, the
+:ref:`primer on parallel iterators <primers-parIters>` in the online
+documentation provides a brief introduction.
+Please also refer to *User-Defined Parallel Zippered Iterators in
+Chapel*, published in the PGAS 2011 workshop.
 
 Control continues with the statement following the forall loop only
 after every iteration has been completely evaluated. At this point, all
@@ -319,17 +319,17 @@ creation time. Within the lexical scope of the forall construct, the
 variable name references the captured value instead of the original
 value.
 
-| A formal can be given another intent explicitly by listing it with
-  that intent in the optional ``task-intent-clause``. For example, for
-  variables of most types, the ``ref`` intent allows the body of the
-  forall loop to modify the corresponding original variable or to read
-  its updated value after concurrent modifications. The ``in`` intent is
-  an alternative way to obtain task-private variables
-  (:ref:`Task_Private_Variables`). A ``reduce`` intent can be used
-  to reduce values across iterations of a forall or coforall loop.
-  Reduce intents are described in the *Reduce Intents* technical note in
-  the online documentation:
-| https://chapel-lang.org/docs/technotes/reduceIntents.html
+A formal can be given another intent explicitly by listing it with
+that intent in the optional ``task-intent-clause``. For example, for
+variables of most types, the ``ref`` intent allows the body of the
+forall loop to modify the corresponding original variable or to read
+its updated value after concurrent modifications. The ``in`` intent is
+an alternative way to obtain task-private variables
+(:ref:`Task_Private_Variables`). A ``reduce`` intent can be used
+to reduce values across iterations of a forall or coforall loop.
+Reduce intents are described in the
+:ref:`Reduce Intents technical note <readme-reduceIntents>` in
+the online documentation.
 
    *Rationale*.
 
