@@ -49,13 +49,13 @@ additionally as follows:
 
 -  tuple and tuple expand :ref:`Chapter-Tuples`
 
--  locale access :ref:`Querying_the_Locale_of_a_Variable`
+-  locale query with ``.locale`` :ref:`Querying_the_Locale_of_an_Expression`
+
+-  type query with ``.type`` :ref:`Querying_the_Type_of_an_Expression`
 
 -  mapped domain :ref:`Chapter-Domain_Maps`
 
 -  initializer calls :ref:`Class_New`
-
--  ``nil`` :ref:`Class_nil_value`
 
 .. _Literal_Expressions:
 
@@ -511,12 +511,12 @@ precedence than those listed later.
    will learn of their error at compilation time because the resulting
    expression is not a scalar as expected.
 
+.. _Unary_Expressions:
 .. _Binary_Expressions:
 
 Operator Expressions
 --------------------
 
-[Unary_Expressions]
 
 The application of operators to expressions is itself an expression. The
 syntax of a unary expression is given by: 

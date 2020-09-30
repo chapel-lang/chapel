@@ -174,7 +174,7 @@ program. It refers to the locale that the current task is running on.
 
 The identifier ``here`` is not a keyword and can be overridden.
 
-.. _Querying_the_Locale_of_a_Variable:
+.. _Querying_the_Locale_of_an_Expression:
 
 Querying the Locale of an Expression
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,7 +270,7 @@ given by
      `on' expression block-statement
 
 The locale of the expression is automatically queried as described
-in :ref:`Querying_the_Locale_of_a_Variable`. Execution of the
+in :ref:`Querying_the_Locale_of_an_Expression`. Execution of the
 statement occurs on this specified locale and then continues after the
 ``on-statement``.
 
