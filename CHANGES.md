@@ -87,6 +87,36 @@ Execution-time Checks
 Bug Fixes
 ---------
 
+Packaging / Configuration Changes
+---------------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Testing System
+--------------
+
+Developer-oriented changes: Documentation improvements
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefile improvements
+-------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
 
 version 1.22.1
 ==============
