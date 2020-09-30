@@ -617,6 +617,12 @@ functionality is particularly useful when doing generic programming
 
       int
 
+   *Open issue*.
+
+   For types that include a runtime component, it would be useful to be
+   able to query the static and runtime components separately.
+
+
 .. _Operators_Available_on_Types:
 
 Operators Available on Types
@@ -643,4 +649,96 @@ The normal comparison operators are also available to compare types:
  * ``<=`` and ``>=`` check if one type is a subtype of another (see
    :proc:`<= <UtilMisc_forDocs.<=>`)
 
-Additionally, it is possible to cast a type to a string.
+Additionally, it is possible to cast a type to a ``param`` string. This
+allows a type to be printed out.
+
+  *Example (type-to-string.chpl)*.
+
+   For example, this code casts the type ``myType`` to a string in order
+   to print it out:
+
+   .. code-block:: chapel
+
+      type myType = int;
+      param str = t:string;
+      writeln(str);
+
+   It produces the output:
+
+   .. code-block:: printoutput
+
+      int
+
+
+.. _Types_with_Runtime_Components:
+
+Types with Runtime Components
+-----------------------------
+
+Domain and array types include a runtime component. (See
+:ref:`Chapter-Domains` and :ref:`Chapter-Arrays` for more on arrays and
+domains).
+
+For a domain type, the runtime component of the type is the distribution over
+which the domain was declared.
+
+For an array type, the runtime component of the type is the domain over which
+the array was declared.
+
+As a result, a type alias representing an array or domain type will exist
+at runtime.
+
+These features combine with the ``.type`` syntax to allow one to create
+an array that has the same element type, shape, and distribution as an
+existing array.
+
+  *Example (same-domain-array.chpl)*.
+
+   The example below shows a function that accepts an array and then
+   creates another array with the same element type, shape, and distribution:
+
+   .. code-block:: chapel
+
+      proc makeAnotherArray(arr: []) {
+        var newArray: arr.type;
+        return newArray;
+      }
+
+   The above program is equivalent to this program:
+
+   .. code-block:: chapel
+
+      proc equivalentAlternative(arr: []) {
+        var newArray:[arr.domain] arr.eltType;
+        return newArray;
+      }
+
+   Both create and return an array storing the same element type as the
+   passed array.
+
+    .. BLOCK-test-chapelpost
+
+      var A:[1..4] int = 1..4;
+      var B = makeAnotherArray(A);
+      var C = equivalentAlternative(A);
+      writeln("A.domain ", A.domain);
+      writeln("A ", A);
+      writeln("B.domain ", B.domain);
+      writeln("B ", B);
+      writeln("C.domain ", C.domain);
+      writeln("C ", C);
+
+   .. BLOCK-test-chapeloutput
+
+      A.domain {1..4}
+      A 1 2 3 4
+      B.domain {1..4}
+      B 0 0 0 0
+      C.domain {1..4}
+      C 0 0 0 0
+
+   *Open issue*.
+
+   Currently, only array and domain types have a runtime component.
+   Other types that contain arrays or domains (such as a record
+   containing an array field) do not have a runtime component.
