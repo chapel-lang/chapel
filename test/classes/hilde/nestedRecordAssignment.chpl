@@ -23,7 +23,9 @@ record S {
   var r:R;
 }
 
-var s,t:S;
+var s = new S();
+var t = new S();
+
 t.r.i = 121;
 s = t;
 writeln(s);
