@@ -220,10 +220,10 @@ The default complex type, ``complex``, is 128 bits; it consists of two
 machine-dependent, but usually include ``complex(64)`` and
 ``complex(128)``.
 
-| The real and imaginary components can be accessed via the methods
-  ``re`` and ``im``. The type of these components is real. The standard
-  ``Math`` module provides some functions on complex types. See
-| https://chapel-lang.org/docs/modules/standard/Math.html
+The real and imaginary components can be accessed via the methods ``re``
+and ``im``. The type of these components is real. The standard :mod:`Math`
+module provides some functions on complex types. See the :mod:`Math`
+module documentation.
 
    *Example*.
 
