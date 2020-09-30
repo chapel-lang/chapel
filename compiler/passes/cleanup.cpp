@@ -63,14 +63,11 @@ void cleanup() {
 
 /************************************* | **************************************
 *                                                                             *
-    if (DefExpr* def = toDefExpr(ast)) {
-
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-static bool areMultiDefExprsInAList(AList& list){ 
-
+static bool areMultiDefExprsInAList(AList& list) { 
    int numStmts = 0;
 
     for_alist(stmt, list){
@@ -80,8 +77,7 @@ static bool areMultiDefExprsInAList(AList& list){
     return numStmts > 1;
 }
 
-
-static bool isValidInit(Expr* initExpr){
+static bool isValidInit(Expr* initExpr) {
   if (initExpr == NULL) {
     return false;
   }
@@ -94,10 +90,7 @@ static bool isValidInit(Expr* initExpr){
   return true;
 }
 
-//parent: prev
-//lhs: prev->init
-//rhs: init->copy()
-static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs){
+static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs) {
   if(lhs){
     lhs->remove();
   }
@@ -105,7 +98,7 @@ static void setAstHelp(Expr* parent, Expr*& lhs, Expr* rhs){
   parent_insert_help(parent, lhs);
 }
 
-static void backPropagateInFunction(BlockStmt* block){
+static void backPropagateInFunction(BlockStmt* block) {
 
   Expr* init = NULL;
   DefExpr* prev = NULL;
@@ -118,13 +111,13 @@ static void backPropagateInFunction(BlockStmt* block){
   VarSymbol* typeTmp = NULL;
   BlockStmt* tmpBlock = new BlockStmt();
 
-  for_alist_backward(stmt, block->body){
+  for_alist_backward(stmt, block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
 
       //1. set local variableis -- analysis
       if (isValidInit(def->init) || def->exprType) {
 
-        if(isValidInit(def->init)){
+        if(isValidInit(def->init)) {
           init = def->init;
         } else {
           init = NULL;
@@ -174,13 +167,13 @@ static void backPropagateInFunction(BlockStmt* block){
     }
   }
 
-  if(tmpBlock){
+  if(tmpBlock) {
     block->insertAtHead(tmpBlock);
     tmpBlock->flattenAndRemove();
   }	   
 }
 
-static void backPropagate(BaseAST* ast){
+static void backPropagate(BaseAST* ast) {
   if (BlockStmt* block = toBlockStmt(ast)) {
     if (block->blockTag == BLOCK_SCOPELESS){
       for_alist(stmt, block->body){
@@ -195,7 +188,6 @@ static void backPropagate(BaseAST* ast){
           return;
         }
       }
-
       backPropagateInFunction(block);
     }
   }
@@ -233,16 +225,12 @@ static void cleanup(ModuleSymbol* module) {
   collect_asts(module, asts);
 
   for_vector(BaseAST, ast, asts) {
-
     backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
-
       if (FnSymbol* fn = toFnSymbol(def->sym)) {
         SET_LINENO(def);
-
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
-
         }
       }
     }
@@ -271,7 +259,6 @@ static void cleanup(ModuleSymbol* module) {
           flattenPrimaryMethod(ts, fn);
           applyAtomicTypeToPrimaryMethod(ts, fn);
         }
-
         fixupVoidReturnFn(fn);
       } else {
         handleNonTypedAndNonInitedVar(def);
