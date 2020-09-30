@@ -33,6 +33,7 @@ Contributors to the Chapel 1.23 release
 * Parth Sarthi Prasad, individual contributor
 * Yujia Qiao, [GSoC 2020] student from [Huazhong University of Science and Technology]
 * Elliot Ronaghan, [HPE]
+* Mohammed Sharfuddin, individual contributor
 * Raj Shekhar, individual contributor
 * Jenna Hoole Starkey, [HPE]
 * Greg Titus, [HPE]
