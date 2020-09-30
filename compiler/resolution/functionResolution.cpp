@@ -6432,15 +6432,21 @@ static void resolveInitField(CallExpr* call) {
       }
     } else {
       // The field is not generic.
-
       if (fs->defPoint->exprType == NULL) {
         fs->type = srcType;
       } else if (fs->defPoint->exprType) {
         Type* exprType = fs->defPoint->exprType->typeInfo();
-        if (exprType == dtUnknown)
+        if (exprType == dtUnknown) {
           fs->type = srcType;
-        else
-          fs->type = exprType;
+        } else {
+          // Try calling resolveGenericActuals in case the field is e.g. range
+          CallExpr* dummyCall = new CallExpr(PRIM_NOOP,
+                                             new SymExpr(exprType->symbol));
+          call->insertBefore(dummyCall);
+          resolveGenericActuals(dummyCall);
+          fs->type = dummyCall->get(1)->typeInfo();
+          dummyCall->remove();
+        }
       }
     }
   }
