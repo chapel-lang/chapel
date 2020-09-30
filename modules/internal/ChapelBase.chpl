@@ -1237,6 +1237,9 @@ module ChapelBase {
     }
     if countRunningTasks {
       here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     }
   }
 
@@ -1250,12 +1253,17 @@ module ChapelBase {
       if numTasks > 1 {
         here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
       }
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     } else {
       here.runningTaskCntSub(1);
     }
   }
 
   extern proc chpl_comm_unordered_task_fence(): void;
+
+  extern proc chpl_comm_task_create();
 
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
