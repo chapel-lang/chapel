@@ -155,7 +155,7 @@ static void backPropagateInFunction(BlockStmt* block) {
   if(tmpBlock) {
     block->insertAtHead(tmpBlock);
     tmpBlock->flattenAndRemove();
-  }	   
+  }
 }
 
 static void backPropagate(BaseAST* ast) {
