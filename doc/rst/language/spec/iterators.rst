@@ -108,7 +108,7 @@ Iterators are invoked using regular call expressions:
 All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the
 parameter list, and so on, are identical to procedure calls as described
-in Chapter \ `[Functions] <#Functions>`__.
+in :ref:`Chapter-Procedures`.
 
 However, the result of an iterator call depends upon its context, as
 described below.
@@ -127,10 +127,12 @@ iteration, the iterator yields a value and the body is executed.
 Iterators as Arrays
 ~~~~~~~~~~~~~~~~~~~
 
-If an iterator function is captured into a new variable declaration or
-assigned to an array, the iterator is iterated over in total and the
-expression evaluates to a one-dimensional arithmetic array that contains
-the values returned by the iterator on each iteration.
+If an iterator function is captured into a new variable declaration,
+passed to an `in` intent argument, or assigned to an array, the iterator
+is iterated over in total and the expression evaluates to a rectangular
+array that contains the values returned by the iterator on each
+iteration. Iterators can pass to `in` intent arguments declared with a
+compatible array type expression.
 
    *Example (as-arrays.chpl)*.
 
