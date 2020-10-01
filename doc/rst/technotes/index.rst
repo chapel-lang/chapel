@@ -8,28 +8,6 @@ yet stable enough to be in the language specification. Additionally, a
 Techinical Note can describe implementation details that can be ignored
 by most Chapel programmers.
 
-Interoperability
-----------------
-
-.. toctree::
-   :maxdepth: 1
-
-   C Interoperability <extern>
-   Calling Chapel Code from Other Languages <libraries>
-   Fortran Interoperability <fortranInterop>
-   Using the Chapel Allocator from C <allocators>
-
-Initializers and Generic Programming
-------------------------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   Forwarding Methods Calls <forwarding>
-   The ‘init=’ Method <initequals>
-   Invoking Initializers with a Generic Instantiation <initTypeAlias>
-   Partial Instantiations <partialInstantiations>
-
 Base Language Features
 ----------------------
 
@@ -42,6 +20,18 @@ Base Language Features
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
+
+
+Initializers and Generic Programming
+------------------------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   Forwarding Methods Calls <forwarding>
+   The ‘init=’ Method <initequals>
+   Invoking Initializers with a Generic Instantiation <initTypeAlias>
+   Partial Instantiations <partialInstantiations>
 
 Parallel Language Features
 --------------------------
@@ -56,6 +46,17 @@ Parallel Language Features
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>
 
+Interoperability
+----------------
+
+.. toctree::
+   :maxdepth: 1
+
+   C Interoperability <extern>
+   Calling Chapel Code from Other Languages <libraries>
+   Fortran Interoperability <fortranInterop>
+   Using the Chapel Allocator from C <allocators>
+
 Compiler Features
 -----------------
 
@@ -68,8 +69,8 @@ Compiler Features
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 
-Tool Implementation Details
----------------------------
+Tool Details
+------------
 
 .. toctree::
    :maxdepth: 1
