@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Language_Overview:
 
 Language Overview

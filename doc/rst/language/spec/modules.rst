@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Modules:
 
 Modules
@@ -1212,7 +1214,7 @@ deinitialization:
    function named ``deinit()``, it is executed first.
 
 -  If the module declares module-scope variables, they are deinitialized in
-   the reverse order of their declaration.
+   the reverse order of their initialization.
 
 Module deinitialization order is discussed
 in :ref:`Module_Deinitialization_Order`.

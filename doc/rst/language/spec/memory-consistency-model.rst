@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Memory_Consistency_Model:
 
 Memory Consistency Model
