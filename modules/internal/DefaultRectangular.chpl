@@ -42,7 +42,10 @@ module DefaultRectangular {
   config param debugDataParNuma = false;
   config param disableArrRealloc = false;
   config param reportInPlaceRealloc = false;
+
   config param parallelAssignThreshold = 2*1024*1024;
+  config const enableParallelGetsInAssignment = false;
+  config const enableParallelPutsInAssignment = false;
 
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
@@ -1954,9 +1957,20 @@ module DefaultRectangular {
     // See: https://github.com/Cray/chapel-private/issues/1365
     const isSizeAboveThreshold = len:int*elemsizeInBytes >= parallelAssignThreshold;
     const isFullyLocal = Alocid == Blocid;
-    const isSrcLocal = Blocid == here.id;
+    var doParallelAssign = isSizeAboveThreshold && isFullyLocal;
 
-    if isSizeAboveThreshold && (isFullyLocal || isSrcLocal) {
+    if enableParallelPutsInAssignment || enableParallelPutsInAssignment {
+      if isSizeAboveThreshold && !isFullyLocal {
+        if enableParallelPutsInAssignment && Blocid == here.id {
+          doParallelAssign = true;
+        }
+        else if enableParallelGetsInAssignment && Blocid != here.id {
+          doParallelAssign = true;
+        }
+      }
+    }
+
+    if doParallelAssign {
       _simpleParallelTransferHelper(A, B, Adata, Bdata, Alocid, Blocid, len);
     }
     else{
