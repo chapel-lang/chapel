@@ -160,6 +160,9 @@ static void backPropagateInFunction(BlockStmt* block) {
 
 static void backPropagate(BaseAST* ast) {
   if (BlockStmt* block = toBlockStmt(ast)) {
+    //Looking for scopeless blocks containing only DefExprs
+    //and end of statement markers since these are how
+    //multivariable declarations are represented after parsing
     if (block->blockTag == BLOCK_SCOPELESS){
       for_alist(stmt, block->body){
         if(DefExpr* def = toDefExpr(stmt)){
