@@ -195,8 +195,7 @@ module ChapelDistribution {
         // and mark this domain to free itself when that number reaches 0.
         local {
           _arrsLock.lock();
-          arr_count = _arrs.size;
-          arr_count += _arrs_containing_dom;
+          arr_count = _arrs_containing_dom;
           _free_when_no_arrs = true;
           _arrsLock.unlock();
         }
@@ -228,12 +227,10 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _arrsLock.lock();
+          _arrs_containing_dom -=1;
           if rmFromList && trackArrays() then
             _arrs.remove(x);
-          else
-            _arrs_containing_dom -=1;
-          cnt = _arrs.size;
-          cnt += _arrs_containing_dom;
+          cnt = _arrs_containing_dom;
           // add one for the main domain record
           if !_free_when_no_arrs then
             cnt += 1;
@@ -253,10 +250,9 @@ module ChapelDistribution {
       on this {
         if locking then
           _arrsLock.lock();
+        _arrs_containing_dom += 1;
         if addToList && trackArrays() then
           _arrs.add(x);
-        else
-          _arrs_containing_dom += 1;
         if locking then
           _arrsLock.unlock();
       }
@@ -269,8 +265,7 @@ module ChapelDistribution {
         var cnt = -1;
         _arrsLock.lock();
         _arrs_containing_dom -= 1;
-        cnt = _arrs.size;
-        cnt += _arrs_containing_dom;
+        cnt = _arrs_containing_dom;
         // add one for the main domain record
         if !_free_when_no_arrs then
           cnt += 1;
