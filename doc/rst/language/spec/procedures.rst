@@ -45,7 +45,7 @@ Functions are presented as follows:
    :ref:`Calling_External_Functions`
 
 -  calling Chapel functions from external
-   functions:ref:`Calling_Chapel_Functions`
+   functions :ref:`Calling_Chapel_Functions`
 
 -  determining the function to invoke for a given call site: function
    and operator overloading :ref:`Function_Overloading`,
