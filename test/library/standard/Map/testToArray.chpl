@@ -4,7 +4,7 @@ config param parSafe = false;
 
 var m = new map(int, int, parSafe);
 for i in -10..10 do
-  m[i] = -i;
+  m.add(i,-i);
 
 var pairA = m.toArray(),
     keysA = m.keysToArray(),
