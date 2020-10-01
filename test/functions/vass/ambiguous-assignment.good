@@ -1,3 +1,3 @@
-ambiguous-assignment.chpl:9: error: ambiguous call '=(R, R)'
+ambiguous-assignment.chpl:10: error: ambiguous call '=(R, R)'
 ambiguous-assignment.chpl:5: note: candidates are:  = (ref r1: R, r2: R)
 ambiguous-assignment.chpl:6: note:                  = (ref r3: R, r4: R)

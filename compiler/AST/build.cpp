@@ -1455,6 +1455,9 @@ backPropagateInitsTypes(BlockStmt* stmts) {
   Expr* type = NULL;
   DefExpr* prev = NULL;
   for_alist_backward(stmt, stmts->body) {
+    if(isEndOfStatementMarker(stmt)){
+      continue;
+    }
     if (DefExpr* def = toDefExpr(stmt)) {
       if (def->init || def->exprType) {
         init = def->init;
@@ -1476,8 +1479,7 @@ backPropagateInitsTypes(BlockStmt* stmts) {
         def->exprType = type;
       }
       prev = def;
-    } else
-      INT_FATAL(stmt, "expected DefExpr in backPropagateInitsTypes");
+    }
   }
 }
 
@@ -1612,7 +1614,6 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
     }
     INT_FATAL(stmt, "Major error in setVarSymbolAttributes");
   }
-  backPropagateInitsTypes(stmts);
   //
   // If blockInfo is set, this is a tuple variable declaration.
   // Add checks that the expression on the right is a tuple and that
@@ -1721,6 +1722,12 @@ DefExpr* buildClassDefExpr(const char*  name,
     if (inherit != NULL)
       USR_FATAL_CONT(inherit,
                      "External types do not currently support inheritance");
+  }
+
+  for_alist(stmt, decls->body){
+    if(BlockStmt* block = toBlockStmt(stmt)) {
+      backPropagateInitsTypes(block);
+    }
   }
 
   ct->addDeclarations(decls);
