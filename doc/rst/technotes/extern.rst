@@ -10,6 +10,9 @@ This README describes support in the Chapel compiler for referring to C
 code within Chapel using a keyword named `extern`. These features are
 still in the process of being improved.
 
+Note that it is also possible to call Chapel from C using the `export`
+keyword. Please see :ref:`readme-libraries` for details.
+
 External C functions, variables, and types can be referred to within a
 Chapel program. The section `Working with C`_ below describes the
 basic ideas of how Chapel and C interoperate. There are two supported
@@ -60,6 +63,8 @@ The general approach is as follows:
 The next section describes the basic information about how the Chapel
 compiler views common C types.
 
+
+.. _readme-extern-standard-c-types:
 
 Standard C Types
 ================
@@ -174,6 +179,8 @@ variable on the stack. Indexing into a c_array works similarly to
 indexing into a c_ptr and starts from 0. c_array supports by-value copy
 initialization and assignment.
 
+.. _readme-extern-standard-c-types-ref-intents:
+
 ref intents
 ~~~~~~~~~~~
 
@@ -206,6 +213,10 @@ because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
 .c_str() on a non-local string will result in a runtime error.
 
+.. note::
+
+  ``c_string`` is expected to be deprecated in a future release in favor
+  of instead using ``c_ptr`` types such as ``c_ptr(int(8))``.
 
 c_fn_ptr
 ~~~~~~~~
@@ -337,6 +348,10 @@ nothing, the prototype would appear as follows:
 
        extern proc foo();
 
+Declaring Return Types
+~~~~~~~~~~~~~~~~~~~~~~
+
+
 C functions that return values which you wish to refer to within your
 Chapel program must have those return types declared. Note that the Chapel
 compiler will not infer the return type as it does for Chapel functions.
@@ -345,6 +360,12 @@ To make the function above return a C "double", it would be declared:
 .. code-block:: chapel
 
        extern proc foo(): real;
+
+See the :ref:`readme-extern-declarations-limitations` section for
+limitations on what types can be returned.
+
+Declaring Arguments
+~~~~~~~~~~~~~~~~~~~
 
 Similarly, external functions that expect arguments must declare those
 arguments in Chapel.
@@ -366,6 +387,71 @@ integer values and that it returns a 64-bit real ('double' in C).
 External function declarations with omitted type arguments can be used
 to support calls to external C macros or varargs functions that accept
 multiple argument signatures.
+
+.. _readme-extern-declarations-limitations:
+
+Allowed Intents and Types
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Since C passes and returns by value, a C argument such as ``int arg``
+corresponds to an ``in`` intent argument in a Chapel ``extern proc``.
+An argument such as ``int* ptrArg`` can be represented either with
+``c_ptr(int)`` or with the ``ref`` intent in Chapel (and see
+:ref:`readme-extern-standard-c-types-ref-intents` for a discussion of why
+you would use one or the other).
+
+Note that, for numeric and pointer types, the default intent in Chapel is
+already ``const in`` (see the spec section :ref:`Abstract_Intents`).
+
+As of 1.23, there are several limitations on what types can be passed to
+or returned from ``extern`` or ``export`` functions and what intents can
+be used for the arguments to these functions.
+
+First, here are the allowable argument and return types for ``extern``
+and ``export`` functions:
+
+ * Built-in numeric type and pointer types, including the C types
+   described above
+
+ * ``extern record`` types
+
+ * ``string`` and ``bytes`` are allowed allowed in an ``export proc``
+   but not in an ``extern proc``
+
+   * see :ref:`readme-libraries`
+
+ * array types are allowed in some cases
+
+   * ``extern proc`` arguments currently allow single-locale rectangular
+     arrays in which case the argument will be a pointer to the first
+     element
+   * ``export proc`` s can support more Chapel array types - see
+     :ref:`readme-libraries`
+
+ * ``unmanaged`` and ``borrowed`` class types are allowed
+
+
+The following types are not allowed as argument or return types for
+``extern`` or ``export`` functions:
+
+  * ``owned`` and ``shared`` classes
+  * any Chapel record type that is not an ``extern record``
+
+Only the following argument intents are allowed in ``extern`` and
+``export`` functions:
+
+  * for built-in numeric and pointer types - default intent and ``const``
+    (these correspond to ``const in`` for those types)
+  * ``in``
+  * ``const in``
+  * ``ref``
+  * ``const ref``
+
+Additionally, ``type`` intent arguments are allowed for ``extern``
+functions (see :ref:`readme-extern-declarations-type-arguments`).
+
+Varargs Functions
+~~~~~~~~~~~~~~~~~
 
 Default arguments can be declared for external function arguments, in
 which case the Chapel compiler will supply the default argument value
@@ -398,6 +484,11 @@ as follows:
 which relies on the callsite to pass in reasonable arguments
 (otherwise, the C compilation step will likely fail).
 
+.. _readme-extern-declarations-type-arguments:
+
+Type Arguments
+~~~~~~~~~~~~~~
+
 External C functions or macros that accept type arguments can also be
 prototyped in Chapel by declaring the argument as a type.  For
 example:
@@ -410,6 +501,9 @@ Calling such a routine with a Chapel type will cause the type
 identifier (e.g., 'int') to be passed to the routine.  In practice,
 this will typically only be useful if the external function is a macro
 or built-in (like sizeof()) that can handle type identifiers.
+
+Array Arguments
+~~~~~~~~~~~~~~~
 
 Extern functions with array arguments are handled as a special case within the
 compiler. As an example:
@@ -437,6 +531,8 @@ array.  The compiler will automatically insert ``use CPtr;`` into scopes
 containing an ``extern proc`` declaration with an array argument in order
 to support the pointer types used to pass the array to the external routine.
 
+Renaming Extern Procs
+~~~~~~~~~~~~~~~~~~~~~
 
 It is possible to provide the Chapel compiler with a different
 name for the function than the name available to other Chapel code.
@@ -650,15 +746,20 @@ code using an ``extern block`` as follows:
     ....
   }
 
-Such 'extern { }' block statements add the top-level C statements to
+Such ``extern { }`` block statements add the top-level C statements to
 the enclosing Chapel module.  This is similar to what one might do
 manually using the extern declarations (as described above), but can
 save a lot of labor for a large API.  Moreover, using an inline extern
 block permits you to write C declarations directly within Chapel
-without having to create distinct C files.  Using an extern block in
-this way also injects an implicit ``public use SysCTypes;`` statement
-into the scope of the extern block to make standard C types that the
-extern block is likely to require available.
+without having to create distinct C files.
+
+An ``extern { }`` also adds ``private use`` statements for the following
+modules since they will generally be used by the implicitly generated
+``extern proc`` functions:
+
+ * :mod:`CPtr`
+ * :mod:`SysCTypes`
+ * :mod:`SysBasic`
 
 If you don't want to have a lot of C symbols cluttering up a module's
 namespace, it's easy to put the C code into its own Chapel module:
@@ -673,6 +774,10 @@ namespace, it's easy to put the C code into its own Chapel module:
   }
 
   writeln(C.foo(3));
+
+In that event, you might consider adding
+``public use CPtr, SysCTypes, SysBasic;`` to the module so
+that the types and functions generated by the extern block will be usable.
 
 This feature strives to support C global variables, functions, structures,
 typedefs, enums, and some #defines. Structures always generate a Chapel record,
@@ -845,6 +950,10 @@ Initialization
 Chapel variables of extern type are not generally initialized
 automatically. Be sure to manually initialize Chapel variables of extern
 type.
+
+The Chapel compiler assume that extern records can be copied to each
+other without running any copy initializer. Similarly, it does not call
+any deinitializer for extern records.
 
 In the future, we would like to support automatic zero initialization
 of such variables and a way to provide their default initializer.
