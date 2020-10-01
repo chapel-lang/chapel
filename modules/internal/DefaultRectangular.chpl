@@ -1959,7 +1959,7 @@ module DefaultRectangular {
     const isFullyLocal = Alocid == Blocid;
     var doParallelAssign = isSizeAboveThreshold && isFullyLocal;
 
-    if enableParallelPutsInAssignment || enableParallelPutsInAssignment {
+    if enableParallelGetsInAssignment || enableParallelPutsInAssignment {
       if isSizeAboveThreshold && !isFullyLocal {
         if enableParallelPutsInAssignment && Blocid == here.id {
           doParallelAssign = true;
