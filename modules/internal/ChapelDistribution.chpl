@@ -29,7 +29,7 @@ module ChapelDistribution {
   //
   pragma "base dist"
   class BaseDist {
-    var _doms: chpl__simpleSet(unmanaged BaseDom); // domains declared over this distribution
+    var _doms_containing_dist: int; // number of domains using this distribution
     var _domsLock: chpl_LocalSpinlock; // lock for concurrent access
     var _free_when_no_doms: bool; // true when original _distribution is destroyed
     var pid:int = nullPid; // privatized ID, if privatization is supported
@@ -49,7 +49,7 @@ module ChapelDistribution {
             // Set a flag to indicate it should be freed when _doms
             // becomes empty
             _free_when_no_doms = true;
-            dom_count = _doms.size;
+            dom_count = _doms_containing_dist;
             _domsLock.unlock();
           }
           if dom_count == 0 then
@@ -73,8 +73,8 @@ module ChapelDistribution {
         var cnt = -1;
         local {
           _domsLock.lock();
-          _doms.remove(x);
-          cnt = _doms.size;
+          _doms_containing_dist -= 1;
+          cnt = _doms_containing_dist;
 
           // add one for the main distribution instance
           if !_free_when_no_doms then
@@ -102,7 +102,7 @@ module ChapelDistribution {
     inline proc add_dom(x:unmanaged BaseDom) {
       on this {
         _domsLock.lock();
-        _doms.add(x);
+        _doms_containing_dist += 1 ;
         _domsLock.unlock();
       }
     }
