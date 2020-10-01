@@ -1634,7 +1634,7 @@ proc cholesky(A: [] ?t, lower = true)
   var copy = A;
   const uploStr = if lower then "L" else "U";
   var hasError = LAPACK.potrf(lapack_memory_order.row_major, uploStr, copy);
-  if(hasError >0){
+  if(hasError > 0){
     if(isComplexType(t)) then
       halt("Matrix passed must be hermitian positive definite ");
     if(isRealType(t)) then
