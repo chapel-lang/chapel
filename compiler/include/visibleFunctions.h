@@ -33,19 +33,39 @@ class FnSymbol;
 
 class VisibilityInfo {
 public:
+  // for proper scope traversal
   BlockStmt* currStart;
   BlockStmt* nextPOI;
-  VisibilityInfo() : currStart(NULL), nextPOI(NULL) {}
+
+  // for CalledFunInfo
+  std::vector<BlockStmt*> visitedScopes; // in visited order  
+  std::vector<BlockStmt*> instnPoints;   // one per POI depth
+  int poiDepth;
+  CallExpr* call;
+  bool useMethodVisibility;
+
+  VisibilityInfo(const CallInfo& info);
+  VisibilityInfo(const VisibilityInfo& src);
+
+  bool inPOI() { return poiDepth > 0; }
 };
 
-void       findVisibleFunctions(CallInfo&       info,
-                                Vec<FnSymbol*>& visibleFns);
+bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
+
+void       findVisibleFunctionsAllPOIs(CallInfo&       info,
+                                       Vec<FnSymbol*>& visibleFns);
 
 void       findVisibleFunctions(CallInfo&             info,
                                 VisibilityInfo*       visInfo,
                                 std::set<BlockStmt*>* visited,
                                 int*                  numVisitedP,
                                 Vec<FnSymbol*>&       visibleFns);
+
+void       getMoreVisibleFunctionsOrMethods(const char*  name,
+                                CallExpr*                call,
+                                VisibilityInfo*          visInfo,
+                                std::set<BlockStmt*>*    visited,
+                                Vec<FnSymbol*>&          visibleFns);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,

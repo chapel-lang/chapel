@@ -66,7 +66,6 @@ fi
 # Ensure nightly does not have syntax errors.
 perl -c $CHPL_HOME/util/buildRelease/gen_release
 perl -c $CHPL_HOME/util/cron/nightly
-perl -c $CHPL_HOME/util/cron/start_opt_test
 perl -c $CHPL_HOME/util/tokencount/tokctnightly
 
 # Check copyrights in source files.

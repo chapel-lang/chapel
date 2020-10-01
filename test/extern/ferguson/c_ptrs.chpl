@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 extern proc returnit(x:c_ptr(c_int)):c_ptr(c_int);

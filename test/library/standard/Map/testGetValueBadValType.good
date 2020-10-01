@@ -1,2 +1,2 @@
-testGetValueBadValType.chpl:3: In function 'test':
-testGetValueBadValType.chpl:9: error: getValue can only be called when a map value type is a non-nilable class
+testGetValueBadValType.chpl:5: In function 'test':
+testGetValueBadValType.chpl:11: error: cannot call `getValue()` for non-copyable map value type: owned C

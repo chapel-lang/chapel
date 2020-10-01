@@ -1,0 +1,4 @@
+printVisibleConflict.chpl:12: Printing symbols visible from here:
+  printVisibleConflict.chpl:2: zzzSymbol
+  printVisibleConflict.chpl:9: main
+  printVisibleConflict.chpl:11: xyzSymbol

@@ -89,12 +89,12 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_BLOCK_LOCAL:
         return FAST_AND_LOCAL;
 
-      // By themselves, loops are considered "fast".
+      // Loops can have arbitrary trip counts, don't consider fast
       case PRIM_BLOCK_WHILEDO_LOOP:
       case PRIM_BLOCK_DOWHILE_LOOP:
       case PRIM_BLOCK_FOR_LOOP:
       case PRIM_BLOCK_C_FOR_LOOP:
-        return FAST_AND_LOCAL;
+        return LOCAL_NOT_FAST;
 
       default:
         INT_FATAL("primitive should have been removed from the tree by now.");
@@ -465,6 +465,18 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
     }
   }
 
+  // Loops can have arbitrary trip counts, don't consider fast
+  std::vector<Expr*> stmts;
+  collect_stmts(fn->body, stmts);
+  for_vector(Expr, stmt, stmts) {
+    if (BlockStmt* block = toBlockStmt(stmt)) {
+      if (block->isLoopStmt()) {
+        maybefast = false;
+        break;
+      }
+    }
+  }
+
   // At this point we've considered all of the function body
   // so if maybefast is still true, we can consider this function fast.
 
@@ -609,8 +621,7 @@ optimizeOnClauses(void) {
         if (fastFork) {
           printf("Optimized on clause (%s) in module %s (%s:%d)\n",
                fn->cname, mod->name, fn->fname(), fn->linenum());
-        }
-        if (removeRmemFences) {
+        } else if (removeRmemFences) {
           printf("Optimized rmem fence (%s) in module %s (%s:%d)\n",
                fn->cname, mod->name, fn->fname(), fn->linenum());
         }

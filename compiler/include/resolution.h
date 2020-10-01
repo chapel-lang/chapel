@@ -29,6 +29,7 @@
 #include <vector>
 
 class CallInfo;
+class VisibilityInfo;
 class ResolutionCandidate;
 
 struct Serializers {
@@ -170,8 +171,9 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs);
-FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call);
+FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
+FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
+                               VisibilityInfo* info);
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
@@ -226,7 +228,14 @@ FnSymbol* getAutoCopyForType(Type* type);   // requires hasAutoCopyForType()==tr
 void      getAutoCopyTypeKeys(Vec<Type*>& keys);
 FnSymbol* getAutoCopy(Type* t);             // returns NULL if there are none
 FnSymbol* getAutoDestroy(Type* t);          //  "
-FnSymbol* getUnalias(Type* t);
+
+FnSymbol* getInitCopyDuringResolution(Type* t);
+
+// Some types should change to another type when assigned into a variable.
+// This function returns that type.
+// Examples: array view -> array; sync int -> int; iterator -> array
+Type* getCopyTypeDuringResolution(Type* t);
+
 FnSymbol* getCoerceMoveFromCoerceCopy(FnSymbol* coerceCopyFn);
 const char* getErroneousCopyError(FnSymbol* fn);
 void markCopyErroneous(FnSymbol* fn, const char* err);
@@ -312,7 +321,14 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            Type* formalType, Symbol* formalSym,
                            Expr* ctx,
                            bool allowCoercion=true,
-                           bool implicitBang=false);
+                           bool implicitBang=false,
+                           bool inOrOtherValue=false);
+
+// in/out/inout but excluding formals to chpl__coerceMove etc
+bool inOrOutFormalNeedingCopyType(ArgSymbol* formal);
+
+bool isCallExprTemporary(Symbol* fromSym);
+bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 
 void resolveIfExprType(CondStmt* stmt);
 

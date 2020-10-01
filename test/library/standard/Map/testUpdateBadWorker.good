@@ -1,0 +1,2 @@
+testUpdateBadWorker.chpl:11: In function 'test':
+testUpdateBadWorker.chpl:15: error: `map.update()` failed to resolve method myWorker.this() for arguments (int(64), r)

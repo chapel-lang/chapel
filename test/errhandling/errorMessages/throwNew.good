@@ -1,2 +1,2 @@
-throwNew.chpl:2: In function 'f':
+throwNew.chpl:2: In method 'f':
 throwNew.chpl:3: error: Cannot throw a type: 'Error'. Did you forget the keyword 'new'?

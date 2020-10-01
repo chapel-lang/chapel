@@ -9,7 +9,7 @@ record myr {
   var b:int(32);
 }
 
-extern proc set_mys(inout x:mys);
+extern proc set_mys(ref x:mys);
 extern proc ret_mys():mys;
 
 proc testr():myr {

@@ -254,6 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
+  private use CPtr;
 
 /* Module-defined comparators */
 
@@ -1237,6 +1238,8 @@ module ShellSort {
 pragma "no doc"
 module SampleSortHelp {
   private use Sort;
+  private use CPtr;
+
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
   const equalBucketThreshold = 5;
@@ -1694,6 +1697,7 @@ module RadixSortHelp {
 pragma "no doc"
 module ShallowCopy {
   private use SysCTypes;
+  private use CPtr;
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -2757,6 +2761,8 @@ module TwoArraySampleSort {
   private use super.TwoArrayPartitioning;
   private use super.SampleSortHelp;
   private use super.RadixSortHelp;
+
+  private use CPtr;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 

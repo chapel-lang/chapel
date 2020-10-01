@@ -1,3 +1,4 @@
+use CPtr;
 config param cPtrToChapel: bool = true;
 
 require 'testit.h';

@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of llvm-10
+# Test performance of a cache-line aligned spinlock
 GITHUB_USER=ronawho
-GITHUB_BRANCH=rm-1-task-opt
-SHORT_NAME=rm-1-task-opt
-START_DATE=09/06/20
+GITHUB_BRANCH=use-runtime-spinlock-in-modules
+SHORT_NAME=aligned-spinlock
+START_DATE=09/29/20
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -1,0 +1,1 @@
+bang-vs-cast2.chpl:13: error: unresolved call 'postfix!(type borrowed C?)'

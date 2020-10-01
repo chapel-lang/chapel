@@ -1,0 +1,19 @@
+Passing var domain
+intent      |definedConst
+------------|------------
+(const ref) |false       
+in          |false       
+ref         |false       
+const (ref) |false       
+const in    |true        
+const ref   |false       
+
+Passing const domain
+intent      |definedConst
+------------|------------
+(const ref) |true        
+in          |false       
+ref         |true        
+const (ref) |true        
+const in    |true        
+const ref   |true        

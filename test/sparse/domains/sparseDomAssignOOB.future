@@ -1,0 +1,6 @@
+bug: should bounds-check sparse domain assignments
+
+The current sparse domain assignment code seems to assume that all
+indices in the RHS domain will be in the LHS domain's parent domain,
+but of course this isn't necessarily the case as this test
+demonstrates.

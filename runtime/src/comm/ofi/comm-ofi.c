@@ -96,6 +96,8 @@ static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
 static int pollSetSize = 0;             // number of fids in the poll set
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
+static int haveDeliveryComplete;        // delivery-complete? (vs. msg order)
+
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -205,7 +207,8 @@ static inline void tciFree(struct perTxCtxInfo_t*);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
-                              void*, size_t, void*, struct perTxCtxInfo_t*);
+                              void*, size_t, void*, struct perTxCtxInfo_t*,
+                              chpl_bool);
 static inline void do_remote_put_buff(void*, c_nodeid_t, void*, size_t);
 static inline chpl_comm_nb_handle_t ofi_get(void*, c_nodeid_t,
                                             void*, size_t);
@@ -1151,8 +1154,9 @@ void init_ofiFabricDomain(void) {
   //   - send-after-send ordering
   // - rx endpoints same as tx
   // - RDM endpoints
-  // - table-style address vectors
+  // - domain threading model, since we manage thread contention ourselves
   // - resource management, to improve the odds we hear about exhaustion
+  // - table-style address vectors
   // - in addition, include the memory registration modes we can support
   //
   const char* prov_name = getProviderName();
@@ -1172,8 +1176,9 @@ void init_ofiFabricDomain(void) {
   hints->tx_attr->msg_order = FI_ORDER_SAS;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
   hints->ep_attr->type = FI_EP_RDM;
-  hints->domain_attr->av_type = FI_AV_TABLE;
+  hints->domain_attr->threading = FI_THREAD_DOMAIN;
   hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
+  hints->domain_attr->av_type = FI_AV_TABLE;
 
   hints->domain_attr->mr_mode = (  FI_MR_LOCAL
                                  | FI_MR_VIRT_ADDR
@@ -1260,8 +1265,38 @@ void init_ofiFabricDomain(void) {
   }
 
   //
-  // Try to get a good provider that can do the transaction orderings
-  // we want.
+  // If we can find a good provider that supports FI_DELIVERY_COMPLETE,
+  // then use that.  In doing so, don't accept anything that includes
+  // the RxM utility provider unless the environment forces it on us,
+  // because RxM advertises delivery-complete but doesn't actually do
+  // it.
+  //
+  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+
+  struct fi_info* infoCmplt;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
+            ret, -FI_ENODATA);
+
+  if (ret == FI_SUCCESS
+      && ((ofi_info = findProvInList(infoCmplt,
+                                     prov_name == NULL /*skip_ungood_provs*/,
+                                     !forced_RxD /*skip_RxD_provs*/,
+                                     !forced_RxM /*skip_RxM_provs*/))
+          != NULL)) {
+    DBG_PRINTF_NODE0(DBG_CFGFAB,
+                     "** found desirable provider with delivery-complete");
+    fi_freeinfo(infoCmplt);
+    goto haveProvider;
+  }
+
+  DBG_PRINTF_NODE0(DBG_CFGFAB,
+                   "** no desirable provider with delivery-complete");
+
+  hints->tx_attr->op_flags = FI_COMPLETION;
+
+  //
+  // If we can find a good provider that supports the transaction
+  // orderings we want, then use that.
   //
   uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
                              ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
@@ -1295,57 +1330,9 @@ void init_ofiFabricDomain(void) {
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
   //
-  // We couldn't get the desired transaction orderings, so instead try
-  // to get FI_DELIVERY_COMPLETE.  Unless an environment setting forces
-  // use of the RxM utility provider, only accept providers that don't
-  // include RxM, because though it advertises delivery-complete it
-  // doesn't actually do it.
+  // We couldn't find a good provider that supports what we need, so now
+  // try to find _any_ provider that does so.
   //
-  hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
-
-  struct fi_info* infoCmplt;
-  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &infoCmplt),
-            ret, -FI_ENODATA);
-
-  if (ret == FI_SUCCESS
-      && ((ofi_info = findProvInList(infoCmplt,
-                                     prov_name == NULL /*skip_ungood_provs*/,
-                                     !forced_RxD /*skip_RxD_provs*/,
-                                     !forced_RxM /*skip_RxM_provs*/))
-          != NULL)) {
-    DBG_PRINTF_NODE0(DBG_CFGFAB,
-                     "** found desirable provider with delivery-complete");
-    fi_freeinfo(infoCmplt);
-    goto haveProvider;
-  }
-
-  DBG_PRINTF_NODE0(DBG_CFGFAB,
-                   "** no desirable provider with delivery-complete");
-
-  hints->tx_attr->op_flags = FI_COMPLETION;
-
-  //
-  // We couldn't get FI_DELIVERY_COMPLETE in a desirable provider
-  // either.  Just use anything that matched and that we know how
-  // to work with.
-  //
-  if (infoTxOrd != NULL) {
-    ofi_info = findProvInList(infoTxOrd,
-                              false /*skip_ungood_provs*/,
-                              !forced_RxD /*skip_RxD_provs*/,
-                              false /*skip_RxM_provs*/);
-    fi_freeinfo(infoTxOrd);
-    if (ofi_info != NULL) {
-      DBG_PRINTF_NODE0(DBG_CFGFAB,
-                       "** found less-desirable provider with transaction "
-                       "orderings");
-      if (infoCmplt != NULL) {
-        fi_freeinfo(infoCmplt);
-      }
-      goto haveProvider;
-    }
-  }
-
   if (infoCmplt != NULL) {
     ofi_info = findProvInList(infoCmplt,
                               false /*skip_ungood_provs*/,
@@ -1356,6 +1343,23 @@ void init_ofiFabricDomain(void) {
       DBG_PRINTF_NODE0(DBG_CFGFAB,
                        "** found less-desirable provider with "
                        "delivery-complete");
+      if (infoTxOrd != NULL) {
+        fi_freeinfo(infoTxOrd);
+      }
+      goto haveProvider;
+    }
+  }
+
+  if (infoTxOrd != NULL) {
+    ofi_info = findProvInList(infoTxOrd,
+                              false /*skip_ungood_provs*/,
+                              !forced_RxD /*skip_RxD_provs*/,
+                              false /*skip_RxM_provs*/);
+    fi_freeinfo(infoTxOrd);
+    if (ofi_info != NULL) {
+      DBG_PRINTF_NODE0(DBG_CFGFAB,
+                       "** found less-desirable provider with transaction "
+                       "orderings");
       goto haveProvider;
     }
   }
@@ -1371,6 +1375,11 @@ haveProvider:
   //
   // If we get here, we have a provider in ofi_info.
   //
+  fi_freeinfo(hints);
+
+  haveDeliveryComplete =
+    (ofi_info->tx_attr->op_flags & FI_DELIVERY_COMPLETE) != 0;
+
   if (DBG_TEST_MASK(DBG_CFGFABSALL)) {
     if (chpl_nodeID == 0) {
       DBG_PRINTF(DBG_CFGFABSALL,
@@ -1390,8 +1399,6 @@ haveProvider:
 
   DBG_PRINTF_NODE0(DBG_CFGFAB | DBG_CFGFABSALL,
                    "====================");
-
-  fi_freeinfo(hints);
 
   if (verbosity >= 2) {
     if (chpl_nodeID == 0) {
@@ -2464,6 +2471,8 @@ int mrGetLocalKey(void* addr, size_t size) {
 //
 
 static inline void amRequestNop(c_nodeid_t, chpl_bool);
+static inline chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
+static inline void retireDelayedAmDone(chpl_bool);
 
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
@@ -2526,20 +2535,20 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
 }
 
 
-void chpl_comm_task_end(void) {
+void chpl_comm_impl_unordered_task_fence(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
+}
 
-  //
-  // Enforce MCM: at the end of a task, make sure all the nonfetching
-  // AMOs we did using AMs have actually completed on the target nodes.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    mcmReleaseAllNodes(prvData->nfaBitmap, NULL, false /*useRMA*/,
-                       "AM-mediated nonfetching AMO");
-    bitmapFree(prvData->nfaBitmap);
-    prvData->nfaBitmap = NULL;
-  }
+
+inline
+void chpl_comm_impl_task_create(void) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
+}
+
+
+void chpl_comm_impl_task_end(void) {
+  task_local_buff_end(get_buff | put_buff | amo_nf_buff);
+  retireDelayedAmDone(true /*taskIsEnding*/);
 }
 
 
@@ -2652,6 +2661,7 @@ static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
                             amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
+static inline void amWaitForDone(amDone_t*);
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -2734,6 +2744,8 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
   assert(!isAmHandler);
   CHK_TRUE(!(fast && !blocking)); // handler doesn't expect fast nonblocking
 
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   arg->comm = (chpl_comm_bundleData_t) { .fast = fast,
                                          .fid = fid,
                                          .node = chpl_nodeID,
@@ -2785,17 +2797,6 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       CHPL_FREE(req.xol.pPayload);
     }
   }
-
-  //
-  // A blocking executeOn will have forced to completion any previous
-  // nonblocking nonfetching-AMO AM on the same node.
-  //
-  if (blocking) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->nfaBitmap != NULL) {
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-  }
 }
 
 
@@ -2808,17 +2809,9 @@ void amRequestRMA(c_nodeid_t node, amOp_t op,
                                .addr = raddr,
                                .raddr = addr,
                                .size = size, }, };
+  retireDelayedAmDone(false /*taskIsEnding*/);
   amRequestCommon(node, &req, sizeof(req.rma),
                   &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
-
-  //
-  // This blocking RMA AM will have forced to completion any previous
-  // nonblocking nonfetching-AMO AM on the same node.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    bitmapClear(prvData->nfaBitmap, node);
-  }
 }
 
 
@@ -2837,59 +2830,36 @@ void amRequestAMO(c_nodeid_t node, void* object,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-  chpl_bool blocking = true;
-
   void* myResult = result;
   size_t resSize = size;
-  if (myResult != NULL) {
+
+  //
+  // If this is a non-fetching atomic and the task is ending (therefore
+  // this is the _downEndCount()) we do it as a regular nonblocking AM.
+  // If it's non-fetching and the task is not ending we may be able to
+  // do it as a blocking AM but delay waiting for the 'done' indicator
+  // until sometime later, when the next thing with MCM implications
+  // comes along.  Otherwise, we have to do it as a normal blocking AM.
+  //
+  chpl_bool delayBlocking = false;
+  chpl_comm_taskPrvData_t* prvData = NULL;
+  amDone_t* pAmDone = NULL;
+  if (myResult == NULL) {
+    delayBlocking = setUpDelayedAmDone(&prvData, (void**) &pAmDone);
+  } else {
     if (mrGetLocalKey(myResult, resSize) != 0) {
       myResult = allocBounceBuf(resSize);
       DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMOREAD : DBG_AMO,
                  "AMO result BB: %p", myResult);
       CHK_TRUE(mrGetLocalKey(myResult, resSize) == 0);
     }
-  } else {
-    //
-    // This is a nonfetching AMO.  We start out using blocking AMs to
-    // make sure these are properly ordered with respect to regular RMA
-    // operations and task end, but if we're on a fixed thread with a
-    // bound tx context (thus fixed libfabric endpoint), our assertion
-    // of send-after-send transaction ordering during set-up means we
-    // can instead use nonblocking AMs for them and later do a blocking
-    // AM to ensure those nonblocking ones are complete.  Nonblocking
-    // AMO AMs are obviously quicker than blocking ones, but this is
-    // nevertheless only a win if there are multiple nfAMO AMs to do,
-    // because the final blocking no-op AM requires a full network round
-    // trip while an 'amDone' PUT needs less than that depending on the
-    // provider's default completion level.  We also need to take into
-    // account that using no-op AMs instead of 'amDone' PUTs effectively
-    // moves the overhead of MCM assurance from the AM handler to the
-    // program tasks, which is a good thing.  But for sure we also want
-    // to do at least 1 nfAMO AM with an 'amDone' PUT before switching
-    // to AMs, so that tasks whose only nfAMO is their downEndcount only
-    // do that one AMO-related AM.  Currently (2020-05-21) we switch to
-    // nonblocking nfAMO AMs after doing 3 blocking ones.
-    //
-    const int nfaCountB2NB = 3;
-    if (tcip->bound && chpl_task_isFixedThread()) {
-      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-      if (prvData != NULL) {
-        if (prvData->nfaCount < UINT8_MAX) {
-          prvData->nfaCount++;
-        }
-        if (prvData->nfaCount > nfaCountB2NB) {
-          blocking = false;
-          if (prvData->nfaBitmap == NULL) {
-            prvData->nfaBitmap = bitmapAlloc(chpl_numNodes);
-          }
-          bitmapSet(prvData->nfaBitmap, node);
-        }
-      }
-    }
   }
 
   amRequest_t req = { .amo = { .b = { .op = am_opAMO,
-                                      .node = chpl_nodeID, },
+                                      .node = chpl_nodeID,
+                                      .pAmDone = delayBlocking
+                                                 ? pAmDone
+                                                 : NULL, },
                                .ofiOp = ofiOp,
                                .ofiType = ofiType,
                                .size = size,
@@ -2903,7 +2873,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
     memcpy(&req.amo.operand2, operand2, size);
   }
   amRequestCommon(node, &req, sizeof(req.amo),
-                  blocking ? &req.b.pAmDone : NULL,
+                  delayBlocking ? NULL : &req.b.pAmDone,
                   true /*yieldDuringTxnWait*/, tcip);
   if (myResult != result) {
     memcpy(result, myResult, resSize);
@@ -2911,17 +2881,6 @@ void amRequestAMO(c_nodeid_t node, void* object,
   }
 
   tciFree(tcip);
-
-  //
-  // A blocking AM for an AMO will have forced to completion any
-  // previous nonblocking nonfetching-AMO AM on the same node.
-  //
-  if (blocking) {
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL && prvData->nfaBitmap != NULL) {
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-  }
 }
 
 
@@ -2952,18 +2911,6 @@ void amRequestShutdown(c_nodeid_t node) {
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
                   NULL, true /*yieldDuringTxnWait*/, NULL);
-
-  //
-  // If we sent a shutdown request, the MCM is moot and we no longer
-  // care about forcing to completion any previous nonblocking
-  // nonfetching-AMO AM on the same node.  Plus, the AM handler on
-  // the target node will have shut down anyway, so there is nobody
-  // there to talk to.
-  //
-  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-  if (prvData != NULL && prvData->nfaBitmap != NULL) {
-    bitmapClear(prvData->nfaBitmap, node);
-  }
 }
 
 
@@ -3034,22 +2981,39 @@ void amRequestCommon(c_nodeid_t node,
     memcpy(myReq, req, reqSize);
   }
 
-  atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-  void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+  //
+  // Inject the message if it's small enough and we're not going to wait
+  // for it anyway.  Otherwise, do a regular send.  Don't count injected
+  // messages as "outstanding", because they won't generate CQ events.
+  //
+  if (pAmDone == NULL && reqSize <= ofi_info->tx_attr->inject_size) {
+    if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
+        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+      DBG_DO_PRINTF("tx AM req inject to %d: %s",
+                    (int) node, am_reqStr(node, myReq, reqSize));
+    }
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_inject(myTcip->txCtx, myReq, reqSize,
+                                  rxMsgAddr(myTcip, node)));
+    myTcip->numTxnsSent++;
+  } else {
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
 
-  if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
-      || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
-    DBG_DO_PRINTF("tx AM req to %d: %s, ctx %p",
-                  (int) node, am_reqStr(node, myReq, reqSize), ctx);
+    if (DBG_TEST_MASK(DBG_AM | DBG_AMSEND)
+        || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
+      DBG_DO_PRINTF("tx AM req to %d: %s, ctx %p",
+                    (int) node, am_reqStr(node, myReq, reqSize), ctx);
+    }
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_send(myTcip->txCtx, myReq, reqSize,
+                                mrDesc, rxMsgAddr(myTcip, node), ctx));
+    myTcip->numTxnsOut++;
+    myTcip->numTxnsSent++;
+    waitForTxnComplete(myTcip, ctx);
+    atomic_destroy_bool(&txnDone);
   }
-  OFI_RIDE_OUT_EAGAIN(myTcip,
-                      fi_send(myTcip->txCtx, myReq, reqSize,
-                              mrDesc, rxMsgAddr(myTcip, node), ctx));
-  myTcip->numTxnsOut++;
-  myTcip->numTxnsSent++;
-  waitForTxnComplete(myTcip, ctx);
-  atomic_destroy_bool(&txnDone);
 
   if (tcip == NULL) {
     tciFree(myTcip);
@@ -3060,15 +3024,7 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   if (pAmDone != NULL) {
-    //
-    // Wait for completion indicator.
-    //
-    DBG_PRINTF(DBG_AM | DBG_AMSEND,
-               "waiting for amDone indication in %p", pAmDone);
-    while (!*(volatile amDone_t*) pAmDone) {
-      local_yield();
-    }
-    DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
+    amWaitForDone(pAmDone);
     if (pAmDone != &amDone) {
       freeBounceBuf(pAmDone);
     }
@@ -3076,9 +3032,75 @@ void amRequestCommon(c_nodeid_t node,
 }
 
 
+static inline
+void amWaitForDone(amDone_t* pAmDone) {
+  //
+  // Wait for completion indicator.
+  //
+  DBG_PRINTF(DBG_AM | DBG_AMSEND,
+             "waiting for amDone indication in %p", pAmDone);
+  while (!*(volatile amDone_t*) pAmDone) {
+    local_yield();
+  }
+  DBG_PRINTF(DBG_AM | DBG_AMSEND, "saw amDone indication in %p", pAmDone);
+}
+
+
+static inline
+chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t** pPrvData,
+                             void** ppAmDone) {
+  //
+  // Set up to record the completion of a delayed-blocking AM.
+  //
+  chpl_comm_taskPrvData_t* prvData;
+  if ((*pPrvData = prvData = get_comm_taskPrvdata()) == NULL) {
+    return false;
+  }
+
+  if (prvData->taskIsEnding) {
+    //
+    // This AMO is for our _downEndCount().  We don't care when that is
+    // done because we won't do anything after it, and our parent only
+    // cares about the effect on the endCount.  Therefore, send back
+    // *ppAmDone==NULL to make our caller do a regular non-blocking AM.
+    //
+    *ppAmDone = NULL;
+    return true;
+  }
+
+  //
+  // Otherwise, this will be an actual delayed-blocking AM, and we'll
+  // use the task-private 'done' indicator for it.
+  //
+  *ppAmDone = &prvData->amDone;
+  prvData->amDone = 0;
+  chpl_atomic_thread_fence(memory_order_release);
+  prvData->amDonePending = true;
+  return true;
+}
+
+
+static inline
+void retireDelayedAmDone(chpl_bool taskIsEnding) {
+  //
+  // Wait for the completion of any delayed-blocking AM.
+  //
+  chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+  if (prvData != NULL) {
+    if (prvData->amDonePending) {
+      amWaitForDone((amDone_t*) &prvData->amDone);
+      prvData->amDonePending = false;
+    }
+    if (taskIsEnding) {
+      prvData->taskIsEnding = true;
+    }
+  }
+}
+
+
 ////////////////////////////////////////
 //
-// Internal active message support
+// Handler-side active message support
 //
 
 static int numAmHandlersActive;
@@ -3103,6 +3125,14 @@ static inline void doCpuAMO(void*, const void*, const void*, void*,
 
 static
 void init_amHandling(void) {
+  //
+  // Sanity checks.
+  //
+  {
+    chpl_comm_taskPrvData_t pd;
+    CHK_TRUE(sizeof(pd.amDone) >= sizeof(amDone_t));
+  }
+
   //
   // Start AM handler thread(s).  Don't proceed from here until at
   // least one is running.
@@ -3513,11 +3543,13 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   }
 
   //
-  // Send the 'done' indicator without waiting for the completion.
-  // Either we or someone else will consume that completion later.
+  // Send the 'done' indicator.  Try to just inject it, thus generating
+  // no completion event.  If we can't do that we'll send it the normal
+  // way, but consume the completion later rather than waiting for it
+  // now.
   //
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncode(txnTrkNone, NULL), amTcip);
+             txnTrkEncode(txnTrkNone, NULL), amTcip, true /*useInject*/);
 }
 
 
@@ -3627,6 +3659,8 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles) {
 
 void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   //
   // Sanity checks, self-communication.
   //
@@ -3659,6 +3693,8 @@ void chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 
 void chpl_comm_get(void* addr, int32_t node, void* raddr,
                    size_t size, int32_t commID, int ln, int32_t fn) {
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   //
   // Sanity checks, self-communication.
   //
@@ -3733,6 +3769,7 @@ void chpl_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
     return;
 
   if (dstnode == chpl_nodeID && srcnode == chpl_nodeID) {
+    retireDelayedAmDone(false /*taskIsEnding*/);
     memmove(dstaddr, srcaddr, size);
     return;
   }
@@ -3763,6 +3800,8 @@ void chpl_comm_get_unordered(void* addr, c_nodeid_t node, void* raddr,
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_get_unordered(%p, %d, %p, %zd, %d)",
              addr, (int) node, raddr, size, (int) commID);
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
 
   //
   // Sanity checks, self-communication.
@@ -3799,6 +3838,8 @@ void chpl_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
   DBG_PRINTF(DBG_INTERFACE,
              "chpl_comm_put_unordered(%p, %d, %p, %zd, %d)",
              addr, (int) node, raddr, size, (int) commID);
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
 
   //
   // Sanity checks, self-communication.
@@ -4004,20 +4045,6 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
-    //
-    // Enforce MCM: earlier AMOs (here, nonfetching ones done via AM)
-    // must be seen to complete before later regular stores.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL
-        && prvData->nfaBitmap != NULL
-        && bitmapTest(prvData->nfaBitmap, node)) {
-      mcmReleaseOneNode(node, tcip, false /*useRMA*/,
-                        "nf AMO AM before store");
-      prvData->nfaCount = 0;
-      bitmapClear(prvData->nfaBitmap, node);
-    }
-
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = (tcip->txCQ == NULL)
@@ -4030,16 +4057,25 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     OFI_RIDE_OUT_EAGAIN(tcip,
                         fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 mrRaddr, mrKey, ctx));
+                                 mrRaddr, mrKey,
+                                 haveDeliveryComplete ? ctx : NULL));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
 
     //
-    // Enforce Chapel MCM using synthesized delivery_complete completion
-    // level: do a release, to force the result of this PUT to appear in
-    // target memory.
+    // If we're using delivery-complete for MCM conformance we just
+    // write the data and wait for the CQ event.  But if we're using
+    // message ordering, instead we write the data, follow that with a
+    // read from the same node, and then wait for the event belonging to
+    // the read instead.  Since we have read-after-write and libfabric
+    // defaults to delivery-complete (locally) for reads, once the CQ
+    // event for the read arrives we assume the write is also visible.
     //
-    mcmReleaseOneNode(node, tcip, true /*useRMA*/, "PUT");
+    if (!haveDeliveryComplete) {
+      DBG_PRINTF(DBG_ORDER,
+                 "dummy GET from %d for PUT ordering", (int) node);
+      ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+    }
 
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
@@ -4073,11 +4109,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
 static inline
 void ofi_put_ll(const void* addr, c_nodeid_t node,
                 void* raddr, size_t size, void* ctx,
-                struct perTxCtxInfo_t* tcip) {
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "PUT LL %d:%p <= %p, size %zd",
-             (int) node, raddr, addr, size);
-
+                struct perTxCtxInfo_t* tcip, chpl_bool useInject) {
   uint64_t mrKey = 0;
   uint64_t mrRaddr = 0;
   CHK_TRUE(mrGetKey(&mrKey, &mrRaddr, node, raddr, size) == 0);
@@ -4091,19 +4123,30 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
     CHK_TRUE((myTcip = tciAlloc()) != NULL);
   }
 
-  DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-             "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
-             (int) node, raddr, myAddr, size, mrKey, ctx);
-  OFI_RIDE_OUT_EAGAIN(myTcip,
-                      fi_write(myTcip->txCtx, myAddr, size,
-                               mrDesc, rxRmaAddr(myTcip, node),
-                               mrRaddr, mrKey, ctx));
-  myTcip->numTxnsOut++;
-  myTcip->numTxnsSent++;
-
   //
-  // We don't do an MCM release.  That's the caller's responsibility.
+  // Inject if we can, otherwise do a regular write.  Don't count inject
+  // as an outstanding operation, because it won't generate a CQ event.
   //
+  if (useInject && size <= ofi_info->tx_attr->inject_size) {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write ll inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+               (int) node, raddr, myAddr, size, mrKey);
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_inject_write(myTcip->txCtx, myAddr, size,
+                                        rxRmaAddr(myTcip, node),
+                                        mrRaddr, mrKey));
+    myTcip->numTxnsSent++;
+  } else {
+    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+               "tx write ll: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+               (int) node, raddr, myAddr, size, mrKey, ctx);
+    OFI_RIDE_OUT_EAGAIN(myTcip,
+                        fi_write(myTcip->txCtx, myAddr, size,
+                                 mrDesc, rxRmaAddr(myTcip, node),
+                                 mrRaddr, mrKey, ctx));
+    myTcip->numTxnsOut++;
+    myTcip->numTxnsSent++;
+  }
 
   if (myTcip != tcip) {
     tciFree(myTcip);
@@ -4296,20 +4339,6 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
 
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-
-    //
-    // Enforce MCM: earlier AMOs (here, nonfetching ones done via AM)
-    // must be seen to complete before later regular loads.
-    //
-    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-    if (prvData != NULL
-        && prvData->nfaBitmap != NULL
-        && bitmapTest(prvData->nfaBitmap, node)) {
-      mcmReleaseOneNode(node, tcip, false /*useRMA*/,
-                         "nf AMO AM before load");
-      prvData->nfaCount = 0;
-      bitmapClear(prvData->nfaBitmap, node);
-    }
 
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
@@ -5228,17 +5257,12 @@ void doAMO(c_nodeid_t node, void* object,
     return;
   }
 
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   uint64_t mrKey;
   uint64_t mrRaddr;
-  if (isAtomicValid(ofiType)
-      && mrGetKey(&mrKey, &mrRaddr, node, object, size) == 0) {
-    //
-    // The type is supported for network atomics and the object address
-    // is remotely accessible.  Do the AMO natively.
-    //
-    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
-            ofiOp, ofiType, size);
-  } else {
+  if (!isAtomicValid(ofiType)
+      || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
     //
     // We can't do the AMO on the network, so do it on the CPU.  If the
     // object is on this node do it directly; otherwise, use an AM.
@@ -5249,6 +5273,13 @@ void doAMO(c_nodeid_t node, void* object,
       amRequestAMO(node, object, operand1, operand2, result,
                    ofiOp, ofiType, size);
     }
+  } else {
+    //
+    // The type is supported for network atomics and the object address
+    // is remotely accessible.  Do the AMO natively.
+    //
+    ofi_amo(node, mrRaddr, mrKey, operand1, operand2, result,
+            ofiOp, ofiType, size);
   }
 }
 
@@ -5452,15 +5483,22 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
   //
   // "Unordered" is possible only for actual network atomic ops.
   //
+  if (chpl_numNodes <= 1) {
+    doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+    return;
+  }
+
+  retireDelayedAmDone(false /*taskIsEnding*/);
+
   uint64_t mrKey;
   uint64_t mrRaddr;
-  if (chpl_numNodes <= 1
-      || !isAtomicValid(ofiType)
+  if (!isAtomicValid(ofiType)
       || mrGetKey(&mrKey, &mrRaddr, node, object, size) != 0) {
     if (node == chpl_nodeID) {
       doCpuAMO(object, opnd1, NULL, NULL, ofiOp, ofiType, size);
     } else {
-      amRequestAMO(node, object, opnd1, NULL, NULL, ofiOp, ofiType, size);
+      amRequestAMO(node, object, opnd1, NULL, NULL,
+                   ofiOp, ofiType, size);
     }
     return;
   }

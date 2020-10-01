@@ -1,2 +1,2 @@
-issue-11846-b.chpl:11: In function 'main':
-issue-11846-b.chpl:12: error: cannot assign expression of type _uninstantiated to field 'data1' of type 2*3*int(64)
+issue-11846-b.chpl:7: error: Cannot replace an instantiated field with another type
+issue-11846-b.chpl:7: note: field 'data1' has type '2*3*int(64)' but is set to '_uninstantiated'

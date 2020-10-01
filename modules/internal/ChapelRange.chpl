@@ -637,13 +637,6 @@ module ChapelRange {
   }
 
 
-  /* Deprecated - please use :proc:`range.size`. */
-  inline proc range.length: intIdxType {
-    compilerWarning("'range.length' is deprecated - " +
-                    "please use 'range.size' instead");
-    return this.size;
-  }
-
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
@@ -2168,29 +2161,23 @@ proc _cast(type t: range(?), r: range(?)) {
       chpl_debug_writeln("*** RI: length=", len, " numChunks=", numChunks);
     }
 
-    if numChunks <= 1 {
-      for i in this {
-        yield i;
-      }
-    } else {
-      coforall chunk in 0..#numChunks {
-        if stridable {
-          // TODO: find a way to avoid this densify/undensify for strided
-          // ranges, perhaps by adding knowledge of alignment to _computeBlock
-          // or using an aligned range
-          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
-          const mylen = hi - (lo-1);
-          var low = orderToIndex(lo);
-          var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
-          if stride < 0 then low <=> high;
-          for i in low..high by stride {
-            yield i;
-          }
-        } else {
-          const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-          for i in lo..hi {
-            yield chpl_intToIdx(i);
-          }
+    coforall chunk in 0..#numChunks {
+      if stridable {
+        // TODO: find a way to avoid this densify/undensify for strided
+        // ranges, perhaps by adding knowledge of alignment to _computeBlock
+        // or using an aligned range
+        const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+        const mylen = hi - (lo-1);
+        var low = orderToIndex(lo);
+        var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
+        if stride < 0 then low <=> high;
+        for i in low..high by stride {
+          yield i;
+        }
+      } else {
+        const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
+        for i in lo..hi {
+          yield chpl_intToIdx(i);
         }
       }
     }
@@ -2238,36 +2225,32 @@ proc _cast(type t: range(?), r: range(?)) {
                            "### numChunks = ", numChunks);
       }
 
-      if numChunks == 1 {
-        yield (0..len-1,);
-      } else {
-        coforall chunk in 0..#numChunks {
-          local do on here.getChild(chunk) {
+      coforall chunk in 0..#numChunks {
+        local do on here.getChild(chunk) {
+          if debugDataParNuma {
+            if chunk!=chpl_getSubloc() then
+              chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
+                                 chunk, ", on ", chpl_getSubloc(), ") ***");
+          }
+          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const locRange = lo..hi;
+          const locLen = locRange.size;
+          // Divide the locale's tasks approximately evenly
+          // among the sublocales
+          const numSublocTasks = (if chunk < dptpl % numChunks
+                                  then dptpl / numChunks + 1
+                                  else dptpl / numChunks);
+          const numTasks = _computeNumChunks(numSublocTasks,
+                                             ignoreRunning=true,
+                                             minIndicesPerTask,
+                                             locLen);
+          coforall core in 0..#numTasks {
+            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
             if debugDataParNuma {
-              if chunk!=chpl_getSubloc() then
-                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
-                                   chunk, ", on ", chpl_getSubloc(), ") ***");
+              chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
+                                 "locRange = ", locRange, "  coreRange = ", low..high);
             }
-            const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
-            const locRange = lo..hi;
-            const locLen = locRange.size;
-            // Divide the locale's tasks approximately evenly
-            // among the sublocales
-            const numSublocTasks = (if chunk < dptpl % numChunks
-                                    then dptpl / numChunks + 1
-                                    else dptpl / numChunks);
-            const numTasks = _computeNumChunks(numSublocTasks,
-                                               ignoreRunning=true,
-                                               minIndicesPerTask,
-                                               locLen);
-            coforall core in 0..#numTasks {
-              const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-              if debugDataParNuma {
-                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
-                                   "locRange = ", locRange, "  coreRange = ", low..high);
-              }
-              yield (low..high,);
-            }
+            yield (low..high,);
           }
         }
       }
@@ -2283,17 +2266,12 @@ proc _cast(type t: range(?), r: range(?)) {
         chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
       }
 
-      if numChunks == 1 then
-        yield (0..v-1,);
-      else
+      coforall chunk in 0..#numChunks
       {
-        coforall chunk in 0..#numChunks
-        {
-          const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-          if debugChapelRange then
-            chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
-          yield (lo..hi,);
-        }
+        const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+        if debugChapelRange then
+          chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
+        yield (lo..hi,);
       }
     }
   }

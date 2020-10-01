@@ -250,9 +250,6 @@ proc main() {
   writeln("m4.mul(v3) = ",  v5);
   writeln("m4.rmul(v4) = ", v6);
 
-  delete m1;
-  delete m4;
-
   delete v6;
   delete v5;
   delete v4;

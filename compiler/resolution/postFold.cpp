@@ -213,7 +213,6 @@ static Expr* postFoldNormal(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void insertValueTemp(Expr* insertPoint, Expr* actual);
 static bool isSameTypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 
 static Expr* postFoldPrimop(CallExpr* call) {
@@ -585,12 +584,6 @@ static Expr* postFoldPrimop(CallExpr* call) {
 
     call->replace(retval);
 
-  } else if (strncmp(call->primitive->name, "_fscan", 6)        == 0    ||
-             strcmp (call->primitive->name, "_readToEndOfLine") == 0    ||
-             strcmp (call->primitive->name, "_now_timer")       == 0)   {
-    for_actuals(actual, call) {
-      insertValueTemp(call->getStmtExpr(), actual);
-    }
   }
 
   return retval;
@@ -644,24 +637,6 @@ bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx) {
     dispatch = canDispatch(sub, NULL, super, NULL, NULL, &promotes);
 
   return dispatch && !promotes;
-}
-
-
-static void insertValueTemp(Expr* insertPoint, Expr* actual) {
-  if (SymExpr* se = toSymExpr(actual)) {
-    if (se->symbol()->type->refType == NULL) {
-      VarSymbol* tmp = newTemp("_value_tmp_", se->symbol()->getValType());
-
-      insertPoint->insertBefore(new DefExpr(tmp));
-
-      insertPoint->insertBefore(new CallExpr(PRIM_MOVE,
-                                             tmp,
-                                             new CallExpr(PRIM_DEREF,
-                                                          se->symbol())));
-
-      se->setSymbol(tmp);
-    }
-  }
 }
 
 /************************************* | **************************************

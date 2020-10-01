@@ -1,3 +1,4 @@
+use CPtr;
 
 proc main() {
   // this isn't going to go well if it compiles

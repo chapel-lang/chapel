@@ -219,7 +219,7 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     return cfn;
 
   } else {
-    FnSymbol* fn = instantiate(cfn, subs);
+    FnSymbol* fn = instantiateWithoutCall(cfn, subs);
 
     //
     // BHARSH 2018-04-06:
@@ -285,7 +285,7 @@ static int getNumUserFormals(FnSymbol* fn) {
   int count = 0;
   for (int i = 3; i <= fnN; i++) {
     ArgSymbol* fa = fn->getFormal(i);
-    if (!fa->hasEitherFlag(FLAG_HIDDEN_FORMAL_INOUT, FLAG_TYPE_FORMAL_FOR_OUT))
+    if (!fa->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
       count++;
   }
   return count;
@@ -298,7 +298,7 @@ static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
   int count = 0;
   for (int i = 3; i <= fnN; i++) {
     ArgSymbol* fa = fn->getFormal(i);
-    if (!fa->hasEitherFlag(FLAG_HIDDEN_FORMAL_INOUT, FLAG_TYPE_FORMAL_FOR_OUT))
+    if (!fa->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
       count++;
     if (count == idx)
       return fa;

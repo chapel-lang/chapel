@@ -1,0 +1,50 @@
+
+Start analyzing forall (preventMultiCall.chpl:29)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (preventMultiCall.chpl:29)
+|
+|  Start analyzing call (preventMultiCall.chpl:30)
+|  This call is a dynamic optimization candidate (preventMultiCall.chpl:30)
+|
+|  Start analyzing call (preventMultiCall.chpl:31)
+|  This call is a dynamic optimization candidate (preventMultiCall.chpl:31)
+|
+|  Start analyzing call (preventMultiCall.chpl:32)
+|  This call is a dynamic optimization candidate (preventMultiCall.chpl:32)
+|
+End analyzing forall (preventMultiCall.chpl:29)
+
+Static check successful. Using localAccess with dynamic check (preventMultiCall.chpl:30)
+Static check successful. Using localAccess with dynamic check (preventMultiCall.chpl:31)
+Static check successful. Using localAccess with dynamic check (preventMultiCall.chpl:32)
+returnDom is called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+3 3 3 3 3 3 3 3 3 3

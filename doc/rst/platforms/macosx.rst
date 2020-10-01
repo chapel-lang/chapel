@@ -57,4 +57,3 @@ section of :ref:`chapelhome-quickstart` for next steps.
 
 
 .. _Homebrew: https://brew.sh/
-.. _whatsnext: 

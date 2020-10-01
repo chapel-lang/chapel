@@ -2137,10 +2137,17 @@ const char* toString(ArgSymbol* arg) {
     case INTENT_TYPE:            intent = "type ";      break;
   }
 
+  const char* retval = "";
   if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
-    return astr(intent, arg->name);
+    retval = astr(intent, arg->name);
   else
-    return astr(intent, arg->name, ": ", toString(arg->getValType()));
+    retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
+
+  if (developer  == true) {
+    retval = astr(retval, " [", istr(arg->id), "]");
+  }
+
+  return retval;
 }
 
 const char* toString(VarSymbol* var) {

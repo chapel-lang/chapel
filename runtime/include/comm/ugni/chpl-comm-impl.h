@@ -71,6 +71,17 @@ chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 #include "chpl-comm-native-atomics.h"
 
 //
+// Remote memory consistency release/acquire hooks.
+//
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
+        chpl_comm_impl_unordered_task_fence()
+void chpl_comm_impl_unordered_task_fence(void);
+
+#define CHPL_COMM_IMPL_TASK_END() \
+        chpl_comm_impl_task_end()
+void chpl_comm_impl_task_end(void);
+
+//
 // Internal statistics gathering and reporting.
 //
 void chpl_comm_statsStartHere(void);

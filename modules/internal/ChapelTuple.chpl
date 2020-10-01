@@ -161,7 +161,7 @@ module ChapelTuple {
     return __primitive("is star tuple type", x);
 
   pragma "no doc"
-  proc _check_tuple_var_decl(x: _tuple, param p) param {
+  proc _check_tuple_var_decl(const ref x: _tuple, param p) param {
     if p == x.size {
       return true;
     } else {
@@ -170,7 +170,7 @@ module ChapelTuple {
     }
   }
   pragma "no doc"
-  proc _check_tuple_var_decl(x, param p) param {
+  proc _check_tuple_var_decl(const ref x, param p) param {
     compilerError("illegal tuple variable declaration with non-tuple initializer");
     return false;
   }
@@ -272,14 +272,10 @@ module ChapelTuple {
                                             minIndicesPerTask,
                                             myRange);
 
-    if numChunks == 1 {
-      yield myRange;
-    } else {
-      coforall chunk in 0..#numChunks {
-        // _computeBlock assumes 0-based ranges
-        const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks {
+      // _computeBlock assumes 0-based ranges
+      const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
+      yield (lo..hi,);
     }
   }
 

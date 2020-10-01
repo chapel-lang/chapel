@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes;
+  use ChapelEnv, SysCTypes, CPtr;
 
   config param enablePostfixBangChecks = false;
 
@@ -670,15 +670,6 @@ module ChapelBase {
     }
   }
 
-  inline proc postfix!(type t: class) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-  inline proc postfix!(type t: class?) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-
   inline proc postfix!(x:unmanaged class) {
     return _to_nonnil(x);
   }
@@ -1157,8 +1148,14 @@ module ChapelBase {
     const dptpl = if dataParTasksPerLocale==0 then here.maxTaskPar
                   else dataParTasksPerLocale;
 
-    if numTasks >= dptpl then
+    if numTasks >= dptpl {
       chpl_rt_reset_task_spawn();
+    } else if numTasks == 1 {
+      // Don't create a task for local single iteration coforalls
+      use ChapelTaskData;
+      var tls = chpl_task_getInfoChapel();
+      chpl_task_data_setNextCoStmtSerial(tls, true);
+    }
   }
 
   config param useAtomicTaskCnt =  CHPL_NETWORK_ATOMICS!="none";
@@ -1240,6 +1237,9 @@ module ChapelBase {
     }
     if countRunningTasks {
       here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     }
   }
 
@@ -1250,18 +1250,27 @@ module ChapelBase {
     e.i.add(numTasks:int, memoryOrder.release);
 
     if countRunningTasks {
-      here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+      if numTasks > 1 {
+        here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
+      }
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     } else {
       here.runningTaskCntSub(1);
     }
   }
 
+  extern proc chpl_comm_unordered_task_fence(): void;
+
+  extern proc chpl_comm_task_create();
+
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
 
-  pragma "task complete impl fn"
+  pragma "compiler added remote fence"
   proc chpl_after_forall_fence() {
-    chpl_comm_task_end(); // TODO: change to chpl_comm_unordered_task_fence()
+    chpl_comm_unordered_task_fence();
   }
 
   // This function is called once by each newly initiated task.  No on
@@ -1321,7 +1330,9 @@ module ChapelBase {
     e.i.waitFor(0, memoryOrder.acquire);
 
     if countRunningTasks {
-      here.runningTaskCntSub(numTasks:int-1);
+      if numTasks > 1 {
+        here.runningTaskCntSub(numTasks:int-1);
+      }
     } else {
       here.runningTaskCntAdd(1);
     }
@@ -1682,28 +1693,6 @@ module ChapelBase {
 
   pragma "compiler generated"
   pragma "last resort"
-  pragma "unalias fn"
-  inline proc chpl__unalias(x) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  // Returns an array storing the result of the iterator
-  pragma "unalias fn"
-  inline proc chpl__unalias(x:_iteratorClass) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  // Returns an array storing the result of the iterator
-  pragma "unalias fn"
-  inline proc chpl__unalias(const ref x:_iteratorRecord) {
-    pragma "no copy" var ret = x;
-    return ret;
-  }
-
-  pragma "compiler generated"
-  pragma "last resort"
   pragma "auto destroy fn"
   inline proc chpl__autoDestroy(x: object) { }
 
@@ -1937,20 +1926,20 @@ module ChapelBase {
     lhs = lhs ^ rhs;
   }
 
-  inline proc >>=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc >>=(ref lhs:int(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
-  inline proc >>=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc >>=(ref lhs:uint(?w), rhs:integral) {
     __primitive(">>=", lhs, rhs);
   }
   inline proc >>=(ref lhs, rhs) {
     lhs = lhs >> rhs;
   }
 
-  inline proc <<=(ref lhs:int(?w), rhs:int(w)) {
+  inline proc <<=(ref lhs:int(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
-  inline proc <<=(ref lhs:uint(?w), rhs:uint(w)) {
+  inline proc <<=(ref lhs:uint(?w), rhs:integral) {
     __primitive("<<=", lhs, rhs);
   }
   inline proc <<=(ref lhs, rhs) {
@@ -2406,10 +2395,5 @@ module ChapelBase {
   pragma "no borrow convert"
   inline proc _removed_cast(in x) {
     return x;
-  }
-
-  proc enumerated type {
-    compilerWarning("'enumerated' is deprecated - please use 'enum' instead");
-    return enum;
   }
 }

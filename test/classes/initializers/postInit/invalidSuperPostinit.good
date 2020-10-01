@@ -1,16 +1,16 @@
-invalidSuperPostinit.chpl:11: In function 'postinit':
+invalidSuperPostinit.chpl:11: In method 'postinit':
 invalidSuperPostinit.chpl:12: error: "super.postinit()" may not be called in a if-statement without an else-branch
-invalidSuperPostinit.chpl:17: In function 'postinit':
+invalidSuperPostinit.chpl:17: In method 'postinit':
 invalidSuperPostinit.chpl:18: error: "super.postinit()" must be called in each branch of a conditional or not at all
-invalidSuperPostinit.chpl:24: In function 'postinit':
+invalidSuperPostinit.chpl:24: In method 'postinit':
 invalidSuperPostinit.chpl:26: error: Multiple calls to "super.postinit()"
-invalidSuperPostinit.chpl:31: In function 'postinit':
+invalidSuperPostinit.chpl:31: In method 'postinit':
 invalidSuperPostinit.chpl:32: error: "super.postinit()" is not allowed in loop statements
 invalidSuperPostinit.chpl:36: error: "super.postinit()" is not allowed in loop statements
 invalidSuperPostinit.chpl:42: error: "super.postinit()" is not allowed in loop statements
 invalidSuperPostinit.chpl:48: error: "super.postinit()" is not allowed in loop statements
 invalidSuperPostinit.chpl:50: error: "super.postinit()" is not allowed in loop statements
-invalidSuperPostinit.chpl:56: In function 'postinit':
+invalidSuperPostinit.chpl:56: In method 'postinit':
 invalidSuperPostinit.chpl:57: error: "super.postinit()" is not allowed in a coforall statement
 invalidSuperPostinit.chpl:59: error: "super.postinit()" is not allowed in a coforall statement
 invalidSuperPostinit.chpl:62: error: "super.postinit()" is not allowed in a begin statement

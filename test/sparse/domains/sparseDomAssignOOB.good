@@ -1,0 +1,1 @@
+sparseDomAssignOOB.chpl:12: error: halt reached - sparse domain index '2' out of bounds for parent domain '{1..0}'

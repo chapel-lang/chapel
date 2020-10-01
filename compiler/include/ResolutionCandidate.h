@@ -29,6 +29,7 @@
 
 class ArgSymbol;
 class CallInfo;
+class VisibilityInfo;
 class FnSymbol;
 class Symbol;
 
@@ -83,7 +84,8 @@ class ResolutionCandidate {
 public:
                           ResolutionCandidate(FnSymbol* fn);
 
-  bool                    isApplicable(CallInfo& info);
+  bool                    isApplicable(CallInfo& info,
+                                       VisibilityInfo* visInfo);
 
   FnSymbol*               fn;
   std::vector<Symbol*>    formalIdxToActual;
@@ -95,9 +97,11 @@ public:
 private:
                           ResolutionCandidate();
 
-  bool                    isApplicableConcrete(CallInfo& info);
+  bool                    isApplicableConcrete(CallInfo& info,
+                                               VisibilityInfo* visInfo);
 
-  bool                    isApplicableGeneric(CallInfo& info);
+  bool                    isApplicableGeneric(CallInfo& info,
+                                              VisibilityInfo* visInfo);
 
   bool                    computeAlignment(CallInfo& info);
 
@@ -114,7 +118,8 @@ private:
 
   void                    resolveTypedefedArgTypes();
 
-  bool                    checkResolveFormalsWhereClauses(CallInfo& info);
+  bool                    checkResolveFormalsWhereClauses(CallInfo& info,
+                                                    VisibilityInfo* visInfo);
 
   bool                    checkGenericFormals(Expr* ctx);
 

@@ -1,0 +1,2 @@
+--no-use-color-terminal # error-message-bolding.nocolors.good
+--use-color-terminal    # error-message-bolding.colors.good

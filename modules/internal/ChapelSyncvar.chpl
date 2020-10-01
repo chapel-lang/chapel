@@ -46,6 +46,8 @@ module ChapelSyncvar {
   use MemConsistency;
   use SyncVarRuntimeSupport;
 
+  use CPtr;
+
   /************************************ | *************************************
   *                                                                           *
   * The implementation of the user-facing sync/single types are exposed to    *
@@ -137,13 +139,13 @@ module ChapelSyncvar {
     // ``a`` needs to be a ``valType``, not a sync.
     //
     pragma "dont disable remote value forwarding"
-    proc init(const other : _syncvar) {
+    proc init(const ref other : _syncvar) {
       this.valType = other.valType;
       this.wrapped = other.wrapped;
       this.isOwned = false;
     }
 
-    proc init=(const other : _syncvar) {
+    proc init=(const ref other : _syncvar) {
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
       //   var y : sync real = x;
@@ -679,13 +681,13 @@ module ChapelSyncvar {
     // ``a`` needs to be a ``valType``, not a single.
     //
     pragma "dont disable remote value forwarding"
-    proc init(const other : _singlevar) {
+    proc init(const ref other : _singlevar) {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
     }
 
-    proc init=(const other : _singlevar) {
+    proc init=(const ref other : _singlevar) {
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;

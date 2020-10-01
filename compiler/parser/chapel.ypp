@@ -1372,7 +1372,6 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def    { $$ = $1; }
-| TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
@@ -1499,12 +1498,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def { 
-      DefExpr * de = new DefExpr(new VarSymbol($2));
-      USR_WARN(de, "support for space in query expressions is deprecated");
-      $$ = de;
-  }
-| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
+  TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:
@@ -2081,16 +2075,6 @@ new_expr:
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr($4, $7)));
     }
-
-  /* handles e.g. new owned(myUnmanaged) */
-| TNEW TOWNED TLP expr TRP
-    { USR_WARN($4, "the syntax 'new owned(an expression)' is deprecated");
-      USR_PRINT($4, "instead use 'owned.create(an expression)'");
-      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
-| TNEW TSHARED TLP expr TRP
-    { USR_WARN($4, "the syntax 'new shared(an expression)' is deprecated");
-      USR_PRINT($4, "instead use 'shared.create(an expression)'");
-      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:
@@ -2213,9 +2197,9 @@ literal_expr:
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                            new SymExpr(gFalse)); }
+                                            new SymExpr(gTrue)); }
 | TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
-                                                   new SymExpr(gFalse)); }
+                                                   new SymExpr(gTrue)); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
@@ -2258,7 +2242,7 @@ binary_op_expr:
 | expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
 | expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1,
-                                               new SymExpr(gFalse)); }
+                                               new SymExpr(gTrue)); }
 ;
 
 unary_op_expr:

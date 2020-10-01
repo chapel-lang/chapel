@@ -260,9 +260,8 @@ writeSpsArr();
 // over time.
 //
 // Anyone reading this far who is interested in exploring more with
-// sparse domains and arrays in Chapel is encouraged to contact us at
-// chapel_info@cray.com.  We currently have a Compressed Sparse Row
-// (CSR) sparse domain/array implementation in the works and a
-// virtually complete implementation of the NAS CG benchmark that
-// makes use of it, and would be happy to share those examples with
-// users of the release.
+// sparse domains and arrays in Chapel is encouraged to contact us.
+// We currently have a Compressed Sparse Row (CSR) sparse domain/array
+// implementation in the works and a virtually complete implementation
+// of the NAS CG benchmark that makes use of it, and would be happy to
+// share those examples with users of the release.

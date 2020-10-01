@@ -46,6 +46,7 @@ module ChapelStandard {
   public use ChapelTaskDataHelp;
   public use LocaleModel;
   public use ChapelLocale;
+  public use ChapelPrivatization;
   public use DefaultRectangular; // This might be able to go just after Atomics
   public use LocalesArray;
   public use ChapelArray;

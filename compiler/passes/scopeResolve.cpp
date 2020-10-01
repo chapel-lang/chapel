@@ -1562,7 +1562,7 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
     else {
       if (VisibilityStmt* reexport = reexportPts[another]) {
         USR_PRINT(another,
-                  "symbol '%s', defined here, was reexported at %s:%d",
+                  "symbol '%s', defined here, was last reexported at %s:%d",
                   another->name, reexport->astloc.filename,
                   reexport->astloc.lineno);
       }
@@ -1602,7 +1602,7 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
         USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
 
         if (VisibilityStmt* reexport = reexportPts[sym]) {
-          USR_PRINT("'%s' was reexported at %s:%d", name,
+          USR_PRINT("'%s' was last reexported at %s:%d", name,
                     reexport->astloc.filename, reexport->astloc.lineno);
         }
         astlocT* symRenameLoc = renameLocs[sym];
@@ -1624,7 +1624,8 @@ Symbol* lookupAndCount(const char*           name,
                        BaseAST*              context,
                        int&                  nSymbolsFound,
                        bool storeRenames,
-                       astlocT** renameLoc) {
+                       astlocT** renameLoc,
+                       bool issueErrors) {
 
   std::vector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
@@ -1648,17 +1649,21 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    if (renameLocs.size() > 0) {
-      // this can be the case when we resolved an urse through a public import
-      // that renames the symbol
-      checkConflictingSymbols(symbols, name, context, true, renameLocs,
-                              reexportPts);
+    if (issueErrors) {
+      if (renameLocs.size() > 0) {
+        // this can be the case when we resolved an urse through a public import
+        // that renames the symbol
+        checkConflictingSymbols(symbols, name, context, true, renameLocs,
+                                reexportPts);
+      }
+      else {
+        checkConflictingSymbols(symbols, name, context, storeRenames,
+                                renameLocs, reexportPts);
+      }
+      retval = NULL;
+    } else {
+      retval = symbols[0];
     }
-    else {
-      checkConflictingSymbols(symbols, name, context, storeRenames, renameLocs,
-                              reexportPts);
-    }
-    retval = NULL;
   }
 
   return retval;
@@ -2741,6 +2746,160 @@ static void detectUserDefinedBorrowMethods() {
   }
 }
 
+
+/* Look up the symbol named 'name' and add it to the map and set of visible
+   symbols in a given file. The map maps from a filename to a set of visible
+   symbols.
+ */
+static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
+  std::map<std::string, std::set<Symbol*>*>& visibleMap,
+  std::set<Symbol*>& alreadyFound) {
+
+  int numSymbolsFound;
+  Symbol* found = lookupAndCount(name, call, numSymbolsFound,
+                                 false, NULL, false);
+  if (found != NULL && alreadyFound.count(found) == 0 &&
+      !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
+      !found->hasFlag(FLAG_COMPILER_GENERATED) &&
+      !found->hasFlag(FLAG_TEMP) &&
+      strcmp(found->defPoint->fname(), "<internal>") != 0) {
+    const char* fname = found->defPoint->fname();
+    alreadyFound.insert(found);
+    if (visibleMap.count(fname) == 0) {
+      visibleMap.insert(make_pair(fname, new std::set<Symbol*>()));
+    }
+    visibleMap[(std::string)fname]->insert(found);
+  }
+}
+
+static bool readNamedArgument(CallExpr* call, const char* name,
+                              bool defaultValue,
+                              std::vector<std::string>& expectedNames) {
+  bool ret = defaultValue;
+  expectedNames.push_back((std::string)name);
+
+  for (int i = 1; i<= call->numActuals(); i++) { 
+    NamedExpr* ne = toNamedExpr(call->get(i));
+    if (ne && !strcmp(ne->name, name)) {
+      SymExpr* se = toSymExpr(ne->actual);
+      if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
+        ret = se->symbol() == gTrue;
+      } else {
+        USR_FATAL(se, "the arguments to 'get visible symbols' must be either 'true' or 'false'");
+      }
+      break;
+    }
+  }
+  return ret;
+}
+
+static bool symbolInBuiltinModule(Symbol* sym) {
+  ModuleSymbol* mod = sym->getModule();
+  if (mod->modTag == MOD_STANDARD &&
+      (!strcmp(mod->name, "Builtins") ||
+       !strcmp(mod->name, "Types") ||
+       !strcmp(mod->name, "Math"))) {
+    return true;
+  }
+  return false;
+}
+
+
+static void errorForUnexpectedArgName(std::vector<std::string> argNames,
+                                      CallExpr* call) {
+  if (((unsigned)call->numActuals()) > argNames.size()) {
+    USR_FATAL(call, "too many arguments to 'get visible symbols'");
+  }
+
+  for (int i = 1; i <= call->numActuals(); i++) {
+    NamedExpr* actual = toNamedExpr(call->get(i));
+    if (!actual) {
+      USR_FATAL(call, "'get visible symbols' requires named arguments");
+    }
+    if (std::find(argNames.begin(), argNames.end(), (std::string)actual->name) == argNames.end()) {
+      USR_FATAL_CONT(actual, "unrecognized argument to 'get visible symbols': %s", actual->name);
+      USR_FATAL_CONT(call, "recognized names are:");
+      for (int i = 0; ((unsigned)i) < argNames.size(); i++) {
+        USR_FATAL_CONT(call, "  %s", argNames[i].c_str());
+      }
+      USR_STOP();
+    }
+  }
+}
+
+
+/* Find any "get visible symbols" primitive calls and print out all
+   symbols that are visible from that point.
+ */
+static void processGetVisibleSymbols() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
+      std::vector<std::string> argNames;
+      bool ignoreInternalModules = readNamedArgument(call, "ignoreInternalModules", true, argNames);
+      bool ignoreBuiltinModules = readNamedArgument(call, "ignoreBuiltinModules", false, argNames);
+
+      errorForUnexpectedArgName(argNames, call);
+
+      std::set<Symbol*> alreadyFound;
+      // build a map from filename to set of visible symbols in that file
+      std::map<std::string, std::set<Symbol*>*> visibleMap;
+      forv_Vec(VarSymbol, sym, gVarSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(FnSymbol, sym, gFnSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+
+      // create and sort a vector of all the filenames in the map
+      std::vector<std::string> sortedFilenames;
+      std::map<std::string, std::set<Symbol*>*>::iterator mapIdx;
+
+      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+        sortedFilenames.push_back((std::string)(mapIdx->first));
+      }
+      std::sort(sortedFilenames.begin(), sortedFilenames.end());
+
+      printf("%s:%d: Printing symbols visible from here:\n",
+             call->fname(), call->linenum());
+      // now walk the sorted vector printing visible symbols from each file
+      for (std::vector<std::string>::iterator it = sortedFilenames.begin();
+           it != sortedFilenames.end(); it++) {
+        // create and sort a vector of <lineNumber, Symbol*> pairs
+        // for the current file by line number
+        std::set<Symbol*>::iterator setIdx;
+        std::vector<std::pair<int, Symbol*> > sortedSymbols;
+        for (setIdx = visibleMap[it->c_str()]->begin();
+             setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
+          Symbol* sym = *setIdx;
+          sortedSymbols.push_back(std::make_pair(sym->defPoint->linenum(),
+                                                 sym));
+        }
+        std::sort(sortedSymbols.begin(), sortedSymbols.end());
+
+        // walk the sorted vector of symbols to print information on each
+        for (std::vector<std::pair<int, Symbol*> >::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+          Symbol* sym = symPair->second;
+          if (ignoreInternalModules &&
+              sym->getModule()->modTag == MOD_INTERNAL)
+            continue;
+          if (ignoreBuiltinModules && symbolInBuiltinModule(sym))
+            continue;
+
+          printf("  %s:%d: %s\n", sym->defPoint->fname(),
+                 sym->defPoint->linenum(), sym->name); 
+        }
+
+        delete visibleMap[it->c_str()];
+      }
+      call->remove();
+    }
+  }
+}
+
+
 void scopeResolve() {
   addToSymbolTable();
 
@@ -2765,6 +2924,8 @@ void scopeResolve() {
   markGenerics();
 
   processGenericFields();
+
+  processGetVisibleSymbols();
 
   ResolveScope::destroyAstMap();
 

@@ -1056,6 +1056,7 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+  prim_def(PRIM_GET_VISIBLE_SYMBOLS, "get visible symbols", returnInfoVoid);
 
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
@@ -1084,6 +1085,8 @@ initPrimitive() {
   // Returns the nilable class type
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
+
+  prim_def(PRIM_SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type", returnInfoVoid, false, false);
 
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
 

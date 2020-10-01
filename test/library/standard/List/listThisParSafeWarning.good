@@ -1,0 +1,6 @@
+listThisParSafeWarning.chpl:3: In function 'test':
+listThisParSafeWarning.chpl:7: warning: Indexing a list initialized with `parSafe=true` has been deprecated, consider using `set()` or `update()` instead
+0
+1
+2
+3

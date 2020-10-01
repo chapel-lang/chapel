@@ -1,0 +1,4 @@
+testThisParSafeWarning.chpl:5: In function 'test':
+testThisParSafeWarning.chpl:9: warning: indexing a map initialized with `parSafe=true` has been deprecated, use `update()` instead
+{0: (x = 0)}
+{0: (x = 64)}

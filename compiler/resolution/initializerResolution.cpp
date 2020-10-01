@@ -28,6 +28,7 @@
 #include "expandVarArgs.h"
 #include "expr.h"
 #include "initializerRules.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "ResolutionCandidate.h"
@@ -490,7 +491,7 @@ static void resolveInitCall(CallExpr* call, AggregateType* newExprAlias, bool fo
     Vec<ResolutionCandidate*> candidates;
     ResolutionCandidate*      best        = NULL;
 
-    findVisibleFunctions(info, visibleFns);
+    findVisibleFunctionsAllPOIs(info, visibleFns);
 
     trimVisibleCandidates(info, mostApplicable, visibleFns);
 
@@ -631,20 +632,14 @@ static void doGatherInitCandidates(CallInfo&                  info,
 
 /** Tests to see if a function is a candidate for resolving a specific call.
  *  If it is a candidate, we add it to the candidate lists.
- *
- * This version of filterInitCandidate is called by code outside the
- * filterInitCandidate family of functions.
- *
- * \param candidates    The list to add possible candidates to.
- * \param currCandidate The current candidate to consider.
- * \param info          The CallInfo object for the call site.
  */
 static void filterInitCandidate(CallInfo&                  info,
                                 FnSymbol*                  fn,
                                 Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
+  VisibilityInfo visInfo(info);
 
-  if (candidate->isApplicable(info) == true) {
+  if (candidate->isApplicable(info, &visInfo) == true) {
     candidates.add(candidate);
 
   } else {
@@ -693,6 +688,8 @@ static void resolveInitializerBody(FnSymbol* fn) {
   fixPrimInitsAndAddCasts(fn);
 
   ensureInMethodList(fn);
+
+  setDefinedConstForFieldsInInitializer(fn);
 }
 
 /************************************* | **************************************

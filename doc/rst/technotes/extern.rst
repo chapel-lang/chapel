@@ -433,7 +433,9 @@ The Chapel compiler will then rewrite any calls to `foo` like this:
 Note that this same technique won't work for distributed rectangular arrays,
 nor for associative, sparse, or opaque arrays because their data isn't
 necessarily stored using a representation that translates trivially to a C
-array.
+array.  The compiler will automatically insert ``use CPtr;`` into scopes
+containing an ``extern proc`` declaration with an array argument in order
+to support the pointer types used to pass the array to the external routine.
 
 
 It is possible to provide the Chapel compiler with a different
@@ -997,6 +999,8 @@ Future Directions
 =================
 
 We intend to continue improving these capabilities to provide richer
-and richer support for external types and functions over time.  If you
-have specific requests for improvement, please let us know at:
-:disguise:`chapel_info@cray.com`.
+support for external types and functions over time.  If you
+have specific requests for improvement, please let us know on the
+`Chapel GitHub issues page`_ or community forums.
+
+.. _Chapel GitHub issues page: https://github.com/chapel-lang/chapel/issues

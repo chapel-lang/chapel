@@ -96,13 +96,17 @@ proc assertFalse(x: bool, msg) {
   }
 }
 
-proc assertAlmostEqual(X: [], Y: [], msg) {
+proc assertAlmostEqual(x , y, msg: string) {
   if !correctness then writeln(msg);
-  if X.shape != Y.shape {
-    writeFailure(X, Y, msg);
-    return;
-  } else if !almostEquals(X, Y) {
-    writeFailure(X, Y, msg);
+  if isArray(x) {
+    if x.shape != y.shape {
+      writeFailure(x, y, msg);
+      return;
+    }
+  }
+
+  if !almostEquals(x, y) {
+    writeFailure(x, y, msg);
     return;
   }
 }

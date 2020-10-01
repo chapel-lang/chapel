@@ -22,6 +22,7 @@
 
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
+#include "caches.h"
 #include "CatchStmt.h"
 #include "CForLoop.h"
 #include "DecoratedClassType.h"
@@ -158,10 +159,6 @@ static void resolveFormals(FnSymbol* fn) {
 // When compiling for Python interoperability, default values for arguments
 // should get propagated to the generated Python files.
 static void storeDefaultValuesForPython(FnSymbol* fn, ArgSymbol* formal) {
-
-  // ignore hidden formals used to implement inout for this purpose
-  if (formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT))
-    return;
 
   if (fLibraryPython) {
     Expr* end = formal->defaultExpr->body.tail;
@@ -477,6 +474,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
     fn->tagIfGeneric();
 
+    createCacheInfoIfNeeded(fn);
+
     if (strcmp(fn->name, "init") == 0 && fn->isMethod()) {
       AggregateType* at = toAggregateType(fn->_this->getValType());
       if (at->symbol->hasFlag(FLAG_GENERIC) == false) {
@@ -526,6 +525,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       markTypesWithDefaultInitEqOrAssign(fn);
     }
     popInstantiationLimit(fn);
+    clearCacheInfoIfEmpty(fn);
   }
 }
 
@@ -755,27 +755,36 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) == true &&
           call->get(1)                 == se) {
-        Type* rhsType = call->get(2)->typeInfo();
+        Expr* fromExpr = call->get(2);
+        Type* rhsType = fromExpr->typeInfo();
 
-        bool arrayIsh = (rhsType->symbol->hasFlag(FLAG_ARRAY) ||
+        SymExpr* fromSe = toSymExpr(fromExpr);
+        bool domain = rhsType->symbol->hasFlag(FLAG_DOMAIN) &&
+                      fromSe != NULL &&
+                      isCallExprTemporary(fromSe->symbol()) &&
+                      isTemporaryFromNoCopyReturn(fromSe->symbol());
+        bool array = rhsType->symbol->hasFlag(FLAG_ARRAY);
+        bool arrayIsh = (array ||
                          rhsType->symbol->hasFlag(FLAG_ITERATOR_RECORD));
 
+        bool handleDomain = skipArray == false && domain;
         bool handleArray = skipArray == false && arrayIsh;
         bool handleTuple = skipTuple == false &&
                            isTupleContainingAnyReferences(rhsType);
 
-        // TODO: Should we check if the RHS is a symbol with
-        // 'no auto destroy' on it? If it is, then we'd be copying
-        // the RHS and it would never be destroyed...
-        if ((handleArray || handleTuple) && !isTypeExpr(call->get(2))) {
+        if ((handleArray || handleDomain || handleTuple) &&
+            !isTypeExpr(fromExpr)) {
+
+          FnSymbol* initCopyFn = getInitCopyDuringResolution(rhsType);
+          INT_ASSERT(initCopyFn);
 
           SET_LINENO(call);
-          Expr*      rhs       = call->get(2)->remove();
-          VarSymbol* tmp       = newTemp("array_unref_ret_tmp", rhsType);
+          Expr*      rhs       = fromExpr->remove();
+          VarSymbol* tmp       = newTemp("copy_ret_tmp", rhsType);
           CallExpr*  initTmp   = new CallExpr(PRIM_MOVE,     tmp, rhs);
-          CallExpr*  unrefCall = new CallExpr("chpl__unref", tmp);
+          Symbol* definedConst = gFalse;
+          CallExpr*  unrefCall = new CallExpr(initCopyFn, tmp, definedConst);
           CallExpr*  shapeSet  = findSetShape(call, ret);
-          FnSymbol*  unrefFn   = NULL;
 
           // Used by callDestructors to catch assignment from
           // a ref to 'tmp' when we know we don't want to copy.
@@ -786,13 +795,7 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
           call->insertAtTail(unrefCall);
 
-          unrefFn = resolveNormalCall(unrefCall);
-
-          resolveFunction(unrefFn);
-
-          // Relies on the ArrayView variant having
-          // the 'unref fn' flag in ChapelArray.
-          if (arrayIsh && unrefFn->hasFlag(FLAG_UNREF_FN) == false) {
+          if (array && isAliasingArrayType(rhs->getValType()) == false) {
             // If the function does not have this flag, this must
             // be a non-view array. Remove the unref call.
             unrefCall->replace(rhs->copy());
@@ -805,11 +808,13 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
             if (shapeSet) setIteratorRecordShape(shapeSet);
 
-          } else if (shapeSet) {
-            // Set the shape on the array unref temp instead of 'ret'.
-            shapeSet->get(1)->replace(new SymExpr(tmp));
-            call->insertBefore(shapeSet->remove());
-            setIteratorRecordShape(shapeSet);
+          } else {
+            if (shapeSet) {
+              // Set the shape on the array unref temp instead of 'ret'.
+              shapeSet->get(1)->replace(new SymExpr(tmp));
+              call->insertBefore(shapeSet->remove());
+              setIteratorRecordShape(shapeSet);
+            }
           }
         }
       }
@@ -819,8 +824,8 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
 
 static bool doNotUnaliasArray(FnSymbol* fn) {
   return (fn->hasFlag(FLAG_NO_COPY_RETURN) ||
-          fn->hasFlag(FLAG_UNALIAS_FN) ||
           fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN) ||
+          fn->hasFlag(FLAG_NO_COPY_RETURNS_OWNED) ||
           fn->hasFlag(FLAG_INIT_COPY_FN) ||
           fn->hasFlag(FLAG_AUTO_COPY_FN) ||
           fn->hasFlag(FLAG_COERCE_FN) ||
@@ -845,7 +850,6 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
       fn->hasFlag(FLAG_AUTO_COPY_FN)             || // tuple chpl__autoCopy
       fn->hasFlag(FLAG_COERCE_FN)                || // chpl__coerceCopy/Move
       fn->hasFlag(FLAG_AUTO_DESTROY_FN)          || // tuple chpl__autoDestroy
-      fn->hasFlag(FLAG_UNALIAS_FN)               || // tuple chpl__unalias
       fn->hasFlag(FLAG_ALLOW_REF)                || // iteratorIndex
       (forRet && fn->hasFlag(FLAG_ITERATOR_FN)) // not iterators b/c
                                     //  * they might return by ref
@@ -977,11 +981,8 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
       bool outIntent = formal->intent == INTENT_OUT ||
                        formal->originalIntent == INTENT_OUT;
 
-      bool inout = formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT);
-
       if (outIntent &&
           formal->typeExpr == NULL &&
-          inout == false &&
           formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
 
         INT_ASSERT(prevFormal && prevActual);
@@ -1894,8 +1895,7 @@ void insertFormalTemps(FnSymbol* fn) {
   SymbolMap formals2vars;
 
   for_formals(formal, fn) {
-    if (formalRequiresTemp(formal, fn) &&
-        !formal->hasFlag(FLAG_HIDDEN_FORMAL_INOUT)) {
+    if (formalRequiresTemp(formal, fn)) {
       SET_LINENO(formal);
 
       VarSymbol* tmp = newTemp(astr("_formal_tmp_", formal->name));
@@ -1928,11 +1928,9 @@ void insertFormalTemps(FnSymbol* fn) {
 bool formalRequiresTemp(ArgSymbol* formal, FnSymbol* fn) {
   return
     //
-    // 'out' and 'inout' intents are passed by ref at the C level, so we
-    // need to make an explicit copy in the codegen'd function */
+    // 'out' requires a temp currently
     //
     (formal->intent == INTENT_OUT ||
-     formal->intent == INTENT_INOUT ||
      //
      // 'in' and 'const in' also require a copy, but for simple types
      // (like ints or class references), we can rely on C's copy when
@@ -2102,16 +2100,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
       break;
      }
-     case INTENT_INOUT: {
-      // This formal will be the `in` part. The next formal is the `out` part.
-      tmp->addFlag(FLAG_NO_COPY);
-      start->insertBefore(new CallExpr(PRIM_ASSIGN, tmp, formal));
-
-      tmp->addFlag(FLAG_FORMAL_TEMP);
-      tmp->addFlag(FLAG_FORMAL_TEMP_INOUT);
-      tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+     case INTENT_INOUT:
+      INT_FATAL("Unexpected INTENT case.");
       break;
-     }
 
      case INTENT_IN:
      case INTENT_CONST_IN:
@@ -2216,14 +2207,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
     if (formal->getValType() != dtNothing) {
       // For inout or out intent, this assigns the modified value back to the
       // formal at the end of the function body.
-      if (formal->intent == INTENT_INOUT) {
-        // This formal will be the `in` part. The next formal is the `out` part.
-        DefExpr* nextDef = toDefExpr(formal->defPoint->next);
-        INT_ASSERT(nextDef && nextDef->sym->hasFlag(FLAG_HIDDEN_FORMAL_INOUT));
-        ArgSymbol* outFormal = toArgSymbol(nextDef->sym);
-        INT_ASSERT(outFormal);
-        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, outFormal, tmp));
-      } else if (formal->intent == INTENT_OUT) {
+      if (formal->intent == INTENT_OUT) {
         fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
       }
     }

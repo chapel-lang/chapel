@@ -55,6 +55,7 @@ FnSymbol::FnSymbol(const char* initName)
   retTag             = RET_VALUE;
   iteratorInfo       = NULL;
   iteratorGroup      = NULL;
+  cacheInfo          = NULL;
   _this              = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
@@ -82,14 +83,9 @@ FnSymbol::FnSymbol(const char* initName)
 FnSymbol::~FnSymbol() {
   cleanupIteratorInfo(this);
   cleanupIteratorGroup(this);
-
+  cleanupCacheInfo(this);
   BasicBlock::clear(this);
-  delete basicBlocks;
-
-  if (calledBy) {
-    delete calledBy;
-    calledBy = NULL;
-  }
+  delete calledBy;
 }
 
 void FnSymbol::verify() {
@@ -739,10 +735,44 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 // 'map' is expected to be non-NULL if this function has been instantiated.
 //
 bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
+  bool anyGeneric = false;
+
+  std::vector<unsigned char> formalIsGeneric;
+
+  int count = 0;
   for_formals(formal, this) {
     bool isGeneric = false;
 
     if (formal->type == dtUnknown && formal->typeExpr != NULL) {
+
+      // If the type expression does not depend on a previous generic formal,
+      // we can resolve it now, even if there was a previous generic formal.
+
+      bool dependsOnPreviousGeneric = false;
+      int i = 0;
+      if (anyGeneric) {
+        for_formals(prevFormal, this) {
+          if (i >= count)
+            break;
+
+          int cursz = formalIsGeneric.size();
+          if (i < cursz && formalIsGeneric[i] == 1) {
+            // check to see if prevFormal is used in the typeExpr
+            // for the current formal.
+            if (findSymExprFor(formal->typeExpr, prevFormal) != NULL) {
+              dependsOnPreviousGeneric = true;
+              break;
+            }
+          }
+          i++;
+        }
+        if (dependsOnPreviousGeneric) {
+          // Stop resolving formals.
+          INT_ASSERT(anyGeneric == true);
+          break;
+        }
+      }
+
       resolveBlockStmt(formal->typeExpr);
       formal->type = formal->typeExpr->body.tail->getValType();
     }
@@ -790,11 +820,18 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
         USR_PRINT(this,
                   "   formal argument '%s' causes it to be", formal->name);
       }
-      return true; // no need to examine the remaining formals
     }
+    anyGeneric = anyGeneric || isGeneric;
+    if (isGeneric) {
+      while ((int)formalIsGeneric.size() < count) {
+        formalIsGeneric.push_back(0);
+      }
+      formalIsGeneric.push_back(1);
+    }
+    count++;
   }
 
-  return false;
+  return anyGeneric;
 }
 
 bool FnSymbol::isNormalized() const {
@@ -1090,85 +1127,218 @@ bool FnSymbol::retExprDefinesNonVoid() const {
   return retval;
 }
 
-const char* FnSymbol::substitutionsToString(const char* sep) const {
-  if (sep == NULL || sep[0] == '\0')
-    sep = " ";
+// Produces a string representing an arg when describing an instantiation;
+// e.g. param x = 3:int(8)
+// if isThisArg is passed, omit the name, and use parens for params
+// e.g. type int
+// e.g. param 1
+// e.g. param (3:int(8))
+static std::string argToString(FnSymbol* concreteFn,
+                               ArgSymbol* concreteArg,
+                               FnSymbol* genericFn, // might be NULL
+                               ArgSymbol* genericArg, // might be NULL
+                               const char* startGeneric,
+                               const char* endGeneric,
+                               bool& printedGeneric) {
 
-  const char* ret = astr("");
+  bool isThisArg = concreteArg->name == astrThis;
+  Symbol* sym = NULL;
+  if (concreteFn != genericFn && genericArg)
+    sym = concreteFn->substitutions.get(genericArg);
+  if (sym == NULL)
+    sym = genericArg;
+  if (sym == NULL)
+    sym = concreteArg;
 
-  FnSymbol* genericFn = this->instantiatedFrom;
+  Type* t = sym->getValType();
 
-  if (genericFn != NULL) {
-    for_formals(genericArg, genericFn) {
-      Symbol* sym = const_cast<FnSymbol*>(this)->substitutions.get(genericArg);
-      if (sym != NULL) {
-        Type* t = sym->getValType();
+  bool isGeneric = genericArg && sym != genericArg;
 
-        // add a separator if this isn't the first one
-        if (ret[0] != '\0')
-          ret = astr(ret, sep);
+  bool isParam = genericArg && (genericArg->intent == INTENT_PARAM ||
+                                genericArg->originalIntent == INTENT_PARAM);
+  bool isType = genericArg && (genericArg->intent == INTENT_TYPE ||
+                               genericArg->originalIntent == INTENT_TYPE ||
+                               genericArg->hasFlag(FLAG_TYPE_VARIABLE));
 
-        // Get the concrete formal, too
-        ArgSymbol* concreteArg = NULL;
-        for_formals(arg, this) {
-          if (arg->name == genericArg->name)
-            concreteArg = arg;
-        }
+  std::string ret = "";
+  std::string name = concreteArg->name;
+  if (genericArg && genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
+      name[0] == '_' && name[1] == 'e') {
+    // change _e##_name into name(##)
+    std::string num = name;
+    num.erase(0, 2); // remove _e
+    std::string n = num; // ##_name
+    num.resize(num.find('_')); // ##
+    n.erase(0, n.find('_')+1); // name
+    name = n + "(" + num + ")";
+  }
 
-        bool isParam = genericArg->intent == INTENT_PARAM ||
-                       genericArg->originalIntent == INTENT_PARAM;
-        bool isType = genericArg->intent == INTENT_TYPE ||
-                      genericArg->originalIntent == INTENT_TYPE ||
-                      genericArg->hasFlag(FLAG_TYPE_VARIABLE);
-
-        const char* name = genericArg->name;
-        if (genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
-            name[0] == '_' && name[1] == 'e') {
-          // change _e##_name into name(##)
-          std::string num = name;
-          num.erase(0, 2); // remove _e
-          std::string n = num; // ##_name
-          num.resize(num.find('_')); // ##
-          n.erase(0, n.find('_')+1); // name
-          name = astr(n.c_str(), "(", num.c_str(), ")");
-        }
-
-        if (isParam) {
-          ret = astr(ret, "param ", name);
-          if (isNumericParamDefaultType(t) == false)
-            ret = astr(ret, ": ", toString(t));
-          Immediate* imm = getSymbolImmediate(sym);
-          if (imm == NULL && concreteArg != NULL) {
-            // Also look in the defaultExpr. See e.g. recursive-leader-errr.chpl
-            // and the iterKind enum.
-            // Not sure why this pattern doesn't set the immediate.
-            if (SymExpr* se = toSymExpr(concreteArg->defaultExpr->body.tail)) {
-              Symbol* sym = se->symbol();
-              imm = getSymbolImmediate(sym);
-              if (imm == NULL) {
-                if (isEnumSymbol(sym)) {
-                  ret = astr(ret, " = ", toString(t), ".", sym->name);
-                }
-              }
-            }
+  if (isParam) {
+    ret += "param ";
+    if (!isThisArg)
+      ret += name;
+    Immediate* imm = getSymbolImmediate(sym);
+    EnumSymbol* enumSym = NULL;
+    if (imm == NULL && concreteArg != NULL) {
+      // Also look in the defaultExpr. See e.g. recursive-leader-errr.chpl
+      // and the iterKind enum.
+      // Not sure why this pattern doesn't set the immediate.
+      if (SymExpr* se = toSymExpr(concreteArg->defaultExpr->body.tail)) {
+        Symbol* sym = se->symbol();
+        imm = getSymbolImmediate(sym);
+        if (imm == NULL) {
+          enumSym = toEnumSymbol(sym);
+          if (enumSym != NULL) {
+            ret += " = ";
+            ret += toString(t);
+            ret += ".";
+            ret += sym->name;
           }
-          if (imm) {
-            const size_t bufSize = 128;
-            char buf[bufSize];
-            snprint_imm(buf, bufSize, *imm);
-            ret = astr(ret, " = ", buf);
-          }
-        } else if (isType) {
-          ret = astr(ret, "type ", name, " = ", toString(t));
-        } else {
-          ret = astr(ret, name, ": ", toString(t));
         }
       }
+    }
+    if (imm) {
+      const size_t bufSize = 128;
+      char buf[bufSize];
+      snprint_imm(buf, bufSize, *imm);
+      ret += " = ";
+      ret += startGeneric;
+      ret += buf;
+      ret += endGeneric;
+      printedGeneric = true;
+    }
+    if (isNumericParamDefaultType(t) == false &&
+        enumSym == NULL) {
+      ret += ": ";
+      ret += toString(t);
+    }
+
+  } else if (isType) {
+    ret += "type ";
+    if (!isThisArg) {
+      ret += name;
+      ret += " = ";
+    }
+    ret += startGeneric;
+    ret += toString(t);
+    ret += endGeneric;
+    printedGeneric = true;
+  } else {
+    if (isGeneric) {
+      if (!isThisArg) {
+        ret += name;
+        ret += ": ";
+      }
+      ret += startGeneric;
+      ret += toString(t);
+      ret += endGeneric;
+      printedGeneric = true;
+    } else {
+      if (!isThisArg) {
+        ret += name;
+        ret += ": ";
+      }
+      ret += toString(t);
     }
   }
 
   return ret;
 }
+
+std::string FnSymbol::nameAndArgsToString(const char* sep,
+                                          bool forError,
+                                          bool& printedUnderline) const {
+  if (sep == NULL || sep[0] == '\0')
+    sep = ", ";
+
+  // To help with printing out generics substitutions as underlined
+  const char* startGeneric = "";
+  const char* endGeneric = "";
+  if (forError) {
+    startGeneric = underlineErrorFormat();
+    endGeneric = clearErrorFormat();
+  }
+
+  FnSymbol* concreteFn = const_cast<FnSymbol*>(this);
+  FnSymbol* genericFn = this->instantiatedFrom;
+
+  std::string ret = "";
+
+  bool printedGeneric = false;
+
+  if (concreteFn->isMethod()) {
+    // Find the concrete and generic `this` argument
+    ArgSymbol* concreteThisArg = NULL;
+    ArgSymbol* genericThisArg = NULL;
+    for_formals(arg, concreteFn) {
+      if (arg->name == astrThis)
+        concreteThisArg = arg;
+    }
+    if (genericFn != NULL) {
+      for_formals(arg, genericFn) {
+        if (arg->name == astrThis)
+          genericThisArg = arg;
+      }
+    }
+
+    // This shouldn't happen
+    if (concreteThisArg == NULL)
+      return ret;
+
+    // Create a string for the this argument
+    std::string argString = argToString(concreteFn, concreteThisArg,
+                                        genericFn, genericThisArg,
+                                        startGeneric, endGeneric,
+                                        printedGeneric);
+    ret += argString;
+    ret += ".";
+  }
+  ret += this->name;
+  ret += "(";
+
+  bool firstArg = true;
+  for_formals(concreteArg, concreteFn) {
+    ArgSymbol* genericArg = NULL;
+    if (genericFn != NULL) {
+      // Get the generic formal, too
+      for_formals(arg, genericFn) {
+        if (arg->name == concreteArg->name)
+          genericArg = arg;
+      }
+    }
+
+    // Method token and this argument handled above
+    if (concreteArg->type == dtMethodToken)
+      continue;
+    if (concreteArg->name == astrThis)
+      continue;
+
+    // Ignore arguments added by the compiler
+    if (concreteArg->hasFlag(FLAG_RETARG) ||
+        concreteArg->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
+      continue;
+
+    std::string argString = argToString(concreteFn, concreteArg,
+                                        genericFn, genericArg,
+                                        startGeneric, endGeneric,
+                                        printedGeneric);
+
+    // add a separator if this isn't the first one
+    if (!firstArg)
+      ret += sep;
+    // add the arg string
+    ret += argString;
+
+    firstArg = false;
+  }
+
+  ret += ")";
+
+  printedUnderline = printedGeneric && (startGeneric[0] != '\0');
+
+  return ret;
+}
+
 
 const char* toString(FnSymbol* fn) {
   const char* retval = NULL;

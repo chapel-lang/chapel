@@ -1,8 +1,15 @@
-====== N ======
+====== const N ======
+0 100
+10000 10100
+[ArrayViewRankChangeDom(2,int(64),false,3*bool,3*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*int(64)))] int(64)
+====== const NN =====
+200 400
+20200 20400
+[ArrayViewRankChangeDom(2,int(64),false,3*bool,3*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*int(64)))] int(64)
+====== const ref N ======
 0 0
 0 0
 [ArrayViewRankChangeDom(2,int(64),false,3*bool,3*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*int(64)))] int(64)
-====== NN =====
-0 0
-0 0
-[ArrayViewRankChangeDom(2,int(64),false,3*bool,3*int(64),int(64),unmanaged ArrayViewRankChangeDist(unmanaged DefaultDist,3*bool,3*int(64)))] int(64)
+====== const ref NN =====
+0 0 0 0
+iterator

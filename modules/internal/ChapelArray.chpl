@@ -170,6 +170,7 @@ module ChapelArray {
   import Reflection;
   use ChapelDebugPrint;
   use SysCTypes;
+  use ChapelPrivatization;
 
   // Explicitly use a processor atomic, as most calls to this function are
   // likely be on locale 0
@@ -186,6 +187,9 @@ module ChapelArray {
   config param useBulkTransferStride = true;
   pragma "no doc"
   config param useBulkPtrTransfer = useBulkTransfer;
+
+  pragma "no doc"
+  config param disableConstDomainOpt = false;
 
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
@@ -352,6 +356,8 @@ module ChapelArray {
   // It would have implications for alias analysis
   // of arrays.
 
+  pragma "no copy return"
+  pragma "return not owned"
   proc _getDomain(value) {
     if _to_unmanaged(value.type) != value.type then
       compilerError("Domain on borrow created");
@@ -452,6 +458,7 @@ module ChapelArray {
     return dom.buildArray(eltType, true);
   }
 
+  pragma "no copy returns owned" // workaround for order of resolution issue
   proc chpl__convertRuntimeTypeToValue(dom: domain,
                                        type eltType,
                                        param isNoInit: bool,
@@ -821,6 +828,7 @@ module ChapelArray {
     return isSparseDom(dom);
   }
 
+  pragma "no copy return"
   pragma "return not owned"
   proc chpl__parentDomainFromDomainRuntimeType(type domainType) {
     pragma "no copy"
@@ -859,6 +867,7 @@ module ChapelArray {
     return _getDistribution(dist._value);
   }
 
+  pragma "no copy return"
   pragma "return not owned"
   proc chpl__domainFromArrayRuntimeType(type rtt) {
     pragma "no copy"
@@ -1757,12 +1766,6 @@ module ChapelArray {
 
     /* Return the number of indices in this domain */
     proc size return _value.dsiNumIndices;
-    /* Deprecated - please use :proc:`size`. */
-    proc numIndices {
-      compilerWarning("'domain.numIndices' is deprecated - " +
-                      "please use 'domain.size' instead");
-      return size;
-    }
     /* Return the lowest index in this domain */
     proc low return _value.dsiLow;
     /* Return the highest index in this domain */
@@ -2512,6 +2515,7 @@ module ChapelArray {
     /* The type of indices used in the array's domain */
     proc idxType type return _value.idxType;
 
+    pragma "no copy return"
     pragma "return not owned"
     proc _dom return _getDomain(_value.dom);
 
@@ -2799,6 +2803,10 @@ module ChapelArray {
       pragma "no auto destroy" var d = _dom((...ranges));
       d._value._free_when_no_arrs = true;
 
+      // this domain is not exposed to the user in any way, so it is actually
+      // constant
+      d._value.definedConst = true;
+
       //
       // If this is already a slice array view, we can short-circuit
       // down to the underlying array.
@@ -2829,7 +2837,13 @@ module ChapelArray {
       if boundsChecking then
         checkRankChange(args);
 
-      const rcdom = this.domain[(...args)];
+      // as we are making this a "no copy", we won't get chpl__initCopy, and
+      // thus no chance to adjust constness. So, define the variable var, but
+      // set its constness manually
+      pragma "no copy"
+      var rcdom = this.domain[(...args)];
+      rcdom.definedConst = true;
+
 
       // TODO: With additional effort, we could collapse rank changes of
       // rank-change array views to a single array view, similar to what
@@ -2844,7 +2858,8 @@ module ChapelArray {
                                          // TODO: Should the array really store
                                          // these redundantly?
                                          collapsedDim=rcdom._value.collapsedDim,
-                                         idx=rcdom._value.idx);
+                                         idx=rcdom._value.idx,
+                                         ownsArrInstance=false);
 
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
@@ -2945,12 +2960,6 @@ module ChapelArray {
       }
     }
 
-    /* Deprecated - please use :proc:`size`. */
-    proc numElements {
-      compilerWarning("'array.numElements' is deprecated - " +
-                      "please use 'array.size' instead");
-      return size;
-    }
     /* Return the number of elements in the array */
     proc size return _value.dom.dsiNumIndices;
 
@@ -3080,7 +3089,11 @@ module ChapelArray {
       const redistRec = new _distribution(redist);
       // redist._free_when_no_doms = true;
 
-      pragma "no auto destroy" const newDom = new _domain(redistRec, rank, updom.idxType, updom.stridable, updom.dims());
+      pragma "no copy"
+      pragma "no auto destroy"
+      const newDom = new _domain(redistRec, rank, updom.idxType,
+                                 updom.stridable, updom.dims(),
+                                 definedConst=true);
       newDom._value._free_when_no_arrs = true;
 
       // TODO: With additional effort, we could collapse reindexings of
@@ -3092,7 +3105,8 @@ module ChapelArray {
                                       _DomPid = newDom._pid,
                                       dom = newDom._instance,
                                       _ArrPid=arrpid,
-                                      _ArrInstance=arr);
+                                      _ArrInstance=arr,
+                                      ownsArrInstance=false);
       // this doesn't need to lock since we just created the domain d
       newDom._value.add_arr(x, locking=false);
       return _newArray(x);
@@ -4430,38 +4444,6 @@ module ChapelArray {
     for x in Xs do yield x;
   }
 
-  // This implementation of arrays and domains can create aliases
-  // of domains and arrays. Additionally, array aliases are possible
-  // in the language with the => operator.
-  //
-  // A call to the chpl__unalias function is added by the compiler when a user
-  // variable is initialized from an expression that would normally not require
-  // a copy.
-  //
-  // For example, if we have
-  //   var A:[1..10] int;
-  //   var B = A[1..3];
-  // then B is initialized with a slice of A. But since B is a new
-  // variable, it needs to be a new 3-element array with distinct storage.
-  // Since the slice is implemented as a function call, without chpl__unalias,
-  // B would just be initialized to the result of the function call -
-  // meaning that B would not refer to distinct array elements.
-  pragma "unalias fn"
-  inline proc chpl__unalias(x: domain) {
-    if _to_unmanaged(x._instance.type) != x._instance.type then
-      compilerError("Domain on borrow created");
-
-    if x._unowned {
-      // We could add an autoDestroy here, but it wouldn't do anything for
-      // an unowned domain.
-      pragma "no auto destroy" var ret = x;
-      return ret;
-    } else {
-      pragma "no copy" var ret = x;
-      return ret;
-    }
-  }
-
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
       where isRectangularDom(rhs) {
@@ -4675,7 +4657,6 @@ module ChapelArray {
     }
     return lhs;
   }
-
 
   pragma "find user line"
   pragma "coerce fn"
@@ -5047,28 +5028,6 @@ module ChapelArray {
   }
 
 
-  // see comment on chpl__unalias for domains
-  pragma "unalias fn"
-  inline proc chpl__unalias(x: []) {
-    param isview = (x._value.isSliceArrayView() ||
-                    x._value.isRankChangeArrayView() ||
-                    x._value.isReindexArrayView());
-
-    if isview {
-      // Intended to call chpl__initCopy
-      pragma "no auto destroy" var ret = x;
-      // Since chpl__unalias replaces a initCopy(auto/initCopy()) the
-      // inner value needs to be auto-destroyed.
-      // TODO: Should this be inserted by the compiler?
-      chpl__autoDestroy(x);
-      return ret;
-    } else {
-      // Just return a bit-copy/shallow-copy of 'x'
-      pragma "no copy" var ret = x;
-      return ret;
-    }
-  }
-
   // chpl__initCopy(ir: _iteratorRecord, definedConst: bool) is used to create
   // an array out of for-expressions, forall-expressions, promoted expressions.
   // The 'ir' iterator - or its standalone/leader/follower counterpart - is
@@ -5106,6 +5065,7 @@ module ChapelArray {
     return chpl__initCopy_shapeHelp(shape, ir);
   }
 
+  pragma "no copy returns owned"
   pragma "ignore transfer errors"
   proc chpl__initCopy_shapeHelp(shape: domain, ir: _iteratorRecord)
   {
@@ -5270,6 +5230,7 @@ module ChapelArray {
         _ddata_allocate_postalloc(data, size);
 
       // Now construct a DefaultRectangular array using the data
+      pragma "no copy"
       var A = D.buildArrayWith(data[0].type, data, size:int);
 
       // Normally, the sub-arrays share a domain with the
@@ -5292,9 +5253,31 @@ module ChapelArray {
       if callPostAlloc then
         _ddata_allocate_postalloc(data, size);
 
+      pragma "no copy"
       var A = D.buildArrayWith(elemType, data, size:int);
 
       return A;
     }
+  }
+
+  // used for passing arrays to extern procs, e.g.
+  //   extern proc foo(X: []);
+  //   var A: [1..3] real;
+  //   foo(A);
+  // 'castToVoidStar' says whether we should cast the result to c_void_ptr
+  pragma "no doc"
+  proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
+    if (!isRectangularArr(arr) || !arr.domain.dist._value.dsiIsLayout()) then
+      compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
+
+    if (arr._value.locale != here) then
+      halt("An array can only be passed to an external routine from the locale on which it lives (array is on locale " + arr._value.locale.id:string + ", call was made on locale " + here.id:string + ")");
+    
+    use CPtr;
+    const ptr = c_pointer_return(arr[arr.domain.alignedLow]);
+    if castToVoidStar then
+      return ptr: c_void_ptr;
+    else
+      return ptr;
   }
 }

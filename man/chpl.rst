@@ -294,7 +294,7 @@ OPTIONS
     and adds calls that can further analyze alignment dynamically during
     execution time.
 
-**--[no-]auto-local-access-dynamic**
+**--[no-]dynamic-auto-local-access**
 
     Enable [disable] the dynamic portion of the analysis described in
     `--[no-]auto-local-access`.  This dynamic analysis can result in loop

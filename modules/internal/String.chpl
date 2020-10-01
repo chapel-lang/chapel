@@ -172,7 +172,7 @@ and :proc:`~string.rfind()` return a :record:`byteIndex`.
  */
 module String {
   use ChapelStandard;
-  use SysCTypes;
+  use SysCTypes, CPtr;
   use ByteBufferHelpers;
   use BytesStringCommon;
   use SysBasic;
@@ -454,16 +454,6 @@ module String {
     return numCodepoints;
   }
 
-  private proc stringFactoryArgDepr() {
-    compilerWarning("createStringWith* with formal argument `s` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
-  private proc joinArgDepr() {
-    compilerWarning("string.join with formal argument `S` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
   //
   // createString* functions
   //
@@ -484,13 +474,6 @@ module String {
     ret.cachedNumCodepoints = x.cachedNumCodepoints;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -514,13 +497,6 @@ module String {
                                                             size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: c_string, length=s.size) throws {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s, length);
-  }
-
   pragma "no doc"
   proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
     // NOTE: This is a "wellknown" function used by the compiler to create
@@ -533,12 +509,12 @@ module String {
   }
 
   /*
-     Creates a new string which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the string returned from
-     this function, accessing it is undefined behavior.
+     Creates a new string which borrows the memory allocated for a `c_ptr`. If
+     the buffer is freed before the string returned from this function,
+     accessing it is undefined behavior.
 
      :arg x: Object to borrow the buffer from
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -551,34 +527,21 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: bufferType,
+  inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
                                              length: int, size: int) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(x, length);
-    initWithBorrowedBuffer(ret, x, length,size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
   }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithBorrowedBuffer(s: bufferType,
-                                             length: int, size: int) throws {
-    stringFactoryArgDepr();
-    return createStringWithBorrowedBuffer(x=s, length, size);
-  }
-
 
   pragma "no doc"
   inline proc createStringWithOwnedBuffer(x: string) {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s);
   }
 
   /*
@@ -601,19 +564,12 @@ module String {
                                                       size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: c_string, length=s.size) throws {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s, length);
-  }
-
   /*
      Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr(uint(8))`. The buffer will be freed when the string is deinitialized.
+     `c_ptr`. The buffer will be freed when the string is deinitialized.
 
      :arg x: Object to take ownership of the buffer from
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -626,20 +582,15 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(x: bufferType,
+  inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
                                           length: int, size: int) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     var ret: string;
-    ret.cachedNumCodepoints = validateEncoding(x, length);
-    initWithOwnedBuffer(ret, x, length, size);
+    ret.cachedNumCodepoints = validateEncoding(x:bufferType, length);
+    initWithOwnedBuffer(ret, x:bufferType, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithOwnedBuffer(s: bufferType,
-                                          length: int, size: int) throws {
-    stringFactoryArgDepr();
-    return createStringWithOwnedBuffer(x=s, length, size);
   }
 
   /*
@@ -656,13 +607,6 @@ module String {
     ret.cachedNumCodepoints = x.numCodepoints;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: string) {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s);
   }
 
   /*
@@ -693,19 +637,11 @@ module String {
                                      size=length+1, policy);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: c_string, length=s.size,
-                                        policy=decodePolicy.strict) throws {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, policy);
-  }
-
   /*
      Creates a new string by creating a copy of a buffer.
 
      :arg x: The buffer to copy
-     :type x: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -725,22 +661,16 @@ module String {
 
      :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(x: bufferType,
+  inline proc createStringWithNewBuffer(x: c_ptr(?t),
                                         length: int, size=length+1,
                                         policy=decodePolicy.strict) throws {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a string with a buffer of ", t:string);
+    }
     // size argument is not used, because we're allocating our own buffer
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
-    return decodeByteBuffer(x, length, policy);
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createStringWithNewBuffer(s: bufferType,
-                                        length: int, size=length+1,
-                                        policy=decodePolicy.strict) throws {
-    stringFactoryArgDepr();
-    return createStringWithNewBuffer(x=s, length, size, policy);
+    return decodeByteBuffer(x:bufferType, length, policy);
   }
 
   // non-validating string factory functions are in this submodule. This
@@ -1136,18 +1066,6 @@ module String {
       return ret;
     }
 
-    pragma "last resort"
-    inline proc join(const ref S) : string where isTuple(S) {
-      joinArgDepr();
-      return join(S);
-    }
-
-    pragma "last resort"
-    inline proc join(const ref S: [] string) : string {
-      joinArgDepr();
-      return join(S);
-    }
-
     inline proc join(ir: _iteratorRecord): string {
       return doJoinIterator(this, ir);
     }
@@ -1181,13 +1099,6 @@ module String {
 
   } // end record string
                                         
-  /* Deprecated - please use :proc:`string.size`. */
-  inline proc string.length {
-    compilerWarning("'string.length' is deprecated - " +
-                    "please use 'string.size' instead");
-    return numCodepoints;
-  }
-
   /*
     :returns: The number of codepoints in the string.
   */
@@ -1826,6 +1737,42 @@ module String {
       return doPartition(this, sep);
     }
 
+
+    /* Remove indentation from each line of string.
+
+       This can be useful when applied to multi-line strings that are indented
+       in the source code, but should not be indented in the output.
+
+       When ``columns == 0``, determine the level of indentation to remove from
+       all lines by finding the common leading whitespace across all non-empty
+       lines. Empty lines are lines containing only whitespace. Tabs and spaces
+       are the only whitespaces that are considered, but are not treated as
+       the same characters when determining common whitespace.
+
+       When ``columns > 0``, remove ``columns`` leading whitespace characters
+       from each line. Tabs are not considered whitespace when ``columns > 0``,
+       so only leading spaces are removed.
+
+       :arg columns: The number of columns of indentation to remove. Infer
+                     common leading whitespace if ``columns == 0``.
+
+       :arg ignoreFirst: When ``true``, ignore first line when determining the
+                         common leading whitespace, and make no changes to the
+                         first line.
+
+       :returns: A new `string` with indentation removed.
+
+       .. warning::
+
+          ``string.dedent`` is not considered stable and is subject to change in
+          future Chapel releases.
+    */
+    proc string.dedent(columns=0, ignoreFirst=true): string {
+      if chpl_warnUnstable then
+        compilerWarning("string.dedent is subject to change in the future.");
+      return doDedent(this, columns, ignoreFirst);
+    }
+
     /*
      Checks if all the characters in the string are either uppercase (A-Z) or
      uncased (not a letter).
@@ -2258,13 +2205,6 @@ module String {
   pragma "no doc"
   inline proc param string.numCodepoints param
     return __primitive("string_length_codepoints", this);
-
-  pragma "no doc"
-  inline proc param string.length param {
-    compilerWarning("'string.length' is deprecated - " +
-                    "please use 'string.size' instead");
-    return this.numCodepoints;
-  }
 
   pragma "no doc"
   inline proc param string.size param

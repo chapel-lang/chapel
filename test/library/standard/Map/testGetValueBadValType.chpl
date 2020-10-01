@@ -1,10 +1,12 @@
 use Map;
 
-proc test() {
-  var m: map(string, int);
+class C { var x: int = 0; }
 
-  m.add("one", 1);
-  m.add("two", 2);
+proc test() {
+  var m: map(string, owned C);
+
+  m.add("one", new owned C(1));
+  m.add("two", new owned C(2));
 
   var x = m.getValue("one");
   x = 128;

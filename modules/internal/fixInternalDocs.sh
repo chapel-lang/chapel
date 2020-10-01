@@ -252,13 +252,6 @@ removeUsage $file
 
 ## End of ChapelEnv ##
 
-## CPtr ##
-
-file="./CPtr.rst"
-removeUsage $file
-
-## End of CPtr ##
-
 ## ChapelError ##
 
 file=ChapelError.rst

@@ -1,1 +1,3 @@
-recordOffset-badField.chpl:10: error: field foo not found in Test
+$CHPL_HOME/modules/standard/CPtr.chpl:xyz: In function 'c_offsetof':
+$CHPL_HOME/modules/standard/CPtr.chpl:xyz: error: field foo not found in Test
+  recordOffset-badField.chpl:11: called as c_offsetof(type t = Test, param fieldname = "foo": string)

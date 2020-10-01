@@ -25,6 +25,7 @@ $allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
 $valgrind = 0;
+$valgrindexe = 0;
 $interpret = 0;
 $printusage = 1;
 $debug = 1;
@@ -75,6 +76,8 @@ while (@ARGV) {
         $printusage = 0;
     } elsif ($flag eq "-valgrind") {
         $valgrind = 1;
+    } elsif ($flag eq "-valgrindexe") {
+        $valgrindexe = 1;
     } elsif ($flag eq "-interpret") {
         $interpret = 1;
     } elsif ($flag eq "-notest") {
@@ -222,6 +225,7 @@ if ($printusage == 1) {
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
     print "\t-sync-dir-suffix <suffix>      : \$syncsuffix = <suffix> ?\n";
     print "\t-valgrind                      : run tests in valgrind mode\n";
+    print "\t-valgrindexe                   : run tests in valgrindexe mode\n";
     print "\t-verify                        : -compopts --verify ?\n";
    #print "\t-interpret                     : run tests in interpreted mode\n";
     exit 1;
@@ -247,11 +251,9 @@ if (exists($ENV{"JENKINS_URL"})) {
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
-if ($debugmail eq "") {
-    $debugmail = "$user\@cray.com";
-    if ($debug == 1) {
-        $replymail = $debugemail;
-    }
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
 }
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
@@ -563,6 +565,8 @@ if ($interpret == 1) {
 }
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
+} elsif ($valgrindexe == 1) {
+    $testflags = "$testflags -valgrindexe";
 }
 
 $testflags = "$testflags -futures-mode $futuresMode";

@@ -1,3 +1,1 @@
-owned-transfer-from-nonnil-tuple.chpl:3: In function 'test':
-owned-transfer-from-nonnil-tuple.chpl:5: error: Cannot transfer ownership from this non-nilable reference variable
-owned-transfer-from-nonnil-tuple.chpl:5: error: Cannot transfer ownership from this non-nilable reference variable
+owned-transfer-from-nonnil-tuple.chpl:5: error: halt reached - argument to ! is nil

@@ -6,4 +6,4 @@ $CHPL_HOME/modules/internal/String.chpl:420: note: is passed to formal 'x: byteI
 $CHPL_HOME/modules/internal/String.chpl:421: note: candidates are: ==(x: codepointIndex, y: codepointIndex)
 $CHPL_HOME/modules/internal/String.chpl:423: note:                 ==(x: byteIndex, y: int)
 note: and N other candidates, use --print-all-candidates to see them
-match-param.chpl:1: Function 'foo' instantiated as: foo(x: R(int(64),100))
+  match-param.chpl:1: called as foo(x: R(int(64),100))

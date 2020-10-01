@@ -31,6 +31,8 @@ module ChapelHashtable {
 
   use ChapelBase, DSIUtil;
 
+  private use CPtr;
+
   // empty needs to be 0 so memset 0 sets it
   enum chpl__hash_status { empty=0, full, deleted };
 
@@ -207,18 +209,12 @@ module ChapelHashtable {
 
     const numChunks = _allSlotsNumChunks(size);
 
-    if numChunks == 1 {
-      for slot in 0..#size {
+    coforall chunk in 0..#numChunks {
+      const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
+      if debugAssocDataPar then
+        writeln("*** chunk: ", chunk, " owns ", lo..hi);
+      for slot in lo..hi {
         yield slot;
-      }
-    } else {
-      coforall chunk in 0..#numChunks {
-        const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
-        if debugAssocDataPar then
-          writeln("*** chunk: ", chunk, " owns ", lo..hi);
-        for slot in lo..hi {
-          yield slot;
-        }
       }
     }
   }
@@ -231,15 +227,11 @@ module ChapelHashtable {
 
     const numChunks = _allSlotsNumChunks(size);
 
-    if numChunks == 1 {
-      yield 0..#size;
-    } else {
-      coforall chunk in 0..#numChunks {
-        const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
-        if debugDefaultAssoc then
-          writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
-        yield lo..hi;
-      }
+    coforall chunk in 0..#numChunks {
+      const (lo, hi) = _computeBlock(size, numChunks, chunk, size-1);
+      if debugDefaultAssoc then
+        writeln("*** DI[", chunk, "]: tuple = ", (lo..hi,));
+      yield lo..hi;
     }
   }
 
