@@ -68,7 +68,6 @@ proc ModulesHelp { } {
 }
 
 conflicts cray-mpich2 < 7.0.0
-conflicts xt-mpich2 < 6.0.0
 conflict chapel
 
 ##
@@ -76,9 +75,7 @@ conflict chapel
 ###
 #
 set network aries
-if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
-    set network $env(XTPE_NETWORK_TARGET)
-} elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
+if { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
     set network $env(CRAYPE_NETWORK_TARGET)
 }
 
@@ -135,8 +132,9 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 }
 
 if { ! [ info exists env(PE_ENV) ] } {
-    module load PrgEnv-gnu
-    set compiler GNU
+    puts stderr "Error: The Chapel module requires a PrgEnv environment"
+    puts stderr "to be loaded."
+    exit 1
 } else {
     set compiler $env(PE_ENV)
 }
@@ -144,15 +142,6 @@ if { ! [ info exists env(PE_ENV) ] } {
 
 if { [string match hpe-cray-ex $CHPL_HOST_PLATFORM] } {
     # Interim settings for HPE Cray EX systems.
-
-    # So far we only have gnu-based Chapel for EX.
-    if { [string equal -nocase cray $compiler] } {
-        module swap PrgEnv-cray PrgEnv-gnu
-    } elseif { [string equal -nocase intel $compiler] } {
-        module swap PrgEnv-intel PrgEnv-gnu
-    } elseif { [string equal -nocase pgi $compiler] } {
-        module swap PrgEnv-pgi PrgEnv-gnu
-    }
 
     # Some libraries are not available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
