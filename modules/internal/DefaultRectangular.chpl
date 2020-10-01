@@ -44,8 +44,8 @@ module DefaultRectangular {
   config param reportInPlaceRealloc = false;
 
   config param parallelAssignThreshold = 2*1024*1024;
-  config const enableParallelGetsInAssignment = false;
-  config const enableParallelPutsInAssignment = false;
+  config param enableParallelGetsInAssignment = false;
+  config param enableParallelPutsInAssignment = false;
 
   config param defaultDoRADOpt = true;
   config param defaultDisableLazyRADOpt = false;
