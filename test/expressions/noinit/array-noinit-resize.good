@@ -1,0 +1,21 @@
+test1a
+init 1
+init 2
+init 3
+init 4
+init 5
+init 6
+init 7
+init 8
+init 9
+init 10
+deinit 1
+deinit 2
+deinit 3
+deinit 4
+deinit 5
+deinit 6
+deinit 7
+deinit 8
+deinit 9
+deinit 10
