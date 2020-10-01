@@ -15,6 +15,7 @@ Base Language Features
    :maxdepth: 1
 
    Associative Set Operations <sets>
+   Avoiding Array Element Initialization with noinit <noinit>
    Error Handling Modes and Prototype Modules <errorHandling>
    First-class Functions in Chapel <firstClassFns>
    Including Sub-Modules from Separate Files <module_include>
