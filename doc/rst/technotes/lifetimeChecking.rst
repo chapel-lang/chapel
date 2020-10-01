@@ -1,8 +1,8 @@
 .. _readme-lifetime-checking:
 
-=================
-Lifetime Checking
-=================
+===========================
+Checking Variable Lifetimes
+===========================
 
 As of Chapel 1.18, Chapel includes a compiler component called the
 lifetime checker. The lifetime checker produces errors at compile time to

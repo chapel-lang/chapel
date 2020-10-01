@@ -1,12 +1,14 @@
 .. _readme-protoGenCodeGuide:
 
-=====================
-Chapel Generated Code
-=====================
+================================================
+Protocol Buffers Support - Generated Chapel Code
+================================================
 
 This page describes exactly what Chapel code the protocol buffer compiler
-generates for protocol definitions using ``proto3`` syntax. You should read
-the `proto3 language guide`_ before reading this document.
+generates for protocol definitions using ``proto3`` syntax. Please see
+:ref:`readme-protobuf` for information about how to use the protocol
+buffer support. Additionally, this document assumes familiarity with the
+`proto3 language guide`_.
 
 .. note::
 

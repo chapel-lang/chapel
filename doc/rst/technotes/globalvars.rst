@@ -1,8 +1,8 @@
 .. _readme-globalvars:
 
-==================================
-Global Variables
-==================================
+=============================================
+Variables to Detect Compilation Configuration
+=============================================
 
 .. warning:: The variables defined here are not part of the Chapel Standard and 
              they can be changed, renamed, or removed at any point in the future.
