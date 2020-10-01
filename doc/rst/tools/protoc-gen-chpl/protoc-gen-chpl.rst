@@ -1,8 +1,10 @@
-===============
-Chapel Protobuf
-===============
+.. _readme-protobuf:
 
-Chapel Protobuf is a Google Protocol Buffers implementation for Chapel.
+==================================
+Protocol Buffers Support in Chapel
+==================================
+
+This document describes a Google Protocol Buffers implementation for Chapel.
 `Protocol Buffers`_ is a language-neutral, platform-neutral, extensible mechanism
 for serializing structured data. The protocol buffer language is a language for 
 specifying the schema for structured data. This schema is compiled into language

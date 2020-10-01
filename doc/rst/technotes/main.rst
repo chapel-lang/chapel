@@ -1,8 +1,8 @@
 .. _readme-main:
 
-============================
-Support for main() Functions
-============================
+================
+main() Functions
+================
 
 After running module initialization code (top-level statements in
 modules), a Chapel program will start executing from the entry point,
