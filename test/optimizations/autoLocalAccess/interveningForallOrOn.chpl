@@ -9,7 +9,7 @@ use common;
   var C: [D] real;
 
   forall i in D {
-    forall j in 1..10 {
+    forall j in 1..10 { // this'll make C[j] a candidate that's not optimized
       A[i] = B[i] + C[j];
     }
   }

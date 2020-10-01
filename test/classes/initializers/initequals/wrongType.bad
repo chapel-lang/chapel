@@ -1,3 +1,0 @@
-wrongType.chpl:6: In function 'init=':
-wrongType.chpl:7: error: cannot assign expression of type 2*int(64) to field 'T' of type int(64)
-wrongType.chpl:13: Function 'init=' instantiated as: init=(this: R(int(64)))

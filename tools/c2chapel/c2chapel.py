@@ -577,6 +577,10 @@ def preamble(args, fakes):
         genComment("Note: Generated with fake std headers")
         print()
 
+    # Arguably we can tighten the use of this module based on what we actually
+    # generate, but for now this is good enough
+    print("use CPtr;")
+
 # TODO: accept file from stdin?
 if __name__=="__main__":
     (args, unknowns)  = getArgs()

@@ -16,9 +16,9 @@ Initializing Modules:
         ChapelArray
          ChapelDebugPrint
           IO
-           SysError
            FormattedIO
             Regexp
+         ChapelPrivatization
          Sort
           List
            ChapelLocks
@@ -46,6 +46,5 @@ Initializing Modules:
     ChapelError
     Builtins
     AlignedTSupport
-    CPtr
    printModuleInitOrder
     moduleInitTest

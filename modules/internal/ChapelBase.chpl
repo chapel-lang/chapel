@@ -28,7 +28,7 @@ module ChapelBase {
   var rootLocaleInitialized: bool = false;
 
   public use ChapelStandard;
-  use ChapelEnv, SysCTypes;
+  use ChapelEnv, SysCTypes, CPtr;
 
   config param enablePostfixBangChecks = false;
 
@@ -670,15 +670,6 @@ module ChapelBase {
     }
   }
 
-  inline proc postfix!(type t: class) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-  inline proc postfix!(type t: class?) type {
-    compilerWarning("applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'");
-    return _to_borrowed(_to_nonnil(t));
-  }
-
   inline proc postfix!(x:unmanaged class) {
     return _to_nonnil(x);
   }
@@ -1246,6 +1237,9 @@ module ChapelBase {
     }
     if countRunningTasks {
       here.runningTaskCntAdd(1);  // decrement is in _waitEndCount()
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     }
   }
 
@@ -1259,17 +1253,24 @@ module ChapelBase {
       if numTasks > 1 {
         here.runningTaskCntAdd(numTasks:int-1);  // decrement is in _waitEndCount()
       }
+      chpl_comm_task_create();    // countRunningTasks is a proxy for "is local"
+                                  // here.  Comm layers are responsible for the
+                                  // remote case themselves.
     } else {
       here.runningTaskCntSub(1);
     }
   }
 
+  extern proc chpl_comm_unordered_task_fence(): void;
+
+  extern proc chpl_comm_task_create();
+
   pragma "task complete impl fn"
   extern proc chpl_comm_task_end(): void;
 
-  pragma "task complete impl fn"
+  pragma "compiler added remote fence"
   proc chpl_after_forall_fence() {
-    chpl_comm_task_end(); // TODO: change to chpl_comm_unordered_task_fence()
+    chpl_comm_unordered_task_fence();
   }
 
   // This function is called once by each newly initiated task.  No on
@@ -2394,10 +2395,5 @@ module ChapelBase {
   pragma "no borrow convert"
   inline proc _removed_cast(in x) {
     return x;
-  }
-
-  proc enumerated type {
-    compilerWarning("'enumerated' is deprecated - please use 'enum' instead");
-    return enum;
   }
 }

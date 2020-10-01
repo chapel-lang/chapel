@@ -92,15 +92,15 @@ proc main {
   var z13a = (xx:CN)!;
   check("z13a = (xx:CN)!", z13a, "borrowed C");
 
-  var z13b = xx:(CN!);
-  check("z13b = xx:(CN!)", z13b, "borrowed C");
+  // below are commented out because they lead to compilation error
+  //var z13b = xx:(CN!);
+  //check("z13b = xx:(CN!)", z13b, "borrowed C");
 
-  var z13c = xx:CN!;
-  check("z13c = xx:CN!", z13c, "borrowed C");
-  // 'bang-vs-cast.chpl' helps see whether this does z13a or z13b
+  //var z13c = xx:CN!;
+  //check("z13c = xx:CN!", z13c, "borrowed C");
 
-  var z14c = xx:tm()!;
-  check("z14c = xx:tm()!", z14c, "borrowed C");
+  //var z14c = xx:tm()!;
+  //check("z14c = xx:tm()!", z14c, "borrowed C");
 
   var z15a  = xx: unmanaged C;
   check("z15a  = xx: unmanaged C", z15a, "unmanaged C");

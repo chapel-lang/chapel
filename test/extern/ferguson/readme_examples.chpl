@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 var i:c_int;

@@ -850,24 +850,28 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
   int coindex = 0;
 
   for_formals(formal, fn) {
-    if (formal->type != dtUnknown) {
-      if (Symbol* actual = formalIdxToActual[coindex]) {
-        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
-        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+    if (Symbol* actual = formalIdxToActual[coindex]) {
+      bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+      bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
-        bool formalIsParam = formal->intent == INTENT_PARAM;
+      bool formalIsParam = formal->intent == INTENT_PARAM;
 
-        if (actualIsTypeAlias != formalIsTypeAlias) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_NOT_TYPE;
-          return false;
+      // type independent checks
+      if (actualIsTypeAlias != formalIsTypeAlias) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_NOT_TYPE;
+        return false;
 
-        } else if (formalIsParam && !actual->isParameter()) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_NOT_PARAM;
-          return false;
+      }
+      if (formalIsParam && !actual->isParameter()) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_NOT_PARAM;
+        return false;
+      }
 
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      // type dependent checks
+      if (formal->type != dtUnknown) {
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {
             failingArgument = actual;

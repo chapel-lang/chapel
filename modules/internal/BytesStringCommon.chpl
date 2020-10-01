@@ -21,6 +21,7 @@
 module BytesStringCommon {
   private use ChapelStandard;
   private use SysCTypes;
+  private use CPtr;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
 
@@ -33,9 +34,8 @@ module BytesStringCommon {
        - **drop**: silently drop data
        - **escape**: escape invalid data by replacing each byte 0xXX with
                      codepoint 0xDCXX
-       - **ignore**: silently drop data (Deprecated)
   */
-  enum decodePolicy { strict, replace, drop, escape, ignore }
+  enum decodePolicy { strict, replace, drop, escape }
 
   /*
      ``encodePolicy`` specifies what happens when there is escaped non-UTF8
@@ -1343,6 +1343,48 @@ module BytesStringCommon {
       }
     }
     return ret;
+  }
+
+  // cast helpers
+  proc _cleanupForNumericCast(ref x: ?t) {
+    assertArgType(t, "_cleanupForNumericCast");
+
+    param underscore = "_".toByte();
+
+    var hasUnderscores = false;
+    for bIdx in 1..<x.numBytes {
+      if x.byte[bIdx] == underscore then {
+        hasUnderscores = true;
+        break;
+      }
+    }
+
+    if hasUnderscores {
+      x = x.strip();
+      // don't remove anything and let it fail later on
+      if _isSingleWord(x) {
+        var len = x.size;
+        if len >= 2 {
+          // Don't remove a leading underscore in the string number,
+          // but remove the rest.
+          if len > 2 && x.byte(0) == underscore {
+            x = x.item(0) + x[1..].replace("_":t, "":t);
+          } else {
+            x = x.replace("_":t, "":t);
+          }
+        }
+      }
+    }
+  }
+
+  private proc _isSingleWord(const ref x: ?t) {
+    assertArgType(t, "_isSingleWord");
+    // here we assume that the string is all ASCII, if not, we'll get an error
+    // from the actual conversion function, anyways
+    for b in x.bytes() {
+      if byte_isWhitespace(b) then return false;
+    }
+    return true;
   }
 
   // character-wise operation helpers

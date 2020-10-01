@@ -1,2 +1,0 @@
-bug: missing expected error when attempting to change LHS type in init= 
-#16030

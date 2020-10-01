@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Domain_Maps:
 
 Domain Maps
@@ -27,15 +29,15 @@ Domain maps are presented as follows:
 -  domain maps are not retained upon domain assignment
    :ref:`Domain_Maps_Not_Assigned`
 
--  | standard layouts and distributions, such as Block and Cyclic, are
-     documented under *Standard Layouts and Distributions* in Chapel's online
-     documentation here:
-   | https://chapel-lang.org/docs/modules/layoutdist.html
+-  standard layouts and distributions, such as Block and Cyclic, are
+   documented under
+   :ref:`Standard Layouts and Distributions <layouts_and_distributions>`
+   in Chapel's online documentation.
 
--  | specification of user-defined domain maps is forthcoming; please
-     refer to the *Domain Map Standard Interface* page under *Technical
-     Notes* in Chapel's online documentation here:
-   | https://chapel-lang.org/docs/technotes/dsi.html
+-  specification of user-defined domain maps is forthcoming; please
+   refer to the
+   :ref:`Domain Map Standard Interface technical note <readme-dsi>`
+   in Chapel's online documentation.
 
 .. _Domain_Maps_For_Types:
 
@@ -79,11 +81,10 @@ record with a single generic field, which holds the domain map instance.
       use BlockDist;
       var MyBlockDist: dmap(Block(rank=2));
 
-   | declares a variable capable of storing dmap values for a
-     two-dimensional Block distribution. The Block distribution is
-     described in more detail in the standard library documentation.
-     See:
-   | https://chapel-lang.org/docs/modules/dists/BlockDist.html
+   declares a variable capable of storing dmap values for a
+   two-dimensional Block distribution. The Block distribution is
+   described in more detail in the standard library documentation.
+   See the module documentation for :mod:`BlockDist`.
 
 ..
 

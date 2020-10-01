@@ -163,13 +163,6 @@ module Collection {
       return getSize() == 0;
     }
 
-    /* Deprecated - please use :proc:`CollectionImpl.size`. */
-    proc length : int {
-      compilerWarning("'CollectionImpl.length' is deprecated - " +
-                      "please use 'CollectionImpl.size' instead");
-      return getSize();
-    }
-
     /*
       Syntactic sugar for `getSize`.
     */

@@ -499,9 +499,41 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_comm_on_bundle_t *arg, size_t arg_size,
                                int ln, int32_t fn);
 
+//
+// Hook to ensure remote memory consistency after unordered operations.
+//
+#ifndef CHPL_COMM_IMPL_UNORDERED_TASK_FENCE
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
+        return
+#endif
+static inline
+void chpl_comm_unordered_task_fence(void) {
+  CHPL_COMM_IMPL_UNORDERED_TASK_FENCE();
+}
+
+
+// This is a hook that's called when a task is creating a child task.
+#ifndef CHPL_COMM_IMPL_TASK_CREATE
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        return
+#endif
+static inline
+void chpl_comm_task_create(void) {
+  CHPL_COMM_IMPL_TASK_CREATE();
+}
+
+
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
-void chpl_comm_task_end(void);
+#ifndef CHPL_COMM_IMPL_TASK_END
+#define CHPL_COMM_IMPL_TASK_END() \
+        return
+#endif
+static inline
+void chpl_comm_task_end(void) {
+  CHPL_COMM_IMPL_TASK_END();
+}
+
 
 void* chpl_get_global_serialize_table(int64_t idx);
 

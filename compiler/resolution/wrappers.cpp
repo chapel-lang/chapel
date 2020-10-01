@@ -53,6 +53,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
+#include "optimizations.h"
 #include "passes.h"
 #include "resolution.h"
 #include "resolveFunction.h"
@@ -1371,7 +1372,7 @@ static void addArgCoercion(FnSymbol*  fn,
         !fn->hasFlag(FLAG_INIT_COPY_FN)) {
 
       bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->intent == INTENT_CONST_IN ||
+                         formal->originalIntent == INTENT_CONST_IN ||
                          formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
       castCall = new CallExpr(astr_initCopy, prevActual, definedConst);
@@ -1467,61 +1468,6 @@ static void copyFormalTypeExprWrapper(FnSymbol* fn,
   body->flattenAndRemove();
 }
 
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual);
-
-static void insertRuntimeTypeDefaultWrapper(FnSymbol* fn,
-                                            ArgSymbol* formal,
-                                            CallExpr* call,
-                                            SymExpr* curActual,
-                                            SymbolMap& copyMap) {
-
-  BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
-  call->getStmtExpr()->insertBefore(body);
-
-  Symbol* newSym = insertRuntimeTypeDefault(fn, formal, call, body, copyMap, curActual->symbol());
-  copyMap.put(formal, newSym);
-
-  update_symbols(body, &copyMap);
-  normalize(body);
-  resolveBlockStmt(body);
-  reset_ast_loc(body, call);
-  body->flattenAndRemove();
-
-  curActual->setSymbol(newSym);
-}
-
-static Symbol* insertRuntimeTypeDefault(FnSymbol* fn,
-                                        ArgSymbol* formal,
-                                        CallExpr* call,
-                                        BlockStmt* body,
-                                        SymbolMap& copyMap,
-                                        Symbol* curActual) {
-  // Create the defaultExpr if not present
-  // TODO: can't we just use a flag?
-  bool removeDefault = false;
-  if (formal->defaultExpr == NULL) {
-    removeDefault = true;
-    BlockStmt* stmt = new BlockStmt();
-    stmt->insertAtTail(new SymExpr(gTypeDefaultToken));
-    formal->defaultExpr = stmt;
-    insert_help(formal->defaultExpr, NULL, formal);
-  }
-
-  Symbol* ret = createDefaultedActual(fn, formal, call, body, copyMap);
-  body->insertAtTail(new CallExpr("=", ret, curActual));
-
-  if (removeDefault) {
-    formal->defaultExpr->remove();
-  }
-
-  return ret;
-}
-
 // BHARSH 2018-05-02: For a case like 'in D = {1..4}' normalization
 // currently turns the AST into something like:
 //   in D : {1..4} = {1..4}
@@ -1551,21 +1497,6 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
   return false;
 }
 
-// We have to use the array default if
-// *  There is not a valid type expr and there is a
-//    defaultExpr that is not just gTypeDefaultToken
-//
-// We do not want to generate defaults for fully or partially generic cases:
-//   in A : [] real;
-//   in A : []
-static bool mustUseRuntimeTypeDefault(ArgSymbol* formal) {
-  if (formal->defaultExpr != NULL && defaultedFormalUsesDefaultForType(formal) == false) {
-    return true;
-  }
-
-  return false;
-}
-
 /************************************* | **************************************
 *                                                                             *
 * handle intents at call site                                                 *
@@ -1584,6 +1515,36 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;
+}
+
+static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
+  
+  // Today, if we generate a default initializer for a type with const fields,
+  // the formals that correspond to those fields have `in` intents. However, we
+  // still need to set those temporaries that will be passed to those formals to
+  // be constant before calling the initializer, in case the initializer have
+  // another argument that will use that temporary.
+  //
+  // This comes up in:
+  //
+  // record R {
+  //   const d;
+  //   var a: [d] int;
+  // }
+  //
+  // we ideally want to be able to make such formals have `const in` intent
+  // instead of `in`. But there may be complications with that and we are close
+  // to the release, so, we track the field symbol from the call in case it is a
+  // default initializer
+
+  if (fn->hasFlag(FLAG_COMPILER_GENERATED) && fn->name == astrInit) {
+    Symbol *fieldSym = fn->getReceiverType()->getField(formal->name);
+    return fieldSym->hasFlag(FLAG_CONST);
+  }
+
+  return formal->intent == INTENT_CONST_IN ||
+         formal->originalIntent == INTENT_CONST_IN ||
+         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
 }
 
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
@@ -1633,10 +1594,6 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
     bool rtt = actualSym->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE);
     bool coerceRuntimeTypes = rtt && typeExprReturnsType(formal);
 
-    // see issue #15628 for explanation and discussion
-    bool defaultInitAssign = rtt && mustUseRuntimeTypeDefault(formal) &&
-                             !coerceRuntimeTypes;
-
     VarSymbol* runtimeTypeTemp = NULL;
     if (coerceRuntimeTypes) {
       runtimeTypeTemp = newTemp("_formal_type_tmp");
@@ -1647,12 +1604,8 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
                                 call, anchor, copyMap);
     }
 
-    if (defaultInitAssign) {
-
-     insertRuntimeTypeDefaultWrapper(fn, formal, call, actual, copyMap);
-
     // A copy might be necessary here but might not.
-    } else if (doesCopyInitializationRequireCopy(actual) || inout) {
+    if (doesCopyInitializationRequireCopy(actual) || inout) {
       // Add a new formal temp at the call site that mimics variable
       // initialization from the actual.
       VarSymbol* tmp = newTemp(astr("_formal_tmp_in_", formal->name));
@@ -1680,10 +1633,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       
       CallExpr* copy = NULL;
 
-      bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                         formal->originalIntent == INTENT_CONST_IN ||
-                         formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-      Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
+      Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
       if (coerceRuntimeTypes)
         copy = new CallExpr(astr_coerceCopy, runtimeTypeTemp, actualSym,
                             definedConst);
@@ -1715,10 +1665,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
           tmp->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
         }
 
-        bool isConstCopy = formal->intent == INTENT_CONST_IN ||
-                           formal->originalIntent == INTENT_CONST_IN ||
-                           formal->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
-        Symbol *definedConst = isConstCopy ?  gTrue : gFalse;
+        Symbol *definedConst = isFormalTempConst(fn, formal) ?  gTrue : gFalse;
         CallExpr* copy = new CallExpr(astr_coerceMove,
                                       runtimeTypeTemp, actualSym, definedConst);
 
@@ -1730,6 +1677,21 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
         resolveCall(move);
 
         actual->setSymbol(tmp);
+      }
+      else {
+        if (actualSym->getValType()->symbol->hasFlag(FLAG_DOMAIN)) {
+          if (!actualSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+            // we are moving a domain to an `in` formal without coercion. We
+            // should adjust its constness
+            Symbol *definedConst = isFormalTempConst(fn, formal) ? gTrue : gFalse;
+
+
+            Expr *nextExpr = new CallExpr(PRIM_NOOP);
+            anchor->insertBefore(nextExpr);
+            setDefinedConstForDomainSymbol(actualSym, nextExpr, definedConst);
+            nextExpr->remove();
+          }
+        }
       }
     }
   }

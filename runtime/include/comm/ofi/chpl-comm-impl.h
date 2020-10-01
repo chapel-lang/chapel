@@ -38,4 +38,19 @@ size_t chpl_comm_impl_regMemHeapPageSize(void);
 //
 #include "chpl-comm-native-atomics.h"
 
+//
+// Remote memory consistency release/acquire hooks.
+//
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
+        chpl_comm_impl_unordered_task_fence()
+void chpl_comm_impl_unordered_task_fence(void);
+
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        chpl_comm_impl_task_create()
+void chpl_comm_impl_task_create(void);
+
+#define CHPL_COMM_IMPL_TASK_END() \
+        chpl_comm_impl_task_end()
+void chpl_comm_impl_task_end(void);
+
 #endif // _chpl_comm_impl_h_

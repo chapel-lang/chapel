@@ -1,0 +1,24 @@
+ApplicationB.methods.chpl:13: In function 'callFoo1':
+ApplicationB.methods.chpl:14: warning: X.foo()
+ApplicationB.methods.chpl:15: warning: X.bar()
+  ApplicationB.methods.chpl:27: called as callFoo1(arg: owned MyClass)
+ApplicationB.methods.chpl:17: In method 'callFoo2':
+ApplicationB.methods.chpl:18: warning: X.foo()
+ApplicationB.methods.chpl:19: warning: X.bar()
+  ApplicationB.methods.chpl:28: called as borrowed MyClass.callFoo2(arg: owned MyClass)
+ApplicationB.methods.chpl:13: In function 'callFoo1':
+ApplicationB.methods.chpl:14: warning: Y.foo()
+ApplicationB.methods.chpl:15: warning: Y.bar()
+  ApplicationB.methods.chpl:36: called as callFoo1(arg: owned MyClass)
+ApplicationB.methods.chpl:17: In method 'callFoo2':
+ApplicationB.methods.chpl:18: warning: Y.foo()
+ApplicationB.methods.chpl:19: warning: Y.bar()
+  ApplicationB.methods.chpl:37: called as borrowed MyClass.callFoo2(arg: owned MyClass)
+X.foo()
+X.bar()
+X.foo()
+X.bar()
+Y.foo()
+Y.bar()
+Y.foo()
+Y.bar()

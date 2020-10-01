@@ -96,7 +96,7 @@ module Bytes {
   private use ChapelStandard;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
-  private use SysCTypes;
+  private use SysCTypes, CPtr;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
@@ -104,15 +104,6 @@ module Bytes {
   pragma "no doc"
   type idxType = int; 
 
-  private proc bytesFactoryArgDepr() {
-    compilerWarning("createBytesWith* with formal argument `s` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
-  private proc joinArgDepr() {
-    compilerWarning("bytes.join with formal argument `S` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
   //
   // createBytes* functions
   //
@@ -130,13 +121,6 @@ module Bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s);
   }
 
   /*
@@ -165,20 +149,13 @@ module Bytes {
     return createBytesWithBorrowedBuffer(x, length);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length);
-  }
-
   /*
      Creates a new :mod:`bytes <Bytes>` which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the :mod:`bytes <Bytes>`
-     returned from this function, accessing it is undefined behavior.
+     `c_ptr`. If the buffer is freed before the :mod:`bytes <Bytes>` returned
+     from this function, accessing it is undefined behavior.
 
      :arg s: Buffer to borrow
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -186,30 +163,19 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
-    initWithBorrowedBuffer(ret, x, length,size);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length, size);
   }
 
   pragma "no doc"
   inline proc createBytesWithOwnedBuffer(s: bytes) {
     // should we allow stealing ownership?
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s);
   }
 
   /*
@@ -229,20 +195,13 @@ module Bytes {
                                                       size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length);
-  }
-
   /*
      Creates a new :mod:`bytes <Bytes>` which takes ownership of the memory
-     allocated for a `c_ptr(uint(8))`. The buffer will be freed when the
+     allocated for a `c_ptr`. The buffer will be freed when the
      :mod:`bytes <Bytes>` is deinitialized.
 
      :arg s: The buffer to take ownership of
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
@@ -250,17 +209,13 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithOwnedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length, size);
   }
 
   /*
@@ -275,13 +230,6 @@ module Bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s);
   }
 
   /*
@@ -300,18 +248,11 @@ module Bytes {
                                                     size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length);
-  }
-
   /*
      Creates a new :mod:`bytes <Bytes>` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
 
@@ -319,19 +260,14 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithNewBuffer(x: bufferType, length: int,
+  inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
                                        size=length+1) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
-                                       size=length+1) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length, size);
   }
 
   pragma "no doc"
@@ -376,12 +312,6 @@ module Bytes {
 
     inline proc byteIndices return 0..<size;
 
-    inline proc param length param {
-      compilerWarning("'bytes.length' is deprecated - " +
-                      "please use 'bytes.size' instead");
-      return size;
-    }
-
     inline proc param size param
       return __primitive("string_length_bytes", this);
 
@@ -419,20 +349,8 @@ module Bytes {
       return __primitive("ascii", this, i);
     }
 
-    pragma "last resort"
-    inline proc join(const ref S) : bytes where isTuple(S) {
-      joinArgDepr();
-      return join(x=S);
-    }
-
     inline proc join(const ref x: [] bytes) : bytes {
       return _join(x);
-    }
-
-    pragma "last resort"
-    inline proc join(const ref S: [] bytes) : bytes {
-      joinArgDepr();
-      return join(x=S);
     }
 
     inline proc join(ir: _iteratorRecord): bytes {
@@ -443,49 +361,7 @@ module Bytes {
     inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
       return doJoin(this, S);
     }
-
-    // to capture the deprecated formal name "errors"
-    pragma "last resort"
-    proc decode(errors=decodePolicy.strict): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      return this.decode(policy=errors);
-    }
-
-    // just to capture the deprecated decodePolicy.ignore and give a compiler
-    // warning
-    pragma "last resort"
-    proc decode(param errors: decodePolicy): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      if errors == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.buffLen, errors);
-    }
-
-     proc decode(param policy: decodePolicy): string throws {
-      if policy == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
-    }
   } // end of record bytes
-
-  /* Deprecated - please use :proc:`bytes.size`. */
-  inline proc bytes.length {
-    compilerWarning("'bytes.length' is deprecated - " +
-                    "please use 'bytes.size' instead");
-    return buffLen;
-  }
 
   /*
     :returns: The number of bytes in the :mod:`bytes <Bytes>`.
@@ -1221,36 +1097,6 @@ module Bytes {
 
   pragma "no doc"
   inline proc !=(a: bytes, b: bytes) : bool {
-    return !doEq(a,b);
-  }
-
-  pragma "no doc"
-  proc comparisonDeprWarn() {
-    compilerWarning("Comparison between bytes and string is deprecated. " +
-                    "Cast the string to bytes first");
-  }
-
-  pragma "no doc"
-  proc ==(a: bytes, b: string) : bool {
-    comparisonDeprWarn();
-    return doEq(a,b);
-  }
-
-  pragma "no doc"
-  proc ==(a: string, b: bytes) : bool {
-    comparisonDeprWarn();
-    return doEq(a,b);
-  }
-
-  pragma "no doc"
-  inline proc !=(a: bytes, b: string) : bool {
-    comparisonDeprWarn();
-    return !doEq(a,b);
-  }
-
-  pragma "no doc"
-  inline proc !=(a: string, b: bytes) : bool {
-    comparisonDeprWarn();
     return !doEq(a,b);
   }
 

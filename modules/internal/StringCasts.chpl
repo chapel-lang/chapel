@@ -20,7 +20,9 @@
 
 module StringCasts {
   private use ChapelStandard;
+  private use BytesStringCommon;
   private use SysCTypes;
+  private use CPtr;
   private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into
@@ -118,10 +120,10 @@ module StringCasts {
       throw new owned IllegalArgumentError("bad cast from empty string to " +
                                            t:string);
 
-    _cleanupStringForNumericCast(localX);
+    _cleanupForNumericCast(localX);
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from string '"+ x + "' to " + t:string);
 
     if isIntType(t) {
       select numBits(t) {
@@ -178,46 +180,6 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  proc _isSingleWord(const ref s: string) {
-    use BytesStringCommon only byte_isWhitespace;
-
-    // here we assume that the string is all ASCII, if not, we'll get an error
-    // from the actual conversion function, anyways
-    for b in s.bytes() {
-      if byte_isWhitespace(b) then return false;
-    }
-    return true;
-  }
-
-  proc _cleanupStringForNumericCast(ref s: string) {
-    param underscore = "_".toByte();
-
-    var hasUnderscores = false;
-    for bIdx in 1..<s.numBytes {
-      if s.byte[bIdx] == underscore then {
-        hasUnderscores = true;
-        break;
-      }
-    }
-
-    if hasUnderscores {
-      s = s.strip();
-      // don't remove anything and let it fail later on
-      if _isSingleWord(s) {
-        var len = s.size;
-        if len >= 2 {
-          // Don't remove a leading underscore in the string number,
-          // but remove the rest.
-          if len > 2 && s[0] == "_" {
-            s = s[0] + s[1..].replace("_", "");
-          } else {
-            s = s.replace("_", "");
-          }
-        }
-      }
-    }
-  }
-
   proc _cast(type t:chpl_anyreal, x: string) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -234,7 +196,7 @@ module StringCasts {
       throw new owned IllegalArgumentError("bad cast from empty string to " +
                                            t:string);
 
-    _cleanupStringForNumericCast(localX);
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -264,7 +226,7 @@ module StringCasts {
       throw new owned IllegalArgumentError("bad cast from empty string to " +
                                            t:string);
 
-    _cleanupStringForNumericCast(localX);
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);

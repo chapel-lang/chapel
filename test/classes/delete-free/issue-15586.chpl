@@ -3,6 +3,7 @@ class C { var x: int = 0; }
 proc test(type t) {
   var x = new t(128);
   writeln("new made " + x.type:string);
+  if isUnmanagedClassType(t) then delete x;
   return;
 }
 // borrowed

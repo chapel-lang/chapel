@@ -1,3 +1,4 @@
+use CPtr;
 // Tests using it on a generic record
 // Note: c_offsetof is intended for use in C interoperability only.
 record Test {

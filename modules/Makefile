@@ -72,6 +72,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/CPtr.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
@@ -79,7 +80,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
@@ -113,6 +113,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LinkedLists.chpl \
 	packages/LockFreeQueue.chpl \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
@@ -166,7 +167,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/ChapelEnv.chpl               \
-	internal/CPtr.chpl                    \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl
 
