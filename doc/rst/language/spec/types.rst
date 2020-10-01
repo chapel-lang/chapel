@@ -615,7 +615,7 @@ functionality is particularly useful when doing generic programming
 
    .. BLOCK-test-chapeloutput
 
-      int
+      int(64)
 
    *Open issue*.
 
@@ -660,14 +660,14 @@ allows a type to be printed out.
    .. code-block:: chapel
 
       type myType = int;
-      param str = t:string;
+      param str = myType:string;
       writeln(str);
 
    It produces the output:
 
    .. code-block:: printoutput
 
-      int
+      int(64)
 
 
 .. _Types_with_Runtime_Components:
