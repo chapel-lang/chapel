@@ -1,8 +1,8 @@
 .. _readme-errorHandling:
 
-==============
-Error Handling
-==============
+==========================================
+Error Handling Modes and Prototype Modules
+==========================================
 
 Overview
 --------

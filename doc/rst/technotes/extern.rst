@@ -7,7 +7,7 @@ C Interoperability
 ==================
 
 This README describes support in the Chapel compiler for referring to C
-code within Chapel using a keyword named 'extern'. These features are
+code within Chapel using a keyword named `extern`. These features are
 still in the process of being improved.
 
 External C functions, variables, and types can be referred to within a

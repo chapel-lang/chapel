@@ -1,8 +1,8 @@
 .. _readme-libraries:
 
-=============================
-Exporting Chapel as a Library
-=============================
+========================================
+Calling Chapel Code from Other Languages
+========================================
 
 .. note::
 
