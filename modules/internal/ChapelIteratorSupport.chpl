@@ -104,6 +104,26 @@ module ChapelIteratorSupport {
       chpl_buildStandInRTT(__primitive("scalar promotion type", t)) );
   }
 
+  // helps handle the case in #16027
+  pragma "no doc"
+  proc chpl_elemTypeForReducingIterables(x) type {
+    // Part 1 - get the first element -- as in iteratorIndexType()
+    pragma "no copy" var ic = _getIterator(x);
+    pragma "no copy" var i = iteratorIndex(ic);
+    _freeIterator(ic);
+    compilerAssert(i.type <= _iteratorRecord); // avoid unintended use
+
+    if !chpl_iteratorHasDomainShape(i) then
+      compilerError("unsupported elements of the expression being reduced -- they are iterable expressions without a domain shape");
+
+    // Part 2 - build the array type -- as in chpl__initCopy(_iteratorRecord)
+    var shape = new _domain(i._shape_);
+    shape._unowned = true;
+
+    type resultT = chpl__buildArrayRuntimeType(shape, iteratorIndexType(i));
+    return resultT;
+  }
+
   //
   // The two chpl_buildStandInRTT(type) functions accept, at run time,
   // the _RuntimeTypeInfo for domType/arrType that is **uninitialized**.

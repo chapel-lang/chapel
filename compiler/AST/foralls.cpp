@@ -1446,6 +1446,24 @@ static SymExpr* normalizeIITR(Expr* ref, Expr* iitr) {
   return new SymExpr(temp);
 }
 
+// If we are reducing things that are iterables,
+// the element type for the reduction op should be an array.
+static SymExpr* elemTypeIfIterableIIT(Expr* ref, SymExpr* iitr,
+                                      SymExpr* dataSE) {
+  Type* IT = iitr->symbol()->type;
+  if (!IT->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return iitr;
+
+  CallExpr* ait = new CallExpr("chpl_elemTypeForReducingIterables",
+                               dataSE->copy());
+  ref->insertBefore(ait);
+  Expr* aitR = resolveExpr(ait)->remove();
+  if (SymExpr* aitSE = toSymExpr(aitR))
+    return aitSE;
+  else
+    return normalizeIITR(ref, aitR);
+}
+
 // Given a reduce expression like "op reduce data", return op(inputType).
 // inputType is the type of things being reduced - when iterating over 'data'.
 // This matches the case where inputType is provided by the user.
@@ -1467,6 +1485,7 @@ static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
   ref->insertBefore(iit);
   Expr* iitR = resolveExpr(iit)->remove();
   if (!isSymExpr(iitR)) iitR = normalizeIITR(ref, iitR);
+  iitR = elemTypeIfIterableIIT(ref, toSymExpr(iitR), dataSE);
 
   return new CallExpr(opSE, iitR);
 }
