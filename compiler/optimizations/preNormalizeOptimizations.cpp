@@ -222,17 +222,38 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
   return NULL;
 }
 
+static Expr *getDomainExprFromArrayType(CallExpr* ce){
+  if (CallExpr *ceInner = toCallExpr(ce->get(1))) {
+    if (ceInner->isNamed("chpl__ensureDomainExpr")) {
+      return ceInner->get(1);
+    }
+  }
+  return NULL;
+}
+
 // get the domain part of the expression from `[D] int` or `[?D] int`
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e) {
   if (CallExpr *ce = toCallExpr(e)) {
     if (ce->isNamed("chpl__buildArrayRuntimeType")) {
-      if (CallExpr *ceInner = toCallExpr(ce->get(1))) {
-        if (ceInner->isNamed("chpl__ensureDomainExpr")) {
-          return ceInner->get(1);
-        }
+      if (Expr* e = getDomainExprFromArrayType(ce)){
+        return e;
       }
-      else if (DefExpr *queryDef = toDefExpr(ce->get(1))) {
-        return queryDef;
+    }
+    else if (DefExpr *queryDef = toDefExpr(ce->get(1))) {
+      return queryDef;
+    }
+  } else if (SymExpr* se = toSymExpr(e)) {
+    if(se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+       se->symbol()->hasFlag(FLAG_TEMP)) {
+      //if type var then check type expression
+      if(DefExpr* defExpr = toDefExpr(se->symbol()->defPoint)){
+        if (CallExpr *ce = toCallExpr(defExpr->init)) {
+          if (ce->isNamed("chpl__buildArrayRuntimeType")) {
+            if (Expr* e = getDomainExprFromArrayType(ce)){
+              return e;
+            }
+          }
+        }
       }
     }
   }
