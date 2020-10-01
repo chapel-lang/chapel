@@ -90,7 +90,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
     export CHPL_LIBFABRIC=libfabric
-    export CHPL_LLVM=none       # llvm requires py27 and cmake
+    export CHPL_LLVM=llvm       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
 
     # As a general rule, more CPUs --> faster make.
@@ -127,28 +127,22 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     ( *runtime* )
         log_info "Building Chapel component: runtime"
 
-        compilers=gnu
-        comms=none,ofi
-        tasks=qthreads
-        launchers=slurm-srun
-        substrates=none
+        compilers=gnu,cray
+        comms=gasnet,none,ofi
+        launchers=pals,slurm-srun
+        substrates=mpi,none
         locale_models=flat
-        auxfs=none
-        regexp=re2
-        llvm=none
-        libpics=none
+        auxfs=none,lustre
+        libpics=none,pic
 
         log_info "Start build_configs $dry_run $verbose # no make target"
 
         $cwd/../build_configs.py -p $dry_run $verbose -s $cwd/$setenv -l "$project.runtime.log" \
             --target-compiler=$compilers \
             --comm=$comms \
-            --tasks=$tasks \
             --launcher=$launchers \
             --substrate=$substrates \
             --locale-model=$locale_models \
-            --regexp=$regexp \
-            --llvm=$llvm \
             --auxfs=$auxfs \
             --lib-pic=$libpics \
             -- notcompiler
@@ -340,9 +334,9 @@ else
         list_loaded_modules
     fi
 
-    #[TODO] gen_version_gcc=
-    #[TODO] gen_version_intel=
-    #[TODO] gen_version_cce=
+    gen_version_gcc=8.3.0
+    gen_version_intel=16.0.3.210
+    gen_version_cce=10.0.2
 
     if [ "$CRAYPE_NETWORK_TARGET" == slingshot* ]; then
         target_cpu_module=craype-x86-rome
@@ -361,7 +355,7 @@ else
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        #[TODO] load_module_version $target_compiler $target_version 
+        load_module_version $target_compiler $target_version
     }
 
     function load_prgenv_intel() {
@@ -375,7 +369,7 @@ else
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        #[TODO] load_module_version $target_compiler $target_version
+        load_module_version $target_compiler $target_version
     }
 
     function load_prgenv_cray() {
@@ -389,7 +383,7 @@ else
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        #[TODO] load_module_version $target_compiler $target_version
+        load_module_version $target_compiler $target_version
     }
 
     function load_target_cpu() {
