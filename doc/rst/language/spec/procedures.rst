@@ -335,10 +335,17 @@ assignment operator and a default expression to the declaration of the
 formal argument. If the actual argument is omitted from the function
 call, the default expression is evaluated when the function call is made
 and the evaluated result is passed to the formal argument as if it were
-passed from the call site. Note though that the default value is
-evaluated in the same scope as the called function. Default value
+passed from the call site. Default value
 expressions can refer to previous formal arguments or to variables that
 are visible to the scope of the function definition.
+
+When a default value is provided for an argument without a type, the
+argument type will be inferred to match the type of the default value.
+This inference is similar to the type inference for variable declarations
+(see :ref:`Local_Type_Inference`). However, there is one difference:
+the type inference for the argument does not include inferring
+the runtime component of the type (see
+:ref:`Types_with_Runtime_Components`).
 
    *Example (default-values.chpl)*.
 
@@ -370,6 +377,37 @@ are visible to the scope of the function definition.
    to use a named argument for ``y`` in order to use the default value
    for ``x`` in the case when ``x`` appears earlier than ``y`` in the
    formal argument list.
+
+
+   *Example (default-array-runtime-type.chpl)*.
+
+   This example shows that the runtime type of the default argument
+   does not impact the runtime type of the argument in the case
+   that an actual argument was provided.
+
+   .. code-block:: chapel
+
+      var D = {1..4};
+      proc createArrayOverD() {
+        var A:[D] int;
+        return A;
+      }
+
+      proc bar(arg = createArrayOverD()) {
+        writeln(arg.domain);
+      }
+
+      bar(); // arg uses the default, so outputs {1..4}
+
+      var B:[0..3] int;
+      bar(B); // arg refers to B and so has the runtime type from B
+              // so outputs {0..3}
+
+   .. BLOCK-test-chapeloutput
+
+      {1..4}
+      {0..3}
+
 
 .. _Argument_Intents:
 
