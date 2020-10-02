@@ -53,9 +53,9 @@ within strings.
 Casts from String to a Numeric Type
 -----------------------------------
 
-This module supports casts from :mod:`string <String>` to numeric types. Such
-casts will convert the string to the numeric type and throw an error if the
-string is invalid. For example:
+The :mod:`string <String>` type supports casting to numeric types. Such casts
+will convert the string to the numeric type and throw an error if the string is
+invalid. For example:
 
 .. code-block:: chapel
 
@@ -140,7 +140,7 @@ bytes:
 .. note::
 
   The standard :mod:`FileSystem`, :mod:`Path` and :mod:`IO` modules can use
-  strings described above for paths and file names.
+  escaped strings as described above for paths and file names.
 
 
 Lengths and Offsets in Unicode Strings
@@ -159,15 +159,48 @@ and `int` values passed into :proc:`~string.this` are offsets in codepoint
 units.
 
 It is possible to indicate byte or codepoint units for indexing in the
-string methods by using arguments of type :record:`byteIndex` or
-:record:`codepointIndex` respectively.
+string methods by using arguments of type ``byteIndex`` or
+``codepointIndex`` respectively.
 
 For speed of indexing with their result values, :proc:`~string.find()`
-and :proc:`~string.rfind()` return a :record:`byteIndex`.
+and :proc:`~string.rfind()` return a ``byteIndex``.
 
 .. note::
 
   Support for grapheme units is not implemented at this time.
+
+Using the ``byteIndex`` and ``codepointIndex`` types
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A value of type ``byteIndex`` or ``codepointIndex`` can be passed to certain
+`string` functions to indicate that the function should operate with units of
+bytes or codepoints. Passing a ``codepointIndex`` has the same behavior as
+passing an integral type. See :proc:`~string.this` for an example.
+
+Both of these types can be created from an ``int`` via assignment or cast. They
+also support addition and subtraction with ``int``. Finally, values of same
+types can be compared.
+
+For example, the following function returns a string containing only the second
+byte of the argument:
+
+   .. code-block:: chapel
+
+     proc getSecondByte(arg:string) : int {
+       var offsetInBytes = 2:byteIndex;
+       return arg[offsetInBytes];
+     }
+
+Whereas the following function returns a string containing only the second
+codepoint of the argument:
+
+   .. code-block:: chapel
+
+     proc getSecondByte(arg:string) : int {
+       var offsetInBytes = 2:byteIndex;
+       return arg[offsetInBytes];
+     }
+
 
  */
 module String {
@@ -225,35 +258,12 @@ module String {
     var cachedNumCodepoints: int;
   }
 
-  /*
-     A value of type :record:`byteIndex` can be passed to certain
-     `string` functions to indicate that the function should operate
-     with units of bytes. See :proc:`~string.this`.
-
-     An `int` can be added to a :record:`byteIndex`, producing
-     another :record:`byteIndex`.  One :record:`byteIndex`
-     can be subtracted from another, producing an `int` distance
-     between them.  A :record:`byteIndex` can also be compared
-     with another :record:`byteIndex` or with an `int` .
-
-     To create or modify a :record:`byteIndex`, cast or assign it from an
-     `int`. For example, the following function returns a string
-     containing only the second byte of the argument:
-
-     .. code-block:: chapel
-
-       proc getSecondByte(arg:string) : int {
-         var offsetInBytes = 2:byteIndex;
-         return arg[offsetInBytes];
-       }
-
-   */
   pragma "plain old data"
+  pragma "no doc"
   record byteIndex {
     pragma "no doc"
     var _bindex  : int;
 
-    pragma "no doc"
     proc init() {
       // Let compiler insert defaults
     }
@@ -266,30 +276,8 @@ module String {
     }
   }
 
-  /*
-     A value of type :record:`codepointIndex` can be passed to certain
-     `string` functions to indicate that the function should operate
-     with units of codepoints. See :proc:`~string.this`.
-
-     An `int` can be added to a :record:`codepointIndex`, producing
-     another :record:`codepointIndex`.  One :record:`codepointIndex`
-     can be subtracted from another, producing an `int` distance
-     between them.  A :record:`codepointIndex` can also be compared
-     with another :record:`codepointIndex` or with an `int` .
-
-     To create or modify a :record:`codepointIndex`, cast or assign it from an
-     `int`. For example, the following function returns a string
-     containing only the second codepoint of the argument:
-
-     .. code-block:: chapel
-
-       proc getSecondCodepoint(arg:string) : int {
-         var offsetInCodepoints = 2:codepointIndex;
-         return arg[offsetInCodepoints];
-       }
-
-   */
   pragma "plain old data"
+  pragma "no doc"
   record codepointIndex {
     pragma "no doc"
     var _cpindex  : int;
