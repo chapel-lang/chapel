@@ -335,16 +335,24 @@ assignment operator and a default expression to the declaration of the
 formal argument. If the actual argument is omitted from the function
 call, the default expression is evaluated when the function call is made
 and the evaluated result is passed to the formal argument as if it were
-passed from the call site. Default value
-expressions can refer to previous formal arguments or to variables that
-are visible to the scope of the function definition.
+passed from the call site. While the default expression is evaluated at
+the time of the function call, it is resolved in the scope of the
+definition of the called function, immediately before the called function
+is resolved. As a result, a default value expression can refer to
+previous formal arguments.
 
-When a default value is provided for an argument without a type, the
-argument type will be inferred to match the type of the default value.
-This inference is similar to the type inference for variable declarations
-(see :ref:`Local_Type_Inference`). However, there is one difference:
-the type inference for the argument does not include inferring
-the runtime component of the type (see
+When a default value is provided for an formal argument without a type,
+the argument type will be inferred to match the type of the default
+value.  This inference is similar to the type inference for variable
+declarations (see :ref:`Local_Type_Inference`). However, there is one
+difference: when the call provides a corresponding actual argument, and
+the actual argument is of a type that includes a runtime component (see
+:ref:`Types_with_Runtime_Components`), the runtime component of the
+formal argument's type will come from the actual argument, rather than
+from the default value expression.
+
+the type inference for the argument does not include
+inferring the runtime component of the type (see
 :ref:`Types_with_Runtime_Components`).
 
    *Example (default-values.chpl)*.
@@ -381,8 +389,8 @@ the runtime component of the type (see
 
    *Example (default-array-runtime-type.chpl)*.
 
-   This example shows that the runtime type of the default argument
-   does not impact the runtime type of the argument in the case
+   This example shows that the runtime type of the default expression
+   does not impact the runtime type of the formal argument in the case
    that an actual argument was provided.
 
    .. code-block:: chapel
@@ -399,14 +407,14 @@ the runtime component of the type (see
 
       bar(); // arg uses the default, so outputs {1..4}
 
-      var B:[0..3] int;
+      var B:[0..2] int;
       bar(B); // arg refers to B and so has the runtime type from B
-              // so outputs {0..3}
+              // so outputs {0..2}
 
    .. BLOCK-test-chapeloutput
 
       {1..4}
-      {0..3}
+      {0..2}
 
 
 .. _Argument_Intents:

@@ -402,12 +402,6 @@ formal/variable/field is non-nilable or generic, including generic
 memory management.
 
 
-
-.. code-block:: syntax
-
-   nil-expression:
-     `nil'
-
 .. _Class_Fields:
 
 Class Fields

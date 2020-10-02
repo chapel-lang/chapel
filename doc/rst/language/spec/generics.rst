@@ -901,8 +901,9 @@ User-Defined Initializers
 If a generic field of a class or record does not have a default value or
 type alias, each user-defined initializer for that class must explicitly
 initialize that field. In the event that the initializer is called using
-an already instantiated type, the initializer must initialize the generic
-fields to the same type.
+an already instantiated type as the receiver, the class or record
+instance created by the initializer must have that same instantiated
+type.
 
    *Example (initializersForGenericFields.chpl)*.
 

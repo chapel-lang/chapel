@@ -184,7 +184,7 @@ stored) is queried using the following syntax:
 
 .. code-block:: syntax
 
-   locale-access-expression:
+   locale-query-expression:
      expression . `locale'
 
 When the expression is a class, the access returns the locale on which

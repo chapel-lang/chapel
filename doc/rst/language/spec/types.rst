@@ -522,7 +522,7 @@ in :ref:`Atomic_Variables`.
 Type Aliases
 ------------
 
-Type aliases are declared with the following syntax: 
+Type aliases are declared with the following syntax:
 
 .. code-block:: syntax
 
@@ -595,6 +595,11 @@ generic (:ref:`Type_Aliases_in_Generic_Types`).
 Querying the Type of an Expression
 ----------------------------------
 
+.. code-block:: syntax
+
+   type-query-expression:
+     expression . `type'
+
 The type of a an expression can be queried with ``.type``. This
 functionality is particularly useful when doing generic programming
 (see :ref:`Chapter-Generics`).
@@ -619,25 +624,43 @@ functionality is particularly useful when doing generic programming
 
    *Open issue*.
 
-   For types that include a runtime component, it would be useful to be
-   able to query the static and runtime components separately.
+   Given a nested expression that has ``.type`` called on it,
+   for example ``f()`` in ``f().type``, in which circumstances should
+   ``f()`` be evaluated for side effects?
+
+   At first it might seem that ``f()`` should never be evaluated for side
+   effects. However, it must be evaluated for side effects if ``f()`` an
+   array or domain type, as these have a runtime component (see
+   :ref:`Types_with_Runtime_Components`). As a result, should ``f()`` in
+   such a setting always be evaluated for side effects?  The answer to
+   this question also also connected to the question of whether or not a
+   when a function returning a ``type`` is evaluated for side effects at
+   runtime.
+
+   One approach might be to introduce different means to query only the
+   compile-time component of the type or only the runtime component of
+   the time.
 
 
-.. _Operators_Available_on_Types:
+.. _Operations_Available_on_Types:
 
-Operators Available on Types
-----------------------------
+Operations Available on Types
+-----------------------------
 
-There are several operators that can operate on type aliases or type
-expressions (such as the ``.type`` queries described above).
+This section discusses how type expressions can be used. Type expressions
+include types, type aliases, ``.type`` queries, and calls to functions
+that use the ``type`` return intent.
 
-Types can also be passed to a ``type`` formal of a generic function (see
-:ref:`Formal_Type_Arguments`).
+A type expression can be used to indicate the type of a value, as with
+``var x: typeExpression;`` (see :ref:`Variable_Declarations`).
+
+A type expression can be passed to a ``type`` formal of a generic
+function (see :ref:`Formal_Type_Arguments`).
 
 See also the :mod:`Types` module documentation which provides many
-methods to query properties of types.
+functions to query properties of types.
 
-The language also provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
+The language provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
 :proc:`isSubtype <UtilMisc_forDocs.isSubtype>`, and
 :proc:`isProperSubtype <UtilMisc_forDocs.isProperSubtype>` for comparing types.
 The normal comparison operators are also available to compare types:
@@ -649,8 +672,8 @@ The normal comparison operators are also available to compare types:
  * ``<=`` and ``>=`` check if one type is a subtype of another (see
    :proc:`<= <UtilMisc_forDocs.<=>`)
 
-Additionally, it is possible to cast a type to a ``param`` string. This
-allows a type to be printed out.
+It is possible to cast a type to a ``param`` string. This allows a type
+to be printed out.
 
   *Example (type-to-string.chpl)*.
 
@@ -669,24 +692,32 @@ allows a type to be printed out.
 
       int(64)
 
+   *Open issue*.
+
+   If type comparison with ``==`` is called on two types with runtime
+   components (see :ref:`Types_with_Runtime_Components`), should the
+   runtime component be included in the comparison? Or, should ``==`` on
+   types only consider if the compile-time components match?
 
 .. _Types_with_Runtime_Components:
 
 Types with Runtime Components
 -----------------------------
 
-Domain and array types include a runtime component. (See
+Domain and array types include a *runtime component*. (See
 :ref:`Chapter-Domains` and :ref:`Chapter-Arrays` for more on arrays and
 domains).
 
 For a domain type, the runtime component of the type is the distribution over
 which the domain was declared.
 
-For an array type, the runtime component of the type is the domain over which
-the array was declared.
+For an array type, the runtime component of the type contains the domain
+over which the array was declared and the runtime component of the
+array's element type, if present.
 
-As a result, a type alias representing an array or domain type will exist
-at runtime.
+As a result, an array or domain type will be represented and manipulated
+at runtime. In particular, a function that returns a type with a runtime
+component will be executed at runtime.
 
 These features combine with the ``.type`` syntax to allow one to create
 an array that has the same element type, shape, and distribution as an
@@ -739,6 +770,21 @@ existing array.
 
    *Open issue*.
 
-   Currently, only array and domain types have a runtime component.
-   Other types that contain arrays or domains (such as a record
-   containing an array field) do not have a runtime component.
+   Should a record or class type also have a runtime component when it
+   contains array/domain field(s)? This runtime component is needed, for
+   example, to create a default-initialized instance of such a type in
+   the absence of user-defined default initializer.
+
+   *Open issue*.
+
+   Class types are not currently considered to have a runtime component.
+   Should class types be considered to have a runtime component, so that
+   querying an instance's type with ``myObject.type`` will produce the
+   type of the object known at runtime, rather than the type with which
+   ``myObject`` was declared?
+
+   *Open issue*.
+
+   Should functions returning a type always be evaluated for side
+   effects, or only evaluated for side effects when returning a type with
+   a runtime component?
