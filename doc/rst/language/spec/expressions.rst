@@ -13,7 +13,6 @@ Chapel provides the following expressions:
 
    expression:
      literal-expression
-     nil-expression
      variable-expression
      enum-constant-expression
      call-expression
@@ -36,7 +35,8 @@ Chapel provides the following expressions:
      module-access-expression
      tuple-expression
      tuple-expand-expression
-     locale-access-expression
+     locale-query-expression
+     type-query-expression
      mapped-domain-expression
 
 Individual expressions are defined in the remainder of this chapter and
