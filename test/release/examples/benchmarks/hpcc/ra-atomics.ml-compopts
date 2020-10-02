@@ -16,7 +16,3 @@ if ugni:
 common = '-sn=33:indexType -sN_U={0}:indexType -sverify=false'.format(nu)
 
 print('{0} # ra.atomic-n33'.format(common))
-
-if ugni:
-  print('{0} --no-optimize-forall-unordered-ops # ra.ordered-atomic-n33'.format(common))
-  print('{0} --no-optimize-forall-unordered-ops -stasksPerCore=4 # ra.atomic-oversub4-n33'.format(common))
