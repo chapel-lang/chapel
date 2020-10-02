@@ -2064,6 +2064,7 @@ module String {
   /*
      Copies the int `rhs` into the byteIndex `lhs`.
   */
+  pragma "no doc"
   proc =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
@@ -2075,6 +2076,7 @@ module String {
   /*
      Copies the int `rhs` into the codepointIndex `lhs`.
   */
+  pragma "no doc"
   proc =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
