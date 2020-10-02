@@ -23,10 +23,22 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * improved the Point of Instantiation (POI) rule to avoid surprising behaviors
   (see https://chapel-lang.org/docs/1.23/language/spec/generics.html#function-visibility-in-generic-functions)
+* array copy initialization now copy initializes the array elements as intended
+  (see https://chapel-lang.org/docs/master/language/spec/variables.html#copy-and-move-initialization)
+* iterator expressions can now be passed to `in` array arguments
+  (see https://chapel-lang.org/docs/language/spec/iterators.html#iterators-as-arrays)
+* improved `inout` intent operations to interleave well with `in` and `out`
+  (see https://chapel-lang.org/docs/language/spec/procedures.html#the-inout-intent)
+* module-scope variables are now deinitialized in reverse initialization order
+  (see https://chapel-lang.org/docs/language/spec/modules.html#module-deinitialization)
+* certain arguments no longer infer runtime types from their default values
+  (see https://chapel-lang.org/docs/language/spec/procedures.html#default-values)
 * improved method resolution to always look at the type's definition point
 
 New Features
 ------------
+* added `noinit` to avoid default initialization of array elements
+  (see https://chapel-lang.org/docs/master/technotes/noinit.html)
 * added support for `import` statements that support multiple subexpressions  
   (e.g., `import Mod1; import Mod2;` can now be written `import Mod1, Mod2;`)  
   (see https://chapel-lang.org/docs/master/language/spec/modules.html#importing-modules)
@@ -49,15 +61,28 @@ Feature Improvements
 * improved `string`/`bytes` factory functions to accept `c_ptr(c_char)` buffers
   (see https://chapel-lang.org/docs/master/builtins/String.html
    and https://chapel-lang.org/docs/master/builtins/Bytes.html)
+* split initialization no longer considers nested function declarations
+  (see https://chapel-lang.org/docs/master/language/spec/variables.html#split-initialization)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed `.length`, `.numIndices`, and `.numElements`; use `.size` instead
+* removed support for spaces in query expressions
+  (e.g. `proc foo(arg: ? t)` or `proc foo(args... ? n)`)
+* removed postfix-`!` on class types in favor of using casts
+* removed `new owned/shared(c)` in favor of `owned/shared.create(c)`
+* removed `string` vs. `bytes` comparisons
+* removed `decodePolicy.ignore` in favor of new `decodePolicy.drop`
+  (see https://chapel-lang.org/docs/1.21/builtins/Bytes.html#Bytes.bytes.decode)
 * removed `enumerated`, which was deprecated in Chapel 1.21; use `enum` instead
-* removed deprecation warnings for symbols in the 'IO' module
+* removed support for C++-style deinitializer names e.g. `proc ~C()`
+* removed support for vectorization hinting to the C backend
+* removed support for deprecated meaning of `CHPL_TARGET_ARCH`
+* removed support for deprecated path to `chpl` within `bin`
 
 Deprecated / Removed Library Features
 -------------------------------------
+* removed deprecation warnings for symbols in the 'IO' module
 
 Standard Library Modules
 ------------------------
@@ -73,6 +98,8 @@ Standard Library Modules
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
 * added a new routine to print 'CommDiagnostics' in tabular form
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
+* added the ability to get stack traces in 'CommDiagnostics' verbose output
+  (see https://chapel-lang.org/docs/master/modules/standard/CommDiagnostics.html#CommDiagnostics.commDiagsStacktrace)
 * made `c_ptrTo()` generate a compile-time error for distributed arrays
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
 * made 'Random.PCGRandomLib' no longer auto-available
@@ -82,8 +109,11 @@ Package Modules
 ---------------
 * added an `OrderedSet` module
   (see https://chapel-lang.org/docs/master/modules/packages/OrderedSet.html)
+* updated the Sort module to number parts in keyPart calls from 0
+  (see https://chapel-lang.org/docs/master/modules/packages/Sort.html#the-keypart-method)
 * moved 'LinkedLists' from the standard modules to the package modules
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinkedLists.html)
+* fixed problems with compiling the Crypto module with `--llvm`
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -91,20 +121,36 @@ Standard Domain Maps (Layouts and Distributions)
 
 New Tools / Tool Changes
 ------------------------
+* added support for Google Protocol Buffers
+  (see https://chapel-lang.org/docs/master/tools/protoc-gen-chpl/protoc-gen-chpl.html)
+* updated `c2chapel` to use the `in` intent by default for struct arguments
+  (see https://chapel-lang.org/docs/master/tools/c2chapel/c2chapel.html)
 * updated 'mason' to work with Spack's new GitHub structure
 
 Interoperability Improvements
 -----------------------------
-* added checks to prevent passing remote/distributed arrays to extern array args
+* added checks to prevent passing distributed arrays to `extern` array arguments
   (see https://chapel-lang.org/docs/1.23/technotes/extern.html#array-arguments)
+* restricted types and intents for `extern`/`export` functions to working cases
+  (see https://chapel-lang.org/docs/master/technotes/extern.html#allowed-intents-and-types)
+
+* added automatic uses of 'CPtr', 'SysCTypes', and 'SysBasic' to `extern` blocks 
+  (see https://chapel-lang.org/docs/master/technotes/extern.html#support-for-extern-blocks)
+* improved `--llvm` and `extern` block support for macros to include shifts
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * parallelized assignments between large local arrays
+* extended parallel array initialization to all types, not just numeric ones
 * added an optimization that reduces overheads for provably local array accesses
   (e.g. `forall i in A.domain { A[i] = 5; }` now executes much more quickly)
+* optimized how domains track the arrays that they govern at execution-time
 * reduced the overheads for creating/destroying arrays with constant domains
   (e.g. `var arr: [1..1_000_000][1..3] int;` now executes ~4x faster)
+* improved performance of associative domains/arrays, `map`, and `set`
+* optimized local single iteration `coforall`s
+* improved on-clause optimization to no longer trigger when loops are present
+* improved compiler vectorization hinting to LLVM optimization with `--llvm`
 * optimized several `string` operations for ASCII-only strings
 * made `string.size` an O(1) operation
 * eliminated an extra task-private variable for iterators w/out top-level yields
@@ -114,13 +160,17 @@ Compilation-Time / Generated Code Improvements
 * reduced the compilation time of several `string`/`bytes` operations
 * reduced the compilation time for repeated calls to `writef()` and `.format()`
 * reduced the amount of code generated for `forall` loops due to fast-followers
+* reduced the amount of code generated for common parallel iterators
+* removed unnecessary instantiations for certain generic functions
 * stopped the compiler from generating (unused) `writeThis()` methods for arrays
+* removed unnecessary array temporaries for arrays-of-arrays
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 
 Memory Improvements
 -------------------
+* reduced fragmentation for large allocations
 * closed a memory leak in distributed promoted expressions
 * closed a memory leak in remote-value-forwarded array views
 * closed a memory leak in `shared` variable assignment
@@ -131,8 +181,18 @@ Documentation
 -------------
 * improved the 'Modules' chapter of the language spec for `use` and `import`
   (see https://chapel-lang.org/docs/1.23/language/spec/modules.html#access-of-module-contents)
+* updated language specification to discuss .type and runtime types
+  (see http://chapel-lang.org/docs/master/language/spec/types.html#querying-the-type-of-an-expression)
+* updated the description of initializing sync variables in the language spec
+  (see https://chapel-lang.org/docs/master/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
 * added a section on conflicts to the `Variables` chapter of the language spec
   (see https://chapel-lang.org/docs/1.23/language/spec/variables.html#variable-conflicts)
+* adjusted spec to make it clearer how loops interact with split initialization
+  (see https://chapel-lang.org/docs/master/language/spec/variables.html#split-initialization)
+* added an example to the spec to clarify the defer statement
+  (see https://chapel-lang.org/docs/master/language/spec/statements.html#the-defer-statement)
+* improved links between various documentation of atomic variables
+  (see https://chapel-lang.org/docs/master/primers/atomics.html)
 * added documentation for (unstable) compiler-defined global variables
   (see https://chapel-lang.org/docs/master/technotes/globalvars.html)
 * added a note to the 'cygwin' docs indicating it's not intended for performance
@@ -146,10 +206,13 @@ Example Codes
 
 Portability
 -----------
+* significantly improved portability of `--llvm` to different architectures
+* improved checking for supported LLVM version when using `CHPL_LLVM=system`
 * fixed a build system bug to better support non-English terminals
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
+* improved the `--cache-remote` operation for `ugni`
 
 Compiler Flags
 --------------
@@ -171,11 +234,17 @@ Syntax Highlighting
 
 Error Messages / Semantic Checks
 --------------------------------
+* many compilation errors now include a callstack
+* compilation errors now use bold when outputting to a compatible terminal
+* improved checking for passing a non-`param` value to a `param` argument 
 * added an error message for sparse arrays of non-nilable classes
 * added an error message when repeating a module in a `use`/`import` statement
   (e.g., for `module M { module N {} }`, `use M.N.N.N;` now generates an error)
+* improved error messages when modules are used as variables or functions
 * added an error message when using qualified access to capture a function ref
 * improved error messages for symbol conflicts involving re-exported symbols
+* improved checking for invalid changes to an instantiated generic field
+  (see https://chapel-lang.org/docs/master/language/spec/generics.html#user-defined-initializers)
 
 Execution-time Checks
 ---------------------
@@ -189,6 +258,8 @@ Bug Fixes
 ---------
 * fixed a bug in which a `return` in a `serial` block squashed parallelism
 * fixed a bug in which certain standard module symbols were auto-available
+* fixed a problem with `new t` when `t` is a `borrowed class?` type
+* fixed an internal error with nilable `shared` field declarations
 * fixed a bug with using and importing private parent symbols
 * fixed a bug when re-exporting multiple functions with the same name
 * fixed a bug with failing to find iterators on a type when importing it
@@ -201,25 +272,45 @@ Bug Fixes
 * fixed a bug with qualified naming of functions conflicting with local symbols
 * fixed a bug with package modules inappropriately accessing parent symbols
 * fixed a bug in which loop expressions dropped `param`ness of formal arguments
+* fixed several problems with split initialization through `out` arguments
 * fixed an internal error for multiple instantiations of a generic field
 * made `string` and `bytes` slices respect the range's alignment
 * fixed an off-by-one error in multilocale `string`/`bytes` interoperability
+* fixed a problem with sizes of string literals containing escapes
+* fixed a bug in associative domain `^=` operator
+* fixed a bug in `map` `-=` and `&=` operators
+* fixed deinit of remote `sync` variables
 * fixed a bug in 'DistIterators' in which 2-locale runs used the wrong locale
+* fixed several problems with `isDefaultInitializable()`
+* fixed a race in `domain.contains()`
 * fixed a race-y OOB error in some of the 'Sort' routines
 * fixed some bugs in the `dynamic()` iterator relating to integer overflow
 * fixed a bug in which restarting 'VisualDebug' silently overwrote its data
 * fixed a bug in which some 'NetCDF' routines were missing their `use` clauses
 * fixed a bug with the 'TOML' `parseLoop` method
 * fixed the rendering of several expression types in `chpldoc`
+* fixed an internal error encountered with certain `lifetime` clauses
+* fixed problems with initializing a channel from another channel
+
+Platform-specific bug fixes
+---------------------------
+* resolved deadlocks from `sync` variables on ARM systems
 
 Packaging / Configuration Changes
 ---------------------------------
+* added a docker image that uses GASNet's `smp` conduit for faster execution
+* made Cray module compatible with the Lmod environment system
+* switched from supporting cce-classic to clang-based cce
+* removed support for Cray XE
+* removed the KNL locale model
 * removed the old `PERFORMANCE.md` file in favor of using the website for this
   (see https://chapel-lang.org/performance.html)
 * made the `make check` step no longer use `--cc-warnings`
 
 Third-Party Software Changes
 ----------------------------
+* upgraded GMP to version 6.2.0
+* upgraded LLVM to version 10.0.1
 
 Testing System
 --------------
