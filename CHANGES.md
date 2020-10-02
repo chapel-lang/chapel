@@ -1,6 +1,12 @@
 Release Changes List
 ====================
 
+TODO:
+o docs links
+o examples changes
+o spellcheck
+o test URLs
+
 version 1.23.0
 ==============
 
@@ -17,30 +23,52 @@ Semantic Changes / Changes to Chapel Language
 
 New Features
 ------------
+* added support for `param` for-loops on ranges that use the `#` operator
+* added a `range.isBounded()` query
+  (see https://chapel-lang.org/docs/1.23/builtins/ChapelRange.html#ChapelRange.range.isBounded)
 
 Feature Improvements
 --------------------
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed `.length`, `.numIndices`, and `.numElements`; use `.size` instead
+* removed `enumerated`, which was deprecated in Chapel 1.21; use `enum` instead
 
 Deprecated / Removed Library Features
 -------------------------------------
 
 Standard Library Modules
 ------------------------
+* added a 'Version' module for reasoning about version numbers including 'chpl's
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Version.html)
+* made 'CPtr' a standard user-facing module that must now be `use`d/`import`ed
+  (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
+* certain other standard libraries must also now be explicitly `use`d/`import`ed
+  (e.g., 'Sys', 'SysBasic', 'CPtr' and 'DSIUtil')
+* added a new routine to print 'CommDiagnostics' in tabular form
+  (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
+* made `c_ptrTo()` print errors for remote/distributed arrays
+  (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
+* made 'Random.PCGRandomLib' no longer auto-available
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Random/PCGRandomLib.html)
 
 Package Modules
 ---------------
+* moved 'LinkedLists' from the standard modules to the package modules
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinkedLists.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 
 New Tools / Tool Changes
 ------------------------
+* updated 'mason' to work with Spack's new GitHub structure
 
 Interoperability Improvements
 -----------------------------
+* added checks to prevent passing remote/distributed arrays to extern array args
+  (see https://chapel-lang.org/docs/1.23/technotes/extern.html#array-arguments)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -53,6 +81,11 @@ Memory Improvements
 
 Documentation
 -------------
+* added a note to the 'cygwin' docs indicating it's not intended for performance
+  (see https://chapel-lang.org/docs/1.23/platforms/cygwin.html)
+* clarified that Mac 'homebrew' users need not build from source
+  (see https://chapel-lang.org/install-mac.html and
+   https://chapel-lang.org/docs/1.23/platforms/macosx.html)
 
 Example Codes
 -------------
@@ -65,6 +98,8 @@ Cray-specific Changes and Bug Fixes
 
 Compiler Flags
 --------------
+* extended `--no-checks` to support `--checks` to re-enable default checks
+  (see https://chapel-lang.org/docs/1.23/usingchapel/man.html)
 
 Runtime Library Changes
 -----------------------
@@ -80,15 +115,28 @@ Syntax Highlighting
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error message for sparse arrays of non-nilable classes
 
 Execution-time Checks
 ---------------------
 
 Bug Fixes
 ---------
+* fixed a bug in which a 'return' in a 'serial' block squashed parallelism
+* fixed a bug in which certain standard module symbols were auto-available
+* fixed an internal error for multiple instantiations of a generic field
+* made `string` and `bytes` slices respect the range's alignment
+* fixed a bug in 'DistIterators' in which 2-locale runs used the wrong locale
+* fixed a race-y OOB error in some of the 'Sort' routines
+* fixed some bugs in the `dynamic()` iterator relating to integer overflow
+* fixed a bug in which restarting 'VisualDebug' silently overwrote its data
+* fixed a bug in which some 'NetCDF' routines were missing their 'use' clauses
 
 Packaging / Configuration Changes
 ---------------------------------
+* removed the old `PERFORMANCE.md` file in favor of using the website for this
+  (see https://chapel-lang.org/performance.html)
+* made the `make check` step no longer use `--cc-warnings`
 
 Third-Party Software Changes
 ----------------------------
@@ -98,24 +146,34 @@ Testing System
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
+* fixed the alphabetization of packages in LICENSE and third-party/README
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* extended support for split-initialization to internal and standard modules
+* remove a superfluous `ref` intend from methods in 'List'
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
+* made the Makefiles remove `chpl-env-gen.h` on `make clean`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* made `use` within internal modules private-by-default, as elsewhere
+* added support for `INT_ASSERT()` to take an optional AST as its first argument
+* enabled `%` format argument checking for `INT_FATAL`/`USR_FATAL`-style calls
+* stop having the compiler generate (unused) `writeThis()` methods for arrays
+* asserted that `gBoundsChecking` is a `param` within the compiler
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* updated test scripts to be ready for Discourse-based mailing lists
 
 
 version 1.22.1
