@@ -1,1 +1,3 @@
 -M Graph500_Modules Graph500_Modules/BFS_1D_onV.chpl -sPRINT_TIMING_STATISTICS=false -sPRINT_LOCALE_INFORMATION=false -sSHUFFLE_DETERMINISTICALLY=true --no-warnings
+# --no-warnings to avoid
+# warning: Module level symbol is hiding function argument 'N_VERTICES'

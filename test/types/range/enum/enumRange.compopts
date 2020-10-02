@@ -1,4 +1,5 @@
 color1.chpl --no-warnings
 color2.chpl --no-warnings
 color3.chpl --no-warnings
-
+# --no-warnings avoids the warning
+# warning: invoking 'offset' on an unstrided range has no effect.

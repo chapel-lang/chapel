@@ -1,1 +1,1 @@
-cg-makea.chpl --no-warnings --print-passes
+cg-makea.chpl --print-passes
