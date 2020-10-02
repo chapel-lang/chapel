@@ -543,7 +543,7 @@ Currently, ``param`` arguments are not allowed in an extern function
 declaration, and ``type`` args are passed as a string containing the
 name of the actual type being passed. Note that the level of indirection
 is changed when passing arguments to a C function using
-``ref`` intent. The C code implementing that function must
+the ``ref`` intent. The C code implementing that function must
 dereference the argument to extract its value.
 
 .. [4]
