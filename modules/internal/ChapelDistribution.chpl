@@ -596,6 +596,18 @@ module ChapelDistribution {
               " (expected to be within ", parentDom, ")");
     }
 
+    proc canDoDirectAssignment(rhs: domain) {
+      if isRectangularDom(this.parentDom) &&
+         isRectangularDom(rhs.parentDom) {
+        if this.dsiNumIndices == 0 {
+          if rhs.parentDom.isSubset(this.parentDom) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
     //basic DSI functions
     proc dsiDim(d: int) { return parentDom.dim(d); }
     proc dsiDims() { return parentDom.dims(); }
