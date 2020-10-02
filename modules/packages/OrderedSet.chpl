@@ -18,21 +18,22 @@
  */
 
 /*
-  This module contains the implementation of the orderedSet type.
+  This module contains the implementation of the ``orderedSet`` type.
 
-  An orderedSet is a collection of unique and ordered elements. The orderedSet 
-  accepts a comparator to determine how elements are compared. The default 
-  comparator is `defaultComparator`. In this case, elements are stored and 
-  considered in ascending order. For example, ``these`` will yield elements in 
-  ascending order.
+  An ``orderedSet`` is a collection of unique and ordered elements. The
+  ``orderedSet`` accepts a :ref:`comparator <comparators>` to determine how
+  elements are compared.  The default comparator is `defaultComparator`. In this
+  case, elements are stored and considered in ascending order. For example,
+  ``these`` will yield elements in ascending order.
 
-  All references to orderedSet elements are invalidated when the orderedSet is 
+  All references to ``orderedSet`` elements are invalidated when the ``orderedSet`` is 
   cleared or deinitialized.
 
-  orderedSet are not parallel safe by default, but can be made parallel safe by 
-  setting the param formal `parSafe` to true in any orderedSet constructor. When 
-  constructed from another orderedSet, the new orderedSet will inherit 
-  the parallel safety mode of its originating orderedSet.
+  ``orderedSet`` is not parallel safe by default, but can be made parallel safe
+  by setting the param formal `parSafe` to true in any ``orderedSet``
+  constructor. When constructed from another ``orderedSet``, the new
+  ``orderedSet`` will inherit the parallel safety mode of its originating
+  ``orderedSet``.
 
 */
 module OrderedSet {
