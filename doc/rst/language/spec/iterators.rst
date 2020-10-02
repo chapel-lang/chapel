@@ -127,12 +127,21 @@ iteration, the iterator yields a value and the body is executed.
 Iterators as Arrays
 ~~~~~~~~~~~~~~~~~~~
 
-If an iterator function is captured into a new variable declaration,
-passed to an `in` intent argument, or assigned to an array, the iterator
-is iterated over in total and the expression evaluates to a rectangular
-array that contains the values returned by the iterator on each
-iteration. Iterators can pass to `in` intent arguments declared with a
-compatible array type expression.
+*Capturing an iterator* into a new variable creates a new rectangular
+array storing the same elements that the iterator yielded.
+
+An iterator can be captured by:
+
+ * storing it into a new ``var`` or ``const`` variable declaration
+ * passing it to function formal argument accepting it with ``in`` intent
+
+In other words, an iterator can be implicitly converted into an array
+with matching shape and element type (see also :ref:`Implicit_Conversions`).
+
+When an iterator is assigned to an existing array, the array and the
+iterator will be iterated over with zippered iteration
+(:ref:`Zipper_Iteration`) and the array elements assigned to the yielded
+value.
 
    *Example (as-arrays.chpl)*.
 
