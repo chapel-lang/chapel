@@ -341,7 +341,7 @@ definition of the called function, immediately before the called function
 is resolved. As a result, a default value expression can refer to
 previous formal arguments.
 
-When a default value is provided for an formal argument without a type,
+When a default value is provided for a formal argument without a type,
 the argument type will be inferred to match the type of the default
 value.  This inference is similar to the type inference for variable
 declarations (see :ref:`Local_Type_Inference`). However, there is one
@@ -350,10 +350,6 @@ the actual argument is of a type that includes a runtime component (see
 :ref:`Types_with_Runtime_Components`), the runtime component of the
 formal argument's type will come from the actual argument, rather than
 from the default value expression.
-
-the type inference for the argument does not include
-inferring the runtime component of the type (see
-:ref:`Types_with_Runtime_Components`).
 
    *Example (default-values.chpl)*.
 
