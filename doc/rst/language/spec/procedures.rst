@@ -45,7 +45,7 @@ Functions are presented as follows:
    :ref:`Calling_External_Functions`
 
 -  calling Chapel functions from external
-   functions:ref:`Calling_Chapel_Functions`
+   functions :ref:`Calling_Chapel_Functions`
 
 -  determining the function to invoke for a given call site: function
    and operator overloading :ref:`Function_Overloading`,
@@ -335,10 +335,21 @@ assignment operator and a default expression to the declaration of the
 formal argument. If the actual argument is omitted from the function
 call, the default expression is evaluated when the function call is made
 and the evaluated result is passed to the formal argument as if it were
-passed from the call site. Note though that the default value is
-evaluated in the same scope as the called function. Default value
-expressions can refer to previous formal arguments or to variables that
-are visible to the scope of the function definition.
+passed from the call site. While the default expression is evaluated at
+the time of the function call, it is resolved in the scope of the
+definition of the called function, immediately before the called function
+is resolved. As a result, a default value expression can refer to
+previous formal arguments.
+
+When a default value is provided for a formal argument without a type,
+the argument type will be inferred to match the type of the default
+value.  This inference is similar to the type inference for variable
+declarations (see :ref:`Local_Type_Inference`). However, there is one
+difference: when the call provides a corresponding actual argument, and
+the actual argument is of a type that includes a runtime component (see
+:ref:`Types_with_Runtime_Components`), the runtime component of the
+formal argument's type will come from the actual argument, rather than
+from the default value expression.
 
    *Example (default-values.chpl)*.
 
@@ -370,6 +381,37 @@ are visible to the scope of the function definition.
    to use a named argument for ``y`` in order to use the default value
    for ``x`` in the case when ``x`` appears earlier than ``y`` in the
    formal argument list.
+
+
+   *Example (default-array-runtime-type.chpl)*.
+
+   This example shows that the runtime type of the default expression
+   does not impact the runtime type of the formal argument in the case
+   that an actual argument was provided.
+
+   .. code-block:: chapel
+
+      var D = {1..4};
+      proc createArrayOverD() {
+        var A:[D] int;
+        return A;
+      }
+
+      proc bar(arg = createArrayOverD()) {
+        writeln(arg.domain);
+      }
+
+      bar(); // arg uses the default, so outputs {1..4}
+
+      var B:[0..2] int;
+      bar(B); // arg refers to B and so has the runtime type from B
+              // so outputs {0..2}
+
+   .. BLOCK-test-chapeloutput
+
+      {1..4}
+      {0..2}
+
 
 .. _Argument_Intents:
 

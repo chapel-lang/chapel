@@ -522,7 +522,7 @@ in :ref:`Atomic_Variables`.
 Type Aliases
 ------------
 
-Type aliases are declared with the following syntax: 
+Type aliases are declared with the following syntax:
 
 .. code-block:: syntax
 
@@ -589,3 +589,202 @@ generic (:ref:`Type_Aliases_in_Generic_Types`).
 
       2
 
+
+.. _Querying_the_Type_of_an_Expression:
+
+Querying the Type of an Expression
+----------------------------------
+
+.. code-block:: syntax
+
+   type-query-expression:
+     expression . `type'
+
+The type of a an expression can be queried with ``.type``. This
+functionality is particularly useful when doing generic programming
+(see :ref:`Chapter-Generics`).
+
+   *Example (dot-type.chpl)*.
+
+   For example, this code uses ``.type`` to query the type of the
+   variable ``x`` and store that in the type alias ``t``:
+
+   .. code-block:: chapel
+
+      var x: int;
+      type t = x.type;
+
+   .. BLOCK-test-chapelpost
+
+      writeln(t:string);
+
+   .. BLOCK-test-chapeloutput
+
+      int(64)
+
+   *Open issue*.
+
+   Given a nested expression that has ``.type`` called on it,
+   for example ``f()`` in ``f().type``, in which circumstances should
+   ``f()`` be evaluated for side effects?
+
+   At first it might seem that ``f()`` should never be evaluated for side
+   effects. However, it must be evaluated for side effects if ``f()`` an
+   array or domain type, as these have a runtime component (see
+   :ref:`Types_with_Runtime_Components`). As a result, should ``f()`` in
+   such a setting always be evaluated for side effects?  The answer to
+   this question also also connected to the question of whether or not a
+   when a function returning a ``type`` is evaluated for side effects at
+   runtime.
+
+   One approach might be to introduce different means to query only the
+   compile-time component of the type or only the runtime component of
+   the time.
+
+
+.. _Operations_Available_on_Types:
+
+Operations Available on Types
+-----------------------------
+
+This section discusses how type expressions can be used. Type expressions
+include types, type aliases, ``.type`` queries, and calls to functions
+that use the ``type`` return intent.
+
+A type expression can be used to indicate the type of a value, as with
+``var x: typeExpression;`` (see :ref:`Variable_Declarations`).
+
+A type expression can be passed to a ``type`` formal of a generic
+function (see :ref:`Formal_Type_Arguments`).
+
+The :mod:`Types` module provides many functions to query properties of
+types.
+
+The language provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
+:proc:`isSubtype <UtilMisc_forDocs.isSubtype>`, and
+:proc:`isProperSubtype <UtilMisc_forDocs.isProperSubtype>` for comparing types.
+The normal comparison operators are also available to compare types:
+
+ * ``==`` checks if two types are equivalent
+ * ``!=`` checks if two types are different
+ * ``<`` and ``>`` check if one type is a proper subtype of another (see
+   :proc:`< <UtilMisc_forDocs.<>`)
+ * ``<=`` and ``>=`` check if one type is a subtype of another (see
+   :proc:`<= <UtilMisc_forDocs.<=>`)
+
+It is possible to cast a type to a ``param`` string. This allows a type
+to be printed out.
+
+  *Example (type-to-string.chpl)*.
+
+   For example, this code casts the type ``myType`` to a string in order
+   to print it out:
+
+   .. code-block:: chapel
+
+      type myType = int;
+      param str = myType:string;
+      writeln(str);
+
+   It produces the output:
+
+   .. code-block:: printoutput
+
+      int(64)
+
+   *Open issue*.
+
+   If type comparison with ``==`` is called on two types with runtime
+   components (see :ref:`Types_with_Runtime_Components`), should the
+   runtime component be included in the comparison? Or, should ``==`` on
+   types only consider if the compile-time components match?
+
+.. _Types_with_Runtime_Components:
+
+Types with Runtime Components
+-----------------------------
+
+Domain and array types include a *runtime component*. (See
+:ref:`Chapter-Domains` and :ref:`Chapter-Arrays` for more on arrays and
+domains).
+
+For a domain type, the runtime component of the type is the distribution over
+which the domain was declared.
+
+For an array type, the runtime component of the type contains the domain
+over which the array was declared and the runtime component of the
+array's element type, if present.
+
+As a result, an array or domain type will be represented and manipulated
+at runtime. In particular, a function that returns a type with a runtime
+component will be executed at runtime.
+
+These features combine with the ``.type`` syntax to allow one to create
+an array that has the same element type, shape, and distribution as an
+existing array.
+
+  *Example (same-domain-array.chpl)*.
+
+   The example below shows a function that accepts an array and then
+   creates another array with the same element type, shape, and distribution:
+
+   .. code-block:: chapel
+
+      proc makeAnotherArray(arr: []) {
+        var newArray: arr.type;
+        return newArray;
+      }
+
+   The above program is equivalent to this program:
+
+   .. code-block:: chapel
+
+      proc equivalentAlternative(arr: []) {
+        var newArray:[arr.domain] arr.eltType;
+        return newArray;
+      }
+
+   Both create and return an array storing the same element type as the
+   passed array.
+
+    .. BLOCK-test-chapelpost
+
+      var A:[1..4] int = 1..4;
+      var B = makeAnotherArray(A);
+      var C = equivalentAlternative(A);
+      writeln("A.domain ", A.domain);
+      writeln("A ", A);
+      writeln("B.domain ", B.domain);
+      writeln("B ", B);
+      writeln("C.domain ", C.domain);
+      writeln("C ", C);
+
+   .. BLOCK-test-chapeloutput
+
+      A.domain {1..4}
+      A 1 2 3 4
+      B.domain {1..4}
+      B 0 0 0 0
+      C.domain {1..4}
+      C 0 0 0 0
+
+   *Open issue*.
+
+   Should a record or class type also have a runtime component when it
+   contains array/domain field(s)? This runtime component is needed, for
+   example, to create a default-initialized instance of such a type in
+   the absence of user-defined default initializer.
+
+   *Open issue*.
+
+   Class types are not currently considered to have a runtime component.
+   Should class types be considered to have a runtime component, so that
+   querying an instance's type with ``myObject.type`` will produce the
+   type of the object known at runtime, rather than the type with which
+   ``myObject`` was declared?
+
+   *Open issue*.
+
+   Should functions returning a type always be evaluated for side
+   effects, or only evaluated for side effects when returning a type with
+   a runtime component?
