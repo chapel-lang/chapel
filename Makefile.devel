@@ -54,9 +54,6 @@ always-build-chplspell-venv: FORCE
 	$(MAKE) chplspell-venv; \
 	fi
 
-spec: FORCE
-	cd spec && $(MAKE)
-
 test: FORCE
 	cd test && start_test
 
