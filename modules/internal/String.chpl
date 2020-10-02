@@ -173,7 +173,7 @@ Using the ``byteIndex`` and ``codepointIndex`` types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A value of type ``byteIndex`` or ``codepointIndex`` can be passed to certain
-`string` functions to indicate that the function should operate with units of
+``string`` functions to indicate that the function should operate with units of
 bytes or codepoints. Passing a ``codepointIndex`` has the same behavior as
 passing an integral type. See :proc:`~string.this` for an example.
 
