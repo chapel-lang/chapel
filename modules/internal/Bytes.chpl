@@ -710,9 +710,9 @@ module Bytes {
       return doPartition(this, sep);
     }
 
-    /* Remove indentation from each line of string.
+    /* Remove indentation from each line of bytes.
 
-       This can be useful when applied to multi-line strings that are indented
+       This can be useful when applied to multi-line bytes that are indented
        in the source code, but should not be indented in the output.
 
        When ``columns == 0``, determine the level of indentation to remove from
@@ -732,11 +732,11 @@ module Bytes {
                          common leading whitespace, and make no changes to the
                          first line.
 
-       :returns: A new `string` with indentation removed.
+       :returns: A new `bytes` with indentation removed.
 
        .. warning::
 
-          ``string.dedent`` is not considered stable and is subject to change in
+          ``bytes.dedent`` is not considered stable and is subject to change in
           future Chapel releases.
     */
     proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
