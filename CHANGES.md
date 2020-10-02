@@ -6,6 +6,7 @@ o docs links
 o examples changes
 o spellcheck
 o test URLs
+o get forced linebreaks right
 
 version 1.23.0
 ==============
@@ -22,22 +23,35 @@ Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * improved the Point of Instantiation (POI) rule to avoid surprising behaviors
   (see https://chapel-lang.org/docs/1.23/language/spec/generics.html#function-visibility-in-generic-functions)
+* improved method resolution to always look at the type's definition point
 
 New Features
 ------------
+* added support for `import` statements that support multiple subexpressions  
+  (e.g., `import Mod1; import Mod2;` can now be written `import Mod1, Mod2;`)  
+  (see https://chapel-lang.org/docs/master/language/spec/modules.html#importing-modules)
+* added support for `use` statements that require qualified access  
+  (e.g., `use Foo as _;` requires typing `Foo.xyz` rather than simply `xyz`)
+  (see https://chapel-lang.org/docs/master/language/spec/modules.html#disabling-qualified)
 * added support for defining methods on type aliases or paren-less functions
   (e.g., `type myAlias=int; proc myAlias.myMethod() {}; 5.myMethod();`)
-* added support for `param` for-loops on ranges that use the `#` operator
 * added a `range.isBounded()` query
   (see https://chapel-lang.org/docs/1.23/builtins/ChapelRange.html#ChapelRange.range.isBounded)
 
 Feature Improvements
 --------------------
+* extended `import super...` to support non-module symbols
+  (e.g., `import super.foo;` is now supported for variable/function/... `foo`)
+* extended `public use` to support re-exporting using qualified access
+  (see TODO)
+* extended `param` for-loops to support ranges formed using the `#` operator
+  (e.g., `for param i in 0..#10` is now supported)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed `.length`, `.numIndices`, and `.numElements`; use `.size` instead
 * removed `enumerated`, which was deprecated in Chapel 1.21; use `enum` instead
+* removed deprecation warnings for symbols in the 'IO' module
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -49,10 +63,10 @@ Standard Library Modules
 * made 'CPtr' a standard user-facing module that must now be `use`d/`import`ed
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries must also now be explicitly `use`d/`import`ed
-  (e.g., 'Sys', 'SysBasic', 'CPtr' and 'DSIUtil')
+  (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
 * added a new routine to print 'CommDiagnostics' in tabular form
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
-* made `c_ptrTo()` print errors for remote/distributed arrays
+* made `c_ptrTo()` generate a compile-time error for distributed arrays
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
 * made 'Random.PCGRandomLib' no longer auto-available
   (see https://chapel-lang.org/docs/1.23/modules/standard/Random/PCGRandomLib.html)
@@ -86,6 +100,12 @@ Memory Improvements
 
 Documentation
 -------------
+* improved the 'Modules' chapter of the language spec for `use` and `import`
+  (see https://chapel-lang.org/docs/1.23/language/spec/modules.html#access-of-module-contents)
+* added a section on conflicts to the `Variables` chapter of the language spec
+  (see https://chapel-lang.org/docs/1.23/language/spec/variables.html#variable-conflicts)
+* added documentation for (unstable) compiler-defined global variables
+  (see https://chapel-lang.org/docs/master/technotes/globalvars.html)
 * added a note to the 'cygwin' docs indicating it's not intended for performance
   (see https://chapel-lang.org/docs/1.23/platforms/cygwin.html)
 * clarified that Mac 'homebrew' users need not build from source
@@ -121,14 +141,29 @@ Syntax Highlighting
 Error Messages / Semantic Checks
 --------------------------------
 * added an error message for sparse arrays of non-nilable classes
+* added an error message for duplicate modules in a `use`/`import` statement
+* added an error message when using qualified access to capture a function ref
+* improved error messages for symbol conflicts involving re-exported symbols
 
 Execution-time Checks
 ---------------------
+* made `c_ptrTo()` generate an execution-time error for a remote array
+  (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
 
 Bug Fixes
 ---------
 * fixed a bug in which a `return` in a `serial` block squashed parallelism
 * fixed a bug in which certain standard module symbols were auto-available
+* fixed a bug with using and importing private parent symbols
+* fixed a bug when re-exporting multiple functions with the same name
+* fixed a bug with failing to find iterators on a type when importing it
+* fixed a bug with accessing a used submodule in an `import` statement
+* fixed bugs with accessing an imported module in another `import` statement
+* fixed a bug with importing or using nested symbols by default
+* fixed bugs where some package modules were missing uses of their parents
+* fixed a bug with re-exporting subsymbols from a separate file
+* fixed a bug that had enabled `use` to access sibling modules without `super`
+* fixed a bug with qualified naming of functions conflicting with local symbols
 * fixed a bug in which loop expressions dropped `param`ness of formal arguments
 * fixed an internal error for multiple instantiations of a generic field
 * made `string` and `bytes` slices respect the range's alignment
@@ -137,6 +172,8 @@ Bug Fixes
 * fixed some bugs in the `dynamic()` iterator relating to integer overflow
 * fixed a bug in which restarting 'VisualDebug' silently overwrote its data
 * fixed a bug in which some 'NetCDF' routines were missing their `use` clauses
+* fixed a bug with the 'TOML' `parseLoop` method
+* fixed the rendering of several expression types in `chpldoc`
 
 Packaging / Configuration Changes
 ---------------------------------
@@ -153,11 +190,13 @@ Testing System
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
 * fixed the alphabetization of packages in LICENSE and third-party/README
+* adjusted module documentation generation to avoid deprecation warning
 
 Developer-oriented changes: Module changes
 ------------------------------------------
 * extended support for split-initialization to internal and standard modules
-* remove a superfluous `ref` intend from methods in 'List'
+* remove a superfluous `ref` intent from methods in 'List'
+* removed a workaround in the 'FileSystem' module now that `import` is done
 
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
@@ -172,6 +211,9 @@ Developer-oriented changes: Compiler improvements/changes
 * added support for `INT_ASSERT()` to take an optional AST as its first argument
 * enabled `%` format argument checking for `INT_FATAL`/`USR_FATAL`-style calls
 * stop having the compiler generate (unused) `writeThis()` methods for arrays
+* extended ast traversal patterns to print out missing ImportStmt functionality
+* extended `gdb` and `lldb lview` command for Chapel AST nodes to accept consts
+* increased code reuse in the import statement implementation
 * asserted that `gBoundsChecking` is a `param` within the compiler
 
 Developer-oriented changes: Runtime improvements
@@ -180,6 +222,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Testing System
 ------------------------------------------
 * updated test scripts to be ready for Discourse-based mailing lists
+* rephrased filtered error messages to express greater confidence in them
 
 
 version 1.22.1
