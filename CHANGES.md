@@ -20,9 +20,13 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* improved the Point of Instantiation (POI) rule to avoid surprising behaviors
+  (see https://chapel-lang.org/docs/1.23/language/spec/generics.html#function-visibility-in-generic-functions)
 
 New Features
 ------------
+* added support for defining methods on type aliases or paren-less functions
+  (e.g., `type myAlias=int; proc myAlias.myMethod() {}; 5.myMethod();`)
 * added support for `param` for-loops on ranges that use the `#` operator
 * added a `range.isBounded()` query
   (see https://chapel-lang.org/docs/1.23/builtins/ChapelRange.html#ChapelRange.range.isBounded)
@@ -72,6 +76,7 @@ Interoperability Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* eliminated an extra task-private variable for iterators w/out top-level yields
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
@@ -122,15 +127,16 @@ Execution-time Checks
 
 Bug Fixes
 ---------
-* fixed a bug in which a 'return' in a 'serial' block squashed parallelism
+* fixed a bug in which a `return` in a `serial` block squashed parallelism
 * fixed a bug in which certain standard module symbols were auto-available
+* fixed a bug in which loop expressions dropped `param`ness of formal arguments
 * fixed an internal error for multiple instantiations of a generic field
 * made `string` and `bytes` slices respect the range's alignment
 * fixed a bug in 'DistIterators' in which 2-locale runs used the wrong locale
 * fixed a race-y OOB error in some of the 'Sort' routines
 * fixed some bugs in the `dynamic()` iterator relating to integer overflow
 * fixed a bug in which restarting 'VisualDebug' silently overwrote its data
-* fixed a bug in which some 'NetCDF' routines were missing their 'use' clauses
+* fixed a bug in which some 'NetCDF' routines were missing their `use` clauses
 
 Packaging / Configuration Changes
 ---------------------------------
