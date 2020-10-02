@@ -135,6 +135,9 @@ An iterator can be captured by:
  * storing it into a new ``var`` or ``const`` variable declaration
  * passing it to function formal argument accepting it with ``in`` intent
 
+In both cases, the variable or formal argument needs to be untyped or
+have a compatible rectangular array type.
+
 In other words, an iterator can be implicitly converted into an array
 with matching shape and element type (see also :ref:`Implicit_Conversions`).
 
