@@ -2418,17 +2418,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 
   if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
     // handle non-split initialization
-
-    // Replace the init with a temp to avoid duplicate call
-    VarSymbol* initTmp = newTemp("initTmp");
-    initTmp->addFlag(FLAG_TYPE_VARIABLE);
-    defExpr->insertBefore(new DefExpr(initTmp));
-    defExpr->insertBefore(new CallExpr(PRIM_MOVE, initTmp, init->copy()));
-    SymExpr* se = new SymExpr(initTmp);
-    init->replace(se);
-    init = se;
-
-    emitTypeAliasInit(defExpr, var, init);
+    emitTypeAliasInit(defExpr, var, init->remove());
   } else {
     // handle split initialization for type aliases
     var->addFlag(FLAG_SPLIT_INITED);
