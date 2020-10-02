@@ -108,7 +108,7 @@ Iterators are invoked using regular call expressions:
 All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the
 parameter list, and so on, are identical to procedure calls as described
-in :ref:`Chapter-Procedures`.
+in the :ref:`Procedures Chapter <Chapter-Procedures>`.
 
 However, the result of an iterator call depends upon its context, as
 described below.
