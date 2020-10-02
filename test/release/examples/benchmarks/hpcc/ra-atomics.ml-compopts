@@ -9,10 +9,10 @@ import os
 comm = os.getenv('CHPL_COMM')
 ugni = comm == 'ugni'
 
-nu = 10000000
-if ugni:
-  nu = 1000000000
+nu = 10000000000
 
-common = '-sn=33:indexType -sN_U={0}:indexType -sverify=false'.format(nu)
+common = '--no-cache-remote -sn=33:indexType -sN_U={0}:indexType -sverify=false'.format(nu)
 
-print('{0} # ra.atomic-n33'.format(common))
+print('--no-optimize-forall-unordered-ops {0} # ra.atomic-ord'.format(common))
+print('   --optimize-forall-unordered-ops {0} # ra.atomic-uno'.format(common))
+print('                       -saggregate {0} # ra.atomic-agg'.format(common))
