@@ -434,14 +434,24 @@ all:
   06/06/20:
     - text: Don't GET domain's dimensions unless needed (#15777)
       config: 16-node-xc, 16-node-cs, chapcs.comm-counts
+  06/16/20:
+    - text: Support third-party CHPL_LIBFABRIC=libfabric (#15729)
+      config: 16-node-cs
+    - text: Warm up the comm layer, in the many-to-one test (#15798)
+      config: 16-node-cs
   06/21/20:
     - Switch the domain's list of arrays to a hashtable (#15895)
   06/25/20:
     - Avoid allocating memory for empty hashtables (#15918)
   09/18/20:
     - Remove the single task specialization from parallel iterators (#16401)
+    - text: Upgrade XC-x86 gcc gen compiler to 8.3.0 (#16407)
+      config: 16-node-xc
   09/22/20:
     - Parallelize large DefaultRectangular assignments (#16418)
+  09/29/20:
+    - text: Do sequential DR assignment if GETs are to be used (#16488)
+      config: 16-node-xc, 16-node-cs
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -483,11 +493,6 @@ AllCompTime: &timecomp-base
     - Remove calls to getUserInstantiationPoint (#15051)
   06/11/20:
     - Fix split init of const variables and update lvalue errors (#15800)
-  06/16/20:
-    - text: Support third-party CHPL_LIBFABRIC=libfabric (#15729)
-      config: 16-node-cs
-    - text: Warm up the comm layer, in the many-to-one test (#15798)
-      config: 16-node-cs
 
 allocate:
   06/11/20:
@@ -688,6 +693,10 @@ dist-performance.cc:
   06/27/20:
     - Revert changes to `list._commonInitFromIterable` (#15943)
 
+dist-performance.ml-perf:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
     - Use --no-early-deinit in array creation/destruction benchmark (#14876)
@@ -760,6 +769,11 @@ ep.ml-perf: &ep-ml-base
     - Represent reduce expressions using ForallStmt (#12131)
   08/25/19:
     - Min/max with NaNs and imag inequalities (#13824)
+  07/31/20:
+    - Make observable inout copy/writeback/deinit orders more consistent (#16143)
+  09/09/20:
+    - Adjust inout to be implemented with a single argument (#16180)
+
 ep.ml-time:
   <<: *ep-ml-base
 
@@ -772,6 +786,8 @@ exchange:
     - Enable bulk-transfer for BlockDist by default (#12797)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  09/29/20:
+    - Remove an unneeded assignment from array view slice initializer (#16477)
 
 fannkuch-redux:
   07/22/14:
@@ -1022,6 +1038,8 @@ lulesh:
 lulesh-dense:
   03/15/14:
     - improved constness of de-nested functions, improved remove value forwarding
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
 
 mandelbrot:
   01/03/14:
@@ -1546,6 +1564,8 @@ ra-atomics.ml-perf:
     - Increase the number of updates for RA to stabilize performance timings (#7522)
   09/06/20:
     - Improve LLVM vectorization support (#16152)
+  09/26/20:
+    - Do not check for order independence in forall-unordered opt (#16455)
 
 RBC:
   02/22/17:
@@ -1975,6 +1995,9 @@ arkouda: &arkouda-base
     - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
   07/02/20:
     - Reduce fragmentation for large allocations (#15992)
+  09/23/20:
+    - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
+      config: 16-node-cs, 16-node-xc
 
 
 arkouda-comp:
