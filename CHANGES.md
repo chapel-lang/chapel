@@ -42,10 +42,13 @@ Feature Improvements
 --------------------
 * extended `import super...` to support non-module symbols
   (e.g., `import super.foo;` is now supported for variable/function/... `foo`)
-* extended `public use` to support re-exporting using qualified access
-  (see TODO)
+* added support for qualified access to re-exported symbols accessed via `use`
+  (e.g., given `module M { public use N; }` `use M;` now supports writing `M.N`)
 * extended `param` for-loops to support ranges formed using the `#` operator
   (e.g., `for param i in 0..#10` is now supported)
+* improved `string`/`bytes` factory functions to accept `c_ptr(c_char)` buffers
+  (see https://chapel-lang.org/docs/master/builtins/String.html
+   and https://chapel-lang.org/docs/master/builtins/Bytes.html)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -58,8 +61,12 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* added a `Builtins` module containing general auto-available symbols
+  (see https://chapel-lang.org/docs/master/modules/standard/Builtins.html)
 * added a 'Version' module for reasoning about version numbers including 'chpl's
   (see https://chapel-lang.org/docs/1.23/modules/standard/Version.html)
+* added a `Heap` module
+  (see https://chapel-lang.org/docs/master/modules/standard/Heap.html)
 * made 'CPtr' a standard user-facing module that must now be `use`d/`import`ed
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries must also now be explicitly `use`d/`import`ed
@@ -73,11 +80,14 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added an `OrderedSet` module
+  (see https://chapel-lang.org/docs/master/modules/packages/OrderedSet.html)
 * moved 'LinkedLists' from the standard modules to the package modules
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinkedLists.html)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* added support for `localAccess()` to `BlockCyclic` and `Cyclic` arrays
 
 New Tools / Tool Changes
 ------------------------
@@ -90,13 +100,32 @@ Interoperability Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* parallelized assignments between large local arrays
+* added an optimization that reduces overheads for provably local array accesses
+  (e.g. `forall i in A.domain { A[i] = 5; }` now executes much more quickly)
+* reduced the overheads for creating/destroying arrays with constant domains
+  (e.g. `var arr: [1..1_000_000][1..3] int;` now executes ~4x faster)
+* optimized several `string` operations for ASCII-only strings
+* made `string.size` an O(1) operation
 * eliminated an extra task-private variable for iterators w/out top-level yields
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+* reduced the compilation time of several `string`/`bytes` operations
+* reduced the compilation time for repeated calls to `writef()` and `.format()`
+* reduced the amount of code generated for `forall` loops due to fast-followers
+* stopped the compiler from generating (unused) `writeThis()` methods for arrays
 
 Cray-specific Performance Optimizations/Improvements
 ----------------------------------------------------
 
 Memory Improvements
 -------------------
+* closed a memory leak in distributed promoted expressions
+* closed a memory leak in remote-value-forwarded array views
+* closed a memory leak in `shared` variable assignment
+* closed a memory leak in `string`/`bytes` multilocale interoperability
+* closed memory leaks in the `SparseBlock`, `Hashed` and `Private` distributions
 
 Documentation
 -------------
@@ -117,6 +146,7 @@ Example Codes
 
 Portability
 -----------
+* fixed a build system bug to better support non-English terminals
 
 Cray-specific Changes and Bug Fixes
 -----------------------------------
@@ -134,6 +164,7 @@ Launchers
 
 Generated Executable Flags
 --------------------------
+* changed `--memLeaks` to avoid emitting any output if there is no leak
 
 Syntax Highlighting
 -------------------
@@ -141,12 +172,16 @@ Syntax Highlighting
 Error Messages / Semantic Checks
 --------------------------------
 * added an error message for sparse arrays of non-nilable classes
-* added an error message for duplicate modules in a `use`/`import` statement
+* added an error message when repeating a module in a `use`/`import` statement
+  (e.g., for `module M { module N {} }`, `use M.N.N.N;` now generates an error)
 * added an error message when using qualified access to capture a function ref
 * improved error messages for symbol conflicts involving re-exported symbols
 
 Execution-time Checks
 ---------------------
+* improved bounds checking for slicing `string`s with `byteIndex` ranges
+  (e.g. `myStr[..(-1):byteIndex]` correctly halts, rather than returning `""`)
+* improved checking for casting strings with underscores to real
 * made `c_ptrTo()` generate an execution-time error for a remote array
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
 
@@ -164,9 +199,11 @@ Bug Fixes
 * fixed a bug with re-exporting subsymbols from a separate file
 * fixed a bug that had enabled `use` to access sibling modules without `super`
 * fixed a bug with qualified naming of functions conflicting with local symbols
+* fixed a bug with package modules inappropriately accessing parent symbols
 * fixed a bug in which loop expressions dropped `param`ness of formal arguments
 * fixed an internal error for multiple instantiations of a generic field
 * made `string` and `bytes` slices respect the range's alignment
+* fixed an off-by-one error in multilocale `string`/`bytes` interoperability
 * fixed a bug in 'DistIterators' in which 2-locale runs used the wrong locale
 * fixed a race-y OOB error in some of the 'Sort' routines
 * fixed some bugs in the `dynamic()` iterator relating to integer overflow
@@ -201,16 +238,19 @@ Developer-oriented changes: Module changes
 Developer-oriented changes: Makefile improvements
 -------------------------------------------------
 * made the Makefiles remove `chpl-env-gen.h` on `make clean`
+* squashed backend warnings about string operation overflows for GCC 9
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added flags to control the automatic `localAccess` optimization
+  (see `--[no-][dynamic-]auto-local-access` in `man chpl` for disabling it)
+  (see `--[no-]report-auto-local-access` in `man chpl` for verbose output)
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * made `use` within internal modules private-by-default, as elsewhere
 * added support for `INT_ASSERT()` to take an optional AST as its first argument
 * enabled `%` format argument checking for `INT_FATAL`/`USR_FATAL`-style calls
-* stop having the compiler generate (unused) `writeThis()` methods for arrays
 * extended ast traversal patterns to print out missing ImportStmt functionality
 * extended `gdb` and `lldb lview` command for Chapel AST nodes to accept consts
 * increased code reuse in the import statement implementation
@@ -218,9 +258,16 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added a `CHPL_RT_MD_MLI_DATA` descriptor for multilocale interop allocations
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added scripts to support nightly testing with AddressSanitizer
+* made multilocale and examples memory leak testing report leaks as failures
+* added a new `-valgrindexe` flag to the `nightly` testing script
+* removed `CHPL_APP_LAUNCH_CMD` in favor of `CHPL_TEST_LAUNCHCMD`
+* fixed a bug about name conflicts between the executable and output file
+* `-memleaks` and `-memleakslog` in scripts now correspond to executable flags
 * updated test scripts to be ready for Discourse-based mailing lists
 * rephrased filtered error messages to express greater confidence in them
 
