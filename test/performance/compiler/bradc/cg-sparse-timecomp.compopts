@@ -1,1 +1,1 @@
-cg-makea.chpl -O --no-bounds-checks --no-warnings
+cg-makea.chpl -O --no-bounds-checks

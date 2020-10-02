@@ -372,12 +372,6 @@ non-nilable classes are not currently supported.
       // the C and D instances allocated above will be reclaimed
       // at the end of this block.
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    When the variable ``c`` is declared, it initially has the value of
    ``nil``. The next statement assigned to it an instance of the class
    ``C``. The declaration of variable ``c2`` shows that these steps can
@@ -687,14 +681,8 @@ To create an instance of a class, use a ``new`` expression. For example:
       }
       var instance = new C(1);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
 The new expression can be defined by the following syntax:
-
 
 
 .. code-block:: syntax
@@ -813,13 +801,6 @@ Section \ `24.3.9 <#Generic_User_Initializers>`__ for details.
       writeln(mp1);
       writeln(mp2);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -867,13 +848,6 @@ will invoke regular assignment as defined by the language.
 
       writeln(p);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -908,11 +882,6 @@ be issued.
       var p = new Point(1.0, 2.0);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    The first statement in the initializer reads the value of
    uninitialized field ``x``, so the compiler will issue an error:
 
@@ -968,13 +937,6 @@ default values.
       writeln(A);
       writeln(B);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1021,13 +983,6 @@ initialized out of order, a compile-time error will be issued.
       var A = new Point3D(1.0);
       var B = new Point3D(1.0, 2.0, 3.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1148,13 +1103,6 @@ initializer.
       writeln(B);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
-
    .. BLOCK-test-chapeloutput
 
       {x = 1.0, y = 2.0, max = 10.0, msg = Unlabeled}
@@ -1209,13 +1157,6 @@ after such a call to ``init``.
 
       var A = new Point3D(1.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1272,14 +1213,7 @@ needed.
 
       writeln(A);
       writeln(B);
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
+  
 
    .. BLOCK-test-chapeloutput
 
@@ -1332,14 +1266,7 @@ at the end of the conditional statement.
    .. BLOCK-test-chapelpost
 
       writeln(c);
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
+  
 
    .. BLOCK-test-chapeloutput
 
@@ -1396,14 +1323,6 @@ value of the corresponding actual argument.
       var c4 = new C(2, z="");
       var c5 = new C(0, 0.0, "");
       writeln((c1, c2, c3, c4, c5));
-
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1475,11 +1394,6 @@ return anything. Otherwise, this method behaves like any other method.
       var D = new Point3D(50.0, 50.0);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
    Each of the ``new`` expressions invokes the compiler-generated
    initializer, then invokes the ``verify`` method via the ``postinit``
    method: 
@@ -1558,13 +1472,6 @@ arguments at the start of the initializer.
       writeln(b2);
 
    
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
-
    .. BLOCK-test-chapeloutput
 
       {a = 4.0, b = 8.0, x = 1.0, y = 2.0}
@@ -1619,13 +1526,6 @@ be accessed before explicit calls to ``init``.
 
       writeln(c);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1694,11 +1594,6 @@ functions as though it were of the parent type.
 
       writeln(c);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
    Once the parent’s initializer is finished, the parent method ``foo``
    may be called. After the ``complete`` method is invoked, a call to
@@ -1748,13 +1643,6 @@ formals for the child type.
       writeln(B);
       writeln(C);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
@@ -1802,11 +1690,6 @@ parent’s ``postinit`` method.
 
       var c = new Child(1.0, 2.0, 3.0, 4.0);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
    The compiler inserts a call to the parent’s ``postinit`` method in
    the child’s ``postinit`` method, and invokes the child’s ``postinit``
@@ -1937,13 +1820,6 @@ the default getter, which simply returns the field, is provided.
       writeln(c.x);
       writeln(c.setCount);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
-
-   
 
    .. BLOCK-test-chapeloutput
 
