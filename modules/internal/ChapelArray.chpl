@@ -1886,6 +1886,28 @@ module ChapelArray {
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
 
     pragma "no doc"
+    proc orderToIndex(in order) where (isRectangularDom(this) && isNumericType(this.idxType)){
+      if(order>=this.size || order <0) then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+      var idx: (rank*_value.idxType);
+      var div = this.size;
+      for i in 0..rank-1 {
+          var currDim = this.dim(i);
+          div/=currDim.size;
+          const lo = currDim.alignedLow;
+          const hi = currDim.alignedHigh;
+          const stride = (currDim.stride);
+          const zeroInd = order/div;
+          var currInd = (zeroInd*stride);
+          if stride<0 then currInd+=hi;
+          else currInd+=lo;
+          idx[i] = currInd;
+          order = order%div;
+      }
+      return idx;
+    }
+
+    pragma "no doc"
     proc position(i) {
       var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
       for d in 0..rank-1 do
