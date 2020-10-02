@@ -1521,6 +1521,9 @@ Expr* lowerPrimReduce(CallExpr* call) {
   bool   zippered = toSymExpr(call->get(1))->symbol() == gTrue;  // 3rd arg
   bool  reqSerial = false; // We may need it for #11819, otherwise remove it.
 
+  if (!isTypeSymbol(opSE->symbol()))
+    USR_FATAL(opSE, "'reduce' expressions where the reduction is defined by a value, not a type, are currently not implemented; a workaround is to replace it with a forall loop with a reduce intent");
+
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 
   Symbol* result = NULL;
