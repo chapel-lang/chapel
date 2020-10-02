@@ -415,8 +415,8 @@ and ``export`` functions:
 
  * ``extern record`` types
 
- * ``string`` and ``bytes`` are allowed allowed in an ``export proc``
-   but not in an ``extern proc``
+ * ``string`` and ``bytes`` are allowed in an ``export proc`` but not in
+   an ``extern proc``
 
    * see :ref:`readme-libraries`
 
