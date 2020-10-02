@@ -4,7 +4,7 @@ Initializers
 ============
 
 Status:
-  Partially Implemented
+  Inactive - Superseded by CHIP 23
 
 Authors:
   Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady

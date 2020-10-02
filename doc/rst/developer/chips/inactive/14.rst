@@ -2,7 +2,7 @@ Chapel stack traces
 ===================
 
 Status
-  Implemented
+  Inactive - Implemented
 
 Author
   Andrea Francesco Iuorio
