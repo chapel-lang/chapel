@@ -2,7 +2,7 @@ Chapel Improvement Proposals
 ============================
 
 Status
-  Active
+  Informational
 
 Author
   Michael Ferguson
@@ -89,7 +89,7 @@ should be updated to record the level of consensus with a Status marker.
 Status can be:
 
  * Draft - CHIPs start here
- * Active - No longer a draft. Informational.
+ * Informational - No longer a draft. Informational.
  * Partially Accepted - There is agreement on the general direction but
    some details need attention.
  * Accepted - The Chapel community likes the idea
