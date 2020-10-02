@@ -153,7 +153,8 @@ class CSDom: BaseSparseDomImpl {
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+    if _to_borrowed(rhs._instance.type) == this.type && 
+       canDoDirectAssignment(rhs) {
       // Optimized CSC->CSC / CSR->CSR
 
       // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
