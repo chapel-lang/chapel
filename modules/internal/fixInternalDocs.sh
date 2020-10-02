@@ -221,6 +221,7 @@ replace "_complex" "complex" $file
 file="./String.rst"
 fixTitle "Strings" $file
 removeUsage $file
+replace "chpl_bytes" "bytes" $file
 
 ## End of String ##
 
@@ -229,6 +230,7 @@ removeUsage $file
 file="./Bytes.rst"
 fixTitle "Bytes" $file
 removeUsage $file
+replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
 
