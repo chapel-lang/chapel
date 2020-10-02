@@ -1,1 +1,1 @@
-testCholeskyReal.chpl:7: error: halt reached - Matrix passed must be symmetric positive definite
+testCholeskyRealError.chpl:7: error: halt reached - Matrix passed must be symmetric positive definite
