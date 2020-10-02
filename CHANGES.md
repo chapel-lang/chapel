@@ -7,6 +7,7 @@ o examples changes
 o spellcheck
 o test URLs
 o get forced linebreaks right
+o initial caps
 
 version 1.23.0
 ==============
@@ -82,6 +83,9 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Removed Library Features
 -------------------------------------
+* deprecated use of `this()` for lists and maps for which `parSafe=true`
+  (e.g. `myList[i]` is not allowed if `myList.parSafe == true`)
+* deprecated use of `getReference()` for maps initialized with `parSafe=true`
 * removed deprecation warnings for symbols in the 'IO' module
 
 Standard Library Modules
@@ -96,6 +100,19 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries must also now be explicitly `use`d/`import`ed
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
+* added support for lists of tuples containing non-nilable classes
+* added `update()`, `getBorrowed()`, `getValue()` methods to list
+  (see https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.update,
+       https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.getBorrowed,
+  and https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.getValue)
+* adjusted `map.items()` iterator to return by value
+* renamed `update()` method on map to `extend()`
+  (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.extend)
+* added `update()` method to map
+  (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.update)
+* enabled lifetime checking for lists of borrowed classes
+* Added support for sets of owned and non-nilable owned classes
+* Added support for maps of non-nilable shared classes
 * added a new routine to print 'CommDiagnostics' in tabular form
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
 * added the ability to get stack traces in 'CommDiagnostics' verbose output
@@ -129,12 +146,14 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
+* added support for exporting functions returning `string` or `bytes` to Python
+* made `--library-python` defaults more user-friendly
+  (see https://chapel-lang.org/docs/master/technotes/libraries.html?highlight=python#python-init-file)
 * added checks to prevent passing distributed arrays to `extern` array arguments
   (see https://chapel-lang.org/docs/1.23/technotes/extern.html#array-arguments)
 * restricted types and intents for `extern`/`export` functions to working cases
   (see https://chapel-lang.org/docs/master/technotes/extern.html#allowed-intents-and-types)
-
-* added automatic uses of 'CPtr', 'SysCTypes', and 'SysBasic' to `extern` blocks 
+* added implicit uses of 'CPtr', 'SysCTypes', and 'SysBasic' to `extern` blocks 
   (see https://chapel-lang.org/docs/master/technotes/extern.html#support-for-extern-blocks)
 * improved `--llvm` and `extern` block support for macros to include shifts
 
@@ -236,13 +255,16 @@ Error Messages / Semantic Checks
 --------------------------------
 * many compilation errors now include a callstack
 * compilation errors now use bold when outputting to a compatible terminal
+* added const checking for elements of tuple formals
 * improved checking for passing a non-`param` value to a `param` argument 
 * added an error message for sparse arrays of non-nilable classes
+* improved the error message when an `init=` fails to resolve
 * added an error message when repeating a module in a `use`/`import` statement
   (e.g., for `module M { module N {} }`, `use M.N.N.N;` now generates an error)
 * improved error messages when modules are used as variables or functions
 * added an error message when using qualified access to capture a function ref
 * improved error messages for symbol conflicts involving re-exported symbols
+* added an error for default init-ing tuples whose elements don't have defaults
 * improved checking for invalid changes to an instantiated generic field
   (see https://chapel-lang.org/docs/master/language/spec/generics.html#user-defined-initializers)
 
