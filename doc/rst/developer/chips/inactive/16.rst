@@ -4,7 +4,7 @@ Optimizing Record and Array Copies in Chapel
 ============================================
 
 Status:
-  Draft
+  Inactive - Partially Implemented with copy-elision and split-init
 
 Authors:
   Michael Ferguson

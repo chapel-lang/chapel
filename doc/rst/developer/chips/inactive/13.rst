@@ -4,7 +4,7 @@ When Do Record and Array Copies Occur
 =====================================
 
 Status:
-  Partially Implemented
+  Inactive - Implemented
 
 Authors:
   Michael Ferguson

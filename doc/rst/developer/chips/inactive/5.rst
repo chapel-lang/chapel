@@ -2,7 +2,7 @@ Implement Object Copying Using a "Postblit" Method
 ##################################################
 
 Status
-  Superseded, see CHIP 10
+  Inactive - Superseded, see CHIP 23 and `init=` in spec
 
 Author
   Tom Hildebrandt, Michael Ferguson

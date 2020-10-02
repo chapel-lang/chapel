@@ -2,7 +2,7 @@ Constructor Syntax and Semantics
 ================================
 
 Status
-  Superseded, see CHIP 10
+  Inactive - Superseded, see CHIP 23
 
 Author
   Tom Hildebrandt

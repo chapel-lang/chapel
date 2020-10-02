@@ -2,7 +2,7 @@ Alternative Initializer Features
 ================================
 
 Status:
-  Rejected
+  Inactive - Rejected
 
 Authors:
   Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov

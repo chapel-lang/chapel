@@ -2,7 +2,7 @@ Rules for inserting autoCopy
 ============================
 
 Status
-  Superseded, see CHIP 13
+  Inactive - Superseded, see CHIP 13
 
 Author
   Vassily Litvinov, Chapel Team

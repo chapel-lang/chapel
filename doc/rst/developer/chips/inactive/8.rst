@@ -2,7 +2,7 @@ Error Handling in Chapel
 ========================
 
 Status:
-  Partially Accepted, Needs Implementation
+  Inactive - Implemented except for Runtime errors
 
 Authors:
   Greg Titus, Kyle Brady, Michael Ferguson, Preston Sahabu
