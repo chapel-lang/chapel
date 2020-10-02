@@ -657,8 +657,8 @@ A type expression can be used to indicate the type of a value, as with
 A type expression can be passed to a ``type`` formal of a generic
 function (see :ref:`Formal_Type_Arguments`).
 
-See also the :mod:`Types` module documentation which provides many
-functions to query properties of types.
+The :mod:`Types` module provides many functions to query properties of
+types.
 
 The language provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
 :proc:`isSubtype <UtilMisc_forDocs.isSubtype>`, and
