@@ -1,10 +1,10 @@
 Chapel's Cryptography Library
 =============================
 
-Status
-  Started coding.
+Status:
+  Inactive - Implemented
 
-Author
+Author:
   Sarthak Munshi
 
 Abstract

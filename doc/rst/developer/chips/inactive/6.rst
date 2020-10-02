@@ -2,7 +2,7 @@ Tuple Semantics
 ===============
 
 Status
-  Partially Implemented
+  Inactive - Implemented
 
 Author
   Michael Ferguson

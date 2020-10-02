@@ -2,7 +2,7 @@ Chapel Package Manager
 ======================
 
 Status
-  Partially Accepted, Needs Implementation
+  Inactive - Implemented
 
 Authors
   Kyle Brady,

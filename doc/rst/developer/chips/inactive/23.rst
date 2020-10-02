@@ -4,7 +4,7 @@ Initializers :- Experiences, Concerns, Proposals
 ================================================
 
 Status:
-  Draft proposal
+  Inactive - Implemented
 
 Authors:
   Michael Noakes, Brad Chamberlain

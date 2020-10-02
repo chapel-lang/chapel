@@ -2,7 +2,7 @@ Chapel Improvement Proposals
 ============================
 
 Status
-  Active
+  Informational
 
 Author
   Michael Ferguson
@@ -86,31 +86,35 @@ Status
 
 As a Chapel Improvement Proposal is discussed with the Chapel community, it
 should be updated to record the level of consensus with a Status marker.
-Status can be:
+A CHIP can be Active or Inactive.
 
- * Draft - CHIPs start here
- * Active - No longer a draft. Informational.
- * Partially Accepted - There is agreement on the general direction but
-   some details need attention.
- * Accepted - The Chapel community likes the idea
- * Rejected - The proposal has been discussed and the Chapel project does
-   not plan to incorporate the proposal.
- * Withdrawn - A champion can withdraw their proposal for any reason
- * Partially Implemented - Accepted and additionally, some of the
-   described functionality is implemented in the repository
- * Implemented - Work on the feature has completed and it is in the
-   repository
- * Superseded - The proposal has been replaced by another proposal
+ * Active CHIPs are under consideration or are documentation that is not
+   present elsewhere (such as this document).  The following keywords
+   might also be useful in describing the status of an active CHIP:
 
-The status marker can also include a description of what needs to happen
-next after a comma. This can be anything, but some common scenarios might
-be:
+    * Draft - CHIPs start here
+    * Informational - No longer a draft. Informational.
+    * Partially Accepted - There is agreement on the general direction but
+      some details need attention.
+    * Accepted - The Chapel community likes the idea
+    * Partially Implemented - Accepted and additionally, some of the
+      described functionality is implemented in the repository
 
- * Deferred (Progress is not being made on an issue)
- * Needs Review
- * Needs Implementation
- * Needs Design Adjustment
 
+ * Inactive CHIPs are only of historical interest. If they were
+   implemented, the authoritative documention is elsewhere. The following
+   keywords might also be useful in describing the status of an inactive
+   CHIP:
+    * Rejected - The proposal has been discussed and the Chapel project does
+      not plan to incorporate the proposal.
+    * Withdrawn - A champion can withdraw their proposal for any reason
+    * Implemented - Work on the feature has completed and it is in the
+      repository. This normally also means the feature is documented
+      elsewhere, outside of the CHIP.
+    * Superseded - The proposal has been replaced by another proposal
+
+A Status does not need to be limited to keywords; it can link to issues
+or describe in other words what is going on with a CHIP.
 
 Abstract
 ++++++++
