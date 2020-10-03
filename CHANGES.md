@@ -341,6 +341,7 @@ Bug Fixes
 * fixed a bug with package modules inappropriately accessing parent symbols
 * fixed a bug in which loop expressions dropped `param`ness of formal arguments
 * fixed several problems with split initialization through `out` arguments
+* fixed a bug preventing split initialization for multi-var decls in functions
 * fixed an internal error for multiple instantiations of a generic field
 * made `string` and `bytes` slices respect the range's alignment
 * fixed an off-by-one error in multilocale `string`/`bytes` interoperability
@@ -424,6 +425,7 @@ Developer-oriented changes: Compiler improvements/changes
 * added "get visible symbols" primitive to print symbols visible at its callsite
 * extended ast traversal patterns to print out missing ImportStmt functionality
 * extended `gdb` and `lldb lview` command for Chapel AST nodes to accept consts
+* added the ability to apply pragmas to `forwarding` declarations
 * increased code reuse in the import statement implementation
 * asserted that `gBoundsChecking` is a `param` within the compiler
 
