@@ -253,9 +253,8 @@ module Map {
     pragma "no doc"
     proc update(pragma "intent ref maybe const formal"
                 m: map(keyType, valType, parSafe)) {
-      compilerWarning('The `update()` method has new functionality in ' +
-                      'the 1.23 release - for forwards compatability ' +
-                      'call `extend()` instead');
+      compilerWarning('Adding to a map using `update()` is deprecated - ' +
+                      'use `extend()` instead');
       extend(m);
     }
 
