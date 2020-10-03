@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 1407441;
-static const int breakOnId2 = 1406121;
+static const int breakOnId1 = 0;
+static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
@@ -110,31 +110,14 @@ symExprIsSetByDef(SymExpr* def) {
   // to a function (typically = ) as ref, inout, or out argument.
   if (def->parentExpr) {
     if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_MOVE)) {
-        SymExpr* lhs = toSymExpr(parentCall->get(1));
-        
-        if (lhs->typeInfo()->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
-          DEBUG_SYMBOL(lhs->symbol());
-
-          if (lhs->symbol()->hasFlag(FLAG_RVV) ||
-              lhs->symbol()->hasFlag(FLAG_YVV)) {
-            FnSymbol* inFn = toFnSymbol(lhs->parentSymbol);
-            if (inFn != NULL && inFn->retTag == RET_REF) {
-              return true;
-            }
-          }
-        } else {
-          Expr* lhs = parentCall->get(1);
-          Expr* rhs = parentCall->get(2);
-
-          // Ignore this def, it's just setting what a ref points to.
-          if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-              rhs->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-            return false;
-          } else {
-            return true;
-          }
-        }
+      if (parentCall->isPrimitive(PRIM_MOVE) &&
+          parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
+          parentCall->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+        // Ignore this def
+        // We don't care about a PRIM_MOVE because it's setting
+        // a reference
+      } else {
+        return true;
       }
     }
   }
@@ -144,7 +127,6 @@ symExprIsSetByDef(SymExpr* def) {
 
 static bool
 symExprIsSetByUse(SymExpr* use) {
-  DEBUG_SYMBOL(use->symbol());
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* formal = actual_to_formal(use);
@@ -412,7 +394,6 @@ typedef std::set<GraphNode> revisitUnknowns_t;
 static
 void addDependency(revisitGraph_t & graph, GraphNode from, GraphNode to)
 {
-  DEBUG_SYMBOL(from.variable);
   if (shouldTrace(from.variable)) {
     printf("Adding a dependency from %i,%i to %i,%i\n",
            from.variable->id, from.fieldIndex,
@@ -1756,8 +1737,6 @@ void lowerContextCallComputeWhich(ContextCallExpr* cc, bool notConst,
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
-  if (cc->id == 1400223) gdbShouldBreakHere();
-
   if (notConst) {
     INT_ASSERT(refCall != NULL);
     which = USE_REF;
@@ -1781,7 +1760,7 @@ void lowerContextCallComputeWhich(ContextCallExpr* cc, bool notConst,
     }
   }
 
-  if (lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF) {
+  if (lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
     INT_ASSERT(which != USE_VALUE);
   }
 
