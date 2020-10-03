@@ -1,0 +1,4 @@
+tupleRefReturnFail3.chpl:7: In function 'inferReturnType':
+tupleRefReturnFail3.chpl:9: error: cannot return local tuple by reference
+tupleRefReturnFail3.chpl:12: In function 'specifyReturnType':
+tupleRefReturnFail3.chpl:14: error: cannot return local tuple by reference

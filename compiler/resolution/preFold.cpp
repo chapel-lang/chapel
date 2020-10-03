@@ -2363,8 +2363,15 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
     SymExpr* destSE = toSymExpr(move->get(1));
     INT_ASSERT(destSE);
 
-    if (!isReferenceType(baseVar->type) &&
-        !isReferenceType(fieldType)) {
+    // TODO: Not sure yet whether it would be wise for `isReferenceType`
+    // to return true for all-ref tuples or not...
+    TypeSymbol* baseTS = baseVar->type->symbol;
+    TypeSymbol* fieldTS = fieldType->symbol;
+    bool isBaseAllRefTuple = baseTS->hasFlag(FLAG_TUPLE_ALL_REF);
+    bool isFieldAllRefTuple = fieldTS->hasFlag(FLAG_TUPLE_ALL_REF);
+
+    if (!(isReferenceType(baseVar->type) || isBaseAllRefTuple) &&
+        !(isReferenceType(fieldType) || isFieldAllRefTuple)) {
       if (destSE->symbol()->hasFlag(FLAG_INDEX_VAR)) {
         // The destination is constant only if both the tuple
         // and the current component are non-references.

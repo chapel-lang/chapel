@@ -539,6 +539,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
       bool isInferredRet = isUnresolvedOrGenericReturnType(fn->retType);
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
+      // TODO: This may no longer be needed now that we touch all moves.
       if (isInferredRet) {
         fixRefTupleRvvForInferredReturnType(fn);
       }
@@ -896,7 +897,7 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
      ) {
     return true;
   } else if (forRet && fn->returnsRefOrConstRef()) {
-    return fn->retType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+    return true;
   } else {
     return false;
   }
@@ -1820,8 +1821,6 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
     }
 
   }
-
-  if (fn->id == 209923) gdbShouldBreakHere();
 
   // Adjust function return type when returning a tuple by ref.
   if (retType->isRef() &&

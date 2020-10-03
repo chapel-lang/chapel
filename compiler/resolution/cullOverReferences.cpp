@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
-static const int breakOnId2 = 0;
+static const int breakOnId1 = 1407441;
+static const int breakOnId2 = 1406121;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
@@ -99,7 +99,7 @@ static bool symbolIsUsedAsConstRef(Symbol* sym);
 static void lowerContextCall(ContextCallExpr* cc, choose_type_t which);
 static void lowerContextCallPreferRefConstRef(ContextCallExpr* cc);
 static void lowerContextCallPreferConstRefValue(ContextCallExpr* cc);
-static void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol);
+static void lowerContextCallComputeWhich(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol);
 static bool firstPassLowerContextCall(ContextCallExpr* cc);
 
 static bool
@@ -110,14 +110,31 @@ symExprIsSetByDef(SymExpr* def) {
   // to a function (typically = ) as ref, inout, or out argument.
   if (def->parentExpr) {
     if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_MOVE) &&
-          parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-          parentCall->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        // Ignore this def
-        // We don't care about a PRIM_MOVE because it's setting
-        // a reference
-      } else {
-        return true;
+      if (parentCall->isPrimitive(PRIM_MOVE)) {
+        SymExpr* lhs = toSymExpr(parentCall->get(1));
+        
+        if (lhs->typeInfo()->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+          DEBUG_SYMBOL(lhs->symbol());
+
+          if (lhs->symbol()->hasFlag(FLAG_RVV) ||
+              lhs->symbol()->hasFlag(FLAG_YVV)) {
+            FnSymbol* inFn = toFnSymbol(lhs->parentSymbol);
+            if (inFn != NULL && inFn->retTag == RET_REF) {
+              return true;
+            }
+          }
+        } else {
+          Expr* lhs = parentCall->get(1);
+          Expr* rhs = parentCall->get(2);
+
+          // Ignore this def, it's just setting what a ref points to.
+          if (lhs->typeInfo()->symbol->hasFlag(FLAG_REF) &&
+              rhs->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+            return false;
+          } else {
+            return true;
+          }
+        }
       }
     }
   }
@@ -127,6 +144,7 @@ symExprIsSetByDef(SymExpr* def) {
 
 static bool
 symExprIsSetByUse(SymExpr* use) {
+  DEBUG_SYMBOL(use->symbol());
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
     if (FnSymbol* fn = call->resolvedFunction()) {
       ArgSymbol* formal = actual_to_formal(use);
@@ -172,6 +190,8 @@ symExprIsSetByUse(SymExpr* use) {
 
 static
 bool symExprIsUsedAsConstRef(SymExpr* use) {
+  DEBUG_SYMBOL(use->symbol());
+
   if (CallExpr* call = toCallExpr(use->parentExpr)) {
     if (FnSymbol* calledFn = call->resolvedFunction()) {
       ArgSymbol* formal = actual_to_formal(use);
@@ -223,10 +243,19 @@ bool symExprIsUsedAsConstRef(SymExpr* use) {
           return true;
         }
 
-        if (lhs != use &&
-            lhsSymbol->isRef() &&
-            symbolIsUsedAsConstRef(lhsSymbol))
-          return true;
+        if (lhs == use) {
+          return false;
+        }
+
+        TypeSymbol* lhsTypeSymbol = lhsSymbol->type->symbol;
+        bool isLhsRefTuple = lhsTypeSymbol->hasFlag(FLAG_TUPLE_ALL_REF);
+        bool isLhsRef = lhsSymbol->isRef();
+
+        if (isLhsRef || isLhsRefTuple) {
+          if (symbolIsUsedAsConstRef(lhsSymbol)) {
+            return true;
+          }
+        }
       }
     }
   }
@@ -243,18 +272,20 @@ bool symbolIsUsedAsConstRef(Symbol* sym) {
   return false;
 }
 
-static
-bool symExprIsSet(SymExpr* se)
-{
+static bool symExprIsSet(SymExpr* se) {
+  DEBUG_SYMBOL(se->symbol());
+ 
   // The ref is necessary if it is for an explicit ref var
   if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
     return true;
   }
 
-  // a ref is not necessary if the LHS is a value
-  // (this can come up in recursive handling of a PRIM_MOVE).
-  if (!se->symbol()->isRef())
+  // A ref is not necessary if the LHS is a value (this can come up in
+  // recursive handling of a PRIM_MOVE).
+  bool isRefTuple = se->typeInfo()->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
+  if (!se->symbol()->isRef() && !isRefTuple) {
     return false;
+  }
 
   // A ref is not necessary if we've already determined
   // that the ref symbol is `const` for some reason.
@@ -571,7 +602,7 @@ static bool considerAllowRefCall(CallExpr* move, FnSymbol* calledFn) {
 }
 
 static
-bool isRefOrTupleWithRef(Symbol* index, int tupleElement)
+bool isRefOrTupleRefElement(Symbol* index, int tupleElement)
 {
   if (index->isRef()) return true;
 
@@ -863,7 +894,7 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
          iterableTupleElement == node.fieldIndex) &&
         iteratorYieldsConstWhenConstThis &&
         index != NULL &&
-        isRefOrTupleWithRef(index, indexTupleElement)) {
+        isRefOrTupleRefElement(index, indexTupleElement)) {
 
       // Now the const-ness of the array depends
       // on whether or not the yielded value is set
@@ -1248,7 +1279,16 @@ bool CullRefCtx::checkCompilerRefTemporaries(CallExpr* call, GraphNode node,
   SymExpr* lhs       = toSymExpr(call2->get(1));
   Symbol*  lhsSymbol = lhs->symbol();
 
-  if (lhsSymbol != sym && isRefOrTupleWithRef(lhsSymbol, node.fieldIndex)) {
+  if (lhsSymbol == sym) {
+    return false;
+  }
+
+  if (lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF) ||
+      isRefOrTupleRefElement(lhsSymbol, node.fieldIndex)) {
+
+    DEBUG_SYMBOL(lhsSymbol);
+    DEBUG_SYMBOL(sym);
+
     GraphNode srcNode = makeNode(lhsSymbol, node.fieldIndex);
     collectedSymbols.push_back(srcNode);
     addDependency(revisitGraph, srcNode, node);
@@ -1504,11 +1544,16 @@ void CullRefCtx::lowerRemainingContextCallExprs(void) {
       lhsSymbol = lhs->symbol();
       Qualifier qual = lhsSymbol->qualType().getQual();
 
-      if (qual == QUAL_REF)
+      if (qual == QUAL_REF) {
         notConst = true;
+      } else if (lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        if (!QualifiedType::qualifierIsConst(qual)) {
+          notConst = true;
+        }
+      }
     }
 
-    lowerContextCallComputeConstRef(cc, notConst, lhsSymbol);
+    lowerContextCallComputeWhich(cc, notConst, lhsSymbol);
   }
 }
 
@@ -1702,8 +1747,8 @@ void lowerContextCallPreferConstRefValue(ContextCallExpr* cc)
 }
 
 static
-void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol* lhsSymbol)
-{
+void lowerContextCallComputeWhich(ContextCallExpr* cc, bool notConst,
+                                  Symbol* lhsSymbol) {
   CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
@@ -1711,17 +1756,22 @@ void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol*
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
+  if (cc->id == 1400223) gdbShouldBreakHere();
+
   if (notConst) {
+    INT_ASSERT(refCall != NULL);
     which = USE_REF;
-    // it would be a program error if the ref version didn't exist
   } else {
-    // Check: should we use the const-ref or value version?
-    // Use value version if it's never passed/returned as const ref
-    if (valueCall != NULL && constRefCall != NULL) {
-      if (lhsSymbol == NULL || symbolIsUsedAsConstRef(lhsSymbol))
+
+    // Check: should we use the const-ref or value version? Use the value
+    // version if it's never passed/returned as const ref. If the LHS
+    // is an "all-ref" tuple, always use the const-ref version.
+    if (valueCall != NULL && constRefCall != NULL) {  
+      which = USE_VALUE;
+      if (lhsSymbol == NULL || symbolIsUsedAsConstRef(lhsSymbol) ||
+          lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
         which = USE_CONST_REF;
-      else
-        which = USE_VALUE;
+      }
     } else {
       // Use whichever value version we have.
       if (constRefCall != NULL)
@@ -1729,6 +1779,10 @@ void lowerContextCallComputeConstRef(ContextCallExpr* cc, bool notConst, Symbol*
       else
         which = USE_VALUE;
     }
+  }
+
+  if (lhsSymbol->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF) {
+    INT_ASSERT(which != USE_VALUE);
   }
 
   lowerContextCall(cc, which);
@@ -1740,6 +1794,8 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
   CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
+
+  if (cc->id == 1408343) gdbShouldBreakHere();
 
   cc->getCalls(refCall, valueCall, constRefCall);
 

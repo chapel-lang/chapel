@@ -1351,6 +1351,7 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call);
 static void fixPrimGetMemberForRefTuple(CallExpr* call);
 static void fixPrimGetMemberValueForRefTuple(CallExpr* call);
 static void fixFieldAccessForRefTuple(CallExpr* call);
+static void fixPrimArrayGetForRefTuple(CallExpr* call);
 
 // TODO: This doesn't fire for iterators with inferred yield types, why?
 // (It also doesn't seem necessary.)
@@ -1634,6 +1635,11 @@ void fixMoveIntoRefTuple(CallExpr* call) {
     sym->qual = QUAL_VAL;
   }
 
+  // Assume the RHS expression is correct if both types match.
+  if (lhs->qualType().type() == rhs->qualType().type()) {
+    return;
+  }
+
   // Do the actual fixups, now.
   if (CallExpr* rhsCall = toCallExpr(rhs)) {
 
@@ -1656,10 +1662,6 @@ void fixMoveIntoRefTuple(CallExpr* call) {
       } else if (isRefTupleRepackFunction(calledFn)) {
         return;
       } else {
-        // The move should already be adjusted, so just let it happen.
-        if (!lhs->symbol()->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
-          INT_FATAL("Move where dst is not adjusted: %d", call->id);
-        }
 
         // Just in case... 
         if (lhs->qualType().type() != rhsCall->qualType().type()) {
@@ -1667,6 +1669,8 @@ void fixMoveIntoRefTuple(CallExpr* call) {
                           call->id);
         }
       }
+    } else if (rhsCall->isPrimitive(PRIM_ARRAY_GET)) {
+      fixPrimArrayGetForRefTuple(call);
     } else {
       INT_FATAL(call, "Unhandled call: %d", rhsCall->id);
     }
@@ -1859,7 +1863,7 @@ static void passFieldReadToRepackCall(CallExpr* call) {
   INT_ASSERT(isLhsNormalized && !isRhsNormalized);
   INT_ASSERT(rhsValType->symbol->hasFlag(FLAG_TUPLE));
 
-  // Insert a temporary to hold the results of the PRIM_GET_MEMBER.
+  // Insert a temporary to hold the results of the field access.
   VarSymbol* fieldTmp = newTemp("field", fieldRead->typeInfo());
   call->insertBefore(new DefExpr(fieldTmp));
 
@@ -1905,6 +1909,15 @@ static void fixFieldAccessForRefTuple(CallExpr* call) {
   FnSymbol* calledFn = rhs->resolvedFunction();
   INT_ASSERT(calledFn != NULL);
   INT_ASSERT(calledFn->hasFlag(FLAG_FIELD_ACCESSOR));
+  passFieldReadToRepackCall(call);
+  return;
+}
+
+static void fixPrimArrayGetForRefTuple(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+  CallExpr* rhs = toCallExpr(call->get(2));
+  INT_ASSERT(rhs != NULL);
+  INT_ASSERT(rhs->isPrimitive(PRIM_ARRAY_GET));
   passFieldReadToRepackCall(call);
   return;
 }
@@ -1963,14 +1976,46 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
   // Case: A tuple expression.
   if (CallExpr* buildCall = getBuildTupleCall(addrSym)) {
     confirmBuildCallActualsAreLvalues(buildCall);
-    convertBuildCallToAllRef(call, buildCall);
+
+    // If the LHS is the RVV/YVV, make sure no actuals are locals.
+    bool error = false;
+    int i = 0;
+    if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
+      for_actuals(actual, buildCall) {
+
+        SymExpr* actualSymExpr = toSymExpr(actual);
+        INT_ASSERT(actualSymExpr != NULL);
+        Symbol* actualSym = actualSymExpr->symbol();
+
+        if (actualSym->defPoint->getFunction() == inFn) {
+          if (!error) {
+            // TODO: Mention const.
+            USR_FATAL_CONT(buildCall, "cannot %s tuple containing locals "
+                                      "by ref",
+                                      warningVerb);
+            error = true;
+          }
+
+          Type* t = actualSym->getValType();
+
+          // TODO: Root on 
+          USR_PRINT(actualSym, "element %d of type %s", i,
+                               t->symbol->name);
+          i++;
+        }
+      }
+    }
+
+    if (!error) {
+      convertBuildCallToAllRef(call, buildCall);
+    }
 
   // Case: A formal argument.
   } else if (ArgSymbol* formal = toArgSymbol(addrSym)) {
 
     // Rudimentary const check.
     if ((formal->intent & INTENT_CONST) && !lhs->isConstant()) {
-      USR_FATAL_CONT(addrSym, "Cannot %s %s formal by ref",
+      USR_FATAL_CONT(addrSym, "Cannot %s %s formal by reference",
                               warningVerb,
                               intentDescrString(formal->intent));
     }
@@ -2003,11 +2048,11 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
 
     // Formals with `in` intent are local value tuples, so error.
     } else if (formal->intent & INTENT_IN) {
-      USR_FATAL_CONT(formal, "Cannot %s %s tuple formal by ref",
+      USR_FATAL_CONT(formal, "cannot %s %s tuple formal by ref",
                              warningVerb,
                              intentDescrString(formal->intent));
     } else {
-      INT_FATAL(formal, "Cannot %s tuple formal", warningVerb);
+      INT_FATAL(formal, "cannot %s tuple formal", warningVerb);
     }
 
   // Case: The result of a call?
@@ -2046,10 +2091,10 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
     }
 
     // TODO: Relax this when cullOverReferences can catch bad cases?
-    if (addrSym->defPoint->getFunction() ==inFn) {
-      if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
-        USR_FATAL_CONT("Cannot %s local tuple by reference",
-                       warningVerb);
+    if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
+      if (addrSym->defPoint->getFunction() ==inFn) {
+        USR_FATAL_CONT(call, "cannot %s local tuple by reference",
+                             warningVerb);
       }
     }
 
