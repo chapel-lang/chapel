@@ -46,6 +46,7 @@ New Features
 * added support for `use` statements that require qualified access  
   (e.g., `use Foo as _;` requires typing `Foo.xyz` rather than simply `xyz`)
   (see https://chapel-lang.org/docs/master/language/spec/modules.html#disabling-qualified)
+* added `string.dedent()` and `bytes.dedent()` for removing common indentation
 * added support for defining methods on type aliases or paren-less functions
   (e.g., `type myAlias=int; proc myAlias.myMethod() {}; 5.myMethod();`)
 * added a `range.isBounded()` query
@@ -100,6 +101,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries must also now be explicitly `use`d/`import`ed
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
+* added support for maps of `owned`/`borrowed` non-nilable classes
 * added support for lists of tuples containing non-nilable classes
 * added `update()`, `getBorrowed()`, `getValue()` methods to list
   (see https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.update,
@@ -119,6 +121,8 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/master/modules/standard/CommDiagnostics.html#CommDiagnostics.commDiagsStacktrace)
 * made `c_ptrTo()` generate a compile-time error for distributed arrays
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
+* added domain and range overloads to `choice()` in the `Random` module
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Random.html#Random.RandomStreamInterface.choice)
 * made 'Random.PCGRandomLib' no longer auto-available
   (see https://chapel-lang.org/docs/1.23/modules/standard/Random/PCGRandomLib.html)
 
@@ -126,6 +130,17 @@ Package Modules
 ---------------
 * added an `OrderedSet` module
   (see https://chapel-lang.org/docs/master/modules/packages/OrderedSet.html)
+* added `leastSquares()` to 'LinearAlgebra' module
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.leastSquares)
+* added `eigh()` and `eigvalsh()` to 'LinearAlgebra' module
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.eigvalsh)
+* `LinearAlgebra.cholesky()` now halts if matrix is symmetric positive definite
+* added support for strided/offset domains in `LinearAlgebra.diag()`
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
+* merged the `Norm` module into 'LinearAlgebra' and deprecated `Norm`
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.norm)
+* added `blockCyclicChunks()` iterator to the 'RangeChunk' module
+  (see: https://chapel-lang.org/docs/master/modules/packages/RangeChunk.html#RangeChunk.blockCyclicChunks)
 * updated the Sort module to number parts in keyPart calls from 0
   (see https://chapel-lang.org/docs/master/modules/packages/Sort.html#the-keypart-method)
 * moved 'LinkedLists' from the standard modules to the package modules
@@ -136,13 +151,34 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * added support for `localAccess()` to `BlockCyclic` and `Cyclic` arrays
 
+Mason Improvements
+------------------
+* added `bash` completion for `mason`
+* added interactive modes to `mason new` and `mason init` when lacking arguments
+  (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#starting-a-new-package)
+* added `mason publish --create-registry` to more easily create a registry
+  (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#local-registries)
+* added license field to the mason manifest file format
+  (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#the-manifest-file)
+* `mason search` output now puts partial matches at the top
+* `mason test` now supports substring matching for running tests
+  (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#testing-your-package)
+* `mason build` now skips the registry update if a package has no dependencies
+* `mason` key-value flags now all support `--key value` and `--key=value` style
+* `mason external --setup` is now significantly faster
+* added second spack clone in `mason external --setup` to get latest packages
+  (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#using-spack-dependencies)
+* updated 'mason' to work with Spack's new GitHub structure
+* removed `mason --list` due to similarity with `mason --help`
+* `mason publish --ci-check` now checks tests, examples, git tags, and manifest
+* added ability for `mason search` to utilize a registry cache
+
 New Tools / Tool Changes
 ------------------------
 * added support for Google Protocol Buffers
   (see https://chapel-lang.org/docs/master/tools/protoc-gen-chpl/protoc-gen-chpl.html)
 * updated `c2chapel` to use the `in` intent by default for struct arguments
   (see https://chapel-lang.org/docs/master/tools/c2chapel/c2chapel.html)
-* updated 'mason' to work with Spack's new GitHub structure
 
 Interoperability Improvements
 -----------------------------
@@ -164,11 +200,13 @@ Performance Optimizations / Improvements
 * added an optimization that reduces overheads for provably local array accesses
   (e.g. `forall i in A.domain { A[i] = 5; }` now executes much more quickly)
 * optimized how domains track the arrays that they govern at execution-time
+* optimized local single iteration `coforall`s
+* improved on-clause optimization to no longer trigger when loops are present
 * reduced the overheads for creating/destroying arrays with constant domains
   (e.g. `var arr: [1..1_000_000][1..3] int;` now executes ~4x faster)
 * improved performance of associative domains/arrays, `map`, and `set`
-* optimized local single iteration `coforall`s
-* improved on-clause optimization to no longer trigger when loops are present
+* optimized the `-=` operation on maps
+* improved performance of local matrix-matrix multiplication in 'LinearAlgebra'
 * improved compiler vectorization hinting to LLVM optimization with `--llvm`
 * optimized several `string` operations for ASCII-only strings
 * made `string.size` an O(1) operation
@@ -210,10 +248,16 @@ Documentation
   (see https://chapel-lang.org/docs/master/language/spec/variables.html#split-initialization)
 * added an example to the spec to clarify the defer statement
   (see https://chapel-lang.org/docs/master/language/spec/statements.html#the-defer-statement)
+* fixed function signatures, futures, and notes in HTML render of language spec
+  (e.g., see https://chapel-lang.org/docs/1.23/language/spec/arrays.html#rectangular-array-literals
+   and https://chapel-lang.org/docs/1.23/language/spec/arrays.html#Array.eltType)
 * improved links between various documentation of atomic variables
   (see https://chapel-lang.org/docs/master/primers/atomics.html)
 * added documentation for (unstable) compiler-defined global variables
   (see https://chapel-lang.org/docs/master/technotes/globalvars.html)
+* corrected `blasImpl` and `lapackImpl` values in `LinearAlgebra` documentation
+  (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
+* removed `List._checkType()` from public documFntation
 * added a note to the 'cygwin' docs indicating it's not intended for performance
   (see https://chapel-lang.org/docs/1.23/platforms/cygwin.html)
 * clarified that Mac 'homebrew' users need not build from source
@@ -243,6 +287,8 @@ Runtime Library Changes
 
 Launchers
 ---------
+* made launchers more reliably able to find the binary to launch
+* added support for arbitrarily long executable names
 
 Generated Executable Flags
 --------------------------
@@ -305,14 +351,21 @@ Bug Fixes
 * fixed a bug in 'DistIterators' in which 2-locale runs used the wrong locale
 * fixed several problems with `isDefaultInitializable()`
 * fixed a race in `domain.contains()`
+* fixed a bug in `DateTime.now()` that was assuming 1-based tuple indexing
 * fixed a race-y OOB error in some of the 'Sort' routines
 * fixed some bugs in the `dynamic()` iterator relating to integer overflow
+* removed redundant control flow in `LinearAlgebra.transpose()`
 * fixed a bug in which restarting 'VisualDebug' silently overwrote its data
 * fixed a bug in which some 'NetCDF' routines were missing their `use` clauses
 * fixed a bug with the 'TOML' `parseLoop` method
+* fixed a bug in 'TOML' parser where line numbers in errors were incorrect
 * fixed the rendering of several expression types in `chpldoc`
 * fixed an internal error encountered with certain `lifetime` clauses
 * fixed problems with initializing a channel from another channel
+* fixed a bug where `mason test` tried to run programs that failed to compile
+* fixed a bug in which 1-character filenames generated an error in `mason`
+* added help output for `mason init --help`
+* fixed a bug where `mason update --help` ran `mason update`
 
 Platform-specific bug fixes
 ---------------------------
@@ -333,6 +386,8 @@ Third-Party Software Changes
 ----------------------------
 * upgraded GMP to version 6.2.0
 * upgraded LLVM to version 10.0.1
+* added the `whereami` library for portably locating the current binary's path
+  (see https://github.com/gpakosz/whereami)
 
 Testing System
 --------------
@@ -345,6 +400,7 @@ Developer-oriented changes: Documentation improvements
 Developer-oriented changes: Module changes
 ------------------------------------------
 * extended support for split-initialization to internal and standard modules
+* updated `map` to use a hash table instead of an associative array
 * remove a superfluous `ref` intent from methods in 'List'
 * removed a workaround in the 'FileSystem' module now that `import` is done
 
@@ -352,6 +408,7 @@ Developer-oriented changes: Makefile improvements
 -------------------------------------------------
 * made the Makefiles remove `chpl-env-gen.h` on `make clean`
 * squashed backend warnings about string operation overflows for GCC 9
+* only try to build compiler once with `make mason`
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -364,6 +421,7 @@ Developer-oriented changes: Compiler improvements/changes
 * made `use` within internal modules private-by-default, as elsewhere
 * added support for `INT_ASSERT()` to take an optional AST as its first argument
 * enabled `%` format argument checking for `INT_FATAL`/`USR_FATAL`-style calls
+* added "get visible symbols" primitive to print symbols visible at its callsite
 * extended ast traversal patterns to print out missing ImportStmt functionality
 * extended `gdb` and `lldb lview` command for Chapel AST nodes to accept consts
 * increased code reuse in the import statement implementation
@@ -379,10 +437,13 @@ Developer-oriented changes: Testing System
 * made multilocale and examples memory leak testing report leaks as failures
 * added a new `-valgrindexe` flag to the `nightly` testing script
 * removed `CHPL_APP_LAUNCH_CMD` in favor of `CHPL_TEST_LAUNCHCMD`
+* added nightly testing of the HDF5 module
 * fixed a bug about name conflicts between the executable and output file
 * `-memleaks` and `-memleakslog` in scripts now correspond to executable flags
 * updated test scripts to be ready for Discourse-based mailing lists
 * rephrased filtered error messages to express greater confidence in them
+* wipe mason git submodules at the beginning of nightly testing
+* made various improvements to reduce noise in mason testing
 
 
 version 1.22.1
