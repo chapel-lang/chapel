@@ -16,6 +16,31 @@ Twenty-sixth public release of Chapel, October 15, 2020
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* language: hardened several core language features, including:
+  - point-of-instantiation (POI) rules and method resolution
+  - namespaces and visibility through `use` and `import`
+  - split initialization and array initialization
+  - behavior of `in`, `out`, `inout` intents
+* library:
+  - added new `Heap` and `OrderedSet` modules
+  - added a new `Version` module for reasoning about `chpl` and code versions
+  - made numerous improvements to the `LinearAlgebra` module
+  - improved orthogonality and interfaces of collection types
+* the `mason` package manager:
+  - `bash` completion support
+  - interactive modes for `mason new` and `mason init`
+  - improved ergonomics for `mason search`, `test`, `build`, and `publish`
+* performance:
+  - optimized accesses to distributed arrays for local indices
+  - parallelized assignments between large local arrays
+  - reduced overheads for managing arrays, particularly for `const` domains
+  - improved performance for associative domains/arrays, `map`, and `set`
+  - significant improvements to compilation time for certain patterns
+* additional highlights:
+  - added initial support for Google Protocol Buffers
+  - significant improvements to the LLVM back-end
+  - improvements to memory fragmentation and leaks
+  - minor improvements to Python interoperability
 
 Syntactic / Naming Changes
 --------------------------
@@ -175,7 +200,7 @@ Mason Improvements
 
 New Tools / Tool Changes
 ------------------------
-* added support for Google Protocol Buffers
+* added initial support for Google Protocol Buffers
   (see https://chapel-lang.org/docs/master/tools/protoc-gen-chpl/protoc-gen-chpl.html)
 * updated `c2chapel` to use the `in` intent by default for struct arguments
   (see https://chapel-lang.org/docs/master/tools/c2chapel/c2chapel.html)
