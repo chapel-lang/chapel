@@ -250,6 +250,15 @@ module Map {
       }
     }
 
+    pragma "no doc"
+    proc update(pragma "intent ref maybe const formal"
+                m: map(keyType, valType, parSafe)) {
+      compilerWarning('The `update()` method has new functionality in ' +
+                      'the 1.23 release - for forwards compatability ' +
+                      'call `extend()` instead');
+      extend(m);
+    }
+
     /*
       Update a value in this map in a parallel safe manner via an updater
       object.
