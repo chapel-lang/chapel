@@ -128,9 +128,9 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         log_info "Building Chapel component: runtime"
 
         compilers=gnu,cray
-        comms=gasnet,none,ofi
+        comms=none,ofi
         launchers=pals,slurm-srun
-        substrates=mpi,none
+        substrates=none
         locale_models=flat
         auxfs=none,lustre
         libpics=none,pic
