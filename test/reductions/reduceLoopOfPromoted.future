@@ -1,2 +1,0 @@
-bug: reductions of loops of promoted expressions cause an assertion error
-
