@@ -215,7 +215,7 @@ Performance Optimizations / Improvements
 * optimized local single iteration `coforall` loops
 * improved on-clause optimization to no longer trigger when loops are present
 * reduced the overheads for creating/destroying arrays with constant domains  
-  (e.g. `var arr: [1..1_000_000][1..3] int;` now executes ~4x faster)
+  (e.g. `var arr: [1..1_000_000][1..3] int;` now executes much faster)
 * improved performance of associative domains/arrays, `map`, and `set`
 * optimized the `-=` operation on maps
 * improved performance of local matrix-matrix multiplication in 'LinearAlgebra'
