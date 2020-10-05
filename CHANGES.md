@@ -39,6 +39,7 @@ Highlights (see subsequent sections for further details)
 * additional highlights:
   - added initial support for Google Protocol Buffers
   - significant improvements to the LLVM back-end
+  - significant improvements to the `ofi`-based runtime option for communication
   - improvements to memory fragmentation and leaks
   - minor improvements to Python interoperability
 
@@ -139,7 +140,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.update)
 * enabled lifetime checking for lists of borrowed classes
 * Added support for sets of owned and non-nilable owned classes
-* Added support for maps of non-nilable shared classes
+* Added support for maps of non-nilable owned and shared classes
 * added a new routine to print 'CommDiagnostics' in tabular form  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
 * added the ability to get stack traces in 'CommDiagnostics' verbose output  
@@ -247,8 +248,8 @@ Compilation-Time / Generated Code Improvements
 * stopped the compiler from generating (unused) `writeThis()` methods for arrays
 * removed unnecessary array temporaries for arrays-of-arrays
 
-Cray-specific Performance Optimizations/Improvements
-----------------------------------------------------
+HPE-specific Performance Optimizations/Improvements
+---------------------------------------------------
 
 Memory Improvements
 -------------------
@@ -298,8 +299,10 @@ Portability
 * improved checking for supported LLVM version when using `CHPL_LLVM=system`
 * fixed a build system bug to better support non-English terminals
 
-Cray-specific Changes and Bug Fixes
------------------------------------
+HPE-specific Changes and Bug Fixes
+----------------------------------
+* added support for the 'Lmod' module system in the HPE Cray modules
+* expanded the configurations available in the pre-built HPE Cray EX module
 * improved the `--cache-remote` operation for `ugni`
 
 Compiler Flags
@@ -309,6 +312,7 @@ Compiler Flags
 
 Runtime Library Changes
 -----------------------
+* significantly improved `ofi` portability and performance
 
 Launchers
 ---------
@@ -402,6 +406,8 @@ Packaging / Configuration Changes
 * added a docker image that uses GASNet's `smp` conduit for faster execution
 * made Cray module compatible with the Lmod environment system
 * switched from supporting cce-classic to clang-based cce
+* changed 'Shasta' to 'HPE Cray EX', reflecting product branding
+  (see https://chapel-lang.org/docs/master/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
 * removed support for Cray XE
 * removed the KNL locale model
 * removed the old `PERFORMANCE.md` file in favor of using the website for this  
@@ -410,10 +416,12 @@ Packaging / Configuration Changes
 
 Third-Party Software Changes
 ----------------------------
-* upgraded GMP to version 6.2.0
-* upgraded LLVM to version 10.0.1
+* added bundled libfabric, version 1.10
 * added the `whereami` library for portably locating the current binary's path  
   (see https://github.com/gpakosz/whereami)
+* upgraded GMP to version 6.2.0
+* upgraded LLVM to version 10.0.1
+* simplified the third-party linking support scripts
 
 Testing System
 --------------
