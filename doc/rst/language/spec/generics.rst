@@ -1151,7 +1151,7 @@ concrete method to be selected when applicable. For example:
 
    
 
-   ::
+   .. code-block:: chapel
 
       record MyNode {
         var field;  // since no type is specified here, MyNode is a generic type
