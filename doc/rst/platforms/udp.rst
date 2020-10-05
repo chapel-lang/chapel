@@ -168,7 +168,7 @@ the local machine, use:
 
 .. code-block:: bash
 
-  export GASNET_MASTERIP=127.0.0.1
-  export GASNET_WORKERIP=127.0.0.0  # may be optional
+  export CHPL_RT_MASTERIP=127.0.0.1
+  export CHPL_RT_WORKERIP=127.0.0.0  # may be optional
 
 
