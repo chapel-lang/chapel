@@ -356,9 +356,9 @@ The following methods are defined for variables of sync and single type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readFE(): t
+      proc (sync t).readFE(): t
 
 Returns the value of the sync variable. This method blocks until the
 sync variable is full. The state of the sync variable is set to empty
@@ -367,10 +367,10 @@ when this method completes. This method implements the normal read of a
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readFF(): t
-   proc (single t).readFF(): t
+      proc (sync t).readFF(): t
+      proc (single t).readFF(): t
 
 Returns the value of the sync or single variable. This method blocks
 until the sync or single variable is full. The state of the sync or
@@ -379,10 +379,10 @@ implements the normal read of a ``single`` variable.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).readXX(): t
-   proc (single t).readXX(): t
+      proc (sync t).readXX(): t
+      proc (single t).readXX(): t
 
 Returns the value of the sync or single variable. This method is
 non-blocking and the state of the sync or single variable is unchanged
@@ -390,10 +390,10 @@ when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeEF(v: t)
-   proc (single t).writeEF(v: t)
+      proc (sync t).writeEF(v: t)
+      proc (single t).writeEF(v: t)
 
 Assigns ``v`` to the value of the sync or single variable. This method
 blocks until the sync or single variable is empty. The state of the sync
@@ -402,9 +402,9 @@ method implements the normal write of a ``sync`` or ``single`` variable.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeFF(v: t)
+      proc (sync t).writeFF(v: t)
 
 Assigns ``v`` to the value of the sync variable. This method blocks
 until the sync variable is full. The state of the sync variable remains
@@ -412,9 +412,9 @@ full when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).writeXF(v: t)
+      proc (sync t).writeXF(v: t)
 
 Assigns ``v`` to the value of the sync variable. This method is
 non-blocking and the state of the sync variable is set to full when this
@@ -422,9 +422,9 @@ method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).reset()
+      proc (sync t).reset()
 
 Assigns the default value of type ``t`` to the value of the sync
 variable. This method is non-blocking and the state of the sync variable
@@ -432,10 +432,10 @@ is set to empty when this method completes.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (sync t).isFull: bool
-   proc (single t).isFull: bool
+      proc (sync t).isFull: bool
+      proc (single t).isFull: bool
 
 Returns ``true`` if the sync or single variable is full and ``false``
 otherwise. This method is non-blocking and the state of the sync or
@@ -571,35 +571,35 @@ memoryOrder.seqCst.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
 
 Reads and returns the stored value. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``v`` as the new value. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Stores ``v`` as the new value and returns the original value. Defined
 for all atomic types.
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-   proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-   proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+      proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
+      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
 
 Stores ``v`` as the new value, if and only if the original value is
 equal to ``e``. Returns ``true`` if ``v`` was stored, otherwise
@@ -610,9 +610,9 @@ performance on some platforms. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``v`` as the new value, if and only if the original value is
 equal to ``e``. Returns ``true`` if ``v`` was stored, ``false``
@@ -620,13 +620,13 @@ otherwise. Defined for all atomic types.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
-   proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v`` and stores the result. All of the methods
@@ -643,13 +643,13 @@ for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-   proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
+      proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
 
 Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
 the original value and ``v``, stores the result, and returns the original
@@ -659,27 +659,27 @@ methods are defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
+      proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
 
 Stores ``true`` as the new value and returns the old value. Equivalent
 to ``exchange(true)``. Only defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
+      proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
 
 Stores ``false`` as the new value. Equivalent to ``write(false)``. Only
 defined for the ``bool`` atomic type.
 
 
 
-::
+   .. code-block:: chapel
 
-   proc (atomic T).waitFor(v: T)
+      proc (atomic T).waitFor(v: T)
 
 Waits until the stored value is equal to ``v``. The implementation may
 yield the running task while waiting. Defined for all atomic types.
