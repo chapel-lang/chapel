@@ -1,0 +1,18 @@
+test1
+g1= 0
+g2= (x = 0)
+type of arr: [domain(1,int(64),false)] (int(64),r)
+arr= (0, (x = 0))
+assigning elements
+arr= (128, (x = 128))
+g1= 0
+g2= (x = 0)
+test2
+g1= 0
+g2= (x = 0)
+type of arr: [domain(1,int(64),false)] (int(64),r)
+arr= (0, (x = 0))
+assigning elements
+arr= (128, (x = 128))
+g1= 0
+g2= (x = 0)

@@ -110,15 +110,21 @@ symExprIsSetByDef(SymExpr* def) {
   // to a function (typically = ) as ref, inout, or out argument.
   if (def->parentExpr) {
     if (CallExpr* parentCall = toCallExpr(def->parentExpr)) {
-      if (parentCall->isPrimitive(PRIM_MOVE) &&
-          parentCall->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF) &&
-          parentCall->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
-        // Ignore this def
-        // We don't care about a PRIM_MOVE because it's setting
-        // a reference
-      } else {
-        return true;
+      if (parentCall->isPrimitive(PRIM_MOVE)) {
+        Type* lhsType = parentCall->get(1)->typeInfo();
+        Type* rhsType = parentCall->get(1)->typeInfo();
+
+        // Ignore this, just setting what a reference refers to.
+        if (lhsType->symbol->hasFlag(FLAG_REF) &&
+            rhsType->symbol->hasFlag(FLAG_REF)) {
+          return false;
+        } else if (lhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF) &&
+                   rhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+          return false;
+        }
       }
+
+      return true;
     }
   }
 
@@ -367,15 +373,15 @@ GraphNode makeNode(Symbol* variable, int fieldIndex)
 }
 
 static
-bool isConst(GraphNode node)
-{
-  if (node.variable->fieldQualifiers) {
-    Qualifier fieldQualifier = node.variable->fieldQualifiers[node.fieldIndex];
-    return QualifiedType::qualifierIsConst(fieldQualifier);
+bool isConst(GraphNode node) {
+  if (node.fieldIndex == 0) {
+    return node.variable->qualType().isConst();
   }
 
-  if (node.fieldIndex == 0)
-    return node.variable->qualType().isConst();
+  if (node.variable->fieldQualifiers) {
+    Qualifier q = node.variable->fieldQualifiers[node.fieldIndex];
+    return QualifiedType::qualifierIsConst(q);
+  }
 
   return false;
 }
@@ -1773,8 +1779,6 @@ void lowerContextCall(ContextCallExpr* cc, choose_type_t which)
   CallExpr* refCall = NULL;
   CallExpr* valueCall = NULL;
   CallExpr* constRefCall = NULL;
-
-  if (cc->id == 1408343) gdbShouldBreakHere();
 
   cc->getCalls(refCall, valueCall, constRefCall);
 
