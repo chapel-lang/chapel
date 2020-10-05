@@ -77,7 +77,8 @@ shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-release = '1.23.0 (pre-release)'
+# release = '1.23.0 (pre-release)'
+release = '1.23.0'
 
 # General information about the project.
 project = u'Chapel Documentation'
