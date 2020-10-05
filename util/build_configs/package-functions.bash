@@ -22,7 +22,7 @@ function ck_chpl_home_bin()
     local chpl_home=$1
     local chpl_platform=$2
 
-    local bindir=`$chpl_home/util/chplenv/chpl_bin_subdir.py`
+    local bindir=`CHPL_HOST_PLATFORM=$chpl_platform $chpl_home/util/chplenv/chpl_bin_subdir.py`
 
     if [[ $bindir != "$chpl_platform"* ]]
     then
