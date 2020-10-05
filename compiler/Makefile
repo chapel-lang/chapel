@@ -113,7 +113,8 @@ ifndef CHPL_MAKE_THIRD_PARTY
 CHPL_MAKE_THIRD_PARTY = $(CHPL_MAKE_HOME)/third-party
 endif
 
-FIXPATH_CMD := $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
+FIXPATH_CMD := $(CHPL_MAKE_PYTHON) \
+                  $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
                   --fixpath '$$CHPL_THIRD_PARTY' $(CHPL_MAKE_THIRD_PARTY) \
                   --fixpath '$$CHPL_HOME' $(CHPL_MAKE_HOME)
 
@@ -146,11 +147,11 @@ $(CHPL_MAKE_HOME)/configured-prefix:
 
 $(CONFIGURED_PREFIX_FILE): FORCE $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-prefix
 	@echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE).incoming
-	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
+	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
 
 $(CLANG_SETTINGS_FILE): FORCE $(COMPILER_BUILD)
 	@echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE).incoming
-	@$(CHPL_MAKE_HOME)/util/config/update-if-different $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
+	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
 
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)

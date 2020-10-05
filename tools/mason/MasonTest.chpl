@@ -427,8 +427,15 @@ proc getTestPath(fullPath: string, testPath = "") : string {
 /* Gets the comm */
 proc getRuntimeComm() throws {
   var line: string;
-  var checkComm = spawn(["python",CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
-                      stdout = PIPE);
+  var python: string;
+  var findPython = spawn([CHPL_HOME:string+"/util/config/find-python.sh"],
+                         stdout = PIPE);
+  while findPython.stdout.readline(line) {
+    python = line.strip();
+  }
+
+  var checkComm = spawn([python, CHPL_HOME:string+"/util/chplenv/chpl_comm.py"],
+                        stdout = PIPE);
   while checkComm.stdout.readline(line) {
     comm = line.strip();
   }
