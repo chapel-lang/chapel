@@ -1,16 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-- [] examples changes?
-- [] spellcheck
-- [] test URLs
-- [] no "highlight" in URLs?
-- [] get forced linebreaks right
-- [] initial caps
-- [] remove empty categories
-- [] spellcheck
-
 version 1.23.0
 ==============
 
@@ -44,9 +34,6 @@ Highlights (see subsequent sections for further details)
   - significant improvements to the `ofi`-based communication option
   - improvements to memory fragmentation and leaks
   - minor improvements to Python interoperability
-
-Syntactic / Naming Changes
---------------------------
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -89,8 +76,8 @@ Feature Improvements
 * extended `param` for-loops to support ranges formed using the `#` operator  
   (e.g., `for param i in 0..#10` is now supported)
 * improved `string`/`bytes` factory functions to accept `c_ptr(c_char)` buffers  
-  (see https://chapel-lang.org/docs/1.23/builtins/String.html  
-   and https://chapel-lang.org/docs/1.23/builtins/Bytes.html)
+  (see https://chapel-lang.org/docs/1.23/builtins/String.html#String.createStringWithBorrowedBuffer  
+   and https://chapel-lang.org/docs/1.23/builtins/Bytes.html#Bytes.createBytesWithBorrowedBuffer)
 * split initialization no longer considers nested function declarations  
   (see https://chapel-lang.org/docs/1.23/language/spec/variables.html#split-initialization)
 
@@ -123,13 +110,13 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.23/modules/standard/Builtins.html)
 * added a 'Version' module for reasoning about version numbers including 'chpl's  
   (see https://chapel-lang.org/docs/1.23/modules/standard/Version.html)  
-* added a 'Heap' module implementing the `heap` datatype
+* added a 'Heap' module implementing the `heap` datatype  
   (see https://chapel-lang.org/docs/1.23/modules/standard/Heap.html)
 * made 'CPtr' a standard user-facing module requiring `use`/`import`  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries now also require explicit `use`/`import`  
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
-* significantly improved support for lists, maps, sets of abitrary class types
+* significantly improved support for lists, maps, sets of arbitrary class types
 * added `update()`, `getBorrowed()`, `getValue()` methods to list  
   (see https://chapel-lang.org/docs/1.23/modules/standard/List.html#List.list.update,  
        https://chapel-lang.org/docs/1.23/modules/standard/List.html#List.list.getBorrowed,  
@@ -138,11 +125,11 @@ Standard Library Modules
 * adjusted `map.items()` iterator to return by value  
   (see https://chapel-lang.org/docs/1.23/modules/standard/Map.html#Map.map.items)
 * redefined `update()` on maps and renamed prior behavior to `extend()`  
-  (see https://chapel-lang.org/docs/1.23/modules/standard/Map.html#Map.map.extend
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Map.html#Map.map.extend  
    and see https://chapel-lang.org/docs/1.23/modules/standard/Map.html#Map.map.update)
 * added a new routine to print 'CommDiagnostics' in tabular form  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
-* added the ability to get stack traces in verbose output for 'CommDiagnostics' 
+* added the ability to get stack traces in verbose output for 'CommDiagnostics'  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.commDiagsStacktrace)
 * made `c_ptrTo()` generate a compile-time error for distributed arrays  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
@@ -153,7 +140,7 @@ Standard Library Modules
 
 Package Modules
 ---------------
-* added an 'OrderedSet' module supporting sets that maintain ordering
+* added an 'OrderedSet' module supporting sets that maintain ordering  
   (see https://chapel-lang.org/docs/1.23/modules/packages/OrderedSet.html)
 * added `leastSquares()` to the 'LinearAlgebra' module  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.leastSquares)
@@ -179,7 +166,7 @@ Standard Domain Maps (Layouts and Distributions)
 Mason Improvements
 ------------------
 * added `bash` completion for `mason`
-* added interactive modes to `mason new` and `mason init`
+* added interactive modes to `mason new` and `mason init`  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#starting-a-new-package)
 * added `mason publish --create-registry` to more easily create a registry  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#local-registries)
@@ -191,7 +178,7 @@ Mason Improvements
 * `mason build` now skips the registry update if a package has no dependencies
 * `mason` key-value flags now all support `--key value` and `--key=value` styles
 * `mason external --setup` is now significantly faster
-* added second spack clone in `mason external --setup` to get latest packages  
+* added second Spack clone in `mason external --setup` to get latest packages  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#using-spack-dependencies)
 * updated `mason` to work with Spack's new GitHub structure
 * removed `mason --list` due to similarity with `mason --help`
@@ -247,9 +234,6 @@ Compilation-Time / Generated Code Improvements
 * stopped the compiler from generating (unused) `writeThis()` methods for arrays
 * removed unnecessary array temporaries for arrays-of-arrays
 
-HPE-specific Performance Optimizations/Improvements
----------------------------------------------------
-
 Memory Improvements
 -------------------
 * reduced fragmentation for large allocations
@@ -291,6 +275,7 @@ Documentation
 
 Example Codes
 -------------
+* updated examples w.r.t. library and namespace changes, array init, and POI
 
 Portability
 -----------
@@ -322,9 +307,6 @@ Launchers
 Generated Executable Flags
 --------------------------
 * changed `--memLeaks` to avoid emitting any output if there is no leak
-
-Syntax Highlighting
--------------------
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -422,9 +404,6 @@ Third-Party Software Changes
 * upgraded GMP to version 6.2.0
 * upgraded LLVM to version 10.0.1
 * simplified the third-party linking support scripts
-
-Testing System
---------------
 
 Developer-oriented changes: Documentation improvements
 ------------------------------------------------------
