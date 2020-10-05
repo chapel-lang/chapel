@@ -127,8 +127,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
 * certain other standard libraries must also now be explicitly `use`d/`import`ed  
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
-* added support for maps of `owned`/`borrowed` non-nilable classes
-* added support for lists of tuples containing non-nilable classes
+* significantly improved support for lists, maps, set of abitrary class types
 * added `update()`, `getBorrowed()`, `getValue()` methods to list  
   (see https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.update,  
        https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.getBorrowed,  
