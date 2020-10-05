@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Removes path components that begin with $CHPL_HOME from the given path.
 

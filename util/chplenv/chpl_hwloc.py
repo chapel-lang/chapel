@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
