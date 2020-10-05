@@ -129,7 +129,7 @@ found the following setting useful to disable such printing:
 I'm seeing warnings from GASNet about using a higher-performance network
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: text
 
   WARNING: Using GASNet's udp-conduit, which exists for portability convenience.
   WARNING: Support was detected for native GASNet conduits: ibv
@@ -148,10 +148,12 @@ warnings. To turn them off, use:
 I get xSocket errors when using a system with multiple IP addresses
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-::
+.. code-block:: text
 
  *** FATAL ERROR: Got an xSocket while spawning slave process: connect()
  failed while creating a connect socket (111:Connection refused)
+
+ Other error codes can arise, ex. (60:Operation timed out)
 
 You need to set ``CHPL_RT_MASTERIP`` (or ``GASNET_MASTERIP``), and possibly
 ``CHPL_RT_WORKERIP`` (or ``GASNET_WORKERIP``).  Please refer to:
@@ -161,5 +163,12 @@ You need to set ``CHPL_RT_MASTERIP`` (or ``GASNET_MASTERIP``), and possibly
   * ``$CHPL_HOME/third-party/gasnet/gasnet-src/udp-conduit/README``
   * https://gasnet.lbl.gov/dist/udp-conduit/README .
 
+For example, when simulating multiple locales by oversubscribing
+the local machine, use:
+
+.. code-block:: bash
+
+  export GASNET_MASTERIP=127.0.0.1
+  export GASNET_WORKERIP=127.0.0.0  # may be optional
 
 
