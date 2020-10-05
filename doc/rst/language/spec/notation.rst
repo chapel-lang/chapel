@@ -38,11 +38,11 @@ alternative productions to define the non-terminal.
    .. code-block:: syntaxdonotcollect
 
       bool-literal:
-        `true'
-        `false'
+        'true'
+        'false'
 
-   defines ``bool-literal`` to be either the symbol :literal:`\`true'`
-   or :literal:`\`false'`.
+   defines ``bool-literal`` to be either the symbol ``true``
+   or ``false``.
 
 In the event that a single line of a definition needs to break across
 multiple lines of text, more indentation is used to indicate that it is

@@ -23,14 +23,14 @@ Variables are declared with the following syntax:
      privacy-specifier[OPT] config-extern-or-export[OPT] variable-kind variable-declaration-list ;
 
    config-or-extern: one of
-     `config' `extern' `export'
+     'config' 'extern' 'export'
 
    variable-kind:
-     `param'
-     `const'
-     `var'
-     `ref'
-     `const ref'
+     'param'
+     'const'
+     'var'
+     'ref'
+     'const ref'
 
    variable-declaration-list:
      variable-declaration

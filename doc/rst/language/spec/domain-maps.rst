@@ -62,7 +62,7 @@ a ``dmapped`` clause:
 .. code-block:: syntax
 
    mapped-domain-type:
-     domain-type `dmapped' dmap-value
+     domain-type 'dmapped' dmap-value
 
    dmap-value:
      expression
@@ -167,7 +167,7 @@ clause, in the same way as a domain type’s map.
 .. code-block:: syntax
 
    mapped-domain-expression:
-     domain-expression `dmapped' dmap-value
+     domain-expression 'dmapped' dmap-value
 
 ..
 

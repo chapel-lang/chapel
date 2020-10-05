@@ -308,11 +308,11 @@ The syntax for a conditional statement is given by
 .. code-block:: syntax
 
    conditional-statement:
-     `if' expression `then' statement else-part[OPT]
-     `if' expression block-statement else-part[OPT]
+     'if' expression 'then' statement else-part[OPT]
+     'if' expression block-statement else-part[OPT]
 
    else-part:
-     `else' statement
+     'else' statement
 
 A conditional statement evaluates an expression of bool type. If the
 expression evaluates to true, the first statement in the conditional
@@ -385,17 +385,17 @@ statement. The syntax is given by:
 .. code-block:: syntax
 
    select-statement:
-     `select' expression { when-statements }
+     'select' expression { when-statements }
 
    when-statements:
      when-statement
      when-statement when-statements
 
    when-statement:
-     `when' expression-list `do' statement
-     `when' expression-list block-statement
-     `otherwise' statement
-     `otherwise' `do' statement
+     'when' expression-list 'do' statement
+     'when' expression-list block-statement
+     'otherwise' statement
+     'otherwise' 'do' statement
 
    expression-list:
      expression
@@ -429,15 +429,15 @@ while-do loop is given by:
 .. code-block:: syntax
 
    while-do-statement:
-     `while' expression `do' statement
-     `while' expression block-statement
+     'while' expression 'do' statement
+     'while' expression block-statement
 
 The syntax of the do-while loop is given by: 
 
 .. code-block:: syntax
 
    do-while-statement:
-     `do' statement `while' expression ;
+     'do' statement 'while' expression ;
 
 In both variants, the expression evaluates to a value of type ``bool``
 which determines when the loop terminates and control continues with the
@@ -544,10 +544,10 @@ loop is given by:
 .. code-block:: syntax
 
    for-statement:
-     `for' index-var-declaration `in' iteratable-expression `do' statement
-     `for' index-var-declaration `in' iteratable-expression block-statement
-     `for' iteratable-expression `do' statement
-     `for' iteratable-expression block-statement
+     'for' index-var-declaration 'in' iteratable-expression 'do' statement
+     'for' index-var-declaration 'in' iteratable-expression block-statement
+     'for' iteratable-expression 'do' statement
+     'for' iteratable-expression block-statement
 
    index-var-declaration:
      identifier
@@ -555,7 +555,7 @@ loop is given by:
 
    iteratable-expression:
      expression
-     `zip' ( expression-list )
+     'zip' ( expression-list )
 
 The ``index-var-declaration`` declares new variables for the scope of
 the loop. It may specify a new identifier or may specify multiple
@@ -616,12 +616,12 @@ parameter for loop statement is given by:
 .. code-block:: syntax
 
    param-for-statement:
-     `for' `param' identifier `in' param-iteratable-expression `do' statement
-     `for' `param' identifier `in' param-iteratable-expression block-statement
+     'for' 'param' identifier 'in' param-iteratable-expression 'do' statement
+     'for' 'param' identifier 'in' param-iteratable-expression block-statement
 
    param-iteratable-expression:
      range-literal
-     range-literal `by' integer-literal
+     range-literal 'by' integer-literal
 
 Parameter for loops are restricted to iteration over range literals with
 an optional by expression where the bounds and stride must be
@@ -655,13 +655,13 @@ The syntax for label, break, and continue statements is given by:
 .. code-block:: syntax
 
    break-statement:
-     `break' identifier[OPT] ;
+     'break' identifier[OPT] ;
 
    continue-statement:
-     `continue' identifier[OPT] ;
+     'continue' identifier[OPT] ;
 
    label-statement:
-     `label' identifier statement
+     'label' identifier statement
 
 A ``break`` statement cannot be used to exit a parallel loop
 :ref:`Forall`.
@@ -749,7 +749,7 @@ The syntax is:
 .. code-block:: syntax
 
    defer-statement:
-     `defer' statement
+     'defer' statement
 
 At each place where control flow exits a block, the compiler will add
 cleanup actions for the in-scope ``defer`` statements that have executed and

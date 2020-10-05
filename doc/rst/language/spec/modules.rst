@@ -28,14 +28,14 @@ A module is declared with the following syntax:
 .. code-block:: syntax
 
    module-declaration-statement:
-     privacy-specifier[OPT] prototype-specifier[OPT] `module' module-identifier block-statement
+     privacy-specifier[OPT] prototype-specifier[OPT] 'module' module-identifier block-statement
 
    privacy-specifier:
-     `private'
-     `public'
+     'private'
+     'public'
 
    prototype-specifier:
-     `prototype'
+     'prototype'
 
    module-identifier:
      identifier
@@ -422,7 +422,7 @@ The syntax of the use statement is given by:
 .. code-block:: syntax
 
    use-statement:
-     privacy-specifier[OPT] `use' module-or-enum-name-list ;
+     privacy-specifier[OPT] 'use' module-or-enum-name-list ;
 
    module-or-enum-name-list:
      module-or-enum-name limitation-clause[OPT]
@@ -433,8 +433,8 @@ The syntax of the use statement is given by:
      identifier . module-or-enum-name
 
    limitation-clause:
-     `except' exclude-list
-     `only' rename-list[OPT]
+     'except' exclude-list
+     'only' rename-list[OPT]
 
    exclude-list:
      identifier-list
@@ -445,8 +445,8 @@ The syntax of the use statement is given by:
      rename-base , rename-list
 
    rename-base:
-     identifier `as' identifier
-     identifier `as' _
+     identifier 'as' identifier
+     identifier 'as' _
      identifier
 
 For example, the program
@@ -665,7 +665,7 @@ The syntax of the import statement is given by:
 .. code-block:: syntax
 
    import-statement:
-     privacy-specifier[OPT] `import' import-expression-list ;
+     privacy-specifier[OPT] 'import' import-expression-list ;
 
    import-expression-list:
      import-expression

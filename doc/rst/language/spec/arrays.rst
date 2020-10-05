@@ -761,8 +761,7 @@ The ``#`` operator can be applied to dense rectangular arrays with a
 tuple argument whose size matches the rank of the array (or optionally
 an integer in the case of a 1D array). The operator is equivalent to
 applying the ``#`` operator to the array’s domain and using the result
-to slice the array as described in
-Section \ `22.6.1 <#Rectangular_Array_Slicing>`__.
+to slice the array as described in :ref:`Rectangular_Array_Slicing`.
 
 .. _Array_Arguments_To_Functions:
 

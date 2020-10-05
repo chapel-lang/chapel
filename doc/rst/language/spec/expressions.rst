@@ -537,7 +537,7 @@ The syntax of a binary expression is given by:
      expression binary-operator expression
 
    binary-operator: one of
-     + - * / % ** & | ^ << >> && || == != <= >= < > `by' #
+     + - * / % ** & | ^ << >> && || == != <= >= < > 'by' #
 
 The operators are defined in subsequent sections.
 
@@ -1483,7 +1483,7 @@ by:
 .. code-block:: syntax
 
    let-expression:
-     `let' variable-declaration-list `in' expression
+     'let' variable-declaration-list 'in' expression
 
 The scope of the variables is the let-expression.
 
@@ -1530,8 +1530,8 @@ A conditional expression is given by the following syntax:
 .. code-block:: syntax
 
    if-expression:
-     `if' expression `then' expression `else' expression
-     `if' expression `then' expression
+     'if' expression 'then' expression 'else' expression
+     'if' expression 'then' expression
 
 The conditional expression is evaluated in two steps. First, the
 expression following the ``if`` keyword is evaluated. Then, if the
@@ -1581,8 +1581,8 @@ A for expression is given by the following syntax:
 .. code-block:: syntax
 
    for-expression:
-     `for' index-var-declaration `in' iteratable-expression `do' expression
-     `for' iteratable-expression `do' expression
+     'for' index-var-declaration 'in' iteratable-expression 'do' expression
+     'for' iteratable-expression 'do' expression
 
 A for expression is an iterator that executes a for loop
 (:ref:`The_For_Loop`), evaluates the body expression on each
