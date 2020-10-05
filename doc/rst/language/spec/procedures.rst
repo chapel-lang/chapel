@@ -1217,6 +1217,23 @@ follows.
    choose which function to call based on the calling context as
    described in :ref:`Choosing_Return_Intent_Overload`.
 
+Notation
+~~~~~~~~
+
+This section uses the following notation:
+
+ * :math:`X` is a function under consideration
+ * The actual argument under consideration is :math:`A` of type
+   :math:`T_A`
+ * :math:`M_X` represents the argument mapping from :math:`A` to the
+   formal argument :math:`F_X` from function :math:`X`. :math:`F_X` has
+   type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
+   refers to the argument before instantiation and :math:`T_X` refers to
+   the instantiated type.
+ * When needed in the exposition, :math:`Y` is another function under
+   consideration, with mapping :math:`M_Y` from :math:`A` to a formal
+   argument :math:`F_Y` of type :math:`T_Y`.
+
 .. _Determining_Visible_Functions:
 
 Determining Visible Functions
@@ -1268,172 +1285,200 @@ to a function if one exists:
 Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
-An actual argument of type :math:`T_A` can be mapped to a formal
-argument of type :math:`T_F` if any of the following conditions hold:
+An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
+a formal argument of :math:`F_X` of type :math:`T_X` according to the
+following rules.
 
--  :math:`T_A` and :math:`T_F` are the same type.
+First, if :math:`F_X` is a generic argument:
 
--  There is an implicit conversion from :math:`T_A` to :math:`T_F`.
+ * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
+   ``param``
+ * if :math:`F_X` uses ``type`` intent, then :math:`A` must also be a
+   ``type``
+ * the type :math:`T_A` must be compatible with the generic declared type
+   of :math:`F_X`, if any, such that an instantiated concrete type can be
+   found
+ * finally, the instantiated type :math:`T_X` will be checked according
+   to the rules below.
 
--  :math:`T_A` is derived from :math:`T_F`.
+Next, the type :math:`T_A` is checked for compatibility with the type
+:math:`T_X` according to the concrete intent of :math:`F_X`:
 
--  :math:`T_A` is scalar promotable to :math:`T_F`.
+ * if :math:`F_X` uses ``ref`` or ``out`` intent, then :math:`T_A`
+   must be the same type as :math:`T_X`
+ * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
+   :math:`T_X` must be the same type or a subtype of :math:`T_X`
+ * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
+   must be the same type, a subtype of, or implicitly convertible to
+   :math:`T_X`.
+
+Finally, the mapping is checked for promotion.  Then, the mapping is
+checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+(see :ref:`Promotion`), then the above rules are checked with the element
+type, index type, or yielded type.  For example, if :math:`T_A` is an
+array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T_A` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
 Determining More Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given two functions :math:`F_1` and :math:`F_2`, the more specific
+Given two candidate functions, :math:`X` and :math:`Y`, the more specific
 function is determined by the first of the following steps that applies:
 
--  If :math:`F_1` does not require promotion and :math:`F_2` does
-   require promotion, then :math:`F_1` is more specific.
+-  If :math:`X` does not require promotion and :math:`Y` does
+   require promotion, then :math:`X` is more specific.
 
--  If :math:`F_2` does not require promotion and :math:`F_1` does
-   require promotion, then :math:`F_2` is more specific.
+-  If :math:`Y` does not require promotion and :math:`X` does
+   require promotion, then :math:`Y` is more specific.
 
--  If at least one of the legal argument mappings to :math:`F_1` is a
+-  If at least one of the legal argument mappings to :math:`X` is a
    *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`F_2` and none of the legal argument
-   mappings to :math:`F_2` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`F_1`, then :math:`F_1`
+   argument mapping to :math:`Y` and none of the legal argument
+   mappings to :math:`Y` is a more specific argument mapping than the
+   corresponding legal argument mapping to :math:`X`, then :math:`X`
    is more specific.
 
--  If at least one of the legal argument mappings to :math:`F_2` is a
+-  If at least one of the legal argument mappings to :math:`Y` is a
    *more specific argument mapping* than the corresponding legal
-   argument mapping to :math:`F_1` and none of the legal argument
-   mappings to :math:`F_1` is a more specific argument mapping than the
-   corresponding legal argument mapping to :math:`F_2`, then :math:`F_2`
+   argument mapping to :math:`X` and none of the legal argument
+   mappings to :math:`X` is a more specific argument mapping than the
+   corresponding legal argument mapping to :math:`Y`, then :math:`Y`
    is more specific.
 
--  If :math:`F_1` shadows :math:`F_2`, then :math:`F_1` is more
+-  If :math:`X` shadows :math:`Y`, then :math:`X` is more
    specific.
 
--  If :math:`F_2` shadows :math:`F_1`, then :math:`F_2` is more
+-  If :math:`Y` shadows :math:`X`, then :math:`Y` is more
    specific.
 
--  If at least one of the legal argument mappings to :math:`F_1` is
+-  If at least one of the legal argument mappings to :math:`X` is
    *weak preferred* and none of the legal argument mappings to
-   :math:`F_2` are *weak preferred*, then :math:`F_1` is more specific.
+   :math:`Y` are *weak preferred*, then :math:`X` is more specific.
 
--  If at least one of the legal argument mappings to :math:`F_2` is
+-  If at least one of the legal argument mappings to :math:`Y` is
    *weak preferred* and none of the legal argument mappings to
-   :math:`F_1` are *weak preferred*, then :math:`F_2` is more specific.
+   :math:`X` are *weak preferred*, then :math:`Y` is more specific.
 
--  If at least one of the legal argument mappings to :math:`F_1` is
+-  If at least one of the legal argument mappings to :math:`X` is
    *weaker preferred* and none of the legal argument mappings to
-   :math:`F_2` are *weaker preferred*, then :math:`F_1` is more
+   :math:`Y` are *weaker preferred*, then :math:`X` is more
    specific.
 
--  If at least one of the legal argument mappings to :math:`F_2` is
+-  If at least one of the legal argument mappings to :math:`Y` is
    *weaker preferred* and none of the legal argument mappings to
-   :math:`F_1` are *weaker preferred*, then :math:`F_2` is more
+   :math:`X` are *weaker preferred*, then :math:`Y` is more
    specific.
 
--  If at least one of the legal argument mappings to :math:`F_1` is
+-  If at least one of the legal argument mappings to :math:`X` is
    *weakest preferred* and none of the legal argument mappings to
-   :math:`F_2` are *weakest preferred*, then :math:`F_1` is more
+   :math:`Y` are *weakest preferred*, then :math:`X` is more
    specific.
 
--  If at least one of the legal argument mappings to :math:`F_2` is
+-  If at least one of the legal argument mappings to :math:`Y` is
    *weakest preferred* and none of the legal argument mappings to
-   :math:`F_1` are *weakest preferred*, then :math:`F_2` is more
+   :math:`X` are *weakest preferred*, then :math:`Y` is more
    specific.
 
 -  Otherwise neither function is more specific.
 
-Given an argument mapping, :math:`M_1`, from an actual argument,
-:math:`A`, of type :math:`T_A` to a formal argument, :math:`F1`, of type
-:math:`T_{F1}` and an argument mapping, :math:`M_2`, from the same
-actual argument to a formal argument, :math:`F2`, of type
-:math:`T_{F2}`, the level of preference for one of these argument
-mappings is determined by the first of the following steps that applies:
+The next section discusses the level of preference for an argument
+mapping. As discussed above, :math:`M_X` represents the argument mapping
+from :math:`A` to the formal argument :math:`F_X` from function :math:`X`
+with type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
+refers to the argument before instantiation and :math:`T_X` represents
+the type of :math:`F_X` after instantiation. :math:`M_Y`, :math:`F_Y`,
+and :math:`T_Y` are defined in a similar manner to represent the argument
+mapping for :math:`Y`.
 
--  If :math:`T_{F1}` and :math:`T_{F2}` are the same type, :math:`F1` is
-   an instantiated parameter, and :math:`F2` is not an instantiated
-   parameter, :math:`M_1` is more specific.
+The level of preference for one of these argument mappings is determined
+by the first of the following steps that applies:
 
--  If :math:`T_{F1}` and :math:`T_{F2}` are the same type, :math:`F2` is
-   an instantiated parameter, and :math:`F1` is not an instantiated
-   parameter, :math:`M_2` is more specific.
+-  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
+   an instantiated parameter, and :math:`F_Y` is not an instantiated
+   parameter, :math:`M_X` is more specific.
 
--  If :math:`M_1` does not require scalar promotion and :math:`M_2`
-   requires scalar promotion, :math:`M_1` is more specific.
+-  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
+   an instantiated parameter, and :math:`F_X` is not an instantiated
+   parameter, :math:`M_Y` is more specific.
 
--  If :math:`M_1` requires scalar promotion and :math:`M_2` does not
-   require scalar promotion, :math:`M_2` is more specific.
+-  If :math:`M_X` does not require scalar promotion and :math:`M_Y`
+   requires scalar promotion, :math:`M_X` is more specific.
 
--  If :math:`T_{F1}` and :math:`T_{F2}` are the same type, :math:`F1` is
-   generic, and :math:`F2` is not generic, :math:`M_1` is more specific.
+-  If :math:`M_X` requires scalar promotion and :math:`M_Y` does not
+   require scalar promotion, :math:`M_Y` is more specific.
 
--  If :math:`T_{F1}` and :math:`T_{F2}` are the same type, :math:`F2` is
-   generic, and :math:`F1` is not generic, :math:`M_2` is more specific.
+-  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
+   generic, and :math:`F_Y` is not generic, :math:`M_X` is more specific.
 
--  If :math:`F1` is not generic over all types and :math:`F2` is generic
-   over all types, :math:`M_1` is more specific.
+-  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_Y` is
+   generic, and :math:`F_X` is not generic, :math:`M_Y` is more specific.
 
--  If :math:`F1` is generic over all types and :math:`F2` is not generic
-   over all types, :math:`M_2` is more specific.
+-  If :math:`F_X` is not generic over all types and :math:`F_Y` is generic
+   over all types, :math:`M_X` is more specific.
 
--  If :math:`F1` and :math:`F2` are both generic, and :math:`F1` is
-   partially concrete but :math:`F2` is not, then :math:`M_1` is more
+-  If :math:`F_X` is generic over all types and :math:`F_Y` is not generic
+   over all types, :math:`M_Y` is more specific.
+
+-  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_X` is
+   partially concrete but :math:`F_Y` is not, then :math:`M_X` is more
    specific.
 
--  If :math:`F1` and :math:`F2` are both generic, and :math:`F2` is
-   partially concrete but :math:`F1` is not, then :math:`M_2` is more
+-  If :math:`F_X` and :math:`F_Y` are both generic, and :math:`F_Y` is
+   partially concrete but :math:`F_X` is not, then :math:`M_Y` is more
    specific.
 
--  If :math:`F1` is a ``param`` argument but :math:`F2` is not, then
-   :math:`M_1` is weak preferred.
+-  If :math:`F_X` is a ``param`` argument but :math:`F_Y` is not, then
+   :math:`M_X` is weak preferred.
 
--  If :math:`F2` is a ``param`` argument but :math:`F1` is not, then
-   :math:`M_2` is weak preferred.
+-  If :math:`F_Y` is a ``param`` argument but :math:`F_X` is not, then
+   :math:`M_Y` is weak preferred.
 
 -  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F2` requires a narrowing conversion but :math:`F1` does not,
-   then :math:`M_1` is weak preferred.
+   :math:`F_Y` requires a narrowing conversion but :math:`F_X` does not,
+   then :math:`M_X` is weak preferred.
 
 -  If :math:`A` is not a ``param`` argument with a default size and
-   :math:`F1` requires a narrowing conversion but :math:`F2` does not,
-   then :math:`M_2` is weak preferred.
+   :math:`F_X` requires a narrowing conversion but :math:`F_Y` does not,
+   then :math:`M_Y` is weak preferred.
 
--  If :math:`T_A` and :math:`T_{F1}` are the same type and :math:`T_A`
-   and :math:`T_{F2}` are not the same type, :math:`M_1` is more
+-  If :math:`T_A` and :math:`T_X` are the same type and :math:`T_A`
+   and :math:`T_Y` are not the same type, :math:`M_X` is more
    specific.
 
--  If :math:`T_A` and :math:`T_{F1}` are not the same type and
-   :math:`T_A` and :math:`T_{F2}` are the same type, :math:`M_2` is more
+-  If :math:`T_A` and :math:`T_X` are not the same type and
+   :math:`T_A` and :math:`T_Y` are the same type, :math:`M_Y` is more
    specific.
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_{F1}` but
-   different from :math:`T_{F2}`, then :math:`M_1` will be preferred as
+-  If :math:`A` uses a scalar promotion type equal to :math:`T_X` but
+   different from :math:`T_Y`, then :math:`M_X` will be preferred as
    follows:
 
    -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_1` is weakest preferred
+      :math:`M_X` is weakest preferred
 
    -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_1` is weaker preferred
+      :math:`M_X` is weaker preferred
 
-   -  otherwise, :math:`M_1` is more specific
+   -  otherwise, :math:`M_X` is more specific
 
--  If :math:`A` uses a scalar promotion type equal to :math:`T_{F2}` but
-   different from :math:`T_{F1}`, then :math:`M_2` will be preferred as
+-  If :math:`A` uses a scalar promotion type equal to :math:`T_Y` but
+   different from :math:`T_X`, then :math:`M_Y` will be preferred as
    follows:
 
    -  if :math:`A` is a ``param`` argument with a default size, then
-      :math:`M_2` is weakest preferred
+      :math:`M_Y` is weakest preferred
 
    -  if :math:`A` is a ``param`` argument with non-default size, then
-      :math:`M_2` is weaker preferred
+      :math:`M_Y` is weaker preferred
 
-   -  otherwise, :math:`M_2` is more specific
+   -  otherwise, :math:`M_Y` is more specific
 
 -  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_{F1}` over conversion to :math:`T_{F2}`, then :math:`M_1` is
+   :math:`T_X` over conversion to :math:`T_Y`, then :math:`M_X` is
    preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_1` is weakest preferred. Otherwise, :math:`M_1` is
+   then :math:`M_X` is weakest preferred. Otherwise, :math:`M_X` is
    weaker preferred.
 
    Type conversion preferences are as follows:
@@ -1469,28 +1514,28 @@ mappings is determined by the first of the following steps that applies:
       total width of twice the real/imag) over another size of complex
 
 -  If :math:`T_A` or its scalar promotion type prefers conversion to
-   :math:`T_{F2}` over conversion to :math:`T_{F1}`, then :math:`M_2` is
+   :math:`T_Y` over conversion to :math:`T_X`, then :math:`M_Y` is
    preferred. If :math:`A` is a ``param`` argument with a default size,
-   then :math:`M_2` is weakest preferred. Otherwise, :math:`M_2` is
+   then :math:`M_Y` is weakest preferred. Otherwise, :math:`M_Y` is
    weaker preferred.
 
--  If :math:`T_{F1}` is derived from :math:`T_{F2}`, then :math:`M_1` is
+-  If :math:`T_X` is derived from :math:`T_Y`, then :math:`M_X` is
    more specific.
 
--  If :math:`T_{F2}` is derived from :math:`T_{F1}`, then :math:`M_2` is
+-  If :math:`T_Y` is derived from :math:`T_X`, then :math:`M_Y` is
    more specific.
 
--  If there is an implicit conversion from :math:`T_{F1}` to
-   :math:`T_{F2}`, then :math:`M_1` is more specific.
+-  If there is an implicit conversion from :math:`T_X` to
+   :math:`T_Y`, then :math:`M_X` is more specific.
 
--  If there is an implicit conversion from :math:`T_{F2}` to
-   :math:`T_{F1}`, then :math:`M_2` is more specific.
+-  If there is an implicit conversion from :math:`T_Y` to
+   :math:`T_X`, then :math:`M_Y` is more specific.
 
--  If :math:`T_{F1}` is any ``int`` type and :math:`T_{F2}` is any
-   ``uint`` type, :math:`M_1` is more specific.
+-  If :math:`T_X` is any ``int`` type and :math:`T_Y` is any
+   ``uint`` type, :math:`M_X` is more specific.
 
--  If :math:`T_{F2}` is any ``int`` type and :math:`T_{F1}` is any
-   ``uint`` type, :math:`M_2` is more specific.
+-  If :math:`T_Y` is any ``int`` type and :math:`T_X` is any
+   ``uint`` type, :math:`M_Y` is more specific.
 
 -  Otherwise neither mapping is more specific.
 
