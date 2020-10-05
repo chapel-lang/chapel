@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Simple slurm-aware paratest wrapper for testing on the chapcs cluster. This

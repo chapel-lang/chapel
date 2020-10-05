@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from distutils.spawn import find_executable
 import sys
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script is intended to sync the performance graphs to dreamhost. It is
 # essentially a large wrapper for rsync. The reason it is separated, rather

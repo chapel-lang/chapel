@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Do basic validation and checks on the ANNOTATIONS.yaml file
 
 This is a kinda-ugly script that does basic validation of ANNOTATIONS.yaml

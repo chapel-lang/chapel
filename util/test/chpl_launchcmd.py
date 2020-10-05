@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Run Chapel test (execution only) inside pbs or slurm batch job.
 
