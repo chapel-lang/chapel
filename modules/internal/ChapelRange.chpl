@@ -771,20 +771,6 @@ module ChapelRange {
     return other == this(other);
   }
 
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(ind: idxType) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(ind);
-  }
-
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(other: range(?)) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(other);
-  }
-
   // Negate one of the two args' strides before comparison.
   private inline proc _containsHelp(in arg1: range(?), in arg2: range(?)) {
     if arg2.stridable then
