@@ -25,13 +25,13 @@
 
 class ForallOptimizationInfo {
   public:
-    Symbol *iterSym = NULL;
-    Expr *dotDomIterExpr = NULL;
-    Symbol *dotDomIterSym = NULL;
-    Symbol *dotDomIterSymDom = NULL;
+    Symbol *iterSym;
+    Expr *dotDomIterExpr;
+    Symbol *dotDomIterSym;
+    Symbol *dotDomIterSymDom;
 
-    CallExpr *iterCall = NULL;  // refers to the original CallExpr
-    Symbol *iterCallTmp = NULL; // this is the symbol to use for checks
+    CallExpr *iterCall;  // refers to the original CallExpr
+    Symbol *iterCallTmp; // this is the symbol to use for checks
 
     // even if there are multiple indices we store them in a vector
     std::vector<Symbol *> multiDIndices;
@@ -52,6 +52,8 @@ class ForallOptimizationInfo {
 
 
     bool confirmedFastFollower;
+
+    ForallOptimizationInfo();
 };
 
 ///////////////////////////////////
