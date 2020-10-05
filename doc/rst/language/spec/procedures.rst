@@ -469,7 +469,7 @@ The assignment implementing the ``out`` intent is a candidate for
 :ref:`Split_Initialization`. As a result, an actual argument might be
 initialized by a call passing the actual by ``out`` intent.
 
-_The_Inout_Intent:
+.. _The_Inout_Intent:
 
 The Inout Intent
 ^^^^^^^^^^^^^^^^
