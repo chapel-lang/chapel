@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Run ra with n=33 and 10 million updates. ugni and gasnet-aries are much
 # faster for the rmo version, so bump the number of updates to 1 billion to get

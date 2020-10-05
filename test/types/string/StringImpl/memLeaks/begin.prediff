@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This is not perfect, but there's no easy way to make sure all the
 # tasking data structures have been freed before we make the call to

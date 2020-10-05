@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Verify the setchplenv.* script correctly set the environment for using chpl,
 et al.

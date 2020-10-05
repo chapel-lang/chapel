@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Use the largest hugepages we can get, so we can cover any compute node.
 print('HUGETLB_DEFAULT_PAGE_SIZE=512M')

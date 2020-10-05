@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 # Valgrind causes a program to "use a lot more memory", so limit mem fraction,
 # and this test is slower under baseline
