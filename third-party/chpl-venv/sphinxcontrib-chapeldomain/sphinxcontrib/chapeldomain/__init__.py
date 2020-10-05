@@ -29,6 +29,8 @@ from docutils.parsers.rst import Directive
 from sphinx.util.docfields import Field, GroupedField, TypedField
 from sphinx.util.nodes import make_refnode
 
+from chapel import ChapelLexer
+
 
 VERSION = '0.0.15'
 
@@ -1028,4 +1030,5 @@ class ChapelDomain(Domain):
 def setup(app):
     """Add Chapel domain to Sphinx app."""
     app.add_config_value('chapeldomain_modindex_common_prefix', [], 'html')
+    app.add_lexer('chapel', ChapelLexer())
     app.add_domain(ChapelDomain)
