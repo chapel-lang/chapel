@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # These tests are disabled currently for multi-locale runs and with sanitizers
 

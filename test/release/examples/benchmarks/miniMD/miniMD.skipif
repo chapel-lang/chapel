@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Skip this test for gasnet+mpi performance testing. As of 08/08/15 it takes
 # ~30 minutes to complete
