@@ -2,7 +2,7 @@ NUMA-Aware Array Storage
 ========================
 
 Status
-  Inactive (see Update below)
+  Inactive - some strategies implemented and some adopted
 
 Authors
   Greg Titus (lead),
@@ -16,14 +16,6 @@ Abstract
 
 Place array elements in NUMA-localized memory so that Chapel programs
 can take advantage of NUMA performance in the architecture.
-
-Update
-------
-
-This document describes an approach to NUMA support that was tried but
-lead to undesireable performance problems with array element access. This
-approach has been set aside in favor of other strategies including just
-relying on first touch.
 
 Rationale
 ---------
