@@ -44,7 +44,7 @@ A record type is defined with the following syntax:
      external-record-declaration-statement
 
    simple-record-declaration-statement:
-     `record' identifier { record-statement-list }
+     'record' identifier { record-statement-list }
 
    record-statement-list:
      record-statement
@@ -102,8 +102,7 @@ permitted.
 For non-generic records, the record name by itself is sufficient to
 specify the type. Generic records must be instantiated to serve as a
 fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in
-Section \ `24.3.6 <#Type_Constructors>`__.
+with type constructors, which are defined in :ref:`Type_Constructors`.
 
 .. _Record_Fields:
 
@@ -564,7 +563,7 @@ In it, the value of each field of the record on the right-hand side is
 assigned to the corresponding field of the record on the left-hand side.
 
 The compiler-provided assignment operator may be overridden as described
-in `11.3 <#Assignment_Statements>`__.
+in :ref:`Assignment_Statements`.
 
 The following example demonstrates record assignment.
 

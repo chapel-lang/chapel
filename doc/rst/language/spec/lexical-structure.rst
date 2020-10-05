@@ -91,18 +91,18 @@ following syntax:
    legal-identifier-char:
      letter-or-underscore
      digit
-     `$'
+     '$'
 
    letter-or-underscore:
      letter
-     `_'
+     '_'
 
    letter: one of
-     `A' `B' `C' `D' `E' `F' `G' `H' `I' `J' `K' `L' `M' `N' `O' `P' `Q' `R' `S' `T' `U' `V' `W' `X' `Y' `Z'
-     `a' `b' `c' `d' `e' `f' `g' `h' `i' `j' `k' `l' `m' `n' `o' `p' `q' `r' `s' `t' `u' `v' `w' `x' `y' `z'
+     'A' 'B' 'C' 'D' 'E' 'F' 'G' 'H' 'I' 'J' 'K' 'L' 'M' 'N' 'O' 'P' 'Q' 'R' 'S' 'T' 'U' 'V' 'W' 'X' 'Y' 'Z'
+     'a' 'b' 'c' 'd' 'e' 'f' 'g' 'h' 'i' 'j' 'k' 'l' 'm' 'n' 'o' 'p' 'q' 'r' 's' 't' 'u' 'v' 'w' 'x' 'y' 'z'
 
    digit: one of
-     `0' `1' `2' `3' `4' `5' `6' `7' `8' `9'
+     '0' '1' '2' '3' '4' '5' '6' '7' '8' '9'
 
 ..
 
@@ -245,7 +245,7 @@ Bool literals are designated by the following syntax:
 .. code-block:: syntax
 
    bool-literal: one of
-     `true' `false'
+     'true' 'false'
 
 Signed and unsigned integer literals are designated by the following
 syntax: 
@@ -254,12 +254,12 @@ syntax:
 
    integer-literal:
      digits
-     `0x' hexadecimal-digits
-     `0X' hexadecimal-digits
-     `0o' octal-digits
-     `0O' octal-digits
-     `0b' binary-digits
-     `0B' binary-digits
+     '0x' hexadecimal-digits
+     '0X' hexadecimal-digits
+     '0o' octal-digits
+     '0O' octal-digits
+     '0b' binary-digits
+     '0B' binary-digits
 
    digits:
      digit
@@ -267,9 +267,9 @@ syntax:
 
    separator-digits:
      digit
-     `_'
+     '_'
      digit separator-digits
-     `_' separator-digits
+     '_' separator-digits
 
    hexadecimal-digits:
      hexadecimal-digit
@@ -277,12 +277,12 @@ syntax:
 
    separator-hexadecimal-digits:
      hexadecimal-digit
-     `_'
+     '_'
      hexadecimal-digit separator-hexadecimal-digits
-     `_' separator-hexadecimal-digits
+     '_' separator-hexadecimal-digits
 
    hexadecimal-digit: one of
-     `0' `1' `2' `3' `4' `5' `6' `7' `8' `9' `A' `B' `C' `D' `E' `F' `a' `b' `c' `d' `e' `f'
+     '0' '1' '2' '3' '4' '5' '6' '7' '8' '9' 'A' 'B' 'C' 'D' 'E' 'F' 'a' 'b' 'c' 'd' 'e' 'f'
 
    octal-digits:
      octal-digit
@@ -290,12 +290,12 @@ syntax:
 
    separator-octal-digits:
      octal-digit
-     `_'
+     '_'
      octal-digit separator-octal-digits
-     `_' separator-octal-digits
+     '_' separator-octal-digits
 
    octal-digit: one of
-     `0' `1' `2' `3' `4' `5' `6' `7'
+     '0' '1' '2' '3' '4' '5' '6' '7'
 
    binary-digits:
      binary-digit
@@ -303,12 +303,12 @@ syntax:
 
    separator-binary-digits:
      binary-digit
-     `_'
+     '_'
      binary-digit separator-binary-digits
-     `_' separator-binary-digits
+     '_' separator-binary-digits
 
    binary-digit: one of
-     `0' `1'
+     '0' '1'
 
 Integer literals in the range 0 to max(\ ``int``),
  :ref:`Signed_and_Unsigned_Integral_Types`, have type ``int`` and
@@ -339,18 +339,18 @@ Real literals are designated by the following syntax:
    real-literal:
      digits[OPT] . digits exponent-part[OPT]
      digits .[OPT] exponent-part
-     `0x' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
-     `0X' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
-     `0x' hexadecimal-digits .[OPT] p-exponent-part
-     `0X' hexadecimal-digits .[OPT] p-exponent-part
+     '0x' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
+     '0X' hexadecimal-digits[OPT] . hexadecimal-digits p-exponent-part[OPT]
+     '0x' hexadecimal-digits .[OPT] p-exponent-part
+     '0X' hexadecimal-digits .[OPT] p-exponent-part
 
    exponent-part:
-     `e' sign[OPT] digits
-     `E' sign[OPT] digits
+     'e' sign[OPT] digits
+     'E' sign[OPT] digits
 
    p-exponent-part:
-     `p' sign[OPT] digits
-     `P' sign[OPT] digits
+     'p' sign[OPT] digits
+     'P' sign[OPT] digits
 
 
    sign: one of
@@ -381,8 +381,8 @@ Imaginary literals are designated by the following syntax:
 .. code-block:: syntax
 
    imaginary-literal:
-     real-literal `i'
-     integer-literal `i'
+     real-literal 'i'
+     integer-literal 'i'
 
 The type of an imaginary literal is ``imag``. Explicit conversions are
 necessary to change the size of the literal.
@@ -416,7 +416,7 @@ Interpreted string literals are designated by the following syntax:
      " single-quote-delimited-characters[OPT]
 
    string-character:
-     `any character except the double quote, single quote, or new line'
+     any character except the double quote, single quote, or new line
      simple-escape-character
      hexadecimal-escape-character
 
@@ -424,7 +424,7 @@ Interpreted string literals are designated by the following syntax:
      \' \" \? \\ \a \b \f \n \r \t \v
 
    hexadecimal-escape-character:
-     `\x' hexadecimal-digits
+     '\x' hexadecimal-digits
 
 Uninterpreted string literals are designated by the following syntax:
 
@@ -441,10 +441,10 @@ Uninterpreted string literals are designated by the following syntax:
      uninterpreted-single-quote-string-character uninterpreted-single-quote-delimited-characters[OPT]
 
    uninterpreted-double-quote-string-character:
-     `any character except three double quotes in a row'
+     any character except three double quotes in a row
 
    uninterpreted-single-quote-string-character:
-     `any character except three single quotes in a row'
+     any character except three single quotes in a row
 
 Uninterpreted string literals do not interpret their contents, so for
 example ``"""\n"""`` is not a newline, but rather two
@@ -520,7 +520,7 @@ language:
 ``,``                                                                                               expression separator
 ``.``                                                                                               member access
 ``?``                                                                                               type query
-``" '``                                                                                             string delimiters
+``"`` ``'``                                                                                         string delimiters
 =================================================================================================== =============================
 
 .. _Grouping_Tokens:

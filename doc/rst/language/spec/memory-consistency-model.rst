@@ -71,7 +71,7 @@ parallelism dependencies between variable reads and writes. The *memory
 order* :math:`<_m` is a total order that describes the semantics of
 synchronizing memory operations (via ``atomic``, ``sync`` or ``single``
 variables) with sequential consistency. Non-SC atomic operations
-(described in Section \ `31.2 <#non_sc_atomics>`__) do not create this
+(described in :ref:`non_sc_atomics`) do not create this
 total order.
 
 Note that ``sync/single`` variables have memory consistency behavior
@@ -97,7 +97,7 @@ We will use the following notation:
 -  :math:`A_r(a,o)` indicates an *atomic operation* on a variable at
    address :math:`a` with ordering constraint :math:`o`, where :math:`o`
    can be one of *relaxed*, *acquire*, or *release* (see
-   Section \ `31.2 <#non_sc_atomics>`__). As with :math:`A_{sc}(a)`,
+   :ref:`non_sc_atomics`). As with :math:`A_{sc}(a)`,
    relaxed atomic operations must be completed as a single operation.
 
 -  :math:`L(a)`, :math:`S(a)`, :math:`A_{sc}(a)`, and :math:`A_r(a,o)`
@@ -145,7 +145,7 @@ of starting a task (``begin``) and waiting for some number of tasks
    :math:`i=1`..\ :math:`m`) and waits for them to complete
    (``waitFor(t_1..t_m)``). The number of tasks :math:`m` is defined
    by the implementation of the parallel iterator (See
-   Section \ `[Iterators] <#Iterators>`__ for details on iterators).
+   :ref:`Chapter-Iterators` for details on iterators).
 
 -  ``coforall`` creates one task per loop iteration
    (``t_i = begin{loop-body}`` for all loop iterations
@@ -270,7 +270,7 @@ to a data race that would prevent sequential consistency.
 
 When relaxed atomics are used only for atomicity and not as part of
 synchronizing tasks, their effect can be understood in the memory
-consistency model described in `31.1 <#SC_for_DRF>`__ by treating them
+consistency model described in :ref:`SC_for_DRF` by treating them
 as ordinary loads or stores with two exceptions:
 
 -  Atomic operations (including relaxed atomic operations) cannot create
@@ -322,8 +322,8 @@ section:
    memory.
 
 The *unordered* loads and stores :math:`UL(a)` and :math:`US(a)` respect
-fences but not program order. As in
-Section \ `31.1.2 <#memory_order>`__, unordered loads and stores are
+fences but not program order. As in :ref:`memory_order`,
+unordered loads and stores are
 ordered with SC atomics. That is, unordered loads and stores for a given
 task are in total order :math:`<_m` respecting the following rules which
 preserve the order of unordered loads and stores relative to SC atomic

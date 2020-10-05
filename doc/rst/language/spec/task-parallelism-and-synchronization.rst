@@ -87,7 +87,7 @@ for the begin statement is given by
 .. code-block:: syntax
 
    begin-statement:
-     `begin' task-intent-clause[OPT] statement
+     'begin' task-intent-clause[OPT] statement
 
 Control continues concurrently with the statement following the begin
 statement.
@@ -186,10 +186,10 @@ by the following syntax:
 .. code-block:: syntax
 
    sync-type:
-     `sync' type-expression
+     'sync' type-expression
 
    single-type:
-     `single' type-expression
+     'single' type-expression
 
 A default-initialized synchronization variable will be empty. A
 synchronization variable initialized from another expression will be
@@ -530,7 +530,7 @@ following syntax:
 .. code-block:: syntax
 
    atomic-type:
-     `atomic' type-expression
+     'atomic' type-expression
 
 .. _Functions_on_Atomic_Variables:
 
@@ -695,7 +695,7 @@ The ``cobegin`` statement syntax is
 .. code-block:: syntax
 
    cobegin-statement:
-     `cobegin' task-intent-clause[OPT] block-statement
+     'cobegin' task-intent-clause[OPT] block-statement
 
 A new task and a corresponding task function are created for each
 statement in the ``block-statement``. Control continues when all of the
@@ -756,10 +756,10 @@ The syntax for the coforall loop is given by
 .. code-block:: syntax
 
    coforall-statement:
-     `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
-     `coforall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
-     `coforall' iteratable-expression task-intent-clause[OPT] `do' statement
-     `coforall' iteratable-expression task-intent-clause[OPT] block-statement
+     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
+     'coforall' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'coforall' iteratable-expression task-intent-clause[OPT] block-statement
 
 The ``coforall`` loop creates a separate task for each iteration of the
 loop. Control continues with the statement following the ``coforall``
@@ -862,7 +862,7 @@ The syntax of the task intent clause is:
 .. code-block:: syntax
 
    task-intent-clause:
-     `with' ( task-intent-list )
+     'with' ( task-intent-list )
 
    task-intent-list:
      task-intent-item
@@ -979,8 +979,8 @@ from within a statement. The syntax for the sync statement is given by
 .. code-block:: syntax
 
    sync-statement:
-     `sync' statement
-     `sync' block-statement
+     'sync' statement
+     'sync' block-statement
 
 Return statements are not allowed in sync statement blocks. Yield
 statement may only be lexically enclosed in sync statement blocks in
@@ -1066,8 +1066,8 @@ The syntax is:
 .. code-block:: syntax
 
    serial-statement:
-     `serial' expression[OPT] `do' statement
-     `serial' expression[OPT] block-statement
+     'serial' expression[OPT] 'do' statement
+     'serial' expression[OPT] block-statement
 
 where the optional ``expression`` evaluates to a boolean value. If the
 expression is omitted, it is as though ’true’ were specified. Whatever
@@ -1208,7 +1208,7 @@ The syntax for the atomic statement is given by:
 .. code-block:: syntax
 
    atomic-statement:
-     `atomic' statement
+     'atomic' statement
 
 ..
 

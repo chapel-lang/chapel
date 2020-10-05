@@ -50,11 +50,11 @@ The syntax of the forall statement is given by
 .. code-block:: syntax
 
    forall-statement:
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' statement
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] block-statement
-     `forall' iteratable-expression task-intent-clause[OPT] `do' statement
-     `forall' iteratable-expression task-intent-clause[OPT] block-statement
-     [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] statement
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] block-statement
+     'forall' iteratable-expression task-intent-clause[OPT] 'do' statement
+     'forall' iteratable-expression task-intent-clause[OPT] block-statement
+     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] statement
      [ iteratable-expression task-intent-clause[OPT] ] statement
 
 As with the for statement, the indices may be omitted if they are
@@ -80,7 +80,7 @@ yielded by the ``iteratable-expression``. Each instance of the forall
 loop’s body may be executed concurrently with the others, but this is
 not guaranteed. In particular, the loop must be serializable. Details
 regarding concurrency and iterator implementation are described
-in \ `23.4 <#Parallel_Iterators>`__.
+in :ref:`Parallel_Iterators`.
 
 This differs from the semantics of the ``coforall`` loop, discussed
 in :ref:`Coforall`, where each iteration is guaranteed to run
@@ -178,9 +178,9 @@ The syntax of a forall expression is given by
 .. code-block:: syntax
 
    forall-expression:
-     `forall' index-var-declaration `in' iteratable-expression task-intent-clause[OPT] `do' expression
-     `forall' iteratable-expression task-intent-clause[OPT] `do' expression
-     [ index-var-declaration `in' iteratable-expression task-intent-clause[OPT] ] expression
+     'forall' index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] 'do' expression
+     'forall' iteratable-expression task-intent-clause[OPT] 'do' expression
+     [ index-var-declaration 'in' iteratable-expression task-intent-clause[OPT] ] expression
      [ iteratable-expression task-intent-clause[OPT] ] expression
 
 As with the for expression, the indices may be omitted if they are
@@ -235,7 +235,7 @@ the zipper case :ref:`Zipper_Promotion`.
    of the indices in the range ``1..10``.
 
 The forall expression follows the semantics of the forall statement as
-described in \ `27.1.2 <#forall_semantics>`__.
+in :ref:`forall_semantics`.
 
 Zipper Iteration
 ~~~~~~~~~~~~~~~~
@@ -371,9 +371,9 @@ statement’s with-clause is:
      task-private-var-kind identifier type-part[OPT] initialization-part[OPT]
 
    task-private-var-kind:
-     `const'
-     `var'
-     `ref'
+     'const'
+     'var'
+     'ref'
 
 The declaration of a ``const`` or ``var`` task-private variable must
 have at least one of ``type-part`` and ``initialization-part``. A
@@ -752,24 +752,29 @@ The syntax for a reduction expression is given by:
 .. code-block:: syntax
 
    reduce-expression:
-     reduce-scan-operator `reduce' iteratable-expression
-     class-type `reduce' iteratable-expression
+     reduce-scan-operator 'reduce' iteratable-expression
+     class-type 'reduce' iteratable-expression
 
    reduce-scan-operator: one of
-     + * && || & | ^ `min' `max' `minloc' `maxloc'
+     + * && || & | ^ 'min' 'max' 'minmax' 'minloc' 'maxloc'
 
 Chapel’s predefined reduction operators are defined by
 ``reduce-scan-operator`` above. In order, they are: sum, product,
 logical-and, logical-or, bitwise-and, bitwise-or, bitwise-exclusive-or,
-minimum, maximum, minimum-with-location, and maximum-with-location. The
+minimum, maximum, minimum-and-maximum,
+minimum-with-location, and maximum-with-location. The
 minimum reduction returns the minimum value as defined by the ``<``
 operator. The maximum reduction returns the maximum value as defined by
-the ``>`` operator. The minimum-with-location reduction returns the lowest
+the ``>`` operator. The minimum-and-maximum reduction returns a tuple
+with the first component being the result of the minimum reduction
+and the second component being the result of the maximum reduction.
+The minimum-with-location reduction returns the lowest
 index position with the minimum value (as defined by the ``<`` operator).
 The maximum-with-location reduction returns the lowest index position
 with the maximum value (as defined by the ``>`` operator). When a minimum,
-maximum, minimum-with-location, or maximum-with-location reduction
-encounters a NaN, the result is a NaN.
+maximum, minimum-and-maximum, minimum-with-location,
+or maximum-with-location reduction encounters a NaN, the result
+is or contains a NaN.
 
 The expression on the right-hand side of the ``reduce`` keyword can be
 of any type that can be iterated over, provided the reduction operator
@@ -844,8 +849,8 @@ The syntax for a scan expression is given by:
 .. code-block:: syntax
 
    scan-expression:
-     reduce-scan-operator `scan' iteratable-expression
-     class-type `scan' iteratable-expression
+     reduce-scan-operator 'scan' iteratable-expression
+     class-type 'scan' iteratable-expression
 
 The predefined scans are defined by ``reduce-scan-operator``. These are
 identical to the predefined reductions and are described
@@ -877,8 +882,8 @@ that can be iterated over and to which the operator can be applied.
       1 2 3
 
 User-defined scans are specified by preceding the keyword ``scan`` by
-the class type that implements the scan interface as described in
-Chapter \ `[User_Defined_Reductions_and_Scans] <#User_Defined_Reductions_and_Scans>`__.
+the class type that implements the scan interface as described
+in :ref:`Chapter-User_Defined_Reductions_and_Scans`.
 
 .. _data_parallel_knobs:
 

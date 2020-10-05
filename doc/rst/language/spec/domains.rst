@@ -137,7 +137,7 @@ The syntax of a rectangular domain type is summarized as follows:
 .. code-block:: syntax
 
    rectangular-domain-type:
-     `domain' ( named-expression-list )
+     'domain' ( named-expression-list )
 
 where ``named-expression-list`` permits the values of ``rank``,
 ``idxType``, and ``stridable`` to be specified using standard type
@@ -293,7 +293,7 @@ the indices that it stores. The syntax is as follows:
 .. code-block:: syntax
 
    associative-domain-type:
-     `domain' ( associative-index-type )
+     'domain' ( associative-index-type )
 
    associative-index-type:
      type-expression
@@ -431,7 +431,7 @@ A simple subdomain type is specified using the following syntax:
 .. code-block:: syntax
 
    simple-subdomain-type:
-     `subdomain' ( domain-expression )
+     'subdomain' ( domain-expression )
 
 This declares that ``domain-expression`` is the parent domain of this
 subdomain type. A simple subdomain specifies a subdomain with the same
@@ -470,7 +470,7 @@ Sparse Subdomain Types and Values
 .. code-block:: syntax
 
    sparse-subdomain-type:
-     `sparse' `subdomain'[OPT] ( domain-expression )
+     'sparse' 'subdomain'[OPT] ( domain-expression )
 
 This declaration creates a sparse subdomain. *Sparse subdomains* are
 irregular domains that describe an arbitrary subset of a domain, even if
@@ -530,7 +530,7 @@ set. Index types are described using the following syntax:
 .. code-block:: syntax
 
    index-type:
-     `index' ( domain-expression )
+     'index' ( domain-expression )
 
 A variable with a given index type is constrained to take on only values
 available within the domain on which it is defined. This restriction
@@ -710,7 +710,7 @@ integral tuple whose size matches the domain’s rank.
 .. code-block:: syntax
 
    domain-striding-expression:
-     domain-expression `by' expression
+     domain-expression 'by' expression
 
 The type of the resulting domain is the same as the original domain but
 with ``stridable`` set to true. In the case of an integer stride value,
@@ -735,7 +735,7 @@ value or an integral tuple whose size matches the domain’s rank.
 .. code-block:: syntax
 
    domain-alignment-expression:
-     domain-expression `align' expression
+     domain-expression 'align' expression
 
 The type of the resulting domain is the same as the original domain but
 with ``stridable`` set to true. In the case of an integer alignment
@@ -840,8 +840,7 @@ The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator is equivalent to
 applying the ``#`` operator to the component ranges of the domain and
-then using them to slice the domain as in
-Section \ `21.8.4.2 <#Range_Based_Slicing>`__.
+then using them to slice the domain as in :ref:`Range_Based_Slicing`.
 
 .. _Adding_and_Removing_Domain_Indices:
 

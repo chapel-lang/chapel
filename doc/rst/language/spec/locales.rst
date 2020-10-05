@@ -185,7 +185,7 @@ stored) is queried using the following syntax:
 .. code-block:: syntax
 
    locale-query-expression:
-     expression . `locale'
+     expression . 'locale'
 
 When the expression is a class, the access returns the locale on which
 the class object exists rather than the reference to the class. If the
@@ -266,8 +266,8 @@ given by
 .. code-block:: syntax
 
    on-statement:
-     `on' expression `do' statement
-     `on' expression block-statement
+     'on' expression 'do' statement
+     'on' expression block-statement
 
 The locale of the expression is automatically queried as described
 in :ref:`Querying_the_Locale_of_an_Expression`. Execution of the
@@ -293,4 +293,4 @@ keyword and braces. The syntax is given by:
 .. code-block:: syntax
 
    remote-variable-declaration-statement:
-     `on' expression variable-declaration-statement
+     'on' expression variable-declaration-statement
