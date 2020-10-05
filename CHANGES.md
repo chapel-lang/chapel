@@ -61,7 +61,9 @@ New Features
 * added support for `use` statements that require qualified access  
   (e.g., `use Foo as _;` requires typing `Foo.xyz` rather than simply `xyz`)  
   (see https://chapel-lang.org/docs/1.23/language/spec/modules.html#disabling-qualified)
-* added `string.dedent()` and `bytes.dedent()` for removing common indentation
+* added `string.dedent()` and `bytes.dedent()` for removing common indentation  
+  (see https://chapel-lang.org/docs/1.23/builtins/String.html#String.string.dedent  
+   and https://chapel-lang.org/docs/1.23/builtins/Bytes.html#Bytes.bytes.dedent)
 * added support for defining methods on type aliases or paren-less functions  
   (e.g., `type myAlias=int; proc myAlias.myMethod() {}; 5.myMethod();`)
 * added a `range.isBounded()` query  
@@ -91,7 +93,7 @@ Deprecated / Unstable / Removed Language Features
 * removed `string` vs. `bytes` comparisons
 * removed `decodePolicy.ignore` in favor of new `decodePolicy.drop`  
   (see https://chapel-lang.org/docs/1.23/builtins/Bytes.html#Bytes.bytes.decode)
-* removed `enumerated`, which was deprecated in Chapel 1.21; use `enum` instead
+* removed `enumerated`, which was deprecated previously; use `enum` instead
 * removed support for C++-style deinitializer names e.g. `proc ~C()`
 * removed support for vectorization hinting to the C backend
 * removed support for deprecated meaning of `CHPL_TARGET_ARCH`
@@ -386,7 +388,6 @@ Platform-specific bug fixes
 Packaging / Configuration Changes
 ---------------------------------
 * added a docker image that uses GASNet's `smp` conduit for faster execution
-* made the Cray module compatible with the Lmod environment system
 * switched from supporting cce-classic to clang-based cce
 * changed 'Shasta' to 'HPE Cray EX', reflecting product branding  
   (see https://chapel-lang.org/docs/1.23/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
