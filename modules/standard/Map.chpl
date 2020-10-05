@@ -256,6 +256,25 @@ module Map {
     }
 
     /*
+      Updates this map with the contents of the other, overwriting the values
+      for already-existing keys.
+
+      .. warning::
+
+        Adding to a map using :proc:`update` is deprecated. Please use
+        the :proc:`extend` method instead.
+
+      :arg m: The other map
+      :type m: map(keyType, valType)
+    */
+    proc update(pragma "intent ref maybe const formal"
+                m: map(keyType, valType, parSafe)) {
+      compilerWarning('Adding to a map using `update()` is deprecated - ' +
+                      'use `extend()` instead');
+      extend(m);
+    }
+
+    /*
       Update a value in this map in a parallel safe manner via an updater
       object.
 
