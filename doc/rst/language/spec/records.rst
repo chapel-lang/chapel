@@ -102,7 +102,7 @@ permitted.
 For non-generic records, the record name by itself is sufficient to
 specify the type. Generic records must be instantiated to serve as a
 fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in :ref:`Type_Constructors`.
+with type constructors, which are defined in Section :ref:`Type_Constructors`.
 
 .. _Record_Fields:
 

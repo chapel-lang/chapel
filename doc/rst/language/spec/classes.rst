@@ -179,7 +179,7 @@ memory management strategy.
 A basic class type is given simply by the class name for non-generic
 classes. Generic classes must be instantiated to serve as a
 fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in :ref:`Type_Constructors`.
+with type constructors, which are defined in Section :ref:`Type_Constructors`.
 
 
 
@@ -761,7 +761,7 @@ are initialized must be initialized in declaration order.
 Initializers for generic classes (:ref:`Generic_Types`) handle
 generic fields without default values differently and may need to
 satisfy additional requirements. See
-ref:`Generic_User_Initializers` for details.
+Section :ref:`Generic_User_Initializers` for details.
 
    *Example (simpleInitializers.chpl)*.
 

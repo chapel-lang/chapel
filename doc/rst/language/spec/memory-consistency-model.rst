@@ -322,7 +322,7 @@ section:
    memory.
 
 The *unordered* loads and stores :math:`UL(a)` and :math:`US(a)` respect
-fences but not program order. As in :ref:`memory_order`,
+fences but not program order. As in Section :ref:`memory_order`,
 unordered loads and stores are
 ordered with SC atomics. That is, unordered loads and stores for a given
 task are in total order :math:`<_m` respecting the following rules which

@@ -235,7 +235,7 @@ the zipper case :ref:`Zipper_Promotion`.
    of the indices in the range ``1..10``.
 
 The forall expression follows the semantics of the forall statement as
-in :ref:`forall_semantics`.
+described in :ref:`forall_semantics`.
 
 Zipper Iteration
 ~~~~~~~~~~~~~~~~
