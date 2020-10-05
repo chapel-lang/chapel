@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Python test script to verify the llvm debug info
 # is generated properly during Chapel compilation

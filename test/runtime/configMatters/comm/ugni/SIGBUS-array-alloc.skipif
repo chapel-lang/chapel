@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This test only makes sense with hugepages, but not on ARM where it
 # runs for a really long time and nevertheless may not fail.

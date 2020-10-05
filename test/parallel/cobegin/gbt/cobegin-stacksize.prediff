@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # A prediff is needed because the failure mode for this test is slightly
 # different depending on the configuration. The signal is sometimes different,

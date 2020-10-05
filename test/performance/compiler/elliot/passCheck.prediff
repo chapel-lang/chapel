@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This test serves as a sentinel for compiler performance testing so that when
 # a pass is moved, added, deleted, or renamed there is some test failure to
