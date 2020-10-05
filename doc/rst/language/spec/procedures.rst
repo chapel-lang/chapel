@@ -111,14 +111,14 @@ Procedures are defined with the following syntax:
 .. code-block:: syntax
 
    procedure-declaration-statement:
-     privacy-specifier[OPT] procedure-kind[OPT] `proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
+     privacy-specifier[OPT] procedure-kind[OPT] 'proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
        function-body
 
    procedure-kind:
-     `inline'
-     `export'
-     `extern'
-     `override'
+     'inline'
+     'export'
+     'extern'
+     'override'
 
    function-name:
      identifier
@@ -154,28 +154,28 @@ Procedures are defined with the following syntax:
      ...
 
    formal-intent:
-     `const'
-     `const in'
-     `const ref'
-     `in'
-     `out'
-     `inout'
-     `ref'
-     `param'
-     `type'
+     'const'
+     'const in'
+     'const ref'
+     'in'
+     'out'
+     'inout'
+     'ref'
+     'param'
+     'type'
 
    return-intent:
-     `const'
-     `const ref'
-     `ref'
-     `param'
-     `type'
+     'const'
+     'const ref'
+     'ref'
+     'param'
+     'type'
 
    return-type:
      : type-expression
 
    where-clause:
-     `where' expression
+     'where' expression
 
    function-body:
      block-statement
@@ -602,8 +602,8 @@ The Default Intent
 
 When no intent is specified for a formal argument, the *default intent*
 is applied. It is designed to take the most natural/least surprising
-action for the argument, based on its type. The
-:ref:`Abstract_Intents_Table` earlier in this sub-section lists the
+action for the argument, based on its type.
+The :ref:`Abstract_Intents_Table` earlier in this sub-section lists the
 meaning of the default intent for each type.
 
 Default argument passing for tuples generally matches the default
@@ -621,7 +621,7 @@ type (see :ref:`Method_receiver_and_this`) is ``ref`` or
 the function, otherwise it is ``const ref``. Note that neither of these
 cause an array or record to be copied by default. The choice between
 ``ref`` and ``const ref`` is similar to and interacts with return intent
-overloads (see :ref:`Return_Intent_Overloads`).
+overloads (see :ref:`Return_Intent_Overloads`).
 
 .. _Default_Intent_for_owned_and_shared:
 
@@ -861,7 +861,7 @@ function to call when the candidate functions are otherwise ambiguous
 except for their return intent. This rule enables data structures such
 as sparse arrays.
 
-See `13.13.5 <#Choosing_Return_Intent_Overload>`__ for a detailed
+See :ref:`Choosing_Return_Intent_Overload` for a detailed
 description of how return intent overloads are chosen based upon calling
 context.
 
@@ -1026,7 +1026,7 @@ The syntax of the return statement is given by
 .. code-block:: syntax
 
    return-statement:
-     `return' expression[OPT] ;
+     'return' expression[OPT] ;
 
 ..
 
@@ -1556,7 +1556,7 @@ the following function(s) are selected as best functions:
 Choosing Return Intent Overloads Based on Calling Context
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See also `13.7.3 <#Return_Intent_Overloads>`__.
+See also :ref:`Return_Intent_Overloads`.
 
 The compiler can choose between overloads differing in return intent
 when:

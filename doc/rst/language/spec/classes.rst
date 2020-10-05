@@ -35,7 +35,7 @@ A class is defined with the following syntax:
 .. code-block:: syntax
 
    class-declaration-statement:
-     `class' identifier class-inherit[OPT] { class-statement-list[OPT] }
+     'class' identifier class-inherit[OPT] { class-statement-list[OPT] }
 
    class-inherit:
      : basic-class-type
@@ -171,16 +171,15 @@ memory management strategy.
 
    class-type:
      basic-class-type
-     `owned' basic-class-type
-     `shared' basic-class-type
-     `borrowed' basic-class-type
-     `unmanaged' basic-class-type
+     'owned' basic-class-type
+     'shared' basic-class-type
+     'borrowed' basic-class-type
+     'unmanaged' basic-class-type
 
 A basic class type is given simply by the class name for non-generic
 classes. Generic classes must be instantiated to serve as a
 fully-specified type, for example to declare a variable. This is done
-with type constructors, which are defined in
-Section \ `24.3.6 <#Type_Constructors>`__.
+with type constructors, which are defined in Section :ref:`Type_Constructors`.
 
 
 
@@ -446,15 +445,13 @@ Field access is described in :ref:`Class_Field_Accesses`.
 Class Methods
 ~~~~~~~~~~~~~
 
-Methods on classes are referred to as to as *class methods*. See the
-methods section :ref:`Chapter-Methods` for more information about
-methods.
+Methods on classes are referred to as *class methods*.
+See :ref:`Chapter-Methods` for more information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
 ``borrowed`` variant of the class type. It is different for type methods
 (see below) and it might be a different type if the class method is
-declared as a secondary method with a type expression
-(see `[Secondary_Methods_with_Type_Expressions] <#Secondary_Methods_with_Type_Expressions>`__).
+declared as a secondary method with a type expression.
 
 For example:
 
@@ -577,8 +574,8 @@ parent class.
 It is possible for a class to inherit from a generic class. Suppose for
 example that a class ``C`` inherits from class ``ParentC``. In this
 situation, ``C`` will have type constructor arguments based upon generic
-fields in the ``ParentC`` as described in
- `24.3.6 <#Type_Constructors>`__. Furthermore, a fully specified ``C``
+fields in the ``ParentC`` as described
+in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
 .. _The_object_Class:
@@ -700,7 +697,7 @@ The new expression can be defined by the following syntax:
 .. code-block:: syntax
 
    new-expression:
-     `new' type-expression ( argument-list )
+     'new' type-expression ( argument-list )
 
 An initializer for a given class is called by placing the ``new``
 operator in front of a type expression. Any initializer arguments follow
@@ -776,7 +773,7 @@ are initialized must be initialized in declaration order.
 Initializers for generic classes (:ref:`Generic_Types`) handle
 generic fields without default values differently and may need to
 satisfy additional requirements. See
-Section \ `24.3.9 <#Generic_User_Initializers>`__ for details.
+Section :ref:`Generic_User_Initializers` for details.
 
    *Example (simpleInitializers.chpl)*.
 
@@ -2039,7 +2036,7 @@ with the ``delete`` statement:
 .. code-block:: syntax
 
    delete-statement:
-     `delete' expression-list ;
+     'delete' expression-list ;
 
 where the expression-list specifies the class objects whose memory will
 be reclaimed. Prior to releasing their memory, the deinitialization

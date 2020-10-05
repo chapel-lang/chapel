@@ -116,14 +116,14 @@ The syntax of a tuple expression is given by:
 
    tuple-component:
      expression
-     `_'
+     '_'
 
    tuple-component-list:
      tuple-component
      tuple-component , tuple-component-list
 
-An underscore can be used to omit components when splitting a tuple (see
-`16.6.1 <#Assignments_in_a_Tuple>`__).
+An underscore can be used to omit components when splitting a tuple
+(see :ref:`Assignments_in_a_Tuple`).
 
    *Example (values.chpl)*.
 

@@ -70,23 +70,23 @@ The primitive types are summarized by the following syntax:
 .. code-block:: syntax
 
    primitive-type:
-     `void'
-     `nothing'
-     `bool' primitive-type-parameter-part[OPT]
-     `int' primitive-type-parameter-part[OPT]
-     `uint' primitive-type-parameter-part[OPT]
-     `real' primitive-type-parameter-part[OPT]
-     `imag' primitive-type-parameter-part[OPT]
-     `complex' primitive-type-parameter-part[OPT]
-     `string'
-     `bytes'
-     `enum'
-     `record'
-     `class'
-     `owned'
-     `shared'
-     `unmanaged'
-     `borrowed'
+     'void'
+     'nothing'
+     'bool' primitive-type-parameter-part[OPT]
+     'int' primitive-type-parameter-part[OPT]
+     'uint' primitive-type-parameter-part[OPT]
+     'real' primitive-type-parameter-part[OPT]
+     'imag' primitive-type-parameter-part[OPT]
+     'complex' primitive-type-parameter-part[OPT]
+     'string'
+     'bytes'
+     'enum'
+     'record'
+     'class'
+     'owned'
+     'shared'
+     'unmanaged'
+     'borrowed'
 
    primitive-type-parameter-part:
      ( integer-parameter-expression )
@@ -269,7 +269,7 @@ Enumerated types are declared with the following syntax:
 .. code-block:: syntax
 
    enum-declaration-statement:
-     `enum' identifier { enum-constant-list }
+     'enum' identifier { enum-constant-list }
 
    enum-constant-list:
      enum-constant
@@ -527,7 +527,7 @@ Type aliases are declared with the following syntax:
 .. code-block:: syntax
 
    type-alias-declaration-statement:
-     privacy-specifier[OPT] `config'[OPT] `type' type-alias-declaration-list ;
+     privacy-specifier[OPT] 'config'[OPT] 'type' type-alias-declaration-list ;
      external-type-alias-declaration-statement
 
    type-alias-declaration-list:
@@ -598,7 +598,7 @@ Querying the Type of an Expression
 .. code-block:: syntax
 
    type-query-expression:
-     expression . `type'
+     expression . 'type'
 
 The type of a an expression can be queried with ``.type``. This
 functionality is particularly useful when doing generic programming

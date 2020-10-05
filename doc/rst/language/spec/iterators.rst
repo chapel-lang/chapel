@@ -23,18 +23,18 @@ The syntax to declare an iterator is given by:
 .. code-block:: syntax
 
    iterator-declaration-statement:
-     privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
+     privacy-specifier[OPT] 'iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
      iterator-body
 
    iterator-name:
      identifier
 
    yield-intent:
-     `const'
-     `const ref'
-     `ref'
-     `param'
-     `type'
+     'const'
+     'const ref'
+     'ref'
+     'param'
+     'type'
 
    yield-type:
      : type-expression
@@ -78,7 +78,7 @@ yield statement is given by
 .. code-block:: syntax
 
    yield-statement:
-     `yield' expression ;
+     'yield' expression ;
 
 When an iterator is executed and a ``yield`` is encountered, the value
 of the yield expression is returned to the iterator’s callsite. However,

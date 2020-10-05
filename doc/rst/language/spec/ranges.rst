@@ -214,7 +214,7 @@ A range type has the following syntax:
 .. code-block:: syntax
 
    range-type:
-     `range' ( named-expression-list )
+     'range' ( named-expression-list )
 
 That is, a range type is obtained as if by invoking the range type
 constructor (:ref:`Type_Constructors`) that has the following
@@ -562,7 +562,7 @@ The syntax of the ``by`` operator is:
 .. code-block:: syntax
 
    strided-range-expression:
-     range-expression `by' step-expression
+     range-expression 'by' step-expression
 
    step-expression:
      expression
@@ -651,7 +651,7 @@ The syntax for the ``align`` operator is:
 .. code-block:: syntax
 
    aligned-range-expression:
-     range-expression `align' expression
+     range-expression 'align' expression
 
 The type of the resulting range expression is the same as that of the
 range appearing as the left operand, but with the ``stridable``

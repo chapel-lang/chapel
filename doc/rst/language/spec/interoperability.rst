@@ -62,7 +62,7 @@ An external procedure declaration has the following syntax:
 .. code-block:: syntax
 
    external-procedure-declaration-statement:
-     `extern' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
+     'extern' external-name[OPT] 'proc' function-name argument-list return-intent[OPT] return-type[OPT]
 
 Chapel code will call the external function using the parameter types
 supplied in the ``extern`` declaration. Therefore, in general, the type
@@ -140,7 +140,7 @@ An exported procedure declaration has the following syntax:
 .. code-block:: syntax
 
    exported-procedure-declaration-statement:
-     `export' external-name[OPT] `proc' function-name argument-list return-intent[OPT] return-type[OPT]
+     'export' external-name[OPT] 'proc' function-name argument-list return-intent[OPT] return-type[OPT]
        function-body
 
    external-name:
@@ -243,7 +243,7 @@ declaration with the following syntax.
 .. code-block:: syntax
 
    external-type-alias-declaration-statement:
-     `extern' `type' type-alias-declaration-list ;
+     'extern' 'type' type-alias-declaration-list ;
 
 In each ``type-alias-declaration``, if the ``type-expression`` part is
 supplied, then Chapel uses the supplied type specifier internally.
@@ -275,7 +275,7 @@ Chapel ``record`` definition with the ``extern`` keyword.
 .. code-block:: syntax
 
    external-record-declaration-statement:
-     `extern' external-name[OPT] simple-record-declaration-statement
+     'extern' external-name[OPT] simple-record-declaration-statement
 
 For example, consider an external C structure defined in ``foo.h``
 called ``fltdbl``. 

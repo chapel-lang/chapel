@@ -12,6 +12,11 @@ expression can be a type expression. We refer to these two types the
 implicit (:ref:`Implicit_Conversions`) or
 explicit (:ref:`Explicit_Conversions`).
 
+   *Open issue*.
+
+   Should Chapel allow for user-defined conversions?
+   If so, how would the user define them?
+
 .. _Implicit_Conversions:
 
 Implicit Conversions
