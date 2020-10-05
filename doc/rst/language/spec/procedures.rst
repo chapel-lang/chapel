@@ -1228,7 +1228,7 @@ This section uses the following notation:
  * :math:`M_X` represents the argument mapping from :math:`A` to the
    formal argument :math:`F_X` from function :math:`X`. :math:`F_X` has
    type :math:`T_X`. When :math:`X` is a generic function, :math:`F_X`
-   refers to the argument before instantiation and :math:`T_X` refers to
+   refers to the possibly generic argument and :math:`T_X` refers to
    the instantiated type.
  * When needed in the exposition, :math:`Y` is another function under
    consideration, with mapping :math:`M_Y` from :math:`A` to a formal
@@ -1255,7 +1255,7 @@ Determining Candidate Functions
 
 Given a function call, a function is determined to be a *candidate
 function* if there is a *valid mapping* from the function call to the
-function and each actual argument is mapped to a formal argument that is
+function where each actual argument is mapped to a formal argument with
 a *legal argument mapping*.
 
 .. _Valid_Mapping:
@@ -1286,8 +1286,7 @@ Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
 An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument of :math:`F_X` of type :math:`T_X` according to the
-following rules.
+a formal argument of :math:`F_X` according to the following rules.
 
 First, if :math:`F_X` is a generic argument:
 
@@ -1295,14 +1294,14 @@ First, if :math:`F_X` is a generic argument:
    ``param``
  * if :math:`F_X` uses ``type`` intent, then :math:`A` must also be a
    ``type``
- * the type :math:`T_A` must be compatible with the generic declared type
-   of :math:`F_X`, if any, such that an instantiated concrete type can be
-   found
- * finally, the instantiated type :math:`T_X` will be checked according
-   to the rules below.
+ * there must exist an instantiation :math:`T_X` of the generic declared
+   type of :math:`F_X`, if any, that is compatible with the type
+   :math:`T_A` according to the rules below.
 
-Next, the type :math:`T_A` is checked for compatibility with the type
-:math:`T_X` according to the concrete intent of :math:`F_X`:
+Next, the type :math:`T_X` - which is either the declared type of the
+formal argument :math:`F_X` if it is concrete or the instantiated type if
+:math:`F_X` is generic - must be compatible with the type :math:`T_A`
+according to the concrete intent of :math:`F_X`:
 
  * if :math:`F_X` uses ``ref`` or ``out`` intent, then :math:`T_A`
    must be the same type as :math:`T_X`
@@ -1312,12 +1311,13 @@ Next, the type :math:`T_A` is checked for compatibility with the type
    must be the same type, a subtype of, or implicitly convertible to
    :math:`T_X`.
 
-Finally, the mapping is checked for promotion.  Then, the mapping is
-checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
-(see :ref:`Promotion`), then the above rules are checked with the element
-type, index type, or yielded type.  For example, if :math:`T_A` is an
-array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
-the above rules will be checked with :math:`T_A` == ``int``.
+Finally, if the above compatibility cannot be established, the mapping is
+checked for promotion.  Then, the mapping is checked for promotion. If
+:math:`T_A` is scalar promotable to :math:`T_X` (see :ref:`Promotion`),
+then the above rules are checked with the element type, index type, or
+yielded type.  For example, if :math:`T_A` is an array of ``int`` and
+:math:`T_X` is ``int``, then promotion occurs and the above rules will be
+checked with :math:`T_A` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
