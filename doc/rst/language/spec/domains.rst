@@ -974,7 +974,7 @@ The methods in this subsection can be applied to any domain.
 
 
 
-.. function:: proc domain.member(i)
+.. function:: proc domain.contains(i)
 
       Returns true if the given index ``i`` is a member of this domain’s index
       set, and false otherwise.
