@@ -25,6 +25,18 @@
 #include "passes.h"
 #include "stringutil.h"
 
+ForallOptimizationInfo::ForallOptimizationInfo():
+  iterSym(NULL),
+  dotDomIterExpr(NULL),
+  dotDomIterSym(NULL),
+  dotDomIterSymDom(NULL),
+  iterCall(NULL),
+  iterCallTmp(NULL),
+  autoLocalAccessChecked(false),
+  confirmedFastFollower(false)
+{
+}
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // ForallStmt represents a forall loop statement
