@@ -1,5 +1,5 @@
+use CPtr;
 class MyClass { var x: int; }
-
 proc main() {
   var c = new MyClass();
   var ptr = c.borrow():c_void_ptr;
