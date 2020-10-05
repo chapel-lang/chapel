@@ -7065,11 +7065,6 @@ static void resolveMove(CallExpr* call) {
     gdbShouldBreakHere();
   }
 
-  if (call->parentSymbol && call->parentSymbol->id == breakOnResolveID) {
-    gdbShouldBreakHere();
-  }
-
-
   if (moveIsAcceptable(call) == false) {
     // NB: This call will not return
     moveHaltMoveIsUnacceptable(call);

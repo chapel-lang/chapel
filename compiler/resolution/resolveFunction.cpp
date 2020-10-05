@@ -897,7 +897,7 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
      ) {
     return true;
   } else if (forRet && fn->returnsRefOrConstRef()) {
-    return true;
+    return fn->retType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);	
   } else {
     return false;
   }
