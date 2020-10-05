@@ -2,12 +2,15 @@ Release Changes List
 ====================
 
 TODO:
-o docs links
-o examples changes
-o spellcheck
-o test URLs
-o get forced linebreaks right
-o initial caps
+- [] unify docs links w.r.t. version
+- [] examples changes?
+- [] spellcheck
+- [] test URLs
+- [] no "highlight" in URLs?
+- [] get forced linebreaks right
+- [] initial caps
+- [] remove empty categories
+- [] spellcheck
 
 version 1.23.0
 ==============
@@ -22,24 +25,24 @@ Highlights (see subsequent sections for further details)
   - split initialization and array initialization
   - behavior of `in`, `out`, `inout` intents
 * library:
-  - added new `Heap` and `OrderedSet` modules
-  - added a new `Version` module for reasoning about `chpl` and code versions
+  - added new 'Heap' and 'OrderedSet' modules
+  - added a new 'Version' module for reasoning about `chpl` and code versions
   - made numerous improvements to the `LinearAlgebra` module
   - improved orthogonality and interfaces of collection types
 * the `mason` package manager:
-  - `bash` completion support
   - interactive modes for `mason new` and `mason init`
   - improved ergonomics for `mason search`, `test`, `build`, and `publish`
+  - `bash` completion support
 * performance:
-  - optimized accesses to distributed arrays for local indices
-  - parallelized assignments between large local arrays
-  - reduced overheads for managing arrays, particularly for `const` domains
+  - optimized accesses to distributed arrays for provably local indices
+  - parallelized assignments and initializations for large local arrays
+  - reduced overheads for managing arrays, particularly over `const` domains
   - improved performance for associative domains/arrays, `map`, and `set`
   - significant improvements to compilation time for certain patterns
 * additional highlights:
   - added initial support for Google Protocol Buffers
   - significant improvements to the LLVM back-end
-  - significant improvements to the `ofi`-based runtime option for communication
+  - significant improvements to the `ofi`-based communication option
   - improvements to memory fragmentation and leaks
   - minor improvements to Python interoperability
 
@@ -96,7 +99,7 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed `.length`, `.numIndices`, and `.numElements`; use `.size` instead
 * removed support for spaces in query expressions  
-  (e.g. `proc foo(arg: ? t)` or `proc foo(args... ? n)`)
+  (e.g. `proc foo(arg: ? t)` and `proc foo(args... ? n)` no longer parse)
 * removed postfix-`!` on class types in favor of using casts
 * removed `new owned/shared(c)` in favor of `owned/shared.create(c)`
 * removed `string` vs. `bytes` comparisons
@@ -117,60 +120,58 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* added a `Builtins` module containing general auto-available symbols  
+* added a 'Builtins' module containing general auto-available symbols  
   (see https://chapel-lang.org/docs/master/modules/standard/Builtins.html)
 * added a 'Version' module for reasoning about version numbers including 'chpl's  
-  (see https://chapel-lang.org/docs/1.23/modules/standard/Version.html)
-* added a `Heap` module  
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Version.html)  
+* added a 'Heap' module implementing the `heap` datatype
   (see https://chapel-lang.org/docs/master/modules/standard/Heap.html)
-* made 'CPtr' a standard user-facing module that must now be `use`d/`import`ed  
+* made 'CPtr' a standard user-facing module requiring `use`/`import`  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html)
-* certain other standard libraries must also now be explicitly `use`d/`import`ed  
+* certain other standard libraries now also require explicit `use`/`import`  
   (e.g., 'Sys', 'SysBasic', 'CPtr', 'HaltWrappers' and 'DSIUtil')
-* significantly improved support for lists, maps, set of abitrary class types
+* significantly improved support for lists, maps, sets of abitrary class types
 * added `update()`, `getBorrowed()`, `getValue()` methods to list  
   (see https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.update,  
        https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.getBorrowed,  
   and https://chapel-lang.org/docs/master/modules/standard/List.html#List.list.getValue)
-* adjusted `map.items()` iterator to return by value
-* renamed `update()` method on map to `extend()`  
-  (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.extend)
-* added `update()` method to map  
-  (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.update)
 * enabled lifetime checking for lists of borrowed classes
-* Added support for sets of owned and non-nilable owned classes
-* Added support for maps of non-nilable owned and shared classes
+* adjusted `map.items()` iterator to return by value  
+  (see https://chapel-lang.org/docs/1.23/modules/standard/Map.html#Map.map.items)
+* redefined `update()` on maps and renamed prior behavior to `extend()`  
+  (see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.extend
+   and see https://chapel-lang.org/docs/master/modules/standard/Map.html#Map.map.update)
 * added a new routine to print 'CommDiagnostics' in tabular form  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CommDiagnostics.html#CommDiagnostics.printCommDiagnosticsTable)
-* added the ability to get stack traces in 'CommDiagnostics' verbose output  
+* added the ability to get stack traces in verbose output for 'CommDiagnostics' 
   (see https://chapel-lang.org/docs/master/modules/standard/CommDiagnostics.html#CommDiagnostics.commDiagsStacktrace)
 * made `c_ptrTo()` generate a compile-time error for distributed arrays  
   (see https://chapel-lang.org/docs/1.23/modules/standard/CPtr.html#CPtr.c_ptrTo)
-* added domain and range overloads to `choice()` in the `Random` module  
+* added domain and range overloads to `choice()` in the 'Random' module  
   (see https://chapel-lang.org/docs/1.23/modules/standard/Random.html#Random.RandomStreamInterface.choice)
 * made 'Random.PCGRandomLib' no longer auto-available  
   (see https://chapel-lang.org/docs/1.23/modules/standard/Random/PCGRandomLib.html)
 
 Package Modules
 ---------------
-* added an `OrderedSet` module  
+* added an 'OrderedSet' module supporting sets that maintain ordering
   (see https://chapel-lang.org/docs/master/modules/packages/OrderedSet.html)
-* added `leastSquares()` to 'LinearAlgebra' module  
+* added `leastSquares()` to the 'LinearAlgebra' module  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.leastSquares)
-* added `eigh()` and `eigvalsh()` to 'LinearAlgebra' module  
+* added `eigh()` and `eigvalsh()` to the 'LinearAlgebra' module  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.eigvalsh)
-* `LinearAlgebra.cholesky()` now halts if matrix is symmetric positive definite
 * added support for strided/offset domains in `LinearAlgebra.diag()`  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.diag)
 * merged the `Norm` module into 'LinearAlgebra' and deprecated `Norm`  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#LinearAlgebra.norm)
-* added `blockCyclicChunks()` iterator to the 'RangeChunk' module  
+* `LinearAlgebra.cholesky()` now halts if matrix is symmetric positive definite
+* added a `blockCyclicChunks()` iterator to the 'RangeChunk' module  
   (see: https://chapel-lang.org/docs/master/modules/packages/RangeChunk.html#RangeChunk.blockCyclicChunks)
-* updated the Sort module to number parts in keyPart calls from 0  
+* updated the 'Sort' module to number parts in `keyPart()` calls from 0  
   (see https://chapel-lang.org/docs/master/modules/packages/Sort.html#the-keypart-method)
 * moved 'LinkedLists' from the standard modules to the package modules  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinkedLists.html)
-* fixed problems with compiling the Crypto module with `--llvm`
+* fixed problems with compiling the 'Crypto' module with `--llvm`
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -179,21 +180,21 @@ Standard Domain Maps (Layouts and Distributions)
 Mason Improvements
 ------------------
 * added `bash` completion for `mason`
-* added interactive modes to `mason new` and `mason init` when lacking arguments  
+* added interactive modes to `mason new` and `mason init`
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#starting-a-new-package)
 * added `mason publish --create-registry` to more easily create a registry  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#local-registries)
 * added license field to the mason manifest file format  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#the-manifest-file)
-* `mason search` output now puts partial matches at the top
+* `mason search` output now places partial matches at the top
 * `mason test` now supports substring matching for running tests  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#testing-your-package)
 * `mason build` now skips the registry update if a package has no dependencies
-* `mason` key-value flags now all support `--key value` and `--key=value` style
+* `mason` key-value flags now all support `--key value` and `--key=value` styles
 * `mason external --setup` is now significantly faster
 * added second spack clone in `mason external --setup` to get latest packages  
   (see https://chapel-lang.org/docs/1.23/tools/mason/mason.html#using-spack-dependencies)
-* updated 'mason' to work with Spack's new GitHub structure
+* updated `mason` to work with Spack's new GitHub structure
 * removed `mason --list` due to similarity with `mason --help`
 * `mason publish --ci-check` now checks tests, examples, git tags, and manifest
 * added ability for `mason search` to utilize a registry cache
@@ -207,7 +208,7 @@ New Tools / Tool Changes
 
 Interoperability Improvements
 -----------------------------
-* added support for exporting functions returning `string` or `bytes` to Python
+* added support for exporting functions to Python returning `string` or `bytes`
 * made `--library-python` defaults more user-friendly  
   (see https://chapel-lang.org/docs/master/technotes/libraries.html?highlight=python#python-init-file)
 * added checks to prevent passing distributed arrays to `extern` array arguments  
@@ -221,11 +222,11 @@ Interoperability Improvements
 Performance Optimizations / Improvements
 ----------------------------------------
 * parallelized assignments between large local arrays
-* extended parallel array initialization to all types, not just numeric ones
+* extended parallel array initialization to all eltTypes, not just numeric ones
 * added an optimization that reduces overheads for provably local array accesses  
   (e.g. `forall i in A.domain { A[i] = 5; }` now executes much more quickly)
 * optimized how domains track the arrays that they govern at execution-time
-* optimized local single iteration `coforall`s
+* optimized local single iteration `coforall` loops
 * improved on-clause optimization to no longer trigger when loops are present
 * reduced the overheads for creating/destroying arrays with constant domains  
   (e.g. `var arr: [1..1_000_000][1..3] int;` now executes ~4x faster)
@@ -263,15 +264,15 @@ Documentation
 -------------
 * improved the 'Modules' chapter of the language spec for `use` and `import`  
   (see https://chapel-lang.org/docs/1.23/language/spec/modules.html#access-of-module-contents)
-* updated language specification to discuss .type and runtime types  
+* updated the language specification to discuss `.type` and runtime types  
   (see http://chapel-lang.org/docs/master/language/spec/types.html#querying-the-type-of-an-expression)
-* updated the description of initializing sync variables in the language spec  
+* updated the description of initializing `sync` variables in the language spec  
   (see https://chapel-lang.org/docs/master/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
-* added a section on conflicts to the `Variables` chapter of the language spec  
+* added a section on conflicts to the 'Variables' chapter of the language spec  
   (see https://chapel-lang.org/docs/1.23/language/spec/variables.html#variable-conflicts)
 * adjusted spec to make it clearer how loops interact with split initialization  
   (see https://chapel-lang.org/docs/master/language/spec/variables.html#split-initialization)
-* added an example to the spec to clarify the defer statement  
+* added an example to the spec to clarify the `defer` statement  
   (see https://chapel-lang.org/docs/master/language/spec/statements.html#the-defer-statement)
 * fixed function signatures, futures, and notes in HTML render of language spec  
   (e.g., see https://chapel-lang.org/docs/1.23/language/spec/arrays.html#rectangular-array-literals  
@@ -282,7 +283,7 @@ Documentation
   (see https://chapel-lang.org/docs/master/technotes/globalvars.html)
 * corrected `blasImpl` and `lapackImpl` values in `LinearAlgebra` documentation  
   (see https://chapel-lang.org/docs/1.23/modules/packages/LinearAlgebra.html#compiling-with-linear-algebra)
-* removed `List._checkType()` from public documFntation
+* removed `List._checkType()` from public documentation
 * added a note to the 'cygwin' docs indicating it's not intended for performance  
   (see https://chapel-lang.org/docs/1.23/platforms/cygwin.html)
 * clarified that Mac 'homebrew' users need not build from source  
@@ -308,6 +309,7 @@ Compiler Flags
 --------------
 * extended `--no-checks` to support `--checks` to re-enable default checks  
   (see https://chapel-lang.org/docs/1.23/usingchapel/man.html)
+* made the `--version` flag print whether LLVM was built into the compiler
 
 Runtime Library Changes
 -----------------------
@@ -344,7 +346,7 @@ Error Messages / Semantic Checks
 
 Execution-time Checks
 ---------------------
-* improved bounds checking for slicing `string`s with `byteIndex` ranges  
+* improved bounds checking for `string` slicing with `byteIndex` ranges  
   (e.g. `myStr[..(-1):byteIndex]` correctly halts, rather than returning `""`)
 * improved checking for casting strings with underscores to real
 * made `c_ptrTo()` generate an execution-time error for a remote array  
@@ -403,19 +405,19 @@ Platform-specific bug fixes
 Packaging / Configuration Changes
 ---------------------------------
 * added a docker image that uses GASNet's `smp` conduit for faster execution
-* made Cray module compatible with the Lmod environment system
+* made the Cray module compatible with the Lmod environment system
 * switched from supporting cce-classic to clang-based cce
-* changed 'Shasta' to 'HPE Cray EX', reflecting product branding
+* changed 'Shasta' to 'HPE Cray EX', reflecting product branding  
   (see https://chapel-lang.org/docs/master/platforms/cray.html#getting-started-with-chapel-on-hpe-cray-ex-systems)
 * removed support for Cray XE
 * removed the KNL locale model
-* removed the old `PERFORMANCE.md` file in favor of using the website for this  
+* removed the old `PERFORMANCE.md` file in favor of using the website  
   (see https://chapel-lang.org/performance.html)
 * made the `make check` step no longer use `--cc-warnings`
 
 Third-Party Software Changes
 ----------------------------
-* added bundled libfabric, version 1.10
+* added a bundled copy of `libfabric`, version 1.10
 * added the `whereami` library for portably locating the current binary's path  
   (see https://github.com/gpakosz/whereami)
 * upgraded GMP to version 6.2.0
