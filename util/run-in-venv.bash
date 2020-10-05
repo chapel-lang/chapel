@@ -7,7 +7,8 @@ if [ -z "$CHPL_HOME" ]; then
   exit 1
 fi
 
-venv_path=$(python "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+python=$($CHPL_HOME/util/config/find-python.sh)
+venv_path=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
 
 if [ ! -d "$venv_path" ]; then
   echo "Error: virtualenv '$venv_path' does not exist"

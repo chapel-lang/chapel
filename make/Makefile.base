@@ -99,6 +99,9 @@ $(eval $(CHPL_MAKE_SETTINGS))
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
+# Compute python command name
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+
 # Now do some minor situational clean-ups.
 
 # The config variable for segment is CHPL_GASNET_SEGMENT

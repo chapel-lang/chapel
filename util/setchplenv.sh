@@ -10,9 +10,18 @@ if [ ! -d "util" ] || [ ! -d "compiler" ] || [ ! -d "runtime" ] || [ ! -d "modul
     echo "Error: You must use '. util/setchplenv.sh' from within the chapel root directory."
     return 1
 fi
-MYPATH=`./util/config/fixpath.py "$PATH"`
+
+echo "Setting CHPL_HOME..."
+CHPL_HOME=`pwd`
+export CHPL_HOME
+echo "                    ...to $CHPL_HOME"
+echo " "
+
+CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
+
+MYPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$PATH"`
 exitcode=$?
-MYMANPATH=`./util/config/fixpath.py "$MANPATH"`
+MYMANPATH=`$CHPL_PYTHON "$CHPL_HOME"/util/config/fixpath.py "$MANPATH"`
 
 # Double check $MYPATH before overwriting $PATH
 if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
@@ -21,13 +30,7 @@ if [ -z "${MYPATH}" -o "${exitcode}" -ne 0 ]; then
     return 1
 fi
 
-echo "Setting CHPL_HOME..."
-CHPL_HOME=`pwd`
-export CHPL_HOME
-echo "                    ...to $CHPL_HOME"
-echo " "
-
-CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+CHPL_BIN_SUBDIR=`$CHPL_PYTHON "$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 
 echo "Updating PATH to include..."
 PATH="$CHPL_HOME"/bin/$CHPL_BIN_SUBDIR:"$CHPL_HOME"/util:"$MYPATH"

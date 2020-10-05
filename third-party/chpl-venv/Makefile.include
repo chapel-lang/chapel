@@ -15,15 +15,10 @@ CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.tx
 # The following Python version processing would needlessly add to chpl's run times.
 
 # Python version
-PYTHON = $(shell which python)
-ifeq ($(wildcard $(PYTHON)),)
-PYTHON_VERSION = _not_found
-PYTHON_MAJOR_VERSION = _not_found
-else
+PYTHON = $(CHPL_MAKE_PYTHON)
 # Python version has 2 digits, like "2.6" or "2.7"
-PYTHON_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
-PYTHON_MAJOR_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only)
-endif
+PYTHON_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py || echo "_not_found")
+PYTHON_MAJOR_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only || echo "_not_found")
 
 # chpl-venv installation path depends on Python version
 CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)/py$(PYTHON_VERSION)
@@ -51,14 +46,14 @@ PIPLIB64=$(CHPL_VENV_INSTALL_DIR)/lib64/python/site-packages
 PIPLIBS=$(PIPLIB_VER):$(PIPLIB):$(PIPLIB64_VER):$(PIPLIB64)
 
 
-GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && python get-pip.py --user --no-warn-conflicts
+GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && $(PYTHON) get-pip.py --user --no-warn-conflicts
 # If CHPL_PIP env var is set, then don't install custom pip
 ifdef CHPL_PIP
   PIP = $(CHPL_PIP)
 else
   ifdef VIRTUAL_ENV
     PIP=$(VIRTUAL_ENV)/bin/pip
-    GET_PIP_COMMAND=python get-pip.py --no-warn-conflicts
+    GET_PIP_COMMAND=$(PYTHON) get-pip.py --no-warn-conflicts
   else
     PIP=-S $(CHPL_VENV_INSTALL_DIR)/bin/pip
     # This must be separate from global CHPL_PIP_INSTALL_PARAMS
