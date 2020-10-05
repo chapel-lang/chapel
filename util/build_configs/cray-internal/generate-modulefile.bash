@@ -132,9 +132,8 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 }
 
 if { ! [ info exists env(PE_ENV) ] } {
-    puts stderr "Error: The Chapel module requires a PrgEnv environment"
-    puts stderr "to be loaded."
-    exit 1
+    module load PrgEnv-gnu
+    set compiler GNU
 } else {
     set compiler $env(PE_ENV)
 }
