@@ -41,8 +41,8 @@
 //
 #ifdef CHPL_COMM_DEBUG
 
-uint64_t chpl_comm_ofi_dbg_level;
-FILE* chpl_comm_ofi_dbg_file;
+extern uint64_t chpl_comm_ofi_dbg_level;
+extern FILE* chpl_comm_ofi_dbg_file;
 
 #define DBG_STATS                      0x1UL
 #define DBG_STATSNODES                 0x2UL
@@ -118,7 +118,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 //
 // Simplify internal error checking
 //
-int chpl_comm_ofi_abort_on_error;
+extern int chpl_comm_ofi_abort_on_error;
 
 #define INTERNAL_ERROR_V(fmt, ...)                                      \
   do {                                                                  \

@@ -71,6 +71,22 @@
 
 ////////////////////////////////////////
 //
+// Data global to all comm-ofi*.c files
+//
+
+//
+// These are declared extern in comm-ofi-internal.h.
+//
+#ifdef CHPL_COMM_DEBUG
+uint64_t chpl_comm_ofi_dbg_level;
+FILE* chpl_comm_ofi_dbg_file;
+#endif
+
+int chpl_comm_ofi_abort_on_error;
+
+
+////////////////////////////////////////
+//
 // Libfabric API version
 //
 
@@ -84,7 +100,7 @@
 
 ////////////////////////////////////////
 //
-// Global types and data
+// Types and data global just within this file.
 //
 
 static struct fi_info* ofi_info;        // fabric interface info
