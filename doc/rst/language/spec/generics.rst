@@ -473,50 +473,86 @@ A queried domain may not be modified via the name to which it is bound
 Function Visibility in Generic Functions
 ----------------------------------------
 
-When resolving function calls made within generic functions, there is an
-additional source of visible functions. Besides functions visible to the
-generic function’s point of declaration, visible functions are also
-taken from one of the call sites at which the generic function is
-instantiated for each particular instantiation. The specific call site
-chosen is arbitrary and it is referred to as the *point of
-instantiation*.
+When resolving a function call, as defined in :ref:`Function_Resolution`,
+there is an additional source of visible functions when the call is
+nested within a generic function. The additional source is the functions
+visible from the call site that the enclosing generic function is invoked from.
+This call site is referred to as the *point of instantiation*.
+If there are multiple enclosing generic functions or the call is nested
+within a concrete function that is, in turn, nested in generic function(s),
+the point of instantiation is the call site of the innermost generic function.
+
+If no candidate functions are found during the initial steps of
+identifying visible and candidate functions, function resolution
+continues the search for visible and candidate functions
+at the point of instantiation. If still no candidates are found,
+the search continues to the point of instantiation of the innermost
+generic function that contains the previous point of instantiation.
+Once candidate(s) are found, the search succeeds and
+function resolution proceeds to selecting the most specific functions.
+Otherwise the search will reach a point of instantiation that is not
+within a generic function. For example, it can be at the module level or
+enclosed in only concrete function(s). If no candidates have been found,
+the compiler issues a "call cannot be resolved" error.
 
    *Example (point-of-instantiation.chpl)*.
 
-   Consider the following code which defines a generic function ``bar``:
+   Consider the following code:
    
 
    .. code-block:: chapel
 
-      module M1 {
-        record R {
-          var x: int;
-          proc foo() { }
+      module LibraryA {
+        proc callWorkers(arg) {
+          worker1();
+          worker2();
         }
       }
 
-      module M2 {
-        proc bar(x) {
-          x.foo();
+      module LibraryB {
+        use LibraryA;
+        proc worker1() { writeln("in LibraryB"); }
+        proc libFun(arg) {
+          callWorkers(arg);
         }
       }
 
-      module M3 {
-        use M1, M2;
+      module Application {
+        use LibraryB;
+        proc worker1() { writeln("in Application"); }
+        proc worker2() { writeln("in Application"); }
         proc main() {
-          var r: R;
-          bar(r);
+          libFun(1);
         }
       }
 
-   In the function ``main``, the variable ``r`` is declared to be of
-   type ``R`` defined in module ``M1`` and a call is made to the generic
-   function ``bar`` which is defined in module ``M2``. This is the only
-   place where ``bar`` is called in this program and so it becomes the
-   point of instantiation for ``bar`` when the argument ``x`` is of type
-   ``R``. Therefore, the call to the ``foo`` method in ``bar`` is
-   resolved by looking for visible functions from within ``main`` and
-   going through the use of module ``M1``.
+   .. BLOCK-test-chapeloutput
+
+      in LibraryB
+      in Application
+
+   When resolving the call to ``worker1`` in ``callWorkers()``
+   there are no visible functions at the scope of the call. Since
+   ``callWorkers()`` is a generic function, resolution looks at
+   its point of instantiation, which is its call within ``libFun()``.
+   There, a single candidate function for ``worker1`` is found, so
+   function resolution determines that this is the target function.
+
+   Since the search is complete, no further points of instantiation
+   are visited. Therefore ``LibraryB`` is assured that whenever
+   ``callWorkers()`` looks to its callers for ``worker1``,
+   the implementation in ``LibraryB`` will be used.
+   Other overloads, such ``worker1()`` in module ``Application``,
+   will not be considered.
+
+   When resolving the call to ``worker2`` in ``callWorkers()``,
+   resolution again looks at its point of instantiation, namely
+   its call within ``libFun()``. No visible functions can be found
+   there. Since ``libFun`` is also a generic function, the search
+   continues in turn to its point of instantiation, which is
+   its call in module ``Application``. Since a definition of ``worker2``
+   is visible there, it will be considered the candidate for the call
+   to ``worker2`` in ``callWorkers()``.
 
 If the generic function is only called indirectly through dynamic
 dispatch, the point of instantiation is defined as the point at which

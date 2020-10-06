@@ -1182,9 +1182,9 @@ Assignment overloads are not supported for class types.
 Function Resolution
 -------------------
 
-*Function resolution* is the algorithm that determines which function to
-invoke for a given call expression. Function resolution is defined as
-follows.
+*Function resolution* is the algorithm that determines which
+*target function* to invoke for a given call expression.
+Function resolution is defined as follows.
 
 -  Identify the set of visible functions for the function call. A
    *visible function* is any function that satisfies the criteria
@@ -1196,9 +1196,13 @@ follows.
    the set of candidate functions for the function call. A *candidate
    function* is any function that satisfies the criteria
    in :ref:`Determining_Candidate_Functions`. If no candidate
-   function can be found, the compiler will issue an error stating that
+   function can be found and the call is within a generic function,
+   its point of instantiation(s) are visited searching for candidates
+   as defined in :ref:`Function_Visibility_in_Generic_Functions`.
+   If still no candidate functions are found,
+   the compiler will issue an error stating that
    the call cannot be resolved. If exactly one candidate function is
-   found, this is determined to be the function.
+   found, this is determined to be the target function.
 
 -  From the set of candidate functions, determine the set of most
    specific functions. In most cases, there is one most specific
@@ -1213,9 +1217,9 @@ follows.
    best function for each return intent as described in
     :ref:`Determining_Best_Functions`. If there is more than
    one best function for a given return intent, the compiler will issue
-   an error stating that the call is ambiguous. Otherwise, it will
-   choose which function to call based on the calling context as
-   described in :ref:`Choosing_Return_Intent_Overload`.
+   an error stating that the call is ambiguous. Otherwise, it will choose
+   the target function from these best functions based on the calling
+   context as described in :ref:`Choosing_Return_Intent_Overload`.
 
 Notation
 ~~~~~~~~
@@ -1239,14 +1243,28 @@ This section uses the following notation:
 Determining Visible Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given a function call, a function is determined to be a *visible
-function* if the name of the function is the same as the name of the
-function call and the function is defined in the same scope as the
-function call or a lexical outer scope of the function call, or if the
-function is publicly declared in a module that is used from the same
-scope as the function call or a lexical outer scope of the function
-call. Function visibility in generic functions is discussed
-in :ref:`Function_Visibility_in_Generic_Functions`.
+Given a function call, a function :math:`X` is determined to be a
+*visible function* if its name is the same as the name of the
+function call and one of the following conditions is met:
+
+- :math:`X` is defined in the same scope as the
+  function call or in a lexical outer scope of the function call, or
+
+- :math:`X` is ``public`` and is declared in a module that is used from
+  the same scope as the function call or from its lexical outer scope,
+  see also :ref:`Using_Modules`, or
+
+- :math:`X` is ``public`` and is declared in a module that is imported from
+  the same scope as the function call or from its lexical outer scope,
+  and the call qualifies the function name with the module name,
+  see also :ref:`Importing_Modules`.
+
+   *Open issue*.
+
+   What should be the visibility of methods? Applying the above rules
+   excludes, for example, the methods defined in the same module as the
+   receiver type when that module is neither visible nor reachable
+   through module uses or imports from the scope of the function call.
 
 .. _Determining_Candidate_Functions:
 
