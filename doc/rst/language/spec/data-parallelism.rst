@@ -18,6 +18,7 @@ This chapter details data parallelism as follows:
 
 -  :ref:`Forall_Intents` specifies how variables from outer
    scopes are handled within forall statements and expressions.
+   :ref:`Task_Private_Variables` provide a related functionality.
 
 -  :ref:`Promotion` describes promotion.
 
@@ -297,17 +298,19 @@ Forall Intents
 If a variable is referenced within the lexical scope of a forall
 statement or expression and is declared outside that forall construct,
 it is subject to *forall intents*, analogously to task intents
-(:ref:`Task_Intents`) for task-parallel constructs. That is, the
-variable is considered to be passed as an actual argument to each task
-function created by the object or iterator leading the execution of the
-loop. If no tasks are created, it is considered to be an actual argument
-to the leader or standalone iterator itself. All references to the
+for task-parallel constructs (see :ref:`Task_Intents`). That is, the
+outer variable is considered to be passed as an actual argument to an
+implicit formal of the iterator leading the execution of the loop.
+From there, it is passed down to each task created by that iterator,
+if any, as an actual to an implicit formal of the corresponding
+task function. A top-level task passes it down recursively to its
+child tasks, if any. All references to the 
 variable within the forall construct implicitly refer to a *shadow
 variable*, i.e. the corresponding formal argument of the task function
-or the leader/standalone iterator.
+or the leading iterator.
 
 When the forall construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as a regular variable. That is,
+field of ``this``, the field is treated as an outer variable. That is,
 it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
@@ -327,9 +330,10 @@ its updated value after concurrent modifications. The ``in`` intent is
 an alternative way to obtain task-private variables
 (:ref:`Task_Private_Variables`). A ``reduce`` intent can be used
 to reduce values across iterations of a forall or coforall loop.
-Reduce intents are described in the
-:ref:`Reduce Intents technical note <readme-reduceIntents>` in
-the online documentation.
+A ``reduce`` forall intent differs from the corresponding task intent,
+as defined in :ref:`Task_Intents`, in that a child task in a forall loop
+combines its accumulated value into its parent task, rather than
+into the outer variable.
 
    *Rationale*.
 

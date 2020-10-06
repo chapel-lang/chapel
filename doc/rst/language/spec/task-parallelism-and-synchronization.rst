@@ -29,6 +29,7 @@ details task parallelism as follows:
 -  :ref:`Task_Intents` specifies how variables from outer scopes
    are handled within ``begin``, ``cobegin`` and ``coforall``
    statements.
+   :ref:`Task_Private_Variables` are also available.
 
 -  :ref:`Sync_Statement` describes the sync statement, a
    structured way to control parallelism.
@@ -831,14 +832,15 @@ Task Intents
 
 If a variable is referenced within the lexical scope of a ``begin``,
 ``cobegin``, or ``coforall`` statement and is declared outside that
-statement, it is subject to *task intents*. That is, it is considered to
+statement, it is subject to *task intents*. That is, this *outer variable*
+is considered to
 be passed as an actual argument to the corresponding task function at
 task creation time. All references to the variable within the task
 function implicitly refer to a *shadow variable*, i.e. the task
 function’s corresponding formal argument.
 
 When the task construct is inside a method on a record and accesses a
-field of ``this``, the field is treated as a regular variable. That is,
+field of ``this``, the field itself is treated as an outer variable. That is,
 it is passed as an actual argument to the task function and all
 references to the field within the task function implicitly refer to the
 corresponding shadow variable.
@@ -870,16 +872,34 @@ The syntax of the task intent clause is:
 
    task-intent-item:
      formal-intent identifier
+     reduce-scan-operator 'reduce' identifier
+     class-type 'reduce' identifier
      task-private-var-decl
 
 where the following intents can be used as a ``formal-intent``:
 ``ref``, ``in``, ``const``, ``const in``, ``const ref``.
-``task-private-var-decl`` is defined in
-:ref:`Task_Private_Variables`. In addition,
-``task-intent-item`` may define a ``reduce`` intent. Reduce intents
-are described in the
-:ref:`Reduce Intents technical note <readme-reduceIntents>` in
-the online documentation.
+``task-private-var-decl`` is defined in :ref:`Task_Private_Variables`.
+
+The ``reduce`` task intent specifies a reduction into the outer variable,
+which is provided to the right of the ``reduce`` keyword.
+The reduction operator is specified by either the ``reduce-scan-operator``
+or the ``class-type`` in the same way as for a Reduction Expressions
+(see :ref:`reduce`). At the start of each task the corresponding shadow
+variable is initialized to the identity value of the reduction operator.
+Within the task it behaves as a regular variable. In addition, it can be
+the left-hand side of the ``reduce=`` operator, which accumulates its
+right-hand side onto the shadow variable.
+At the end of each task its shadow variable is combined into the outer
+variable.
+
+   *Open issue*.
+
+   How should ``reduce`` task intent be defined for ``begin`` tasks?
+   A reduction is legal only when the task completes before the program
+   has exited the dynamic scope of the outer variable.
+
+   Reduce intents are currently work-in-progress. See also
+   :ref:`Reduce Intents technical note <readme-reduceIntents>`.
 
 The implicit treatment of outer scope variables as the task function’s
 formal arguments applies to both module level and local variables. It
