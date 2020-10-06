@@ -1360,6 +1360,10 @@ void fixRefTupleRvvForInferredReturnType(FnSymbol* fn) {
     return;
   }
 
+  if (fn->id == breakOnResolveID) {
+    gdbShouldBreakHere();
+  }
+
   Type* ft = fn->retType->getValType();
   if (!ft->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
     return;
@@ -1379,6 +1383,10 @@ void fixRefTupleRvvForInferredReturnType(FnSymbol* fn) {
   for_SymbolSymExprs(se, rvv) {
     CallExpr* call = toCallExpr(se->parentExpr);
     if (call != NULL && call->isPrimitive(PRIM_MOVE)) {
+      if (call->id == breakOnResolveID) {
+        gdbShouldBreakHere();
+      }
+
       CallExpr* addrOf = toCallExpr(call->get(2));
       if (addrOf != NULL && addrOf->isPrimitive(PRIM_ADDR_OF)) {
         fixPrimAddrOfForRefTuple(call);
@@ -1554,7 +1562,7 @@ void confirmBuildCallActualsAreLvalues(CallExpr* buildCall) {
     i++;
   }
 
-  if (error) {
+  if (error) { // TODO: replace this with "return false" then caller leaves
     USR_STOP();
   }
 
@@ -1961,7 +1969,7 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
   INT_ASSERT(isSymAllRefTuple(lhs));
 
   SymExpr* addrSymExpr = toSymExpr(rhs->get(1));
-  INT_ASSERT(addrSymExpr != NULL);
+  INT_ASSERT(addrSymExpr != NULL); // TODO: remove, cannot be null
   Symbol* addrSym = addrSymExpr->symbol();
 
   // TODO: Put this in function.
@@ -1979,17 +1987,25 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
 
     // If the LHS is the RVV/YVV, make sure no actuals are locals.
     bool error = false;
-    int i = 0;
+    int i = -1;
     if (lhs->hasFlag(FLAG_RVV) || lhs->hasFlag(FLAG_YVV)) {
       for_actuals(actual, buildCall) {
+        i++;
 
         SymExpr* actualSymExpr = toSymExpr(actual);
         INT_ASSERT(actualSymExpr != NULL);
         Symbol* actualSym = actualSymExpr->symbol();
 
+        // TODO: Confirm field access is from non-local symbol or formal.
+        Symbol* fa = getFieldAccessTmpFromCoerceTmp(actualSym, false);
+        if (fa != NULL) {
+          continue;
+        }
+
         if (actualSym->defPoint->getFunction() == inFn) {
           if (!error) {
-            // TODO: Mention const.
+
+            // TODO: Mention constness.
             USR_FATAL_CONT(buildCall, "cannot %s tuple containing locals "
                                       "by ref",
                                       warningVerb);
@@ -1997,11 +2013,8 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
           }
 
           Type* t = actualSym->getValType();
-
-          // TODO: Root on 
           USR_PRINT(actualSym, "element %d of type %s", i,
                                t->symbol->name);
-          i++;
         }
       }
     }
