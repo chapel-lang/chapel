@@ -123,8 +123,8 @@ Future Work
 -----------
 
 * Switch to a light-weight interface for user-defined reductions.
-  The current proposal is discussed as a
-  `Github Issue #9879 <https://github.com/chapel-lang/chapel/issues/9879>`_.
+  The current proposal is discussed in
+  `GitHub issue 9879 <https://github.com/chapel-lang/chapel/issues/9879>`_.
 
 * Implement ``reduce=`` for task intents.
 

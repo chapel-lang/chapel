@@ -302,7 +302,7 @@ for task-parallel constructs (see :ref:`Task_Intents`). That is, the
 outer variable is considered to be passed as an actual argument to an
 implicit formal of the iterator leading the execution of the loop.
 From there, it is passed down to each task created by that iterator,
-if any, as an actual to an implicit formal of the corresponding
+if any, as an actual argument to an implicit formal of the corresponding
 task function. A top-level task passes it down recursively to its
 child tasks, if any. All references to the 
 variable within the forall construct implicitly refer to a *shadow
@@ -328,12 +328,17 @@ variables of most types, the ``ref`` intent allows the body of the
 forall loop to modify the corresponding original variable or to read
 its updated value after concurrent modifications. The ``in`` intent is
 an alternative way to obtain task-private variables
-(:ref:`Task_Private_Variables`). A ``reduce`` intent can be used
-to reduce values across iterations of a forall or coforall loop.
-A ``reduce`` forall intent differs from the corresponding task intent,
-as defined in :ref:`Task_Intents`, in that a child task in a forall loop
-combines its accumulated value into its parent task, rather than
-into the outer variable.
+(:ref:`Task_Private_Variables`).
+
+A ``reduce`` forall intent can be used to reduce values across iterations
+of a forall loop. While it is similar to the ``reduce`` task intent
+(see :ref:`Task_Intents`), there is a difference in how values
+are combined at the end of a task. With a ``reduce`` forall intent,
+each child task combines its accumulated value into its parent task
+rather than into an outer variable.
+The ``reduce=`` operator accumulates its right-hand side values
+computed for all iterations executed by a given task into the same
+shadow variable for that task.
 
    *Rationale*.
 

@@ -1243,12 +1243,21 @@ This section uses the following notation:
 Determining Visible Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given a function call, a function is determined to be a *visible
-function* if the name of the function is the same as the name of the
-function call and the function is defined in the same scope as the
-function call or a lexical outer scope of the function call, or if the
-function is publicly declared in a module that is used from the same
-scope as the function call or a lexical outer scope of the function call.
+Given a function call, a function :math:`X` is determined to be a
+*visible function* if its name is the same as the name of the
+function call and one of the following conditions is met:
+
+- :math:`X` is defined in the same scope as the
+  function call or in a lexical outer scope of the function call, or
+
+- :math:`X` is ``public`` and is declared in a module that is used from
+  the same scope as the function call or from its lexical outer scope,
+  see also :ref:`Using_Modules`, or
+
+- :math:`X` is ``public`` and is declared in a module that is imported from
+  the same scope as the function call or from its lexical outer scope,
+  and the call qualifies the function name with the module name,
+  see also :ref:`Importing_Modules`.
 
    *Open issue*.
 
