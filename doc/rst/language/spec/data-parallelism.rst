@@ -96,8 +96,8 @@ tasks.
 
 This concept will be formalized in future drafts of the Chapel
 specification. For now, the
-:ref:`primer on parallel iterators <primers-parIters>` in the online
-documentation provides a brief introduction.
+:ref:`primer on parallel iterators <primers-parIters>`
+provides a brief introduction.
 Please also refer to *User-Defined Parallel Zippered Iterators in
 Chapel*, published in the PGAS 2011 workshop.
 
