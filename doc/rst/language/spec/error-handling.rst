@@ -14,8 +14,8 @@ a less-permissive mode intended for production code.
 
    Additional information about the current implementation of
    error handling and the *strict* error handling mode, which is not
-   defined here, is available online in the errorHandling technical note
-   :ref:`readme-errorHandling`.
+   defined here, is available in the 
+   :ref:`errorHandling technical note <readme-errorHandling>`
 
 .. _Throwing_Errors:
 
