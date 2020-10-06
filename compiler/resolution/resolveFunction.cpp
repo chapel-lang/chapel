@@ -781,6 +781,12 @@ static bool doNotUnaliasArray(FnSymbol* fn);
 static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret);
 
 static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
+
+  // No need to construct a value type for a function returning ref.
+  if (fn->returnsRefOrConstRef()) {
+    return;
+  }
+
   bool skipArray = doNotUnaliasArray(fn);
   bool skipTuple = doNotChangeTupleTypeRefLevel(fn, true);
 
@@ -896,8 +902,6 @@ bool doNotChangeTupleTypeRefLevel(FnSymbol* fn, bool forRet) {
                                     //    when not indicated return by ref.
      ) {
     return true;
-  } else if (forRet && fn->returnsRefOrConstRef()) {
-    return fn->retType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);	
   } else {
     return false;
   }
