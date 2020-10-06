@@ -89,9 +89,16 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-    export CHPL_LIBFABRIC=libfabric
+    export CHPL_LIBFABRIC=system
     export CHPL_LLVM=llvm       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
+
+    # We default to CHPL_LIBFABRIC=system for EX.  We need to point to
+    # a libfabric install for the builds.  On EX a module will supply
+    # this but on XC we have to reference our own.
+    if ! pkg-config --exists libfabric ; then
+      export PKG_CONFIG_PATH=${PKG_CONFIG_PATH:+${PKG_CONFIG_PATH}:}/cray/css/users/chapelu/libfabric/install/cray-xc/lib/pkgconfig
+    fi
 
     # As a general rule, more CPUs --> faster make.
     # To use all available CPUs, export CHPL_MAKE_MAX_CPU_COUNT=0 before running this setenv.
@@ -338,11 +345,7 @@ else
     #[TODO] gen_version_intel=16.0.3.210
     gen_version_cce=10.0.2
 
-    if [ "$CRAYPE_NETWORK_TARGET" == slingshot* ]; then
-        target_cpu_module=craype-x86-rome
-    else
-        target_cpu_module=craype-sandybridge
-    fi
+    target_cpu_module=craype-x86-rome
 
     function load_prgenv_gnu() {
 
