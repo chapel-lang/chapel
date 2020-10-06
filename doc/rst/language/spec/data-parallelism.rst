@@ -328,7 +328,7 @@ variables of most types, the ``ref`` intent allows the body of the
 forall loop to modify the corresponding original variable or to read
 its updated value after concurrent modifications. The ``in`` intent is
 an alternative way to obtain task-private variables
-(:ref:`Task_Private_Variables`).
+(see :ref:`Task_Private_Variables`).
 
 A ``reduce`` forall intent can be used to reduce values across iterations
 of a forall loop. While it is similar to the ``reduce`` task intent

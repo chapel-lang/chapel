@@ -536,7 +536,7 @@ the compiler issues a "call cannot be resolved" error.
    ``callWorkers()`` is a generic function, resolution looks at
    its point of instantiation, which is its call within ``libFun()``.
    There, a single candidate function for ``worker1`` is found, so
-   function resolution determins that this is the target function.
+   function resolution determines that this is the target function.
 
    Since the search is complete, no further points of instantiation
    are visited. Therefore ``LibraryB`` is assured that whenever

@@ -1263,8 +1263,8 @@ function call and one of the following conditions is met:
 
    What should be the visibility of methods? Applying the above rules
    excludes, for example, the methods defined in the same module as the
-   receiver type when neither that module nor its use is visible
-   from the scope of the function call.
+   receiver type when that module is neither visible nor reachable
+   through module uses or imports from the scope of the function call.
 
 .. _Determining_Candidate_Functions:
 

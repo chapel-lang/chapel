@@ -11,23 +11,37 @@ Note: this is work in progress and is subject to change.
 Overview
 --------
 
-Reduce intents are defined as :ref:`a forall intent <Forall_Intents>`
-for forall loops and :ref:`a task intent <Task_Intents>` for
+A reduce intent is defined as a :ref:`forall intent <Forall_Intents>`
+for forall loops and a :ref:`task intent <Task_Intents>` for
 task-parallel constructs.
 
 Reduce intents are distinct from other forall/task intents:
 
-* The references, within the loop body, to a reduce-intented outer variable
-  implicitly refer to the reduction state corresponding to the task
-  function's formal. At the beginning of the task, this reduction state
-  is initialized to the identity value for the corresponding reduction.
+* The shadow variable for a reduce intent implicitly references
+  the accumulation state for the reduction. At the beginning of
+  each task, its accumulation state is initialized to the
+  identity value for the corresponding reduction. At the end of
+  each task, its accumulation state is combined into the
+  accumulation state of its parent task, if any, or into
+  the top-level accumulation state.
 
-* The value of the outer variable immediately after the forall loop is a
-  reduction of the values of the corresponding formals at the end of
-  their tasks and the value of the outer variable immediately before
-  the forall/coforall loop.
+* The top-level accumulation state is accessed through the shadow
+  variable for those loop iterations that correspond to top-level
+  yield statements. Those are the yields that occur outside any
+  task constructs in the iterator that is leading the loop.
 
-Reduce intents are currently available for forall and coforall statements.
+* The value of the corresponding outer variable immediately prior
+  the forall loop or the task-parallel construct is accumulated
+  into the top-level accumulation state. The value of the outer
+  variable immediately after the loop / construct is the result
+  of applying the reduction's ``generate`` operation to the top-level
+  accumulation state at that point. If this ``generate`` operation
+  returns the accumulation state unchanged, then the implementation
+  can be optimized by reusing the outer variable as the top-level
+  accumulation state.
+
+Reduce intents are currently implemented for ``forall`` and
+``coforall`` statements.
 
 
 --------
