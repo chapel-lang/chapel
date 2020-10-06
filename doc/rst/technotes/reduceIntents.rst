@@ -11,20 +11,11 @@ Note: this is work in progress and is subject to change.
 Overview
 --------
 
-Reduce intents are a kind of forall intent - see Section 26.3
-"Forall Intents" of the Chapel Language Specification.
+Reduce intents are defined as :ref:`a forall intent <Forall_Intents>`
+for forall loops and :ref:`a task intent <Task_Intents>` for
+task-parallel constructs.
 
-As with any forall intent, a reduce intent can be specified on any
-*outer variable* - that is, a variable used within the body of a
-forall loop and declared outside that loop.  References to such a
-variable within the loop implicitly refer to the corresponding formal
-argument of the task function created by the parallel iterator.
-If/when the parallel iterator executes a yield outside any parallel
-constructs, the reference is implicitly to the corresponding formal
-argument of the parallel iterator itself. In both cases, these formals
-are added implicitly by the compiler.
-
-Reduce intents are distinct:
+Reduce intents are distinct from other forall/task intents:
 
 * The references, within the loop body, to a reduce-intented outer variable
   implicitly refer to the reduction state corresponding to the task
@@ -37,40 +28,6 @@ Reduce intents are distinct:
   the forall/coforall loop.
 
 Reduce intents are currently available for forall and coforall statements.
-
-
-------
-Syntax
-------
-
-The syntax of ``task-intent-list`` is extended to allow ``reduce-intent``:
-
-  ::
-
-    task-intent-list:
-      // no change with these
-      formal-intent identifier
-      formal-intent identifier, task-intent-list
-      // added for reduce intents:
-      reduce-intent
-      reduce-intent, task-intent-list
-
-    reduce-intent:
-      reduce-operator 'reduce' identifier
-      reduce-class    'reduce' identifier
-      reduce-expr     'reduce' identifier
-
-    reduce-operator: one of
-       // these have the same meaning as in a reduction expression
-       +  *  &&  ||  &  |  ^  min  max
-
-    reduce-class:
-       // the name of the class that implements a user-defined reduction
-       identifier
-
-    reduce-expr:
-       // an expression producing an instance of a user-defined reduction class
-       expr
 
 
 --------
@@ -165,20 +122,11 @@ or coforall loop. Here is an example of such a class:
 Future Work
 -----------
 
+* Switch to a light-weight interface for user-defined reductions.
+  The current proposal is discussed as a
+  `Github Issue #9879 <https://github.com/chapel-lang/chapel/issues/9879>`_.
+
+* Implement ``reduce=`` for task intents.
+
 * Implement reduce intents for cobegin statements.
-
-* Provide the other predefined reduction operators as reduce intents:
-
-  .. code-block:: chapel
-
-    minloc maxloc
-
-* We are working on a new interface for user-defined reductions,
-  addressing the need for user-defined synchronization choices
-  and the ability to provide reduction state without the overhead
-  of synchronization support for partial reductions.
-
-* We are also considering replacing classes with records for user-defined
-  reductions. The goal is to eliminate the required malloc+free,
-  which is possible because the lifetime of a reduction class instance
-  matches the forall or coforall statement.
+  Consider reduce intents for begin statements.
