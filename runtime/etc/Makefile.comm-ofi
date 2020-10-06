@@ -44,6 +44,8 @@ endif
 # If we're using the slurm PMI2 out-of-band support we have to
 # reference that library explicitly.
 #
-ifneq (, $(findstring slurm-pmi2, $(CHPL_COMM_OFI_OOB)))
+ifneq (, $(findstring hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+  LIBS += -lpmi2
+else ifneq (, $(findstring slurm-pmi2, $(CHPL_COMM_OFI_OOB)))
   LIBS += -lpmi2
 endif
