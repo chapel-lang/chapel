@@ -1996,13 +1996,64 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
         INT_ASSERT(actualSymExpr != NULL);
         Symbol* actualSym = actualSymExpr->symbol();
 
-        // TODO: Confirm field access is from non-local symbol or formal.
+        // Maybe fetch field reference from coercion.
         Symbol* fa = getFieldAccessTmpFromCoerceTmp(actualSym, false);
-        if (fa != NULL) {
-          continue;
+
+        Symbol* maybeFieldRef = (fa != NULL) ? fa : actualSym;
+        bool isValidFieldRead = false;
+
+        // Confirm field access is from non-local symbol or formal.
+        if (maybeFieldRef->isRef()) {
+          for_SymbolSymExprs(se, maybeFieldRef) {
+            CallExpr* move = toCallExpr(se->parentExpr);
+            if (move != NULL && move->isPrimitive(PRIM_MOVE)) {
+
+              SymExpr* lhsSymExpr = toSymExpr(move->get(1));
+              Symbol* lhs = lhsSymExpr->symbol();
+
+              if (lhs != maybeFieldRef) {
+                continue;
+              }
+
+              CallExpr* rhs = toCallExpr(move->get(2));
+              if (rhs == NULL) {
+                continue;
+              }
+
+              FnSymbol* calledFn = rhs->resolvedFunction();
+              bool isPrimGet = rhs->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
+                               rhs->isPrimitive(PRIM_GET_MEMBER);
+              bool isAccessor = calledFn != NULL &&
+                                calledFn->hasFlag(FLAG_FIELD_ACCESSOR);
+              INT_ASSERT(!(isPrimGet && isAccessor));
+
+              if (isPrimGet || isAccessor) {
+
+                int receiverIndex = isPrimGet ? 1 : 2;  
+                SymExpr* recSymExpr = toSymExpr(rhs->get(receiverIndex));
+                INT_ASSERT(recSymExpr != NULL);
+                Symbol* rec = recSymExpr->symbol();
+
+                // OK, actual is reference to formal field.
+                ArgSymbol* formal = toArgSymbol(rec);
+                if (formal != NULL && !(formal->intent & INTENT_IN)) {
+                  isValidFieldRead = true;
+                  break;
+                } 
+
+                // OK, actual is non-local.
+                if (rec->defPoint->getFunction() != inFn) {
+                  isValidFieldRead = true;
+                  break;
+                }
+              }
+            }
+          }
         }
 
-        if (actualSym->defPoint->getFunction() == inFn) {
+        if (actualSym->defPoint->getFunction() == inFn &&
+            !isValidFieldRead) {
+
           if (!error) {
 
             // TODO: Mention constness.
@@ -2012,6 +2063,7 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
             error = true;
           }
 
+          // TODO: Additional hints?
           Type* t = actualSym->getValType();
           USR_PRINT(actualSym, "element %d of type %s", i,
                                t->symbol->name);

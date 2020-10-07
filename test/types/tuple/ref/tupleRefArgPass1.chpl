@@ -1,4 +1,5 @@
-// Modify ref tuple arguments with actuals that are tuple expressions.
+// Modify ref tuple arguments. Actual elements are references to globals.
+
 record r { var x: int = 0; }
 
 var g1 = 0;

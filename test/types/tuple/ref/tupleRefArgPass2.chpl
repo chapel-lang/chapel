@@ -1,4 +1,5 @@
-// Modify ref tuple arguments when the actuals are value tuples.
+// Modify ref tuple argument. Actual is a global value tuple.
+
 record r { var x: int = 0; }
 
 var g1 = (0, new r());
