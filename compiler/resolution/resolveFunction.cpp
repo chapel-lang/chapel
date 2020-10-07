@@ -247,6 +247,7 @@ static void updateIfRefFormal(FnSymbol* fn, ArgSymbol* formal) {
         formal->type = formal->type->getValType();
         INT_ASSERT(formal->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
       } else {
+        if (formal->id == 1749780) gdbShouldBreakHere();
         AggregateType* at = toAggregateType(formal->type);
         formal->type = computeAllRefTuple(at);
       }

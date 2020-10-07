@@ -423,7 +423,16 @@ TupleInfo getTupleInfo(std::vector<TypeSymbol*>& args,
       newTypeSymbol->addFlag(FLAG_STAR_TUPLE);
     }
 
-    if (level == TupleRefLevel::All) {
+    bool markAllRef = true;
+    for (size_t i = 0; i < args.size(); i++) {
+      Type* t = args[i]->type;
+      if (!t->isRef() && !t->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        markAllRef = false;
+        break;
+      }
+    }
+
+    if (markAllRef) {
       newTypeSymbol->addFlag(FLAG_TUPLE_ALL_REF);
     }
 
@@ -1023,6 +1032,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
   // Construct tuple that would be used for a particular argument intent.
   std::vector<TypeSymbol*> args;
   bool                     allSame            = true;
+  bool                     allRef             = false;
   BlockStmt*               instantiationPoint = at->symbol->instantiationPoint;
   int                      i                  = 0;
   AggregateType*           retval             = NULL;
@@ -1090,7 +1100,7 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
             makeRefType(useType);
             useType = useType->getRefType();
           }
-        } else if (intent == INTENT_REF) {
+        } else if (intent & INTENT_REF) {
           makeRefType(useType);
           useType = useType->getRefType();
         }
@@ -1101,20 +1111,24 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       allSame = false;
     }
 
+    if (!useType->symbol->hasFlag(FLAG_TUPLE_ALL_REF) &&
+        !useType->isRef()) {
+      allRef = false;
+    }
+
     args.push_back(useType->symbol);
 
     i++;
   }
-
 
   if (allSame == true) {
     retval = at;
 
   } else {
 
-    // TODO (dlongnecke): Adjust this path for each tuple ref level.
+    // TODO (dlongnecke): Adjust this path for each tuple ref level?
     TupleRefLevel::K level = TupleRefLevel::Mixed;
-    if (intent == INTENT_REF) {
+    if (allRef) {
       level = TupleRefLevel::All;
     }
 
@@ -1131,6 +1145,7 @@ AggregateType* computeTupleWithIntent(IntentTag intent, AggregateType* t) {
 
 AggregateType* computeAllRefTuple(AggregateType* t) {
   AggregateType* result = computeTupleWithIntent(INTENT_REF, t);
+  INT_ASSERT(result->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
   return result;
 }
 
@@ -1974,6 +1989,7 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
         bool isValidFieldRead = false;
 
         // Confirm field access is from non-local symbol or formal.
+        // TODO: Let lifetime checker handle all of this.
         if (maybeFieldRef->isRef()) {
           for_SymbolSymExprs(se, maybeFieldRef) {
             CallExpr* move = toCallExpr(se->parentExpr);
@@ -2004,6 +2020,12 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
                 SymExpr* recSymExpr = toSymExpr(rhs->get(receiverIndex));
                 INT_ASSERT(recSymExpr != NULL);
                 Symbol* rec = recSymExpr->symbol();
+
+                // TODO (dlongnecke): Handle ref vars in lifetime visitor.
+                if (rec->hasFlag(FLAG_REF_VAR)) {
+                  isValidFieldRead = true;
+                  break;
+                }
 
                 // OK, actual is reference to formal field.
                 ArgSymbol* formal = toArgSymbol(rec);

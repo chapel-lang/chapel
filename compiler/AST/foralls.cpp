@@ -869,12 +869,20 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
       }
       break;
     case RET_REF:
-      INT_ASSERT(idxVar->isRef());
-      idxVar->qual = QUAL_REF;
+      if (idxVar->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        idxVar->qual = QUAL_VAL;
+      } else {
+        INT_ASSERT(idxVar->isRef());
+        idxVar->qual = QUAL_REF;
+      }
       break;
     case RET_CONST_REF:
-      INT_ASSERT(idxVar->isRef());
-      idxVar->qual = QUAL_CONST_REF;
+      if (idxVar->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+        idxVar->qual = QUAL_CONST_VAL;
+      } else {
+        INT_ASSERT(idxVar->isRef());
+        idxVar->qual = QUAL_CONST_REF;
+      }
       idxVar->addFlag(FLAG_CONST);
       break;
     case RET_PARAM:
