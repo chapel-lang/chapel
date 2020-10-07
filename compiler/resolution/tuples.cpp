@@ -1346,7 +1346,6 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
   return retval;
 }
 
-static void fixSimpleMoveForRefTuple(CallExpr* call);
 static void fixPrimAddrOfForRefTuple(CallExpr* call);
 static void fixPrimGetMemberForRefTuple(CallExpr* call);
 static void fixPrimGetMemberValueForRefTuple(CallExpr* call);
@@ -1526,7 +1525,7 @@ bool isRefTupleRepackFunction(FnSymbol* fn) {
          !strcmp(fn->name, "chpl_refTupleRepack");
 }
 
-void confirmBuildCallActualsAreLvalues(CallExpr* buildCall) {
+static void confirmBuildCallActualsAreLvalues(CallExpr* buildCall) {
   bool error = false;
   int i = 0;
 
@@ -1540,7 +1539,8 @@ void confirmBuildCallActualsAreLvalues(CallExpr* buildCall) {
 
       // Don't warn if the actual is the coercion of a field access temp.
       if (sym->hasFlag(FLAG_COERCE_TEMP)) {
-        if (Symbol* fa = getFieldAccessTmpFromCoerceTmp(sym, false)) {
+        Symbol* fa = getFieldAccessTmpFromCoerceTmp(sym, false);
+        if (fa != NULL) {
           INT_ASSERT(!isImmediate && !isExprTmp);
           INT_ASSERT(isNonRefTmp);
           isNonRefTmp = false;
@@ -1685,7 +1685,12 @@ void fixMoveIntoRefTuple(CallExpr* call) {
 
   // If it's a simple move, check to see if the RHS is OK...
   } else if (SymExpr* rhsSymExpr = toSymExpr(rhs)) {
-    fixSimpleMoveForRefTuple(call);
+    INT_ASSERT(call->isPrimitive(PRIM_MOVE));
+
+    Symbol* rhs = rhsSymExpr->symbol();
+
+    INT_ASSERT(rhs->typeInfo()->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
+    INT_ASSERT(lhs->typeInfo() == rhs->typeInfo());
   } else {
     INT_FATAL(call, "Unhandled call: %d", rhsCall->id);
   }
@@ -1825,32 +1830,6 @@ static void convertBuildCallToAllRef(CallExpr* call, CallExpr* buildCall) {
   return;
 }
 
-// TODO: If the LHS and RHS are not already expanded ref tuples, something
-// went wrong, and we can handle it here later.
-static void fixSimpleMoveForRefTuple(CallExpr* call) {
-  INT_ASSERT(call->isPrimitive(PRIM_MOVE));
-
-  SymExpr* lhsSymExpr = toSymExpr(call->get(1));
-  INT_ASSERT(lhsSymExpr != NULL);
-  Symbol* lhs = lhsSymExpr->symbol();
-
-  SymExpr* rhsSymExpr = toSymExpr(call->get(2));
-  INT_ASSERT(rhsSymExpr != NULL);
-  Symbol* rhs = rhsSymExpr->symbol();
-
-  Type* lhsType = lhs->type;
-  Type* rhsType = rhs->type;
-
-  INT_ASSERT(!lhsType->isRef() && !rhsType->isRef());
-
-  bool isLhsTypeNormalized = lhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
-  bool isRhsTypeNormalized = rhsType->symbol->hasFlag(FLAG_TUPLE_ALL_REF);
-
-  INT_ASSERT(isLhsTypeNormalized && isRhsTypeNormalized);
-
-  return;
-}
-
 // TODO: Used to implement the guts of the different field reads.
 static void passFieldReadToRepackCall(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_MOVE));
@@ -1952,14 +1931,6 @@ static void fixPrimAddrOfForRefTuple(CallExpr* call) {
   FnSymbol* inFn = toFnSymbol(call->parentSymbol);
   if (inFn == NULL) {
     return;
-  }
-
-  // Iterator return types _may_ have been adjusted at this point.
-  bool isIteratorReturningRef = false;
-  if (inFn->hasFlag(FLAG_ITERATOR_FN) && inFn->iteratorInfo != NULL) {
-    if (inFn->iteratorInfo->iteratorRetTag == RET_REF) {
-      isIteratorReturningRef = true;
-    }
   }
 
   SymExpr* lhsSymExpr = toSymExpr(call->get(1));
