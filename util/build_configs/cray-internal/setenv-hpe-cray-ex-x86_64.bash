@@ -136,7 +136,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
         compilers=gnu,cray
         comms=none,ofi
-        launchers=pals,slurm-srun
+        launchers=none,pals,slurm-srun
         substrates=none
         locale_models=flat
         auxfs=none,lustre
