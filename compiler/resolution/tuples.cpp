@@ -1750,11 +1750,6 @@ void fixMoveIntoRefTuple(CallExpr* call) {
     INT_FATAL(call, "Unhandled call: %d", rhsCall->id);
   }
 
-  // Verify that types match before we leave.
-  if (lhs->qualType().type() != rhsCall->qualType().type()) {
-    INT_FATAL(call, "Mismatched types on exit: %D", call->id);
-  }
-
   return;
 }
 
