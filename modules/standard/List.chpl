@@ -1401,7 +1401,7 @@ module List {
     }
 
     pragma "no doc"
-    iter these(param tag) ref where tag == iterKind.leader {
+    iter these(param tag) where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
