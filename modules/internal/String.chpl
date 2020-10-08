@@ -186,8 +186,8 @@ byte of the argument:
 
    .. code-block:: chapel
 
-     proc getSecondByte(arg:string) : int {
-       var offsetInBytes = 2:byteIndex;
+     proc getSecondByte(arg:string) {
+       var offsetInBytes = 1:byteIndex;
        return arg[offsetInBytes];
      }
 
@@ -196,9 +196,9 @@ codepoint of the argument:
 
    .. code-block:: chapel
 
-     proc getSecondByte(arg:string) : int {
-       var offsetInBytes = 2:byteIndex;
-       return arg[offsetInBytes];
+     proc getSecondCodepoint(arg:string) {
+       var offsetInCodepoints = 1:codepointIndex;
+       return arg[offsetInCodepoints];
      }
 
 
