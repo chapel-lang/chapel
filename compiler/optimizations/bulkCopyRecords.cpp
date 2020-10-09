@@ -79,7 +79,7 @@ static bool typeContainsRef(Type* t, bool isRoot = true)
  */
 static bool isTrivialAssignment(FnSymbol* fn)
 {
-  if (! isAssignment(fn))
+  if (!isAssignment(fn))
     return false;
   
   // The base argument types must match.
@@ -88,6 +88,11 @@ static bool isTrivialAssignment(FnSymbol* fn)
   Type* argType = lhs->type->getValType();
   if (argType != rhs->type->getValType())
     return false;
+
+  // Skip for ref tuples, we need a deep copy on the LHS.
+  if (argType->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+    return false;
+  }
 
   // Skip this optimization for string/wide string types
   // (due to problems providing additional arguments for

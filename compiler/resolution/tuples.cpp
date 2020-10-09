@@ -1634,22 +1634,24 @@ void coerceActualForRefTupleFormal(Symbol* actual, ArgSymbol* formal,
 }
 
 void fixMoveIntoRefTuple(CallExpr* call) {
-  if (call == NULL || !call->isPrimitive(PRIM_MOVE)) {
-    return;
-  }
-
-  SymExpr* lhs = toSymExpr(call->get(1));
-  Expr* rhs = call->get(2);
-  if (lhs == NULL || rhs == NULL) {
-    return;
-  }
-
   if (call->id == breakOnResolveID) {
     gdbShouldBreakHere();
   }
 
+  if (call == NULL || !call->isPrimitive(PRIM_MOVE)) {
+    return;
+  }
+
   // Moves within certain functions should be skipped.
   if (isMoveToSkip(call)) {
+    return;
+  }
+
+  if (call->parentSymbol->id == 419856) gdbShouldBreakHere();
+
+  SymExpr* lhs = toSymExpr(call->get(1));
+  Expr* rhs = call->get(2);
+  if (lhs == NULL || rhs == NULL) {
     return;
   }
 
