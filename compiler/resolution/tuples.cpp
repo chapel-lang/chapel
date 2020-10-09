@@ -974,19 +974,15 @@ static void instantiateRefTupleRepack(FnSymbol *fn) {
   bool isFormalConst = formal->intent & INTENT_CONST;
   (void) isFormalConst;
 
+  INT_ASSERT(formal->isRef());
   INT_ASSERT(isFormalRef);
 
   AggregateType* originalType = toAggregateType(formal->getValType());
+  INT_ASSERT(!originalType->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
   INT_ASSERT(originalType->symbol->hasFlag(FLAG_TUPLE));
 
   AggregateType* newType = computeAllRefTuple(originalType);
-
-  //
-  // TODO: It doesn't seem "illegal" to repack a reference to a mixed
-  // tuple, so for now try leaving this assertion out.
-  // INT_ASSERT(!isTupleContainingAnyReferences(originalType));
-  //
-  INT_ASSERT(isTupleContainingOnlyReferences(newType));
+  INT_ASSERT(newType->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
 
   BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
@@ -1002,10 +998,33 @@ static void instantiateRefTupleRepack(FnSymbol *fn) {
     Symbol* from = toDefExpr(originalType->fields.get(i))->sym;
     Symbol* to = toDefExpr(newType->fields.get(i))->sym;
     Symbol* toName = new_CStringSymbol(to->name);
-    
+
+    // In ref tuples, all tuple elements are represented as ref tuples.
+    if (to->isRef()) {
+      TypeSymbol* toValTypeSym = to->getValType()->symbol;
+      INT_ASSERT(!toValTypeSym->hasFlag(FLAG_TUPLE_ALL_REF));
+    }
+
     VarSymbol* read = generateReadTupleField(formal, from, NULL, block);
+    VarSymbol* src = read;
+
+    // TODO (dlongnecke): Could coercions alone handle changing ref levels?
+    if (!from->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF) &&
+        to->type->symbol->hasFlag(FLAG_TUPLE_ALL_REF)) {
+      VarSymbol* repackTmp = newTemp("repack_tmp", to->type);
+      block->insertAtTail(new DefExpr(repackTmp));
+
+      const char* name = "chpl_refTupleRepack";
+      UnresolvedSymExpr* repack = new UnresolvedSymExpr(name);
+      CallExpr* repackCall = new CallExpr(repack, read);
+      CallExpr* move = new CallExpr(PRIM_MOVE, repackTmp, repackCall);
+      block->insertAtTail(move);
+
+      src = repackTmp;
+    }
+
     CallExpr* set = new CallExpr(PRIM_SET_MEMBER, new SymExpr(retSym),
-                                 toName, read);
+                                 toName, src);
     block->insertAtTail(set);
   }
 
@@ -1071,19 +1090,20 @@ static AggregateType* do_computeTupleWithIntent(bool           valueOnly,
       AggregateType* useAt = toAggregateType(useType);
       INT_ASSERT(useAt);
 
-      useType = do_computeTupleWithIntent(valueOnly, intent, useAt,
-                                          copyWith, testBlock, forCopy);
-
+      // TODO (dlongnecke): Try storing all refs to tuples as all-ref.
       if (allowReference) {
-        if (intent == INTENT_BLANK || intent == INTENT_CONST) {
+        bool isRefIntent = (intent & INTENT_REF);
+        if (intent == INTENT_BLANK || intent == INTENT_CONST ||
+            isRefIntent) {
           IntentTag concrete = concreteIntent(intent, useType);
+
+          useType = do_computeTupleWithIntent(valueOnly, concrete, useAt,
+                                              copyWith, testBlock,
+                                              forCopy);
+
           if ((concrete & INTENT_FLAG_REF)) {
-            makeRefType(useType);
-            useType = useType->getRefType();
+            INT_ASSERT(useType->symbol->hasFlag(FLAG_TUPLE_ALL_REF));
           }
-        } else if (intent & INTENT_REF) {
-          makeRefType(useType);
-          useType = useType->getRefType();
         }
       }
 
@@ -1293,7 +1313,12 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
           if (ArgSymbol* arg = toArgSymbol(se->symbol())) {
             IntentTag intent = concreteIntentForArg(arg);
             if ((intent & INTENT_FLAG_REF) != 0) {
-              t = t->getRefType();
+              if (t->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
+                t = computeAllRefTuple(toAggregateType(t));
+              } else {
+                makeRefType(t);
+                t = t->getRefType();
+              }
             }
           }
         }
@@ -1646,8 +1671,6 @@ void fixMoveIntoRefTuple(CallExpr* call) {
   if (isMoveToSkip(call)) {
     return;
   }
-
-  if (call->parentSymbol->id == 419856) gdbShouldBreakHere();
 
   SymExpr* lhs = toSymExpr(call->get(1));
   Expr* rhs = call->get(2);
