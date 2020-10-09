@@ -1522,7 +1522,7 @@ static bool isFormalTempConst(FnSymbol *fn, ArgSymbol *formal) {
   // Today, if we generate a default initializer for a type with const fields,
   // the formals that correspond to those fields have `in` intents. However, we
   // still need to set those temporaries that will be passed to those formals to
-  // be constant before calling the initializer, in case the initializer have
+  // be constant before calling the initializer, in case the initializer has
   // another argument that will use that temporary.
   //
   // This comes up in:
