@@ -100,7 +100,7 @@ static void backPropagateInFunction(BlockStmt* block) {
   for_alist_backward(stmt, block->body) {
     if (DefExpr* def = toDefExpr(stmt)) {
 
-      //1. set local variableis -- analysis
+      //1. set local variables -- analysis
       if (def->init || def->exprType) {
 
         if(def->init != NULL) {
