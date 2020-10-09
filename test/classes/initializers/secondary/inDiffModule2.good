@@ -1,4 +1,3 @@
-inDiffModule2.chpl:14: warning: initializers defined outside the module where the type was originally defined may cause issues
-inDiffModule2.chpl:14: note: This will no longer be a problem when constructors are deprecated
 In secondary initializer of class Foo
 {x = 10, y = true}
+{x = 2, y = true}
