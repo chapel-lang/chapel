@@ -2715,6 +2715,7 @@ asgn
 elen
 
 FILEID: 732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5
+multivariable
 rtmp
 urse
 
@@ -2956,7 +2957,9 @@ ttwang
 FILEID: c3b7f950-1f15-11e6-a3a6-10ddb1d4c3d5
 aarr
 aidx
+alocid
 bidx
+blocid
 bonachea
 chunkify
 escholarship
@@ -3323,14 +3326,20 @@ binarytrees
 chpldocumentation
 circularities
 desync
+eigvalsh
 gengraphs
 getcid
+globalvars
+gpakosz
 hepl
 illumos
+keypart
 libmvec
 librt
 libtool
+lmod
 memkind
+memleakslog
 nodbg
 nomail
 ousing
@@ -3345,18 +3354,23 @@ spack
 stdinredirect
 stripdirectories
 structors
+subsymbols
 teardowns
 vundle
+whereami
 writethis
 xbabe
 
 FILEID: f91458ec-2adb-11e6-a3a6-10ddb1d4c3d5
 awski
 bloomu
+cecs
+cristian
 cstop
 diku
 eidos
 facultyweb
+gonzaga
 iiit
 iiitd
 iiits
@@ -3364,6 +3378,7 @@ iith
 iitr
 laga
 malaga
+melia
 pune
 shtml
 summerofcode
@@ -4833,6 +4848,7 @@ refee
 retexpr
 retsym
 setref
+tlvy
 vclone
 wmikanik
 
@@ -5004,6 +5020,7 @@ FILEID: d774177c-244d-11e9-b712-843835579daa
 urse
 
 FILEID: fb18cb3c-244d-11e9-b712-843835579daa
+cursz
 errr
 mymethod
 
@@ -5308,6 +5325,12 @@ toadd
 FILEID: 4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5
 rmem
 
+FILEID: ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5
+logln
+
+FILEID: 22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5
+globalvars
+
 NATURAL:
 aarch
 abcd
@@ -5328,6 +5351,7 @@ addrs
 adjoint
 afaik
 afterwards
+aggregator
 akash
 akihiro
 akshansh
@@ -5421,6 +5445,7 @@ atomicness
 attaches
 attrs
 audrey
+australian
 authhdr
 autocopy
 autocrlf
@@ -5680,6 +5705,7 @@ compopts
 composability
 compsci
 concretize
+condruz
 condstmt
 condwait
 confchpldoc
@@ -6048,6 +6074,7 @@ eremoteio
 erestart
 erfc
 eric
+erin
 erofs
 errhandling
 errmsg
@@ -6353,6 +6380,7 @@ httpauth
 httpheader
 httppost
 https
+huazhong
 hugepages
 hugetlbfs
 hwloc
@@ -6718,6 +6746,7 @@ logdir
 logfiles
 login
 logtmp
+lohariwal
 loisel
 london
 longlong
@@ -6984,6 +7013,7 @@ nextinc
 nextint
 nextprime
 nfds
+nguyen
 niak
 nicholas
 nightlytesting
@@ -7238,6 +7268,7 @@ powm
 pozo
 prabhanjan
 pragmas
+prasad
 prasun
 preadv
 preallocated
@@ -7269,6 +7300,7 @@ printf
 prithvi
 privatebugs
 priy
+priyank
 prng
 procid
 procs
@@ -7496,7 +7528,9 @@ sanket
 santana
 sanz
 sapiens
+sarah
 sarthak
+sarthi
 sassert
 sassign
 saturday
@@ -7560,6 +7594,7 @@ seymour
 sgte
 shannon
 shapeful
+sharfuddin
 shasta
 shavian
 shavit
