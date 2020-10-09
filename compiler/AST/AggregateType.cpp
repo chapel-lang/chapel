@@ -2809,16 +2809,6 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
       USR_FATAL(fn, "an initializer cannot be declared without parentheses");
     }
 
-    if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
-        fn->getModule() != t->getModule()) {
-      // We are looking at a secondary initializer defined in a module
-      // other than the module defining the type.
-      USR_WARN(fn, "initializers defined outside the module where the "
-               "type was originally defined may cause issues");
-      USR_PRINT(fn, "This will no longer be a problem when constructors "
-                "are deprecated");
-    }
-
     if (ct->hasUserDefinedInit == false) {
       // We hadn't previously seen an initializer definition.
       // Update the field on the type appropriately.
