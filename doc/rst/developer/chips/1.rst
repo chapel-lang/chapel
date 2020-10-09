@@ -102,7 +102,7 @@ A CHIP can be Active or Inactive.
 
 
  * Inactive CHIPs are only of historical interest. If they were
-   implemented, the authoritative documention is elsewhere. The following
+   implemented, the authoritative documentation is elsewhere. The following
    keywords might also be useful in describing the status of an inactive
    CHIP:
     * Rejected - The proposal has been discussed and the Chapel project does
