@@ -184,6 +184,9 @@
   "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/optimizations/noAliasSets.cpp"
   ],
+  "ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5": [
+    "compiler/optimizations/preNormalizeOptimizations.cpp"
+  ],
   "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
     "compiler/optimizations/refPropagation.cpp"
   ],
@@ -319,9 +322,6 @@
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
   ],
-  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/11.rst"
-  ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
     "doc/rst/developer/chips/15.rst"
   ],
@@ -337,23 +337,26 @@
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/2.rst"
   ],
-  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/21.rst"
-  ],
   "554af092-652a-11e7-88ba-10ddb1d4c3d5": [
     "doc/rst/developer/chips/22.rst"
   ],
+  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/11.rst"
+  ],
+  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/21.rst"
+  ],
   "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/3.rst"
+    "doc/rst/developer/chips/inactive/3.rst"
   ],
   "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/4.rst"
+    "doc/rst/developer/chips/inactive/4.rst"
   ],
   "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/5.rst"
+    "doc/rst/developer/chips/inactive/5.rst"
   ],
   "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/9.rst"
+    "doc/rst/developer/chips/inactive/9.rst"
   ],
   "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/compilerOverview/compiler.tex"
@@ -416,6 +419,9 @@
   ],
   "f824f208-a3e4-11ea-8acb-843835579daa": [
     "doc/rst/technotes/globalvars.rst"
+  ],
+  "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/index.rst"
   ],
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
