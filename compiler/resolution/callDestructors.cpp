@@ -1102,6 +1102,7 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
                           rttSE->remove(), domField);
        call->insertBefore(new CallExpr(destroyFn, domTemp));
       }
+ // do something here
  // Whether we expanded it above or it is a no-op, we are done with it.
  call->remove();
 }

@@ -2297,6 +2297,12 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
     tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
+  if (UnresolvedSymExpr *callBase = toUnresolvedSymExpr(call->baseExpr)) {
+    if (startsWith(callBase->unresolved, astr_forallexpr)) {
+      fn->insertBeforeEpilogue(new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, tmp));
+    }
+  }
+
   FnSymbol* initFn = fn->getModule()->initFn;
 
   // Sometimes an array type is represented with a loop-expression, so we
