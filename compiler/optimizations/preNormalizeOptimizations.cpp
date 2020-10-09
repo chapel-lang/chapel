@@ -138,7 +138,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
 // 2: entering/exiting call
 // 3: information about call
 //
-// during resolution, the output is much more straighforward, and depth 0 is
+// during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG(int depth, const char *msg, BaseAST *node) {
   if (fReportAutoLocalAccess) {
