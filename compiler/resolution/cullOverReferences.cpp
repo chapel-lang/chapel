@@ -62,7 +62,7 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 0;
+static const int breakOnId1 = 1341627;
 static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
@@ -151,12 +151,24 @@ symExprIsSetByUse(SymExpr* use) {
       }
 
     } else if (call->isPrimitive(PRIM_SET_MEMBER)) {
-      // PRIM_SET_MEMBER to set the pointer inside of a reference
-      // counts as "setter"
-      // the below conditional would better be isRefType()
+
+      // Consider the field set if it is not a reference.
+      if (call->get(1) == use) {
+        if (!call->get(2)->typeInfo()->isRef()) {
+          return true;
+        }
+      }
+
+      // TODO (dlongnecke): This is the old code, which returns true _if_
+      // the field to be set is a ref (because refType will only be NULL
+      // if the type is already a ref). I'm keeping it here because I'm
+      // not sure if it's correct. What I wrote above seems like it would
+      // be the correct thing to do...
+      /*
       if (!call->get(2)->typeInfo()->refType) {
         return true;
       }
+      */
 
     } else if (call->isPrimitive(PRIM_RETURN) ||
                call->isPrimitive(PRIM_YIELD)) {
