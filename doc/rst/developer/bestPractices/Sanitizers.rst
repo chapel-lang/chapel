@@ -34,6 +34,15 @@ To only sanitize executables and not the compiler:
      unset CHPL_SANITIZE
      export CHPL_SANITIZE_EXE=address
 
+To get stack traces for the generated executable in terms of Chapel
+source line numbers, try compiling with:
+
+     chpl --cpp-lines -g --no-inline --savec <dirname> <program.chpl>
+
+To get them in terms of C source line numbers, use:
+
+     chpl --no-cpp-lines -g --no-inline --savec <dirname> <program.chpl>
+
 To get better stack traces when optimizations are enabled:
 
 .. code-block:: bash
