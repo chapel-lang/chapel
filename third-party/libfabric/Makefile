@@ -6,12 +6,12 @@ CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
 #
-# Cray X* builds are cross-compilations.
+# Cray builds are cross-compilations.
 #
-ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
-else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
+else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_LIBFABRIC_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 endif
 
 CHPL_LIBFABRIC_CFG_OPTIONS += --enable-static \
@@ -55,7 +55,7 @@ configure-libfabric: FORCE
 	cd $(LIBFABRIC_SUBDIR) && touch -c aclocal.m4
 	sleep 1
 	touch $(LIBFABRIC_SUBDIR)/configure
-	find $(LIBFABRIC_SUBDIR)/. -name Makefile.in | xargs touch
+	find $(LIBFABRIC_SUBDIR)/. -name "*.in" | xargs touch
 #
 # Then configure
 #

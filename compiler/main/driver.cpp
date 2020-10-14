@@ -46,11 +46,16 @@
 #include "symbol.h"
 #include "timer.h"
 #include "version.h"
+#include "visibleFunctions.h"
 
 #include <inttypes.h>
 #include <string>
 #include <sstream>
 #include <map>
+
+#ifdef HAVE_LLVM
+#include "llvm/Config/llvm-config.h"
+#endif
 
 std::map<std::string, const char*> envMap;
 
@@ -123,7 +128,6 @@ bool ignore_warnings = false;
 int  fcg = 0;
 bool fCacheRemote = false;
 bool fFastFlag = false;
-bool fUseNoinit = true;
 bool fNoCopyPropagation = false;
 bool fNoDeadCodeElimination = false;
 bool fNoScalarReplacement = false;
@@ -196,6 +200,7 @@ int fLinkStyle = LS_DEFAULT; // use backend compiler's default
 bool fUserSetLocal = false;
 bool fLocal;   // initialized in postLocal()
 bool fIgnoreLocalClasses = false;
+bool fAllowNoinitArrayNotPod = false;
 bool fNoLifetimeChecking = false;
 bool fNoSplitInit = false;
 bool fNoEarlyDeinit = false;
@@ -246,11 +251,13 @@ char defaultDist[256] = "DefaultDist";
 int instantiation_limit = 256;
 bool printSearchDirs = false;
 bool printModuleFiles = false;
-bool llvmCodegen = false;
+bool fLlvmCodegen = false;
+static bool fYesLlvmCodegen = false;
+static bool fNoLlvmCodegen = false;
 #ifdef HAVE_LLVM
-bool externC = true;
+bool fAllowExternC = true;
 #else
-bool externC = false;
+bool fAllowExternC = false;
 #endif
 char breakOnCodegenCname[256] = "";
 int breakOnCodegenID = 0;
@@ -484,7 +491,6 @@ static void setupChplHome(const char* argv0) {
   }
 }
 
-// NOTE: We are leaking memory here by dropping astr() results on the ground.
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -695,8 +701,17 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
   setLibmode(desc, unused);
 }
 
+static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
+{
+  if (fYesLlvmCodegen)
+    fNoLlvmCodegen = false;
+  else
+    fNoLlvmCodegen = true;
+}
+
 static void setVectorize(const ArgumentDescription* desc, const char* unused)
 {
+  // fNoVectorize is set by the flag processing
   if (fNoVectorize)
     fYesVectorize = false;
   else
@@ -936,8 +951,7 @@ static ArgumentDescription arg_desc[] = {
  {"scalar-replace-limit", ' ', "<limit>", "Limit on the size of tuples being replaced during scalar replacement", "I", &scalar_replace_limit, "CHPL_SCALAR_REPLACE_TUPLE_LIMIT", NULL},
  {"tuple-copy-opt", ' ', NULL, "Enable [disable] tuple (memcpy) optimization", "n", &fNoTupleCopyOpt, "CHPL_DISABLE_TUPLE_COPY_OPT", NULL},
  {"tuple-copy-limit", ' ', "<limit>", "Limit on the size of tuples considered for optimization", "I", &tuple_copy_limit, "CHPL_TUPLE_COPY_LIMIT", NULL},
- {"use-noinit", ' ', NULL, "Enable [disable] ability to skip default initialization through the keyword noinit", "N", &fUseNoinit, NULL, NULL},
- {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records (experimental)", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
+ {"infer-local-fields", ' ', NULL, "Enable [disable] analysis to infer local fields in classes and records", "n", &fNoInferLocalFields, "CHPL_DISABLE_INFER_LOCAL_FIELDS", NULL},
  {"vectorize", ' ', NULL, "Enable [disable] generation of vectorization hints", "n", &fNoVectorize, "CHPL_DISABLE_VECTORIZATION", setVectorize},
 
  {"auto-local-access", ' ', NULL, "Enable [disable] using local access automatically", "N", &fAutoLocalAccess, "CHPL_DISABLE_AUTO_LOCAL_ACCESS", NULL},
@@ -974,7 +988,7 @@ static ArgumentDescription arg_desc[] = {
  {"static", ' ', NULL, "Generate a statically linked binary", "F", &fLinkStyle, NULL, NULL},
 
  {"", ' ', NULL, "LLVM Code Generation Options", NULL, NULL, NULL, NULL},
- {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &llvmCodegen, "CHPL_LLVM_CODEGEN", NULL},
+ {"llvm", ' ', NULL, "[Don't] use the LLVM code generator", "N", &fYesLlvmCodegen, "CHPL_LLVM_CODEGEN", setLlvmCodegen},
  {"llvm-wide-opt", ' ', NULL, "Enable [disable] LLVM wide pointer optimizations", "N", &fLLVMWideOpt, "CHPL_LLVM_WIDE_OPTS", NULL},
  {"mllvm", ' ', "<flags>", "LLVM flags (can be specified multiple times)", "S", NULL, "CHPL_MLLVM", setLLVMFlags},
 
@@ -984,9 +998,6 @@ static ArgumentDescription arg_desc[] = {
  {"print-passes-file", ' ', "<filename>", "Print compiler passes to <filename>", "S", NULL, "CHPL_PRINT_PASSES_FILE", setPrintPassesFile},
 
  {"", ' ', NULL, "Miscellaneous Options", NULL, NULL, NULL, NULL},
-// Support for extern { c-code-here } blocks could be toggled with this
-// flag, but instead we just leave it on if the compiler can do it.
-// {"extern-c", ' ', NULL, "Enable [disable] extern C block support", "f", &externC, "CHPL_EXTERN_C", NULL},
  DRIVER_ARG_DEVELOPER,
  {"explain-call", ' ', "<call>[:<module>][:<line>]", "Explain resolution of call", "S256", fExplainCall, NULL, NULL},
  {"explain-instantiation", ' ', "<function|type>[:<module>][:<line>]", "Explain instantiation of type", "S256", fExplainInstantiation, NULL, NULL},
@@ -1071,6 +1082,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
+ {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
  DRIVER_ARG_BREAKFLAGS_COMMON,
  {"break-on-codegen", ' ', NULL, "Break when function cname is code generated", "S256", &breakOnCodegenCname, "CHPL_BREAK_ON_CODEGEN", NULL},
  {"break-on-codegen-id", ' ', NULL, "Break when id is code generated", "I", &breakOnCodegenID, "CHPL_BREAK_ON_CODEGEN_ID", NULL},
@@ -1145,6 +1157,10 @@ static void printStuff(const char* argv0) {
   if (fPrintVersion) {
     fprintf(stdout, "%s version %s\n", sArgState.program_name, compileVersion);
 
+#ifdef HAVE_LLVM
+    fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+#endif
+
     fPrintCopyright  = true;
     printedSomething = true;
     shouldExit       = true;
@@ -1213,6 +1229,35 @@ static void printStuff(const char* argv0) {
 
   if (shouldExit) {
     clean_exit(0);
+  }
+}
+
+static void setupLLVMCodeGen() {
+  if (fYesLlvmCodegen) {
+    fLlvmCodegen = true;
+  } else if (fNoLlvmCodegen) {
+    fLlvmCodegen = false;
+  } else {
+    const char* chpl_llvm = getenv("CHPL_LLVM");
+    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
+      fLlvmCodegen = false;
+    } else {
+#ifdef HAVE_LLVM
+      const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
+      if (chpl_llvm_by_default != NULL &&
+          0 != strcmp(chpl_llvm_by_default, "0")) {
+        // LLVM-by-default was requested
+        fLlvmCodegen = true;
+      } else {
+        // LLVM-by-default not requested
+        // (in the future, this will change to `true`)
+        fLlvmCodegen = false;
+      }
+#else
+      // Not built with LLVM
+      fLlvmCodegen = false;
+#endif
+    }
   }
 }
 
@@ -1342,7 +1387,8 @@ static void setupChplGlobals(const char* argv0) {
   }
 
   // tell printchplenv that we're doing an LLVM build
-  if (llvmCodegen) {
+  setupLLVMCodeGen();
+  if (fLlvmCodegen) {
     envMap["CHPL_LLVM_CODEGEN"] = "llvm";
   }
 
@@ -1393,7 +1439,7 @@ static void postVectorize() {
     fYesVectorize = false;
   } else if (fYesVectorize) {
     fNoVectorize = false;
-  } else if (llvmCodegen) {
+  } else if (fLlvmCodegen) {
     // LLVM code generator defaults to enabling vectorization
     fYesVectorize = true;
     fNoVectorize = false;
@@ -1410,7 +1456,7 @@ static void setMultiLocaleInterop() {
     return;
   }
 
-  if (llvmCodegen) {
+  if (fLlvmCodegen) {
     USR_FATAL("Multi-locale libraries do not support --llvm");
   }
 
@@ -1433,8 +1479,20 @@ static void setPrintCppLineno() {
 }
 
 static void checkLLVMCodeGen() {
-#ifndef HAVE_LLVM
- if (llvmCodegen) USR_FATAL("This compiler was built without LLVM support");
+#ifdef HAVE_LLVM
+  // LLVM does not currently work on 32-bit x86
+  bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
+  if (fLlvmCodegen && unsupportedLlvmConfiguration)
+    USR_FATAL("--llvm not yet supported for this architecture");
+
+  if (0 == strcmp(CHPL_LLVM, "none")) {
+    if (fYesLlvmCodegen)
+      USR_FATAL("--llvm not supported when CHPL_LLVM=none");
+  }
+#else
+  // compiler wasn't built with LLVM, so if LLVM is enabled, error
+  if (fLlvmCodegen)
+    USR_FATAL("This compiler was built without LLVM support");
 #endif
 }
 
@@ -1459,7 +1517,7 @@ static void checkUnsupportedConfigs(void) {
   // Check for cce classic
   if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
     const char* cce_variant = getenv("CRAY_PE_CCE_VARIANT");
-    if (strstr(cce_variant, "CC=Classic")) {
+    if (cce_variant && strstr(cce_variant, "CC=Classic")) {
       USR_FATAL("CCE classic (cce < 9.x.x / 9.x.x-classic) is no longer supported."
                  " Please notify the Chapel team if this configuration is"
                  " important to you.");
@@ -1545,6 +1603,7 @@ int main(int argc, char* argv[]) {
 
     initFlags();
     initAstrConsts();
+    initTypeHelperNames();
     initRootModule();
     initPrimitive();
     initPrimitiveTypes();

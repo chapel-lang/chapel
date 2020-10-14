@@ -1,9 +1,8 @@
 //===- Transforms/Instrumentation/MemorySanitizer.h - MSan Pass -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,10 +18,17 @@
 
 namespace llvm {
 
+struct MemorySanitizerOptions {
+  MemorySanitizerOptions() : MemorySanitizerOptions(0, false, false){};
+  MemorySanitizerOptions(int TrackOrigins, bool Recover, bool Kernel);
+  bool Kernel;
+  int TrackOrigins;
+  bool Recover;
+};
+
 // Insert MemorySanitizer instrumentation (detection of uninitialized reads)
-FunctionPass *createMemorySanitizerLegacyPassPass(int TrackOrigins = 0,
-                                        bool Recover = false,
-                                        bool EnableKmsan = false);
+FunctionPass *
+createMemorySanitizerLegacyPassPass(MemorySanitizerOptions Options = {});
 
 /// A function pass for msan instrumentation.
 ///
@@ -31,17 +37,13 @@ FunctionPass *createMemorySanitizerLegacyPassPass(int TrackOrigins = 0,
 /// yet, the pass inserts the declarations. Otherwise the existing globals are
 /// used.
 struct MemorySanitizerPass : public PassInfoMixin<MemorySanitizerPass> {
-  MemorySanitizerPass(int TrackOrigins = 0, bool Recover = false,
-                      bool EnableKmsan = false)
-      : TrackOrigins(TrackOrigins), Recover(Recover), EnableKmsan(EnableKmsan) {
-  }
+  MemorySanitizerPass(MemorySanitizerOptions Options) : Options(Options) {}
 
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &FAM);
+  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
 
 private:
-  int TrackOrigins;
-  bool Recover;
-  bool EnableKmsan;
+  MemorySanitizerOptions Options;
 };
 }
 

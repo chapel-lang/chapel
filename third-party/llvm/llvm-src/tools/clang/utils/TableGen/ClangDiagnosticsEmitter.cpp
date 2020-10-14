@@ -1,9 +1,8 @@
 //=- ClangDiagnosticsEmitter.cpp - Generate Clang diagnostics tables -*- C++ -*-
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "TableGenBackends.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/PointerUnion.h"
@@ -134,7 +134,7 @@ namespace {
 
     const Record *ExplicitDef;
 
-    GroupInfo() : ExplicitDef(nullptr) {}
+    GroupInfo() : IDNo(0), ExplicitDef(nullptr) {}
   };
 } // end anonymous namespace.
 
@@ -554,7 +554,7 @@ public:
 
   ModifierType ModKind;
   std::vector<Piece *> Options;
-  int Index;
+  int Index = 0;
 
   static bool classof(const Piece *P) {
     return P->getPieceClass() == SelectPieceClass ||
@@ -566,7 +566,7 @@ struct PluralPiece : SelectPiece {
   PluralPiece() : SelectPiece(PluralPieceClass, MT_Plural) {}
 
   std::vector<Piece *> OptionPrefixes;
-  int Index;
+  int Index = 0;
 
   static bool classof(const Piece *P) {
     return P->getPieceClass() == PluralPieceClass;
@@ -1188,9 +1188,8 @@ static bool isRemark(const Record &Diag) {
 
 /// ClangDiagsDefsEmitter - The top-level class emits .def files containing
 /// declarations of Clang diagnostics.
-namespace clang {
-void EmitClangDiagsDefs(RecordKeeper &Records, raw_ostream &OS,
-                        const std::string &Component) {
+void clang::EmitClangDiagsDefs(RecordKeeper &Records, raw_ostream &OS,
+                               const std::string &Component) {
   // Write the #if guard
   if (!Component.empty()) {
     std::string ComponentName = StringRef(Component).upper();
@@ -1289,7 +1288,6 @@ void EmitClangDiagsDefs(RecordKeeper &Records, raw_ostream &OS,
     OS << ")\n";
   }
 }
-} // end namespace clang
 
 //===----------------------------------------------------------------------===//
 // Warning Group Tables generation
@@ -1529,8 +1527,7 @@ static void emitCategoryTable(RecordKeeper &Records, raw_ostream &OS) {
   OS << "#endif // GET_CATEGORY_TABLE\n\n";
 }
 
-namespace clang {
-void EmitClangDiagGroups(RecordKeeper &Records, raw_ostream &OS) {
+void clang::EmitClangDiagGroups(RecordKeeper &Records, raw_ostream &OS) {
   // Compute a mapping from a DiagGroup to all of its parents.
   DiagGroupParentMap DGParentMap(Records);
 
@@ -1566,7 +1563,6 @@ void EmitClangDiagGroups(RecordKeeper &Records, raw_ostream &OS) {
                 OS);
   emitCategoryTable(Records, OS);
 }
-} // end namespace clang
 
 //===----------------------------------------------------------------------===//
 // Diagnostic name index generation
@@ -1583,8 +1579,7 @@ struct RecordIndexElement
 };
 } // end anonymous namespace.
 
-namespace clang {
-void EmitClangDiagsIndexName(RecordKeeper &Records, raw_ostream &OS) {
+void clang::EmitClangDiagsIndexName(RecordKeeper &Records, raw_ostream &OS) {
   const std::vector<Record*> &Diags =
     Records.getAllDerivedDefinitions("Diagnostic");
 
@@ -1674,7 +1669,7 @@ void writeDiagnosticText(DiagnosticTextBuilder &Builder, const Record *R,
 }  // namespace
 }  // namespace docs
 
-void EmitClangDiagDocs(RecordKeeper &Records, raw_ostream &OS) {
+void clang::EmitClangDiagDocs(RecordKeeper &Records, raw_ostream &OS) {
   using namespace docs;
 
   // Get the documentation introduction paragraph.
@@ -1793,5 +1788,3 @@ void EmitClangDiagDocs(RecordKeeper &Records, raw_ostream &OS) {
     OS << "\n";
   }
 }
-
-} // end namespace clang

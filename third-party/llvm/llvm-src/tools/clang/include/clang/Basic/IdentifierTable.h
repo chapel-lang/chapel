@@ -1,9 +1,8 @@
 //===- IdentifierTable.h - Hash table for identifier lookup -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -385,6 +384,17 @@ public:
     return getName().startswith("<#") && getName().endswith("#>");
   }
 
+  /// Determine whether \p this is a name reserved for the implementation (C99
+  /// 7.1.3, C++ [lib.global.names]).
+  bool isReservedName(bool doubleUnderscoreOnly = false) const {
+    if (getLength() < 2)
+      return false;
+    const char *Name = getNameStart();
+    return Name[0] == '_' &&
+           (Name[1] == '_' ||
+            (Name[1] >= 'A' && Name[1] <= 'Z' && !doubleUnderscoreOnly));
+  }
+
   /// Provide less than operator for lexicographical sorting.
   bool operator<(const IdentifierInfo &RHS) const {
     return getName() < RHS.getName();
@@ -582,6 +592,8 @@ public:
   iterator end() const   { return HashTable.end(); }
   unsigned size() const  { return HashTable.size(); }
 
+  iterator find(StringRef Name) const { return HashTable.find(Name); }
+
   /// Print some statistics to stderr that indicate how well the
   /// hashing is doing.
   void PrintStats() const;
@@ -750,6 +762,12 @@ public:
   bool isUnarySelector() const {
     return getIdentifierInfoFlag() == ZeroArg;
   }
+
+  /// If this selector is the specific keyword selector described by Names.
+  bool isKeywordSelector(ArrayRef<StringRef> Names) const;
+
+  /// If this selector is the specific unary selector described by Name.
+  bool isUnarySelector(StringRef Name) const;
 
   unsigned getNumArgs() const;
 
@@ -938,9 +956,6 @@ struct DenseMapInfo<clang::Selector> {
     return LHS == RHS;
   }
 };
-
-template <>
-struct isPodLike<clang::Selector> { static const bool value = true; };
 
 template<>
 struct PointerLikeTypeTraits<clang::Selector> {

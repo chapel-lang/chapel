@@ -1,9 +1,8 @@
 //===- CodeGenInstruction.h - Instruction Class Wrapper ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,10 +29,11 @@ template <typename T> class ArrayRef;
   class CGIOperandList {
   public:
     class ConstraintInfo {
-      enum { None, EarlyClobber, Tied } Kind;
-      unsigned OtherTiedOperand;
+      enum { None, EarlyClobber, Tied } Kind = None;
+      unsigned OtherTiedOperand = 0;
+
     public:
-      ConstraintInfo() : Kind(None) {}
+      ConstraintInfo() = default;
 
       static ConstraintInfo getEarlyClobber() {
         ConstraintInfo I;
@@ -232,6 +232,7 @@ template <typename T> class ArrayRef;
     std::vector<Record*> ImplicitDefs, ImplicitUses;
 
     // Various boolean values we track for the instruction.
+    bool isPreISelOpcode : 1;
     bool isReturn : 1;
     bool isEHScopeReturn : 1;
     bool isBranch : 1;
@@ -250,6 +251,7 @@ template <typename T> class ArrayRef;
     bool mayLoad_Unset : 1;
     bool mayStore : 1;
     bool mayStore_Unset : 1;
+    bool mayRaiseFPException : 1;
     bool isPredicable : 1;
     bool isConvertibleToThreeAddress : 1;
     bool isCommutable : 1;
@@ -276,6 +278,7 @@ template <typename T> class ArrayRef;
     bool hasChain : 1;
     bool hasChain_Inferred : 1;
     bool variadicOpsAreDefs : 1;
+    bool isAuthenticated : 1;
 
     std::string DeprecatedReason;
     bool HasComplexDeprecationPredicate;
@@ -307,7 +310,17 @@ template <typename T> class ArrayRef;
     // This can be used on intructions that use typeN or ptypeN to identify
     // operands that should be considered as pointers even though SelectionDAG
     // didn't make a distinction between integer and pointers.
-    bool isOperandAPointer(unsigned i) const;
+    bool isOperandAPointer(unsigned i) const {
+      return isOperandImpl(i, "IsPointer");
+    }
+
+    /// Check if the operand is required to be an immediate.
+    bool isOperandImmArg(unsigned i) const {
+      return isOperandImpl(i, "IsImmediate");
+    }
+
+  private:
+    bool isOperandImpl(unsigned i, StringRef PropertyName) const;
   };
 
 
@@ -331,9 +344,9 @@ template <typename T> class ArrayRef;
     struct ResultOperand {
     private:
       std::string Name;
-      Record *R;
+      Record *R = nullptr;
+      int64_t Imm = 0;
 
-      int64_t Imm;
     public:
       enum {
         K_Record,

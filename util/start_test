@@ -678,6 +678,11 @@ def set_up_environment():
     else:
         args.execopts = ""
 
+    # memory leak
+    if args.mem_leaks:
+        os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
+        args.execopts += " --memLeaks"
+
     # memory leak log
     if args.mem_leaks_log:
         os.environ["CHPL_MEM_LEAK_TESTING"] = "true"
@@ -1032,6 +1037,8 @@ def set_up_executables():
     logger.write('[localeModel: "{0}"]'.format(locale_model))
     os.environ["CHPL_LOCALE_MODEL"] = locale_model
 
+    os.environ["CHPL_LLVM"] = chpl_llvm.get()
+
     # skip stdin tests for most custom launchers, except for amdprun and slurm
     if (launcher != "none" and launcher != "amudprun" and launcher !=
         "slurm-srun" and not os.environ.get("CHPL_NO_STDIN_REDIRECT")
@@ -1299,10 +1306,13 @@ def parser_setup():
     # log_file
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
+    # mem leaks
+    parser.add_argument("-memleaks", "-memleaks", "-memLeaks", "--memLeaks",
+            action="store_true", dest="mem_leaks", help="run with --memLeaks")
     # mem leaks log
-    parser.add_argument("-memleaks", "--memleaks", action="store",
-            dest="mem_leaks_log", help=("set location for memLeaks log, "
-                "and run with the --memLeaksLog flag"))
+    parser.add_argument("-memleakslog", "--memleakslog", "-memLeaksLog",
+            "--memLeaksLog", action="store", dest="mem_leaks_log", help=("set"
+            " location for memLeaks log, and run with --memLeaksLog"))
     # valgrind
     parser.add_argument("-valgrind", "--valgrind", action="store_true",
             dest="valgrind", help="run everything using valgrind")

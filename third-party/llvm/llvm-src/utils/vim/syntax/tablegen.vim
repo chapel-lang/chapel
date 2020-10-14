@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:   TableGen
 " Maintainer: The LLVM team, http://llvm.org/
-" Version:    $Revision: 235369 $
+" Version:    $Revision$
 
 if version < 600
   syntax clear
@@ -14,7 +14,7 @@ syntax sync minlines=100
 
 syn case match
 
-syn keyword tgKeyword   def let in code dag field include defm foreach
+syn keyword tgKeyword   def let in code dag field include defm foreach defset defvar if then else
 syn keyword tgType      class int string list bit bits multiclass
 
 syn match   tgNumber    /\<\d\+\>/

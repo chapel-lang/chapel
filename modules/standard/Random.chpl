@@ -64,8 +64,7 @@ module Random {
   public use RandomSupport;
   public use NPBRandom;
   public use PCGRandom;
-  import HaltWrappers;
-  import Set;
+  import Set.set;
 
 
 
@@ -314,7 +313,7 @@ module Random {
         }
       } else {
         if numElements < log2(X.size) {
-          var indices: Set.set(int);
+          var indices: set(int);
           var i: int = 0;
           while i < numElements {
             var randVal = stream.getNext(resultType=int, 0, X.size-1);
@@ -766,9 +765,10 @@ module Random {
   */
   module PCGRandom {
 
-    use RandomSupport;
+    use super.RandomSupport;
+    private use Random;
     public use PCGRandomLib;
-    private use ChapelLocks;
+    use ChapelLocks;
 
     // How many generators do we need for this type?
     private
@@ -964,6 +964,8 @@ module Random {
 
        */
       proc getNext(min: eltType, max:eltType): eltType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
@@ -978,6 +980,8 @@ module Random {
        */
       proc getNext(type resultType,
                    min: resultType, max:resultType): resultType {
+        use HaltWrappers;
+
         _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
@@ -1535,6 +1539,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
+    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         for i in ranges(dim) do
@@ -1552,6 +1557,7 @@ module Random {
     // PCGRandomStream iterator implementation
     //
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1568,9 +1574,11 @@ module Random {
     }
 
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);
@@ -2448,8 +2456,8 @@ module Random {
   */
   module NPBRandom {
 
-    use RandomSupport;
-    private use ChapelLocks;
+    use super.RandomSupport;
+    use ChapelLocks;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level
@@ -2504,6 +2512,8 @@ module Random {
       proc init(type eltType = real(64),
                 seed: int(64) = SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
+        use HaltWrappers;
+
         this.eltType = eltType;
 
         // The mod operation is written in these steps in order
@@ -2800,6 +2810,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
+    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         for i in ranges(dim) do
@@ -2817,6 +2828,7 @@ module Random {
     // RandomStream iterator implementation
     //
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2834,9 +2846,11 @@ module Random {
     }
 
     pragma "no doc"
+    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
+      use DSIUtil;
       param multiplier = if resultType == complex then 2 else 1;
       const ZD = computeZeroBasedDomain(D);
       const innerRange = followThis(ZD.rank-1);

@@ -13,6 +13,7 @@ tablegen(LLVM MipsGenMCPseudoLowering.inc -gen-pseudo-lowering)
 tablegen(LLVM MipsGenRegisterBank.inc -gen-register-bank)
 tablegen(LLVM MipsGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM MipsGenSubtargetInfo.inc -gen-subtarget)
+tablegen(LLVM MipsGenExegesis.inc -gen-exegesis)
 
 add_public_tablegen_target(MipsCommonTableGen)
 
@@ -60,6 +61,5 @@ add_llvm_target(MipsCodeGen
 
 add_subdirectory(AsmParser)
 add_subdirectory(Disassembler)
-add_subdirectory(InstPrinter)
 add_subdirectory(MCTargetDesc)
 add_subdirectory(TargetInfo)

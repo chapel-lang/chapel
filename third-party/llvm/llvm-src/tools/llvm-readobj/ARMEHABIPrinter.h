@@ -1,9 +1,8 @@
 //===--- ARMEHABIPrinter.h - ARM EHABI Unwind Information Printer ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -330,6 +329,7 @@ class PrinterContext {
 
   ScopedPrinter &SW;
   const object::ELFFile<ET> *ELF;
+  StringRef FileName;
   const Elf_Shdr *Symtab;
   ArrayRef<Elf_Word> ShndxTable;
 
@@ -353,8 +353,8 @@ class PrinterContext {
 
 public:
   PrinterContext(ScopedPrinter &SW, const object::ELFFile<ET> *ELF,
-                 const Elf_Shdr *Symtab)
-      : SW(SW), ELF(ELF), Symtab(Symtab) {}
+                 StringRef FileName, const Elf_Shdr *Symtab)
+      : SW(SW), ELF(ELF), FileName(FileName), Symtab(Symtab) {}
 
   void PrintUnwindInformation() const;
 };
@@ -366,12 +366,14 @@ template <typename ET>
 ErrorOr<StringRef>
 PrinterContext<ET>::FunctionAtAddress(unsigned Section,
                                       uint64_t Address) const {
+  if (!Symtab)
+    return readobj_error::unknown_symbol;
   auto StrTableOrErr = ELF->getStringTableForSymtab(*Symtab);
   if (!StrTableOrErr)
-    error(StrTableOrErr.takeError());
+    reportError(StrTableOrErr.takeError(), FileName);
   StringRef StrTable = *StrTableOrErr;
 
-  for (const Elf_Sym &Sym : unwrapOrError(ELF->symbols(Symtab)))
+  for (const Elf_Sym &Sym : unwrapOrError(FileName, ELF->symbols(Symtab)))
     if (Sym.st_shndx == Section && Sym.st_value == Address &&
         Sym.getType() == ELF::STT_FUNC) {
       auto NameOrErr = Sym.getName(StrTable);
@@ -397,16 +399,16 @@ PrinterContext<ET>::FindExceptionTable(unsigned IndexSectionIndex,
   /// handling table.  Use this symbol to recover the actual exception handling
   /// table.
 
-  for (const Elf_Shdr &Sec : unwrapOrError(ELF->sections())) {
+  for (const Elf_Shdr &Sec : unwrapOrError(FileName, ELF->sections())) {
     if (Sec.sh_type != ELF::SHT_REL || Sec.sh_info != IndexSectionIndex)
       continue;
 
     auto SymTabOrErr = ELF->getSection(Sec.sh_link);
     if (!SymTabOrErr)
-      error(SymTabOrErr.takeError());
+      reportError(SymTabOrErr.takeError(), FileName);
     const Elf_Shdr *SymTab = *SymTabOrErr;
 
-    for (const Elf_Rel &R : unwrapOrError(ELF->rels(&Sec))) {
+    for (const Elf_Rel &R : unwrapOrError(FileName, ELF->rels(&Sec))) {
       if (R.r_offset != static_cast<unsigned>(IndexTableOffset))
         continue;
 
@@ -416,7 +418,7 @@ PrinterContext<ET>::FindExceptionTable(unsigned IndexSectionIndex,
       RelA.r_addend = 0;
 
       const Elf_Sym *Symbol =
-          unwrapOrError(ELF->getRelocationSymbol(&RelA, SymTab));
+          unwrapOrError(FileName, ELF->getRelocationSymbol(&RelA, SymTab));
 
       auto Ret = ELF->getSection(Symbol, SymTab, ShndxTable);
       if (!Ret)
@@ -551,13 +553,15 @@ void PrinterContext<ET>::PrintIndexTable(unsigned SectionIndex,
       const Elf_Shdr *EHT =
         FindExceptionTable(SectionIndex, Entry * IndexTableEntrySize + 4);
 
-      if (auto Name = ELF->getSectionName(EHT))
-        SW.printString("ExceptionHandlingTable", *Name);
+      if (EHT)
+        if (auto Name = ELF->getSectionName(EHT))
+          SW.printString("ExceptionHandlingTable", *Name);
 
       uint64_t TableEntryOffset = PREL31(Word1, IT->sh_addr);
       SW.printHex("TableEntryOffset", TableEntryOffset);
 
-      PrintExceptionTable(IT, EHT, TableEntryOffset);
+      if (EHT)
+        PrintExceptionTable(IT, EHT, TableEntryOffset);
     }
   }
 }
@@ -567,7 +571,7 @@ void PrinterContext<ET>::PrintUnwindInformation() const {
   DictScope UI(SW, "UnwindInformation");
 
   int SectionIndex = 0;
-  for (const Elf_Shdr &Sec : unwrapOrError(ELF->sections())) {
+  for (const Elf_Shdr &Sec : unwrapOrError(FileName, ELF->sections())) {
     if (Sec.sh_type == ELF::SHT_ARM_EXIDX) {
       DictScope UIT(SW, "UnwindIndexTable");
 

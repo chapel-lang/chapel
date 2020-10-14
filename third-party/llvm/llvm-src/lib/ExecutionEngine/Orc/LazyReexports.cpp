@@ -1,9 +1,8 @@
 //===---------- LazyReexports.cpp - Utilities for lazy reexports ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -52,18 +51,16 @@ LazyCallThroughManager::callThroughToSymbol(JITTargetAddress TrampolineAddr) {
     SymbolName = I->second.second;
   }
 
-  auto LookupResult = ES.lookup(JITDylibSearchList({{SourceJD, true}}),
-                                {SymbolName}, NoDependenciesToRegister, true);
+  auto LookupResult = ES.lookup(
+      makeJITDylibSearchOrder(SourceJD, JITDylibLookupFlags::MatchAllSymbols),
+      SymbolName);
 
   if (!LookupResult) {
     ES.reportError(LookupResult.takeError());
     return ErrorHandlerAddr;
   }
 
-  assert(LookupResult->size() == 1 && "Unexpected number of results");
-  assert(LookupResult->count(SymbolName) && "Unexpected result");
-
-  auto ResolvedAddr = LookupResult->begin()->second.getAddress();
+  auto ResolvedAddr = LookupResult->getAddress();
 
   std::shared_ptr<NotifyResolvedFunction> NotifyResolved = nullptr;
   {
@@ -95,6 +92,7 @@ createLocalLazyCallThroughManager(const Triple &T, ExecutionSession &ES,
         inconvertibleErrorCode());
 
   case Triple::aarch64:
+  case Triple::aarch64_32:
     return LocalLazyCallThroughManager::Create<OrcAArch64>(ES,
                                                            ErrorHandlerAddr);
 
@@ -125,7 +123,8 @@ createLocalLazyCallThroughManager(const Triple &T, ExecutionSession &ES,
 
 LazyReexportsMaterializationUnit::LazyReexportsMaterializationUnit(
     LazyCallThroughManager &LCTManager, IndirectStubsManager &ISManager,
-    JITDylib &SourceJD, SymbolAliasMap CallableAliases, VModuleKey K)
+    JITDylib &SourceJD, SymbolAliasMap CallableAliases, ImplSymbolMap *SrcJDLoc,
+    VModuleKey K)
     : MaterializationUnit(extractFlags(CallableAliases), std::move(K)),
       LCTManager(LCTManager), ISManager(ISManager), SourceJD(SourceJD),
       CallableAliases(std::move(CallableAliases)),
@@ -133,7 +132,8 @@ LazyReexportsMaterializationUnit::LazyReexportsMaterializationUnit(
           [&ISManager](JITDylib &JD, const SymbolStringPtr &SymbolName,
                        JITTargetAddress ResolvedAddr) {
             return ISManager.updatePointer(*SymbolName, ResolvedAddr);
-          })) {}
+          })),
+      AliaseeTable(SrcJDLoc) {}
 
 StringRef LazyReexportsMaterializationUnit::getName() const {
   return "<Lazy Reexports>";
@@ -153,7 +153,7 @@ void LazyReexportsMaterializationUnit::materialize(
 
   if (!CallableAliases.empty())
     R.replace(lazyReexports(LCTManager, ISManager, SourceJD,
-                            std::move(CallableAliases)));
+                            std::move(CallableAliases), AliaseeTable));
 
   IndirectStubsManager::StubInitsMap StubInits;
   for (auto &Alias : RequestedAliases) {
@@ -172,6 +172,9 @@ void LazyReexportsMaterializationUnit::materialize(
         std::make_pair(*CallThroughTrampoline, Alias.second.AliasFlags);
   }
 
+  if (AliaseeTable != nullptr && !RequestedAliases.empty())
+    AliaseeTable->trackImpls(RequestedAliases, &SourceJD);
+
   if (auto Err = ISManager.createStubs(StubInits)) {
     SourceJD.getExecutionSession().reportError(std::move(Err));
     R.failMaterialization();
@@ -182,8 +185,9 @@ void LazyReexportsMaterializationUnit::materialize(
   for (auto &Alias : RequestedAliases)
     Stubs[Alias.first] = ISManager.findStub(*Alias.first, false);
 
-  R.resolve(Stubs);
-  R.emit();
+  // No registered dependencies, so these calls cannot fail.
+  cantFail(R.notifyResolved(Stubs));
+  cantFail(R.notifyEmitted());
 }
 
 void LazyReexportsMaterializationUnit::discard(const JITDylib &JD,

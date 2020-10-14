@@ -1,9 +1,8 @@
 //===- TargetFrameLoweringImpl.cpp - Implement target frame interface ------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/Attributes.h"
+#include "llvm/IR/CallSite.h"
 #include "llvm/IR/CallingConv.h"
 #include "llvm/IR/Function.h"
 #include "llvm/MC/MCRegisterInfo.h"
@@ -60,6 +60,19 @@ bool TargetFrameLowering::needsFrameIndexResolution(
   return MF.getFrameInfo().hasStackObjects();
 }
 
+void TargetFrameLowering::getCalleeSaves(const MachineFunction &MF,
+                                         BitVector &CalleeSaves) const {
+  const TargetRegisterInfo &TRI = *MF.getSubtarget().getRegisterInfo();
+  CalleeSaves.resize(TRI.getNumRegs());
+
+  const MachineFrameInfo &MFI = MF.getFrameInfo();
+  if (!MFI.isCalleeSavedInfoValid())
+    return;
+
+  for (const CalleeSavedInfo &Info : MFI.getCalleeSavedInfo())
+    CalleeSaves.set(Info.getReg());
+}
+
 void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
                                                BitVector &SavedRegs,
                                                RegScavenger *RS) const {
@@ -72,7 +85,9 @@ void TargetFrameLowering::determineCalleeSaves(MachineFunction &MF,
 
   // When interprocedural register allocation is enabled caller saved registers
   // are preferred over callee saved registers.
-  if (MF.getTarget().Options.EnableIPRA && isSafeForNoCSROpt(MF.getFunction()))
+  if (MF.getTarget().Options.EnableIPRA &&
+      isSafeForNoCSROpt(MF.getFunction()) &&
+      isProfitableForNoCSROpt(MF.getFunction()))
     return;
 
   // Get the callee saved register list...
@@ -117,6 +132,18 @@ unsigned TargetFrameLowering::getStackAlignmentSkew(
     return MF.getTarget().getAllocaPointerSize();
 
   return 0;
+}
+
+bool TargetFrameLowering::isSafeForNoCSROpt(const Function &F) {
+  if (!F.hasLocalLinkage() || F.hasAddressTaken() ||
+      !F.hasFnAttribute(Attribute::NoRecurse))
+    return false;
+  // Function should not be optimized as tail call.
+  for (const User *U : F.users())
+    if (auto CS = ImmutableCallSite(U))
+      if (CS.isTailCall())
+        return false;
+  return true;
 }
 
 int TargetFrameLowering::getInitialCFAOffset(const MachineFunction &MF) const {

@@ -66,7 +66,6 @@ static int illegalFirstUnsChar(char c) {
                                                           int* invalid,    \
                                                           char* invalidCh) { \
     char* endPtr;                                                       \
-    char* newStr = NULL;                                                \
     int numberBase = 10;                                                \
     int negative = 0;                                                   \
     _type(base, width) val;                                             \
@@ -91,35 +90,31 @@ static int illegalFirstUnsChar(char c) {
         str += 2;                                                       \
       }                                                                 \
     }                                                                   \
+    if (negative) {                                                     \
+      if (uns) {                                                        \
+        *invalid = 1;                                                   \
+        *invalidCh = *str;                                              \
+        return -1;                                                      \
+      }                                                                 \
+    }                                                                   \
     if (str[0] == '-' || str[0] == '+') {                               \
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
       return -1;                                                        \
     }                                                                   \
+    val = (_type(base, width))strtoull(str, &endPtr, numberBase);  \
     if (negative) {                                                     \
-      newStr = chpl_mem_alloc(strlen(str) + 2,                          \
-                              CHPL_RT_MD_STR_COPY_DATA, 0, 0);          \
-      newStr[0] = '-';                                                  \
-      strcpy(&newStr[1], str);                                          \
-    } else {                                                            \
-      newStr = chpl_mem_alloc(strlen(str) + 1,                          \
-                              CHPL_RT_MD_STR_COPY_DATA, 0, 0);          \
-      strcpy(newStr, str);                                              \
+      val = -1*val;                                                     \
     }                                                                   \
-    if (uns)                                                            \
-      val = (_type(base, width))strtoull(newStr, &endPtr, numberBase);  \
-    else                                                                \
-      val = (_type(base, width))strtoll(newStr, &endPtr, numberBase);   \
     while (*endPtr && isspace(*endPtr))                                 \
       endPtr++;                                                         \
-    *invalid = (*newStr == '\0' || *endPtr != '\0');                    \
+    *invalid = (*str == '\0' || *endPtr != '\0');                    \
     *invalidCh = *endPtr;                                               \
     /* for negatives, strtol works, but we wouldn't want chapel to */   \
-    if (*invalid == 0 && uns && illegalFirstUnsChar(*newStr)) {         \
+    if (*invalid == 0 && uns && illegalFirstUnsChar(*str)) {         \
       *invalid = 1;                                                     \
       *invalidCh = *str;                                                \
     }                                                                   \
-    chpl_mem_free(newStr, 0, 0);                                        \
     return val;                                                         \
   }
 

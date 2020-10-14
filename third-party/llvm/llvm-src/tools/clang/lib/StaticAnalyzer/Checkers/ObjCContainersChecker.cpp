@@ -1,9 +1,8 @@
 //== ObjCContainersChecker.cpp - Path sensitive checker for CFArray *- C++ -*=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -145,10 +144,11 @@ void ObjCContainersChecker::checkPreStmt(const CallExpr *CE,
       if (!N)
         return;
       initBugType();
-      auto R = llvm::make_unique<BugReport>(*BT, "Index is out of bounds", N);
+      auto R = std::make_unique<PathSensitiveBugReport>(
+          *BT, "Index is out of bounds", N);
       R->addRange(IdxExpr->getSourceRange());
-      bugreporter::trackExpressionValue(N, IdxExpr, *R,
-                                        /*EnableNullFPSuppression=*/false);
+      bugreporter::trackExpressionValue(
+          N, IdxExpr, *R, bugreporter::TrackingKind::Thorough, false);
       C.emitReport(std::move(R));
       return;
     }
@@ -186,4 +186,8 @@ void ObjCContainersChecker::printState(raw_ostream &OS, ProgramStateRef State,
 /// Register checker.
 void ento::registerObjCContainersChecker(CheckerManager &mgr) {
   mgr.registerChecker<ObjCContainersChecker>();
+}
+
+bool ento::shouldRegisterObjCContainersChecker(const LangOptions &LO) {
+  return true;
 }

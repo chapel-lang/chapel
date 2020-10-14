@@ -1,9 +1,8 @@
 //===-- AVRISelLowering.cpp - AVR DAG Lowering Implementation -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,19 +25,21 @@
 
 #include "AVR.h"
 #include "AVRMachineFunctionInfo.h"
+#include "AVRSubtarget.h"
 #include "AVRTargetMachine.h"
 #include "MCTargetDesc/AVRMCTargetDesc.h"
 
 namespace llvm {
 
-AVRTargetLowering::AVRTargetLowering(AVRTargetMachine &tm)
-    : TargetLowering(tm) {
+AVRTargetLowering::AVRTargetLowering(const AVRTargetMachine &TM,
+                                     const AVRSubtarget &STI)
+    : TargetLowering(TM), Subtarget(STI) {
   // Set up the register classes.
   addRegisterClass(MVT::i8, &AVR::GPR8RegClass);
   addRegisterClass(MVT::i16, &AVR::DREGSRegClass);
 
   // Compute derived properties from the register classes.
-  computeRegisterProperties(tm.getSubtargetImpl()->getRegisterInfo());
+  computeRegisterProperties(Subtarget.getRegisterInfo());
 
   setBooleanContents(ZeroOrOneBooleanContent);
   setBooleanVectorContents(ZeroOrOneBooleanContent);
@@ -88,9 +89,9 @@ AVRTargetLowering::AVRTargetLowering(AVRTargetMachine &tm)
   setOperationAction(ISD::SRL_PARTS, MVT::i16, Expand);
 
   setOperationAction(ISD::ROTL, MVT::i8, Custom);
-  setOperationAction(ISD::ROTL, MVT::i16, Custom);
+  setOperationAction(ISD::ROTL, MVT::i16, Expand);
   setOperationAction(ISD::ROTR, MVT::i8, Custom);
-  setOperationAction(ISD::ROTR, MVT::i16, Custom);
+  setOperationAction(ISD::ROTR, MVT::i16, Expand);
 
   setOperationAction(ISD::BR_CC, MVT::i8, Custom);
   setOperationAction(ISD::BR_CC, MVT::i16, Custom);
@@ -163,6 +164,13 @@ AVRTargetLowering::AVRTargetLowering(AVRTargetMachine &tm)
   setOperationAction(ISD::SMUL_LOHI, MVT::i16, Expand);
   setOperationAction(ISD::UMUL_LOHI, MVT::i16, Expand);
 
+  // Expand multiplications to libcalls when there is
+  // no hardware MUL.
+  if (!Subtarget.supportsMultiplication()) {
+    setOperationAction(ISD::SMUL_LOHI, MVT::i8, Expand);
+    setOperationAction(ISD::UMUL_LOHI, MVT::i8, Expand);
+  }
+
   for (MVT VT : MVT::integer_valuetypes()) {
     setOperationAction(ISD::MULHS, VT, Expand);
     setOperationAction(ISD::MULHU, VT, Expand);
@@ -228,8 +236,8 @@ AVRTargetLowering::AVRTargetLowering(AVRTargetMachine &tm)
   setLibcallName(RTLIB::SIN_F32, "sin");
   setLibcallName(RTLIB::COS_F32, "cos");
 
-  setMinFunctionAlignment(1);
-  setMinimumJumpTableEntries(INT_MAX);
+  setMinFunctionAlignment(Align(2));
+  setMinimumJumpTableEntries(UINT_MAX);
 }
 
 const char *AVRTargetLowering::getTargetNodeName(unsigned Opcode) const {
@@ -935,7 +943,7 @@ static void analyzeStandardArguments(TargetLowering::CallLoweringInfo *CLI,
                                         AVR::R19R18, AVR::R17R16, AVR::R15R14,
                                         AVR::R13R12, AVR::R11R10, AVR::R9R8};
   if (IsVarArg) {
-    // Variadic functions do not need all the analisys below.
+    // Variadic functions do not need all the analysis below.
     if (IsCall) {
       CCInfo.AnalyzeCallOperands(*Outs, ArgCC_AVR_Vararg);
     } else {
@@ -1270,8 +1278,7 @@ SDValue AVRTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   }
 
   // Add a register mask operand representing the call-preserved registers.
-  const AVRTargetMachine &TM = (const AVRTargetMachine &)getTargetMachine();
-  const TargetRegisterInfo *TRI = TM.getSubtargetImpl()->getRegisterInfo();
+  const TargetRegisterInfo *TRI = Subtarget.getRegisterInfo();
   const uint32_t *Mask =
       TRI->getCallPreservedMask(DAG.getMachineFunction(), CallConv);
   assert(Mask && "Missing call preserved mask for calling convention");
@@ -1433,8 +1440,7 @@ MachineBasicBlock *AVRTargetLowering::insertShift(MachineInstr &MI,
   bool HasRepeatedOperand = false;
   MachineFunction *F = BB->getParent();
   MachineRegisterInfo &RI = F->getRegInfo();
-  const AVRTargetMachine &TM = (const AVRTargetMachine &)getTargetMachine();
-  const TargetInstrInfo &TII = *TM.getSubtargetImpl()->getInstrInfo();
+  const TargetInstrInfo &TII = *Subtarget.getInstrInfo();
   DebugLoc dl = MI.getDebugLoc();
 
   switch (MI.getOpcode()) {
@@ -1466,16 +1472,15 @@ MachineBasicBlock *AVRTargetLowering::insertShift(MachineInstr &MI,
     RC = &AVR::DREGSRegClass;
     break;
   case AVR::Rol8:
-    Opc = AVR::ADCRdRr; // ROL is an alias of ADC Rd, Rd
+    Opc = AVR::ROLBRd;
     RC = &AVR::GPR8RegClass;
-    HasRepeatedOperand = true;
     break;
   case AVR::Rol16:
     Opc = AVR::ROLWRd;
     RC = &AVR::DREGSRegClass;
     break;
   case AVR::Ror8:
-    Opc = AVR::RORRd;
+    Opc = AVR::RORBRd;
     RC = &AVR::GPR8RegClass;
     break;
   case AVR::Ror16:
@@ -1511,11 +1516,11 @@ MachineBasicBlock *AVRTargetLowering::insertShift(MachineInstr &MI,
 
   unsigned ShiftAmtReg = RI.createVirtualRegister(&AVR::LD8RegClass);
   unsigned ShiftAmtReg2 = RI.createVirtualRegister(&AVR::LD8RegClass);
-  unsigned ShiftReg = RI.createVirtualRegister(RC);
-  unsigned ShiftReg2 = RI.createVirtualRegister(RC);
-  unsigned ShiftAmtSrcReg = MI.getOperand(2).getReg();
-  unsigned SrcReg = MI.getOperand(1).getReg();
-  unsigned DstReg = MI.getOperand(0).getReg();
+  Register ShiftReg = RI.createVirtualRegister(RC);
+  Register ShiftReg2 = RI.createVirtualRegister(RC);
+  Register ShiftAmtSrcReg = MI.getOperand(2).getReg();
+  Register SrcReg = MI.getOperand(1).getReg();
+  Register DstReg = MI.getOperand(0).getReg();
 
   // BB:
   // cpi N, 0
@@ -1562,7 +1567,7 @@ MachineBasicBlock *AVRTargetLowering::insertShift(MachineInstr &MI,
 
 static bool isCopyMulResult(MachineBasicBlock::iterator const &I) {
   if (I->getOpcode() == AVR::COPY) {
-    unsigned SrcReg = I->getOperand(1).getReg();
+    Register SrcReg = I->getOperand(1).getReg();
     return (SrcReg == AVR::R0 || SrcReg == AVR::R1);
   }
 
@@ -1574,8 +1579,7 @@ static bool isCopyMulResult(MachineBasicBlock::iterator const &I) {
 // it, but it works for now.
 MachineBasicBlock *AVRTargetLowering::insertMul(MachineInstr &MI,
                                                 MachineBasicBlock *BB) const {
-  const AVRTargetMachine &TM = (const AVRTargetMachine &)getTargetMachine();
-  const TargetInstrInfo &TII = *TM.getSubtargetImpl()->getInstrInfo();
+  const TargetInstrInfo &TII = *Subtarget.getInstrInfo();
   MachineBasicBlock::iterator I(MI);
   ++I; // in any case insert *after* the mul instruction
   if (isCopyMulResult(I))
@@ -1629,6 +1633,15 @@ AVRTargetLowering::EmitInstrWithCustomInserter(MachineInstr &MI,
 
   MachineFunction *MF = MBB->getParent();
   const BasicBlock *LLVM_BB = MBB->getBasicBlock();
+  MachineBasicBlock *FallThrough = MBB->getFallThrough();
+
+  // If the current basic block falls through to another basic block,
+  // we must insert an unconditional branch to the fallthrough destination
+  // if we are to insert basic blocks at the prior fallthrough point.
+  if (FallThrough != nullptr) {
+    BuildMI(MBB, dl, TII.get(AVR::RJMPk)).addMBB(FallThrough);
+  }
+
   MachineBasicBlock *trueMBB = MF->CreateMachineBasicBlock(LLVM_BB);
   MachineBasicBlock *falseMBB = MF->CreateMachineBasicBlock(LLVM_BB);
 
@@ -1675,6 +1688,8 @@ AVRTargetLowering::getConstraintType(StringRef Constraint) const {
   if (Constraint.size() == 1) {
     // See http://www.nongnu.org/avr-libc/user-manual/inline_asm.html
     switch (Constraint[0]) {
+    default:
+      break;
     case 'a': // Simple upper registers
     case 'b': // Base pointer registers pairs
     case 'd': // Upper register
@@ -1701,9 +1716,7 @@ AVRTargetLowering::getConstraintType(StringRef Constraint) const {
     case 'O': // Integer constant (Range: 8, 16, 24)
     case 'P': // Integer constant (Range: 1)
     case 'R': // Integer constant (Range: -6 to 5)x
-      return C_Other;
-    default:
-      break;
+      return C_Immediate;
     }
   }
 
@@ -1838,9 +1851,6 @@ std::pair<unsigned, const TargetRegisterClass *>
 AVRTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
                                                 StringRef Constraint,
                                                 MVT VT) const {
-  auto STI = static_cast<const AVRTargetMachine &>(this->getTargetMachine())
-                 .getSubtargetImpl();
-
   // We only support i8 and i16.
   //
   //:FIXME: remove this assert for now since it gets sometimes executed
@@ -1884,8 +1894,8 @@ AVRTargetLowering::getRegForInlineAsmConstraint(const TargetRegisterInfo *TRI,
     }
   }
 
-  return TargetLowering::getRegForInlineAsmConstraint(STI->getRegisterInfo(),
-                                                      Constraint, VT);
+  return TargetLowering::getRegForInlineAsmConstraint(
+      Subtarget.getRegisterInfo(), Constraint, VT);
 }
 
 void AVRTargetLowering::LowerAsmOperandForConstraint(SDValue Op,
@@ -1995,12 +2005,11 @@ void AVRTargetLowering::LowerAsmOperandForConstraint(SDValue Op,
   return TargetLowering::LowerAsmOperandForConstraint(Op, Constraint, Ops, DAG);
 }
 
-unsigned AVRTargetLowering::getRegisterByName(const char *RegName,
-                                              EVT VT,
-                                              SelectionDAG &DAG) const {
-  unsigned Reg;
+Register AVRTargetLowering::getRegisterByName(const char *RegName, LLT VT,
+                                              const MachineFunction &MF) const {
+  Register Reg;
 
-  if (VT == MVT::i8) {
+  if (VT == LLT::scalar(8)) {
     Reg = StringSwitch<unsigned>(RegName)
       .Case("r0", AVR::R0).Case("r1", AVR::R1).Case("r2", AVR::R2)
       .Case("r3", AVR::R3).Case("r4", AVR::R4).Case("r5", AVR::R5)

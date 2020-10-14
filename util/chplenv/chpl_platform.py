@@ -40,7 +40,7 @@ def get(flag='host'):
     if not platform_val:
         network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
         if network.startswith("slingshot") or network == "ofi":
-            platform_val = 'cray-shasta'
+            platform_val = 'hpe-cray-ex'
 
     if not platform_val:
         # uname() -> (system, node, release, version, machine, processor)
@@ -74,11 +74,6 @@ def get(flag='host'):
                 platform_val = 'netbsd32'
 
     return platform_val
-
-
-@memoize
-def is_cross_compiling():
-    return get('host') != get('target')
 
 
 def _main():

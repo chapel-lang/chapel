@@ -86,10 +86,6 @@ module Set {
 
   pragma "no doc"
   proc _checkElementType(type t) {
-    // Associative domains need to support owned classes first.
-    if isOwnedClass(t) then
-        compilerError('Sets do not support this class type', 2);
-
     // In the future we might support it if the set is not default-inited.
     if isGenericType(t) {
       compilerWarning('creating a set with element type ' + t:string, 2);
@@ -238,16 +234,28 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        var (hasFoundSlot, _) = _htb.findFullSlot(x);
-        result = hasFoundSlot;
+        result = _contains(x);
       }
 
       return result;
     }
 
     /*
+     As above, but parSafe lock must be held and must be called "on this".
+    */
+    pragma "no doc"
+    proc const _contains(const ref x: eltType): bool {
+      var (hasFoundSlot, _) = _htb.findFullSlot(x);
+      return hasFoundSlot;
+    }
+
+    /*
       Returns `true` if this set shares no elements in common with the set
       `other`, and `false` otherwise.
+
+      .. warning::
+
+        `other` must not be modified during this call.
 
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` are disjoint.
@@ -259,11 +267,10 @@ module Set {
       on this {
         _enter(); defer _leave();
 
-        if !(size == 0 || other.size == 0) {
-
+        if _size != 0 {
           // TODO: Take locks on other?
           for x in other do
-            if this.contains(x) {
+            if this._contains(x) {
               result = false;
               break;
             }
@@ -357,12 +364,14 @@ module Set {
       
       :yields: A constant reference to an element in this set.
     */
+    pragma "order independent yielding loops"
     iter const these() {
       for idx in 0..#_htb.tableSize do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter const these(param tag) where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
       for idx in space.these(tag) do
@@ -378,6 +387,7 @@ module Set {
     }
 
     pragma "no doc"
+    pragma "order independent yielding loops"
     iter const these(param tag, followThis)
     where tag == iterKind.follower {
       for idx in followThis(0) do
@@ -434,10 +444,19 @@ module Set {
 
       on this {
         _enter(); defer _leave();
-        result = _htb.tableNumFullSlots;
+        result = _size;
       }
 
       return result;
+    }
+
+    /*
+      As above, but the parSafe lock must be held, and must be called
+      "on this".
+    */
+    pragma "no doc"
+    inline proc const _size {
+      return _htb.tableNumFullSlots;
     }
 
     /*
@@ -646,31 +665,20 @@ module Set {
     :arg rhs: A set to take the intersection of.
   */
   proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    /* Iterate over the smaller set.  But we can't remove things from
-       lhs while iterating over it.  So use a temporary if lhs is
-       significantly smaller than rhs; otherwise just iterate over rhs. */
-    if lhs.size < 2 * rhs.size {
-      var result: set(t, (lhs.parSafe || rhs.parSafe));
+    /* We can't remove things from lhs while iterating over it, so
+     * use a temporary. */
+    var result: set(t, (lhs.parSafe || rhs.parSafe));
 
-      if lhs.parSafe && rhs.parSafe {
-        forall x in lhs do
-          if rhs.contains(x) then
-            result.add(x);
-      } else {
-        for x in lhs do
-          if rhs.contains(x) then
-            result.add(x);
-      }
-      lhs = result;
+    if lhs.parSafe && rhs.parSafe {
+      forall x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
     } else {
-      if lhs.parSafe && rhs.parSafe {
-        forall x in rhs do
-          lhs.remove(x);
-      } else {
-        for x in rhs do
-          lhs.remove(x);
-      }
+      for x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
     }
+    lhs = result;
   }
 
   /*

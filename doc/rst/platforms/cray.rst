@@ -5,7 +5,8 @@ Using Chapel on Cray Systems
 ============================
 
 The following information is assembled to help Chapel users get up and running
-on Cray\ |reg| systems including the Cray XC\ |trade| and Shasta\ |trade|
+on HPE Cray\ |reg| systems including the Cray XC\ |trade| and
+HPE Cray EX\ |trade|
 series systems.
 
 .. contents::
@@ -47,10 +48,10 @@ contact your system administrator.
 
 
 --------------------------------------------------
-Getting Started with Chapel on Cray Shasta Systems
+Getting Started with Chapel on HPE Cray EX Systems
 --------------------------------------------------
 
-Chapel is available as a module for Cray Shasta systems.  It should be
+Chapel is available as a module for HPE Cray EX systems.  It should be
 installed on your system already.  If it is not, contact your system
 administrator for information on obtaining and installing the Chapel
 module.
@@ -69,10 +70,6 @@ installed, do the following:
      cray-mpich
      libfabric
 
-   And this module will be unloaded, if it is loaded::
-
-     cray-libsci
-
 
 2) Compile an example program like this::
 
@@ -85,10 +82,10 @@ installed, do the following:
 
 
 Currently the number of Chapel configurations available on
-Shasta systems is quite limited.  Only the following have been built
+HPE Cray EX systems is quite limited.  Only the following have been built
 into the module::
 
-  CHPL_TARGET_PLATFORM: cray-shasta
+  CHPL_TARGET_PLATFORM: hpe-cray-ex
   CHPL_TARGET_COMPILER: cray-prgenv-gnu
   CHPL_TARGET_ARCH: x86_64
   CHPL_TARGET_CPU: sandybridge
@@ -107,7 +104,7 @@ into the module::
   CHPL_LLVM: none
   CHPL_AUX_FILESYS: none
 
-You may be able to build Chapel from source on a Shasta system if you do
+You may be able to build Chapel from source on an EX system if you do
 not have a module already.  Generally you should be able to follow the
 instructions below for building from source, but be advised that so far
 only the above configurations have been built.  Also, you'll probably

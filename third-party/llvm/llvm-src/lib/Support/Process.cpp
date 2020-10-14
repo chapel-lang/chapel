@@ -1,9 +1,8 @@
 //===-- Process.cpp - Implement OS Process Concept --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,8 +13,9 @@
 #include "llvm/Support/Process.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/Config/llvm-config.h"
 #include "llvm/Config/config.h"
+#include "llvm/Config/llvm-config.h"
+#include "llvm/Support/CrashRecoveryContext.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/Program.h"
@@ -88,6 +88,13 @@ static const char colorcodes[2][2][8][10] = {
 static bool coreFilesPrevented = !LLVM_ENABLE_CRASH_DUMPS;
 
 bool Process::AreCoreFilesPrevented() { return coreFilesPrevented; }
+
+LLVM_ATTRIBUTE_NORETURN
+void Process::Exit(int RetCode) {
+  if (CrashRecoveryContext *CRC = CrashRecoveryContext::GetCurrent())
+    CRC->HandleExit(RetCode);
+  ::exit(RetCode);
+}
 
 // Include the platform-specific parts of this class.
 #ifdef LLVM_ON_UNIX

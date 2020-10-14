@@ -1,9 +1,8 @@
 //===- InstCombineCasts.cpp -----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/PatternMatch.h"
 #include "llvm/Support/KnownBits.h"
+#include <numeric>
 using namespace llvm;
 using namespace PatternMatch;
 
@@ -141,7 +141,7 @@ Instruction *InstCombiner::PromoteCastOfAllocation(BitCastInst &CI,
   }
 
   AllocaInst *New = AllocaBuilder.CreateAlloca(CastElTy, Amt);
-  New->setAlignment(AI.getAlignment());
+  New->setAlignment(MaybeAlign(AI.getAlignment()));
   New->takeName(&AI);
   New->setUsedWithInAlloca(AI.isUsedWithInAlloca());
 
@@ -844,33 +844,33 @@ Instruction *InstCombiner::visitTrunc(TruncInst &CI) {
   return nullptr;
 }
 
-Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
+Instruction *InstCombiner::transformZExtICmp(ICmpInst *Cmp, ZExtInst &Zext,
                                              bool DoTransform) {
   // If we are just checking for a icmp eq of a single bit and zext'ing it
   // to an integer, then shift the bit to the appropriate place and then
   // cast to integer to avoid the comparison.
   const APInt *Op1CV;
-  if (match(ICI->getOperand(1), m_APInt(Op1CV))) {
+  if (match(Cmp->getOperand(1), m_APInt(Op1CV))) {
 
     // zext (x <s  0) to i32 --> x>>u31      true if signbit set.
     // zext (x >s -1) to i32 --> (x>>u31)^1  true if signbit clear.
-    if ((ICI->getPredicate() == ICmpInst::ICMP_SLT && Op1CV->isNullValue()) ||
-        (ICI->getPredicate() == ICmpInst::ICMP_SGT && Op1CV->isAllOnesValue())) {
-      if (!DoTransform) return ICI;
+    if ((Cmp->getPredicate() == ICmpInst::ICMP_SLT && Op1CV->isNullValue()) ||
+        (Cmp->getPredicate() == ICmpInst::ICMP_SGT && Op1CV->isAllOnesValue())) {
+      if (!DoTransform) return Cmp;
 
-      Value *In = ICI->getOperand(0);
+      Value *In = Cmp->getOperand(0);
       Value *Sh = ConstantInt::get(In->getType(),
                                    In->getType()->getScalarSizeInBits() - 1);
       In = Builder.CreateLShr(In, Sh, In->getName() + ".lobit");
-      if (In->getType() != CI.getType())
-        In = Builder.CreateIntCast(In, CI.getType(), false /*ZExt*/);
+      if (In->getType() != Zext.getType())
+        In = Builder.CreateIntCast(In, Zext.getType(), false /*ZExt*/);
 
-      if (ICI->getPredicate() == ICmpInst::ICMP_SGT) {
+      if (Cmp->getPredicate() == ICmpInst::ICMP_SGT) {
         Constant *One = ConstantInt::get(In->getType(), 1);
         In = Builder.CreateXor(In, One, In->getName() + ".not");
       }
 
-      return replaceInstUsesWith(CI, In);
+      return replaceInstUsesWith(Zext, In);
     }
 
     // zext (X == 0) to i32 --> X^1      iff X has only the low bit set.
@@ -883,24 +883,24 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
     // zext (X != 2) to i32 --> (X>>1)^1 iff X has only the 2nd bit set.
     if ((Op1CV->isNullValue() || Op1CV->isPowerOf2()) &&
         // This only works for EQ and NE
-        ICI->isEquality()) {
+        Cmp->isEquality()) {
       // If Op1C some other power of two, convert:
-      KnownBits Known = computeKnownBits(ICI->getOperand(0), 0, &CI);
+      KnownBits Known = computeKnownBits(Cmp->getOperand(0), 0, &Zext);
 
       APInt KnownZeroMask(~Known.Zero);
       if (KnownZeroMask.isPowerOf2()) { // Exactly 1 possible 1?
-        if (!DoTransform) return ICI;
+        if (!DoTransform) return Cmp;
 
-        bool isNE = ICI->getPredicate() == ICmpInst::ICMP_NE;
+        bool isNE = Cmp->getPredicate() == ICmpInst::ICMP_NE;
         if (!Op1CV->isNullValue() && (*Op1CV != KnownZeroMask)) {
           // (X&4) == 2 --> false
           // (X&4) != 2 --> true
-          Constant *Res = ConstantInt::get(CI.getType(), isNE);
-          return replaceInstUsesWith(CI, Res);
+          Constant *Res = ConstantInt::get(Zext.getType(), isNE);
+          return replaceInstUsesWith(Zext, Res);
         }
 
         uint32_t ShAmt = KnownZeroMask.logBase2();
-        Value *In = ICI->getOperand(0);
+        Value *In = Cmp->getOperand(0);
         if (ShAmt) {
           // Perform a logical shr by shiftamt.
           // Insert the shift to put the result in the low bit.
@@ -913,11 +913,11 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
           In = Builder.CreateXor(In, One);
         }
 
-        if (CI.getType() == In->getType())
-          return replaceInstUsesWith(CI, In);
+        if (Zext.getType() == In->getType())
+          return replaceInstUsesWith(Zext, In);
 
-        Value *IntCast = Builder.CreateIntCast(In, CI.getType(), false);
-        return replaceInstUsesWith(CI, IntCast);
+        Value *IntCast = Builder.CreateIntCast(In, Zext.getType(), false);
+        return replaceInstUsesWith(Zext, IntCast);
       }
     }
   }
@@ -925,19 +925,19 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
   // icmp ne A, B is equal to xor A, B when A and B only really have one bit.
   // It is also profitable to transform icmp eq into not(xor(A, B)) because that
   // may lead to additional simplifications.
-  if (ICI->isEquality() && CI.getType() == ICI->getOperand(0)->getType()) {
-    if (IntegerType *ITy = dyn_cast<IntegerType>(CI.getType())) {
-      Value *LHS = ICI->getOperand(0);
-      Value *RHS = ICI->getOperand(1);
+  if (Cmp->isEquality() && Zext.getType() == Cmp->getOperand(0)->getType()) {
+    if (IntegerType *ITy = dyn_cast<IntegerType>(Zext.getType())) {
+      Value *LHS = Cmp->getOperand(0);
+      Value *RHS = Cmp->getOperand(1);
 
-      KnownBits KnownLHS = computeKnownBits(LHS, 0, &CI);
-      KnownBits KnownRHS = computeKnownBits(RHS, 0, &CI);
+      KnownBits KnownLHS = computeKnownBits(LHS, 0, &Zext);
+      KnownBits KnownRHS = computeKnownBits(RHS, 0, &Zext);
 
       if (KnownLHS.Zero == KnownRHS.Zero && KnownLHS.One == KnownRHS.One) {
         APInt KnownBits = KnownLHS.Zero | KnownLHS.One;
         APInt UnknownBit = ~KnownBits;
         if (UnknownBit.countPopulation() == 1) {
-          if (!DoTransform) return ICI;
+          if (!DoTransform) return Cmp;
 
           Value *Result = Builder.CreateXor(LHS, RHS);
 
@@ -950,10 +950,10 @@ Instruction *InstCombiner::transformZExtICmp(ICmpInst *ICI, ZExtInst &CI,
           Result = Builder.CreateLShr(
                Result, ConstantInt::get(ITy, UnknownBit.countTrailingZeros()));
 
-          if (ICI->getPredicate() == ICmpInst::ICMP_EQ)
+          if (Cmp->getPredicate() == ICmpInst::ICMP_EQ)
             Result = Builder.CreateXor(Result, ConstantInt::get(ITy, 1));
-          Result->takeName(ICI);
-          return replaceInstUsesWith(CI, Result);
+          Result->takeName(Cmp);
+          return replaceInstUsesWith(Zext, Result);
         }
       }
     }
@@ -1173,8 +1173,8 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
     }
   }
 
-  if (ICmpInst *ICI = dyn_cast<ICmpInst>(Src))
-    return transformZExtICmp(ICI, CI);
+  if (ICmpInst *Cmp = dyn_cast<ICmpInst>(Src))
+    return transformZExtICmp(Cmp, CI);
 
   BinaryOperator *SrcI = dyn_cast<BinaryOperator>(Src);
   if (SrcI && SrcI->getOpcode() == Instruction::Or) {
@@ -1189,7 +1189,9 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
       // zext (or icmp, icmp) -> or (zext icmp), (zext icmp)
       Value *LCast = Builder.CreateZExt(LHS, CI.getType(), LHS->getName());
       Value *RCast = Builder.CreateZExt(RHS, CI.getType(), RHS->getName());
-      BinaryOperator *Or = BinaryOperator::Create(Instruction::Or, LCast, RCast);
+      Value *Or = Builder.CreateOr(LCast, RCast, CI.getName());
+      if (auto *OrInst = dyn_cast<Instruction>(Or))
+        Builder.SetInsertPoint(OrInst);
 
       // Perform the elimination.
       if (auto *LZExt = dyn_cast<ZExtInst>(LCast))
@@ -1197,7 +1199,7 @@ Instruction *InstCombiner::visitZExt(ZExtInst &CI) {
       if (auto *RZExt = dyn_cast<ZExtInst>(RCast))
         transformZExtICmp(RHS, *RZExt);
 
-      return Or;
+      return replaceInstUsesWith(CI, Or);
     }
   }
 
@@ -1373,10 +1375,8 @@ Instruction *InstCombiner::visitSExt(SExtInst &CI) {
   // If we know that the value being extended is positive, we can use a zext
   // instead.
   KnownBits Known = computeKnownBits(Src, 0, &CI);
-  if (Known.isNonNegative()) {
-    Value *ZExt = Builder.CreateZExt(Src, DestTy);
-    return replaceInstUsesWith(CI, ZExt);
-  }
+  if (Known.isNonNegative())
+    return CastInst::Create(Instruction::ZExt, Src, DestTy);
 
   // Try to extend the entire expression tree to the wide destination type.
   if (shouldChangeType(SrcTy, DestTy) && canEvaluateSExtd(Src, DestTy)) {
@@ -1534,16 +1534,16 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
   // what we can and cannot do safely varies from operation to operation, and
   // is explained below in the various case statements.
   Type *Ty = FPT.getType();
-  BinaryOperator *OpI = dyn_cast<BinaryOperator>(FPT.getOperand(0));
-  if (OpI && OpI->hasOneUse()) {
-    Type *LHSMinType = getMinimumFPType(OpI->getOperand(0));
-    Type *RHSMinType = getMinimumFPType(OpI->getOperand(1));
-    unsigned OpWidth = OpI->getType()->getFPMantissaWidth();
+  auto *BO = dyn_cast<BinaryOperator>(FPT.getOperand(0));
+  if (BO && BO->hasOneUse()) {
+    Type *LHSMinType = getMinimumFPType(BO->getOperand(0));
+    Type *RHSMinType = getMinimumFPType(BO->getOperand(1));
+    unsigned OpWidth = BO->getType()->getFPMantissaWidth();
     unsigned LHSWidth = LHSMinType->getFPMantissaWidth();
     unsigned RHSWidth = RHSMinType->getFPMantissaWidth();
     unsigned SrcWidth = std::max(LHSWidth, RHSWidth);
     unsigned DstWidth = Ty->getFPMantissaWidth();
-    switch (OpI->getOpcode()) {
+    switch (BO->getOpcode()) {
       default: break;
       case Instruction::FAdd:
       case Instruction::FSub:
@@ -1566,10 +1566,10 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
         // could be tightened for those cases, but they are rare (the main
         // case of interest here is (float)((double)float + float)).
         if (OpWidth >= 2*DstWidth+1 && DstWidth >= SrcWidth) {
-          Value *LHS = Builder.CreateFPTrunc(OpI->getOperand(0), Ty);
-          Value *RHS = Builder.CreateFPTrunc(OpI->getOperand(1), Ty);
-          Instruction *RI = BinaryOperator::Create(OpI->getOpcode(), LHS, RHS);
-          RI->copyFastMathFlags(OpI);
+          Value *LHS = Builder.CreateFPTrunc(BO->getOperand(0), Ty);
+          Value *RHS = Builder.CreateFPTrunc(BO->getOperand(1), Ty);
+          Instruction *RI = BinaryOperator::Create(BO->getOpcode(), LHS, RHS);
+          RI->copyFastMathFlags(BO);
           return RI;
         }
         break;
@@ -1580,9 +1580,9 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
         // rounding can possibly occur; we can safely perform the operation
         // in the destination format if it can represent both sources.
         if (OpWidth >= LHSWidth + RHSWidth && DstWidth >= SrcWidth) {
-          Value *LHS = Builder.CreateFPTrunc(OpI->getOperand(0), Ty);
-          Value *RHS = Builder.CreateFPTrunc(OpI->getOperand(1), Ty);
-          return BinaryOperator::CreateFMulFMF(LHS, RHS, OpI);
+          Value *LHS = Builder.CreateFPTrunc(BO->getOperand(0), Ty);
+          Value *RHS = Builder.CreateFPTrunc(BO->getOperand(1), Ty);
+          return BinaryOperator::CreateFMulFMF(LHS, RHS, BO);
         }
         break;
       case Instruction::FDiv:
@@ -1593,9 +1593,9 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
         // condition used here is a good conservative first pass.
         // TODO: Tighten bound via rigorous analysis of the unbalanced case.
         if (OpWidth >= 2*DstWidth && DstWidth >= SrcWidth) {
-          Value *LHS = Builder.CreateFPTrunc(OpI->getOperand(0), Ty);
-          Value *RHS = Builder.CreateFPTrunc(OpI->getOperand(1), Ty);
-          return BinaryOperator::CreateFDivFMF(LHS, RHS, OpI);
+          Value *LHS = Builder.CreateFPTrunc(BO->getOperand(0), Ty);
+          Value *RHS = Builder.CreateFPTrunc(BO->getOperand(1), Ty);
+          return BinaryOperator::CreateFDivFMF(LHS, RHS, BO);
         }
         break;
       case Instruction::FRem: {
@@ -1607,23 +1607,54 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
           break;
         Value *LHS, *RHS;
         if (LHSWidth == SrcWidth) {
-           LHS = Builder.CreateFPTrunc(OpI->getOperand(0), LHSMinType);
-           RHS = Builder.CreateFPTrunc(OpI->getOperand(1), LHSMinType);
+           LHS = Builder.CreateFPTrunc(BO->getOperand(0), LHSMinType);
+           RHS = Builder.CreateFPTrunc(BO->getOperand(1), LHSMinType);
         } else {
-           LHS = Builder.CreateFPTrunc(OpI->getOperand(0), RHSMinType);
-           RHS = Builder.CreateFPTrunc(OpI->getOperand(1), RHSMinType);
+           LHS = Builder.CreateFPTrunc(BO->getOperand(0), RHSMinType);
+           RHS = Builder.CreateFPTrunc(BO->getOperand(1), RHSMinType);
         }
 
-        Value *ExactResult = Builder.CreateFRemFMF(LHS, RHS, OpI);
+        Value *ExactResult = Builder.CreateFRemFMF(LHS, RHS, BO);
         return CastInst::CreateFPCast(ExactResult, Ty);
       }
     }
+  }
 
-    // (fptrunc (fneg x)) -> (fneg (fptrunc x))
-    Value *X;
-    if (match(OpI, m_FNeg(m_Value(X)))) {
+  // (fptrunc (fneg x)) -> (fneg (fptrunc x))
+  Value *X;
+  Instruction *Op = dyn_cast<Instruction>(FPT.getOperand(0));
+  if (Op && Op->hasOneUse()) {
+    // FIXME: The FMF should propagate from the fptrunc, not the source op.
+    IRBuilder<>::FastMathFlagGuard FMFG(Builder);
+    if (isa<FPMathOperator>(Op))
+      Builder.setFastMathFlags(Op->getFastMathFlags());
+
+    if (match(Op, m_FNeg(m_Value(X)))) {
       Value *InnerTrunc = Builder.CreateFPTrunc(X, Ty);
-      return BinaryOperator::CreateFNegFMF(InnerTrunc, OpI);
+
+      // FIXME: Once we're sure that unary FNeg optimizations are on par with
+      // binary FNeg, this should always return a unary operator.
+      if (isa<BinaryOperator>(Op))
+        return BinaryOperator::CreateFNegFMF(InnerTrunc, Op);
+      return UnaryOperator::CreateFNegFMF(InnerTrunc, Op);
+    }
+
+    // If we are truncating a select that has an extended operand, we can
+    // narrow the other operand and do the select as a narrow op.
+    Value *Cond, *X, *Y;
+    if (match(Op, m_Select(m_Value(Cond), m_FPExt(m_Value(X)), m_Value(Y))) &&
+        X->getType() == Ty) {
+      // fptrunc (select Cond, (fpext X), Y --> select Cond, X, (fptrunc Y)
+      Value *NarrowY = Builder.CreateFPTrunc(Y, Ty);
+      Value *Sel = Builder.CreateSelect(Cond, X, NarrowY, "narrow.sel", Op);
+      return replaceInstUsesWith(FPT, Sel);
+    }
+    if (match(Op, m_Select(m_Value(Cond), m_Value(Y), m_FPExt(m_Value(X)))) &&
+        X->getType() == Ty) {
+      // fptrunc (select Cond, Y, (fpext X) --> select Cond, (fptrunc Y), X
+      Value *NarrowY = Builder.CreateFPTrunc(Y, Ty);
+      Value *Sel = Builder.CreateSelect(Cond, NarrowY, X, "narrow.sel", Op);
+      return replaceInstUsesWith(FPT, Sel);
     }
   }
 
@@ -1657,8 +1688,8 @@ Instruction *InstCombiner::visitFPTrunc(FPTruncInst &FPT) {
                                                      II->getIntrinsicID(), Ty);
       SmallVector<OperandBundleDef, 1> OpBundles;
       II->getOperandBundlesAsDefs(OpBundles);
-      CallInst *NewCI = CallInst::Create(Overload, { InnerTrunc }, OpBundles,
-                                         II->getName());
+      CallInst *NewCI =
+          CallInst::Create(Overload, {InnerTrunc}, OpBundles, II->getName());
       NewCI->copyFastMathFlags(II);
       return NewCI;
     }
@@ -1803,7 +1834,7 @@ Instruction *InstCombiner::visitPtrToInt(PtrToIntInst &CI) {
   Type *Ty = CI.getType();
   unsigned AS = CI.getPointerAddressSpace();
 
-  if (Ty->getScalarSizeInBits() == DL.getIndexSizeInBits(AS))
+  if (Ty->getScalarSizeInBits() == DL.getPointerSizeInBits(AS))
     return commonPointerCastTransforms(CI);
 
   Type *PtrTy = DL.getIntPtrType(CI.getContext(), AS);
@@ -1815,12 +1846,24 @@ Instruction *InstCombiner::visitPtrToInt(PtrToIntInst &CI) {
 }
 
 /// This input value (which is known to have vector type) is being zero extended
-/// or truncated to the specified vector type.
+/// or truncated to the specified vector type. Since the zext/trunc is done
+/// using an integer type, we have a (bitcast(cast(bitcast))) pattern,
+/// endianness will impact which end of the vector that is extended or
+/// truncated.
+///
+/// A vector is always stored with index 0 at the lowest address, which
+/// corresponds to the most significant bits for a big endian stored integer and
+/// the least significant bits for little endian. A trunc/zext of an integer
+/// impacts the big end of the integer. Thus, we need to add/remove elements at
+/// the front of the vector for big endian targets, and the back of the vector
+/// for little endian targets.
+///
 /// Try to replace it with a shuffle (and vector/vector bitcast) if possible.
 ///
 /// The source and destination vector types may have different element types.
-static Instruction *optimizeVectorResize(Value *InVal, VectorType *DestTy,
-                                         InstCombiner &IC) {
+static Instruction *optimizeVectorResizeWithIntegerBitCasts(Value *InVal,
+                                                            VectorType *DestTy,
+                                                            InstCombiner &IC) {
   // We can only do this optimization if the output is a multiple of the input
   // element size, or the input is a multiple of the output element size.
   // Convert the input type to have the same element type as the output.
@@ -1839,31 +1882,53 @@ static Instruction *optimizeVectorResize(Value *InVal, VectorType *DestTy,
     InVal = IC.Builder.CreateBitCast(InVal, SrcTy);
   }
 
+  bool IsBigEndian = IC.getDataLayout().isBigEndian();
+  unsigned SrcElts = SrcTy->getNumElements();
+  unsigned DestElts = DestTy->getNumElements();
+
+  assert(SrcElts != DestElts && "Element counts should be different.");
+
   // Now that the element types match, get the shuffle mask and RHS of the
   // shuffle to use, which depends on whether we're increasing or decreasing the
   // size of the input.
-  SmallVector<uint32_t, 16> ShuffleMask;
+  SmallVector<uint32_t, 16> ShuffleMaskStorage;
+  ArrayRef<uint32_t> ShuffleMask;
   Value *V2;
 
-  if (SrcTy->getNumElements() > DestTy->getNumElements()) {
-    // If we're shrinking the number of elements, just shuffle in the low
-    // elements from the input and use undef as the second shuffle input.
+  // Produce an identify shuffle mask for the src vector.
+  ShuffleMaskStorage.resize(SrcElts);
+  std::iota(ShuffleMaskStorage.begin(), ShuffleMaskStorage.end(), 0);
+
+  if (SrcElts > DestElts) {
+    // If we're shrinking the number of elements (rewriting an integer
+    // truncate), just shuffle in the elements corresponding to the least
+    // significant bits from the input and use undef as the second shuffle
+    // input.
     V2 = UndefValue::get(SrcTy);
-    for (unsigned i = 0, e = DestTy->getNumElements(); i != e; ++i)
-      ShuffleMask.push_back(i);
-
+    // Make sure the shuffle mask selects the "least significant bits" by
+    // keeping elements from back of the src vector for big endian, and from the
+    // front for little endian.
+    ShuffleMask = ShuffleMaskStorage;
+    if (IsBigEndian)
+      ShuffleMask = ShuffleMask.take_back(DestElts);
+    else
+      ShuffleMask = ShuffleMask.take_front(DestElts);
   } else {
-    // If we're increasing the number of elements, shuffle in all of the
-    // elements from InVal and fill the rest of the result elements with zeros
-    // from a constant zero.
+    // If we're increasing the number of elements (rewriting an integer zext),
+    // shuffle in all of the elements from InVal. Fill the rest of the result
+    // elements with zeros from a constant zero.
     V2 = Constant::getNullValue(SrcTy);
-    unsigned SrcElts = SrcTy->getNumElements();
-    for (unsigned i = 0, e = SrcElts; i != e; ++i)
-      ShuffleMask.push_back(i);
-
-    // The excess elements reference the first element of the zero input.
-    for (unsigned i = 0, e = DestTy->getNumElements()-SrcElts; i != e; ++i)
-      ShuffleMask.push_back(SrcElts);
+    // Use first elt from V2 when indicating zero in the shuffle mask.
+    uint32_t NullElt = SrcElts;
+    // Extend with null values in the "most significant bits" by adding elements
+    // in front of the src vector for big endian, and at the back for little
+    // endian.
+    unsigned DeltaElts = DestElts - SrcElts;
+    if (IsBigEndian)
+      ShuffleMaskStorage.insert(ShuffleMaskStorage.begin(), DeltaElts, NullElt);
+    else
+      ShuffleMaskStorage.append(DeltaElts, NullElt);
+    ShuffleMask = ShuffleMaskStorage;
   }
 
   return new ShuffleVectorInst(InVal, V2,
@@ -2167,7 +2232,7 @@ Instruction *InstCombiner::optimizeBitCastFromPhi(CastInst &CI, PHINode *PN) {
   SmallSetVector<PHINode *, 4> OldPhiNodes;
 
   // Find all of the A->B casts and PHI nodes.
-  // We need to inpect all related PHI nodes, but PHIs can be cyclic, so
+  // We need to inspect all related PHI nodes, but PHIs can be cyclic, so
   // OldPhiNodes is used to track all known PHI nodes, before adding a new
   // PHI to PhiWorklist, it is checked against and added to OldPhiNodes first.
   PhiWorklist.push_back(PN);
@@ -2212,6 +2277,31 @@ Instruction *InstCombiner::optimizeBitCastFromPhi(CastInst &CI, PHINode *PN) {
     }
   }
 
+  // Check that each user of each old PHI node is something that we can
+  // rewrite, so that all of the old PHI nodes can be cleaned up afterwards.
+  for (auto *OldPN : OldPhiNodes) {
+    for (User *V : OldPN->users()) {
+      if (auto *SI = dyn_cast<StoreInst>(V)) {
+        if (!SI->isSimple() || SI->getOperand(0) != OldPN)
+          return nullptr;
+      } else if (auto *BCI = dyn_cast<BitCastInst>(V)) {
+        // Verify it's a B->A cast.
+        Type *TyB = BCI->getOperand(0)->getType();
+        Type *TyA = BCI->getType();
+        if (TyA != DestTy || TyB != SrcTy)
+          return nullptr;
+      } else if (auto *PHI = dyn_cast<PHINode>(V)) {
+        // As long as the user is another old PHI node, then even if we don't
+        // rewrite it, the PHI web we're considering won't have any users
+        // outside itself, so it'll be dead.
+        if (OldPhiNodes.count(PHI) == 0)
+          return nullptr;
+      } else {
+        return nullptr;
+      }
+    }
+  }
+
   // For each old PHI node, create a corresponding new PHI node with a type A.
   SmallDenseMap<PHINode *, PHINode *> NewPNodes;
   for (auto *OldPN : OldPhiNodes) {
@@ -2229,9 +2319,14 @@ Instruction *InstCombiner::optimizeBitCastFromPhi(CastInst &CI, PHINode *PN) {
       if (auto *C = dyn_cast<Constant>(V)) {
         NewV = ConstantExpr::getBitCast(C, DestTy);
       } else if (auto *LI = dyn_cast<LoadInst>(V)) {
-        Builder.SetInsertPoint(LI->getNextNode());
-        NewV = Builder.CreateBitCast(LI, DestTy);
-        Worklist.Add(LI);
+        // Explicitly perform load combine to make sure no opposing transform
+        // can remove the bitcast in the meantime and trigger an infinite loop.
+        Builder.SetInsertPoint(LI);
+        NewV = combineLoadToNewType(*LI, DestTy);
+        // Remove the old load and its use in the old phi, which itself becomes
+        // dead once the whole transform finishes.
+        replaceInstUsesWith(*LI, UndefValue::get(LI->getType()));
+        eraseInstFromFunction(*LI);
       } else if (auto *BCI = dyn_cast<BitCastInst>(V)) {
         NewV = BCI->getOperand(0);
       } else if (auto *PrevPN = dyn_cast<PHINode>(V)) {
@@ -2242,20 +2337,50 @@ Instruction *InstCombiner::optimizeBitCastFromPhi(CastInst &CI, PHINode *PN) {
     }
   }
 
+  // Traverse all accumulated PHI nodes and process its users,
+  // which are Stores and BitcCasts. Without this processing
+  // NewPHI nodes could be replicated and could lead to extra
+  // moves generated after DeSSA.
   // If there is a store with type B, change it to type A.
-  for (User *U : PN->users()) {
-    auto *SI = dyn_cast<StoreInst>(U);
-    if (SI && SI->isSimple() && SI->getOperand(0) == PN) {
-      Builder.SetInsertPoint(SI);
-      auto *NewBC =
-          cast<BitCastInst>(Builder.CreateBitCast(NewPNodes[PN], SrcTy));
-      SI->setOperand(0, NewBC);
-      Worklist.Add(SI);
-      assert(hasStoreUsersOnly(*NewBC));
+
+
+  // Replace users of BitCast B->A with NewPHI. These will help
+  // later to get rid off a closure formed by OldPHI nodes.
+  Instruction *RetVal = nullptr;
+  for (auto *OldPN : OldPhiNodes) {
+    PHINode *NewPN = NewPNodes[OldPN];
+    for (auto It = OldPN->user_begin(), End = OldPN->user_end(); It != End; ) {
+      User *V = *It;
+      // We may remove this user, advance to avoid iterator invalidation.
+      ++It;
+      if (auto *SI = dyn_cast<StoreInst>(V)) {
+        assert(SI->isSimple() && SI->getOperand(0) == OldPN);
+        Builder.SetInsertPoint(SI);
+        auto *NewBC =
+          cast<BitCastInst>(Builder.CreateBitCast(NewPN, SrcTy));
+        SI->setOperand(0, NewBC);
+        Worklist.Add(SI);
+        assert(hasStoreUsersOnly(*NewBC));
+      }
+      else if (auto *BCI = dyn_cast<BitCastInst>(V)) {
+        Type *TyB = BCI->getOperand(0)->getType();
+        Type *TyA = BCI->getType();
+        assert(TyA == DestTy && TyB == SrcTy);
+        (void) TyA;
+        (void) TyB;
+        Instruction *I = replaceInstUsesWith(*BCI, NewPN);
+        if (BCI == &CI)
+          RetVal = I;
+      } else if (auto *PHI = dyn_cast<PHINode>(V)) {
+        assert(OldPhiNodes.count(PHI) > 0);
+        (void) PHI;
+      } else {
+        llvm_unreachable("all uses should be handled");
+      }
     }
   }
 
-  return replaceInstUsesWith(CI, NewPNodes[PN]);
+  return RetVal;
 }
 
 Instruction *InstCombiner::visitBitCast(BitCastInst &CI) {
@@ -2310,7 +2435,23 @@ Instruction *InstCombiner::visitBitCast(BitCastInst &CI) {
     // If we found a path from the src to dest, create the getelementptr now.
     if (SrcElTy == DstElTy) {
       SmallVector<Value *, 8> Idxs(NumZeros + 1, Builder.getInt32(0));
-      return GetElementPtrInst::CreateInBounds(Src, Idxs);
+      GetElementPtrInst *GEP =
+          GetElementPtrInst::Create(SrcPTy->getElementType(), Src, Idxs);
+
+      // If the source pointer is dereferenceable, then assume it points to an
+      // allocated object and apply "inbounds" to the GEP.
+      bool CanBeNull;
+      if (Src->getPointerDereferenceableBytes(DL, CanBeNull)) {
+        // In a non-default address space (not 0), a null pointer can not be
+        // assumed inbounds, so ignore that case (dereferenceable_or_null).
+        // The reason is that 'null' is not treated differently in these address
+        // spaces, and we consequently ignore the 'gep inbounds' special case
+        // for 'null' which allows 'inbounds' on 'null' if the indices are
+        // zeros.
+        if (SrcPTy->getAddressSpace() == 0 || !CanBeNull)
+          GEP->setIsInBounds();
+      }
+      return GEP;
     }
   }
 
@@ -2330,8 +2471,8 @@ Instruction *InstCombiner::visitBitCast(BitCastInst &CI) {
         CastInst *SrcCast = cast<CastInst>(Src);
         if (BitCastInst *BCIn = dyn_cast<BitCastInst>(SrcCast->getOperand(0)))
           if (isa<VectorType>(BCIn->getOperand(0)->getType()))
-            if (Instruction *I = optimizeVectorResize(BCIn->getOperand(0),
-                                               cast<VectorType>(DestTy), *this))
+            if (Instruction *I = optimizeVectorResizeWithIntegerBitCasts(
+                    BCIn->getOperand(0), cast<VectorType>(DestTy), *this))
               return I;
       }
 
@@ -2355,35 +2496,53 @@ Instruction *InstCombiner::visitBitCast(BitCastInst &CI) {
       }
 
       // Otherwise, see if our source is an insert. If so, then use the scalar
-      // component directly.
-      if (InsertElementInst *IEI =
-            dyn_cast<InsertElementInst>(CI.getOperand(0)))
-        return CastInst::Create(Instruction::BitCast, IEI->getOperand(1),
-                                DestTy);
+      // component directly:
+      // bitcast (inselt <1 x elt> V, X, 0) to <n x m> --> bitcast X to <n x m>
+      if (auto *InsElt = dyn_cast<InsertElementInst>(Src))
+        return new BitCastInst(InsElt->getOperand(1), DestTy);
     }
   }
 
-  if (ShuffleVectorInst *SVI = dyn_cast<ShuffleVectorInst>(Src)) {
+  if (auto *Shuf = dyn_cast<ShuffleVectorInst>(Src)) {
     // Okay, we have (bitcast (shuffle ..)).  Check to see if this is
     // a bitcast to a vector with the same # elts.
-    if (SVI->hasOneUse() && DestTy->isVectorTy() &&
-        DestTy->getVectorNumElements() == SVI->getType()->getNumElements() &&
-        SVI->getType()->getNumElements() ==
-        SVI->getOperand(0)->getType()->getVectorNumElements()) {
+    Value *ShufOp0 = Shuf->getOperand(0);
+    Value *ShufOp1 = Shuf->getOperand(1);
+    unsigned NumShufElts = Shuf->getType()->getVectorNumElements();
+    unsigned NumSrcVecElts = ShufOp0->getType()->getVectorNumElements();
+    if (Shuf->hasOneUse() && DestTy->isVectorTy() &&
+        DestTy->getVectorNumElements() == NumShufElts &&
+        NumShufElts == NumSrcVecElts) {
       BitCastInst *Tmp;
       // If either of the operands is a cast from CI.getType(), then
       // evaluating the shuffle in the casted destination's type will allow
       // us to eliminate at least one cast.
-      if (((Tmp = dyn_cast<BitCastInst>(SVI->getOperand(0))) &&
+      if (((Tmp = dyn_cast<BitCastInst>(ShufOp0)) &&
            Tmp->getOperand(0)->getType() == DestTy) ||
-          ((Tmp = dyn_cast<BitCastInst>(SVI->getOperand(1))) &&
+          ((Tmp = dyn_cast<BitCastInst>(ShufOp1)) &&
            Tmp->getOperand(0)->getType() == DestTy)) {
-        Value *LHS = Builder.CreateBitCast(SVI->getOperand(0), DestTy);
-        Value *RHS = Builder.CreateBitCast(SVI->getOperand(1), DestTy);
+        Value *LHS = Builder.CreateBitCast(ShufOp0, DestTy);
+        Value *RHS = Builder.CreateBitCast(ShufOp1, DestTy);
         // Return a new shuffle vector.  Use the same element ID's, as we
         // know the vector types match #elts.
-        return new ShuffleVectorInst(LHS, RHS, SVI->getOperand(2));
+        return new ShuffleVectorInst(LHS, RHS, Shuf->getOperand(2));
       }
+    }
+
+    // A bitcasted-to-scalar and byte-reversing shuffle is better recognized as
+    // a byte-swap:
+    // bitcast <N x i8> (shuf X, undef, <N, N-1,...0>) --> bswap (bitcast X)
+    // TODO: We should match the related pattern for bitreverse.
+    if (DestTy->isIntegerTy() &&
+        DL.isLegalInteger(DestTy->getScalarSizeInBits()) &&
+        SrcTy->getScalarSizeInBits() == 8 && NumShufElts % 2 == 0 &&
+        Shuf->hasOneUse() && Shuf->isReverse()) {
+      assert(ShufOp0->getType() == SrcTy && "Unexpected shuffle mask");
+      assert(isa<UndefValue>(ShufOp1) && "Unexpected shuffle op");
+      Function *Bswap =
+          Intrinsic::getDeclaration(CI.getModule(), Intrinsic::bswap, DestTy);
+      Value *ScalarX = Builder.CreateBitCast(ShufOp0, DestTy);
+      return IntrinsicInst::Create(Bswap, { ScalarX });
     }
   }
 

@@ -1,9 +1,8 @@
 //===- unittest/ProfileData/SampleProfTest.cpp ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,17 +44,35 @@ struct SampleProfTest : ::testing::Test {
   void createWriter(SampleProfileFormat Format, StringRef Profile) {
     std::error_code EC;
     std::unique_ptr<raw_ostream> OS(
-        new raw_fd_ostream(Profile, EC, sys::fs::F_None));
+        new raw_fd_ostream(Profile, EC, sys::fs::OF_None));
     auto WriterOrErr = SampleProfileWriter::create(OS, Format);
     ASSERT_TRUE(NoError(WriterOrErr.getError()));
     Writer = std::move(WriterOrErr.get());
   }
 
-  void readProfile(const Module &M, StringRef Profile) {
-    auto ReaderOrErr = SampleProfileReader::create(Profile, Context);
+  void readProfile(const Module &M, StringRef Profile,
+                   StringRef RemapFile = "") {
+    auto ReaderOrErr = SampleProfileReader::create(Profile, Context, RemapFile);
     ASSERT_TRUE(NoError(ReaderOrErr.getError()));
     Reader = std::move(ReaderOrErr.get());
-    Reader->collectFuncsToUse(M);
+    Reader->collectFuncsFrom(M);
+  }
+
+  void createRemapFile(SmallVectorImpl<char> &RemapPath, StringRef &RemapFile) {
+    std::error_code EC =
+        llvm::sys::fs::createTemporaryFile("remapfile", "", RemapPath);
+    ASSERT_TRUE(NoError(EC));
+    RemapFile = StringRef(RemapPath.data(), RemapPath.size());
+
+    std::unique_ptr<raw_fd_ostream> OS(
+        new raw_fd_ostream(RemapFile, EC, sys::fs::OF_None));
+    *OS << R"(
+      # Types 'int' and 'long' are equivalent
+      type i l
+      # Function names 'foo' and 'faux' are equivalent
+      name 3foo 4faux
+    )";
+    OS->close();
   }
 
   void testRoundTrip(SampleProfileFormat Format, bool Remap) {
@@ -87,15 +104,48 @@ struct SampleProfTest : ::testing::Test {
     BarSamples.addCalledTargetSamples(1, 0, MconstructName, 1000);
     BarSamples.addCalledTargetSamples(1, 0, StringviewName, 437);
 
-    Module M("my_module", Context);
-    FunctionType *fn_type =
-        FunctionType::get(Type::getVoidTy(Context), {}, false);
-    M.getOrInsertFunction(FooName, fn_type);
-    M.getOrInsertFunction(BarName, fn_type);
+    StringRef BazName("_Z3bazi");
+    FunctionSamples BazSamples;
+    BazSamples.setName(BazName);
+    BazSamples.addTotalSamples(12557);
+    BazSamples.addHeadSamples(1257);
+    BazSamples.addBodySamples(1, 0, 12557);
+
+    StringRef BooName("_Z3booi");
+    FunctionSamples BooSamples;
+    BooSamples.setName(BooName);
+    BooSamples.addTotalSamples(1232);
+    BooSamples.addHeadSamples(1);
+    BooSamples.addBodySamples(1, 0, 1232);
 
     StringMap<FunctionSamples> Profiles;
     Profiles[FooName] = std::move(FooSamples);
     Profiles[BarName] = std::move(BarSamples);
+    Profiles[BazName] = std::move(BazSamples);
+    Profiles[BooName] = std::move(BooSamples);
+
+    Module M("my_module", Context);
+    FunctionType *fn_type =
+        FunctionType::get(Type::getVoidTy(Context), {}, false);
+
+    SmallVector<char, 128> RemapPath;
+    StringRef RemapFile;
+    if (Remap) {
+      createRemapFile(RemapPath, RemapFile);
+      FooName = "_Z4fauxi";
+      BarName = "_Z3barl";
+    }
+
+    M.getOrInsertFunction(FooName, fn_type);
+    M.getOrInsertFunction(BarName, fn_type);
+    M.getOrInsertFunction(BooName, fn_type);
+
+    ProfileSymbolList List;
+    if (Format == SampleProfileFormat::SPF_Ext_Binary) {
+      List.add("zoo", true);
+      List.add("moo", true);
+    }
+    Writer->setProfileSymbolList(&List);
 
     std::error_code EC;
     EC = Writer->write(Profiles);
@@ -103,28 +153,16 @@ struct SampleProfTest : ::testing::Test {
 
     Writer->getOutputStream().flush();
 
-    readProfile(M, Profile);
-
+    readProfile(M, Profile, RemapFile);
     EC = Reader->read();
     ASSERT_TRUE(NoError(EC));
 
-    if (Remap) {
-      auto MemBuffer = llvm::MemoryBuffer::getMemBuffer(R"(
-        # Types 'int' and 'long' are equivalent
-        type i l
-        # Function names 'foo' and 'faux' are equivalent
-        name 3foo 4faux
-      )");
-      Reader.reset(new SampleProfileReaderItaniumRemapper(
-          std::move(MemBuffer), Context, std::move(Reader)));
-      FooName = "_Z4fauxi";
-      BarName = "_Z3barl";
-
-      EC = Reader->read();
-      ASSERT_TRUE(NoError(EC));
+    if (Format == SampleProfileFormat::SPF_Ext_Binary) {
+      std::unique_ptr<ProfileSymbolList> ReaderList =
+          Reader->getProfileSymbolList();
+      ReaderList->contains("zoo");
+      ReaderList->contains("moo");
     }
-
-    ASSERT_EQ(2u, Reader->getProfiles().size());
 
     FunctionSamples *ReadFooSamples = Reader->getSamplesFor(FooName);
     ASSERT_TRUE(ReadFooSamples != nullptr);
@@ -145,6 +183,24 @@ struct SampleProfTest : ::testing::Test {
         ReadBarSamples->findCallTargetMapAt(1, 0);
     ASSERT_FALSE(CTMap.getError());
 
+    // Because _Z3bazi is not defined in module M, expect _Z3bazi's profile
+    // is not loaded when the profile is ExtBinary or Compact format because
+    // these formats support loading function profiles on demand.
+    FunctionSamples *ReadBazSamples = Reader->getSamplesFor(BazName);
+    if (Format == SampleProfileFormat::SPF_Ext_Binary ||
+        Format == SampleProfileFormat::SPF_Compact_Binary) {
+      ASSERT_TRUE(ReadBazSamples == nullptr);
+      ASSERT_EQ(3u, Reader->getProfiles().size());
+    } else {
+      ASSERT_TRUE(ReadBazSamples != nullptr);
+      ASSERT_EQ(12557u, ReadBazSamples->getTotalSamples());
+      ASSERT_EQ(4u, Reader->getProfiles().size());
+    }
+
+    FunctionSamples *ReadBooSamples = Reader->getSamplesFor(BooName);
+    ASSERT_TRUE(ReadBooSamples != nullptr);
+    ASSERT_EQ(1232u, ReadBooSamples->getTotalSamples());
+
     std::string MconstructGUID;
     StringRef MconstructRep =
         getRepInFormat(MconstructName, Format, MconstructGUID);
@@ -156,9 +212,9 @@ struct SampleProfTest : ::testing::Test {
 
     auto VerifySummary = [](ProfileSummary &Summary) mutable {
       ASSERT_EQ(ProfileSummary::PSK_Sample, Summary.getKind());
-      ASSERT_EQ(123603u, Summary.getTotalCount());
-      ASSERT_EQ(6u, Summary.getNumCounts());
-      ASSERT_EQ(2u, Summary.getNumFunctions());
+      ASSERT_EQ(137392u, Summary.getTotalCount());
+      ASSERT_EQ(8u, Summary.getNumCounts());
+      ASSERT_EQ(4u, Summary.getNumFunctions());
       ASSERT_EQ(1437u, Summary.getMaxFunctionCount());
       ASSERT_EQ(60351u, Summary.getMaxCount());
 
@@ -175,8 +231,8 @@ struct SampleProfTest : ::testing::Test {
       Cutoff = 990000;
       auto NinetyNinePerc = find_if(Details, Predicate);
       ASSERT_EQ(60000u, EightyPerc->MinCount);
-      ASSERT_EQ(60000u, NinetyPerc->MinCount);
-      ASSERT_EQ(60000u, NinetyFivePerc->MinCount);
+      ASSERT_EQ(12557u, NinetyPerc->MinCount);
+      ASSERT_EQ(12557u, NinetyFivePerc->MinCount);
       ASSERT_EQ(610u, NinetyNinePerc->MinCount);
     };
 
@@ -192,13 +248,85 @@ struct SampleProfTest : ::testing::Test {
     delete PS;
 
     // Test that summary can be attached to and read back from module.
-    M.setProfileSummary(MD);
-    MD = M.getProfileSummary();
+    M.setProfileSummary(MD, ProfileSummary::PSK_Sample);
+    MD = M.getProfileSummary(/* IsCS */ false);
     ASSERT_TRUE(MD);
     PS = ProfileSummary::getFromMD(MD);
     ASSERT_TRUE(PS);
     VerifySummary(*PS);
     delete PS;
+  }
+
+  void addFunctionSamples(StringMap<FunctionSamples> *Smap, const char *Fname,
+                          uint64_t TotalSamples, uint64_t HeadSamples) {
+    StringRef Name(Fname);
+    FunctionSamples FcnSamples;
+    FcnSamples.setName(Name);
+    FcnSamples.addTotalSamples(TotalSamples);
+    FcnSamples.addHeadSamples(HeadSamples);
+    FcnSamples.addBodySamples(1, 0, HeadSamples);
+    (*Smap)[Name] = FcnSamples;
+  }
+
+  StringMap<FunctionSamples> setupFcnSamplesForElisionTest(StringRef Policy) {
+    StringMap<FunctionSamples> Smap;
+    addFunctionSamples(&Smap, "foo", uint64_t(20301), uint64_t(1437));
+    if (Policy == "" || Policy == "all")
+      return Smap;
+    addFunctionSamples(&Smap, "foo.bar", uint64_t(20303), uint64_t(1439));
+    if (Policy == "selected")
+      return Smap;
+    addFunctionSamples(&Smap, "foo.llvm.2465", uint64_t(20305), uint64_t(1441));
+    return Smap;
+  }
+
+  void createFunctionWithSampleProfileElisionPolicy(Module *M,
+                                                    const char *Fname,
+                                                    StringRef Policy) {
+    FunctionType *FnType =
+        FunctionType::get(Type::getVoidTy(Context), {}, false);
+    auto Inserted = M->getOrInsertFunction(Fname, FnType);
+    auto Fcn = cast<Function>(Inserted.getCallee());
+    if (Policy != "")
+      Fcn->addFnAttr("sample-profile-suffix-elision-policy", Policy);
+  }
+
+  void setupModuleForElisionTest(Module *M, StringRef Policy) {
+    createFunctionWithSampleProfileElisionPolicy(M, "foo", Policy);
+    createFunctionWithSampleProfileElisionPolicy(M, "foo.bar", Policy);
+    createFunctionWithSampleProfileElisionPolicy(M, "foo.llvm.2465", Policy);
+  }
+
+  void testSuffixElisionPolicy(SampleProfileFormat Format, StringRef Policy,
+                               const StringMap<uint64_t> &Expected) {
+    SmallVector<char, 128> ProfilePath;
+    std::error_code EC;
+    EC = llvm::sys::fs::createTemporaryFile("profile", "", ProfilePath);
+    ASSERT_TRUE(NoError(EC));
+    StringRef ProfileFile(ProfilePath.data(), ProfilePath.size());
+
+    Module M("my_module", Context);
+    setupModuleForElisionTest(&M, Policy);
+    StringMap<FunctionSamples> ProfMap = setupFcnSamplesForElisionTest(Policy);
+
+    // write profile
+    createWriter(Format, ProfileFile);
+    EC = Writer->write(ProfMap);
+    ASSERT_TRUE(NoError(EC));
+    Writer->getOutputStream().flush();
+
+    // read profile
+    readProfile(M, ProfileFile);
+    EC = Reader->read();
+    ASSERT_TRUE(NoError(EC));
+
+    for (auto I = Expected.begin(); I != Expected.end(); ++I) {
+      uint64_t Esamples = uint64_t(-1);
+      FunctionSamples *Samples = Reader->getSamplesFor(I->getKey());
+      if (Samples != nullptr)
+        Esamples = Samples->getTotalSamples();
+      ASSERT_EQ(I->getValue(), Esamples);
+    }
   }
 };
 
@@ -214,6 +342,10 @@ TEST_F(SampleProfTest, roundtrip_compact_binary_profile) {
   testRoundTrip(SampleProfileFormat::SPF_Compact_Binary, false);
 }
 
+TEST_F(SampleProfTest, roundtrip_ext_binary_profile) {
+  testRoundTrip(SampleProfileFormat::SPF_Ext_Binary, false);
+}
+
 TEST_F(SampleProfTest, remap_text_profile) {
   testRoundTrip(SampleProfileFormat::SPF_Text, true);
 }
@@ -222,11 +354,14 @@ TEST_F(SampleProfTest, remap_raw_binary_profile) {
   testRoundTrip(SampleProfileFormat::SPF_Binary, true);
 }
 
+TEST_F(SampleProfTest, remap_ext_binary_profile) {
+  testRoundTrip(SampleProfileFormat::SPF_Ext_Binary, true);
+}
+
 TEST_F(SampleProfTest, sample_overflow_saturation) {
   const uint64_t Max = std::numeric_limits<uint64_t>::max();
   sampleprof_error Result;
 
-  StringRef FooName("_Z3fooi");
   FunctionSamples FooSamples;
   Result = FooSamples.addTotalSamples(1);
   ASSERT_EQ(Result, sampleprof_error::success);
@@ -250,6 +385,79 @@ TEST_F(SampleProfTest, sample_overflow_saturation) {
   ErrorOr<uint64_t> BodySamples = FooSamples.findSamplesAt(10, 0);
   ASSERT_FALSE(BodySamples.getError());
   ASSERT_EQ(BodySamples.get(), Max);
+}
+
+TEST_F(SampleProfTest, default_suffix_elision_text) {
+  // Default suffix elision policy: strip everything after first dot.
+  // This implies that all suffix variants will map to "foo", so
+  // we don't expect to see any entries for them in the sample
+  // profile.
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(-1);
+  Expected["foo.llvm.2465"] = uint64_t(-1);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Text, "", Expected);
+}
+
+TEST_F(SampleProfTest, default_suffix_elision_compact_binary) {
+  // Default suffix elision policy: strip everything after first dot.
+  // This implies that all suffix variants will map to "foo", so
+  // we don't expect to see any entries for them in the sample
+  // profile.
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(-1);
+  Expected["foo.llvm.2465"] = uint64_t(-1);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Compact_Binary, "",
+                          Expected);
+}
+
+TEST_F(SampleProfTest, selected_suffix_elision_text) {
+  // Profile is created and searched using the "selected"
+  // suffix elision policy: we only strip a .XXX suffix if
+  // it matches a pattern known to be generated by the compiler
+  // (e.g. ".llvm.<digits>").
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(20303);
+  Expected["foo.llvm.2465"] = uint64_t(-1);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Text, "selected", Expected);
+}
+
+TEST_F(SampleProfTest, selected_suffix_elision_compact_binary) {
+  // Profile is created and searched using the "selected"
+  // suffix elision policy: we only strip a .XXX suffix if
+  // it matches a pattern known to be generated by the compiler
+  // (e.g. ".llvm.<digits>").
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(20303);
+  Expected["foo.llvm.2465"] = uint64_t(-1);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Compact_Binary, "selected",
+                          Expected);
+}
+
+TEST_F(SampleProfTest, none_suffix_elision_text) {
+  // Profile is created and searched using the "none"
+  // suffix elision policy: no stripping of suffixes at all.
+  // Here we expect to see all variants in the profile.
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(20303);
+  Expected["foo.llvm.2465"] = uint64_t(20305);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Text, "none", Expected);
+}
+
+TEST_F(SampleProfTest, none_suffix_elision_compact_binary) {
+  // Profile is created and searched using the "none"
+  // suffix elision policy: no stripping of suffixes at all.
+  // Here we expect to see all variants in the profile.
+  StringMap<uint64_t> Expected;
+  Expected["foo"] = uint64_t(20301);
+  Expected["foo.bar"] = uint64_t(20303);
+  Expected["foo.llvm.2465"] = uint64_t(20305);
+  testSuffixElisionPolicy(SampleProfileFormat::SPF_Compact_Binary, "none",
+                          Expected);
 }
 
 } // end anonymous namespace

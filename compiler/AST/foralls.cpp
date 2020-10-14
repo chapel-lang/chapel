@@ -293,6 +293,7 @@ buildFollowLoop(VarSymbol* iter,
                                        zippered,
                                        /*isLoweredForall*/ false,
                                        forallExpr);
+  followBody->orderIndependentSet(true);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -485,6 +486,8 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
                                  SymExpr* origSE, FnSymbol* origTarget)
 {
   ParIterFlavor retval = PIF_NONE;
+  IteratorGroup* igroup = origTarget ? origTarget->iteratorGroup : NULL;
+  FnSymbol* noniterFn = NULL;
 
   checkForExplicitTagArgs(iterCall);
 
@@ -495,14 +498,28 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
 
   // try standalone
   if (!pfs->zippered()) {
-    bool gotSA = tryResolveCall(iterCall);
+    bool gotSA = false;
+    if (igroup) {
+      gotSA = igroup->standalone != NULL;
+      if (gotSA) iterCall->baseExpr->replace(new SymExpr(igroup->standalone));
+      else noniterFn = igroup->noniterSA;
+    } else {
+      gotSA = tryResolveCall(iterCall);
+    }
     if (gotSA) retval = PIF_STANDALONE;
   }
 
   // try leader
   if (retval == PIF_NONE) {
     tag->actual->replace(new SymExpr(gLeaderTag));
-    bool gotLeader = tryResolveCall(iterCall);
+    bool gotLeader = false;
+    if (igroup) {
+      gotLeader = igroup->leader != NULL;
+      if (gotLeader) iterCall->baseExpr->replace(new SymExpr(igroup->leader));
+      else if (!noniterFn) noniterFn = igroup->noniterL;
+    } else {
+      gotLeader = tryResolveCall(iterCall);
+    }
     if (gotLeader) retval = PIF_LEADER;
   }
 
@@ -521,13 +538,16 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   }
 
   if (retval == PIF_NONE) {
-    // Cannot USR_FATAL_CONT in general: e.g. if these() is not found,
-    // we do not know the type of the index variable.
-    // Without which we cannot typecheck the loop body.
+   if (noniterFn != NULL) {
+    USR_FATAL_CONT(iterCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", noniterFn->name);
+    USR_PRINT(noniterFn, "The function '%s' is declared here", noniterFn->name);
+    USR_STOP();
+   } else {
     if (iterCall->isNamed("these") && isTypeExpr(iterCall->get(2)))
       USR_FATAL(iterCall, "unable to iterate over type '%s'", toString(iterCall->get(2)->getValType()));
     else
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
+   }
   }
 
   return retval;
@@ -808,19 +828,6 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   INT_ASSERT(fs->numInductionVars() == 1);
 }
 
-static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
-                                CallExpr* parCall)
-{
-  if ((flavor == PIF_STANDALONE && igroup->noniterSA) ||
-      (flavor == PIF_LEADER     && igroup->noniterL)   )
-  {
-    FnSymbol* dest = parCall->resolvedFunction();
-    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-    USR_STOP();
-  }
-}
-
 static RetTag iteratorTag(FnSymbol* iterFn) {
   IteratorInfo* ii = iterFn->iteratorInfo;
   if (ii == NULL) {
@@ -964,9 +971,16 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+
+      // override the dynamic check if the compiler can prove it's safe
+      if (pfs->optInfo.confirmedFastFollower) {
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
+      }
+      else {
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                            new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
+                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+      }
     }
 
     SymbolMap map;
@@ -1009,7 +1023,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   checkWhenOverTupleExpand(pfs);
 
-  FnSymbol* origTarget = NULL; //for assertions
+  FnSymbol* origTarget = NULL;
   CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
 
   // So we know where iterCall is.
@@ -1026,21 +1040,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   CallExpr* firstIterCall = iterCall;
   FnSymbol* origIterFn = iterCall->resolvedFunction();
   bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"
-
-  if (origTarget) {
-    IteratorGroup* igroup = origTarget->iteratorGroup;
-    checkForNonIterator(igroup, flavor, iterCall);
-
-    if (origTarget == origIterFn) {
-      INT_ASSERT(flavor == PIF_SERIAL);
-      INT_ASSERT(pfs->allowSerialIterator());
-      INT_ASSERT(origIterFn == igroup->serial);
-    } else if (gotSA) {
-      INT_ASSERT(origIterFn == igroup->standalone);
-    } else {
-      INT_ASSERT(origIterFn == igroup->leader);
-    }
-  }
 
   if (flavor == PIF_SERIAL && pfs->numIteratedExprs() > 1) {
     // numIteratedExprs() is a good number to check, right?

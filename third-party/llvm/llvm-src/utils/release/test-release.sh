@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 #===-- test-release.sh - Test the LLVM release candidates ------------------===#
 #
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
 #===------------------------------------------------------------------------===#
 #
@@ -18,6 +17,7 @@ if [ "$System" = "FreeBSD" ]; then
 else
     MAKE=make
 fi
+generator="Unix Makefiles"
 
 # Base SVN URL for the sources.
 Base_url="http://llvm.org/svn/llvm-project"
@@ -40,9 +40,11 @@ do_openmp="yes"
 do_lld="yes"
 do_lldb="no"
 do_polly="yes"
+do_mlir="yes"
 BuildDir="`pwd`"
 ExtraConfigureFlags=""
 ExportBranch=""
+git_ref=""
 
 function usage() {
     echo "usage: `basename $0` -release X.Y.Z -rc NUM [OPTIONS]"
@@ -58,9 +60,9 @@ function usage() {
     echo " -test-asserts        Test with asserts on. [default: no]"
     echo " -no-compare-files    Don't test that phase 2 and 3 files are identical."
     echo " -use-gzip            Use gzip instead of xz."
+    echo " -use-ninja           Use ninja instead of make/gmake."
     echo " -configure-flags FLAGS  Extra flags to pass to the configure step."
-    echo " -svn-path DIR        Use the specified DIR instead of a release."
-    echo "                      For example -svn-path trunk or -svn-path branches/release_37"
+    echo " -git-ref sha         Use the specified git ref for testing instead of a release."
     echo " -no-rt               Disable check-out & build Compiler-RT"
     echo " -no-libs             Disable check-out & build libcxx/libcxxabi/libunwind"
     echo " -no-libcxxabi        Disable check-out & build libcxxabi"
@@ -71,6 +73,7 @@ function usage() {
     echo " -lldb                Enable check-out & build lldb"
     echo " -no-lldb             Disable check-out & build lldb (default)"
     echo " -no-polly            Disable check-out & build Polly"
+    echo " -no-mlir             Disable check-out & build MLIR"
 }
 
 while [ $# -gt 0 ]; do
@@ -87,13 +90,14 @@ while [ $# -gt 0 ]; do
         -final | --final )
             RC=final
             ;;
-        -svn-path | --svn-path )
+        -git-ref | --git-ref )
             shift
             Release="test"
             Release_no_dot="test"
             ExportBranch="$1"
             RC="`echo $ExportBranch | sed -e 's,/,_,g'`"
-            echo "WARNING: Using the branch $ExportBranch instead of a release tag"
+            git_ref="$1"
+            echo "WARNING: Using the ref $git_ref instead of a release tag"
             echo "         This is intended to aid new packagers in trialing "
             echo "         builds without requiring a tag to be created first"
             ;;
@@ -111,6 +115,10 @@ while [ $# -gt 0 ]; do
                 shift
                 NumJobs="$1"
             fi
+            ;;
+        -use-ninja )
+            MAKE=ninja
+            generator=Ninja
             ;;
         -build-dir | --build-dir | -builddir | --builddir )
             shift
@@ -161,6 +169,9 @@ while [ $# -gt 0 ]; do
         -no-polly )
             do_polly="no"
             ;;
+        -no-mlir )
+            do_mlir="no"
+            ;;
         -help | --help | -h | --h | -\? )
             usage
             exit 0
@@ -191,6 +202,17 @@ if [ -z "$Triple" ]; then
     exit 1
 fi
 
+if [ "$Release" != "test" ]; then
+  if [ -n "$git_ref" ]; then
+    echo "error: can't specify both -release and -git-ref"
+    exit 1
+  fi
+  git_ref=llvmorg-$Release
+  if [ "$RC" != "final" ]; then
+    git_ref="$git_ref-$RC"
+  fi
+fi
+
 # Figure out how many make processes to run.
 if [ -z "$NumJobs" ]; then
     NumJobs=`sysctl -n hw.activecpu 2> /dev/null || true`
@@ -206,7 +228,7 @@ if [ -z "$NumJobs" ]; then
 fi
 
 # Projects list
-projects="llvm cfe clang-tools-extra"
+projects="llvm clang clang-tools-extra"
 if [ $do_rt = "yes" ]; then
   projects="$projects compiler-rt"
 fi
@@ -235,6 +257,9 @@ if [ $do_lldb = "yes" ]; then
 fi
 if [ $do_polly = "yes" ]; then
   projects="$projects polly"
+fi
+if [ $do_mlir = "yes" ]; then
+  projects="$projects mlir"
 fi
 
 # Go to the build directory (may be different from CWD)
@@ -272,66 +297,48 @@ function check_program_exists() {
   fi
 }
 
-if [ "$System" != "Darwin" ]; then
+if [ "$System" != "Darwin" -a "$System" != "SunOS" ]; then
   check_program_exists 'chrpath'
+fi
+
+if [ "$System" != "Darwin" ]; then
   check_program_exists 'file'
   check_program_exists 'objdump'
 fi
 
-# Make sure that the URLs are valid.
-function check_valid_urls() {
-    for proj in $projects ; do
-        echo "# Validating $proj SVN URL"
-
-        if ! svn ls $Base_url/$proj/$ExportBranch > /dev/null 2>&1 ; then
-            echo "$proj does not have a $ExportBranch branch/tag!"
-            exit 1
-        fi
-    done
-}
+check_program_exists ${MAKE}
 
 # Export sources to the build directory.
 function export_sources() {
-    check_valid_urls
+  SrcDir=$BuildDir/llvm-project
+  mkdir -p $SrcDir
+  echo "# Using git ref: $git_ref"
 
-    for proj in $projects ; do
-        case $proj in
-        llvm)
-            projsrc=$proj.src
-            ;;
-        cfe)
-            projsrc=llvm.src/tools/clang
-            ;;
-        lld|lldb|polly)
-            projsrc=llvm.src/tools/$proj
-            ;;
-        clang-tools-extra)
-            projsrc=llvm.src/tools/clang/tools/extra
-            ;;
-        compiler-rt|libcxx|libcxxabi|libunwind|openmp)
-            projsrc=llvm.src/projects/$proj
-            ;;
-        test-suite)
-            projsrc=$proj.src
-            ;;
-        *)
-            echo "error: unknown project $proj"
-            exit 1
-            ;;
-        esac
+  # GitHub allows you to download a tarball of any commit using the URL:
+  # https://github.com/$organization/$repo/archive/$ref.tar.gz
+  curl -L https://github.com/llvm/llvm-project/archive/$git_ref.tar.gz | \
+    tar -C $SrcDir --strip-components=1 -xzf -
 
-        if [ -d $projsrc ]; then
-          echo "# Reusing $proj $Release-$RC sources in $projsrc"
-          continue
-        fi
-        echo "# Exporting $proj $Release-$RC sources to $projsrc"
-        if ! svn export -q $Base_url/$proj/$ExportBranch $projsrc ; then
-            echo "error: failed to export $proj project"
-            exit 1
-        fi
-    done
+  if [ "$do_test_suite" = "yes" ]; then
+    TestSuiteSrcDir=$BuildDir/llvm-test-suite
+    mkdir -p $TestSuiteSrcDir
 
-    cd $BuildDir
+    # We can only use named refs, like branches and tags, that exist in
+    # both the llvm-project and test-suite repos if we want to run the
+    # test suite.
+    # If the test-suite fails to download assume we are using a ref that
+    # doesn't exist in the test suite and disable it.
+    set +e
+    curl -L https://github.com/llvm/test-suite/archive/$git_ref.tar.gz | \
+      tar -C $TestSuiteSrcDir --strip-components=1 -xzf -
+    if [ $? -ne -0 ]; then
+      echo "$git_ref not found in test-suite repo, test-suite disabled."
+      do_test_suite="no"
+    fi
+    set -e
+  fi
+
+  cd $BuildDir
 }
 
 function configure_llvmCore() {
@@ -359,6 +366,7 @@ function configure_llvmCore() {
             ;;
     esac
 
+    project_list=${projects// /;}
     echo "# Using C compiler: $c_compiler"
     echo "# Using C++ compiler: $cxx_compiler"
 
@@ -366,14 +374,16 @@ function configure_llvmCore() {
     echo "# Configuring llvm $Release-$RC $Flavor"
 
     echo "#" env CC="$c_compiler" CXX="$cxx_compiler" \
-        cmake -G "Unix Makefiles" \
+        cmake -G "$generator" \
         -DCMAKE_BUILD_TYPE=$BuildType -DLLVM_ENABLE_ASSERTIONS=$Assertions \
-        $ExtraConfigureFlags $BuildDir/llvm.src \
+        -DLLVM_ENABLE_PROJECTS="$project_list" \
+        $ExtraConfigureFlags $BuildDir/llvm-project/llvm \
         2>&1 | tee $LogDir/llvm.configure-Phase$Phase-$Flavor.log
     env CC="$c_compiler" CXX="$cxx_compiler" \
-        cmake -G "Unix Makefiles" \
+        cmake -G "$generator" \
         -DCMAKE_BUILD_TYPE=$BuildType -DLLVM_ENABLE_ASSERTIONS=$Assertions \
-        $ExtraConfigureFlags $BuildDir/llvm.src \
+        -DLLVM_ENABLE_PROJECTS="$project_list" \
+        $ExtraConfigureFlags $BuildDir/llvm-project/llvm \
         2>&1 | tee $LogDir/llvm.configure-Phase$Phase-$Flavor.log
 
     cd $BuildDir
@@ -385,16 +395,20 @@ function build_llvmCore() {
     ObjDir="$3"
     DestDir="$4"
 
+    Verbose="VERBOSE=1"
+    if [ ${MAKE} = 'ninja' ]; then
+      Verbose="-v"
+    fi
+
     cd $ObjDir
     echo "# Compiling llvm $Release-$RC $Flavor"
-    echo "# ${MAKE} -j $NumJobs VERBOSE=1"
-    ${MAKE} -j $NumJobs VERBOSE=1 \
+    echo "# ${MAKE} -j $NumJobs $Verbose"
+    ${MAKE} -j $NumJobs $Verbose \
         2>&1 | tee $LogDir/llvm.make-Phase$Phase-$Flavor.log
 
     echo "# Installing llvm $Release-$RC $Flavor"
     echo "# ${MAKE} install"
-    ${MAKE} install \
-        DESTDIR="${DestDir}" \
+    DESTDIR="${DestDir}" ${MAKE} install \
         2>&1 | tee $LogDir/llvm.install-Phase$Phase-$Flavor.log
     cd $BuildDir
 }
@@ -404,8 +418,15 @@ function test_llvmCore() {
     Flavor="$2"
     ObjDir="$3"
 
+    KeepGoing="-k"
+    if [ ${MAKE} = 'ninja' ]; then
+      # Ninja doesn't have a documented "keep-going-forever" mode, we need to
+      # set a limit on how many jobs can fail before we give up.
+      KeepGoing="-k 100"
+    fi
+
     cd $ObjDir
-    if ! ( ${MAKE} -j $NumJobs -k check-all \
+    if ! ( ${MAKE} -j $NumJobs $KeepGoing check-all \
         2>&1 | tee $LogDir/llvm.check-Phase$Phase-$Flavor.log ) ; then
       deferred_error $Phase $Flavor "check-all failed"
     fi
@@ -413,8 +434,9 @@ function test_llvmCore() {
     if [ $do_test_suite = 'yes' ]; then
       cd $TestSuiteBuildDir
       env CC="$c_compiler" CXX="$cxx_compiler" \
-          cmake $TestSuiteSrcDir -DTEST_SUITE_LIT=$Lit
-      if ! ( ${MAKE} -j $NumJobs -k check \
+          cmake $TestSuiteSrcDir -G "$generator" -DTEST_SUITE_LIT=$Lit
+
+      if ! ( ${MAKE} -j $NumJobs $KeepGoing check \
           2>&1 | tee $LogDir/llvm.check-Phase$Phase-$Flavor.log ) ; then
         deferred_error $Phase $Flavor "test suite failed"
       fi
@@ -425,7 +447,7 @@ function test_llvmCore() {
 # Clean RPATH. Libtool adds the build directory to the search path, which is
 # not necessary --- and even harmful --- for the binary packages we release.
 function clean_RPATH() {
-  if [ "$System" = "Darwin" ]; then
+  if [ "$System" = "Darwin" -o "$System" = "SunOS" ]; then
     return
   fi
   local InstallPath="$1"
@@ -472,10 +494,10 @@ if [ $do_test_suite = "yes" ]; then
   SandboxDir="$BuildDir/sandbox"
   Lit=$SandboxDir/bin/lit
   TestSuiteBuildDir="$BuildDir/test-suite-build"
-  TestSuiteSrcDir="$BuildDir/test-suite.src"
+  TestSuiteSrcDir="$BuildDir/llvm-test-suite"
 
   virtualenv $SandboxDir
-  $SandboxDir/bin/python $BuildDir/llvm.src/utils/lit/setup.py install
+  $SandboxDir/bin/python $BuildDir/llvm-project/llvm/utils/lit/setup.py install
   mkdir -p $TestSuiteBuildDir
 fi
 
@@ -572,11 +594,12 @@ for Flavor in $Flavors ; do
         for p2 in `find $llvmCore_phase2_objdir -name '*.o'` ; do
             p3=`echo $p2 | sed -e 's,Phase2,Phase3,'`
             # Substitute 'Phase2' for 'Phase3' in the Phase 2 object file in
-            # case there are build paths in the debug info. On some systems,
-            # sed adds a newline to the output, so pass $p3 through sed too.
+            # case there are build paths in the debug info. Do the same sub-
+            # stitution on both files in case the string occurrs naturally.
             if ! cmp -s \
-                <(env LC_CTYPE=C sed -e 's,Phase2,Phase3,g' -e 's,Phase1,Phase2,g' $p2) \
-                <(env LC_CTYPE=C sed -e '' $p3) 16 16; then
+                <(env LC_CTYPE=C sed -e 's,Phase1,Phase2,g' -e 's,Phase2,Phase3,g' $p2) \
+                <(env LC_CTYPE=C sed -e 's,Phase1,Phase2,g' -e 's,Phase2,Phase3,g' $p3) \
+                16 16; then
                 echo "file `basename $p2` differs between phase 2 and phase 3"
             fi
         done

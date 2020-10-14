@@ -1,9 +1,8 @@
 //===--- CallAndMessageChecker.cpp ------------------------------*- C++ -*--==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,14 +28,6 @@ using namespace ento;
 
 namespace {
 
-struct ChecksFilter {
-  DefaultBool Check_CallAndMessageUnInitRefArg;
-  DefaultBool Check_CallAndMessageChecker;
-
-  CheckName CheckName_CallAndMessageUnInitRefArg;
-  CheckName CheckName_CallAndMessageChecker;
-};
-
 class CallAndMessageChecker
   : public Checker< check::PreStmt<CallExpr>,
                     check::PreStmt<CXXDeleteExpr>,
@@ -57,7 +48,8 @@ class CallAndMessageChecker
   mutable std::unique_ptr<BugType> BT_call_few_args;
 
 public:
-  ChecksFilter Filter;
+  DefaultBool Check_CallAndMessageUnInitRefArg;
+  CheckerNameRef CheckName_CallAndMessageUnInitRefArg;
 
   void checkPreStmt(const CallExpr *CE, CheckerContext &C) const;
   void checkPreStmt(const CXXDeleteExpr *DE, CheckerContext &C) const;
@@ -103,7 +95,7 @@ void CallAndMessageChecker::emitBadCall(BugType *BT, CheckerContext &C,
   if (!N)
     return;
 
-  auto R = llvm::make_unique<BugReport>(*BT, BT->getName(), N);
+  auto R = std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);
   if (BadE) {
     R->addRange(BadE->getSourceRange());
     if (BadE->isGLValue())
@@ -152,7 +144,7 @@ bool CallAndMessageChecker::uninitRefOrPointer(
     CheckerContext &C, const SVal &V, SourceRange ArgRange, const Expr *ArgEx,
     std::unique_ptr<BugType> &BT, const ParmVarDecl *ParamDecl, const char *BD,
     int ArgumentNumber) const {
-  if (!Filter.Check_CallAndMessageUnInitRefArg)
+  if (!Check_CallAndMessageUnInitRefArg)
     return false;
 
   // No parameter declaration available, i.e. variadic function argument.
@@ -183,7 +175,7 @@ bool CallAndMessageChecker::uninitRefOrPointer(
     if (PSV.isUndef()) {
       if (ExplodedNode *N = C.generateErrorNode()) {
         LazyInit_BT(BD, BT);
-        auto R = llvm::make_unique<BugReport>(*BT, Os.str(), N);
+        auto R = std::make_unique<PathSensitiveBugReport>(*BT, Os.str(), N);
         R->addRange(ArgRange);
         if (ArgEx)
           bugreporter::trackExpressionValue(N, ArgEx, *R);
@@ -260,7 +252,7 @@ bool CallAndMessageChecker::PreVisitProcessArg(CheckerContext &C,
       SmallString<200> Buf;
       llvm::raw_svector_ostream Os(Buf);
       describeUninitializedArgumentInCall(Call, ArgumentNumber, Os);
-      auto R = llvm::make_unique<BugReport>(*BT, Os.str(), N);
+      auto R = std::make_unique<PathSensitiveBugReport>(*BT, Os.str(), N);
 
       R->addRange(ArgRange);
       if (ArgEx)
@@ -303,7 +295,7 @@ bool CallAndMessageChecker::PreVisitProcessArg(CheckerContext &C,
         }
 
         // Generate a report for this bug.
-        auto R = llvm::make_unique<BugReport>(*BT, os.str(), N);
+        auto R = std::make_unique<PathSensitiveBugReport>(*BT, os.str(), N);
         R->addRange(ArgRange);
 
         if (ArgEx)
@@ -366,7 +358,7 @@ void CallAndMessageChecker::checkPreStmt(const CXXDeleteExpr *DE,
     else
       Desc = "Argument to 'delete' is uninitialized";
     BugType *BT = BT_cxx_delete_undef.get();
-    auto R = llvm::make_unique<BugReport>(*BT, Desc, N);
+    auto R = std::make_unique<PathSensitiveBugReport>(*BT, Desc, N);
     bugreporter::trackExpressionValue(N, DE, *R);
     C.emitReport(std::move(R));
     return;
@@ -428,8 +420,8 @@ void CallAndMessageChecker::checkPreCall(const CallEvent &Call,
          << (Params == 1 ? "" : "s") << " is called with fewer ("
          << Call.getNumArgs() << ")";
 
-      C.emitReport(
-          llvm::make_unique<BugReport>(*BT_call_few_args, os.str(), N));
+      C.emitReport(std::make_unique<PathSensitiveBugReport>(*BT_call_few_args,
+                                                            os.str(), N));
     }
   }
 
@@ -490,7 +482,7 @@ void CallAndMessageChecker::checkPreObjCMessage(const ObjCMethodCall &msg,
       }
       assert(BT && "Unknown message kind.");
 
-      auto R = llvm::make_unique<BugReport>(*BT, BT->getName(), N);
+      auto R = std::make_unique<PathSensitiveBugReport>(*BT, BT->getDescription(), N);
       const ObjCMessageExpr *ME = msg.getOriginExpr();
       R->addRange(ME->getReceiverRange());
 
@@ -533,7 +525,8 @@ void CallAndMessageChecker::emitNilReceiverBug(CheckerContext &C,
     os << "' that will be garbage";
   }
 
-  auto report = llvm::make_unique<BugReport>(*BT_msg_ret, os.str(), N);
+  auto report =
+      std::make_unique<PathSensitiveBugReport>(*BT_msg_ret, os.str(), N);
   report->addRange(ME->getReceiverRange());
   // FIXME: This won't track "self" in messages to super.
   if (const Expr *receiver = ME->getInstanceReceiver()) {
@@ -608,13 +601,20 @@ void CallAndMessageChecker::HandleNilReceiver(CheckerContext &C,
   C.addTransition(state);
 }
 
-#define REGISTER_CHECKER(name)                                                 \
-  void ento::register##name(CheckerManager &mgr) {                             \
-    CallAndMessageChecker *Checker =                                           \
-        mgr.registerChecker<CallAndMessageChecker>();                          \
-    Checker->Filter.Check_##name = true;                                       \
-    Checker->Filter.CheckName_##name = mgr.getCurrentCheckName();              \
-  }
+void ento::registerCallAndMessageChecker(CheckerManager &mgr) {
+  mgr.registerChecker<CallAndMessageChecker>();
+}
 
-REGISTER_CHECKER(CallAndMessageUnInitRefArg)
-REGISTER_CHECKER(CallAndMessageChecker)
+bool ento::shouldRegisterCallAndMessageChecker(const LangOptions &LO) {
+  return true;
+}
+
+void ento::registerCallAndMessageUnInitRefArg(CheckerManager &mgr) {
+  CallAndMessageChecker *Checker = mgr.getChecker<CallAndMessageChecker>();
+  Checker->Check_CallAndMessageUnInitRefArg = true;
+  Checker->CheckName_CallAndMessageUnInitRefArg = mgr.getCurrentCheckerName();
+}
+
+bool ento::shouldRegisterCallAndMessageUnInitRefArg(const LangOptions &LO) {
+  return true;
+}

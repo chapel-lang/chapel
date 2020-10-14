@@ -100,7 +100,8 @@ const char* filenameToModulename(const char* filename);
 const char* getIntermediateDirName();
 
 void readArgsFromCommand(std::string path, std::vector<std::string>& args);
-void readArgsFromFile(std::string path, std::vector<std::string>& cmds);
+bool readArgsFromFile(std::string path, std::vector<std::string>& cmds,
+                      bool errFatal=true);
 void expandInstallationPaths(std::string& arg);
 void expandInstallationPaths(std::vector<std::string>& args);
 

@@ -1,9 +1,8 @@
 //===- lib/Target/AMDGPU/AMDGPUCallLowering.h - Call lowering -*- C++ -*---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -21,22 +20,38 @@
 namespace llvm {
 
 class AMDGPUTargetLowering;
+class MachineInstrBuilder;
 
 class AMDGPUCallLowering: public CallLowering {
-  unsigned lowerParameterPtr(MachineIRBuilder &MIRBuilder, Type *ParamTy,
+  Register lowerParameterPtr(MachineIRBuilder &B, Type *ParamTy,
                              uint64_t Offset) const;
 
-  void lowerParameter(MachineIRBuilder &MIRBuilder, Type *ParamTy,
-                      uint64_t Offset, unsigned Align,
-                      unsigned DstReg) const;
+  void lowerParameter(MachineIRBuilder &B, Type *ParamTy, uint64_t Offset,
+                      unsigned Align, Register DstReg) const;
 
- public:
+  /// A function of this type is used to perform value split action.
+  using SplitArgTy = std::function<void(ArrayRef<Register>, LLT, LLT, int)>;
+
+  void splitToValueTypes(const ArgInfo &OrigArgInfo,
+                         SmallVectorImpl<ArgInfo> &SplitArgs,
+                         const DataLayout &DL, MachineRegisterInfo &MRI,
+                         CallingConv::ID CallConv,
+                         SplitArgTy SplitArg) const;
+
+  bool lowerReturnVal(MachineIRBuilder &B, const Value *Val,
+                      ArrayRef<Register> VRegs, MachineInstrBuilder &Ret) const;
+
+public:
   AMDGPUCallLowering(const AMDGPUTargetLowering &TLI);
 
-  bool lowerReturn(MachineIRBuilder &MIRBuilder, const Value *Val,
-                   ArrayRef<unsigned> VRegs) const override;
-  bool lowerFormalArguments(MachineIRBuilder &MIRBuilder, const Function &F,
-                            ArrayRef<unsigned> VRegs) const override;
+  bool lowerReturn(MachineIRBuilder &B, const Value *Val,
+                   ArrayRef<Register> VRegs) const override;
+
+  bool lowerFormalArgumentsKernel(MachineIRBuilder &B, const Function &F,
+                                  ArrayRef<ArrayRef<Register>> VRegs) const;
+
+  bool lowerFormalArguments(MachineIRBuilder &B, const Function &F,
+                            ArrayRef<ArrayRef<Register>> VRegs) const override;
   static CCAssignFn *CCAssignFnForCall(CallingConv::ID CC, bool IsVarArg);
   static CCAssignFn *CCAssignFnForReturn(CallingConv::ID CC, bool IsVarArg);
 };

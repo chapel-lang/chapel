@@ -20,13 +20,13 @@ module OuterModule {
   }
 
   module M3 {
-    public use M5;
+    public use super.M5;
     proc h() { } // does not shadow other h based on call to h since
     // there is another path (through M4) to the other h
   }
 
   module M4 {
-    public use M5;
+    public use super.M5;
   }
 
   module M5 {

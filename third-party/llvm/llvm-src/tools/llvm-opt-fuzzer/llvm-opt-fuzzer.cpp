@@ -1,9 +1,8 @@
 //===--- llvm-opt-fuzzer.cpp - Fuzzer for instruction selection ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "llvm/FuzzMutate/FuzzerCLI.h"
 #include "llvm/FuzzMutate/IRMutator.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/TargetRegistry.h"
@@ -42,12 +42,12 @@ std::unique_ptr<IRMutator> createOptMutator() {
 
   std::vector<std::unique_ptr<IRMutationStrategy>> Strategies;
   Strategies.push_back(
-      llvm::make_unique<InjectorIRStrategy>(
+      std::make_unique<InjectorIRStrategy>(
           InjectorIRStrategy::getDefaultOps()));
   Strategies.push_back(
-      llvm::make_unique<InstDeleterIRStrategy>());
+      std::make_unique<InstDeleterIRStrategy>());
 
-  return llvm::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
+  return std::make_unique<IRMutator>(std::move(Types), std::move(Strategies));
 }
 
 extern "C" LLVM_ATTRIBUTE_USED size_t LLVMFuzzerCustomMutator(

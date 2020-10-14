@@ -20,26 +20,25 @@ ARKOUDA_DEP_DIR=/cray/css/users/chapelu/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
+  export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
 fi
 
-currentSha=`git rev-parse HEAD`
-
-# test against Chapel release
+# test against Chapel release (checking our current test/cron directories)
 function test_release() {
   export CHPL_TEST_PERF_DESCRIPTION=release
-  export CHPL_TEST_PERF_CONFIGS="release:v,master"
-  git checkout 1.22.0
+  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
+  currentSha=`git rev-parse HEAD`
+  git checkout 1.22.1
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
+  git checkout $currentSha -- $CHPL_HOME/util/test/perf/
   $CWD/nightly -cron ${nightly_args}
 }
 
-# test against Chapel master
-function test_master() {
-  export CHPL_TEST_PERF_DESCRIPTION=master
-  export CHPL_TEST_PERF_CONFIGS="release:v,master"
-  git checkout $currentSha
-  git clean -ffdx $CHPL_HOME
+# test against Chapel nightly
+function test_nightly() {
+  export CHPL_TEST_PERF_DESCRIPTION=nightly
+  export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   $CWD/nightly -cron ${nightly_args}
 }
 

@@ -1,9 +1,8 @@
 //===- MachOYAML.cpp - MachO YAMLIO implementation ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -288,6 +287,15 @@ void MappingTraits<MachOYAML::Section>::mapping(IO &IO,
   IO.mapRequired("reserved1", Section.reserved1);
   IO.mapRequired("reserved2", Section.reserved2);
   IO.mapOptional("reserved3", Section.reserved3);
+  IO.mapOptional("content", Section.content);
+}
+
+StringRef
+MappingTraits<MachOYAML::Section>::validate(IO &IO,
+                                            MachOYAML::Section &Section) {
+  if (Section.content && Section.size < Section.content->binary_size())
+    return "Section size must be greater than or equal to the content size";
+  return {};
 }
 
 void MappingTraits<MachO::build_tool_version>::mapping(

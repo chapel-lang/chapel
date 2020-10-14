@@ -1,9 +1,8 @@
 //===- NestedNameSpecifier.cpp - C++ nested name specifiers ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -473,7 +472,7 @@ TypeLoc NestedNameSpecifierLoc::getTypeLoc() const {
 }
 
 static void Append(char *Start, char *End, char *&Buffer, unsigned &BufferSize,
-              unsigned &BufferCapacity) {
+                   unsigned &BufferCapacity) {
   if (Start == End)
     return;
 
@@ -490,9 +489,9 @@ static void Append(char *Start, char *End, char *&Buffer, unsigned &BufferSize,
     Buffer = NewBuffer;
     BufferCapacity = NewCapacity;
   }
-
+  assert(Buffer && Start && End && End > Start && "Illegal memory buffer copy");
   memcpy(Buffer + BufferSize, Start, End - Start);
-  BufferSize += End-Start;
+  BufferSize += End - Start;
 }
 
 /// Save a source location to the given buffer.

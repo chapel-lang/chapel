@@ -1,9 +1,8 @@
 //===-- SIFixupVectorISel.cpp - Fixup post ISel vector issues -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 /// \file
 /// SIFixupVectorISel pass cleans up post ISEL Vector issues.
@@ -92,8 +91,7 @@ static bool findSRegBaseAndIndex(MachineOperand *Op,
   Worklist.push_back(Op);
   while (!Worklist.empty()) {
     MachineOperand *WOp = Worklist.pop_back_val();
-    if (!WOp->isReg() ||
-        !TargetRegisterInfo::isVirtualRegister(WOp->getReg()))
+    if (!WOp->isReg() || !Register::isVirtualRegister(WOp->getReg()))
       continue;
     MachineInstr *DefInst = MRI.getUniqueVRegDef(WOp->getReg());
     switch (DefInst->getOpcode()) {
@@ -198,6 +196,11 @@ static bool fixupGlobalSaddr(MachineBasicBlock &MBB,
     // Atomics dont have a GLC, so omit the field if not there.
     if (Glc)
       NewGlob->addOperand(MF, *Glc);
+
+    MachineOperand *DLC = TII->getNamedOperand(MI, AMDGPU::OpName::dlc);
+    if (DLC)
+      NewGlob->addOperand(MF, *DLC);
+
     NewGlob->addOperand(*TII->getNamedOperand(MI, AMDGPU::OpName::slc));
     // _D16 have an vdst_in operand, copy it in.
     MachineOperand *VDstInOp = TII->getNamedOperand(MI,

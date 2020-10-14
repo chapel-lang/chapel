@@ -1,9 +1,8 @@
 //===- ArgList.cpp - Argument List Management -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -94,21 +93,6 @@ std::vector<std::string> ArgList::getAllArgValues(OptSpecifier Id) const {
   SmallVector<const char *, 16> Values;
   AddAllArgValues(Values, Id);
   return std::vector<std::string>(Values.begin(), Values.end());
-}
-
-void ArgList::AddLastArg(ArgStringList &Output, OptSpecifier Id) const {
-  if (Arg *A = getLastArg(Id)) {
-    A->claim();
-    A->render(*this, Output);
-  }
-}
-
-void ArgList::AddLastArg(ArgStringList &Output, OptSpecifier Id0,
-                         OptSpecifier Id1) const {
-  if (Arg *A = getLastArg(Id0, Id1)) {
-    A->claim();
-    A->render(*this, Output);
-  }
 }
 
 void ArgList::AddAllArgsExcept(ArgStringList &Output,
@@ -257,7 +241,7 @@ void DerivedArgList::AddSynthesizedArg(Arg *A) {
 
 Arg *DerivedArgList::MakeFlagArg(const Arg *BaseArg, const Option Opt) const {
   SynthesizedArgs.push_back(
-      make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
+      std::make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
                        BaseArgs.MakeIndex(Opt.getName()), BaseArg));
   return SynthesizedArgs.back().get();
 }
@@ -266,7 +250,7 @@ Arg *DerivedArgList::MakePositionalArg(const Arg *BaseArg, const Option Opt,
                                        StringRef Value) const {
   unsigned Index = BaseArgs.MakeIndex(Value);
   SynthesizedArgs.push_back(
-      make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
+      std::make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
                        Index, BaseArgs.getArgString(Index), BaseArg));
   return SynthesizedArgs.back().get();
 }
@@ -275,7 +259,7 @@ Arg *DerivedArgList::MakeSeparateArg(const Arg *BaseArg, const Option Opt,
                                      StringRef Value) const {
   unsigned Index = BaseArgs.MakeIndex(Opt.getName(), Value);
   SynthesizedArgs.push_back(
-      make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
+      std::make_unique<Arg>(Opt, MakeArgString(Opt.getPrefix() + Opt.getName()),
                        Index, BaseArgs.getArgString(Index + 1), BaseArg));
   return SynthesizedArgs.back().get();
 }
@@ -283,7 +267,7 @@ Arg *DerivedArgList::MakeSeparateArg(const Arg *BaseArg, const Option Opt,
 Arg *DerivedArgList::MakeJoinedArg(const Arg *BaseArg, const Option Opt,
                                    StringRef Value) const {
   unsigned Index = BaseArgs.MakeIndex((Opt.getName() + Value).str());
-  SynthesizedArgs.push_back(make_unique<Arg>(
+  SynthesizedArgs.push_back(std::make_unique<Arg>(
       Opt, MakeArgString(Opt.getPrefix() + Opt.getName()), Index,
       BaseArgs.getArgString(Index) + Opt.getName().size(), BaseArg));
   return SynthesizedArgs.back().get();

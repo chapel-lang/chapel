@@ -1,9 +1,8 @@
 //===-- llvm/ADT/Hashing.h - Utilities for hashing --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -46,7 +45,7 @@
 #define LLVM_ADT_HASHING_H
 
 #include "llvm/Support/DataTypes.h"
-#include "llvm/Support/Host.h"
+#include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/SwapByteOrder.h"
 #include "llvm/Support/type_traits.h"
 #include <algorithm>
@@ -192,7 +191,7 @@ inline uint64_t hash_1to3_bytes(const char *s, size_t len, uint64_t seed) {
   uint8_t b = s[len >> 1];
   uint8_t c = s[len - 1];
   uint32_t y = static_cast<uint32_t>(a) + (static_cast<uint32_t>(b) << 8);
-  uint32_t z = len + (static_cast<uint32_t>(c) << 2);
+  uint32_t z = static_cast<uint32_t>(len) + (static_cast<uint32_t>(c) << 2);
   return shift_mix(y * k2 ^ z * k3 ^ seed) * k2;
 }
 
@@ -258,7 +257,7 @@ inline uint64_t hash_short(const char *s, size_t length, uint64_t seed) {
 /// Currently, the algorithm for computing hash codes is based on CityHash and
 /// keeps 56 bytes of arbitrary state.
 struct hash_state {
-  uint64_t h0, h1, h2, h3, h4, h5, h6;
+  uint64_t h0 = 0, h1 = 0, h2 = 0, h3 = 0, h4 = 0, h5 = 0, h6 = 0;
 
   /// Create a new hash_state structure and initialize it based on the
   /// seed and the first 64-byte chunk.
@@ -493,7 +492,7 @@ namespace detail {
 /// useful at minimizing the code in the recursive calls to ease the pain
 /// caused by a lack of variadic functions.
 struct hash_combine_recursive_helper {
-  char buffer[64];
+  char buffer[64] = {};
   hash_state state;
   const uint64_t seed;
 
@@ -541,7 +540,7 @@ public:
       // store types smaller than the buffer.
       if (!store_and_advance(buffer_ptr, buffer_end, data,
                              partial_store_size))
-        abort();
+        llvm_unreachable("buffer smaller than stored type");
     }
     return buffer_ptr;
   }

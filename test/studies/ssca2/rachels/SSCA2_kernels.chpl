@@ -15,7 +15,7 @@ module SSCA2_kernels
 //  +==========================================================================+
 
 { 
-  use SSCA2_compilation_config_params, Time, Barriers;
+  use SSCA2_compilation_config_params, Time, Barriers, DSIUtil;
 
   var stopwatch : Timer;
 

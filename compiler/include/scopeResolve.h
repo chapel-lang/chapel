@@ -27,6 +27,7 @@ class CallExpr;
 class DefExpr;
 class FnSymbol;
 class Symbol;
+class VisibilityStmt;
 
 #include <cstddef>
 #include <map>
@@ -42,19 +43,22 @@ void     lookup(const char*           name,
                 BaseAST*              context,
                 std::vector<Symbol*>& symbols,
                 std::map<Symbol*, astlocT*>& renameLocs,
+                std::map<Symbol*, VisibilityStmt*>& reexportPts,
                 bool storeRenames = false);
 
 Symbol*  lookupAndCount(const char*           name,
                         BaseAST*              context,
                         int&                  nSymbolsFound,
                         bool storeRenames = false,
-                        astlocT** renameLoc = NULL);
+                        astlocT** renameLoc = NULL,
+                        bool issueErrors = true);
 
 void checkConflictingSymbols(std::vector<Symbol *>& symbols,
                              const char* name,
                              BaseAST* context,
                              bool storeRenames,
-                             std::map<Symbol*, astlocT*>& renameLocs);
+                             std::map<Symbol*, astlocT*>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 BaseAST* getScope(BaseAST* ast);
 

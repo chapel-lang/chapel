@@ -1,9 +1,8 @@
 //===-- X86InstrXOP.td - XOP Instruction Set ---------------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -144,13 +143,13 @@ multiclass xop3opimm<bits<8> opc, string OpcodeStr, SDNode OpNode,
            (ins VR128:$src1, u8imm:$src2),
            !strconcat(OpcodeStr, "\t{$src2, $src1, $dst|$dst, $src1, $src2}"),
            [(set VR128:$dst,
-              (vt128 (OpNode (vt128 VR128:$src1), imm:$src2)))]>,
+              (vt128 (OpNode (vt128 VR128:$src1), timm:$src2)))]>,
            XOP, Sched<[sched]>;
   def mi : IXOPi8<opc, MRMSrcMem, (outs VR128:$dst),
            (ins i128mem:$src1, u8imm:$src2),
            !strconcat(OpcodeStr, "\t{$src2, $src1, $dst|$dst, $src1, $src2}"),
            [(set VR128:$dst,
-              (vt128 (OpNode (vt128 (load addr:$src1)), imm:$src2)))]>,
+              (vt128 (OpNode (vt128 (load addr:$src1)), timm:$src2)))]>,
            XOP, Sched<[sched.Folded, sched.ReadAfterFold]>;
 }
 
@@ -247,42 +246,28 @@ multiclass xopvpcom<bits<8> opc, string Suffix, SDNode OpNode, ValueType vt128,
   let ExeDomain = SSEPackedInt in { // SSE integer instructions
     let isCommutable = 1 in
     def ri : IXOPi8<opc, MRMSrcReg, (outs VR128:$dst),
-             (ins VR128:$src1, VR128:$src2, XOPCC:$cc),
-             !strconcat("vpcom${cc}", Suffix,
-             "\t{$src2, $src1, $dst|$dst, $src1, $src2}"),
+             (ins VR128:$src1, VR128:$src2, u8imm:$cc),
+             !strconcat("vpcom", Suffix,
+             "\t{$cc, $src2, $src1, $dst|$dst, $src1, $src2, $cc}"),
              [(set VR128:$dst,
                 (vt128 (OpNode (vt128 VR128:$src1), (vt128 VR128:$src2),
-                               imm:$cc)))]>,
+                               timm:$cc)))]>,
              XOP_4V, Sched<[sched]>;
     def mi : IXOPi8<opc, MRMSrcMem, (outs VR128:$dst),
-             (ins VR128:$src1, i128mem:$src2, XOPCC:$cc),
-             !strconcat("vpcom${cc}", Suffix,
-             "\t{$src2, $src1, $dst|$dst, $src1, $src2}"),
+             (ins VR128:$src1, i128mem:$src2, u8imm:$cc),
+             !strconcat("vpcom", Suffix,
+             "\t{$cc, $src2, $src1, $dst|$dst, $src1, $src2, $cc}"),
              [(set VR128:$dst,
                 (vt128 (OpNode (vt128 VR128:$src1),
                                (vt128 (load addr:$src2)),
-                                imm:$cc)))]>,
+                                timm:$cc)))]>,
              XOP_4V, Sched<[sched.Folded, sched.ReadAfterFold]>;
-    let isAsmParserOnly = 1, hasSideEffects = 0 in {
-      def ri_alt : IXOPi8<opc, MRMSrcReg, (outs VR128:$dst),
-                   (ins VR128:$src1, VR128:$src2, u8imm:$src3),
-                   !strconcat("vpcom", Suffix,
-                   "\t{$src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3}"),
-                   []>, XOP_4V, Sched<[sched]>, NotMemoryFoldable;
-      let mayLoad = 1 in
-      def mi_alt : IXOPi8<opc, MRMSrcMem, (outs VR128:$dst),
-                   (ins VR128:$src1, i128mem:$src2, u8imm:$src3),
-                   !strconcat("vpcom", Suffix,
-                   "\t{$src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3}"),
-                   []>, XOP_4V, Sched<[sched.Folded, sched.ReadAfterFold]>,
-                   NotMemoryFoldable;
-    }
   }
 
   def : Pat<(OpNode (load addr:$src2),
-                    (vt128 VR128:$src1), imm:$cc),
+                    (vt128 VR128:$src1), timm:$cc),
             (!cast<Instruction>(NAME#"mi") VR128:$src1, addr:$src2,
-                                           (CommuteVPCOMCC imm:$cc))>;
+                                           (CommuteVPCOMCC timm:$cc))>;
 }
 
 defm VPCOMB  : xopvpcom<0xCC, "b", X86vpcom, v16i8, SchedWriteVecALU.XMM>;
@@ -433,27 +418,27 @@ multiclass xop_vpermil2<bits<8> Opc, string OpcodeStr, RegisterClass RC,
                         ValueType VT, PatFrag FPLdFrag, PatFrag IntLdFrag,
                         X86FoldableSchedWrite sched> {
   def rr : IXOP5<Opc, MRMSrcReg, (outs RC:$dst),
-        (ins RC:$src1, RC:$src2, RC:$src3, u8imm:$src4),
+        (ins RC:$src1, RC:$src2, RC:$src3, u4imm:$src4),
         !strconcat(OpcodeStr,
         "\t{$src4, $src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3, $src4}"),
         [(set RC:$dst,
-           (VT (X86vpermil2 RC:$src1, RC:$src2, RC:$src3, (i8 imm:$src4))))]>,
+           (VT (X86vpermil2 RC:$src1, RC:$src2, RC:$src3, (i8 timm:$src4))))]>,
         Sched<[sched]>;
   def rm : IXOP5<Opc, MRMSrcMemOp4, (outs RC:$dst),
-        (ins RC:$src1, RC:$src2, intmemop:$src3, u8imm:$src4),
+        (ins RC:$src1, RC:$src2, intmemop:$src3, u4imm:$src4),
         !strconcat(OpcodeStr,
         "\t{$src4, $src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3, $src4}"),
         [(set RC:$dst,
           (VT (X86vpermil2 RC:$src1, RC:$src2, (IntLdFrag addr:$src3),
-                           (i8 imm:$src4))))]>, VEX_W,
+                           (i8 timm:$src4))))]>, VEX_W,
         Sched<[sched.Folded, sched.ReadAfterFold, sched.ReadAfterFold]>;
   def mr : IXOP5<Opc, MRMSrcMem, (outs RC:$dst),
-        (ins RC:$src1, fpmemop:$src2, RC:$src3, u8imm:$src4),
+        (ins RC:$src1, fpmemop:$src2, RC:$src3, u4imm:$src4),
         !strconcat(OpcodeStr,
         "\t{$src4, $src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3, $src4}"),
         [(set RC:$dst,
           (VT (X86vpermil2 RC:$src1, (FPLdFrag addr:$src2),
-                           RC:$src3, (i8 imm:$src4))))]>,
+                           RC:$src3, (i8 timm:$src4))))]>,
         Sched<[sched.Folded, sched.ReadAfterFold,
                // fpmemop:$src2
                ReadDefault, ReadDefault, ReadDefault, ReadDefault, ReadDefault,
@@ -462,7 +447,7 @@ multiclass xop_vpermil2<bits<8> Opc, string OpcodeStr, RegisterClass RC,
   // For disassembler
   let isCodeGenOnly = 1, ForceDisassemble = 1, hasSideEffects = 0 in
   def rr_REV : IXOP5<Opc, MRMSrcRegOp4, (outs RC:$dst),
-        (ins RC:$src1, RC:$src2, RC:$src3, u8imm:$src4),
+        (ins RC:$src1, RC:$src2, RC:$src3, u4imm:$src4),
         !strconcat(OpcodeStr,
         "\t{$src4, $src3, $src2, $src1, $dst|$dst, $src1, $src2, $src3, $src4}"),
         []>, VEX_W, Sched<[sched]>, FoldGenData<NAME#rr>;

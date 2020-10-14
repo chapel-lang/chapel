@@ -1,9 +1,8 @@
 //===-- X86MCTargetDesc.cpp - X86 Target Descriptions ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,13 +11,15 @@
 //===----------------------------------------------------------------------===//
 
 #include "X86MCTargetDesc.h"
-#include "InstPrinter/X86ATTInstPrinter.h"
-#include "InstPrinter/X86IntelInstPrinter.h"
+#include "TargetInfo/X86TargetInfo.h"
+#include "X86ATTInstPrinter.h"
 #include "X86BaseInfo.h"
+#include "X86IntelInstPrinter.h"
 #include "X86MCAsmInfo.h"
 #include "llvm/ADT/APInt.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/DebugInfo/CodeView/CodeView.h"
+#include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCInstrAnalysis.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCRegisterInfo.h"
@@ -69,6 +70,10 @@ unsigned X86_MC::getDwarfRegFlavour(const Triple &TT, bool isEH) {
   return DWARFFlavour::X86_32_Generic;
 }
 
+bool X86_MC::hasLockPrefix(const MCInst &MI) {
+  return MI.getFlags() & X86::IP_HAS_LOCK;
+}
+
 void X86_MC::initLLVMToSEHAndCVRegMapping(MCRegisterInfo *MRI) {
   // FIXME: TableGen these.
   for (unsigned Reg = X86::NoRegister + 1; Reg < X86::NUM_TARGET_REGS; ++Reg) {
@@ -116,6 +121,15 @@ void X86_MC::initLLVMToSEHAndCVRegMapping(MCRegisterInfo *MRI) {
       {codeview::RegisterId::ST5, X86::FP5},
       {codeview::RegisterId::ST6, X86::FP6},
       {codeview::RegisterId::ST7, X86::FP7},
+
+      {codeview::RegisterId::MM0, X86::MM0},
+      {codeview::RegisterId::MM1, X86::MM1},
+      {codeview::RegisterId::MM2, X86::MM2},
+      {codeview::RegisterId::MM3, X86::MM3},
+      {codeview::RegisterId::MM4, X86::MM4},
+      {codeview::RegisterId::MM5, X86::MM5},
+      {codeview::RegisterId::MM6, X86::MM6},
+      {codeview::RegisterId::MM7, X86::MM7},
 
       {codeview::RegisterId::XMM0, X86::XMM0},
       {codeview::RegisterId::XMM1, X86::XMM1},
@@ -276,12 +290,9 @@ void X86_MC::initLLVMToSEHAndCVRegMapping(MCRegisterInfo *MRI) {
 MCSubtargetInfo *X86_MC::createX86MCSubtargetInfo(const Triple &TT,
                                                   StringRef CPU, StringRef FS) {
   std::string ArchFS = X86_MC::ParseX86Triple(TT);
-  if (!FS.empty()) {
-    if (!ArchFS.empty())
-      ArchFS = (Twine(ArchFS) + "," + FS).str();
-    else
-      ArchFS = FS;
-  }
+  assert(!ArchFS.empty() && "Failed to parse X86 triple");
+  if (!FS.empty())
+    ArchFS = (Twine(ArchFS) + "," + FS).str();
 
   std::string CPUName = CPU;
   if (CPUName.empty())
@@ -309,7 +320,8 @@ static MCRegisterInfo *createX86MCRegisterInfo(const Triple &TT) {
 }
 
 static MCAsmInfo *createX86MCAsmInfo(const MCRegisterInfo &MRI,
-                                     const Triple &TheTriple) {
+                                     const Triple &TheTriple,
+                                     const MCTargetOptions &Options) {
   bool is64Bit = TheTriple.getArch() == Triple::x86_64;
 
   MCAsmInfo *MAI;
@@ -389,6 +401,9 @@ public:
   findPltEntries(uint64_t PltSectionVA, ArrayRef<uint8_t> PltContents,
                  uint64_t GotSectionVA,
                  const Triple &TargetTriple) const override;
+  Optional<uint64_t> evaluateMemoryOperandAddress(const MCInst &Inst,
+                                                  uint64_t Addr,
+                                                  uint64_t Size) const override;
 };
 
 #define GET_STIPREDICATE_DEFS_FOR_MC_ANALYSIS
@@ -501,7 +516,31 @@ std::vector<std::pair<uint64_t, uint64_t>> X86MCInstrAnalysis::findPltEntries(
       return findX86_64PltEntries(PltSectionVA, PltContents);
     default:
       return {};
-  }
+    }
+}
+
+Optional<uint64_t> X86MCInstrAnalysis::evaluateMemoryOperandAddress(
+    const MCInst &Inst, uint64_t Addr, uint64_t Size) const {
+  const MCInstrDesc &MCID = Info->get(Inst.getOpcode());
+  int MemOpStart = X86II::getMemoryOperandNo(MCID.TSFlags);
+  if (MemOpStart == -1)
+    return None;
+  MemOpStart += X86II::getOperandBias(MCID);
+
+  const MCOperand &SegReg = Inst.getOperand(MemOpStart + X86::AddrSegmentReg);
+  const MCOperand &BaseReg = Inst.getOperand(MemOpStart + X86::AddrBaseReg);
+  const MCOperand &IndexReg = Inst.getOperand(MemOpStart + X86::AddrIndexReg);
+  const MCOperand &ScaleAmt = Inst.getOperand(MemOpStart + X86::AddrScaleAmt);
+  const MCOperand &Disp = Inst.getOperand(MemOpStart + X86::AddrDisp);
+  if (SegReg.getReg() != 0 || IndexReg.getReg() != 0 || ScaleAmt.getImm() != 1 ||
+      !Disp.isImm())
+    return None;
+
+  // RIP-relative addressing.
+  if (BaseReg.getReg() == X86::RIP)
+    return Addr + Size + Disp.getImm();
+
+  return None;
 }
 
 } // end of namespace X86_MC
@@ -513,7 +552,7 @@ static MCInstrAnalysis *createX86MCInstrAnalysis(const MCInstrInfo *Info) {
 }
 
 // Force static initialization.
-extern "C" void LLVMInitializeX86TargetMC() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86TargetMC() {
   for (Target *T : {&getTheX86_32Target(), &getTheX86_64Target()}) {
     // Register the MC asm info.
     RegisterMCAsmInfoFn X(*T, createX86MCAsmInfo);
@@ -557,13 +596,13 @@ extern "C" void LLVMInitializeX86TargetMC() {
                                        createX86_64AsmBackend);
 }
 
-unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
-                                            bool High) {
+MCRegister llvm::getX86SubSuperRegisterOrZero(MCRegister Reg, unsigned Size,
+                                              bool High) {
   switch (Size) {
-  default: return 0;
+  default: return X86::NoRegister;
   case 8:
     if (High) {
-      switch (Reg) {
+      switch (Reg.id()) {
       default: return getX86SubSuperRegisterOrZero(Reg, 64);
       case X86::SIL: case X86::SI: case X86::ESI: case X86::RSI:
         return X86::SI;
@@ -583,8 +622,8 @@ unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
         return X86::BH;
       }
     } else {
-      switch (Reg) {
-      default: return 0;
+      switch (Reg.id()) {
+      default: return X86::NoRegister;
       case X86::AH: case X86::AL: case X86::AX: case X86::EAX: case X86::RAX:
         return X86::AL;
       case X86::DH: case X86::DL: case X86::DX: case X86::EDX: case X86::RDX:
@@ -620,8 +659,8 @@ unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
       }
     }
   case 16:
-    switch (Reg) {
-    default: return 0;
+    switch (Reg.id()) {
+    default: return X86::NoRegister;
     case X86::AH: case X86::AL: case X86::AX: case X86::EAX: case X86::RAX:
       return X86::AX;
     case X86::DH: case X86::DL: case X86::DX: case X86::EDX: case X86::RDX:
@@ -656,8 +695,8 @@ unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
       return X86::R15W;
     }
   case 32:
-    switch (Reg) {
-    default: return 0;
+    switch (Reg.id()) {
+    default: return X86::NoRegister;
     case X86::AH: case X86::AL: case X86::AX: case X86::EAX: case X86::RAX:
       return X86::EAX;
     case X86::DH: case X86::DL: case X86::DX: case X86::EDX: case X86::RDX:
@@ -692,7 +731,7 @@ unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
       return X86::R15D;
     }
   case 64:
-    switch (Reg) {
+    switch (Reg.id()) {
     default: return 0;
     case X86::AH: case X86::AL: case X86::AX: case X86::EAX: case X86::RAX:
       return X86::RAX;
@@ -730,9 +769,9 @@ unsigned llvm::getX86SubSuperRegisterOrZero(unsigned Reg, unsigned Size,
   }
 }
 
-unsigned llvm::getX86SubSuperRegister(unsigned Reg, unsigned Size, bool High) {
-  unsigned Res = getX86SubSuperRegisterOrZero(Reg, Size, High);
-  assert(Res != 0 && "Unexpected register or VT");
+MCRegister llvm::getX86SubSuperRegister(MCRegister Reg, unsigned Size, bool High) {
+  MCRegister Res = getX86SubSuperRegisterOrZero(Reg, Size, High);
+  assert(Res != X86::NoRegister && "Unexpected register or VT");
   return Res;
 }
 

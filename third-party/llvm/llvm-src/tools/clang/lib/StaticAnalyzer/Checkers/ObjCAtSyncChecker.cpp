@@ -1,9 +1,8 @@
 //== ObjCAtSyncChecker.cpp - nil mutex checker for @synchronized -*- C++ -*--=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,8 +46,8 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
       if (!BT_undef)
         BT_undef.reset(new BuiltinBug(this, "Uninitialized value used as mutex "
                                             "for @synchronized"));
-      auto report =
-          llvm::make_unique<BugReport>(*BT_undef, BT_undef->getDescription(), N);
+      auto report = std::make_unique<PathSensitiveBugReport>(
+          *BT_undef, BT_undef->getDescription(), N);
       bugreporter::trackExpressionValue(N, Ex, *report);
       C.emitReport(std::move(report));
     }
@@ -71,8 +70,8 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
           BT_null.reset(new BuiltinBug(
               this, "Nil value used as mutex for @synchronized() "
                     "(no synchronization will occur)"));
-        auto report =
-            llvm::make_unique<BugReport>(*BT_null, BT_null->getDescription(), N);
+        auto report = std::make_unique<PathSensitiveBugReport>(
+            *BT_null, BT_null->getDescription(), N);
         bugreporter::trackExpressionValue(N, Ex, *report);
 
         C.emitReport(std::move(report));
@@ -89,6 +88,9 @@ void ObjCAtSyncChecker::checkPreStmt(const ObjCAtSynchronizedStmt *S,
 }
 
 void ento::registerObjCAtSyncChecker(CheckerManager &mgr) {
-  if (mgr.getLangOpts().ObjC)
-    mgr.registerChecker<ObjCAtSyncChecker>();
+  mgr.registerChecker<ObjCAtSyncChecker>();
+}
+
+bool ento::shouldRegisterObjCAtSyncChecker(const LangOptions &LO) {
+  return LO.ObjC;
 }

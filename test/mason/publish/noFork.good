@@ -1,0 +1,8 @@
+Checking Registry with DummyPath path.
+------------------------------------------------------
+The current mason environment is:
+MASON_HOME: $PWD/mason_home *
+MASON_REGISTRY: registry|https://github.com/chapel-lang/mason-registry *
+MASON_OFFLINE: false *
+SPACK_ROOT: $PWD/mason_home/spack *
+DummyPath is not a local git repository.

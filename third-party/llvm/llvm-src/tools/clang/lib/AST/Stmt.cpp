@@ -1,9 +1,8 @@
 //===- Stmt.cpp - Statement AST Node Implementation -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "clang/AST/Decl.h"
 #include "clang/AST/DeclGroup.h"
 #include "clang/AST/Expr.h"
+#include "clang/AST/ExprConcepts.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/ExprOpenMP.h"
@@ -42,6 +42,7 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <type_traits>
 
 using namespace clang;
 
@@ -84,6 +85,16 @@ const char *Stmt::getStmtClassName() const {
                 #CLASS " should not be polymorphic!");
 #include "clang/AST/StmtNodes.inc"
 
+// Check that no statement / expression class has a non-trival destructor.
+// Statements and expressions are allocated with the BumpPtrAllocator from
+// ASTContext and therefore their destructor is not executed.
+#define STMT(CLASS, PARENT)                                                    \
+  static_assert(std::is_trivially_destructible<CLASS>::value,                  \
+                #CLASS " should be trivially destructible!");
+// FIXME: InitListExpr is not trivially destructible due to its ASTVector.
+#define INITLISTEXPR(CLASS, PARENT)
+#include "clang/AST/StmtNodes.inc"
+
 void Stmt::PrintStats() {
   // Ensure the table is primed.
   getStmtInfoTableEntry(Stmt::NullStmtClass);
@@ -116,30 +127,6 @@ void Stmt::addStmtClass(StmtClass s) {
 bool Stmt::StatisticsEnabled = false;
 void Stmt::EnableStatistics() {
   StatisticsEnabled = true;
-}
-
-Stmt *Stmt::IgnoreImplicit() {
-  Stmt *s = this;
-
-  Stmt *lasts = nullptr;
-
-  while (s != lasts) {
-    lasts = s;
-
-    if (auto *fe = dyn_cast<FullExpr>(s))
-      s = fe->getSubExpr();
-
-    if (auto *mte = dyn_cast<MaterializeTemporaryExpr>(s))
-      s = mte->GetTemporaryExpr();
-
-    if (auto *bte = dyn_cast<CXXBindTemporaryExpr>(s))
-      s = bte->getSubExpr();
-
-    if (auto *ice = dyn_cast<ImplicitCastExpr>(s))
-      s = ice->getSubExpr();
-  }
-
-  return s;
 }
 
 /// Skip no-op (attributed, compound) container stmts and skip captured
@@ -345,6 +332,23 @@ CompoundStmt *CompoundStmt::CreateEmpty(const ASTContext &C,
   return New;
 }
 
+const Expr *ValueStmt::getExprStmt() const {
+  const Stmt *S = this;
+  do {
+    if (const auto *E = dyn_cast<Expr>(S))
+      return E;
+
+    if (const auto *LS = dyn_cast<LabelStmt>(S))
+      S = LS->getSubStmt();
+    else if (const auto *AS = dyn_cast<AttributedStmt>(S))
+      S = AS->getSubStmt();
+    else
+      llvm_unreachable("unknown kind of ValueStmt");
+  } while (isa<ValueStmt>(S));
+
+  return nullptr;
+}
+
 const char *LabelStmt::getName() const {
   return getDecl()->getIdentifier()->getNameStart();
 }
@@ -452,6 +456,14 @@ void GCCAsmStmt::setInputExpr(unsigned i, Expr *E) {
   Exprs[i + NumOutputs] = E;
 }
 
+AddrLabelExpr *GCCAsmStmt::getLabelExpr(unsigned i) const {
+  return cast<AddrLabelExpr>(Exprs[i + NumInputs]);
+}
+
+StringRef GCCAsmStmt::getLabelName(unsigned i) const {
+  return getLabelExpr(i)->getLabel()->getName();
+}
+
 /// getInputConstraint - Return the specified input constraint.  Unlike output
 /// constraints, these can be empty.
 StringRef GCCAsmStmt::getInputConstraint(unsigned i) const {
@@ -464,13 +476,16 @@ void GCCAsmStmt::setOutputsAndInputsAndClobbers(const ASTContext &C,
                                                 Stmt **Exprs,
                                                 unsigned NumOutputs,
                                                 unsigned NumInputs,
+                                                unsigned NumLabels,
                                                 StringLiteral **Clobbers,
                                                 unsigned NumClobbers) {
   this->NumOutputs = NumOutputs;
   this->NumInputs = NumInputs;
   this->NumClobbers = NumClobbers;
+  this->NumLabels = NumLabels;
+  assert(!(NumOutputs && NumLabels) && "asm goto cannot have outputs");
 
-  unsigned NumExprs = NumOutputs + NumInputs;
+  unsigned NumExprs = NumOutputs + NumInputs + NumLabels;
 
   C.Deallocate(this->Names);
   this->Names = new (C) IdentifierInfo*[NumExprs];
@@ -480,9 +495,10 @@ void GCCAsmStmt::setOutputsAndInputsAndClobbers(const ASTContext &C,
   this->Exprs = new (C) Stmt*[NumExprs];
   std::copy(Exprs, Exprs + NumExprs, this->Exprs);
 
+  unsigned NumConstraints = NumOutputs + NumInputs;
   C.Deallocate(this->Constraints);
-  this->Constraints = new (C) StringLiteral*[NumExprs];
-  std::copy(Constraints, Constraints + NumExprs, this->Constraints);
+  this->Constraints = new (C) StringLiteral*[NumConstraints];
+  std::copy(Constraints, Constraints + NumConstraints, this->Constraints);
 
   C.Deallocate(this->Clobbers);
   this->Clobbers = new (C) StringLiteral*[NumClobbers];
@@ -504,6 +520,10 @@ int GCCAsmStmt::getNamedOperand(StringRef SymbolicName) const {
   for (unsigned i = 0, e = getNumInputs(); i != e; ++i)
     if (getInputName(i) == SymbolicName)
       return getNumOutputs() + NumPlusOperands + i;
+
+  for (unsigned i = 0, e = getNumLabels(); i != e; ++i)
+    if (getLabelName(i) == SymbolicName)
+      return i + getNumInputs();
 
   // Not found.
   return -1;
@@ -622,8 +642,8 @@ unsigned GCCAsmStmt::AnalyzeAsmString(SmallVectorImpl<AsmStringPiece>&Pieces,
       while (CurPtr != StrEnd && isDigit(*CurPtr))
         N = N*10 + ((*CurPtr++)-'0');
 
-      unsigned NumOperands =
-        getNumOutputs() + getNumPlusOperands() + getNumInputs();
+      unsigned NumOperands = getNumOutputs() + getNumPlusOperands() +
+                             getNumInputs() + getNumLabels();
       if (N >= NumOperands) {
         DiagOffs = CurPtr-StrStart-1;
         return diag::err_asm_invalid_operand_number;
@@ -736,10 +756,12 @@ GCCAsmStmt::GCCAsmStmt(const ASTContext &C, SourceLocation asmloc,
                        unsigned numinputs, IdentifierInfo **names,
                        StringLiteral **constraints, Expr **exprs,
                        StringLiteral *asmstr, unsigned numclobbers,
-                       StringLiteral **clobbers, SourceLocation rparenloc)
+                       StringLiteral **clobbers, unsigned numlabels,
+                       SourceLocation rparenloc)
     : AsmStmt(GCCAsmStmtClass, asmloc, issimple, isvolatile, numoutputs,
-              numinputs, numclobbers), RParenLoc(rparenloc), AsmStr(asmstr) {
-  unsigned NumExprs = NumOutputs + NumInputs;
+              numinputs, numclobbers),
+              RParenLoc(rparenloc), AsmStr(asmstr), NumLabels(numlabels) {
+  unsigned NumExprs = NumOutputs + NumInputs + NumLabels;
 
   Names = new (C) IdentifierInfo*[NumExprs];
   std::copy(names, names + NumExprs, Names);
@@ -747,8 +769,9 @@ GCCAsmStmt::GCCAsmStmt(const ASTContext &C, SourceLocation asmloc,
   Exprs = new (C) Stmt*[NumExprs];
   std::copy(exprs, exprs + NumExprs, Exprs);
 
-  Constraints = new (C) StringLiteral*[NumExprs];
-  std::copy(constraints, constraints + NumExprs, Constraints);
+  unsigned NumConstraints = NumOutputs + NumInputs;
+  Constraints = new (C) StringLiteral*[NumConstraints];
+  std::copy(constraints, constraints + NumConstraints, Constraints);
 
   Clobbers = new (C) StringLiteral*[NumClobbers];
   std::copy(clobbers, clobbers + NumClobbers, Clobbers);
@@ -884,6 +907,12 @@ void IfStmt::setConditionVariable(const ASTContext &Ctx, VarDecl *V) {
 
 bool IfStmt::isObjCAvailabilityCheck() const {
   return isa<ObjCAvailabilityCheckExpr>(getCond());
+}
+
+Optional<const Stmt*> IfStmt::getNondiscardedCase(const ASTContext &Ctx) const {
+  if (!isConstexpr() || getCond()->isValueDependent())
+    return None;
+  return !getCond()->EvaluateKnownConstInt(Ctx) ? getElse() : getThen();
 }
 
 ForStmt::ForStmt(const ASTContext &C, Stmt *Init, Expr *Cond, VarDecl *condVar,
@@ -1260,6 +1289,10 @@ CapturedStmt *CapturedStmt::CreateDeserialized(const ASTContext &Context,
 Stmt::child_range CapturedStmt::children() {
   // Children are captured field initializers.
   return child_range(getStoredStmts(), getStoredStmts() + NumCaptures);
+}
+
+Stmt::const_child_range CapturedStmt::children() const {
+  return const_child_range(getStoredStmts(), getStoredStmts() + NumCaptures);
 }
 
 CapturedDecl *CapturedStmt::getCapturedDecl() {

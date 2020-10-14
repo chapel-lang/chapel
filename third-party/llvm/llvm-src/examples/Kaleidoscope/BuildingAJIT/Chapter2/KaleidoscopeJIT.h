@@ -1,9 +1,8 @@
 //===- KaleidoscopeJIT.h - A simple JIT for Kaleidoscope --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -46,16 +45,20 @@ private:
   MangleAndInterner Mangle;
   ThreadSafeContext Ctx;
 
+  JITDylib &MainJD;
+
 public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
-                    []() { return llvm::make_unique<SectionMemoryManager>(); }),
-        CompileLayer(ES, ObjectLayer, ConcurrentIRCompiler(std::move(JTMB))),
-        OptimizeLayer(ES, CompileLayer, optimizeModule),
-        DL(std::move(DL)), Mangle(ES, this->DL),
-        Ctx(llvm::make_unique<LLVMContext>()) {
-    ES.getMainJITDylib().setGenerator(
-        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL)));
+                    []() { return std::make_unique<SectionMemoryManager>(); }),
+        CompileLayer(ES, ObjectLayer,
+                     std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
+        OptimizeLayer(ES, CompileLayer, optimizeModule), DL(std::move(DL)),
+        Mangle(ES, this->DL), Ctx(std::make_unique<LLVMContext>()),
+        MainJD(ES.createJITDylib("<main>")) {
+    MainJD.addGenerator(
+        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            DL.getGlobalPrefix())));
   }
 
   const DataLayout &getDataLayout() const { return DL; }
@@ -72,37 +75,38 @@ public:
     if (!DL)
       return DL.takeError();
 
-    return llvm::make_unique<KaleidoscopeJIT>(std::move(*JTMB), std::move(*DL));
+    return std::make_unique<KaleidoscopeJIT>(std::move(*JTMB), std::move(*DL));
   }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return OptimizeLayer.add(ES.getMainJITDylib(),
-                             ThreadSafeModule(std::move(M), Ctx));
+    return OptimizeLayer.add(MainJD, ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({&ES.getMainJITDylib()}, Mangle(Name.str()));
+    return ES.lookup({&MainJD}, Mangle(Name.str()));
   }
 
 private:
   static Expected<ThreadSafeModule>
   optimizeModule(ThreadSafeModule TSM, const MaterializationResponsibility &R) {
-    // Create a function pass manager.
-    auto FPM = llvm::make_unique<legacy::FunctionPassManager>(TSM.getModule());
+    TSM.withModuleDo([](Module &M) {
+      // Create a function pass manager.
+      auto FPM = std::make_unique<legacy::FunctionPassManager>(&M);
 
-    // Add some optimizations.
-    FPM->add(createInstructionCombiningPass());
-    FPM->add(createReassociatePass());
-    FPM->add(createGVNPass());
-    FPM->add(createCFGSimplificationPass());
-    FPM->doInitialization();
+      // Add some optimizations.
+      FPM->add(createInstructionCombiningPass());
+      FPM->add(createReassociatePass());
+      FPM->add(createGVNPass());
+      FPM->add(createCFGSimplificationPass());
+      FPM->doInitialization();
 
-    // Run the optimizations over all functions in the module being added to
-    // the JIT.
-    for (auto &F : *TSM.getModule())
-      FPM->run(F);
+      // Run the optimizations over all functions in the module being added to
+      // the JIT.
+      for (auto &F : M)
+        FPM->run(F);
+    });
 
-    return TSM;
+    return std::move(TSM);
   }
 };
 

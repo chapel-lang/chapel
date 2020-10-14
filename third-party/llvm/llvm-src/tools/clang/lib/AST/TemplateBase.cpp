@@ -1,9 +1,8 @@
 //===- TemplateBase.cpp - Common template AST class implementation --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -371,7 +370,7 @@ TemplateArgument TemplateArgument::getPackExpansionPattern() const {
 
   switch (getKind()) {
   case Type:
-    return getAsType()->getAs<PackExpansionType>()->getPattern();
+    return getAsType()->castAs<PackExpansionType>()->getPattern();
 
   case Expression:
     return cast<PackExpansionExpr>(getAsExpr())->getPattern();
@@ -562,7 +561,7 @@ const DiagnosticBuilder &clang::operator<<(const DiagnosticBuilder &DB,
 }
 
 const ASTTemplateArgumentListInfo *
-ASTTemplateArgumentListInfo::Create(ASTContext &C,
+ASTTemplateArgumentListInfo::Create(const ASTContext &C,
                                     const TemplateArgumentListInfo &List) {
   std::size_t size = totalSizeToAlloc<TemplateArgumentLoc>(List.size());
   void *Mem = C.Allocate(size, alignof(ASTTemplateArgumentListInfo));

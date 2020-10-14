@@ -1,9 +1,8 @@
 //==- HexagonTargetTransformInfo.cpp - Hexagon specific TTI pass -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 /// \file
 /// This file implements a TargetTransformInfo analysis pass specific to the
@@ -69,8 +68,8 @@ public:
   bool shouldFavorPostInc() const;
 
   // L1 cache prefetch.
-  unsigned getPrefetchDistance() const;
-  unsigned getCacheLineSize() const;
+  unsigned getPrefetchDistance() const override;
+  unsigned getCacheLineSize() const override;
 
   /// @}
 
@@ -113,8 +112,9 @@ public:
             unsigned ScalarizationCostPassed = UINT_MAX);
   unsigned getAddressComputationCost(Type *Tp, ScalarEvolution *SE,
             const SCEV *S);
-  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
-            unsigned AddressSpace, const Instruction *I = nullptr);
+  unsigned getMemoryOpCost(unsigned Opcode, Type *Src, MaybeAlign Alignment,
+                           unsigned AddressSpace,
+                           const Instruction *I = nullptr);
   unsigned getMaskedMemoryOpCost(unsigned Opcode, Type *Src, unsigned Alignment,
             unsigned AddressSpace);
   unsigned getShuffleCost(TTI::ShuffleKind Kind, Type *Tp, int Index,
@@ -127,12 +127,14 @@ public:
             bool UseMaskForGaps = false);
   unsigned getCmpSelInstrCost(unsigned Opcode, Type *ValTy, Type *CondTy,
             const Instruction *I);
-  unsigned getArithmeticInstrCost(unsigned Opcode, Type *Ty,
-            TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
-            TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
-            TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
-            TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-            ArrayRef<const Value *> Args = ArrayRef<const Value *>());
+  unsigned getArithmeticInstrCost(
+      unsigned Opcode, Type *Ty,
+      TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
+      TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
+      TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
+      TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr);
   unsigned getCastInstrCost(unsigned Opcode, Type *Dst, Type *Src,
             const Instruction *I = nullptr);
   unsigned getVectorInstrCost(unsigned Opcode, Type *Val, unsigned Index);

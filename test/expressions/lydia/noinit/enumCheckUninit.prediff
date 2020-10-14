@@ -1,7 +1,0 @@
-#!/bin/bash
-
-outfile=enumCheckUninit.exec.out.tmp
-# use the name of the stored c code and concatenate with the outputfile
-grep -r "foo = " ccode/ >> $outfile
-grep -r "bar = " ccode/ >> $outfile
-grep -r "baz = " ccode/ >> $outfile

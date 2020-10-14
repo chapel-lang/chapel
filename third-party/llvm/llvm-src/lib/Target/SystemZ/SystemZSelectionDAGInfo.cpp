@@ -1,9 +1,8 @@
 //===-- SystemZSelectionDAGInfo.cpp - SystemZ SelectionDAG Info -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -210,10 +209,10 @@ std::pair<SDValue, SDValue> SystemZSelectionDAGInfo::EmitTargetCodeForMemchr(
 
   // Now select between End and null, depending on whether the character
   // was found.
-  SDValue Ops[] = {End, DAG.getConstant(0, DL, PtrVT),
-                   DAG.getConstant(SystemZ::CCMASK_SRST, DL, MVT::i32),
-                   DAG.getConstant(SystemZ::CCMASK_SRST_FOUND, DL, MVT::i32),
-                   CCReg};
+  SDValue Ops[] = {
+      End, DAG.getConstant(0, DL, PtrVT),
+      DAG.getTargetConstant(SystemZ::CCMASK_SRST, DL, MVT::i32),
+      DAG.getTargetConstant(SystemZ::CCMASK_SRST_FOUND, DL, MVT::i32), CCReg};
   End = DAG.getNode(SystemZISD::SELECT_CCMASK, DL, PtrVT, Ops);
   return std::make_pair(End, Chain);
 }

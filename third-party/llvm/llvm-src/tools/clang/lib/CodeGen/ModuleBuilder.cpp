@@ -1,9 +1,8 @@
 //===--- ModuleBuilder.cpp - Emit LLVM Code from ASTs ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -66,6 +65,13 @@ namespace {
   private:
     SmallVector<FunctionDecl *, 8> DeferredInlineMemberFuncDefs;
 
+    static llvm::StringRef ExpandModuleName(llvm::StringRef ModuleName,
+                                            const CodeGenOptions &CGO) {
+      if (ModuleName == "-" && !CGO.MainFileName.empty())
+        return CGO.MainFileName;
+      return ModuleName;
+    }
+
   public:
     CodeGeneratorImpl(DiagnosticsEngine &diags, llvm::StringRef ModuleName,
                       const HeaderSearchOptions &HSO,
@@ -74,7 +80,8 @@ namespace {
                       CoverageSourceInfo *CoverageInfo = nullptr)
         : Diags(diags), Ctx(nullptr), HeaderSearchOpts(HSO),
           PreprocessorOpts(PPO), CodeGenOpts(CGO), HandlingTopLevelDecls(0),
-          CoverageInfo(CoverageInfo), M(new llvm::Module(ModuleName, C)) {
+          CoverageInfo(CoverageInfo),
+          M(new llvm::Module(ExpandModuleName(ModuleName, CGO), C)) {
       C.setDiscardValueNames(CGO.DiscardValueNames);
     }
 
@@ -122,7 +129,7 @@ namespace {
     llvm::Module *StartModule(llvm::StringRef ModuleName,
                               llvm::LLVMContext &C) {
       assert(!M && "Replacing existing Module?");
-      M.reset(new llvm::Module(ModuleName, C));
+      M.reset(new llvm::Module(ExpandModuleName(ModuleName, CodeGenOpts), C));
       Initialize(*Ctx);
       return M.get();
     }
@@ -233,6 +240,9 @@ namespace {
           if (auto *DRD = dyn_cast<OMPDeclareReductionDecl>(Member)) {
             if (Ctx->DeclMustBeEmitted(DRD))
               Builder->EmitGlobal(DRD);
+          } else if (auto *DMD = dyn_cast<OMPDeclareMapperDecl>(Member)) {
+            if (Ctx->DeclMustBeEmitted(DMD))
+              Builder->EmitGlobal(DMD);
           }
         }
       }
@@ -278,6 +288,10 @@ namespace {
         return;
 
       Builder->EmitTentativeDefinition(D);
+    }
+
+    void CompleteExternalDeclaration(VarDecl *D) override {
+      Builder->EmitExternalDeclaration(D);
     }
 
     void HandleVTable(CXXRecordDecl *RD) override {

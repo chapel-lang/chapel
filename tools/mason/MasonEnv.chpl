@@ -21,6 +21,7 @@
 private use List;
 use MasonUtils;
 public use MasonHelp;
+const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
 proc MASON_HOME : string {
   const envHome = getEnv("MASON_HOME");
@@ -67,8 +68,7 @@ proc MASON_OFFLINE {
  */
 proc MASON_REGISTRY {
   const env = getEnv("MASON_REGISTRY");
-  const default = ("mason-registry",
-                   "https://github.com/chapel-lang/mason-registry");
+  const default = ("mason-registry",regUrl);
   var registries: list(2*string);
 
   if env == "" {

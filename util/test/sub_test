@@ -590,7 +590,7 @@ def filter_compiler_errors(compiler_output):
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if re.search(s, compiler_output, re.IGNORECASE) != None:
-            error_msg = '(possible private issue #398) '
+            error_msg = '(private issue #398) '
             break
 
     return error_msg
@@ -624,14 +624,20 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
     for s in err_strings:
         # NOTE: checking pre_exec (compiler) output
         if re.search(s, pre_exec_output, re.IGNORECASE) != None:
-            extra_msg = '(possible private issue #482) '
+            extra_msg = '(private issue #482) '
             break
 
     err_strings = ['could not checkout FLEXlm license']
     for s in err_strings:
         if (re.search(s, output, re.IGNORECASE) != None or
             re.search(s, pre_exec_output, re.IGNORECASE) != None):
-            extra_msg = '(possible private issue #398) '
+            extra_msg = '(private issue #398) '
+            break
+
+    err_strings = ['=* Memory Leaks =*']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None):
+            extra_msg = '(memory leak) '
             break
 
     return extra_msg
@@ -1699,6 +1705,15 @@ for testname in testsrc:
             printTestVariation(compoptsnum, compoptslist);
             sys.stdout.write(']\n')
 
+            # If there was a prediff it may have hidden the compilation
+            # failure, so print out the full log. Note that we don't check
+            # systemPrediffs since they shouldn't be filtering all output
+            # anyways, and it could create noise for configs that use them.
+            if result != 0:
+                if prediff or globalPrediff:
+                    sys.stdout.write('[Compiler output before prediff was as follows:]\n')
+                    sys.stdout.write(origoutput)
+
             if (result != 0 and futuretest != ''):
                 badfile=test_filename+'.bad'
                 if os.access(badfile, os.R_OK):
@@ -2228,7 +2243,8 @@ for testname in testsrc:
                         keyfile = PerfTFile(test_filename,'keys') #e.g. .perfkeys
                     else:
                         perfexecname = re.sub(r'\{0}$'.format(PerfSfx('keys')), '', explicitexecgoodfile)
-                        if os.path.isfile(explicitexecgoodfile):
+                        if (os.path.isfile(explicitexecgoodfile) and
+                            test_filename != explicitexecgoodfile):
                             keyfile = explicitexecgoodfile
                         else:
                             keyfile = PerfTFile(test_filename,'keys')

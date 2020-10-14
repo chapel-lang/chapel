@@ -1,9 +1,8 @@
 //===-- BrainFDriver.cpp - BrainF compiler driver -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -73,11 +72,14 @@ JIT("jit", cl::desc("Run program Just-In-Time"));
 //Add main function so can be fully compiled
 void addMainFunction(Module *mod) {
   //define i32 @main(i32 %argc, i8 **%argv)
-  Function *main_func = cast<Function>(mod->
-    getOrInsertFunction("main", IntegerType::getInt32Ty(mod->getContext()),
-                        IntegerType::getInt32Ty(mod->getContext()),
-                        PointerType::getUnqual(PointerType::getUnqual(
-                          IntegerType::getInt8Ty(mod->getContext())))));
+  FunctionType *main_func_fty = FunctionType::get(
+      Type::getInt32Ty(mod->getContext()),
+      {Type::getInt32Ty(mod->getContext()),
+       Type::getInt8Ty(mod->getContext())->getPointerTo()->getPointerTo()},
+      false);
+  Function *main_func =
+      Function::Create(main_func_fty, Function::ExternalLinkage, "main", mod);
+
   {
     Function::arg_iterator args = main_func->arg_begin();
     Value *arg_0 = &*args++;
@@ -124,7 +126,7 @@ int main(int argc, char **argv) {
     }
     if (OutputFilename != "-") {
       std::error_code EC;
-      out = new raw_fd_ostream(OutputFilename, EC, sys::fs::F_None);
+      out = new raw_fd_ostream(OutputFilename, EC, sys::fs::OF_None);
     }
   }
 

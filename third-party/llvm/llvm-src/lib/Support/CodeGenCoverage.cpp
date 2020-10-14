@@ -1,9 +1,8 @@
 //===- lib/Support/CodeGenCoverage.cpp -------------------------------------==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -102,9 +101,9 @@ bool CodeGenCoverage::emit(StringRef CoveragePrefix,
     std::string CoverageFilename = (CoveragePrefix + Pid).str();
 
     std::error_code EC;
-    sys::fs::OpenFlags OpenFlags = sys::fs::F_Append;
+    sys::fs::OpenFlags OpenFlags = sys::fs::OF_Append;
     std::unique_ptr<ToolOutputFile> CoverageFile =
-        llvm::make_unique<ToolOutputFile>(CoverageFilename, EC, OpenFlags);
+        std::make_unique<ToolOutputFile>(CoverageFilename, EC, OpenFlags);
     if (EC)
       return false;
 

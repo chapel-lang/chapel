@@ -12,11 +12,11 @@ proc isNil(x): bool {
     return false;
 }
 
-proc car(x: _tuple) ref: x(0).type where x.size == 2 {
+proc car(x: _tuple) const ref: x(0).type where x.size == 2 {
   return x(0);
 }
 
-proc cdr(x: _tuple) ref: x(1).type where x.size == 2 {
+proc cdr(x: _tuple) const ref: x(1).type where x.size == 2 {
   return x(1);
 }
 

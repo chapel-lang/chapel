@@ -1,9 +1,8 @@
 //===-- HexagonRegisterInfo.td - Hexagon Register defs -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -120,7 +119,7 @@ let Namespace = "Hexagon" in {
   def P2 : Rp<2, "p2">, DwarfRegNum<[65]>;
   def P3 : Rp<3, "p3">, DwarfRegNum<[66]>;
 
-  // Fake register to represent USR.OVF bit. Artihmetic/saturating instruc-
+  // Fake register to represent USR.OVF bit. Arithmetic/saturating instruc-
   // tions modify this bit, and multiple such instructions are allowed in the
   // same packet. We need to ignore output dependencies on this bit, but not
   // on the entire USR.

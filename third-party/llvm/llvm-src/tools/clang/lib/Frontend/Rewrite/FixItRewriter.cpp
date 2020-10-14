@@ -1,9 +1,8 @@
 //===- FixItRewriter.cpp - Fix-It Rewriter Diagnostic Client --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -102,7 +101,7 @@ bool FixItRewriter::WriteFixedFiles(
     if (fd != -1) {
       OS.reset(new llvm::raw_fd_ostream(fd, /*shouldClose=*/true));
     } else {
-      OS.reset(new llvm::raw_fd_ostream(Filename, EC, llvm::sys::fs::F_None));
+      OS.reset(new llvm::raw_fd_ostream(Filename, EC, llvm::sys::fs::OF_None));
     }
     if (EC) {
       Diags.Report(clang::diag::err_fe_unable_to_open_output) << Filename

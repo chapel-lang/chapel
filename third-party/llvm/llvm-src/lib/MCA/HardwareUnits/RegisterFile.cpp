@@ -1,9 +1,8 @@
 //===--------------------- RegisterFile.cpp ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -148,7 +147,7 @@ void RegisterFile::freePhysRegs(const RegisterRenamingInfo &Entry,
 void RegisterFile::addRegisterWrite(WriteRef Write,
                                     MutableArrayRef<unsigned> UsedPhysRegs) {
   WriteState &WS = *Write.getWriteState();
-  unsigned RegID = WS.getRegisterID();
+  MCPhysReg RegID = WS.getRegisterID();
   assert(RegID && "Adding an invalid register definition?");
 
   LLVM_DEBUG({
@@ -189,13 +188,13 @@ void RegisterFile::addRegisterWrite(WriteRef Write,
       if (OtherWS && (OtherWrite.getSourceIndex() != Write.getSourceIndex())) {
         // This partial write has a false dependency on RenameAs.
         assert(!IsEliminated && "Unexpected partial update!");
-        OtherWS->addUser(&WS);
+        OtherWS->addUser(OtherWrite.getSourceIndex(), &WS);
       }
     }
   }
 
   // Update zero registers.
-  unsigned ZeroRegisterID =
+  MCPhysReg ZeroRegisterID =
       WS.clearsSuperRegisters() ? RegID : WS.getRegisterID();
   if (IsWriteZero) {
     ZeroRegisters.setBit(ZeroRegisterID);
@@ -248,7 +247,7 @@ void RegisterFile::removeRegisterWrite(
   if (WS.isEliminated())
     return;
 
-  unsigned RegID = WS.getRegisterID();
+  MCPhysReg RegID = WS.getRegisterID();
 
   assert(RegID != 0 && "Invalidating an already invalid register?");
   assert(WS.getCyclesLeft() != UNKNOWN_CYCLES &&
@@ -256,7 +255,7 @@ void RegisterFile::removeRegisterWrite(
   assert(WS.getCyclesLeft() <= 0 && "Invalid cycles left for this write!");
 
   bool ShouldFreePhysRegs = !WS.isWriteZero();
-  unsigned RenameAs = RegisterMappings[RegID].second.RenameAs;
+  MCPhysReg RenameAs = RegisterMappings[RegID].second.RenameAs;
   if (RenameAs && RenameAs != RegID) {
     RegID = RenameAs;
 
@@ -331,37 +330,32 @@ bool RegisterFile::tryEliminateMove(WriteState &WS, ReadState &RS) {
   if (RMT.AllowZeroMoveEliminationOnly && !IsZeroMove)
     return false;
 
-  MCPhysReg FromReg = RS.getRegisterID();
-  MCPhysReg ToReg = WS.getRegisterID();
-
   // Construct an alias.
-  MCPhysReg AliasReg = FromReg;
-  if (RRIFrom.RenameAs)
-    AliasReg = RRIFrom.RenameAs;
+  MCPhysReg AliasedReg =
+      RRIFrom.RenameAs ? RRIFrom.RenameAs : RS.getRegisterID();
+  MCPhysReg AliasReg = RRITo.RenameAs ? RRITo.RenameAs : WS.getRegisterID();
 
-  const RegisterRenamingInfo &RMAlias = RegisterMappings[AliasReg].second;
+  const RegisterRenamingInfo &RMAlias = RegisterMappings[AliasedReg].second;
   if (RMAlias.AliasRegID)
-    AliasReg = RMAlias.AliasRegID;
+    AliasedReg = RMAlias.AliasRegID;
 
-  if (AliasReg != ToReg) {
-    RegisterMappings[ToReg].second.AliasRegID = AliasReg;
-    for (MCSubRegIterator I(ToReg, &MRI); I.isValid(); ++I)
-      RegisterMappings[*I].second.AliasRegID = AliasReg;
-  }
+  RegisterMappings[AliasReg].second.AliasRegID = AliasedReg;
+  for (MCSubRegIterator I(AliasReg, &MRI); I.isValid(); ++I)
+    RegisterMappings[*I].second.AliasRegID = AliasedReg;
 
-  RMT.NumMoveEliminated++;
   if (IsZeroMove) {
     WS.setWriteZero();
     RS.setReadZero();
   }
   WS.setEliminated();
+  RMT.NumMoveEliminated++;
 
   return true;
 }
 
 void RegisterFile::collectWrites(const ReadState &RS,
                                  SmallVectorImpl<WriteRef> &Writes) const {
-  unsigned RegID = RS.getRegisterID();
+  MCPhysReg RegID = RS.getRegisterID();
   assert(RegID && RegID < RegisterMappings.size());
   LLVM_DEBUG(dbgs() << "RegisterFile: collecting writes for register "
                     << MRI.getName(RegID) << '\n');
@@ -402,8 +396,8 @@ void RegisterFile::collectWrites(const ReadState &RS,
 }
 
 void RegisterFile::addRegisterRead(ReadState &RS,
-                                   SmallVectorImpl<WriteRef> &Defs) const {
-  unsigned RegID = RS.getRegisterID();
+                                   const MCSubtargetInfo &STI) const {
+  MCPhysReg RegID = RS.getRegisterID();
   const RegisterRenamingInfo &RRI = RegisterMappings[RegID].second;
   RS.setPRF(RRI.IndexPlusCost.first);
   if (RS.isIndependentFromDef())
@@ -411,15 +405,30 @@ void RegisterFile::addRegisterRead(ReadState &RS,
 
   if (ZeroRegisters[RS.getRegisterID()])
     RS.setReadZero();
-  collectWrites(RS, Defs);
-  RS.setDependentWrites(Defs.size());
+
+  SmallVector<WriteRef, 4> DependentWrites;
+  collectWrites(RS, DependentWrites);
+  RS.setDependentWrites(DependentWrites.size());
+
+  // We know that this read depends on all the writes in DependentWrites.
+  // For each write, check if we have ReadAdvance information, and use it
+  // to figure out in how many cycles this read becomes available.
+  const ReadDescriptor &RD = RS.getDescriptor();
+  const MCSchedModel &SM = STI.getSchedModel();
+  const MCSchedClassDesc *SC = SM.getSchedClassDesc(RD.SchedClassID);
+  for (WriteRef &WR : DependentWrites) {
+    WriteState &WS = *WR.getWriteState();
+    unsigned WriteResID = WS.getWriteResourceID();
+    int ReadAdvance = STI.getReadAdvanceCycles(SC, RD.UseIndex, WriteResID);
+    WS.addUser(WR.getSourceIndex(), &RS, ReadAdvance);
+  }
 }
 
-unsigned RegisterFile::isAvailable(ArrayRef<unsigned> Regs) const {
+unsigned RegisterFile::isAvailable(ArrayRef<MCPhysReg> Regs) const {
   SmallVector<unsigned, 4> NumPhysRegs(getNumRegisterFiles());
 
   // Find how many new mappings must be created for each register file.
-  for (const unsigned RegID : Regs) {
+  for (const MCPhysReg RegID : Regs) {
     const RegisterRenamingInfo &RRI = RegisterMappings[RegID].second;
     const IndexPlusCostPairTy &Entry = RRI.IndexPlusCost;
     if (Entry.first)

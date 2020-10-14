@@ -1,9 +1,8 @@
 //===- TailRecursionElimination.cpp - Eliminate Tail Calls ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,6 +55,7 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/CFG.h"
 #include "llvm/Analysis/CaptureTracking.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/GlobalsModRef.h"
 #include "llvm/Analysis/InlineCost.h"
 #include "llvm/Analysis/InstructionSimplify.h"
@@ -69,7 +69,6 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/DiagnosticInfo.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/InstIterator.h"
@@ -77,6 +76,7 @@
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/ValueHandle.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
@@ -341,8 +341,8 @@ static bool canMoveAboveCall(Instruction *I, CallInst *CI, AliasAnalysis *AA) {
       // being loaded from.
       const DataLayout &DL = L->getModule()->getDataLayout();
       if (isModSet(AA->getModRefInfo(CI, MemoryLocation::get(L))) ||
-          !isSafeToLoadUnconditionally(L->getPointerOperand(),
-                                       L->getAlignment(), DL, L))
+          !isSafeToLoadUnconditionally(L->getPointerOperand(), L->getType(),
+                                       MaybeAlign(L->getAlignment()), DL, L))
         return false;
     }
   }
@@ -679,7 +679,7 @@ static bool eliminateRecursiveTailCall(
 
   BB->getInstList().erase(Ret);  // Remove return.
   BB->getInstList().erase(CI);   // Remove call.
-  DTU.insertEdge(BB, OldEntry);
+  DTU.applyUpdates({{DominatorTree::Insert, BB, OldEntry}});
   ++NumEliminated;
   return true;
 }

@@ -1,9 +1,8 @@
 //===-- LoopUnrollAndJam.cpp - Loop unrolling utilities -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,7 +21,6 @@
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/OptimizationRemarkEmitter.h"
 #include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/Utils/Local.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/DataLayout.h"
@@ -178,6 +176,7 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
 
   // When we enter here we should have already checked that it is safe
   BasicBlock *Header = L->getHeader();
+  assert(Header && "No header.");
   assert(L->getSubLoops().size() == 1);
   Loop *SubLoop = *L->begin();
 
@@ -198,8 +197,8 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
   if (TripMultiple == 1 || TripMultiple % Count != 0) {
     if (!UnrollRuntimeLoopRemainder(L, Count, /*AllowExpensiveTripCount*/ false,
                                     /*UseEpilogRemainder*/ true,
-                                    UnrollRemainder, LI, SE, DT, AC, true,
-                                    EpilogueLoop)) {
+                                    UnrollRemainder, /*ForgetAllSCEV*/ false,
+                                    LI, SE, DT, AC, true, EpilogueLoop)) {
       LLVM_DEBUG(dbgs() << "Won't unroll-and-jam; remainder loop could not be "
                            "generated when assuming runtime trip count\n");
       return LoopUnrollResult::Unmodified;
@@ -248,8 +247,9 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
 
   BasicBlock *Preheader = L->getLoopPreheader();
   BasicBlock *LatchBlock = L->getLoopLatch();
+  assert(Preheader && "No preheader");
+  assert(LatchBlock && "No latch block");
   BranchInst *BI = dyn_cast<BranchInst>(LatchBlock->getTerminator());
-  assert(Preheader && LatchBlock && Header);
   assert(BI && !BI->isUnconditional());
   bool ContinueOnTrue = L->contains(BI->getSuccessor(0));
   BasicBlock *LoopExit = BI->getSuccessor(ContinueOnTrue);
@@ -301,7 +301,7 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
       for (Instruction &I : *BB)
         if (!isa<DbgInfoIntrinsic>(&I))
           if (const DILocation *DIL = I.getDebugLoc()) {
-            auto NewDIL = DIL->cloneWithDuplicationFactor(Count);
+            auto NewDIL = DIL->cloneByMultiplyingDuplicationFactor(Count);
             if (NewDIL)
               I.setDebugLoc(NewDIL.getValue());
             else
@@ -518,6 +518,7 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
     movePHIs(AftBlocksFirst[It], AftBlocksFirst[0]);
   }
 
+  DomTreeUpdater DTU(DT, DomTreeUpdater::UpdateStrategy::Lazy);
   // Dominator Tree. Remove the old links between Fore, Sub and Aft, adding the
   // new ones required.
   if (Count != 1) {
@@ -531,7 +532,7 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
                            ForeBlocksLast.back(), SubLoopBlocksFirst[0]);
     DTUpdates.emplace_back(DominatorTree::UpdateKind::Insert,
                            SubLoopBlocksLast.back(), AftBlocksFirst[0]);
-    DT->applyUpdates(DTUpdates);
+    DTU.applyUpdatesPermissive(DTUpdates);
   }
 
   // Merge adjacent basic blocks, if possible.
@@ -544,7 +545,8 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
     BranchInst *Term = dyn_cast<BranchInst>(BB->getTerminator());
     if (Term && Term->isUnconditional() && L->contains(Term->getSuccessor(0))) {
       BasicBlock *Dest = Term->getSuccessor(0);
-      if (BasicBlock *Fold = foldBlockIntoPredecessor(Dest, LI, SE, DT)) {
+      BasicBlock *Fold = Dest->getUniquePredecessor();
+      if (MergeBlockIntoPredecessor(Dest, &DTU, LI)) {
         // Don't remove BB and add Fold as they are the same BB
         assert(Fold == BB);
         (void)Fold;
@@ -554,6 +556,8 @@ LoopUnrollResult llvm::UnrollAndJamLoop(
     } else
       MergeBlocks.erase(BB);
   }
+  // Apply updates to the DomTree.
+  DT = &DTU.getDomTree();
 
   // At this point, the code is well formed.  We now do a quick sweep over the
   // inserted code, doing constant propagation and dead code elimination as we

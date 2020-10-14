@@ -1,9 +1,8 @@
 //===- TGLexer.h - Lexer for TableGen Files ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,8 +19,8 @@
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/SMLoc.h"
 #include <cassert>
-#include <map>
 #include <memory>
+#include <set>
 #include <string>
 
 namespace llvm {
@@ -45,14 +44,15 @@ namespace tgtok {
     equal, question,    // = ?
     paste,              // #
 
-    // Keywords.
+    // Keywords. ('ElseKW' is named to distinguish it from the existing 'Else'
+    // that means the preprocessor #else.)
     Bit, Bits, Class, Code, Dag, Def, Foreach, Defm, Field, In, Int, Let, List,
-    MultiClass, String, Defset,
+    MultiClass, String, Defset, Defvar, If, Then, ElseKW,
 
     // !keywords.
-    XConcat, XADD, XAND, XOR, XSRA, XSRL, XSHL, XListConcat, XStrConcat, XCast,
-    XSubst, XForEach, XFoldl, XHead, XTail, XSize, XEmpty, XIf, XEq, XIsA, XDag,
-    XNe, XLe, XLt, XGe, XGt,
+    XConcat, XADD, XMUL, XAND, XOR, XSRA, XSRL, XSHL, XListConcat, XListSplat,
+    XStrConcat, XCast, XSubst, XForEach, XFoldl, XHead, XTail, XSize, XEmpty,
+    XIf, XCond, XEq, XIsA, XDag, XNe, XLe, XLt, XGe, XGt, XSetOp, XGetOp,
 
     // Integer value.
     IntVal,
@@ -66,7 +66,7 @@ namespace tgtok {
 
     // Preprocessing tokens for internal usage by the lexer.
     // They are never returned as a result of Lex().
-    Ifdef, Else, Endif, Define
+    Ifdef, Ifndef, Else, Endif, Define
   };
 }
 
@@ -74,24 +74,25 @@ namespace tgtok {
 class TGLexer {
   SourceMgr &SrcMgr;
 
-  const char *CurPtr;
+  const char *CurPtr = nullptr;
   StringRef CurBuf;
 
   // Information about the current token.
-  const char *TokStart;
-  tgtok::TokKind CurCode;
+  const char *TokStart = nullptr;
+  tgtok::TokKind CurCode = tgtok::TokKind::Eof;
   std::string CurStrVal;  // This is valid for ID, STRVAL, VARNAME, CODEFRAGMENT
-  int64_t CurIntVal;      // This is valid for INTVAL.
+  int64_t CurIntVal = 0;  // This is valid for INTVAL.
 
   /// CurBuffer - This is the current buffer index we're lexing from as managed
   /// by the SourceMgr object.
-  unsigned CurBuffer;
+  unsigned CurBuffer = 0;
 
 public:
-  typedef std::map<std::string, SMLoc> DependenciesMapTy;
+  typedef std::set<std::string> DependenciesSetTy;
+
 private:
   /// Dependencies - This is the list of all included files.
-  DependenciesMapTy Dependencies;
+  DependenciesSetTy Dependencies;
 
 public:
   TGLexer(SourceMgr &SrcMgr, ArrayRef<std::string> Macros);
@@ -100,7 +101,7 @@ public:
     return CurCode = LexToken(CurPtr == CurBuf.begin());
   }
 
-  const DependenciesMapTy &getDependencies() const {
+  const DependenciesSetTy &getDependencies() const {
     return Dependencies;
   }
 

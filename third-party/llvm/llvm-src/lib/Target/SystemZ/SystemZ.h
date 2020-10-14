@@ -1,9 +1,8 @@
 //==- SystemZ.h - Top-Level Interface for SystemZ representation -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,7 +55,7 @@ const unsigned CCMASK_ARITH          = CCMASK_ANY;
 
 // Condition-code mask assignments for logical operations.
 const unsigned CCMASK_LOGICAL_ZERO     = CCMASK_0 | CCMASK_2;
-const unsigned CCMASK_LOGICAL_NONZERO  = CCMASK_1 | CCMASK_2;
+const unsigned CCMASK_LOGICAL_NONZERO  = CCMASK_1 | CCMASK_3;
 const unsigned CCMASK_LOGICAL_CARRY    = CCMASK_2 | CCMASK_3;
 const unsigned CCMASK_LOGICAL_NOCARRY  = CCMASK_0 | CCMASK_1;
 const unsigned CCMASK_LOGICAL_BORROW   = CCMASK_LOGICAL_NOCARRY;
@@ -191,10 +190,10 @@ static inline bool isImmHF(uint64_t Val) {
 FunctionPass *createSystemZISelDag(SystemZTargetMachine &TM,
                                    CodeGenOpt::Level OptLevel);
 FunctionPass *createSystemZElimComparePass(SystemZTargetMachine &TM);
-FunctionPass *createSystemZExpandPseudoPass(SystemZTargetMachine &TM);
 FunctionPass *createSystemZShortenInstPass(SystemZTargetMachine &TM);
 FunctionPass *createSystemZLongBranchPass(SystemZTargetMachine &TM);
 FunctionPass *createSystemZLDCleanupPass(SystemZTargetMachine &TM);
+FunctionPass *createSystemZPostRewritePass(SystemZTargetMachine &TM);
 FunctionPass *createSystemZTDCPass();
 } // end namespace llvm
 

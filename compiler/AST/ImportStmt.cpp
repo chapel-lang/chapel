@@ -152,9 +152,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
   if (checkValid(src) == true) {
-    // 2017/05/28 The parser inserts a normalized UseStmt of ChapelBase
     if (isSymExpr(src)) {
-      INT_FATAL("This should only happen for a UseStmt");
+      // We should at least be in the process of resolving the use and import
+      // statements for this scope if src is a SymExpr at this point.
+      INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
     } else if (Symbol* sym = scope->lookupForImport(src, false)) {
       SET_LINENO(this);

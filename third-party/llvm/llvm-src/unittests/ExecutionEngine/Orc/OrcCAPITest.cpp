@@ -1,9 +1,8 @@
 //===--------------- OrcCAPITest.cpp - Unit tests Orc C API ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,7 +44,7 @@ protected:
     return MB.takeModule();
   }
 
-  std::unique_ptr<MemoryBuffer> createTestObject() {
+  Expected<std::unique_ptr<MemoryBuffer>> createTestObject() {
     orc::SimpleCompiler IRCompiler(*TM);
     auto M = createTestModule(TM->getTargetTriple());
     M->setDataLayout(TM->createDataLayout());
@@ -162,7 +161,7 @@ TEST_F(OrcCAPIExecutionTest, TestAddObjectFile) {
   if (!SupportsJIT)
     return;
 
-  auto ObjBuffer = createTestObject();
+  auto ObjBuffer = cantFail(createTestObject());
 
   LLVMOrcJITStackRef JIT =
     LLVMOrcCreateInstance(wrap(TM.get()));

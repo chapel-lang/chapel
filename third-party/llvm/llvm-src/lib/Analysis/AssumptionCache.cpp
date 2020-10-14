@@ -1,9 +1,8 @@
 //===- AssumptionCache.cpp - Cache finding @llvm.assume calls -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,6 +23,7 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -54,11 +54,11 @@ AssumptionCache::getOrInsertAffectedValues(Value *V) {
   return AVIP.first->second;
 }
 
-void AssumptionCache::updateAffectedValues(CallInst *CI) {
+static void findAffectedValues(CallInst *CI,
+                               SmallVectorImpl<Value *> &Affected) {
   // Note: This code must be kept in-sync with the code in
   // computeKnownBitsFromAssume in ValueTracking.
 
-  SmallVector<Value *, 16> Affected;
   auto AddAffected = [&Affected](Value *V) {
     if (isa<Argument>(V)) {
       Affected.push_back(V);
@@ -109,12 +109,32 @@ void AssumptionCache::updateAffectedValues(CallInst *CI) {
       AddAffectedFromEq(B);
     }
   }
+}
+
+void AssumptionCache::updateAffectedValues(CallInst *CI) {
+  SmallVector<Value *, 16> Affected;
+  findAffectedValues(CI, Affected);
 
   for (auto &AV : Affected) {
     auto &AVV = getOrInsertAffectedValues(AV);
     if (std::find(AVV.begin(), AVV.end(), CI) == AVV.end())
       AVV.push_back(CI);
   }
+}
+
+void AssumptionCache::unregisterAssumption(CallInst *CI) {
+  SmallVector<Value *, 16> Affected;
+  findAffectedValues(CI, Affected);
+
+  for (auto &AV : Affected) {
+    auto AVI = AffectedValues.find_as(AV);
+    if (AVI != AffectedValues.end())
+      AffectedValues.erase(AVI);
+  }
+
+  AssumeHandles.erase(
+      remove_if(AssumeHandles, [CI](WeakTrackingVH &VH) { return CI == VH; }),
+      AssumeHandles.end());
 }
 
 void AssumptionCache::AffectedValueCallbackVH::deleted() {
@@ -124,7 +144,7 @@ void AssumptionCache::AffectedValueCallbackVH::deleted() {
   // 'this' now dangles!
 }
 
-void AssumptionCache::copyAffectedValuesInCache(Value *OV, Value *NV) {
+void AssumptionCache::transferAffectedValuesInCache(Value *OV, Value *NV) {
   auto &NAVV = getOrInsertAffectedValues(NV);
   auto AVI = AffectedValues.find(OV);
   if (AVI == AffectedValues.end())
@@ -133,6 +153,7 @@ void AssumptionCache::copyAffectedValuesInCache(Value *OV, Value *NV) {
   for (auto &A : AVI->second)
     if (std::find(NAVV.begin(), NAVV.end(), A) == NAVV.end())
       NAVV.push_back(A);
+  AffectedValues.erase(OV);
 }
 
 void AssumptionCache::AffectedValueCallbackVH::allUsesReplacedWith(Value *NV) {
@@ -141,7 +162,7 @@ void AssumptionCache::AffectedValueCallbackVH::allUsesReplacedWith(Value *NV) {
 
   // Any assumptions that affected this value now affect the new value.
 
-  AC->copyAffectedValuesInCache(getValPtr(), NV);
+  AC->transferAffectedValuesInCache(getValPtr(), NV);
   // 'this' now might dangle! If the AffectedValues map was resized to add an
   // entry for NV then this object might have been destroyed in favor of some
   // copy in the grown map.
@@ -236,9 +257,16 @@ AssumptionCache &AssumptionCacheTracker::getAssumptionCache(Function &F) {
   // Ok, build a new cache by scanning the function, insert it and the value
   // handle into our map, and return the newly populated cache.
   auto IP = AssumptionCaches.insert(std::make_pair(
-      FunctionCallbackVH(&F, this), llvm::make_unique<AssumptionCache>(F)));
+      FunctionCallbackVH(&F, this), std::make_unique<AssumptionCache>(F)));
   assert(IP.second && "Scanning function already in the map?");
   return *IP.first->second;
+}
+
+AssumptionCache *AssumptionCacheTracker::lookupAssumptionCache(Function &F) {
+  auto I = AssumptionCaches.find_as(&F);
+  if (I != AssumptionCaches.end())
+    return I->second.get();
+  return nullptr;
 }
 
 void AssumptionCacheTracker::verifyAnalysis() const {

@@ -22,7 +22,7 @@ pragma "no doc"
 module ExportWrappers {
   use ChapelStandard;
   use CPtr;
-  private use SysCTypes;
+  use SysCTypes;
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   pragma "export wrapper"

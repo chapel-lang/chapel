@@ -434,7 +434,10 @@ all:
   06/06/20:
     - text: Don't GET domain's dimensions unless needed (#15777)
       config: 16-node-xc, 16-node-cs, chapcs.comm-counts
-
+  06/21/20:
+    - Switch the domain's list of arrays to a hashtable (#15895)
+  06/25/20:
+    - Avoid allocating memory for empty hashtables (#15918)
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -474,6 +477,19 @@ AllCompTime: &timecomp-base
     - Improve handling for tryResolve and errors to handle a bad init= (#14887)
   03/03/20:
     - Remove calls to getUserInstantiationPoint (#15051)
+  06/11/20:
+    - Fix split init of const variables and update lvalue errors (#15800)
+  06/16/20:
+    - text: Support third-party CHPL_LIBFABRIC=libfabric (#15729)
+      config: 16-node-cs
+    - text: Warm up the comm layer, in the many-to-one test (#15798)
+      config: 16-node-cs
+
+allocate:
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 arguments:
   09/20/17:
@@ -507,6 +523,8 @@ array-of-strings-read:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 
 arr-forall:
   03/24/15:
@@ -601,6 +619,8 @@ CoMD:
     - Update PR 5296 (#6722)
   06/25/19:
     - Simplify standalone iterator for DefaultRectangular domains/arrays (#13189)
+  08/05/20:
+    - Adjust target compiler versions for some Cray configs (#16196)
 
 CoMD-elegant-aos:
   06/12/18:
@@ -651,6 +671,8 @@ create-views:
     - Close a leak with creating iterator records with domain shapes (#15512)
   04/29/20:
     - Put param conditionals before others in domain record initialization (#15591)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)
 
 cs-resize:
   03/05/19:
@@ -659,6 +681,8 @@ cs-resize:
 dist-performance.cc:
   04/29/20:
     - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
+  06/27/20:
+    - Revert changes to `list._commonInitFromIterable` (#15943)
 
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
@@ -947,6 +971,8 @@ knucleotide: &knucleotide-base
     - Deprecate adding to associative domain by assigning to array (#13945)
   09/11/19:
     - Optimize the method map.this(k) (#14065)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1281,6 +1307,12 @@ memleaksfull:
     - Close some multilocale test leaks (#15406)
   04/19/20:
     - no new leaks, multiple tests used to be registered as one
+  06/16/20:
+    - Use `localAccess` automatically (#15713)
+  06/18/20:
+    - Close a trivial test leak (#15871)
+  07/14/20:
+    - Add tests for set, map, list of arrays (#16034)
 
 meteor:
   12/18/13:
@@ -1414,6 +1446,10 @@ pidigits: &pidigits-base
 pidigits-submitted:
   <<: *pidigits-base
 
+primes:
+  07/01/20:
+    - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+
 prk-stencil:
   02/14/16:
     - Improved performance on PRK-stencil (#3288)
@@ -1471,6 +1507,8 @@ ptrans: &ptrans-base
     - Make BlockCyclic more parallel (#5224)
   01/27/17:
     - Fix bug in BlockCyclic indexing, convert arrays to tuples(#5229)
+  07/07/20:
+    - Distribution improvements for automatic localAccess (#15959)
 ptrans.ml-perf:
   <<: *ptrans-base
 ptrans.ml-time:
@@ -1484,6 +1522,8 @@ ra:
     - Rank change dom dist view (#5694)
   04/05/18:
     - Convert BaseDist-inheriting classes to use initializers (#9075)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
 
 ra.ml-perf:
   09/19/17:
@@ -1494,6 +1534,8 @@ ra.ml-perf:
 ra-atomics.ml-perf:
   10/03/17:
     - Increase the number of updates for RA to stabilize performance timings (#7522)
+  09/06/20:
+    - Improve LLVM vectorization support (#16152)
 
 RBC:
   02/22/17:
@@ -1518,6 +1560,8 @@ regexdna: &regexdna-base
     - Add UTF8 validation for strings (#14384)
   01/23/20:
     - Add support for escaping non-UTF8 sequences in strings (#14743)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -1583,6 +1627,12 @@ revcomp: &revcomp-base
 revcomp-submitted:
   <<: *revcomp-base
 
+ri-a2-AoA:
+  06/05/20:
+    - Remove unnecessary array temporaries for arrays-of-arrays (#15767)
+  08/24/20:
+    - Propagate constness of domain variables into the instance implementation (#16218)
+
 sad:
   05/03/16:
     - inconclusive due to noise
@@ -1612,6 +1662,14 @@ search:
     - Remove standardModuleSet and all code involving it from the compiler (#14270)
   12/10/19:
     - Allow messages in new Errors (#14545)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+
+search-throughput:
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
 
 spectralnorm:
   01/21/15:
@@ -1626,6 +1684,10 @@ spectral-norm-specify-step:
 split-whitespace-perf:
   11/02/16:
     - fix bugs when reading null bytes (#4806)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
 
 SSCA2_main:
   06/12/13:
@@ -1669,6 +1731,8 @@ stencil:
     - machine related (no commits on the day before)
   03/24/15:
     - with CCE, bug fix to avoid vectorizing when not valid
+  08/13/20:
+    - Optimize array swap operator for basic cases (#16209)
 
 stream:
   05/13/16:
@@ -1691,6 +1755,10 @@ substring:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 taskSpawn:
   07/24/16:
@@ -1715,6 +1783,10 @@ temporary-copies:
     - Rework the helper for string/bytes slicing (#15615)
   05/20/20:
     - Remove string.indices from getView (#15653)
+  06/11/20:
+    - Add a field to the string record to store a cached size (#15758)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
 
 twopt-paircount:
   06/22/17:
@@ -1727,6 +1799,8 @@ testSerialReductions:
     - result of Greg's commit to let the tasking layer determine parallelism
   12/19/18:
     - Merge ExternArr and friends into DefaultRectangular (#11893)
+  07/15/20:
+    - Enable parallel array init for all types (#16070)
 
 thread-ring:
   03/19/15:
@@ -1774,6 +1848,10 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+
+timeMapMinusEqual:
+  07/10/20:
+    - Optimize map -= operation (#16038)
 
 views-forall-iter:
   10/12/17:
@@ -1854,6 +1932,15 @@ compilerAndTestingStats: &compiler-perf-base
     - Give errors in reexporting ambiguities (#15316)
   04/16/20:
     - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  07/27/20:
+    - Replace some where-clauses with formals types (#16130)
+    - Handle bool tests in the compiler (#16062)
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/03/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -1870,11 +1957,29 @@ arkouda: &arkouda-base
   04/28/20:
     - text: Improve comm=none build and execution speed (mhmerrill/arkouda#358)
       config: chapcs
-  04/28/20:
     - text: Move XC testing from login to elogin node
       config: 16-node-xc
   05/20/20:
     - Upgrade Arkouda release testing from 1.20 to 1.22 (#15690)
+  07/01/20:
+    - Translate pdarray setops to server-side operations (mhmerrill/arkouda#392)
+  07/02/20:
+    - Reduce fragmentation for large allocations (#15992)
+
 
 arkouda-comp:
   <<: *arkouda-base
+  07/29/20:
+    - Optimize ASCII strings (#16092)
+  08/25/20:
+    - Refactor string iterators to reduce generated code size (#16266)
+  09/01/20:
+    - Stop inlining chpl__delete (#16314)
+  09/04/20:
+    - Improve string to numerical casts' compilation and execution performance (#16278)
+  09/09/20:
+    - Adjust inout to be implemented with a single argument (#16180)
+  09/10/20:
+    - Stop inlining many string casts (#16355)
+  09/17/20:
+    - Fix some issues with constant domain optimization (#16397)

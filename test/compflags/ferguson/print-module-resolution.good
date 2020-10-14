@@ -1,1 +1,176 @@
-nnnn Resolving module print-module-resolution ... nnnn asts
+SysCTypes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.SysCTypes
+ByteBufferHelpers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.ByteBufferHelpers
+NVStringFactory
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.NVStringFactory
+SysBasic
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.SysBasic
+BytesCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes.BytesCasts
+Bytes
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon.Bytes
+BytesStringCommon
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.BytesStringCommon
+CString
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.CString
+StringCasts
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String.StringCasts
+String
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv.String
+ChapelEnv
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelEnv
+HaltWrappers
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.HaltWrappers
+ChapelTaskData
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase.ChapelTaskData
+ChapelBase
+  from print-module-resolution.ChapelStandard.startInitCommDiags.ChapelBase
+Reflection
+  from print-module-resolution.ChapelStandard.startInitCommDiags.CommDiagnostics.Reflection
+CommDiagnostics
+  from print-module-resolution.ChapelStandard.startInitCommDiags.CommDiagnostics
+startInitCommDiags
+  from print-module-resolution.ChapelStandard.startInitCommDiags
+OwnedObject
+  from print-module-resolution.ChapelStandard.OwnedObject
+MemConsistency
+  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics.MemConsistency
+Atomics
+  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics
+ChapelLocks
+  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks
+ChapelError
+  from print-module-resolution.ChapelStandard.SharedObject.ChapelError
+SharedObject
+  from print-module-resolution.ChapelStandard.SharedObject
+NetworkAtomics
+  from print-module-resolution.ChapelStandard.NetworkAtomics
+NetworkAtomicTypes
+  from print-module-resolution.ChapelStandard.NetworkAtomicTypes
+AtomicsCommon
+  from print-module-resolution.ChapelStandard.AtomicsCommon
+ChapelIteratorSupport
+  from print-module-resolution.ChapelStandard.ChapelIteratorSupport
+ChapelThreads
+  from print-module-resolution.ChapelStandard.ChapelThreads
+DSIUtil
+  from print-module-resolution.ChapelStandard.ChapelTuple.DSIUtil
+ChapelTuple
+  from print-module-resolution.ChapelStandard.ChapelTuple
+Math
+  from print-module-resolution.ChapelStandard.ChapelRange.Math
+ChapelRange
+  from print-module-resolution.ChapelStandard.ChapelRange
+ChapelReduce
+  from print-module-resolution.ChapelStandard.ChapelReduce
+AlignedTSupport
+  from print-module-resolution.ChapelStandard.ChapelSyncvar.AlignedTSupport
+SyncVarRuntimeSupport
+  from print-module-resolution.ChapelStandard.ChapelSyncvar.SyncVarRuntimeSupport
+ChapelSyncvar
+  from print-module-resolution.ChapelStandard.ChapelSyncvar
+ChapelTaskDataHelp
+  from print-module-resolution.ChapelStandard.ChapelTaskDataHelp
+ChapelLocale
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelLocale
+ArrayViewSlice
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewSlice
+ArrayViewRankChange
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewRankChange
+ArrayViewReindex
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
+SysError
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.SysError
+Regexp
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.FormattedIO.Regexp
+FormattedIO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.FormattedIO
+IO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO
+ChapelDebugPrint
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint
+List
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
+RadixSortHelp
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.RadixSortHelp
+ShellSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort.ShellSort
+MSBRadixSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.MSBRadixSort
+ShallowCopy
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort.ShallowCopy
+InsertionSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort.InsertionSort
+QuickSort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.QuickSort
+Sort
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort
+ChapelArray
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray
+ChapelHashtable
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution.ChapelHashtable
+ChapelDistribution
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelDistribution
+RangeChunk
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.RangeChunk
+Search
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse.Search
+DefaultSparse
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultSparse
+ChapelHashing
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultAssociative.ChapelHashing
+DefaultAssociative
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.DefaultAssociative
+ExternalArray
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ExternalArray
+DefaultRectangular
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular
+ChapelNumLocales
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.ChapelNumLocales
+Sys
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.Sys
+LocaleModelHelpSetup
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup
+LocaleModelHelpRuntime
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpRuntime
+LocaleModelHelpFlat
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat
+LocaleModelHelpMem
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpMem
+LocaleModel
+  from print-module-resolution.ChapelStandard.LocaleModel
+LocalesArray
+  from print-module-resolution.ChapelStandard.LocalesArray
+ChapelAutoLocalAccess
+  from print-module-resolution.ChapelStandard.ChapelAutoLocalAccess
+ChapelIO
+  from print-module-resolution.ChapelStandard.ChapelIO
+LocaleTree
+  from print-module-resolution.ChapelStandard.LocaleTree
+ChapelTaskID
+  from print-module-resolution.ChapelStandard.ChapelTaskID
+ChapelTaskTable
+  from print-module-resolution.ChapelStandard.ChapelTaskTable
+MemTracking
+  from print-module-resolution.ChapelStandard.MemTracking
+ChapelUtil
+  from print-module-resolution.ChapelStandard.ChapelUtil
+CPtr
+  from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast.CPtr
+ChapelSerializedBroadcast
+  from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast
+ExportWrappers
+  from print-module-resolution.ChapelStandard.ExportWrappers
+Builtins
+  from print-module-resolution.ChapelStandard.Builtins
+Types
+  from print-module-resolution.ChapelStandard.Types
+stopInitCommDiags
+  from print-module-resolution.ChapelStandard.stopInitCommDiags
+ChapelStandard
+  from print-module-resolution.ChapelStandard
+print-module-resolution
+  from print-module-resolution
+PrintModuleInitOrder
+  from PrintModuleInitOrder

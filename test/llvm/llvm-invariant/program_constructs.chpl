@@ -11,7 +11,7 @@ proc f(n)
   var sum = 0;
   for i in 1..10
   {
-// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* [[NEW_TEMP:%.*]],
+// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* {{[^%]*}}[[NEW_TEMP:%.*]],
 // CHECK: [[TMP1:%.*]] = load %A_chpl, %A_chpl* [[NEW_TEMP]]
 // CHECK: store %A_chpl [[TMP1]], %A_chpl* [[TMP2:%.*]]
 // CHECK: [[TMP3:%.*]] = load %A_chpl, %A_chpl* [[TMP2]]
@@ -25,7 +25,7 @@ proc f(n)
   }
 
   if n < 10 {
-// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* [[NEW_TEMP:%.*]],
+// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* {{[^%]*}}[[NEW_TEMP:%.*]],
 // CHECK: [[TMP1:%.*]] = load %A_chpl, %A_chpl* [[NEW_TEMP]]
 // CHECK: store %A_chpl [[TMP1]], %A_chpl* [[TMP2:%.*]]
 // CHECK: [[TMP3:%.*]] = load %A_chpl, %A_chpl* [[TMP2]]
@@ -38,7 +38,7 @@ proc f(n)
     return localConst.a;
   }
   else {
-// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* [[NEW_TEMP:%.*]],
+// CHECK: call {{.*}} @init_chpl{{.*}}(%A_chpl* {{[^%]*}}[[NEW_TEMP:%.*]],
 // CHECK: [[TMP1:%.*]] = load %A_chpl, %A_chpl* [[NEW_TEMP]]
 // CHECK: store %A_chpl [[TMP1]], %A_chpl* [[TMP2:%.*]]
 // CHECK: [[TMP3:%.*]] = load %A_chpl, %A_chpl* [[TMP2]]

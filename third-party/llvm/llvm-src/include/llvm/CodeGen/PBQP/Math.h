@@ -1,9 +1,8 @@
 //===- Math.h - PBQP Vector and Matrix classes ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,17 +28,17 @@ class Vector {
 public:
   /// Construct a PBQP vector of the given size.
   explicit Vector(unsigned Length)
-    : Length(Length), Data(llvm::make_unique<PBQPNum []>(Length)) {}
+    : Length(Length), Data(std::make_unique<PBQPNum []>(Length)) {}
 
   /// Construct a PBQP vector with initializer.
   Vector(unsigned Length, PBQPNum InitVal)
-    : Length(Length), Data(llvm::make_unique<PBQPNum []>(Length)) {
+    : Length(Length), Data(std::make_unique<PBQPNum []>(Length)) {
     std::fill(Data.get(), Data.get() + Length, InitVal);
   }
 
   /// Copy construct a PBQP vector.
   Vector(const Vector &V)
-    : Length(V.Length), Data(llvm::make_unique<PBQPNum []>(Length)) {
+    : Length(V.Length), Data(std::make_unique<PBQPNum []>(Length)) {
     std::copy(V.Data.get(), V.Data.get() + Length, Data.get());
   }
 
@@ -126,21 +125,21 @@ private:
 public:
   /// Construct a PBQP Matrix with the given dimensions.
   Matrix(unsigned Rows, unsigned Cols) :
-    Rows(Rows), Cols(Cols), Data(llvm::make_unique<PBQPNum []>(Rows * Cols)) {
+    Rows(Rows), Cols(Cols), Data(std::make_unique<PBQPNum []>(Rows * Cols)) {
   }
 
   /// Construct a PBQP Matrix with the given dimensions and initial
   /// value.
   Matrix(unsigned Rows, unsigned Cols, PBQPNum InitVal)
     : Rows(Rows), Cols(Cols),
-      Data(llvm::make_unique<PBQPNum []>(Rows * Cols)) {
+      Data(std::make_unique<PBQPNum []>(Rows * Cols)) {
     std::fill(Data.get(), Data.get() + (Rows * Cols), InitVal);
   }
 
   /// Copy construct a PBQP matrix.
   Matrix(const Matrix &M)
     : Rows(M.Rows), Cols(M.Cols),
-      Data(llvm::make_unique<PBQPNum []>(Rows * Cols)) {
+      Data(std::make_unique<PBQPNum []>(Rows * Cols)) {
     std::copy(M.Data.get(), M.Data.get() + (Rows * Cols), Data.get());
   }
 

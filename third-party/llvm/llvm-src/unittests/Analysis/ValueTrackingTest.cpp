@@ -1,9 +1,8 @@
 //===- ValueTrackingTest.cpp - ValueTracking tests ------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,8 +13,8 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Support/ErrorHandling.h"
-#include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/KnownBits.h"
+#include "llvm/Support/SourceMgr.h"
 #include "gtest/gtest.h"
 
 using namespace llvm;
@@ -24,21 +23,26 @@ namespace {
 
 class ValueTrackingTest : public testing::Test {
 protected:
-  void parseAssembly(const char *Assembly) {
+  std::unique_ptr<Module> parseModule(StringRef Assembly) {
     SMDiagnostic Error;
-    M = parseAssemblyString(Assembly, Error, Context);
+    std::unique_ptr<Module> M = parseAssemblyString(Assembly, Error, Context);
 
     std::string errMsg;
     raw_string_ostream os(errMsg);
     Error.print("", os);
+    EXPECT_TRUE(M) << os.str();
 
-    // A failure here means that the test itself is buggy.
-    if (!M)
-      report_fatal_error(os.str());
+    return M;
+  }
+
+  void parseAssembly(StringRef Assembly) {
+    M = parseModule(Assembly);
+    ASSERT_TRUE(M);
 
     Function *F = M->getFunction("test");
-    if (F == nullptr)
-      report_fatal_error("Test must have a function named @test");
+    ASSERT_TRUE(F) << "Test must have a function @test";
+    if (!F)
+      return;
 
     A = nullptr;
     for (inst_iterator I = inst_begin(F), E = inst_end(F); I != E; ++I) {
@@ -47,13 +51,12 @@ protected:
           A = &*I;
       }
     }
-    if (A == nullptr)
-      report_fatal_error("@test must have an instruction %A");
+    ASSERT_TRUE(A) << "@test must have an instruction %A";
   }
 
   LLVMContext Context;
   std::unique_ptr<Module> M;
-  Instruction *A;
+  Instruction *A = nullptr;
 };
 
 class MatchSelectPatternTest : public ValueTrackingTest {
@@ -465,6 +468,7 @@ TEST(ValueTracking, GuaranteedToTransferExecutionToSuccessor) {
       "declare void @nounwind_argmemonly(i32*) nounwind argmemonly "
       "declare void @throws_but_readonly(i32*) readonly "
       "declare void @throws_but_argmemonly(i32*) argmemonly "
+      "declare void @nounwind_willreturn(i32*) nounwind willreturn"
       " "
       "declare void @unknown(i32*) "
       " "
@@ -477,6 +481,7 @@ TEST(ValueTracking, GuaranteedToTransferExecutionToSuccessor) {
       "  call void @unknown(i32* %p) nounwind argmemonly "
       "  call void @unknown(i32* %p) readonly "
       "  call void @unknown(i32* %p) argmemonly "
+      "  call void @nounwind_willreturn(i32* %p)"
       "  ret void "
       "} ";
 
@@ -498,6 +503,7 @@ TEST(ValueTracking, GuaranteedToTransferExecutionToSuccessor) {
       true,  // call void @unknown(i32* %p) nounwind argmemonly
       false, // call void @unknown(i32* %p) readonly
       false, // call void @unknown(i32* %p) argmemonly
+      true,  // call void @nounwind_willreturn(i32* %p)
       false, // ret void
   };
 
@@ -615,4 +621,328 @@ TEST_F(ComputeKnownBitsTest, ComputeKnownFshlZero) {
       "}\n"
       "declare i16 @llvm.fshl.i16(i16, i16, i16)\n");
   expectKnownBits(/*zero*/ 15u, /*one*/ 3840u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownUAddSatLeadingOnes) {
+  // uadd.sat(1111...1, ........)
+  // = 1111....
+  parseAssembly(
+      "define i8 @test(i8 %a, i8 %b) {\n"
+      "  %aa = or i8 %a, 241\n"
+      "  %A = call i8 @llvm.uadd.sat.i8(i8 %aa, i8 %b)\n"
+      "  ret i8 %A\n"
+      "}\n"
+      "declare i8 @llvm.uadd.sat.i8(i8, i8)\n");
+  expectKnownBits(/*zero*/ 0u, /*one*/ 240u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownUAddSatOnesPreserved) {
+  // uadd.sat(00...011, .1...110)
+  // = .......1
+  parseAssembly(
+      "define i8 @test(i8 %a, i8 %b) {\n"
+      "  %aa = or i8 %a, 3\n"
+      "  %aaa = and i8 %aa, 59\n"
+      "  %bb = or i8 %b, 70\n"
+      "  %bbb = and i8 %bb, 254\n"
+      "  %A = call i8 @llvm.uadd.sat.i8(i8 %aaa, i8 %bbb)\n"
+      "  ret i8 %A\n"
+      "}\n"
+      "declare i8 @llvm.uadd.sat.i8(i8, i8)\n");
+  expectKnownBits(/*zero*/ 0u, /*one*/ 1u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownUSubSatLHSLeadingZeros) {
+  // usub.sat(0000...0, ........)
+  // = 0000....
+  parseAssembly(
+      "define i8 @test(i8 %a, i8 %b) {\n"
+      "  %aa = and i8 %a, 14\n"
+      "  %A = call i8 @llvm.usub.sat.i8(i8 %aa, i8 %b)\n"
+      "  ret i8 %A\n"
+      "}\n"
+      "declare i8 @llvm.usub.sat.i8(i8, i8)\n");
+  expectKnownBits(/*zero*/ 240u, /*one*/ 0u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownUSubSatRHSLeadingOnes) {
+  // usub.sat(........, 1111...1)
+  // = 0000....
+  parseAssembly(
+      "define i8 @test(i8 %a, i8 %b) {\n"
+      "  %bb = or i8 %a, 241\n"
+      "  %A = call i8 @llvm.usub.sat.i8(i8 %a, i8 %bb)\n"
+      "  ret i8 %A\n"
+      "}\n"
+      "declare i8 @llvm.usub.sat.i8(i8, i8)\n");
+  expectKnownBits(/*zero*/ 240u, /*one*/ 0u);
+}
+
+TEST_F(ComputeKnownBitsTest, ComputeKnownUSubSatZerosPreserved) {
+  // usub.sat(11...011, .1...110)
+  // = ......0.
+  parseAssembly(
+      "define i8 @test(i8 %a, i8 %b) {\n"
+      "  %aa = or i8 %a, 195\n"
+      "  %aaa = and i8 %aa, 251\n"
+      "  %bb = or i8 %b, 70\n"
+      "  %bbb = and i8 %bb, 254\n"
+      "  %A = call i8 @llvm.usub.sat.i8(i8 %aaa, i8 %bbb)\n"
+      "  ret i8 %A\n"
+      "}\n"
+      "declare i8 @llvm.usub.sat.i8(i8, i8)\n");
+  expectKnownBits(/*zero*/ 2u, /*one*/ 0u);
+}
+
+class IsBytewiseValueTest : public ValueTrackingTest,
+                            public ::testing::WithParamInterface<
+                                std::pair<const char *, const char *>> {
+protected:
+};
+
+const std::pair<const char *, const char *> IsBytewiseValueTests[] = {
+    {
+        "i8 0",
+        "i48* null",
+    },
+    {
+        "i8 undef",
+        "i48* undef",
+    },
+    {
+        "i8 0",
+        "i8 zeroinitializer",
+    },
+    {
+        "i8 0",
+        "i8 0",
+    },
+    {
+        "i8 -86",
+        "i8 -86",
+    },
+    {
+        "i8 -1",
+        "i8 -1",
+    },
+    {
+        "i8 undef",
+        "i16 undef",
+    },
+    {
+        "i8 0",
+        "i16 0",
+    },
+    {
+        "",
+        "i16 7",
+    },
+    {
+        "i8 -86",
+        "i16 -21846",
+    },
+    {
+        "i8 -1",
+        "i16 -1",
+    },
+    {
+        "i8 0",
+        "i48 0",
+    },
+    {
+        "i8 -1",
+        "i48 -1",
+    },
+    {
+        "i8 0",
+        "i49 0",
+    },
+    {
+        "",
+        "i49 -1",
+    },
+    {
+        "i8 0",
+        "half 0xH0000",
+    },
+    {
+        "i8 -85",
+        "half 0xHABAB",
+    },
+    {
+        "i8 0",
+        "float 0.0",
+    },
+    {
+        "i8 -1",
+        "float 0xFFFFFFFFE0000000",
+    },
+    {
+        "i8 0",
+        "double 0.0",
+    },
+    {
+        "i8 -15",
+        "double 0xF1F1F1F1F1F1F1F1",
+    },
+    {
+        "i8 undef",
+        "i16* undef",
+    },
+    {
+        "i8 0",
+        "i16* inttoptr (i64 0 to i16*)",
+    },
+    {
+        "i8 -1",
+        "i16* inttoptr (i64 -1 to i16*)",
+    },
+    {
+        "i8 -86",
+        "i16* inttoptr (i64 -6148914691236517206 to i16*)",
+    },
+    {
+        "",
+        "i16* inttoptr (i48 -1 to i16*)",
+    },
+    {
+        "i8 -1",
+        "i16* inttoptr (i96 -1 to i16*)",
+    },
+    {
+        "i8 undef",
+        "[0 x i8] zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "[0 x i8] undef",
+    },
+    {
+        "i8 undef",
+        "[5 x [0 x i8]] zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "[5 x [0 x i8]] undef",
+    },
+    {
+        "i8 0",
+        "[6 x i8] zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "[6 x i8] undef",
+    },
+    {
+        "i8 1",
+        "[5 x i8] [i8 1, i8 1, i8 1, i8 1, i8 1]",
+    },
+    {
+        "",
+        "[5 x i64] [i64 1, i64 1, i64 1, i64 1, i64 1]",
+    },
+    {
+        "i8 -1",
+        "[5 x i64] [i64 -1, i64 -1, i64 -1, i64 -1, i64 -1]",
+    },
+    {
+        "",
+        "[4 x i8] [i8 1, i8 2, i8 1, i8 1]",
+    },
+    {
+        "i8 1",
+        "[4 x i8] [i8 1, i8 undef, i8 1, i8 1]",
+    },
+    {
+        "i8 0",
+        "<6 x i8> zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "<6 x i8> undef",
+    },
+    {
+        "i8 1",
+        "<5 x i8> <i8 1, i8 1, i8 1, i8 1, i8 1>",
+    },
+    {
+        "",
+        "<5 x i64> <i64 1, i64 1, i64 1, i64 1, i64 1>",
+    },
+    {
+        "i8 -1",
+        "<5 x i64> <i64 -1, i64 -1, i64 -1, i64 -1, i64 -1>",
+    },
+    {
+        "",
+        "<4 x i8> <i8 1, i8 1, i8 2, i8 1>",
+    },
+    {
+        "i8 5",
+        "<2 x i8> < i8 5, i8 undef >",
+    },
+    {
+        "i8 0",
+        "[2 x [2 x i16]] zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "[2 x [2 x i16]] undef",
+    },
+    {
+        "i8 -86",
+        "[2 x [2 x i16]] [[2 x i16] [i16 -21846, i16 -21846], "
+        "[2 x i16] [i16 -21846, i16 -21846]]",
+    },
+    {
+        "",
+        "[2 x [2 x i16]] [[2 x i16] [i16 -21846, i16 -21846], "
+        "[2 x i16] [i16 -21836, i16 -21846]]",
+    },
+    {
+        "i8 undef",
+        "{ } zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "{ } undef",
+    },
+    {
+        "i8 undef",
+        "{ {}, {} } zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "{ {}, {} } undef",
+    },
+    {
+        "i8 0",
+        "{i8, i64, i16*} zeroinitializer",
+    },
+    {
+        "i8 undef",
+        "{i8, i64, i16*} undef",
+    },
+    {
+        "i8 -86",
+        "{i8, i64, i16*} {i8 -86, i64 -6148914691236517206, i16* undef}",
+    },
+    {
+        "",
+        "{i8, i64, i16*} {i8 86, i64 -6148914691236517206, i16* undef}",
+    },
+};
+
+INSTANTIATE_TEST_CASE_P(IsBytewiseValueParamTests, IsBytewiseValueTest,
+                        ::testing::ValuesIn(IsBytewiseValueTests),);
+
+TEST_P(IsBytewiseValueTest, IsBytewiseValue) {
+  auto M = parseModule(std::string("@test = global ") + GetParam().second);
+  GlobalVariable *GV = dyn_cast<GlobalVariable>(M->getNamedValue("test"));
+  Value *Actual = isBytewiseValue(GV->getInitializer(), M->getDataLayout());
+  std::string Buff;
+  raw_string_ostream S(Buff);
+  if (Actual)
+    S << *Actual;
+  EXPECT_EQ(GetParam().first, S.str());
 }

@@ -1,9 +1,8 @@
 //===--- ARMAttributeParser.cpp - ARM Attribute Information Printer -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -38,6 +37,7 @@ ARMAttributeParser::DisplayRoutines[] = {
   ATTRIBUTE_HANDLER(FP_arch),
   ATTRIBUTE_HANDLER(WMMX_arch),
   ATTRIBUTE_HANDLER(Advanced_SIMD_arch),
+  ATTRIBUTE_HANDLER(MVE_arch),
   ATTRIBUTE_HANDLER(PCS_config),
   ATTRIBUTE_HANDLER(ABI_PCS_R9_use),
   ATTRIBUTE_HANDLER(ABI_PCS_RW_data),
@@ -73,9 +73,9 @@ ARMAttributeParser::DisplayRoutines[] = {
 
 uint64_t ARMAttributeParser::ParseInteger(const uint8_t *Data,
                                           uint32_t &Offset) {
-  unsigned Length;
-  uint64_t Value = decodeULEB128(Data + Offset, &Length);
-  Offset = Offset + Length;
+  unsigned DecodeLength;
+  uint64_t Value = decodeULEB128(Data + Offset, &DecodeLength);
+  Offset += DecodeLength;
   return Value;
 }
 
@@ -133,7 +133,9 @@ void ARMAttributeParser::CPU_arch(AttrType Tag, const uint8_t *Data,
   static const char *const Strings[] = {
     "Pre-v4", "ARM v4", "ARM v4T", "ARM v5T", "ARM v5TE", "ARM v5TEJ", "ARM v6",
     "ARM v6KZ", "ARM v6T2", "ARM v6K", "ARM v7", "ARM v6-M", "ARM v6S-M",
-    "ARM v7E-M", "ARM v8"
+    "ARM v7E-M", "ARM v8", nullptr,
+    "ARM v8-M Baseline", "ARM v8-M Mainline", nullptr, nullptr, nullptr,
+    "ARM v8.1-M Mainline"
   };
 
   uint64_t Value = ParseInteger(Data, Offset);
@@ -206,6 +208,18 @@ void ARMAttributeParser::Advanced_SIMD_arch(AttrType Tag, const uint8_t *Data,
                                             uint32_t &Offset) {
   static const char *const Strings[] = {
     "Not Permitted", "NEONv1", "NEONv2+FMA", "ARMv8-a NEON", "ARMv8.1-a NEON"
+  };
+
+  uint64_t Value = ParseInteger(Data, Offset);
+  StringRef ValueDesc =
+    (Value < array_lengthof(Strings)) ? Strings[Value] : nullptr;
+  PrintAttribute(Tag, Value, ValueDesc);
+}
+
+void ARMAttributeParser::MVE_arch(AttrType Tag, const uint8_t *Data,
+                                  uint32_t &Offset) {
+  static const char *const Strings[] = {
+    "Not Permitted", "MVE integer", "MVE integer and float"
   };
 
   uint64_t Value = ParseInteger(Data, Offset);
@@ -573,9 +587,9 @@ void ARMAttributeParser::nodefaults(AttrType Tag, const uint8_t *Data,
 void ARMAttributeParser::ParseIndexList(const uint8_t *Data, uint32_t &Offset,
                                         SmallVectorImpl<uint8_t> &IndexList) {
   for (;;) {
-    unsigned Length;
-    uint64_t Value = decodeULEB128(Data + Offset, &Length);
-    Offset = Offset + Length;
+    unsigned DecodeLength;
+    uint64_t Value = decodeULEB128(Data + Offset, &DecodeLength);
+    Offset += DecodeLength;
     if (Value == 0)
       break;
     IndexList.push_back(Value);
@@ -585,9 +599,9 @@ void ARMAttributeParser::ParseIndexList(const uint8_t *Data, uint32_t &Offset,
 void ARMAttributeParser::ParseAttributeList(const uint8_t *Data,
                                             uint32_t &Offset, uint32_t Length) {
   while (Offset < Length) {
-    unsigned Length;
-    uint64_t Tag = decodeULEB128(Data + Offset, &Length);
-    Offset += Length;
+    unsigned DecodeLength;
+    uint64_t Tag = decodeULEB128(Data + Offset, &DecodeLength);
+    Offset += DecodeLength;
 
     bool Handled = false;
     for (unsigned AHI = 0, AHE = array_lengthof(DisplayRoutines);
@@ -682,7 +696,7 @@ void ARMAttributeParser::ParseSubsection(const uint8_t *Data, uint32_t Length) {
 }
 
 void ARMAttributeParser::Parse(ArrayRef<uint8_t> Section, bool isLittle) {
-  size_t Offset = 1;
+  uint64_t Offset = 1;
   unsigned SectionNumber = 0;
 
   while (Offset < Section.size()) {
@@ -693,6 +707,12 @@ void ARMAttributeParser::Parse(ArrayRef<uint8_t> Section, bool isLittle) {
     if (SW) {
       SW->startLine() << "Section " << ++SectionNumber << " {\n";
       SW->indent();
+    }
+
+    if (SectionLength == 0 || (SectionLength + Offset) > Section.size()) {
+      errs() << "invalid subsection length " << SectionLength << " at offset "
+             << Offset << "\n";
+      return;
     }
 
     ParseSubsection(Section.data() + Offset, SectionLength);

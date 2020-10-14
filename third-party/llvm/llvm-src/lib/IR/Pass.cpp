@@ -1,9 +1,8 @@
 //===- Pass.cpp - LLVM Pass Infrastructure Implementation -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,8 +55,13 @@ PassManagerType ModulePass::getPotentialPassManagerType() const {
   return PMT_ModulePassManager;
 }
 
+static std::string getDescription(const Module &M) {
+  return "module (" + M.getName().str() + ")";
+}
+
 bool ModulePass::skipModule(Module &M) const {
-  return !M.getContext().getOptPassGate().shouldRunPass(this, M);
+  OptPassGate &Gate = M.getContext().getOptPassGate();
+  return Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(M));
 }
 
 bool Pass::mustPreserveAnalysisID(char &AID) const {
@@ -155,55 +159,21 @@ PassManagerType FunctionPass::getPotentialPassManagerType() const {
   return PMT_FunctionPassManager;
 }
 
+static std::string getDescription(const Function &F) {
+  return "function (" + F.getName().str() + ")";
+}
+
 bool FunctionPass::skipFunction(const Function &F) const {
-  if (!F.getContext().getOptPassGate().shouldRunPass(this, F))
+  OptPassGate &Gate = F.getContext().getOptPassGate();
+  if (Gate.isEnabled() && !Gate.shouldRunPass(this, getDescription(F)))
     return true;
 
-  if (F.hasFnAttribute(Attribute::OptimizeNone)) {
+  if (F.hasOptNone()) {
     LLVM_DEBUG(dbgs() << "Skipping pass '" << getPassName() << "' on function "
                       << F.getName() << "\n");
     return true;
   }
   return false;
-}
-
-//===----------------------------------------------------------------------===//
-// BasicBlockPass Implementation
-//
-
-Pass *BasicBlockPass::createPrinterPass(raw_ostream &OS,
-                                        const std::string &Banner) const {
-  return createPrintBasicBlockPass(OS, Banner);
-}
-
-bool BasicBlockPass::doInitialization(Function &) {
-  // By default, don't do anything.
-  return false;
-}
-
-bool BasicBlockPass::doFinalization(Function &) {
-  // By default, don't do anything.
-  return false;
-}
-
-bool BasicBlockPass::skipBasicBlock(const BasicBlock &BB) const {
-  const Function *F = BB.getParent();
-  if (!F)
-    return false;
-  if (!F->getContext().getOptPassGate().shouldRunPass(this, BB))
-    return true;
-  if (F->hasFnAttribute(Attribute::OptimizeNone)) {
-    // Report this only once per function.
-    if (&BB == &F->getEntryBlock())
-      LLVM_DEBUG(dbgs() << "Skipping pass '" << getPassName()
-                        << "' on function " << F->getName() << "\n");
-    return true;
-  }
-  return false;
-}
-
-PassManagerType BasicBlockPass::getPotentialPassManagerType() const {
-  return PMT_BasicBlockPassManager;
 }
 
 const PassInfo *Pass::lookupPassInfo(const void *TI) {

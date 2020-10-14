@@ -42,7 +42,7 @@ assignment, and unary, binary, and relational operators.
 
 */
 module ChapelTuple {
-  private use ChapelStandard;
+  use ChapelStandard, DSIUtil;
 
   pragma "tuple" record _tuple {
     param size : int;
@@ -161,7 +161,7 @@ module ChapelTuple {
     return __primitive("is star tuple type", x);
 
   pragma "no doc"
-  proc _check_tuple_var_decl(x: _tuple, param p) param {
+  proc _check_tuple_var_decl(const ref x: _tuple, param p) param {
     if p == x.size {
       return true;
     } else {
@@ -170,7 +170,7 @@ module ChapelTuple {
     }
   }
   pragma "no doc"
-  proc _check_tuple_var_decl(x, param p) param {
+  proc _check_tuple_var_decl(const ref x, param p) param {
     compilerError("illegal tuple variable declaration with non-tuple initializer");
     return false;
   }
@@ -234,6 +234,7 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -271,19 +272,16 @@ module ChapelTuple {
                                             minIndicesPerTask,
                                             myRange);
 
-    if numChunks == 1 {
-      yield myRange;
-    } else {
-      coforall chunk in 0..#numChunks {
-        // _computeBlock assumes 0-based ranges
-        const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks {
+      // _computeBlock assumes 0-based ranges
+      const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
+      yield (lo..hi,);
     }
   }
 
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
@@ -313,12 +311,14 @@ module ChapelTuple {
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
-  inline proc _cast(type t, x: (?,?)) where t == complex(64) {
+  inline proc _cast(type t: complex(64), x: (?,?)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
-  inline proc _cast(type t, x: (?,?)) where t == complex(128) {
+  inline proc _cast(type t: complex(128), x: (?,?)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
   }

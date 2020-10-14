@@ -1,9 +1,8 @@
 //===-- llvm/CodeGen/TargetFrameLowering.h ----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #define LLVM_CODEGEN_TARGETFRAMELOWERING_H
 
 #include "llvm/CodeGen/MachineBasicBlock.h"
+#include "llvm/ADT/StringSwitch.h"
 #include <utility>
 #include <vector>
 
@@ -23,6 +23,15 @@ namespace llvm {
   class CalleeSavedInfo;
   class MachineFunction;
   class RegScavenger;
+
+namespace TargetStackID {
+  enum Value {
+    Default = 0,
+    SGPRSpill = 1,
+    SVEVector = 2,
+    NoAlloc = 255
+  };
+}
 
 /// Information about stack frame layout on the target.  It holds the direction
 /// of stack growth, the known stack alignment on entry to each function, and
@@ -45,15 +54,15 @@ public:
   };
 private:
   StackDirection StackDir;
-  unsigned StackAlignment;
-  unsigned TransientStackAlignment;
+  Align StackAlignment;
+  Align TransientStackAlignment;
   int LocalAreaOffset;
   bool StackRealignable;
 public:
-  TargetFrameLowering(StackDirection D, unsigned StackAl, int LAO,
-                      unsigned TransAl = 1, bool StackReal = true)
-    : StackDir(D), StackAlignment(StackAl), TransientStackAlignment(TransAl),
-      LocalAreaOffset(LAO), StackRealignable(StackReal) {}
+  TargetFrameLowering(StackDirection D, Align StackAl, int LAO,
+                      Align TransAl = Align::None(), bool StackReal = true)
+      : StackDir(D), StackAlignment(StackAl), TransientStackAlignment(TransAl),
+        LocalAreaOffset(LAO), StackRealignable(StackReal) {}
 
   virtual ~TargetFrameLowering();
 
@@ -68,7 +77,7 @@ public:
   /// stack pointer must be aligned on entry to a function.  Typically, this
   /// is the largest alignment for any data object in the target.
   ///
-  unsigned getStackAlignment() const { return StackAlignment; }
+  unsigned getStackAlignment() const { return StackAlignment.value(); }
 
   /// alignSPAdjust - This method aligns the stack adjustment to the correct
   /// alignment.
@@ -87,7 +96,7 @@ public:
   /// calls.
   ///
   unsigned getTransientStackAlignment() const {
-    return TransientStackAlignment;
+    return TransientStackAlignment.value();
   }
 
   /// isStackRealignable - This method returns whether the stack can be
@@ -262,6 +271,22 @@ public:
     return getFrameIndexReference(MF, FI, FrameReg);
   }
 
+  /// getNonLocalFrameIndexReference - This method returns the offset used to
+  /// reference a frame index location. The offset can be from either FP/BP/SP
+  /// based on which base register is returned by llvm.localaddress.
+  virtual int getNonLocalFrameIndexReference(const MachineFunction &MF,
+                                       int FI) const {
+    // By default, dispatch to getFrameIndexReference. Interested targets can
+    // override this.
+    unsigned FrameReg;
+    return getFrameIndexReference(MF, FI, FrameReg);
+  }
+
+  /// Returns the callee-saved registers as computed by determineCalleeSaves
+  /// in the BitVector \p SavedRegs.
+  virtual void getCalleeSaves(const MachineFunction &MF,
+                                  BitVector &SavedRegs) const;
+
   /// This method determines which of the registers reported by
   /// TargetRegisterInfo::getCalleeSavedRegs() should actually get saved.
   /// The default implementation checks populates the \p SavedRegs bitset with
@@ -269,6 +294,9 @@ public:
   /// this function to save additional registers.
   /// This method also sets up the register scavenger ensuring there is a free
   /// register or a frameindex available.
+  /// This method should not be called by any passes outside of PEI, because
+  /// it may change state passed in by \p MF and \p RS. The preferred
+  /// interface outside PEI is getCalleeSaves.
   virtual void determineCalleeSaves(MachineFunction &MF, BitVector &SavedRegs,
                                     RegScavenger *RS = nullptr) const;
 
@@ -335,17 +363,27 @@ public:
     return true;
   }
 
+  /// Returns the StackID that scalable vectors should be associated with.
+  virtual TargetStackID::Value getStackIDForScalableVectors() const {
+    return TargetStackID::Default;
+  }
+
+  virtual bool isSupportedStackID(TargetStackID::Value ID) const {
+    switch (ID) {
+    default:
+      return false;
+    case TargetStackID::Default:
+    case TargetStackID::NoAlloc:
+      return true;
+    }
+  }
+
   /// Check if given function is safe for not having callee saved registers.
   /// This is used when interprocedural register allocation is enabled.
-  static bool isSafeForNoCSROpt(const Function &F) {
-    if (!F.hasLocalLinkage() || F.hasAddressTaken() ||
-        !F.hasFnAttribute(Attribute::NoRecurse))
-      return false;
-    // Function should not be optimized as tail call.
-    for (const User *U : F.users())
-      if (auto CS = ImmutableCallSite(U))
-        if (CS.isTailCall())
-          return false;
+  static bool isSafeForNoCSROpt(const Function &F);
+
+  /// Check if the no-CSR optimisation is profitable for the given function.
+  virtual bool isProfitableForNoCSROpt(const Function &F) const {
     return true;
   }
 

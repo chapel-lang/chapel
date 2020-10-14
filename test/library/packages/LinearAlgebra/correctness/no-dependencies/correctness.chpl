@@ -446,6 +446,16 @@ use IO;
                   [5,6,7,8],
                   [9,0,1,2],
                   eltType=real);
+  var M2 = Matrix([1,2,3,4,5,6],
+                  [1,2,3,4,5,6],
+                  [1,2,3,4,5,6],
+                  eltType=real);
+  var M3 = Matrix([1,2,3],
+                  [4,5,6],
+                  [7,8,9],
+                  [1,2,3],
+                  [4,5,6],
+                  eltType=real);
   var v11 = Vector(1,6,1);
   var v12 = Vector(3,8);
   var v13 = Vector([9]);
@@ -455,6 +465,11 @@ use IO;
   assertEqual(v11,  diag(M1),       "diag(M1)");
   assertEqual(v12,  diag(M1,2),     "diag(M1,2)");
   assertEqual(v13,  diag(M1,-2),    "diag(M1,-2)");
+  assertEqual([1],  diag(M2,-2),    "diag(M2,-2)");
+  assertEqual([4,5,6], diag(M2, 3),  "diag(M2,3)");
+  assertEqual([3],  diag(M3,2),     "diag(M3, 2)");
+  assertEqual([4,8,3], diag(M3,-1), "diag(M3,-1)");
+  assertEqual([1, 5], diag(M3,-3),  "diag(M3,-3)"); 
 
   // Now let's try with offsets
 
@@ -462,6 +477,8 @@ use IO;
   ref rv = v.reindex(1..3);
   ref rvMat = vMat.reindex(1..3, 1..3);
   ref rM1 = M1.reindex(1..3, 1..4);
+  ref rM2 = M2.reindex(1..9 by 4, 1..11 by 2);
+  ref rM3 = M3.reindex(1..21 by 5, 1..9 by 4);
   ref rv11 = v11.reindex(1..3);
   ref rv12 = v12.reindex(1..2);
   ref rv13 = v13.reindex(1..1);
@@ -471,6 +488,12 @@ use IO;
   assertEqual(rv11, diag(rM1),      "diag(M1)");
   assertEqual(rv12, diag(rM1,2),    "diag(M1,2)");
   assertEqual(rv13, diag(rM1,-2),   "diag(M1,-2)");
+  assertEqual([1],  diag(rM2,-2),    "diag(M2,-2)");
+  assertEqual([4,5,6], diag(rM2, 3),  "diag(M2,3)");
+  assertEqual([3],  diag(rM3,2),     "diag(M3, 2)");
+  assertEqual([4,8,3], diag(rM3,-1), "diag(M3,-1)");
+  assertEqual([1, 5], diag(rM3,-3),  "diag(M3,-3)");
+
 }
 
 /* kron */

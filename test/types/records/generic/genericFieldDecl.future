@@ -1,0 +1,2 @@
+bug: internal error when using generic record declaration for field type
+#16044

@@ -390,10 +390,17 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
                                        Expr* cond,
                                        Expr* indices,
                                        bool zippered,
+                                       bool forall,
                                        Expr*& stmt)
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    sifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    sifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    sifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -460,10 +467,17 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 
 static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
                                          bool zippered,
+                                         bool forall,
                                          VarSymbol*& followerIterator)
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    fifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    fifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    fifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -563,8 +577,11 @@ static bool considerForOuter(Symbol* sym) {
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway
 
-  if (isArgSymbol(sym))
-    return true;   // a formal is never a global var
+  // Do not consider type formals (detected above with FLAG_TYPE_VARIABLE)
+  // and param formals (detected below with INTENT_PARAM).
+
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return !(arg->intent == INTENT_PARAM); // a formal is never a global var
 
   if (isGlobalVar(sym))
     return false;  // we do not need to handle globals
@@ -594,11 +611,14 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
 
   ArgSymbol* ret = new ArgSymbol(INTENT_BLANK, ovar->name, argType);
 
-  // An argument might need to be a type variable if the outer variable is
+  // An argument might need to be a type or param if the outer variable is
   // a type field.
   if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
     ret->addFlag(FLAG_TYPE_VARIABLE);
   }
+  if (ArgSymbol* ovarArg = toArgSymbol(ovar))
+    if (ovarArg->intent == INTENT_PARAM)
+      ret->intent = INTENT_PARAM;
 
   return ret;
 }
@@ -776,14 +796,16 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   FnSymbol* fifn = NULL;
 
   Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
-  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices, zippered, stmt);
+  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices,
+                               zippered, forall, stmt);
 
   if (forall) {
     lifn = buildLeaderIteratorFn(iteratorName, zippered);
     addOuterVariableFormals(lifn, outerVars);
 
     VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
-    fifn = buildFollowerIteratorFn(iteratorName, zippered, followerIterator);
+    fifn = buildFollowerIteratorFn(iteratorName, zippered, forall,
+                                   followerIterator);
 
     // do we need to use this map since symbols have not been resolved?
     SymbolMap map;

@@ -1,9 +1,8 @@
 (*===-- llvm_ipo.mli - LLVM OCaml Interface -------------------*- OCaml -*-===*
  *
- *                     The LLVM Compiler Infrastructure
- *
- * This file is distributed under the University of Illinois Open Source
- * License. See LICENSE.TXT for details.
+ * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+ * See https://llvm.org/LICENSE.txt for license information.
+ * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
  *
  *===----------------------------------------------------------------------===*)
 
@@ -21,6 +20,11 @@ external add_argument_promotion
 external add_constant_merge
   : [ `Module ] Llvm.PassManager.t -> unit
   = "llvm_add_constant_merge"
+
+(** See the [llvm::createMergeFunctionsPass] function. *)
+external add_merge_functions
+  : [ `Module ] Llvm.PassManager.t -> unit
+  = "llvm_add_merge_functions"
 
 (** See the [llvm::createDeadArgEliminationPass] function. *)
 external add_dead_arg_elimination

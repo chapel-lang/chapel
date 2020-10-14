@@ -92,11 +92,12 @@
  */
 module FileSystem {
 
-  use SysError;
-  private use Path;
-  private use HaltWrappers;
-  private use SysCTypes;
+  public use SysError;
+  use Path;
+  use HaltWrappers;
+  use SysCTypes;
   use IO;
+  use SysBasic;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -697,6 +698,7 @@ proc exists(out error: syserr, name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -709,6 +711,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -867,6 +870,7 @@ proc getUID(out error: syserr, name: string): int {
 // of casting and error checking.
 //
 private module GlobWrappers {
+  import HaltWrappers;
   extern type glob_t;
   use SysCTypes;
 
@@ -875,10 +879,7 @@ private module GlobWrappers {
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
-    // want:
-    //  import FileSystem.unescape;
-    // but see issue #15308, so:
-    use FileSystem;
+    import FileSystem.unescape;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -926,6 +927,7 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*"): string {
   use GlobWrappers;
   var glb : glob_t;
@@ -941,6 +943,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -982,6 +985,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1191,6 +1195,7 @@ proc isMount(out error:syserr, name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
+pragma "not order independent yielding loops"
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;

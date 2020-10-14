@@ -1,9 +1,8 @@
 //=- AArch64SchedExynosM3.td - Samsung Exynos M3 Sched Defs --*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,7 +24,8 @@ def ExynosM3Model : SchedMachineModel {
   let MispredictPenalty     =  16; // Minimum branch misprediction penalty.
   let CompleteModel         =   1; // Use the default model otherwise.
 
-  list<Predicate> UnsupportedFeatures = [HasSVE];
+  list<Predicate> UnsupportedFeatures = !listconcat(SVEUnsupported.F,
+                                                    PAUnsupported.F);
 }
 
 //===----------------------------------------------------------------------===//
@@ -131,8 +131,10 @@ def M3WriteAU : SchedWriteVariant<[SchedVar<IsCopyIdiomPred, [M3WriteZ0]>,
                                    SchedVar<ExynosLogicPred, [M3WriteA1]>,
                                    SchedVar<NoSchedPred,     [M3WriteAA]>]>;
 def M3WriteAV : SchedWriteVariant<[SchedVar<IsCopyIdiomPred, [M3WriteZ0]>,
+                                   SchedVar<ExynosArithPred, [M3WriteA1]>,
                                    SchedVar<NoSchedPred,     [M3WriteAA]>]>;
 def M3WriteAW : SchedWriteVariant<[SchedVar<IsZeroIdiomPred, [M3WriteZ0]>,
+                                   SchedVar<ExynosLogicPred, [M3WriteA1]>,
                                    SchedVar<NoSchedPred,     [M3WriteAA]>]>;
 def M3WriteAX : SchedWriteVariant<[SchedVar<ExynosArithPred, [M3WriteA1]>,
                                    SchedVar<ExynosLogicPred, [M3WriteA1]>,
@@ -166,6 +168,8 @@ def M3WriteLH : SchedWriteRes<[]>        { let Latency = 5;
                                            let NumMicroOps = 0; }
 def M3WriteLX : SchedWriteVariant<[SchedVar<ExynosScaledIdxPred, [M3WriteL5]>,
                                    SchedVar<NoSchedPred,         [M3WriteL4]>]>;
+def M3WriteLY : SchedWriteVariant<[SchedVar<ExynosScaledIdxPred, [M3WriteLE]>,
+                                   SchedVar<NoSchedPred,         [M3WriteL5]>]>;
 
 def M3WriteS1 : SchedWriteRes<[M3UnitS]>   { let Latency = 1; }
 def M3WriteSA : SchedWriteRes<[M3UnitA,
@@ -175,6 +179,12 @@ def M3WriteSA : SchedWriteRes<[M3UnitA,
 def M3WriteSB : SchedWriteRes<[M3UnitA,
                                M3UnitS]>   { let Latency = 2;
                                              let NumMicroOps = 2; }
+def M3WriteSC : SchedWriteRes<[M3UnitA,
+                               M3UnitS,
+                               M3UnitFST]> { let Latency = 1;
+                                             let NumMicroOps = 2; }
+def M3WriteSY : SchedWriteVariant<[SchedVar<ExynosScaledIdxPred, [M3WriteSA]>,
+                                   SchedVar<NoSchedPred,         [WriteVST]>]>;
 
 def M3ReadAdrBase : SchedReadVariant<[SchedVar<ExynosScaledIdxPred, [ReadDefault]>,
                                       SchedVar<NoSchedPred,         [ReadDefault]>]>;
@@ -558,7 +568,7 @@ def : InstRW<[M3WriteLE,
               ReadAdrBase], (instregex "^LDR[BDHS]roW")>;
 def : InstRW<[WriteVLD,
               ReadAdrBase], (instregex "^LDR[BDHS]roX")>;
-def : InstRW<[M3WriteLE,
+def : InstRW<[M3WriteLY,
               ReadAdrBase], (instregex "^LDRQro[WX]")>;
 def : InstRW<[WriteVLD,
               M3WriteLH],   (instregex "^LDN?P[DS]i")>;
@@ -578,14 +588,16 @@ def : InstRW<[WriteVST,
 def : InstRW<[WriteVST],    (instregex "^STR[BDHSQ]ui")>;
 def : InstRW<[M3WriteSA,
               ReadAdrBase], (instregex "^STR[BDHS]roW")>;
+def : InstRW<[M3WriteSA,
+              ReadAdrBase], (instregex "^STRQroW")>;
 def : InstRW<[WriteVST,
               ReadAdrBase], (instregex "^STR[BDHS]roX")>;
-def : InstRW<[M3WriteSA,
-              ReadAdrBase], (instregex "^STRQro[WX]")>;
+def : InstRW<[M3WriteSY,
+              ReadAdrBase], (instregex "^STRQroX")>;
 def : InstRW<[WriteVST],    (instregex "^STN?P[DSQ]i")>;
 def : InstRW<[WriteVST,
               WriteAdr],    (instregex "^STP[DS](post|pre)")>;
-def : InstRW<[M3WriteSA,
+def : InstRW<[M3WriteSC,
               WriteAdr],    (instregex "^STPQ(post|pre)")>;
 
 // ASIMD instructions.

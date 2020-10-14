@@ -126,6 +126,12 @@ void Symbol::verify() {
   }
   verifyInTree(type, "Symbol::type");
 
+  if (name != astr(name))
+    INT_FATAL("name is not an astr");
+
+  if (cname != astr(cname))
+    INT_FATAL("cname is not an astr");
+
   if (symExprsHead) {
     if (symExprsHead->symbolSymExprsPrev != NULL)
       INT_FATAL(this, "Symbol's SymExpr list is malformed (head)");
@@ -1421,8 +1427,11 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
           char buf[3];
           long num;
           buf[0] = buf[1] = buf[2] = '\0';
-          if( str[pos] ) buf[0] = str[pos++];
-          if( str[pos] ) buf[1] = str[pos++];
+          if (str[pos] && isxdigit(str[pos])) {
+              buf[0] = str[pos++];
+              if( str[pos] && isxdigit(str[pos]))
+                buf[1] = str[pos++];
+          }
           num = strtol(buf, NULL, 16);
           newString += (char) num;
         }
@@ -1584,7 +1593,14 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createBytesWithBorrowedBuffer"),
+  Expr* initFn = NULL;
+  if (gChplCreateBytesWithLiteral != NULL)
+    initFn = new SymExpr(gChplCreateBytesWithLiteral);
+  else
+    initFn = new UnresolvedSymExpr("chpl_createBytesWithLiteral");
+
+
+  CallExpr *initCall = new CallExpr(initFn,
                                     bytesTemp,
                                     new_IntSymbol(bytesLength));
 
@@ -2121,10 +2137,17 @@ const char* toString(ArgSymbol* arg) {
     case INTENT_TYPE:            intent = "type ";      break;
   }
 
+  const char* retval = "";
   if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
-    return astr(intent, arg->name);
+    retval = astr(intent, arg->name);
   else
-    return astr(intent, arg->name, ": ", toString(arg->getValType()));
+    retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
+
+  if (developer  == true) {
+    retval = astr(retval, " [", istr(arg->id), "]");
+  }
+
+  return retval;
 }
 
 const char* toString(VarSymbol* var) {

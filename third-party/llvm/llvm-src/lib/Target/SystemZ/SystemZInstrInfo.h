@@ -1,9 +1,8 @@
 //===-- SystemZInstrInfo.h - SystemZ instruction information ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,7 +46,8 @@ enum {
   CompareZeroCCMaskShift = 14,
   CCMaskFirst            = (1 << 18),
   CCMaskLast             = (1 << 19),
-  IsLogical              = (1 << 20)
+  IsLogical              = (1 << 20),
+  CCIfNoSignedWrap       = (1 << 21)
 };
 
 static inline unsigned getAccessSize(unsigned int Flags) {
@@ -101,11 +101,18 @@ enum BranchType {
 
   // An instruction that decrements a 64-bit register and branches if
   // the result is nonzero.
-  BranchCTG
+  BranchCTG,
+
+  // An instruction representing an asm goto statement.
+  AsmGoto
 };
 
 // Information about a branch instruction.
-struct Branch {
+class Branch {
+  // The target of the branch. In case of INLINEASM_BR, this is nullptr.
+  const MachineOperand *Target;
+
+public:
   // The type of the branch.
   BranchType Type;
 
@@ -115,12 +122,15 @@ struct Branch {
   // CCMASK_<N> is set if the branch should be taken when CC == N.
   unsigned CCMask;
 
-  // The target of the branch.
-  const MachineOperand *Target;
-
   Branch(BranchType type, unsigned ccValid, unsigned ccMask,
          const MachineOperand *target)
-    : Type(type), CCValid(ccValid), CCMask(ccMask), Target(target) {}
+    : Target(target), Type(type), CCValid(ccValid), CCMask(ccMask) {}
+
+  bool isIndirect() { return Target != nullptr && Target->isReg(); }
+  bool hasMBBTarget() { return Target != nullptr && Target->isMBB(); }
+  MachineBasicBlock *getMBBTarget() {
+    return hasMBBTarget() ? Target->getMBB() : nullptr;
+  }
 };
 
 // Kinds of fused compares in compare-and-* instructions.  Together with type
@@ -142,6 +152,11 @@ enum FusedCompareType {
 
 } // end namespace SystemZII
 
+namespace SystemZ {
+int getTwoOperandOpcode(uint16_t Opcode);
+int getTargetMemOpcode(uint16_t Opcode);
+}
+
 class SystemZInstrInfo : public SystemZGenInstrInfo {
   const SystemZRegisterInfo RI;
   SystemZSubtarget &STI;
@@ -156,8 +171,6 @@ class SystemZInstrInfo : public SystemZGenInstrInfo {
                        unsigned HighOpcode) const;
   void expandLOCPseudo(MachineInstr &MI, unsigned LowOpcode,
                        unsigned HighOpcode) const;
-  void expandLOCRPseudo(MachineInstr &MI, unsigned LowOpcode,
-                        unsigned HighOpcode) const;
   void expandZExtPseudo(MachineInstr &MI, unsigned LowOpcode,
                         unsigned Size) const;
   void expandLoadStackGuard(MachineInstr *MI) const;
@@ -230,7 +243,7 @@ public:
   bool PredicateInstruction(MachineInstr &MI,
                             ArrayRef<MachineOperand> Pred) const override;
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MBBI,
-                   const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
   void storeRegToStackSlot(MachineBasicBlock &MBB,
                            MachineBasicBlock::iterator MBBI,
@@ -249,7 +262,8 @@ public:
   foldMemoryOperandImpl(MachineFunction &MF, MachineInstr &MI,
                         ArrayRef<unsigned> Ops,
                         MachineBasicBlock::iterator InsertPt, int FrameIndex,
-                        LiveIntervals *LIS = nullptr) const override;
+                        LiveIntervals *LIS = nullptr,
+                        VirtRegMap *VRM = nullptr) const override;
   MachineInstr *foldMemoryOperandImpl(
       MachineFunction &MF, MachineInstr &MI, ArrayRef<unsigned> Ops,
       MachineBasicBlock::iterator InsertPt, MachineInstr &LoadMI,
@@ -309,13 +323,17 @@ public:
                      MachineBasicBlock::iterator MBBI,
                      unsigned Reg, uint64_t Value) const;
 
+  // Perform target specific instruction verification.
+  bool verifyInstruction(const MachineInstr &MI,
+                         StringRef &ErrInfo) const override;
+
   // Sometimes, it is possible for the target to tell, even without
   // aliasing information, that two MIs access different memory
   // addresses. This function returns true if two MIs access different
   // memory addresses and false otherwise.
   bool
-  areMemAccessesTriviallyDisjoint(MachineInstr &MIa, MachineInstr &MIb,
-                                  AliasAnalysis *AA = nullptr) const override;
+  areMemAccessesTriviallyDisjoint(const MachineInstr &MIa,
+                                  const MachineInstr &MIb) const override;
 };
 
 } // end namespace llvm

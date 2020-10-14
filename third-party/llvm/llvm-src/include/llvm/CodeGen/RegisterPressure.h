@@ -1,9 +1,8 @@
 //===- RegisterPressure.h - Dynamic Register Pressure -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -130,10 +129,8 @@ public:
   bool operator==(const PressureChange &RHS) const {
     return PSetID == RHS.PSetID && UnitInc == RHS.UnitInc;
   }
-};
 
-template <> struct isPodLike<PressureChange> {
-   static const bool value = true;
+  void dump() const;
 };
 
 /// List of PressureChanges in order of increasing, unique PSetID.
@@ -253,6 +250,7 @@ struct RegPressureDelta {
   bool operator!=(const RegPressureDelta &RHS) const {
     return !operator==(RHS);
   }
+  void dump() const;
 };
 
 /// A set of live virtual registers and physical register units.
@@ -278,15 +276,15 @@ private:
   unsigned NumRegUnits;
 
   unsigned getSparseIndexFromReg(unsigned Reg) const {
-    if (TargetRegisterInfo::isVirtualRegister(Reg))
-      return TargetRegisterInfo::virtReg2Index(Reg) + NumRegUnits;
+    if (Register::isVirtualRegister(Reg))
+      return Register::virtReg2Index(Reg) + NumRegUnits;
     assert(Reg < NumRegUnits);
     return Reg;
   }
 
   unsigned getRegFromSparseIndex(unsigned SparseIndex) const {
     if (SparseIndex >= NumRegUnits)
-      return TargetRegisterInfo::index2VirtReg(SparseIndex-NumRegUnits);
+      return Register::index2VirtReg(SparseIndex-NumRegUnits);
     return SparseIndex;
   }
 

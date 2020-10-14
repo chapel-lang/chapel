@@ -65,9 +65,9 @@
 */
 module Path {
 
-private use List;
+use List;
 use SysError, IO;
-private use Sys;
+use Sys, SysBasic;
 
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.

@@ -1,9 +1,8 @@
 #!/usr/bin/env perl
 #
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License. See LICENSE.TXT for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
 ##===----------------------------------------------------------------------===##
 #
@@ -58,6 +57,7 @@ my %Options = (
   KeepEmpty => 0,            # Don't remove output directory even with 0 results.
   EnableCheckers => {},
   DisableCheckers => {},
+  SilenceCheckers => {},
   Excludes => [],
   UseCC => undef,            # C compiler to use for compilation.
   UseCXX => undef,           # C++ compiler to use for compilation.
@@ -1461,6 +1461,16 @@ sub ShellEscape {
 }
 
 ##----------------------------------------------------------------------------##
+# FindXcrun - searches for the 'xcrun' executable. Returns "" if not found.
+##----------------------------------------------------------------------------##
+
+sub FindXcrun {
+  my $xcrun = `which xcrun`;
+  chomp $xcrun;
+  return $xcrun;
+}
+
+##----------------------------------------------------------------------------##
 # FindClang - searches for 'clang' executable.
 ##----------------------------------------------------------------------------##
 
@@ -1469,6 +1479,16 @@ sub FindClang {
     $Clang = Cwd::realpath("$RealBin/bin/clang") if (-f "$RealBin/bin/clang");
     if (!defined $Clang || ! -x $Clang) {
       $Clang = Cwd::realpath("$RealBin/clang") if (-f "$RealBin/clang");
+      if (!defined $Clang || ! -x $Clang) {
+        # When an Xcode toolchain is present, look for a clang in the sibling bin
+        # of the parent of the bin directory. So if scan-build is at
+        # $TOOLCHAIN/usr/local/bin/scan-build look for clang at
+        # $TOOLCHAIN/usr/bin/clang.
+        my $has_xcode_toolchain = FindXcrun() ne "";
+        if ($has_xcode_toolchain && -f "$RealBin/../../bin/clang") {
+          $Clang = Cwd::realpath("$RealBin/../../bin/clang");
+        }
+      }
     }
     if (!defined $Clang || ! -x $Clang) {
       return "error: Cannot find an executable 'clang' relative to" .
@@ -1478,8 +1498,7 @@ sub FindClang {
   }
   else {
     if ($Options{AnalyzerDiscoveryMethod} =~ /^[Xx]code$/) {
-      my $xcrun = `which xcrun`;
-      chomp $xcrun;
+      my $xcrun = FindXcrun();
       if ($xcrun eq "") {
         return "Cannot find 'xcrun' to find 'clang' for analysis.\n";
       }
@@ -1724,9 +1743,15 @@ sub ProcessArgs {
     if ($arg eq "-disable-checker") {
       shift @$Args;
       my $Checker = shift @$Args;
-      # Store $NumArgs to preserve the order the checkers were disabled.
-      $Options{DisableCheckers}{$Checker} = $NumArgs;
-      delete $Options{EnableCheckers}{$Checker};
+      # Store $NumArgs to preserve the order the checkers are disabled/silenced.
+      # See whether it is a core checker to disable. That means we do not want
+      # to emit a report from that checker so we have to silence it.
+      if (index($Checker, "core") == 0) {
+        $Options{SilenceCheckers}{$Checker} = $NumArgs;
+      } else {
+        $Options{DisableCheckers}{$Checker} = $NumArgs;
+        delete $Options{EnableCheckers}{$Checker};
+      }
       next;
     }
 
@@ -1873,6 +1898,14 @@ if ($Options{MaxLoop} > 0) { push @AnalysesToRun, "-analyzer-max-loop $Options{M
 my $CCC_ANALYZER_ANALYSIS = join ' ', @AnalysesToRun;
 my $CCC_ANALYZER_PLUGINS = join ' ', map { "-load ".$_ } @{$Options{PluginsToLoad}};
 my $CCC_ANALYZER_CONFIG = join ' ', map { "-analyzer-config ".$_ } @{$Options{ConfigOptions}};
+
+foreach (sort { $Options{SilenceCheckers}{$a} <=> $Options{SilenceCheckers}{$b} }
+         keys %{$Options{SilenceCheckers}}) {
+  # Add checkers in order they were silenced.
+  $CCC_ANALYZER_CONFIG =
+      $CCC_ANALYZER_CONFIG." -analyzer-config silence-checkers=".$_;
+}
+
 my %EnvVars = (
   'CC' => $Cmd,
   'CXX' => $CmdCXX,

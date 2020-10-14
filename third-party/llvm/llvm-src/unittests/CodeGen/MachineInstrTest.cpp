@@ -1,14 +1,15 @@
 //===- MachineInstrTest.cpp -----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/CodeGen/MachineBasicBlock.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineFunction.h"
+#include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
@@ -16,6 +17,8 @@
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/ModuleSlotTracker.h"
+#include "llvm/MC/MCAsmInfo.h"
+#include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Target/TargetMachine.h"
@@ -35,7 +38,7 @@ public:
 class BogusFrameLowering : public TargetFrameLowering {
 public:
   BogusFrameLowering()
-      : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, 4, 4) {}
+      : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(4), 4) {}
 
   void emitPrologue(MachineFunction &MF,
                     MachineBasicBlock &MBB) const override {}
@@ -44,11 +47,63 @@ public:
   bool hasFP(const MachineFunction &MF) const override { return false; }
 };
 
+static TargetRegisterClass *const BogusRegisterClasses[] = {nullptr};
+
+class BogusRegisterInfo : public TargetRegisterInfo {
+public:
+  BogusRegisterInfo()
+      : TargetRegisterInfo(nullptr, BogusRegisterClasses, BogusRegisterClasses,
+                           nullptr, nullptr, LaneBitmask(~0u), nullptr) {
+    InitMCRegisterInfo(nullptr, 0, 0, 0, nullptr, 0, nullptr, 0, nullptr,
+                       nullptr, nullptr, nullptr, nullptr, 0, nullptr, nullptr);
+  }
+
+  const MCPhysReg *
+  getCalleeSavedRegs(const MachineFunction *MF) const override {
+    return nullptr;
+  }
+  ArrayRef<const uint32_t *> getRegMasks() const override { return None; }
+  ArrayRef<const char *> getRegMaskNames() const override { return None; }
+  BitVector getReservedRegs(const MachineFunction &MF) const override {
+    return BitVector();
+  }
+  const RegClassWeight &
+  getRegClassWeight(const TargetRegisterClass *RC) const override {
+    static RegClassWeight Bogus{1, 16};
+    return Bogus;
+  }
+  unsigned getRegUnitWeight(unsigned RegUnit) const override { return 1; }
+  unsigned getNumRegPressureSets() const override { return 0; }
+  const char *getRegPressureSetName(unsigned Idx) const override {
+    return "bogus";
+  }
+  unsigned getRegPressureSetLimit(const MachineFunction &MF,
+                                  unsigned Idx) const override {
+    return 0;
+  }
+  const int *
+  getRegClassPressureSets(const TargetRegisterClass *RC) const override {
+    static const int Bogus[] = {0, -1};
+    return &Bogus[0];
+  }
+  const int *getRegUnitPressureSets(unsigned RegUnit) const override {
+    static const int Bogus[] = {0, -1};
+    return &Bogus[0];
+  }
+
+  Register getFrameRegister(const MachineFunction &MF) const override {
+    return 0;
+  }
+  void eliminateFrameIndex(MachineBasicBlock::iterator MI, int SPAdj,
+                           unsigned FIOperandNum,
+                           RegScavenger *RS = nullptr) const override {}
+};
+
 class BogusSubtarget : public TargetSubtargetInfo {
 public:
   BogusSubtarget(TargetMachine &TM)
       : TargetSubtargetInfo(Triple(""), "", "", {}, {}, nullptr, nullptr,
-                            nullptr, nullptr, nullptr, nullptr, nullptr),
+                            nullptr, nullptr, nullptr, nullptr),
         FL(), TL(TM) {}
   ~BogusSubtarget() override {}
 
@@ -58,8 +113,11 @@ public:
 
   const TargetInstrInfo *getInstrInfo() const override { return &TII; }
 
+  const TargetRegisterInfo *getRegisterInfo() const override { return &TRI; }
+
 private:
   BogusFrameLowering FL;
+  BogusRegisterInfo TRI;
   BogusTargetLowering TL;
   TargetInstrInfo TII;
 };
@@ -70,6 +128,7 @@ public:
       : LLVMTargetMachine(Target(), "", Triple(""), "", "", TargetOptions(),
                           Reloc::Static, CodeModel::Small, CodeGenOpt::Default),
         ST(*this) {}
+
   ~BogusTargetMachine() override {}
 
   const TargetSubtargetInfo *getSubtargetImpl(const Function &) const override {
@@ -80,8 +139,13 @@ private:
   BogusSubtarget ST;
 };
 
+std::unique_ptr<MCContext> createMCContext(MCAsmInfo *AsmInfo) {
+  return std::make_unique<MCContext>(
+      AsmInfo, nullptr, nullptr, nullptr, nullptr, false);
+}
+
 std::unique_ptr<BogusTargetMachine> createTargetMachine() {
-  return llvm::make_unique<BogusTargetMachine>();
+  return std::make_unique<BogusTargetMachine>();
 }
 
 std::unique_ptr<MachineFunction> createMachineFunction() {
@@ -95,7 +159,7 @@ std::unique_ptr<MachineFunction> createMachineFunction() {
   MachineModuleInfo MMI(TM.get());
   const TargetSubtargetInfo &STI = *TM->getSubtargetImpl(*F);
 
-  return llvm::make_unique<MachineFunction>(*F, *TM, STI, FunctionNum, MMI);
+  return std::make_unique<MachineFunction>(*F, *TM, STI, FunctionNum, MMI);
 }
 
 // This test makes sure that MachineInstr::isIdenticalTo handles Defs correctly
@@ -266,11 +330,178 @@ TEST(MachineInstrPrintingTest, DebugLocPrinting) {
 
   std::string str;
   raw_string_ostream OS(str);
-  MI->print(OS);
+  MI->print(OS, /*IsStandalone*/true, /*SkipOpers*/false, /*SkipDebugLoc*/false,
+            /*AddNewLine*/false);
   ASSERT_TRUE(
       StringRef(OS.str()).startswith("$noreg = UNKNOWN debug-location "));
   ASSERT_TRUE(
       StringRef(OS.str()).endswith("filename:1:5"));
 }
+
+TEST(MachineInstrSpan, DistanceBegin) {
+  auto MF = createMachineFunction();
+  auto MBB = MF->CreateMachineBasicBlock();
+
+  MCInstrDesc MCID = {0, 0,       0,       0,       0, 0,
+                      0, nullptr, nullptr, nullptr, 0, nullptr};
+
+  auto MII = MBB->begin();
+  MachineInstrSpan MIS(MII, MBB);
+  ASSERT_TRUE(MIS.empty());
+
+  auto MI = MF->CreateMachineInstr(MCID, DebugLoc());
+  MBB->insert(MII, MI);
+  ASSERT_TRUE(std::distance(MIS.begin(), MII) == 1);
+}
+
+TEST(MachineInstrSpan, DistanceEnd) {
+  auto MF = createMachineFunction();
+  auto MBB = MF->CreateMachineBasicBlock();
+
+  MCInstrDesc MCID = {0, 0,       0,       0,       0, 0,
+                      0, nullptr, nullptr, nullptr, 0, nullptr};
+
+  auto MII = MBB->end();
+  MachineInstrSpan MIS(MII, MBB);
+  ASSERT_TRUE(MIS.empty());
+
+  auto MI = MF->CreateMachineInstr(MCID, DebugLoc());
+  MBB->insert(MII, MI);
+  ASSERT_TRUE(std::distance(MIS.begin(), MII) == 1);
+}
+
+TEST(MachineInstrExtraInfo, AddExtraInfo) {
+  auto MF = createMachineFunction();
+  MCInstrDesc MCID = {0, 0,       0,       0,       0, 0,
+                      0, nullptr, nullptr, nullptr, 0, nullptr};
+
+  auto MI = MF->CreateMachineInstr(MCID, DebugLoc());
+  auto MAI = MCAsmInfo();
+  auto MC = createMCContext(&MAI);
+  auto MMO = MF->getMachineMemOperand(MachinePointerInfo(),
+                                      MachineMemOperand::MOLoad, 8, 8);
+  SmallVector<MachineMemOperand *, 2> MMOs;
+  MMOs.push_back(MMO);
+  MCSymbol *Sym1 = MC->createTempSymbol("pre_label", false);
+  MCSymbol *Sym2 = MC->createTempSymbol("post_label", false);
+  LLVMContext Ctx;
+  MDNode *MDN = MDNode::getDistinct(Ctx, None);
+
+  ASSERT_TRUE(MI->memoperands_empty());
+  ASSERT_FALSE(MI->getPreInstrSymbol());
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setMemRefs(*MF, MMOs);
+  ASSERT_TRUE(MI->memoperands().size() == 1);
+  ASSERT_FALSE(MI->getPreInstrSymbol());
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setPreInstrSymbol(*MF, Sym1);
+  ASSERT_TRUE(MI->memoperands().size() == 1);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setPostInstrSymbol(*MF, Sym2);
+  ASSERT_TRUE(MI->memoperands().size() == 1);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_TRUE(MI->getPostInstrSymbol() == Sym2);
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setHeapAllocMarker(*MF, MDN);
+  ASSERT_TRUE(MI->memoperands().size() == 1);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_TRUE(MI->getPostInstrSymbol() == Sym2);
+  ASSERT_TRUE(MI->getHeapAllocMarker() == MDN);
+}
+
+TEST(MachineInstrExtraInfo, ChangeExtraInfo) {
+  auto MF = createMachineFunction();
+  MCInstrDesc MCID = {0, 0,       0,       0,       0, 0,
+                      0, nullptr, nullptr, nullptr, 0, nullptr};
+
+  auto MI = MF->CreateMachineInstr(MCID, DebugLoc());
+  auto MAI = MCAsmInfo();
+  auto MC = createMCContext(&MAI);
+  auto MMO = MF->getMachineMemOperand(MachinePointerInfo(),
+                                      MachineMemOperand::MOLoad, 8, 8);
+  SmallVector<MachineMemOperand *, 2> MMOs;
+  MMOs.push_back(MMO);
+  MCSymbol *Sym1 = MC->createTempSymbol("pre_label", false);
+  MCSymbol *Sym2 = MC->createTempSymbol("post_label", false);
+  LLVMContext Ctx;
+  MDNode *MDN = MDNode::getDistinct(Ctx, None);
+
+  MI->setMemRefs(*MF, MMOs);
+  MI->setPreInstrSymbol(*MF, Sym1);
+  MI->setPostInstrSymbol(*MF, Sym2);
+  MI->setHeapAllocMarker(*MF, MDN);
+
+  MMOs.push_back(MMO);
+
+  MI->setMemRefs(*MF, MMOs);
+  ASSERT_TRUE(MI->memoperands().size() == 2);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_TRUE(MI->getPostInstrSymbol() == Sym2);
+  ASSERT_TRUE(MI->getHeapAllocMarker() == MDN);
+
+  MI->setPostInstrSymbol(*MF, Sym1);
+  ASSERT_TRUE(MI->memoperands().size() == 2);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_TRUE(MI->getPostInstrSymbol() == Sym1);
+  ASSERT_TRUE(MI->getHeapAllocMarker() == MDN);
+}
+
+TEST(MachineInstrExtraInfo, RemoveExtraInfo) {
+  auto MF = createMachineFunction();
+  MCInstrDesc MCID = {0, 0,       0,       0,       0, 0,
+                      0, nullptr, nullptr, nullptr, 0, nullptr};
+
+  auto MI = MF->CreateMachineInstr(MCID, DebugLoc());
+  auto MAI = MCAsmInfo();
+  auto MC = createMCContext(&MAI);
+  auto MMO = MF->getMachineMemOperand(MachinePointerInfo(),
+                                      MachineMemOperand::MOLoad, 8, 8);
+  SmallVector<MachineMemOperand *, 2> MMOs;
+  MMOs.push_back(MMO);
+  MMOs.push_back(MMO);
+  MCSymbol *Sym1 = MC->createTempSymbol("pre_label", false);
+  MCSymbol *Sym2 = MC->createTempSymbol("post_label", false);
+  LLVMContext Ctx;
+  MDNode *MDN = MDNode::getDistinct(Ctx, None);
+
+  MI->setMemRefs(*MF, MMOs);
+  MI->setPreInstrSymbol(*MF, Sym1);
+  MI->setPostInstrSymbol(*MF, Sym2);
+  MI->setHeapAllocMarker(*MF, MDN);
+
+  MI->setPostInstrSymbol(*MF, nullptr);
+  ASSERT_TRUE(MI->memoperands().size() == 2);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_TRUE(MI->getHeapAllocMarker() == MDN);
+
+  MI->setHeapAllocMarker(*MF, nullptr);
+  ASSERT_TRUE(MI->memoperands().size() == 2);
+  ASSERT_TRUE(MI->getPreInstrSymbol() == Sym1);
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setPreInstrSymbol(*MF, nullptr);
+  ASSERT_TRUE(MI->memoperands().size() == 2);
+  ASSERT_FALSE(MI->getPreInstrSymbol());
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+
+  MI->setMemRefs(*MF, {});
+  ASSERT_TRUE(MI->memoperands_empty());
+  ASSERT_FALSE(MI->getPreInstrSymbol());
+  ASSERT_FALSE(MI->getPostInstrSymbol());
+  ASSERT_FALSE(MI->getHeapAllocMarker());
+}
+
+static_assert(is_trivially_copyable<MCOperand>::value, "trivially copyable");
 
 } // end namespace

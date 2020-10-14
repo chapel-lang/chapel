@@ -1,9 +1,8 @@
 //===- BuildLibCalls.h - Utility builder for libcalls -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,17 +30,16 @@ namespace llvm {
   bool inferLibFuncAttributes(Function &F, const TargetLibraryInfo &TLI);
   bool inferLibFuncAttributes(Module *M, StringRef Name, const TargetLibraryInfo &TLI);
 
-  /// Check whether the overloaded unary floating point function
+  /// Check whether the overloaded floating point function
   /// corresponding to \a Ty is available.
-  bool hasUnaryFloatFn(const TargetLibraryInfo *TLI, Type *Ty,
-                       LibFunc DoubleFn, LibFunc FloatFn,
-                       LibFunc LongDoubleFn);
+  bool hasFloatFn(const TargetLibraryInfo *TLI, Type *Ty,
+                  LibFunc DoubleFn, LibFunc FloatFn, LibFunc LongDoubleFn);
 
-  /// Get the name of the overloaded unary floating point function
+  /// Get the name of the overloaded floating point function
   /// corresponding to \a Ty.
-  StringRef getUnaryFloatFn(const TargetLibraryInfo *TLI, Type *Ty,
-                            LibFunc DoubleFn, LibFunc FloatFn,
-                            LibFunc LongDoubleFn);
+  StringRef getFloatFnName(const TargetLibraryInfo *TLI, Type *Ty,
+                           LibFunc DoubleFn, LibFunc FloatFn,
+                           LibFunc LongDoubleFn);
 
   /// Return V if it is an i8*, otherwise cast it to i8*.
   Value *castToCStr(Value *V, IRBuilder<> &B);
@@ -51,6 +49,11 @@ namespace llvm {
   /// 'intptr_t' type.
   Value *emitStrLen(Value *Ptr, IRBuilder<> &B, const DataLayout &DL,
                     const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the strdup function to the builder, for the specified
+  /// pointer. Ptr is required to be some pointer type, and the return value has
+  /// 'i8*' type.
+  Value *emitStrDup(Value *Ptr, IRBuilder<> &B, const TargetLibraryInfo *TLI);
 
   /// Emit a call to the strnlen function to the builder, for the specified
   /// pointer. Ptr is required to be some pointer type, MaxLen must be of size_t
@@ -71,12 +74,22 @@ namespace llvm {
   /// Emit a call to the strcpy function to the builder, for the specified
   /// pointer arguments.
   Value *emitStrCpy(Value *Dst, Value *Src, IRBuilder<> &B,
-                    const TargetLibraryInfo *TLI, StringRef Name = "strcpy");
+                    const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the stpcpy function to the builder, for the specified
+  /// pointer arguments.
+  Value *emitStpCpy(Value *Dst, Value *Src, IRBuilder<> &B,
+                    const TargetLibraryInfo *TLI);
 
   /// Emit a call to the strncpy function to the builder, for the specified
   /// pointer arguments and length.
   Value *emitStrNCpy(Value *Dst, Value *Src, Value *Len, IRBuilder<> &B,
-                     const TargetLibraryInfo *TLI, StringRef Name = "strncpy");
+                     const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the stpncpy function to the builder, for the specified
+  /// pointer arguments and length.
+  Value *emitStpNCpy(Value *Dst, Value *Src, Value *Len, IRBuilder<> &B,
+                     const TargetLibraryInfo *TLI);
 
   /// Emit a call to the __memcpy_chk function to the builder. This expects that
   /// the Len and ObjSize have type 'intptr_t' and Dst/Src are pointers.
@@ -92,6 +105,47 @@ namespace llvm {
   /// Emit a call to the memcmp function.
   Value *emitMemCmp(Value *Ptr1, Value *Ptr2, Value *Len, IRBuilder<> &B,
                     const DataLayout &DL, const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the bcmp function.
+  Value *emitBCmp(Value *Ptr1, Value *Ptr2, Value *Len, IRBuilder<> &B,
+                  const DataLayout &DL, const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the memccpy function.
+  Value *emitMemCCpy(Value *Ptr1, Value *Ptr2, Value *Val, Value *Len,
+                     IRBuilder<> &B, const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the snprintf function.
+  Value *emitSNPrintf(Value *Dest, Value *Size, Value *Fmt,
+                      ArrayRef<Value *> Args, IRBuilder<> &B,
+                      const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the sprintf function.
+  Value *emitSPrintf(Value *Dest, Value *Fmt, ArrayRef<Value *> VariadicArgs,
+                     IRBuilder<> &B, const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the strcat function.
+  Value *emitStrCat(Value *Dest, Value *Src, IRBuilder<> &B,
+                    const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the strlcpy function.
+  Value *emitStrLCpy(Value *Dest, Value *Src, Value *Size, IRBuilder<> &B,
+                     const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the strlcat function.
+  Value *emitStrLCat(Value *Dest, Value *Src, Value *Size, IRBuilder<> &B,
+                     const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the strncat function.
+  Value *emitStrNCat(Value *Dest, Value *Src, Value *Size, IRBuilder<> &B,
+                     const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the vsnprintf function.
+  Value *emitVSNPrintf(Value *Dest, Value *Size, Value *Fmt, Value *VAList,
+                       IRBuilder<> &B, const TargetLibraryInfo *TLI);
+
+  /// Emit a call to the vsprintf function.
+  Value *emitVSPrintf(Value *Dest, Value *Fmt, Value *VAList, IRBuilder<> &B,
+                      const TargetLibraryInfo *TLI);
 
   /// Emit a call to the unary function named 'Name' (e.g.  'floor'). This
   /// function is known to take a single of type matching 'Op' and returns one
@@ -112,6 +166,13 @@ namespace llvm {
   /// value with the same type. If 'Op1/Op2' are long double, 'l' is added as
   /// the suffix of name, if 'Op1/Op2' are float, we add a 'f' suffix.
   Value *emitBinaryFloatFnCall(Value *Op1, Value *Op2, StringRef Name,
+                               IRBuilder<> &B, const AttributeList &Attrs);
+
+  /// Emit a call to the binary function DoubleFn, FloatFn or LongDoubleFn,
+  /// depending of the type of Op1.
+  Value *emitBinaryFloatFnCall(Value *Op1, Value *Op2,
+                               const TargetLibraryInfo *TLI, LibFunc DoubleFn,
+                               LibFunc FloatFn, LibFunc LongDoubleFn,
                                IRBuilder<> &B, const AttributeList &Attrs);
 
   /// Emit a call to the putchar function. This assumes that Char is an integer.

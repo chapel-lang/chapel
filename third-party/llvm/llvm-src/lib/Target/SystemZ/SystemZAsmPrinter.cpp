@@ -1,9 +1,8 @@
 //===-- SystemZAsmPrinter.cpp - SystemZ LLVM assembly printer -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,14 +12,17 @@
 //===----------------------------------------------------------------------===//
 
 #include "SystemZAsmPrinter.h"
-#include "InstPrinter/SystemZInstPrinter.h"
+#include "MCTargetDesc/SystemZInstPrinter.h"
 #include "SystemZConstantPoolValue.h"
 #include "SystemZMCInstLower.h"
+#include "TargetInfo/SystemZTargetInfo.h"
+#include "llvm/BinaryFormat/ELF.h"
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/MC/MCExpr.h"
 #include "llvm/MC/MCInstBuilder.h"
+#include "llvm/MC/MCSectionELF.h"
 #include "llvm/MC/MCStreamer.h"
 #include "llvm/Support/TargetRegistry.h"
 
@@ -78,6 +80,27 @@ static const MCSymbolRefExpr *getGlobalOffsetTable(MCContext &Context) {
   return MCSymbolRefExpr::create(Context.getOrCreateSymbol(Name),
                                  MCSymbolRefExpr::VK_None,
                                  Context);
+}
+
+// MI is an instruction that accepts an optional alignment hint,
+// and which was already lowered to LoweredMI.  If the alignment
+// of the original memory operand is known, update LoweredMI to
+// an instruction with the corresponding hint set.
+static void lowerAlignmentHint(const MachineInstr *MI, MCInst &LoweredMI,
+                               unsigned Opcode) {
+  if (!MI->hasOneMemOperand())
+    return;
+  const MachineMemOperand *MMO = *MI->memoperands_begin();
+  unsigned AlignmentHint = 0;
+  if (MMO->getAlignment() >= 16)
+    AlignmentHint = 4;
+  else if (MMO->getAlignment() >= 8)
+    AlignmentHint = 3;
+  if (AlignmentHint == 0)
+    return;
+
+  LoweredMI.setOpcode(Opcode);
+  LoweredMI.addOperand(MCOperand::createImm(AlignmentHint));
 }
 
 // MI loads the high part of a vector from memory.  Return an instruction
@@ -351,6 +374,26 @@ void SystemZAsmPrinter::EmitInstruction(const MachineInstr *MI) {
       .addReg(SystemZMC::getRegAsVR128(MI->getOperand(1).getReg()));
     break;
 
+  case SystemZ::VL:
+    Lower.lower(MI, LoweredMI);
+    lowerAlignmentHint(MI, LoweredMI, SystemZ::VLAlign);
+    break;
+
+  case SystemZ::VST:
+    Lower.lower(MI, LoweredMI);
+    lowerAlignmentHint(MI, LoweredMI, SystemZ::VSTAlign);
+    break;
+
+  case SystemZ::VLM:
+    Lower.lower(MI, LoweredMI);
+    lowerAlignmentHint(MI, LoweredMI, SystemZ::VLMAlign);
+    break;
+
+  case SystemZ::VSTM:
+    Lower.lower(MI, LoweredMI);
+    lowerAlignmentHint(MI, LoweredMI, SystemZ::VSTMAlign);
+    break;
+
   case SystemZ::VL32:
     LoweredMI = lowerSubvectorLoad(MI, SystemZ::VLREPF);
     break;
@@ -460,6 +503,10 @@ void SystemZAsmPrinter::EmitInstruction(const MachineInstr *MI) {
     }
     break;
 
+  case TargetOpcode::FENTRY_CALL:
+    LowerFENTRY_CALL(*MI, Lower);
+    return;
+
   case TargetOpcode::STACKMAP:
     LowerSTACKMAP(*MI);
     return;
@@ -498,11 +545,36 @@ static unsigned EmitNop(MCContext &OutContext, MCStreamer &OutStreamer,
   else {
     MCSymbol *DotSym = OutContext.createTempSymbol();
     const MCSymbolRefExpr *Dot = MCSymbolRefExpr::create(DotSym, OutContext);
+    OutStreamer.EmitLabel(DotSym);
     OutStreamer.EmitInstruction(MCInstBuilder(SystemZ::BRCLAsm)
                                   .addImm(0).addExpr(Dot), STI);
-    OutStreamer.EmitLabel(DotSym);
     return 6;
   }
+}
+
+void SystemZAsmPrinter::LowerFENTRY_CALL(const MachineInstr &MI,
+                                         SystemZMCInstLower &Lower) {
+  MCContext &Ctx = MF->getContext();
+  if (MF->getFunction().hasFnAttribute("mrecord-mcount")) {
+    MCSymbol *DotSym = OutContext.createTempSymbol();
+    OutStreamer->PushSection();
+    OutStreamer->SwitchSection(
+        Ctx.getELFSection("__mcount_loc", ELF::SHT_PROGBITS, ELF::SHF_ALLOC));
+    OutStreamer->EmitSymbolValue(DotSym, 8);
+    OutStreamer->PopSection();
+    OutStreamer->EmitLabel(DotSym);
+  }
+
+  if (MF->getFunction().hasFnAttribute("mnop-mcount")) {
+    EmitNop(Ctx, *OutStreamer, 6, getSubtargetInfo());
+    return;
+  }
+
+  MCSymbol *fentry = Ctx.getOrCreateSymbol("__fentry__");
+  const MCSymbolRefExpr *Op =
+      MCSymbolRefExpr::create(fentry, MCSymbolRefExpr::VK_PLT, Ctx);
+  OutStreamer->EmitInstruction(MCInstBuilder(SystemZ::BRASL)
+                       .addReg(SystemZ::R0D).addExpr(Op), getSubtargetInfo());
 }
 
 void SystemZAsmPrinter::LowerSTACKMAP(const MachineInstr &MI) {
@@ -511,7 +583,11 @@ void SystemZAsmPrinter::LowerSTACKMAP(const MachineInstr &MI) {
 
   unsigned NumNOPBytes = MI.getOperand(1).getImm();
 
-  SM.recordStackMap(MI);
+  auto &Ctx = OutStreamer->getContext();
+  MCSymbol *MILabel = Ctx.createTempSymbol();
+  OutStreamer->EmitLabel(MILabel);
+  
+  SM.recordStackMap(*MILabel, MI);
   assert(NumNOPBytes % 2 == 0 && "Invalid number of NOP bytes requested!");
 
   // Scan ahead to trim the shadow.
@@ -540,7 +616,11 @@ void SystemZAsmPrinter::LowerSTACKMAP(const MachineInstr &MI) {
 // [<def>], <id>, <numBytes>, <target>, <numArgs>
 void SystemZAsmPrinter::LowerPATCHPOINT(const MachineInstr &MI,
                                         SystemZMCInstLower &Lower) {
-  SM.recordPatchPoint(MI);
+  auto &Ctx = OutStreamer->getContext();
+  MCSymbol *MILabel = Ctx.createTempSymbol();
+  OutStreamer->EmitLabel(MILabel);
+
+  SM.recordPatchPoint(*MILabel, MI);
   PatchPointOpers Opers(&MI);
 
   unsigned EncodedBytes = 0;
@@ -618,26 +698,19 @@ EmitMachineConstantPoolValue(MachineConstantPoolValue *MCPV) {
   OutStreamer->EmitValue(Expr, Size);
 }
 
-bool SystemZAsmPrinter::PrintAsmOperand(const MachineInstr *MI,
-                                        unsigned OpNo,
-                                        unsigned AsmVariant,
+bool SystemZAsmPrinter::PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
                                         const char *ExtraCode,
                                         raw_ostream &OS) {
-  if (ExtraCode && *ExtraCode == 'n') {
-    if (!MI->getOperand(OpNo).isImm())
-      return true;
-    OS << -int64_t(MI->getOperand(OpNo).getImm());
-  } else {
-    SystemZMCInstLower Lower(MF->getContext(), *this);
-    MCOperand MO(Lower.lowerOperand(MI->getOperand(OpNo)));
-    SystemZInstPrinter::printOperand(MO, MAI, OS);
-  }
+  if (ExtraCode)
+    return AsmPrinter::PrintAsmOperand(MI, OpNo, ExtraCode, OS);
+  SystemZMCInstLower Lower(MF->getContext(), *this);
+  MCOperand MO(Lower.lowerOperand(MI->getOperand(OpNo)));
+  SystemZInstPrinter::printOperand(MO, MAI, OS);
   return false;
 }
 
 bool SystemZAsmPrinter::PrintAsmMemoryOperand(const MachineInstr *MI,
                                               unsigned OpNo,
-                                              unsigned AsmVariant,
                                               const char *ExtraCode,
                                               raw_ostream &OS) {
   SystemZInstPrinter::printAddress(MI->getOperand(OpNo).getReg(),
@@ -651,6 +724,6 @@ void SystemZAsmPrinter::EmitEndOfAsmFile(Module &M) {
 }
 
 // Force static initialization.
-extern "C" void LLVMInitializeSystemZAsmPrinter() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeSystemZAsmPrinter() {
   RegisterAsmPrinter<SystemZAsmPrinter> X(getTheSystemZTarget());
 }

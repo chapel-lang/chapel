@@ -5,12 +5,31 @@ declare_args() {
   llvm_targets_to_build = "host"
 }
 
+# FIXME: Port the remaining targets.
+llvm_all_targets = [
+  "AArch64",
+  "AMDGPU",
+  "ARM",
+  "AVR",
+  "BPF",
+  "Hexagon",
+  "Lanai",
+  "Mips",
+  "NVPTX",
+  "PowerPC",
+  "RISCV",
+  "Sparc",
+  "SystemZ",
+  "WebAssembly",
+  "X86",
+]
+
 if (llvm_targets_to_build == "host") {
   if (host_cpu == "arm64") {
     llvm_targets_to_build = [ "AArch64" ]
   } else if (host_cpu == "arm") {
     llvm_targets_to_build = [ "ARM" ]
-  } else if (host_cpu == "pcc" || host_cpu == "pcc64") {
+  } else if (host_cpu == "ppc" || host_cpu == "ppc64") {
     llvm_targets_to_build = [ "PowerPC" ]
   } else if (host_cpu == "x86" || host_cpu == "x64") {
     llvm_targets_to_build = [ "X86" ]
@@ -18,20 +37,16 @@ if (llvm_targets_to_build == "host") {
     assert(false, "add your host_cpu above")
   }
 } else if (llvm_targets_to_build == "all") {
-  # FIXME: Port the remaining targets.
-  llvm_targets_to_build = [
-    "AArch64",
-    "ARM",
-    "PowerPC",
-    "WebAssembly",
-    "X86",
-  ]
+  llvm_targets_to_build = llvm_all_targets
 }
 
 # Validate that llvm_targets_to_build is set to a list of valid targets,
-# and remember which targets are built.
+# and remember which targets are built where needed (for conditionally-built
+# unittest targets).
 llvm_build_AArch64 = false
 llvm_build_ARM = false
+llvm_build_BPF = false
+llvm_build_Mips = false
 llvm_build_PowerPC = false
 llvm_build_WebAssembly = false
 llvm_build_X86 = false
@@ -40,15 +55,27 @@ foreach(target, llvm_targets_to_build) {
     llvm_build_AArch64 = true
   } else if (target == "ARM") {
     llvm_build_ARM = true
+  } else if (target == "BPF") {
+    llvm_build_BPF = true
+  } else if (target == "Mips") {
+    llvm_build_Mips = true
   } else if (target == "PowerPC") {
     llvm_build_PowerPC = true
   } else if (target == "WebAssembly") {
     llvm_build_WebAssembly = true
   } else if (target == "X86") {
     llvm_build_X86 = true
+  } else if (target == "AMDGPU" || target == "AVR" || target == "Hexagon" ||
+             target == "Lanai" || target == "NVPTX" || target == "RISCV" ||
+             target == "Sparc" || target == "SystemZ") {
+    # Nothing to do.
   } else {
-    # FIXME: Port the remaining targets.
-    assert(false, "Unknown target '$target'.")
+    all_targets_string = ""
+    foreach(target, llvm_all_targets) {
+      all_targets_string += "$0x0a    " + target
+    }
+    assert(false, "Unknown target '$target' in llvm_targets_to_build. " +
+                      "Known targets:" + all_targets_string)
   }
 }
 
@@ -57,8 +84,8 @@ if (host_cpu == "arm64") {
   native_target = "AArch64"
 } else if (host_cpu == "arm") {
   native_target = "ARM"
-} else if (host_cpu == "pcc" || host_cpu == "pcc64") {
-  native_target = [ "PowerPC" ]
+} else if (host_cpu == "ppc" || host_cpu == "ppc64") {
+  native_target = "PowerPC"
 } else if (host_cpu == "x86" || host_cpu == "x64") {
   native_target = "X86"
 } else {

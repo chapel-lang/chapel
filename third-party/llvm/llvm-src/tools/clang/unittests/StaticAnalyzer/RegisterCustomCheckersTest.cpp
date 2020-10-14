@@ -1,9 +1,8 @@
 //===- unittests/StaticAnalyzer/RegisterCustomCheckersTest.cpp ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,7 +30,7 @@ class TestAction : public ASTFrontendAction {
     void FlushDiagnosticsImpl(std::vector<const PathDiagnostic *> &Diags,
                               FilesMade *filesMade) override {
       for (const auto *PD : Diags)
-        Output << PD->getCheckName() << ":" << PD->getShortDescription();
+        Output << PD->getCheckerName() << ":" << PD->getShortDescription();
     }
 
     StringRef getName() const override { return "Test"; }
@@ -47,7 +46,7 @@ public:
     std::unique_ptr<AnalysisASTConsumer> AnalysisConsumer =
         CreateAnalysisConsumer(Compiler);
     AnalysisConsumer->AddDiagnosticConsumer(new DiagConsumer(DiagsOutput));
-    Compiler.getAnalyzerOpts()->CheckersControlList = {
+    Compiler.getAnalyzerOpts()->CheckersAndPackages = {
         {"custom.CustomChecker", true}};
     AnalysisConsumer->AddCheckerRegistrationFn([](CheckerRegistry &Registry) {
       Registry.addChecker<CheckerT>("custom.CustomChecker", "Description", "");
@@ -59,7 +58,8 @@ public:
 template <typename CheckerT>
 bool runCheckerOnCode(const std::string &Code, std::string &Diags) {
   llvm::raw_string_ostream OS(Diags);
-  return tooling::runToolOnCode(new TestAction<CheckerT>(OS), Code);
+  return tooling::runToolOnCode(std::make_unique<TestAction<CheckerT>>(OS),
+                                Code);
 }
 template <typename CheckerT>
 bool runCheckerOnCode(const std::string &Code) {
@@ -89,8 +89,9 @@ public:
   void checkLocation(SVal Loc, bool IsLoad, const Stmt *S,
                      CheckerContext &C) const {
     auto UnaryOp = dyn_cast<UnaryOperator>(S);
-    if (UnaryOp && !IsLoad)
+    if (UnaryOp && !IsLoad) {
       EXPECT_FALSE(UnaryOp->isIncrementOp());
+    }
   }
 };
 

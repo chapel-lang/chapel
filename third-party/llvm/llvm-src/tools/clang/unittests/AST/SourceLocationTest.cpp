@@ -1,9 +1,8 @@
 //===- unittest/AST/SourceLocationTest.cpp - AST source loc unit tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -647,6 +646,112 @@ TEST(FunctionDecl, FunctionDeclWithNoExceptSpecification) {
       "void f() noexcept(false);\n",
       functionDecl(),
       Language::Lang_CXX11));
+}
+
+class FunctionDeclParametersRangeVerifier : public RangeVerifier<FunctionDecl> {
+protected:
+  SourceRange getRange(const FunctionDecl &Function) override {
+    return Function.getParametersSourceRange();
+  }
+};
+
+TEST(FunctionDeclParameters, FunctionDeclOnlyVariadic) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 8);
+  EXPECT_TRUE(Verifier.match("void f(...);\n", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclVariadic) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 15);
+  EXPECT_TRUE(Verifier.match("void f(int a, ...);\n", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclMacroVariadic) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(2, 8, 1, 18);
+  EXPECT_TRUE(Verifier.match("#define VARIADIC ...\n"
+                             "void f(int a, VARIADIC);\n",
+                             functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclMacroParams) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 16, 2, 20);
+  EXPECT_TRUE(Verifier.match("#define PARAMS int a, int b\n"
+                             "void f(PARAMS, int c);",
+                             functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclSingleParameter) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 12);
+  EXPECT_TRUE(Verifier.match("void f(int a);\n", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, MemberFunctionDecl) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(2, 8, 2, 12);
+  EXPECT_TRUE(Verifier.match("class A{\n"
+                             "void f(int a);\n"
+                             "};",
+                             functionDecl()));
+}
+
+TEST(FunctionDeclParameters, MemberFunctionDeclVariadic) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(2, 8, 2, 15);
+  EXPECT_TRUE(Verifier.match("class A{\n"
+                             "void f(int a, ...);\n"
+                             "};",
+                             functionDecl()));
+}
+
+TEST(FunctionDeclParameters, StaticFunctionDecl) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(2, 15, 2, 19);
+  EXPECT_TRUE(Verifier.match("class A{\n"
+                             "static void f(int a);\n"
+                             "};",
+                             functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclMultipleParameters) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 28);
+  EXPECT_TRUE(
+      Verifier.match("void f(int a, int b, char *c);\n", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclWithDefaultValue) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 16);
+  EXPECT_TRUE(Verifier.match("void f(int a = 5);\n", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclWithVolatile) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 22);
+  EXPECT_TRUE(Verifier.match("void f(volatile int *i);", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclWithConstParam) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 19);
+  EXPECT_TRUE(Verifier.match("void f(const int *i);", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclWithConstVolatileParam) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 28);
+  EXPECT_TRUE(Verifier.match("void f(const volatile int *i);", functionDecl()));
+}
+
+TEST(FunctionDeclParameters, FunctionDeclWithParamAttribute) {
+  FunctionDeclParametersRangeVerifier Verifier;
+  Verifier.expectRange(1, 8, 1, 36);
+  EXPECT_TRUE(Verifier.match("void f(__attribute__((unused)) int a) {}",
+                             functionDecl()));
 }
 
 TEST(CXXMethodDecl, CXXMethodDeclWithThrowSpecification) {

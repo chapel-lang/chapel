@@ -1,9 +1,8 @@
 //===- ForceFunctionAttrs.cpp - Force function attrs for debugging --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,8 @@
 #include "llvm/IR/Function.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
@@ -58,6 +59,7 @@ static Attribute::AttrKind parseAttrKind(StringRef Kind) {
       .Case("sanitize_hwaddress", Attribute::SanitizeHWAddress)
       .Case("sanitize_memory", Attribute::SanitizeMemory)
       .Case("sanitize_thread", Attribute::SanitizeThread)
+      .Case("sanitize_memtag", Attribute::SanitizeMemTag)
       .Case("speculative_load_hardening", Attribute::SpeculativeLoadHardening)
       .Case("ssp", Attribute::StackProtect)
       .Case("sspreq", Attribute::StackProtectReq)

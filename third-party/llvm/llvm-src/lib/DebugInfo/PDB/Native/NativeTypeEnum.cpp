@@ -1,9 +1,8 @@
 //===- NativeTypeEnum.cpp - info about enum type ----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -164,14 +163,14 @@ void NativeTypeEnum::dump(raw_ostream &OS, int Indent,
 std::unique_ptr<IPDBEnumSymbols>
 NativeTypeEnum::findChildren(PDB_SymType Type) const {
   if (Type != PDB_SymType::Data)
-    return llvm::make_unique<NullEnumerator<PDBSymbol>>();
+    return std::make_unique<NullEnumerator<PDBSymbol>>();
 
   const NativeTypeEnum *ClassParent = nullptr;
   if (!Modifiers)
     ClassParent = this;
   else
     ClassParent = UnmodifiedType;
-  return llvm::make_unique<NativeEnumEnumEnumerators>(Session, *ClassParent);
+  return std::make_unique<NativeEnumEnumEnumerators>(Session, *ClassParent);
 }
 
 PDB_SymType NativeTypeEnum::getSymTag() const { return PDB_SymType::Enum; }

@@ -21,8 +21,8 @@
 // ChapelReduce.chpl
 //
 module ChapelReduce {
-  private use ChapelStandard;
-  private use ChapelLocks;
+  use ChapelStandard;
+  use ChapelLocks;
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;

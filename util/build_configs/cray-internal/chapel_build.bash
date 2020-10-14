@@ -48,7 +48,7 @@ Usage: $( basename "${BASH_SOURCE[0]}" )" '[options]
                             package version string to be generated in this script.
                           Alphanumeric/underscore chars only.
                           Default value: current hostname. See NOTES below.
-    -R rel_name         : Shasta RPM release name, synthesized if not given
+    -R rel_name         : HPE Cray EX RPM release name, synthesized if not given
     -r rc_number        : Release candidate number (0,1,2,...9)
                           Default: 0
     -o outputs  : Where to deliver the Chapel RPM file created by this script.
@@ -154,7 +154,7 @@ bash "$setenv" $verbose $dry_run
 
 # Create the Chapel package
 
-if [ "$chpl_platform" = cray-shasta ]; then
+if [ "$chpl_platform" = hpe-cray-ex ]; then
     rpm_id_option="-R $rel_name"
 else
     rpm_id_option="-r $rc_number"

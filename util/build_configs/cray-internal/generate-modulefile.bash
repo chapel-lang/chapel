@@ -41,10 +41,8 @@ if { [ info exists env(CRAYPE_DIR) ]} {
     set start_path "/opt/cray/craype"
 } elseif { [ file exists "/opt/cray/pe/craype" ]} { # SLES12?
     set start_path "/opt/cray/pe/craype"
-} elseif { [ file exists "/opt/cray/xt-asyncpe" ]} {
-    set start_path "/opt/cray/xt-asyncpe"
 } else {
-    puts stderr "Either craype/1.05 or later or xt-asyncpe/5.21 or later  are required."
+    puts stderr "craype is required."
     exit 1
 }
 
@@ -57,7 +55,7 @@ if { [file exists "$latest_module/admin/bin/modulefile-utils.tcl" ]} {
     source $latest_module/admin/bin/modulefile-utils.tcl
 } else {
     puts stderr "Error: could not find modulefile-utils.tcl."
-    puts stderr "Either craype/1.05 or later  or xt-asyncpe/5.21 or later are required."
+    puts stderr "craype is required."
     exit 1
 }
 
@@ -72,13 +70,12 @@ proc ModulesHelp { } {
 conflicts cray-mpich2 < 7.0.0
 conflicts xt-mpich2 < 6.0.0
 conflict chapel
-#conflict gcc
 
 ##
 ## Now, we're going to attempt to get to the right build type
 ###
 #
-set network seastar
+set network aries
 if { [ info exists env(XTPE_NETWORK_TARGET) ] } {
     set network $env(XTPE_NETWORK_TARGET)
 } elseif { [ info exists env(CRAYPE_NETWORK_TARGET) ] } {
@@ -89,9 +86,9 @@ setenv MPICH_GNI_DYNAMIC_CONN disabled
 if { [string match aries $network] } {
     set CHPL_HOST_PLATFORM cray-xc
 } elseif { [string match ofi $network] } {
-    set CHPL_HOST_PLATFORM cray-shasta
+    set CHPL_HOST_PLATFORM hpe-cray-ex
 } elseif { [string match slingshot* $network] } {
-    set CHPL_HOST_PLATFORM cray-shasta
+    set CHPL_HOST_PLATFORM hpe-cray-ex
 }
 if { ! [info exists CHPL_HOST_PLATFORM] } {
     puts stderr "Cannot determine host platform"
@@ -100,13 +97,17 @@ if { ! [info exists CHPL_HOST_PLATFORM] } {
 if { [string match aarch64 $CHPL_HOST_ARCH] } {
     # ARM-based CPU, 2018-06-08
 } elseif { [string match x86_64 $CHPL_HOST_ARCH] } {
-    # Cray-XC/Shasta
+    # Cray-XC/HPE Cray EX
 
     # Load/unload cray-mpich if not previously loaded
 
-    set mpichLoaded [string match "*PE_MPICH*" $env(PE_PKGCONFIG_PRODUCTS)]
+    if { [ info exists env(PE_PKGCONFIG_PRODUCTS) ] } {
+        set mpichLoaded [string match "*PE_MPICH*" $env(PE_PKGCONFIG_PRODUCTS)]
+    } else {
+        set mpichLoaded 0
+    }
     # Logic for mpich is split into loading and unloading phases
-    if { !([is-loaded chapel] == 1) }  {
+    if { [ module-info mode load ] } {
         # Loading chapel
 
         if {$mpichLoaded} {
@@ -135,14 +136,16 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 
 if { ! [ info exists env(PE_ENV) ] } {
     module load PrgEnv-gnu
+    set compiler GNU
+} else {
+    set compiler $env(PE_ENV)
 }
 
-set compiler $env(PE_ENV)
 
-if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
-    # Interim settings for Shasta systems.
+if { [string match hpe-cray-ex $CHPL_HOST_PLATFORM] } {
+    # Interim settings for HPE Cray EX systems.
 
-    # So far we only have gnu-based Chapel for Shasta.
+    # So far we only have gnu-based Chapel for EX.
     if { [string equal -nocase cray $compiler] } {
         module swap PrgEnv-cray PrgEnv-gnu
     } elseif { [string equal -nocase intel $compiler] } {
@@ -151,21 +154,12 @@ if { [string match cray-shasta $CHPL_HOST_PLATFORM] } {
         module swap PrgEnv-pgi PrgEnv-gnu
     }
 
-    # Some libraries are not yet available in static form.
+    # Some libraries are not available in static form.
     setenv CRAYPE_LINK_TYPE dynamic
 
-    # Work around libfabric module not setting everything we need yet:
-    # set LIBFABRIC_DIR to the parent of libfabric's PATH entry.
     if { ! [info exists env(LOADEDMODULES)] ||
          ! [string match *libfabric* $env(LOADEDMODULES)] } {
         module load libfabric
-    }
-    if { [info exists env(PATH)] &&
-         [regsub {^(.*:)?([^:]*libfabric[^:]*)/bin.*} $env(PATH) {\2} lfp] == 1
-       } {
-        setenv LIBFABRIC_DIR $lfp
-    } else {
-        puts stderr "Error: Cannot find libfabric path"
     }
 }
 
@@ -180,11 +174,10 @@ if { [ file exists $CHPL_LOC/release_info ] } {
     set REL_INFO ""
 }
 
-# The default comm layer on X* for Chapel version 1.11+ is ugni, which requires a
-# craype-hugepages module in order to link correctly. If CHPL_COMM is not set
-# in the environment or is set to ugni, make sure there is a craype-hugepages
-# module loaded. Use craype-hugepages16M if a craype-hugepages module is not
-# already loaded.
+# The default comm layer on cray-x* is ugni, which requires a craype-hugepages
+# module for performance.  If CHPL_COMM is not set in the environment or is set
+# to ugni, make sure there is a craype-hugepages module loaded. Use
+# craype-hugepages16M if a craype-hugepages module is not already loaded.
 if { [info exists env(CHPL_COMM)] } {
     set chpl_comm $env(CHPL_COMM)
 } elseif { [string match cray-x* $CHPL_HOST_PLATFORM] } {
@@ -195,7 +188,7 @@ if { [info exists env(CHPL_COMM)] } {
 
 set hugepagesLoaded [string match "*HUGETLB*" $env(PE_PRODUCT_LIST)]
 # Logic for hugepages is split into loading and unloading phases
-if { !([is-loaded chapel] == 1) }  {
+if { [ module-info mode load ] } {
     # Loading chapel
 
     if {$hugepagesLoaded} {
@@ -203,8 +196,7 @@ if { !([is-loaded chapel] == 1) }  {
     }
 
     # Check to see if we require hugepages
-    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) &&
-         ([string equal -nocase GNU $compiler] || [string equal -nocase INTEL $compiler] || [string equal -nocase CRAY $compiler]) } {
+    if { ([string equal UNSET-WILL-BE-UGNI $chpl_comm] || [string equal ugni $chpl_comm]) } {
 
         if {! $hugepagesLoaded} {
             module load craype-hugepages16M

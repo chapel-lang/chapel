@@ -89,12 +89,12 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_BLOCK_LOCAL:
         return FAST_AND_LOCAL;
 
-      // By themselves, loops are considered "fast".
+      // Loops can have arbitrary trip counts, don't consider fast
       case PRIM_BLOCK_WHILEDO_LOOP:
       case PRIM_BLOCK_DOWHILE_LOOP:
       case PRIM_BLOCK_FOR_LOOP:
       case PRIM_BLOCK_C_FOR_LOOP:
-        return FAST_AND_LOCAL;
+        return LOCAL_NOT_FAST;
 
       default:
         INT_FATAL("primitive should have been removed from the tree by now.");
@@ -253,7 +253,6 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_TESTCID:
   case PRIM_GETCID:
   case PRIM_ARRAY_GET:
-  case PRIM_ARRAY_GET_VALUE:
   case PRIM_DYNAMIC_CAST:
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       return FAST_AND_LOCAL;
@@ -462,6 +461,18 @@ markFastSafeFn(FnSymbol *fn, int recurse, std::set<FnSymbol*>& visited) {
           maybefast = false;
         }
         // otherwise, possibly still fast.
+      }
+    }
+  }
+
+  // Loops can have arbitrary trip counts, don't consider fast
+  std::vector<Expr*> stmts;
+  collect_stmts(fn->body, stmts);
+  for_vector(Expr, stmt, stmts) {
+    if (BlockStmt* block = toBlockStmt(stmt)) {
+      if (block->isLoopStmt()) {
+        maybefast = false;
+        break;
       }
     }
   }

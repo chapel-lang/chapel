@@ -28,11 +28,10 @@ prime_parse(c, val);
 writeln();
 
 proc prime_parse(val, isProbPrime) {
-  select isProbPrime {
-    when 0 do writeln(val, " not prime");
-    when 1 do writeln(val, " probably prime");
-    when 2 do writeln(val, " definitely prime");
-  }
+  if isProbPrime == 0 then
+    writeln(val, " not prime");
+  if isProbPrime == 1 || isProbPrime == 2 then
+    writeln(val, " prime or probably prime");
 }
 
 

@@ -1,7 +1,7 @@
 ;;; chpl-mode.el --- Major mode for editing Chapel code
 
 ;; Author:     2007 Steven T Balensiefer
-;; Maintainer: Chapel group <chapel_info@cray.com>
+;; Maintainer: Chapel group
 ;; Created:    December 2002
 ;; Version:    0.7
 ;; Keywords:   Chapel languages oop

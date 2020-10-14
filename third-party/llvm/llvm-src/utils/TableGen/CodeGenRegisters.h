@@ -1,9 +1,8 @@
 //===- CodeGenRegisters.h - Register and RegisterClass Info -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -94,7 +93,8 @@ namespace llvm {
 
     // Map of composite subreg indices.
     typedef std::map<CodeGenSubRegIndex *, CodeGenSubRegIndex *,
-                     deref<llvm::less>> CompMap;
+                     deref<std::less<>>>
+        CompMap;
 
     // Returns the subreg index that results from composing this with Idx.
     // Returns NULL if this and Idx don't compose.
@@ -138,14 +138,13 @@ namespace llvm {
     /// list of subregisters they are composed of (if any). Do this recursively.
     void computeConcatTransitiveClosure();
 
+    bool operator<(const CodeGenSubRegIndex &RHS) const {
+      return this->EnumValue < RHS.EnumValue;
+    }
+
   private:
     CompMap Composed;
   };
-
-  inline bool operator<(const CodeGenSubRegIndex &A,
-                        const CodeGenSubRegIndex &B) {
-    return A.EnumValue < B.EnumValue;
-  }
 
   /// CodeGenRegister - Represents a register definition.
   struct CodeGenRegister {
@@ -157,7 +156,8 @@ namespace llvm {
     bool Artificial;
 
     // Map SubRegIndex -> Register.
-    typedef std::map<CodeGenSubRegIndex *, CodeGenRegister *, deref<llvm::less>>
+    typedef std::map<CodeGenSubRegIndex *, CodeGenRegister *,
+                     deref<std::less<>>>
         SubRegMap;
 
     CodeGenRegister(Record *R, unsigned Enum);
@@ -347,6 +347,10 @@ namespace llvm {
     std::string getQualifiedName() const;
     ArrayRef<ValueTypeByHwMode> getValueTypes() const { return VTs; }
     unsigned getNumValueTypes() const { return VTs.size(); }
+
+    bool hasType(const ValueTypeByHwMode &VT) const {
+      return std::find(VTs.begin(), VTs.end(), VT) != VTs.end();
+    }
 
     const ValueTypeByHwMode &getValueTypeNum(unsigned VTNum) const {
       if (VTNum < VTs.size())
@@ -631,9 +635,11 @@ namespace llvm {
     CodeGenSubRegIndex *
       getConcatSubRegIndex(const SmallVector<CodeGenSubRegIndex *, 8>&);
 
-    const std::deque<CodeGenRegister> &getRegisters() { return Registers; }
+    const std::deque<CodeGenRegister> &getRegisters() const {
+      return Registers;
+    }
 
-    const StringMap<CodeGenRegister*> &getRegistersByName() {
+    const StringMap<CodeGenRegister *> &getRegistersByName() const {
       return RegistersByName;
     }
 
@@ -682,7 +688,7 @@ namespace llvm {
     // Native units are the singular unit of a leaf register. Register aliasing
     // is completely characterized by native units. Adopted units exist to give
     // register additional weight but don't affect aliasing.
-    bool isNativeUnit(unsigned RUID) {
+    bool isNativeUnit(unsigned RUID) const {
       return RUID < NumNativeRegUnits;
     }
 
@@ -708,6 +714,13 @@ namespace llvm {
     /// classes have a superset-subset relationship and the same set of types,
     /// return the superclass.  Otherwise return null.
     const CodeGenRegisterClass* getRegClassForRegister(Record *R);
+
+    // Analog of TargetRegisterInfo::getMinimalPhysRegClass. Unlike
+    // getRegClassForRegister, this tries to find the smallest class containing
+    // the physical register. If \p VT is specified, it will only find classes
+    // with a matching type
+    const CodeGenRegisterClass *
+    getMinimalPhysRegClass(Record *RegRecord, ValueTypeByHwMode *VT = nullptr);
 
     // Get the sum of unit weights.
     unsigned getRegUnitSetWeight(const std::vector<unsigned> &Units) const {

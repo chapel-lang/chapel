@@ -12,11 +12,14 @@ testname = sys.argv[1]
 outfile = sys.argv[2]
 compflags = sys.argv[4].split(' ')
 genLLVM = False
-for i in range(len(compflags)):
-    if compflags[i] == '--llvm':
+for flag in compflags:
+    if flag == '--llvm':
         genLLVM = True
-        os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
-        break
+    elif flag == '--no-llvm':
+        genLLVM = False
+
+if genLLVM:
+    os.environ['CHPL_LLVM_CODEGEN'] = 'llvm'
 
 goodfile = testname+'.good'
 compver = 'Chapel compiler version:'
@@ -37,11 +40,17 @@ with open(outfile, 'w') as ofh:
             ofh.write(line)
 
 with open(goodfile, 'w') as gfh:
-    # might have to leave this off if too troublesome to maintain
-    if genLLVM:
-        gfh.write('Compilation command: chpl -o about --cc-warnings --llvm about.chpl \n')
-    else:
-        gfh.write('Compilation command: chpl -o about --cc-warnings about.chpl \n')
+    flags_str = ""
+    first_flag = True
+    for flag in compflags:
+        if flag == '':
+            continue
+        if not first_flag:
+            flags_str += " "
+        first_flag = False
+        flags_str += flag
+
+    gfh.write('Compilation command: chpl -o about %s about.chpl \n'%(flags_str))
     gfh.write('Chapel compiler version:\n')
     gfh.write('Chapel environment:\n')
     gfh.write('  CHPL_HOME: %s\n'%(chpl_home))

@@ -1,9 +1,8 @@
 //===-- X86PfmCounters.td - X86 Hardware Counters ----------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -82,14 +81,14 @@ def HaswellPfmCounters : ProcPfmCounters {
   let CycleCounter = UnhaltedCoreCyclesPfmCounter;
   let UopsCounter = UopsIssuedPfmCounter;
   let IssueCounters = [
-    PfmIssueCounter<"HWPort0", "uops_dispatched_port:port_0">,
-    PfmIssueCounter<"HWPort1", "uops_dispatched_port:port_1">,
-    PfmIssueCounter<"HWPort2", "uops_dispatched_port:port_2">,
-    PfmIssueCounter<"HWPort3", "uops_dispatched_port:port_3">,
-    PfmIssueCounter<"HWPort4", "uops_dispatched_port:port_4">,
-    PfmIssueCounter<"HWPort5", "uops_dispatched_port:port_5">,
-    PfmIssueCounter<"HWPort6", "uops_dispatched_port:port_6">,
-    PfmIssueCounter<"HWPort7", "uops_dispatched_port:port_7">
+    PfmIssueCounter<"HWPort0", "uops_executed_port:port_0">,
+    PfmIssueCounter<"HWPort1", "uops_executed_port:port_1">,
+    PfmIssueCounter<"HWPort2", "uops_executed_port:port_2">,
+    PfmIssueCounter<"HWPort3", "uops_executed_port:port_3">,
+    PfmIssueCounter<"HWPort4", "uops_executed_port:port_4">,
+    PfmIssueCounter<"HWPort5", "uops_executed_port:port_5">,
+    PfmIssueCounter<"HWPort6", "uops_executed_port:port_6">,
+    PfmIssueCounter<"HWPort7", "uops_executed_port:port_7">
   ];
 }
 def : PfmCountersBinding<"haswell", HaswellPfmCounters>;

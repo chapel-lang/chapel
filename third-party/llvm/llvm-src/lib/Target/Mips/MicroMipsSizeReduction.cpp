@@ -1,9 +1,8 @@
 //=== MicroMipsSizeReduction.cpp - MicroMips size reduction pass --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///\file
@@ -362,7 +361,7 @@ static bool CheckXWPInstr(MachineInstr *MI, bool ReduceToLwp,
         MI->getOpcode() == Mips::SW16_MM))
     return false;
 
-  unsigned reg = MI->getOperand(0).getReg();
+  Register reg = MI->getOperand(0).getReg();
   if (reg == Mips::RA)
     return false;
 
@@ -404,8 +403,8 @@ static bool ConsecutiveInstr(MachineInstr *MI1, MachineInstr *MI2) {
   if (!GetImm(MI2, 2, Offset2))
     return false;
 
-  unsigned Reg1 = MI1->getOperand(0).getReg();
-  unsigned Reg2 = MI2->getOperand(0).getReg();
+  Register Reg1 = MI1->getOperand(0).getReg();
+  Register Reg2 = MI2->getOperand(0).getReg();
 
   return ((Offset1 == (Offset2 - 4)) && (ConsecutiveRegisters(Reg1, Reg2)));
 }
@@ -476,8 +475,8 @@ bool MicroMipsSizeReduce::ReduceXWtoXWP(ReduceEntryFunArgs *Arguments) {
   if (!CheckXWPInstr(MI2, ReduceToLwp, Entry))
     return false;
 
-  unsigned Reg1 = MI1->getOperand(1).getReg();
-  unsigned Reg2 = MI2->getOperand(1).getReg();
+  Register Reg1 = MI1->getOperand(1).getReg();
+  Register Reg2 = MI2->getOperand(1).getReg();
 
   if (Reg1 != Reg2)
     return false;
@@ -622,8 +621,8 @@ bool MicroMipsSizeReduce::ReduceMoveToMovep(ReduceEntryFunArgs *Arguments) {
   MachineInstr *MI1 = Arguments->MI;
   MachineInstr *MI2 = &*NextMII;
 
-  unsigned RegDstMI1 = MI1->getOperand(0).getReg();
-  unsigned RegSrcMI1 = MI1->getOperand(1).getReg();
+  Register RegDstMI1 = MI1->getOperand(0).getReg();
+  Register RegSrcMI1 = MI1->getOperand(1).getReg();
 
   if (!IsMovepSrcRegister(RegSrcMI1))
     return false;
@@ -634,8 +633,8 @@ bool MicroMipsSizeReduce::ReduceMoveToMovep(ReduceEntryFunArgs *Arguments) {
   if (MI2->getOpcode() != Entry.WideOpc())
     return false;
 
-  unsigned RegDstMI2 = MI2->getOperand(0).getReg();
-  unsigned RegSrcMI2 = MI2->getOperand(1).getReg();
+  Register RegDstMI2 = MI2->getOperand(0).getReg();
+  Register RegSrcMI2 = MI2->getOperand(1).getReg();
 
   if (!IsMovepSrcRegister(RegSrcMI2))
     return false;

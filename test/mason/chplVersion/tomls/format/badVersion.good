@@ -1,3 +1,4 @@
+Skipping registry update since no dependency found in manifest file.
 Invalid chplVersion in package 'badVersion-0.1.0': 1.2.3.4.5
 Details: Invalid Chapel version format: 1.2.3.4.5
 

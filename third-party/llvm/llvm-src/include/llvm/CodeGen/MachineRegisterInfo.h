@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/MachineRegisterInfo.h -----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -108,16 +107,16 @@ private:
 
   /// getRegUseDefListHead - Return the head pointer for the register use/def
   /// list for the specified virtual or physical register.
-  MachineOperand *&getRegUseDefListHead(unsigned RegNo) {
-    if (TargetRegisterInfo::isVirtualRegister(RegNo))
-      return VRegInfo[RegNo].second;
-    return PhysRegUseDefLists[RegNo];
+  MachineOperand *&getRegUseDefListHead(Register RegNo) {
+    if (RegNo.isVirtual())
+      return VRegInfo[RegNo.id()].second;
+    return PhysRegUseDefLists[RegNo.id()];
   }
 
-  MachineOperand *getRegUseDefListHead(unsigned RegNo) const {
-    if (TargetRegisterInfo::isVirtualRegister(RegNo))
-      return VRegInfo[RegNo].second;
-    return PhysRegUseDefLists[RegNo];
+  MachineOperand *getRegUseDefListHead(Register RegNo) const {
+    if (RegNo.isVirtual())
+      return VRegInfo[RegNo.id()].second;
+    return PhysRegUseDefLists[RegNo.id()];
   }
 
   /// Get the next element in the use-def chain.
@@ -215,8 +214,8 @@ public:
   bool shouldTrackSubRegLiveness(const TargetRegisterClass &RC) const {
     return subRegLivenessEnabled() && RC.HasDisjunctSubRegs;
   }
-  bool shouldTrackSubRegLiveness(unsigned VReg) const {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg) && "Must pass a VReg");
+  bool shouldTrackSubRegLiveness(Register VReg) const {
+    assert(VReg.isVirtual() && "Must pass a VReg");
     return shouldTrackSubRegLiveness(*getRegClass(VReg));
   }
   bool subRegLivenessEnabled() const {
@@ -327,7 +326,7 @@ public:
   /// of the specified register, skipping those marked as Debug.
   using reg_nodbg_iterator =
       defusechain_iterator<true, true, true, true, false, false>;
-  reg_nodbg_iterator reg_nodbg_begin(unsigned RegNo) const {
+  reg_nodbg_iterator reg_nodbg_begin(Register RegNo) const {
     return reg_nodbg_iterator(getRegUseDefListHead(RegNo));
   }
   static reg_nodbg_iterator reg_nodbg_end() {
@@ -375,7 +374,7 @@ public:
 
   /// reg_nodbg_empty - Return true if the only instructions using or defining
   /// Reg are Debug instructions.
-  bool reg_nodbg_empty(unsigned RegNo) const {
+  bool reg_nodbg_empty(Register RegNo) const {
     return reg_nodbg_begin(RegNo) == reg_nodbg_end();
   }
 
@@ -562,9 +561,14 @@ public:
   }
 
   /// hasOneNonDBGUse - Return true if there is exactly one non-Debug
-  /// instruction using the specified register.
+  /// use of the specified register.
   bool hasOneNonDBGUse(unsigned RegNo) const;
 
+  /// hasOneNonDBGUse - Return true if there is exactly one non-Debug
+  /// instruction using the specified register. Said instruction may have
+  /// multiple uses.
+  bool hasOneNonDBGUser(unsigned RegNo) const;
+  
   /// replaceRegWith - Replace all instances of FromReg with ToReg in the
   /// machine function.  This is like llvm-level X->replaceAllUsesWith(Y),
   /// except that it also changes any definitions of the register as well.
@@ -624,10 +628,10 @@ public:
   /// Return the register class of the specified virtual register.
   /// This shouldn't be used directly unless \p Reg has a register class.
   /// \see getRegClassOrNull when this might happen.
-  const TargetRegisterClass *getRegClass(unsigned Reg) const {
-    assert(VRegInfo[Reg].first.is<const TargetRegisterClass *>() &&
+  const TargetRegisterClass *getRegClass(Register Reg) const {
+    assert(VRegInfo[Reg.id()].first.is<const TargetRegisterClass *>() &&
            "Register class not set, wrong accessor");
-    return VRegInfo[Reg].first.get<const TargetRegisterClass *>();
+    return VRegInfo[Reg.id()].first.get<const TargetRegisterClass *>();
   }
 
   /// Return the register class of \p Reg, or null if Reg has not been assigned
@@ -713,17 +717,17 @@ public:
 
   /// createVirtualRegister - Create and return a new virtual register in the
   /// function with the specified register class.
-  unsigned createVirtualRegister(const TargetRegisterClass *RegClass,
+  Register createVirtualRegister(const TargetRegisterClass *RegClass,
                                  StringRef Name = "");
 
   /// Create and return a new virtual register in the function with the same
   /// attributes as the given register.
-  unsigned cloneVirtualRegister(unsigned VReg, StringRef Name = "");
+  Register cloneVirtualRegister(Register VReg, StringRef Name = "");
 
   /// Get the low-level type of \p Reg or LLT{} if Reg is not a generic
   /// (target independent) virtual register.
   LLT getType(unsigned Reg) const {
-    if (TargetRegisterInfo::isVirtualRegister(Reg) && VRegToType.inBounds(Reg))
+    if (Register::isVirtualRegister(Reg) && VRegToType.inBounds(Reg))
       return VRegToType[Reg];
     return LLT{};
   }
@@ -733,7 +737,7 @@ public:
 
   /// Create and return a new generic virtual register with low-level
   /// type \p Ty.
-  unsigned createGenericVirtualRegister(LLT Ty, StringRef Name = "");
+  Register createGenericVirtualRegister(LLT Ty, StringRef Name = "");
 
   /// Remove all types associated to virtual registers (after instruction
   /// selection and constraining of all generic virtual registers).
@@ -756,7 +760,7 @@ public:
   /// specified virtual register. This is typically used by target, and in case
   /// of an earlier hint it will be overwritten.
   void setRegAllocationHint(unsigned VReg, unsigned Type, unsigned PrefReg) {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg));
+    assert(Register::isVirtualRegister(VReg));
     RegAllocHints[VReg].first  = Type;
     RegAllocHints[VReg].second.clear();
     RegAllocHints[VReg].second.push_back(PrefReg);
@@ -765,7 +769,7 @@ public:
   /// addRegAllocationHint - Add a register allocation hint to the hints
   /// vector for VReg.
   void addRegAllocationHint(unsigned VReg, unsigned PrefReg) {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg));
+    assert(Register::isVirtualRegister(VReg));
     RegAllocHints[VReg].second.push_back(PrefReg);
   }
 
@@ -785,17 +789,18 @@ public:
   /// specified virtual register. If there are many hints, this returns the
   /// one with the greatest weight.
   std::pair<unsigned, unsigned>
-  getRegAllocationHint(unsigned VReg) const {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg));
-    unsigned BestHint = (RegAllocHints[VReg].second.size() ?
-                         RegAllocHints[VReg].second[0] : 0);
-    return std::pair<unsigned, unsigned>(RegAllocHints[VReg].first, BestHint);
+  getRegAllocationHint(Register VReg) const {
+    assert(VReg.isVirtual());
+    unsigned BestHint = (RegAllocHints[VReg.id()].second.size() ?
+                         RegAllocHints[VReg.id()].second[0] : 0);
+    return std::pair<unsigned, unsigned>(RegAllocHints[VReg.id()].first,
+                                         BestHint);
   }
 
   /// getSimpleHint - same as getRegAllocationHint except it will only return
   /// a target independent hint.
-  unsigned getSimpleHint(unsigned VReg) const {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg));
+  Register getSimpleHint(Register VReg) const {
+    assert(VReg.isVirtual());
     std::pair<unsigned, unsigned> Hint = getRegAllocationHint(VReg);
     return Hint.first ? 0 : Hint.second;
   }
@@ -804,7 +809,7 @@ public:
   /// register allocation hints for VReg.
   const std::pair<unsigned, SmallVector<unsigned, 4>>
   &getRegAllocationHints(unsigned VReg) const {
-    assert(TargetRegisterInfo::isVirtualRegister(VReg));
+    assert(Register::isVirtualRegister(VReg));
     return RegAllocHints[VReg];
   }
 
@@ -812,6 +817,17 @@ public:
   /// specified register as undefined which causes the DBG_VALUE to be
   /// deleted during LiveDebugVariables analysis.
   void markUsesInDebugValueAsUndef(unsigned Reg) const;
+
+  /// updateDbgUsersToReg - Update a collection of DBG_VALUE instructions
+  /// to refer to the designated register.
+  void updateDbgUsersToReg(unsigned Reg,
+                           ArrayRef<MachineInstr*> Users) const {
+    for (MachineInstr *MI : Users) {
+      assert(MI->isDebugInstr());
+      assert(MI->getOperand(0).isReg());
+      MI->getOperand(0).setReg(Reg);
+    }
+  }
 
   /// Return true if the specified register is modified in this function.
   /// This checks that no defining machine operands exist for the register or
@@ -878,8 +894,8 @@ public:
   ///
   /// Reserved registers may belong to an allocatable register class, but the
   /// target has explicitly requested that they are not used.
-  bool isReserved(unsigned PhysReg) const {
-    return getReservedRegs().test(PhysReg);
+  bool isReserved(Register PhysReg) const {
+    return getReservedRegs().test(PhysReg.id());
   }
 
   /// Returns true when the given register unit is considered reserved.
@@ -1160,7 +1176,7 @@ public:
 
   PSetIterator(unsigned RegUnit, const MachineRegisterInfo *MRI) {
     const TargetRegisterInfo *TRI = MRI->getTargetRegisterInfo();
-    if (TargetRegisterInfo::isVirtualRegister(RegUnit)) {
+    if (Register::isVirtualRegister(RegUnit)) {
       const TargetRegisterClass *RC = MRI->getRegClass(RegUnit);
       PSet = TRI->getRegClassPressureSets(RC);
       Weight = TRI->getRegClassWeight(RC).RegWeight;

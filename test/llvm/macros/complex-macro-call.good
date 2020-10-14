@@ -1,0 +1,1 @@
+complex-macro-call.chpl:1: error: Could not find C function for ComplexFnLike;  perhaps it is missing or is a macro?

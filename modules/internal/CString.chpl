@@ -29,12 +29,12 @@ module CString {
   //inline proc c_string.c_str() return this;
 
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string) : c_string {
+  inline proc chpl__initCopy(x: c_string, definedConst: bool) : c_string {
     return x;
   }
 
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string) : c_string {
+  inline proc chpl__autoCopy(x: c_string, definedConst: bool) : c_string {
     return x;
   }
 

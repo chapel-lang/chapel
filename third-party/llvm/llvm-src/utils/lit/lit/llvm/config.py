@@ -9,10 +9,6 @@ from lit.llvm.subst import FindTool
 from lit.llvm.subst import ToolSubst
 
 
-def binary_feature(on, feature, off_prefix):
-    return feature if on else off_prefix + feature
-
-
 class LLVMConfig(object):
 
     def __init__(self, lit_config, config):
@@ -58,7 +54,7 @@ class LLVMConfig(object):
         elif platform.system() == "Linux":
             features.add('system-linux')
         elif platform.system() in ['FreeBSD']:
-            config.available_features.add('system-freebsd')
+            features.add('system-freebsd')
         elif platform.system() == "NetBSD":
             features.add('system-netbsd')
 
@@ -73,13 +69,16 @@ class LLVMConfig(object):
         # Sanitizers.
         sanitizers = getattr(config, 'llvm_use_sanitizer', '')
         sanitizers = frozenset(x.lower() for x in sanitizers.split(';'))
-        features.add(binary_feature('address' in sanitizers, 'asan', 'not_'))
-        features.add(binary_feature('memory' in sanitizers, 'msan', 'not_'))
-        features.add(binary_feature(
-            'undefined' in sanitizers, 'ubsan', 'not_'))
+        if 'address' in sanitizers:
+            features.add('asan')
+        if 'memory' in sanitizers or 'memorywithorigins' in sanitizers:
+            features.add('msan')
+        if 'undefined' in sanitizers:
+            features.add('ubsan')
 
         have_zlib = getattr(config, 'have_zlib', None)
-        features.add(binary_feature(have_zlib, 'zlib', 'no'))
+        if have_zlib:
+            features.add('zlib')
 
         # Check if we should run long running tests.
         long_tests = lit_config.params.get('run_long_tests', None)
@@ -94,8 +93,14 @@ class LLVMConfig(object):
                         'ASAN_OPTIONS', 'detect_leaks=1', append_path=True)
             if re.match(r'^x86_64.*-linux', target_triple):
                 features.add('x86_64-linux')
-            if re.match(r'.*-windows-msvc$', target_triple):
-                features.add('target-windows')
+            if re.match(r'^i.86.*', target_triple):
+                features.add('target-x86')
+            elif re.match(r'^x86_64.*', target_triple):
+                features.add('target-x86_64')
+            elif re.match(r'^aarch64.*', target_triple):
+                features.add('target-aarch64')
+            elif re.match(r'^arm.*', target_triple):
+                features.add('target-arm')
 
         use_gmalloc = lit_config.params.get('use_gmalloc', None)
         if lit.util.pythonize_bool(use_gmalloc):
@@ -229,8 +234,8 @@ class LLVMConfig(object):
             major_version_number = int(version_regex.group(1))
             minor_version_number = int(version_regex.group(2))
             patch_version_number = int(version_regex.group(3))
-            if 'Apple LLVM' in version_string:
-                # Apple LLVM doesn't yet support LSan
+            if ('Apple LLVM' in version_string) or ('Apple clang' in version_string):
+                # Apple clang doesn't yet support LSan
                 return False
             else:
                 return major_version_number >= 5
@@ -401,7 +406,7 @@ class LLVMConfig(object):
         builtin_include_dir = self.get_clang_builtin_include_dir(self.config.clang)
         tool_substitutions = [
             ToolSubst('%clang', command=self.config.clang, extra_args=additional_flags),
-            ToolSubst('%clang_analyze_cc1', command='%clang_cc1', extra_args=['-analyze', '%analyze']+additional_flags),
+            ToolSubst('%clang_analyze_cc1', command='%clang_cc1', extra_args=['-analyze', '%analyze', '-setup-static-analyzer']+additional_flags),
             ToolSubst('%clang_cc1', command=self.config.clang, extra_args=['-cc1', '-internal-isystem', builtin_include_dir, '-nostdsysteminc']+additional_flags),
             ToolSubst('%clang_cpp', command=self.config.clang, extra_args=['--driver-mode=cpp']+additional_flags),
             ToolSubst('%clang_cl', command=self.config.clang, extra_args=['--driver-mode=cl']+additional_flags),
@@ -484,11 +489,11 @@ class LLVMConfig(object):
         was_found = ld_lld and lld_link and ld64_lld and wasm_ld
         tool_substitutions = []
         if ld_lld:
-            tool_substitutions.append(ToolSubst('ld.lld', command=ld_lld))
+            tool_substitutions.append(ToolSubst('ld\.lld', command=ld_lld))
         if lld_link:
             tool_substitutions.append(ToolSubst('lld-link', command=lld_link))
         if ld64_lld:
-            tool_substitutions.append(ToolSubst('ld64.lld', command=ld64_lld))
+            tool_substitutions.append(ToolSubst('ld64\.lld', command=ld64_lld))
         if wasm_ld:
             tool_substitutions.append(ToolSubst('wasm-ld', command=wasm_ld))
         self.add_tool_substitutions(tool_substitutions)

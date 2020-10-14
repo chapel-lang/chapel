@@ -1,9 +1,8 @@
 //===-- CoalesceBranches.cpp - Coalesce blocks with the same condition ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -24,6 +23,7 @@
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/Debug.h"
 
 using namespace llvm;
@@ -33,10 +33,6 @@ using namespace llvm;
 STATISTIC(NumBlocksCoalesced, "Number of blocks coalesced");
 STATISTIC(NumPHINotMoved, "Number of PHI Nodes that cannot be merged");
 STATISTIC(NumBlocksNotCoalesced, "Number of blocks not coalesced");
-
-namespace llvm {
-    void initializePPCBranchCoalescingPass(PassRegistry&);
-}
 
 //===----------------------------------------------------------------------===//
 //                               PPCBranchCoalescing
@@ -345,9 +341,10 @@ bool PPCBranchCoalescing::identicalOperands(
 
     if (Op1.isIdenticalTo(Op2)) {
       // filter out instructions with physical-register uses
-      if (Op1.isReg() && TargetRegisterInfo::isPhysicalRegister(Op1.getReg())
-        // If the physical register is constant then we can assume the value
-        // has not changed between uses.
+      if (Op1.isReg() &&
+          Register::isPhysicalRegister(Op1.getReg())
+          // If the physical register is constant then we can assume the value
+          // has not changed between uses.
           && !(Op1.isUse() && MRI->isConstantPhysReg(Op1.getReg()))) {
         LLVM_DEBUG(dbgs() << "The operands are not provably identical.\n");
         return false;
@@ -360,8 +357,8 @@ bool PPCBranchCoalescing::identicalOperands(
     // definition of the register produces the same value. If they produce the
     // same value, consider them to be identical.
     if (Op1.isReg() && Op2.isReg() &&
-        TargetRegisterInfo::isVirtualRegister(Op1.getReg()) &&
-        TargetRegisterInfo::isVirtualRegister(Op2.getReg())) {
+        Register::isVirtualRegister(Op1.getReg()) &&
+        Register::isVirtualRegister(Op2.getReg())) {
       MachineInstr *Op1Def = MRI->getVRegDef(Op1.getReg());
       MachineInstr *Op2Def = MRI->getVRegDef(Op2.getReg());
       if (TII->produceSameValue(*Op1Def, *Op2Def, MRI)) {
@@ -461,7 +458,7 @@ bool PPCBranchCoalescing::canMoveToEnd(const MachineInstr &MI,
                     << TargetMBB.getNumber() << "\n");
 
   for (auto &Use : MI.uses()) {
-    if (Use.isReg() && TargetRegisterInfo::isVirtualRegister(Use.getReg())) {
+    if (Use.isReg() && Register::isVirtualRegister(Use.getReg())) {
       MachineInstr *DefInst = MRI->getVRegDef(Use.getReg());
       if (DefInst->isPHI() && DefInst->getParent() == MI.getParent()) {
         LLVM_DEBUG(dbgs() << "    *** Cannot move this instruction ***\n");

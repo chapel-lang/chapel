@@ -167,7 +167,7 @@ uint64_t random_draw(double mu)
 {
   const double   two_pi      = 2.0*3.14159265358979323846;
   const uint64_t rand_max    = ULLONG_MAX;
-  const double   rand_div    = 1.0/ULLONG_MAX;
+  const double   rand_div    = 1.0/(double)ULLONG_MAX;
   const uint64_t denominator = UINT_MAX;
 
   static double   z0, z1;

@@ -1,9 +1,8 @@
 //===-- CodeTemplate.h ------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -24,7 +23,7 @@ namespace exegesis {
 
 // A template for an Instruction holding values for each of its Variables.
 struct InstructionTemplate {
-  InstructionTemplate(const Instruction &Instr);
+  InstructionTemplate(const Instruction *Instr);
 
   InstructionTemplate(const InstructionTemplate &);            // default
   InstructionTemplate &operator=(const InstructionTemplate &); // default
@@ -32,19 +31,22 @@ struct InstructionTemplate {
   InstructionTemplate &operator=(InstructionTemplate &&);      // default
 
   unsigned getOpcode() const;
-  llvm::MCOperand &getValueFor(const Variable &Var);
-  const llvm::MCOperand &getValueFor(const Variable &Var) const;
-  llvm::MCOperand &getValueFor(const Operand &Op);
-  const llvm::MCOperand &getValueFor(const Operand &Op) const;
+  MCOperand &getValueFor(const Variable &Var);
+  const MCOperand &getValueFor(const Variable &Var) const;
+  MCOperand &getValueFor(const Operand &Op);
+  const MCOperand &getValueFor(const Operand &Op) const;
   bool hasImmediateVariables() const;
+  const Instruction &getInstr() const { return *Instr; }
+  ArrayRef<MCOperand> getVariableValues() const { return VariableValues; }
 
-  // Builds an llvm::MCInst from this InstructionTemplate setting its operands
+  // Builds an MCInst from this InstructionTemplate setting its operands
   // to the corresponding variable values. Precondition: All VariableValues must
   // be set.
-  llvm::MCInst build() const;
+  MCInst build() const;
 
-  Instruction Instr;
-  llvm::SmallVector<llvm::MCOperand, 4> VariableValues;
+private:
+  const Instruction *Instr;
+  SmallVector<MCOperand, 4> VariableValues;
 };
 
 enum class ExecutionMode : uint8_t {
@@ -92,14 +94,14 @@ enum class ExecutionMode : uint8_t {
 bool isEnumValue(ExecutionMode Execution);
 
 // Returns a human readable string for the enum.
-llvm::StringRef getName(ExecutionMode Execution);
+StringRef getName(ExecutionMode Execution);
 
 // Returns a sequence of increasing powers of two corresponding to all the
 // Execution flags.
-llvm::ArrayRef<ExecutionMode> getAllExecutionBits();
+ArrayRef<ExecutionMode> getAllExecutionBits();
 
 // Decomposes Execution into individual set bits.
-llvm::SmallVector<ExecutionMode, 4> getExecutionModeBits(ExecutionMode);
+SmallVector<ExecutionMode, 4> getExecutionModeBits(ExecutionMode);
 
 LLVM_ENABLE_BITMASK_ENUMS_IN_NAMESPACE();
 
@@ -116,6 +118,8 @@ struct CodeTemplate {
   CodeTemplate &operator=(const CodeTemplate &) = delete;
 
   ExecutionMode Execution = ExecutionMode::UNKNOWN;
+  // See InstructionBenchmarkKey.::Config.
+  std::string Config;
   // Some information about how this template has been created.
   std::string Info;
   // The list of the instructions for this template.

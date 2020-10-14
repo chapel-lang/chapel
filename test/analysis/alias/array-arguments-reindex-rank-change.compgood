@@ -1,0 +1,12 @@
+noAliasSets: no-aliases for function main:
+  A no alias AA
+noAliasSets: no-aliases for function testA1:
+noAliasSets: no-aliases for function testA2:
+noAliasSets: no-aliases for function testN3:
+  a no ref alias b
+noAliasSets: no-aliases for function testN4:
+  a no ref alias b
+noAliasSets: no-aliases for function testN5:
+  a no ref alias b
+noAliasSets: no-aliases for function testN6:
+  a no ref alias b

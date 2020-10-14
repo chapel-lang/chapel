@@ -1,9 +1,8 @@
 //== TestAfterDivZeroChecker.cpp - Test after division by zero checker --*--==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -70,9 +69,9 @@ public:
     ID.Add(SFC);
   }
 
-  std::shared_ptr<PathDiagnosticPiece> VisitNode(const ExplodedNode *Succ,
-                                                 BugReporterContext &BRC,
-                                                 BugReport &BR) override;
+  PathDiagnosticPieceRef VisitNode(const ExplodedNode *Succ,
+                                   BugReporterContext &BRC,
+                                   PathSensitiveBugReport &BR) override;
 };
 
 class TestAfterDivZeroChecker
@@ -93,9 +92,9 @@ public:
 
 REGISTER_SET_WITH_PROGRAMSTATE(DivZeroMap, ZeroState)
 
-std::shared_ptr<PathDiagnosticPiece>
-DivisionBRVisitor::VisitNode(const ExplodedNode *Succ, 
-                             BugReporterContext &BRC, BugReport &BR) {
+PathDiagnosticPieceRef
+DivisionBRVisitor::VisitNode(const ExplodedNode *Succ, BugReporterContext &BRC,
+                             PathSensitiveBugReport &BR) {
   if (Satisfied)
     return nullptr;
 
@@ -168,12 +167,12 @@ void TestAfterDivZeroChecker::reportBug(SVal Val, CheckerContext &C) const {
     if (!DivZeroBug)
       DivZeroBug.reset(new BuiltinBug(this, "Division by zero"));
 
-    auto R = llvm::make_unique<BugReport>(
+    auto R = std::make_unique<PathSensitiveBugReport>(
         *DivZeroBug, "Value being compared against zero has already been used "
                      "for division",
         N);
 
-    R->addVisitor(llvm::make_unique<DivisionBRVisitor>(Val.getAsSymbol(),
+    R->addVisitor(std::make_unique<DivisionBRVisitor>(Val.getAsSymbol(),
                                                        C.getStackFrame()));
     C.emitReport(std::move(R));
   }
@@ -260,4 +259,8 @@ void TestAfterDivZeroChecker::checkBranchCondition(const Stmt *Condition,
 
 void ento::registerTestAfterDivZeroChecker(CheckerManager &mgr) {
   mgr.registerChecker<TestAfterDivZeroChecker>();
+}
+
+bool ento::shouldRegisterTestAfterDivZeroChecker(const LangOptions &LO) {
+  return true;
 }

@@ -925,7 +925,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       {
         mText += "{";
         appendExpr(expr->get(1), printingType);
-        for (int index = 2; index <= expr->numActuals(); index++)
+        
+        // last argument to chpl__buildDomainExpr is definedConst
+        for (int index = 2; index <= expr->numActuals()-1; index++)
         {
           mText += ", ";
           appendExpr(expr->get(index), printingType);

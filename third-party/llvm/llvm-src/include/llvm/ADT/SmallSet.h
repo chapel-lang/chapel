@@ -1,9 +1,8 @@
 //===- llvm/ADT/SmallSet.h - 'Normally small' sets --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -248,6 +247,31 @@ private:
 /// SmallPtrSet for performance.
 template <typename PointeeType, unsigned N>
 class SmallSet<PointeeType*, N> : public SmallPtrSet<PointeeType*, N> {};
+
+/// Equality comparison for SmallSet.
+///
+/// Iterates over elements of LHS confirming that each element is also a member
+/// of RHS, and that RHS contains no additional values.
+/// Equivalent to N calls to RHS.count.
+/// For small-set mode amortized complexity is O(N^2)
+/// For large-set mode amortized complexity is linear, worst case is O(N^2) (if
+/// every hash collides).
+template <typename T, unsigned LN, unsigned RN, typename C>
+bool operator==(const SmallSet<T, LN, C> &LHS, const SmallSet<T, RN, C> &RHS) {
+  if (LHS.size() != RHS.size())
+    return false;
+
+  // All elements in LHS must also be in RHS
+  return all_of(LHS, [&RHS](const T &E) { return RHS.count(E); });
+}
+
+/// Inequality comparison for SmallSet.
+///
+/// Equivalent to !(LHS == RHS). See operator== for performance notes.
+template <typename T, unsigned LN, unsigned RN, typename C>
+bool operator!=(const SmallSet<T, LN, C> &LHS, const SmallSet<T, RN, C> &RHS) {
+  return !(LHS == RHS);
+}
 
 } // end namespace llvm
 

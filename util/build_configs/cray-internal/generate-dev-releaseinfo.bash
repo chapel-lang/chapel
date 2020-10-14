@@ -69,9 +69,9 @@ Chapel $major.$minor
     Interested users are encouraged to ask questions and join
     discussions in a variety of forums (Stack Overflow, Gitter,
     mailing lists, etc.) listed at https://chapel-lang.org/users.html.
-    Questions about Chapel can be directed to the Chapel team at
-    chapel_info@cray.com.  To file bugs or feature requests against
-    Chapel, refer to \$CHPL_HOME/doc/html/usingchapel/bugs.html or
+    Questions about Chapel can be directed to the Chapel team.  To file
+    bugs or feature requests against Chapel, refer to
+    \$CHPL_HOME/doc/html/usingchapel/bugs.html or
     https://chapel-lang.org/bugs.html.
 
 
@@ -114,7 +114,7 @@ Dependencies:
 -------------
 
     Chapel $major.$minor is supported on the following Cray systems:
-    * Cray Shasta systems with CLE based on SLES15 or later
+    * HPE Cray EX systems with COS based on SLES15 or later
     * Cray XC systems with CLE 5.2UP04 or later
     * Cray CS systems running Red Hat, CentOS, or SuSE Linux
 
@@ -131,7 +131,7 @@ Installation instructions:
     Copy the Chapel RPM file to the current directory and execute
     the appropriate one of the following commands:
 
-      #On Cray Shasta systems (x86_64):
+      #On HPE Cray EX systems (x86_64):
       rpm -ivh chapel-$pkg_version-$rpm_release.x86_64.rpm
 
       #On Cray XC systems (x86_64):

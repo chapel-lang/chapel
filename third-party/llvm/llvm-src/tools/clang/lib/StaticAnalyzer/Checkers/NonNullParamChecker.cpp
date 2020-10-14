@@ -1,9 +1,8 @@
 //===--- NonNullParamChecker.cpp - Undefined arguments checker -*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,9 +35,11 @@ public:
 
   void checkPreCall(const CallEvent &Call, CheckerContext &C) const;
 
-  std::unique_ptr<BugReport>
-  genReportNullAttrNonNull(const ExplodedNode *ErrorN, const Expr *ArgE) const;
-  std::unique_ptr<BugReport>
+  std::unique_ptr<PathSensitiveBugReport>
+  genReportNullAttrNonNull(const ExplodedNode *ErrorN,
+                           const Expr *ArgE,
+                           unsigned IdxOfArg) const;
+  std::unique_ptr<PathSensitiveBugReport>
   genReportReferenceToNullPointer(const ExplodedNode *ErrorN,
                                   const Expr *ArgE) const;
 };
@@ -144,7 +145,7 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
 
         std::unique_ptr<BugReport> R;
         if (haveAttrNonNull)
-          R = genReportNullAttrNonNull(errorNode, ArgE);
+          R = genReportNullAttrNonNull(errorNode, ArgE, idx + 1);
         else if (haveRefTypeParam)
           R = genReportReferenceToNullPointer(errorNode, ArgE);
 
@@ -178,9 +179,10 @@ void NonNullParamChecker::checkPreCall(const CallEvent &Call,
   C.addTransition(state);
 }
 
-std::unique_ptr<BugReport>
+std::unique_ptr<PathSensitiveBugReport>
 NonNullParamChecker::genReportNullAttrNonNull(const ExplodedNode *ErrorNode,
-                                              const Expr *ArgE) const {
+                                              const Expr *ArgE,
+                                              unsigned IdxOfArg) const {
   // Lazily allocate the BugType object if it hasn't already been
   // created. Ownership is transferred to the BugReporter object once
   // the BugReport is passed to 'EmitWarning'.
@@ -188,21 +190,27 @@ NonNullParamChecker::genReportNullAttrNonNull(const ExplodedNode *ErrorNode,
     BTAttrNonNull.reset(new BugType(
         this, "Argument with 'nonnull' attribute passed null", "API"));
 
-  auto R = llvm::make_unique<BugReport>(
-      *BTAttrNonNull,
-      "Null pointer passed as an argument to a 'nonnull' parameter", ErrorNode);
+  llvm::SmallString<256> SBuf;
+  llvm::raw_svector_ostream OS(SBuf);
+  OS << "Null pointer passed to "
+     << IdxOfArg << llvm::getOrdinalSuffix(IdxOfArg)
+     << " parameter expecting 'nonnull'";
+
+  auto R =
+      std::make_unique<PathSensitiveBugReport>(*BTAttrNonNull, SBuf, ErrorNode);
   if (ArgE)
     bugreporter::trackExpressionValue(ErrorNode, ArgE, *R);
 
   return R;
 }
 
-std::unique_ptr<BugReport> NonNullParamChecker::genReportReferenceToNullPointer(
+std::unique_ptr<PathSensitiveBugReport>
+NonNullParamChecker::genReportReferenceToNullPointer(
     const ExplodedNode *ErrorNode, const Expr *ArgE) const {
   if (!BTNullRefArg)
     BTNullRefArg.reset(new BuiltinBug(this, "Dereference of null pointer"));
 
-  auto R = llvm::make_unique<BugReport>(
+  auto R = std::make_unique<PathSensitiveBugReport>(
       *BTNullRefArg, "Forming reference to null pointer", ErrorNode);
   if (ArgE) {
     const Expr *ArgEDeref = bugreporter::getDerefExpr(ArgE);
@@ -216,4 +224,8 @@ std::unique_ptr<BugReport> NonNullParamChecker::genReportReferenceToNullPointer(
 
 void ento::registerNonNullParamChecker(CheckerManager &mgr) {
   mgr.registerChecker<NonNullParamChecker>();
+}
+
+bool ento::shouldRegisterNonNullParamChecker(const LangOptions &LO) {
+  return true;
 }

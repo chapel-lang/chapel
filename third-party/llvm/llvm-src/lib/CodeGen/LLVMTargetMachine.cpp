@@ -1,9 +1,8 @@
 //===-- LLVMTargetMachine.cpp - Implement the LLVMTargetMachine class -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -49,8 +48,8 @@ void LLVMTargetMachine::initAsmInfo() {
   STI.reset(TheTarget.createMCSubtargetInfo(
       getTargetTriple().str(), getTargetCPU(), getTargetFeatureString()));
 
-  MCAsmInfo *TmpAsmInfo =
-      TheTarget.createMCAsmInfo(*MRI, getTargetTriple().str());
+  MCAsmInfo *TmpAsmInfo = TheTarget.createMCAsmInfo(
+      *MRI, getTargetTriple().str(), Options.MCOptions);
   // TargetSelect.h moved to a different directory between LLVM 2.9 and 3.0,
   // and if the old one gets included then MCAsmInfo will be NULL and
   // we'll crash later.
@@ -97,14 +96,15 @@ LLVMTargetMachine::getTargetTransformInfo(const Function &F) {
 /// addPassesToX helper drives creation and initialization of TargetPassConfig.
 static TargetPassConfig *
 addPassesToGenerateCode(LLVMTargetMachine &TM, PassManagerBase &PM,
-                        bool DisableVerify, MachineModuleInfo &MMI) {
+                        bool DisableVerify,
+                        MachineModuleInfoWrapperPass &MMIWP) {
   // Targets may override createPassConfig to provide a target-specific
   // subclass.
   TargetPassConfig *PassConfig = TM.createPassConfig(PM);
   // Set PassConfig options provided by TargetMachine.
   PassConfig->setDisableVerify(DisableVerify);
   PM.add(PassConfig);
-  PM.add(&MMI);
+  PM.add(&MMIWP);
 
   if (PassConfig->addISelPasses())
     return nullptr;
@@ -140,7 +140,7 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
 
     std::unique_ptr<MCAsmBackend> MAB(
         getTarget().createMCAsmBackend(STI, MRI, Options.MCOptions));
-    auto FOut = llvm::make_unique<formatted_raw_ostream>(Out);
+    auto FOut = std::make_unique<formatted_raw_ostream>(Out);
     MCStreamer *S = getTarget().createAsmStreamer(
         Context, std::move(FOut), Options.MCOptions.AsmVerbose,
         Options.MCOptions.MCUseDwarfDirectory, InstPrinter, std::move(MCE),
@@ -187,23 +187,31 @@ bool LLVMTargetMachine::addAsmPrinter(PassManagerBase &PM,
   return false;
 }
 
-bool LLVMTargetMachine::addPassesToEmitFile(PassManagerBase &PM,
-                                            raw_pwrite_stream &Out,
-                                            raw_pwrite_stream *DwoOut,
-                                            CodeGenFileType FileType,
-                                            bool DisableVerify,
-                                            MachineModuleInfo *MMI) {
+bool LLVMTargetMachine::addPassesToEmitFile(
+    PassManagerBase &PM, raw_pwrite_stream &Out, raw_pwrite_stream *DwoOut,
+    CodeGenFileType FileType, bool DisableVerify,
+    MachineModuleInfoWrapperPass *MMIWP) {
   // Add common CodeGen passes.
-  if (!MMI)
-    MMI = new MachineModuleInfo(this);
+  if (!MMIWP)
+    MMIWP = new MachineModuleInfoWrapperPass(this);
   TargetPassConfig *PassConfig =
-      addPassesToGenerateCode(*this, PM, DisableVerify, *MMI);
+      addPassesToGenerateCode(*this, PM, DisableVerify, *MMIWP);
   if (!PassConfig)
     return true;
 
   if (!TargetPassConfig::willCompleteCodeGenPipeline()) {
+    if (this->getTargetTriple().isOSAIX()) {
+      // On AIX, we might manifest MCSymbols during SDAG lowering. For MIR
+      // testing to be meaningful, we need to ensure that the symbols created
+      // are MCSymbolXCOFF variants, which requires that
+      // the TargetLoweringObjectFile instance has been initialized.
+      MCContext &Ctx = MMIWP->getMMI().getContext();
+      const_cast<TargetLoweringObjectFile &>(*this->getObjFileLowering())
+          .Initialize(Ctx, *this);
+    }
     PM.add(createPrintMIRPass(Out));
-  } else if (addAsmPrinter(PM, Out, DwoOut, FileType, MMI->getContext()))
+  } else if (addAsmPrinter(PM, Out, DwoOut, FileType,
+                           MMIWP->getMMI().getContext()))
     return true;
 
   PM.add(createFreeMachineFunctionPass());
@@ -219,15 +227,15 @@ bool LLVMTargetMachine::addPassesToEmitMC(PassManagerBase &PM, MCContext *&Ctx,
                                           raw_pwrite_stream &Out,
                                           bool DisableVerify) {
   // Add common CodeGen passes.
-  MachineModuleInfo *MMI = new MachineModuleInfo(this);
+  MachineModuleInfoWrapperPass *MMIWP = new MachineModuleInfoWrapperPass(this);
   TargetPassConfig *PassConfig =
-      addPassesToGenerateCode(*this, PM, DisableVerify, *MMI);
+      addPassesToGenerateCode(*this, PM, DisableVerify, *MMIWP);
   if (!PassConfig)
     return true;
   assert(TargetPassConfig::willCompleteCodeGenPipeline() &&
          "Cannot emit MC with limited codegen pipeline");
 
-  Ctx = &MMI->getContext();
+  Ctx = &MMIWP->getMMI().getContext();
   if (Options.MCOptions.MCSaveTempLabels)
     Ctx->setAllowTemporaryLabels(false);
 

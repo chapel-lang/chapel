@@ -2,6 +2,9 @@ Start of reverse file-order output
 This function is accessible!
 This function is accessible!
 This function is accessible!
+Start of UsesTheUser3's module-level code
+This function is accessible!
+End of UsesTheUser3's module-level code
 Start of UsesTheUser2's module-level code
 This function is accessible!
 End of UsesTheUser2's module-level code
@@ -24,10 +27,13 @@ Access from outside a module
 2
 2
 2
+2
 4.0
 4.0
 2
 2
+12
+12
 12
 false
 false

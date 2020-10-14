@@ -9,7 +9,7 @@
 
     /*
      * Automatic numbering is described in this article:
-     * http://dev.opera.com/articles/view/automatic-numbering-with-css-counters/
+     * https://dev.opera.com/articles/view/automatic-numbering-with-css-counters/
      */
     /*
      * Automatic numbering for the TOC.
@@ -268,7 +268,7 @@ ARC's semantics and restrictions.
   * There must be reliable conventions for whether and when "ownership" is
     passed between caller and callee, for both arguments and return values.
     Objective-C methods follow such a convention very reliably, at least for
-    system libraries on Mac OS X, and functions always pass objects at +0.  The
+    system libraries on macOS, and functions always pass objects at +0.  The
     C-based APIs for Core Foundation objects, on the other hand, have much more
     varied transfer semantics.
 
@@ -1862,6 +1862,12 @@ parameter variable or reading a ``__weak`` variable, whenever these semantics
 call for retaining a value of block-pointer type, it has the effect of a
 ``Block_copy``.  The optimizer may remove such copies when it sees that the
 result is used only as an argument to a call.
+
+When a block pointer type is converted to a non-block pointer type (such as
+``id``), ``Block_copy`` is called. This is necessary because a block allocated
+on the stack won't get copied to the heap when the non-block pointer escapes.
+A block pointer is implicitly converted to ``id`` when it is passed to a
+function as a variadic argument.
 
 .. _arc.misc.exceptions:
 

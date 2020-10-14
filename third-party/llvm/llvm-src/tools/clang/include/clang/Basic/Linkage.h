@@ -1,9 +1,8 @@
 //===- Linkage.h - Linkage enumeration and utilities ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -81,6 +80,12 @@ enum GVALinkage {
 
 inline bool isDiscardableGVALinkage(GVALinkage L) {
   return L <= GVA_DiscardableODR;
+}
+
+/// Do we know that this will be the only definition of this symbol (excluding
+/// inlining-only definitions)?
+inline bool isUniqueGVALinkage(GVALinkage L) {
+  return L == GVA_Internal || L == GVA_StrongExternal;
 }
 
 inline bool isExternallyVisible(Linkage L) {

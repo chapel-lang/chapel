@@ -1,6 +1,8 @@
 llvm-mca - LLVM Machine Code Analyzer
 =====================================
 
+.. program:: llvm-mca
+
 SYNOPSIS
 --------
 
@@ -38,6 +40,17 @@ Or for Intel syntax:
 
   $ clang foo.c -O2 -target x86_64-unknown-unknown -mllvm -x86-asm-syntax=intel -S -o - | llvm-mca -mcpu=btver2
 
+Scheduling models are not just used to compute instruction latencies and
+throughput, but also to understand what processor resources are available
+and how to simulate them.
+
+By design, the quality of the analysis conducted by :program:`llvm-mca` is
+inevitably affected by the quality of the scheduling models in LLVM.
+
+If you see that the performance report is not accurate for a processor,
+please `file a bug <https://bugs.llvm.org/enter_bug.cgi?product=libraries>`_
+against the appropriate backend.
+
 OPTIONS
 -------
 
@@ -52,6 +65,11 @@ option specifies "``-``", then the output will also be sent to standard output.
 .. option:: -help
 
  Print a summary of command line options.
+
+.. option:: -o <filename>
+
+ Use ``<filename>`` as the output filename. See the summary above for more
+ details.
 
 .. option:: -mtriple=<target triple>
 
@@ -73,6 +91,11 @@ option specifies "``-``", then the output will also be sent to standard output.
  On x86, possible values are [0, 1]. A value of 0 (vic. 1) for this flag enables
  the AT&T (vic. Intel) assembly format for the code printed out by the tool in
  the analysis report.
+
+.. option:: -print-imm-hex
+
+ Prefer hex format for numeric literals in the output assembly printed as part
+ of the report.
 
 .. option:: -dispatch=<width>
 
@@ -151,6 +174,10 @@ option specifies "``-``", then the output will also be sent to standard output.
 
   Enable the instruction info view. This is enabled by default.
 
+.. option:: -show-encoding
+
+  Enable the printing of instruction encodings within the instruction info view.
+
 .. option:: -all-stats
 
   Print all hardware statistics. This enables extra statistics related to the
@@ -169,6 +196,12 @@ option specifies "``-``", then the output will also be sent to standard output.
   the theoretical uniform distribution of resource pressure for every
   instruction in sequence.
 
+.. option:: -bottleneck-analysis
+
+  Print information about bottlenecks that affect the throughput. This analysis
+  can be expensive, and it is disabled by default.  Bottlenecks are highlighted
+  in the summary view.
+
 
 EXIT STATUS
 -----------
@@ -186,19 +219,57 @@ example:
 
 .. code-block:: none
 
-  # LLVM-MCA-BEGIN My Code Region
+  # LLVM-MCA-BEGIN
     ...
   # LLVM-MCA-END
 
-Multiple regions can be specified provided that they do not overlap.  A code
-region can have an optional description. If no user-defined region is specified,
-then :program:`llvm-mca` assumes a default region which contains every
-instruction in the input file.  Every region is analyzed in isolation, and the
-final performance report is the union of all the reports generated for every
-code region.
+If no user-defined region is specified, then :program:`llvm-mca` assumes a
+default region which contains every instruction in the input file.  Every region
+is analyzed in isolation, and the final performance report is the union of all
+the reports generated for every code region.
 
-Inline assembly directives may be used from source code to annotate the
-assembly text:
+Code regions can have names. For example:
+
+.. code-block:: none
+
+  # LLVM-MCA-BEGIN A simple example
+    add %eax, %eax
+  # LLVM-MCA-END 
+
+The code from the example above defines a region named "A simple example" with a
+single instruction in it. Note how the region name doesn't have to be repeated
+in the ``LLVM-MCA-END`` directive. In the absence of overlapping regions,
+an anonymous ``LLVM-MCA-END`` directive always ends the currently active user
+defined region.
+
+Example of nesting regions:
+
+.. code-block:: none
+
+  # LLVM-MCA-BEGIN foo
+    add %eax, %edx
+  # LLVM-MCA-BEGIN bar
+    sub %eax, %edx
+  # LLVM-MCA-END bar
+  # LLVM-MCA-END foo
+
+Example of overlapping regions:
+
+.. code-block:: none
+
+  # LLVM-MCA-BEGIN foo
+    add %eax, %edx
+  # LLVM-MCA-BEGIN bar
+    sub %eax, %edx
+  # LLVM-MCA-END foo
+    add %eax, %edx
+  # LLVM-MCA-END bar
+
+Note that multiple anonymous regions cannot overlap. Also, overlapping regions
+cannot have the same name.
+
+There is no support for marking regions from high-level source code, like C or
+C++. As a workaround, inline assembly directives may be used:
 
 .. code-block:: c++
 
@@ -209,6 +280,15 @@ assembly text:
     a *= b;
     return a;
   }
+
+However, this interferes with optimizations like loop vectorization and may have
+an impact on the code generated. This is because the ``__asm`` statements are
+seen as real code having important side effects, which limits how the code
+around them can be transformed. If users want to make use of inline assembly
+to emit markers, then the recommendation is to always verify that the output
+assembly is equivalent to the assembly generated in the absence of markers.
+The `Clang options to emit optimization reports <https://clang.llvm.org/docs/UsersManual.html#options-to-emit-optimization-reports>`_
+can also help in detecting missed optimizations.
 
 HOW LLVM-MCA WORKS
 ------------------
@@ -297,17 +377,28 @@ overview of the performance throughput. Important performance indicators are
 **IPC**, **uOps Per Cycle**, and  **Block RThroughput** (Block Reciprocal
 Throughput).
 
+Field *DispatchWidth* is the maximum number of micro opcodes that are dispatched
+to the out-of-order backend every simulated cycle.
+
 IPC is computed dividing the total number of simulated instructions by the total
-number of cycles. In the absence of loop-carried data dependencies, the
-observed IPC tends to a theoretical maximum which can be computed by dividing
-the number of instructions of a single iteration by the *Block RThroughput*.
+number of cycles.
+
+Field *Block RThroughput* is the reciprocal of the block throughput. Block
+throuhgput is a theoretical quantity computed as the maximum number of blocks
+(i.e. iterations) that can be executed per simulated clock cycle in the absence
+of loop carried dependencies. Block throughput is is superiorly
+limited by the dispatch rate, and the availability of hardware resources.
+
+In the absence of loop-carried data dependencies, the observed IPC tends to a
+theoretical maximum which can be computed by dividing the number of instructions
+of a single iteration by the `Block RThroughput`.
 
 Field 'uOps Per Cycle' is computed dividing the total number of simulated micro
 opcodes by the total number of cycles. A delta between Dispatch Width and this
 field is an indicator of a performance issue. In the absence of loop-carried
 data dependencies, the observed 'uOps Per Cycle' should tend to a theoretical
 maximum throughput which can be computed by dividing the number of uOps of a
-single iteration by the *Block RThroughput*.
+single iteration by the `Block RThroughput`.
 
 Field *uOps Per Cycle* is bounded from above by the dispatch width. That is
 because the dispatch width limits the maximum size of a dispatch group. Both IPC
@@ -316,22 +407,54 @@ availability of hardware resources affects the resource pressure distribution,
 and it limits the number of instructions that can be executed in parallel every
 cycle.  A delta between Dispatch Width and the theoretical maximum uOps per
 Cycle (computed by dividing the number of uOps of a single iteration by the
-*Block RTrhoughput*) is an indicator of a performance bottleneck caused by the
+`Block RThroughput`) is an indicator of a performance bottleneck caused by the
 lack of hardware resources.
 In general, the lower the Block RThroughput, the better.
 
 In this example, ``uOps per iteration/Block RThroughput`` is 1.50. Since there
-are no loop-carried dependencies, the observed *uOps Per Cycle* is expected to
+are no loop-carried dependencies, the observed `uOps Per Cycle` is expected to
 approach 1.50 when the number of iterations tends to infinity. The delta between
 the Dispatch Width (2.00), and the theoretical maximum uOp throughput (1.50) is
 an indicator of a performance bottleneck caused by the lack of hardware
 resources, and the *Resource pressure view* can help to identify the problematic
 resource usage.
 
-The second section of the report shows the latency and reciprocal
-throughput of every instruction in the sequence. That section also reports
-extra information related to the number of micro opcodes, and opcode properties
-(i.e., 'MayLoad', 'MayStore', and 'HasSideEffects').
+The second section of the report is the `instruction info view`. It shows the
+latency and reciprocal throughput of every instruction in the sequence. It also
+reports extra information related to the number of micro opcodes, and opcode
+properties (i.e., 'MayLoad', 'MayStore', and 'HasSideEffects').
+
+Field *RThroughput* is the reciprocal of the instruction throughput. Throughput
+is computed as the maximum number of instructions of a same type that can be
+executed per clock cycle in the absence of operand dependencies. In this
+example, the reciprocal throughput of a vector float multiply is 1
+cycles/instruction.  That is because the FP multiplier JFPM is only available
+from pipeline JFPU1.
+
+Instruction encodings are displayed within the instruction info view when flag
+`-show-encoding` is specified.
+
+Below is an example of `-show-encoding` output for the dot-product kernel:
+
+.. code-block:: none
+
+  Instruction Info:
+  [1]: #uOps
+  [2]: Latency
+  [3]: RThroughput
+  [4]: MayLoad
+  [5]: MayStore
+  [6]: HasSideEffects (U)
+  [7]: Encoding Size
+
+  [1]    [2]    [3]    [4]    [5]    [6]    [7]    Encodings:                    Instructions:
+   1      2     1.00                         4     c5 f0 59 d0                   vmulps	%xmm0, %xmm1, %xmm2
+   1      4     1.00                         4     c5 eb 7c da                   vhaddps	%xmm2, %xmm2, %xmm3
+   1      4     1.00                         4     c5 e3 7c e3                   vhaddps	%xmm3, %xmm3, %xmm4
+
+The `Encoding Size` column shows the size in bytes of instructions.  The
+`Encodings` column shows the actual instruction encodings (byte sequences in
+hex).
 
 The third section is the *Resource pressure view*.  This view reports
 the average number of resource cycles consumed every iteration by instructions
@@ -400,6 +523,7 @@ Below is the timeline view for a subset of the dot-product example located in
   0.     3     1.0    1.0    3.3       vmulps	%xmm0, %xmm1, %xmm2
   1.     3     3.3    0.7    1.0       vhaddps	%xmm2, %xmm2, %xmm3
   2.     3     5.7    0.0    0.0       vhaddps	%xmm3, %xmm3, %xmm4
+         3     3.3    0.5    1.4       <total>
 
 The timeline view is interesting because it shows instruction state changes
 during execution.  It also gives an idea of how the tool processes instructions
@@ -451,7 +575,8 @@ and therefore consuming physical registers).
 
 Table *Average Wait times* helps diagnose performance issues that are caused by
 the presence of long latency instructions and potentially long data dependencies
-which may limit the ILP.  Note that :program:`llvm-mca`, by default, assumes at
+which may limit the ILP. Last row, ``<total>``, shows a global average over all
+instructions measured. Note that :program:`llvm-mca`, by default, assumes at
 least 1cy between the dispatch event and the issue event.
 
 When the performance is limited by data dependencies and/or long latency
@@ -463,6 +588,61 @@ instructions.  When performance is mostly limited by the lack of hardware
 resources, the delta between the two counters is small.  However, the number of
 cycles spent in the queue tends to be larger (i.e., more than 1-3cy),
 especially when compared to other low latency instructions.
+
+Bottleneck Analysis
+^^^^^^^^^^^^^^^^^^^
+The ``-bottleneck-analysis`` command line option enables the analysis of
+performance bottlenecks.
+
+This analysis is potentially expensive. It attempts to correlate increases in
+backend pressure (caused by pipeline resource pressure and data dependencies) to
+dynamic dispatch stalls.
+
+Below is an example of ``-bottleneck-analysis`` output generated by
+:program:`llvm-mca` for 500 iterations of the dot-product example on btver2.
+
+.. code-block:: none
+
+
+  Cycles with backend pressure increase [ 48.07% ]
+  Throughput Bottlenecks: 
+    Resource Pressure       [ 47.77% ]
+    - JFPA  [ 47.77% ]
+    - JFPU0  [ 47.77% ]
+    Data Dependencies:      [ 0.30% ]
+    - Register Dependencies [ 0.30% ]
+    - Memory Dependencies   [ 0.00% ]
+  
+  Critical sequence based on the simulation:
+  
+                Instruction                         Dependency Information
+   +----< 2.    vhaddps %xmm3, %xmm3, %xmm4
+   |
+   |    < loop carried > 
+   |
+   |      0.    vmulps  %xmm0, %xmm1, %xmm2
+   +----> 1.    vhaddps %xmm2, %xmm2, %xmm3         ## RESOURCE interference:  JFPA [ probability: 74% ]
+   +----> 2.    vhaddps %xmm3, %xmm3, %xmm4         ## REGISTER dependency:  %xmm3
+   |
+   |    < loop carried > 
+   |
+   +----> 1.    vhaddps %xmm2, %xmm2, %xmm3         ## RESOURCE interference:  JFPA [ probability: 74% ]
+
+
+According to the analysis, throughput is limited by resource pressure and not by
+data dependencies.  The analysis observed increases in backend pressure during
+48.07% of the simulated run. Almost all those pressure increase events were
+caused by contention on processor resources JFPA/JFPU0.
+
+The `critical sequence` is the most expensive sequence of instructions according
+to the simulation. It is annotated to provide extra information about critical
+register dependencies and resource interferences between instructions.
+
+Instructions from the critical sequence are expected to significantly impact
+performance. By construction, the accuracy of this analysis is strongly
+dependent on the simulation and (as always) by the quality of the processor
+model in llvm.
+
 
 Extra Statistics to Further Diagnose Performance Issues
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -492,7 +672,7 @@ sections.
    2,              314  (51.5%)
 
 
-  Schedulers - number of cycles where we saw N instructions issued:
+  Schedulers - number of cycles where we saw N micro opcodes issued:
   [# issued], [# cycles]
    0,          7  (1.1%)
    1,          306  (50.2%)
@@ -546,9 +726,9 @@ dispatch statistics are displayed by either using the command option
 ``-all-stats`` or ``-dispatch-stats``.
 
 The next table, *Schedulers*, presents a histogram displaying a count,
-representing the number of instructions issued on some number of cycles.  In
-this case, of the 610 simulated cycles, single instructions were issued 306
-times (50.2%) and there were 7 cycles where no instructions were issued.
+representing the number of micro opcodes issued on some number of cycles. In
+this case, of the 610 simulated cycles, single opcodes were issued 306 times
+(50.2%) and there were 7 cycles where no opcodes were issued.
 
 The *Scheduler's queue usage* table shows that the average and maximum number of
 buffer entries (i.e., scheduler queue entries) used at runtime.  Resource JFPU01

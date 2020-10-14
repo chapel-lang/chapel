@@ -1,9 +1,8 @@
 //===--- GlobalsModRefTest.cpp - Mixed TBAA unit tests --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,9 +44,10 @@ TEST(GlobalsModRef, OptNone) {
   Triple Trip(M->getTargetTriple());
   TargetLibraryInfoImpl TLII(Trip);
   TargetLibraryInfo TLI(TLII);
+  auto GetTLI = [&TLI](Function &F) -> TargetLibraryInfo & { return TLI; };
   llvm::CallGraph CG(*M);
 
-  auto AAR = GlobalsAAResult::analyzeModule(*M, TLI, CG);
+  auto AAR = GlobalsAAResult::analyzeModule(*M, GetTLI, CG);
 
   EXPECT_EQ(FMRB_UnknownModRefBehavior, AAR.getModRefBehavior(&F1));
   EXPECT_EQ(FMRB_DoesNotAccessMemory, AAR.getModRefBehavior(&F2));

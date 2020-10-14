@@ -1,9 +1,8 @@
 //===---- StmtProfile.cpp - Profile implementation for Stmt ASTs ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -322,6 +321,9 @@ void StmtProfiler::VisitGCCAsmStmt(const GCCAsmStmt *S) {
   ID.AddInteger(S->getNumClobbers());
   for (unsigned I = 0, N = S->getNumClobbers(); I != N; ++I)
     VisitStringLiteral(S->getClobberStringLiteral(I));
+  ID.AddInteger(S->getNumLabels());
+  for (auto *L : S->labels())
+    VisitDecl(L->getLabel());
 }
 
 void StmtProfiler::VisitMSAsmStmt(const MSAsmStmt *S) {
@@ -438,6 +440,7 @@ void OMPClauseProfiler::VisitOMPIfClause(const OMPIfClause *C) {
 }
 
 void OMPClauseProfiler::VisitOMPFinalClause(const OMPFinalClause *C) {
+  VistOMPClauseWithPreInit(C);
   if (C->getCondition())
     Profiler->VisitStmt(C->getCondition());
 }
@@ -456,6 +459,11 @@ void OMPClauseProfiler::VisitOMPSafelenClause(const OMPSafelenClause *C) {
 void OMPClauseProfiler::VisitOMPSimdlenClause(const OMPSimdlenClause *C) {
   if (C->getSimdlen())
     Profiler->VisitStmt(C->getSimdlen());
+}
+
+void OMPClauseProfiler::VisitOMPAllocatorClause(const OMPAllocatorClause *C) {
+  if (C->getAllocator())
+    Profiler->VisitStmt(C->getAllocator());
 }
 
 void OMPClauseProfiler::VisitOMPCollapseClause(const OMPCollapseClause *C) {
@@ -712,6 +720,11 @@ void OMPClauseProfiler::VisitOMPDeviceClause(const OMPDeviceClause *C) {
 void OMPClauseProfiler::VisitOMPMapClause(const OMPMapClause *C) {
   VisitOMPClauseList(C);
 }
+void OMPClauseProfiler::VisitOMPAllocateClause(const OMPAllocateClause *C) {
+  if (Expr *Allocator = C->getAllocator())
+    Profiler->VisitStmt(Allocator);
+  VisitOMPClauseList(C);
+}
 void OMPClauseProfiler::VisitOMPNumTeamsClause(const OMPNumTeamsClause *C) {
   VistOMPClauseWithPreInit(C);
   if (C->getNumTeams())
@@ -724,14 +737,17 @@ void OMPClauseProfiler::VisitOMPThreadLimitClause(
     Profiler->VisitStmt(C->getThreadLimit());
 }
 void OMPClauseProfiler::VisitOMPPriorityClause(const OMPPriorityClause *C) {
+  VistOMPClauseWithPreInit(C);
   if (C->getPriority())
     Profiler->VisitStmt(C->getPriority());
 }
 void OMPClauseProfiler::VisitOMPGrainsizeClause(const OMPGrainsizeClause *C) {
+  VistOMPClauseWithPreInit(C);
   if (C->getGrainsize())
     Profiler->VisitStmt(C->getGrainsize());
 }
 void OMPClauseProfiler::VisitOMPNumTasksClause(const OMPNumTasksClause *C) {
+  VistOMPClauseWithPreInit(C);
   if (C->getNumTasks())
     Profiler->VisitStmt(C->getNumTasks());
 }
@@ -753,7 +769,13 @@ void OMPClauseProfiler::VisitOMPIsDevicePtrClause(
     const OMPIsDevicePtrClause *C) {
   VisitOMPClauseList(C);
 }
+void OMPClauseProfiler::VisitOMPNontemporalClause(
+    const OMPNontemporalClause *C) {
+  VisitOMPClauseList(C);
+  for (auto *E : C->private_refs())
+    Profiler->VisitStmt(E);
 }
+} // namespace
 
 void
 StmtProfiler::VisitOMPExecutableDirective(const OMPExecutableDirective *S) {
@@ -815,6 +837,11 @@ StmtProfiler::VisitOMPParallelForDirective(const OMPParallelForDirective *S) {
 void StmtProfiler::VisitOMPParallelForSimdDirective(
     const OMPParallelForSimdDirective *S) {
   VisitOMPLoopDirective(S);
+}
+
+void StmtProfiler::VisitOMPParallelMasterDirective(
+    const OMPParallelMasterDirective *S) {
+  VisitOMPExecutableDirective(S);
 }
 
 void StmtProfiler::VisitOMPParallelSectionsDirective(
@@ -903,6 +930,26 @@ void StmtProfiler::VisitOMPTaskLoopDirective(const OMPTaskLoopDirective *S) {
 
 void StmtProfiler::VisitOMPTaskLoopSimdDirective(
     const OMPTaskLoopSimdDirective *S) {
+  VisitOMPLoopDirective(S);
+}
+
+void StmtProfiler::VisitOMPMasterTaskLoopDirective(
+    const OMPMasterTaskLoopDirective *S) {
+  VisitOMPLoopDirective(S);
+}
+
+void StmtProfiler::VisitOMPMasterTaskLoopSimdDirective(
+    const OMPMasterTaskLoopSimdDirective *S) {
+  VisitOMPLoopDirective(S);
+}
+
+void StmtProfiler::VisitOMPParallelMasterTaskLoopDirective(
+    const OMPParallelMasterTaskLoopDirective *S) {
+  VisitOMPLoopDirective(S);
+}
+
+void StmtProfiler::VisitOMPParallelMasterTaskLoopSimdDirective(
+    const OMPParallelMasterTaskLoopSimdDirective *S) {
   VisitOMPLoopDirective(S);
 }
 
@@ -1260,13 +1307,14 @@ void StmtProfiler::VisitBlockExpr(const BlockExpr *S) {
 
 void StmtProfiler::VisitGenericSelectionExpr(const GenericSelectionExpr *S) {
   VisitExpr(S);
-  for (unsigned i = 0; i != S->getNumAssocs(); ++i) {
-    QualType T = S->getAssocType(i);
+  for (const GenericSelectionExpr::ConstAssociation Assoc :
+       S->associations()) {
+    QualType T = Assoc.getType();
     if (T.isNull())
       ID.AddPointer(nullptr);
     else
       VisitType(T);
-    VisitExpr(S->getAssocExpr(i));
+    VisitExpr(Assoc.getAssociationExpr());
   }
 }
 
@@ -1282,6 +1330,57 @@ void StmtProfiler::VisitPseudoObjectExpr(const PseudoObjectExpr *S) {
 void StmtProfiler::VisitAtomicExpr(const AtomicExpr *S) {
   VisitExpr(S);
   ID.AddInteger(S->getOp());
+}
+
+void StmtProfiler::VisitConceptSpecializationExpr(
+                                           const ConceptSpecializationExpr *S) {
+  VisitExpr(S);
+  VisitDecl(S->getNamedConcept());
+  for (const TemplateArgument &Arg : S->getTemplateArguments())
+    VisitTemplateArgument(Arg);
+}
+
+void StmtProfiler::VisitRequiresExpr(const RequiresExpr *S) {
+  VisitExpr(S);
+  ID.AddInteger(S->getLocalParameters().size());
+  for (ParmVarDecl *LocalParam : S->getLocalParameters())
+    VisitDecl(LocalParam);
+  ID.AddInteger(S->getRequirements().size());
+  for (concepts::Requirement *Req : S->getRequirements()) {
+    if (auto *TypeReq = dyn_cast<concepts::TypeRequirement>(Req)) {
+      ID.AddInteger(concepts::Requirement::RK_Type);
+      ID.AddBoolean(TypeReq->isSubstitutionFailure());
+      if (!TypeReq->isSubstitutionFailure())
+        VisitType(TypeReq->getType()->getType());
+    } else if (auto *ExprReq = dyn_cast<concepts::ExprRequirement>(Req)) {
+      ID.AddInteger(concepts::Requirement::RK_Compound);
+      ID.AddBoolean(ExprReq->isExprSubstitutionFailure());
+      if (!ExprReq->isExprSubstitutionFailure())
+        Visit(ExprReq->getExpr());
+      // C++2a [expr.prim.req.compound]p1 Example:
+      //    [...] The compound-requirement in C1 requires that x++ is a valid
+      //    expression. It is equivalent to the simple-requirement x++; [...]
+      // We therefore do not profile isSimple() here.
+      ID.AddBoolean(ExprReq->getNoexceptLoc().isValid());
+      const concepts::ExprRequirement::ReturnTypeRequirement &RetReq =
+          ExprReq->getReturnTypeRequirement();
+      if (RetReq.isEmpty()) {
+        ID.AddInteger(0);
+      } else if (RetReq.isTypeConstraint()) {
+        ID.AddInteger(1);
+        Visit(RetReq.getTypeConstraint()->getImmediatelyDeclaredConstraint());
+      } else {
+        assert(RetReq.isSubstitutionFailure());
+        ID.AddInteger(2);
+      }
+    } else {
+      ID.AddInteger(concepts::Requirement::RK_Nested);
+      auto *NestedReq = cast<concepts::NestedRequirement>(Req);
+      ID.AddBoolean(NestedReq->isSubstitutionFailure());
+      if (!NestedReq->isSubstitutionFailure())  
+        Visit(NestedReq->getConstraintExpr());
+    }
+  }
 }
 
 static Stmt::StmtClass DecodeOperatorCall(const CXXOperatorCallExpr *S,
@@ -1436,8 +1535,8 @@ static Stmt::StmtClass DecodeOperatorCall(const CXXOperatorCallExpr *S,
     return Stmt::BinaryOperatorClass;
 
   case OO_Spaceship:
-    // FIXME: Update this once we support <=> expressions.
-    llvm_unreachable("<=> expressions not supported yet");
+    BinaryOp = BO_Cmp;
+    return Stmt::BinaryOperatorClass;
 
   case OO_AmpAmp:
     BinaryOp = BO_LAnd;
@@ -1517,6 +1616,16 @@ void StmtProfiler::VisitCXXOperatorCallExpr(const CXXOperatorCallExpr *S) {
   ID.AddInteger(S->getOperator());
 }
 
+void StmtProfiler::VisitCXXRewrittenBinaryOperator(
+    const CXXRewrittenBinaryOperator *S) {
+  // If a rewritten operator were ever to be type-dependent, we should profile
+  // it following its syntactic operator.
+  assert(!S->isTypeDependent() &&
+         "resolved rewritten operator should never be type-dependent");
+  ID.AddBoolean(S->isReversed());
+  VisitExpr(S->getSemanticForm());
+}
+
 #if defined(_MSC_VER) && !defined(__clang__)
 #if _MSC_VER == 1911
 #pragma optimize("", on)
@@ -1554,6 +1663,11 @@ StmtProfiler::VisitCXXReinterpretCastExpr(const CXXReinterpretCastExpr *S) {
 
 void StmtProfiler::VisitCXXConstCastExpr(const CXXConstCastExpr *S) {
   VisitCXXNamedCastExpr(S);
+}
+
+void StmtProfiler::VisitBuiltinBitCastExpr(const BuiltinBitCastExpr *S) {
+  VisitExpr(S);
+  VisitType(S->getTypeInfoAsWritten()->getType());
 }
 
 void StmtProfiler::VisitUserDefinedLiteral(const UserDefinedLiteral *S) {
@@ -1869,6 +1983,10 @@ void StmtProfiler::VisitOpaqueValueExpr(const OpaqueValueExpr *E) {
 }
 
 void StmtProfiler::VisitTypoExpr(const TypoExpr *E) {
+  VisitExpr(E);
+}
+
+void StmtProfiler::VisitSourceLocExpr(const SourceLocExpr *E) {
   VisitExpr(E);
 }
 

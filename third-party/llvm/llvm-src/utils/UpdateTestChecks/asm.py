@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import sys
 
@@ -14,7 +15,7 @@ else:
 ##### Assembly parser
 
 ASM_FUNCTION_X86_RE = re.compile(
-    r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n(?:\s*.Lfunc_begin[^:\n]*:\n)?[^:]*?'
+    r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n(?:\s*\.?Lfunc_begin[^:\n]*:\n)?[^:]*?'
     r'(?P<body>^##?[ \t]+[^:]+:.*?)\s*'
     r'^\s*(?:[^:\n]+?:\s*\n\s*\.size|\.cfi_endproc|\.globl|\.comm|\.(?:sub)?section|#+ -- End function)',
     flags=(re.M | re.S))
@@ -28,7 +29,7 @@ ASM_FUNCTION_ARM_RE = re.compile(
 
 ASM_FUNCTION_AARCH64_RE = re.compile(
      r'^_?(?P<func>[^:]+):[ \t]*\/\/[ \t]*@(?P=func)\n'
-     r'(?:[ \t]+.cfi_startproc\n)?'  # drop optional cfi noise 
+     r'(?:[ \t]+.cfi_startproc\n)?'  # drop optional cfi noise
      r'(?P<body>.*?)\n'
      # This list is incomplete
      r'.Lfunc_end[0-9]+:\n',
@@ -38,6 +39,13 @@ ASM_FUNCTION_AMDGPU_RE = re.compile(
     r'^_?(?P<func>[^:]+):[ \t]*;+[ \t]*@(?P=func)\n[^:]*?'
     r'(?P<body>.*?)\n' # (body of the function)
     # This list is incomplete
+    r'^\s*(\.Lfunc_end[0-9]+:\n|\.section)',
+    flags=(re.M | re.S))
+
+ASM_FUNCTION_HEXAGON_RE = re.compile(
+    r'^_?(?P<func>[^:]+):[ \t]*//[ \t]*@(?P=func)\n[^:]*?'
+    r'(?P<body>.*?)\n' # (body of the function)
+    # This list is incomplete
     r'.Lfunc_end[0-9]+:\n',
     flags=(re.M | re.S))
 
@@ -45,9 +53,16 @@ ASM_FUNCTION_MIPS_RE = re.compile(
     r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n[^:]*?' # f: (name of func)
     r'(?:^[ \t]+\.(frame|f?mask|set).*?\n)+'  # Mips+LLVM standard asm prologue
     r'(?P<body>.*?)\n'                        # (body of the function)
-    r'(?:^[ \t]+\.(set|end).*?\n)+'           # Mips+LLVM standard asm epilogue
+    # Mips+LLVM standard asm epilogue
+    r'(?:(^[ \t]+\.set[^\n]*?\n)*^[ \t]+\.end.*?\n)'
     r'(\$|\.L)func_end[0-9]+:\n',             # $func_end0: (mips32 - O32) or
                                               # .Lfunc_end0: (mips64 - NewABI)
+    flags=(re.M | re.S))
+
+ASM_FUNCTION_MSP430_RE = re.compile(
+    r'^_?(?P<func>[^:]+):[ \t]*;+[ \t]*@(?P=func)\n[^:]*?'
+    r'(?P<body>.*?)\n'
+    r'(\$|\.L)func_end[0-9]+:\n',             # $func_end0:
     flags=(re.M | re.S))
 
 ASM_FUNCTION_PPC_RE = re.compile(
@@ -63,8 +78,15 @@ ASM_FUNCTION_PPC_RE = re.compile(
     flags=(re.M | re.S))
 
 ASM_FUNCTION_RISCV_RE = re.compile(
-    r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n[^:]*?'
+    r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n(?:\s*\.?Lfunc_begin[^:\n]*:\n)?[^:]*?'
     r'(?P<body>^##?[ \t]+[^:]+:.*?)\s*'
+    r'.Lfunc_end[0-9]+:\n',
+    flags=(re.M | re.S))
+
+ASM_FUNCTION_LANAI_RE = re.compile(
+    r'^_?(?P<func>[^:]+):[ \t]*!+[ \t]*@(?P=func)\n'
+    r'(?:[ \t]+.cfi_startproc\n)?'  # drop optional cfi noise
+    r'(?P<body>.*?)\s*'
     r'.Lfunc_end[0-9]+:\n',
     flags=(re.M | re.S))
 
@@ -79,6 +101,43 @@ ASM_FUNCTION_SYSTEMZ_RE = re.compile(
     r'[ \t]+.cfi_startproc\n'
     r'(?P<body>.*?)\n'
     r'.Lfunc_end[0-9]+:\n',
+    flags=(re.M | re.S))
+
+ASM_FUNCTION_AARCH64_DARWIN_RE = re.compile(
+     r'^_(?P<func>[^:]+):[ \t]*;[ \t]@(?P=func)\n'
+     r'([ \t]*.cfi_startproc\n[\s]*)?'
+     r'(?P<body>.*?)'
+     r'([ \t]*.cfi_endproc\n[\s]*)?'
+     r'^[ \t]*;[ \t]--[ \t]End[ \t]function',
+     flags=(re.M | re.S))
+
+ASM_FUNCTION_ARM_DARWIN_RE = re.compile(
+     r'^[ \t]*\.globl[ \t]*_(?P<func>[^ \t])[ \t]*@[ \t]--[ \t]Begin[ \t]function[ \t](?P=func)'
+     r'(?P<directives>.*?)'
+     r'^_(?P=func):\n[ \t]*'
+     r'(?P<body>.*?)'
+     r'^[ \t]*@[ \t]--[ \t]End[ \t]function',
+     flags=(re.M | re.S ))
+
+ASM_FUNCTION_ARM_MACHO_RE = re.compile(
+     r'^_(?P<func>[^:]+):[ \t]*\n'
+     r'([ \t]*.cfi_startproc\n[ \t]*)?'
+     r'(?P<body>.*?)\n'
+     r'[ \t]*\.cfi_endproc\n',
+     flags=(re.M | re.S))
+
+ASM_FUNCTION_ARM_IOS_RE = re.compile(
+     r'^_(?P<func>[^:]+):[ \t]*\n'
+     r'^Lfunc_begin(?P<id>[0-9][1-9]*):\n'
+     r'(?P<body>.*?)'
+     r'^Lfunc_end(?P=id):\n'
+     r'^[ \t]*@[ \t]--[ \t]End[ \t]function',
+     flags=(re.M | re.S))
+
+ASM_FUNCTION_WASM32_RE = re.compile(
+    r'^_?(?P<func>[^:]+):[ \t]*#+[ \t]*@(?P=func)\n'
+    r'(?P<body>.*?)\n'
+    r'^\s*(\.Lfunc_end[0-9]+:\n|end_function)',
     flags=(re.M | re.S))
 
 
@@ -147,14 +206,24 @@ def scrub_asm_arm_eabi(asm, args):
   asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
   return asm
 
-def scrub_asm_powerpc64(asm, args):
+def scrub_asm_hexagon(asm, args):
   # Scrub runs of whitespace out of the assembly, but leave the leading
   # whitespace in place.
   asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
   # Expand the tabs used for indentation.
   asm = string.expandtabs(asm, 2)
-  # Stripe unimportant comments
-  asm = SCRUB_LOOP_COMMENT_RE.sub(r'', asm)
+  # Strip trailing whitespace.
+  asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
+  return asm
+
+def scrub_asm_powerpc(asm, args):
+  # Scrub runs of whitespace out of the assembly, but leave the leading
+  # whitespace in place.
+  asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
+  # Expand the tabs used for indentation.
+  asm = string.expandtabs(asm, 2)
+  # Stripe unimportant comments, but leave the token '#' in place.
+  asm = SCRUB_LOOP_COMMENT_RE.sub(r'#', asm)
   # Strip trailing whitespace.
   asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
   return asm
@@ -169,7 +238,27 @@ def scrub_asm_mips(asm, args):
   asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
   return asm
 
+def scrub_asm_msp430(asm, args):
+  # Scrub runs of whitespace out of the assembly, but leave the leading
+  # whitespace in place.
+  asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
+  # Expand the tabs used for indentation.
+  asm = string.expandtabs(asm, 2)
+  # Strip trailing whitespace.
+  asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
+  return asm
+
 def scrub_asm_riscv(asm, args):
+  # Scrub runs of whitespace out of the assembly, but leave the leading
+  # whitespace in place.
+  asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
+  # Expand the tabs used for indentation.
+  asm = string.expandtabs(asm, 2)
+  # Strip trailing whitespace.
+  asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
+  return asm
+
+def scrub_asm_lanai(asm, args):
   # Scrub runs of whitespace out of the assembly, but leave the leading
   # whitespace in place.
   asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
@@ -199,62 +288,78 @@ def scrub_asm_systemz(asm, args):
   asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
   return asm
 
+def scrub_asm_wasm32(asm, args):
+  # Scrub runs of whitespace out of the assembly, but leave the leading
+  # whitespace in place.
+  asm = common.SCRUB_WHITESPACE_RE.sub(r' ', asm)
+  # Expand the tabs used for indentation.
+  asm = string.expandtabs(asm, 2)
+  # Strip trailing whitespace.
+  asm = common.SCRUB_TRAILING_WHITESPACE_RE.sub(r'', asm)
+  return asm
+
+def get_triple_from_march(march):
+  triples = {
+      'amdgcn': 'amdgcn',
+      'r600': 'r600',
+      'mips': 'mips',
+      'sparc': 'sparc',
+      'hexagon': 'hexagon',
+  }
+  for prefix, triple in triples.items():
+    if march.startswith(prefix):
+      return triple
+  print("Cannot find a triple. Assume 'x86'", file=sys.stderr)
+  return 'x86'
 
 def build_function_body_dictionary_for_triple(args, raw_tool_output, triple, prefixes, func_dict):
   target_handlers = {
-      'x86_64': (scrub_asm_x86, ASM_FUNCTION_X86_RE),
       'i686': (scrub_asm_x86, ASM_FUNCTION_X86_RE),
       'x86': (scrub_asm_x86, ASM_FUNCTION_X86_RE),
       'i386': (scrub_asm_x86, ASM_FUNCTION_X86_RE),
       'aarch64': (scrub_asm_arm_eabi, ASM_FUNCTION_AARCH64_RE),
+      'aarch64-apple-darwin': (scrub_asm_arm_eabi, ASM_FUNCTION_AARCH64_DARWIN_RE),
+      'hexagon': (scrub_asm_hexagon, ASM_FUNCTION_HEXAGON_RE),
       'r600': (scrub_asm_amdgpu, ASM_FUNCTION_AMDGPU_RE),
       'amdgcn': (scrub_asm_amdgpu, ASM_FUNCTION_AMDGPU_RE),
-      'arm-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumb-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6t2': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6t2-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6m': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv6m-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv7': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv7-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv7m': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv7m-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv8-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv8m.base': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'thumbv8m.main': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armv6': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armv7': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armv7-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armeb-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armv7eb-eabi': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
-      'armv7eb': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
+      'arm': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
+      'arm64': (scrub_asm_arm_eabi, ASM_FUNCTION_AARCH64_RE),
+      'arm64-apple-ios': (scrub_asm_arm_eabi, ASM_FUNCTION_AARCH64_DARWIN_RE),
+      'armv7-apple-ios' : (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_IOS_RE),
+      'armv7-apple-darwin': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_DARWIN_RE),
+      'thumb': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_RE),
+      'thumb-macho': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_MACHO_RE),
+      'thumbv5-macho': (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_MACHO_RE),
+      'thumbv7-apple-ios' : (scrub_asm_arm_eabi, ASM_FUNCTION_ARM_IOS_RE),
       'mips': (scrub_asm_mips, ASM_FUNCTION_MIPS_RE),
-      'powerpc64': (scrub_asm_powerpc64, ASM_FUNCTION_PPC_RE),
-      'powerpc64le': (scrub_asm_powerpc64, ASM_FUNCTION_PPC_RE),
+      'msp430': (scrub_asm_msp430, ASM_FUNCTION_MSP430_RE),
+      'ppc32': (scrub_asm_powerpc, ASM_FUNCTION_PPC_RE),
+      'powerpc': (scrub_asm_powerpc, ASM_FUNCTION_PPC_RE),
       'riscv32': (scrub_asm_riscv, ASM_FUNCTION_RISCV_RE),
       'riscv64': (scrub_asm_riscv, ASM_FUNCTION_RISCV_RE),
+      'lanai': (scrub_asm_lanai, ASM_FUNCTION_LANAI_RE),
       'sparc': (scrub_asm_sparc, ASM_FUNCTION_SPARC_RE),
-      'sparcv9': (scrub_asm_sparc, ASM_FUNCTION_SPARC_RE),
       's390x': (scrub_asm_systemz, ASM_FUNCTION_SYSTEMZ_RE),
+      'wasm32': (scrub_asm_wasm32, ASM_FUNCTION_WASM32_RE),
   }
-  handlers = None
+  handler = None
+  best_prefix = ''
   for prefix, s in target_handlers.items():
-    if triple.startswith(prefix):
-      handlers = s
-      break
-  else:
+    if triple.startswith(prefix) and len(prefix) > len(best_prefix):
+      handler = s
+      best_prefix = prefix
+
+  if handler is None:
     raise KeyError('Triple %r is not supported' % (triple))
 
-  scrubber, function_re = handlers
+  scrubber, function_re = handler
   common.build_function_body_dictionary(
           function_re, scrubber, [args], raw_tool_output, prefixes,
-          func_dict, args.verbose)
+          func_dict, args.verbose, False)
 
 ##### Generator of assembly CHECK lines
 
 def add_asm_checks(output_lines, comment_marker, prefix_list, func_dict, func_name):
   # Label format is based on ASM string.
-  check_label_format = '{} %s-LABEL: %s:'.format(comment_marker)
+  check_label_format = '{} %s-LABEL: %s%s:'.format(comment_marker)
   common.add_checks(output_lines, comment_marker, prefix_list, func_dict, func_name, check_label_format, True, False)

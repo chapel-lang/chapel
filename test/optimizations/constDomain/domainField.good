@@ -1,0 +1,12 @@
+Pass literal to var field
+false
+false
+Pass const to var field
+false
+false
+Pass literal to const field
+true
+true
+Pass var to const field
+true
+true

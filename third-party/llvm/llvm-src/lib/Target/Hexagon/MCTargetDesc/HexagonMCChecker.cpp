@@ -1,9 +1,8 @@
 //===----- HexagonMCChecker.cpp - Instruction bundle checking -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "MCTargetDesc/HexagonMCChecker.h"
-#include "Hexagon.h"
 #include "MCTargetDesc/HexagonBaseInfo.h"
 #include "MCTargetDesc/HexagonMCInstrInfo.h"
 #include "MCTargetDesc/HexagonMCShuffler.h"
@@ -728,9 +726,6 @@ void HexagonMCChecker::reportNote(SMLoc Loc, llvm::Twine const &Msg) {
 }
 
 void HexagonMCChecker::reportWarning(Twine const &Msg) {
-  if (ReportErrors) {
-    auto SM = Context.getSourceManager();
-    if (SM)
-      SM->PrintMessage(MCB.getLoc(), SourceMgr::DK_Warning, Msg);
-  }
+  if (ReportErrors)
+    Context.reportWarning(MCB.getLoc(), Msg);
 }

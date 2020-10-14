@@ -1,9 +1,8 @@
 //===--- PrecompiledPreamble.h - Build precompiled preambles ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -134,14 +133,6 @@ private:
   public:
     // A main method used to construct TempPCHFile.
     static llvm::ErrorOr<TempPCHFile> CreateNewPreamblePCHFile();
-
-    /// Call llvm::sys::fs::createTemporaryFile to create a new temporary file.
-    static llvm::ErrorOr<TempPCHFile> createInSystemTempDir(const Twine &Prefix,
-                                                            StringRef Suffix);
-    /// Create a new instance of TemporaryFile for file at \p Path. Use with
-    /// extreme caution, there's an assertion checking that there's only a
-    /// single instance of TempPCHFile alive for each path.
-    static llvm::ErrorOr<TempPCHFile> createFromCustomPath(const Twine &Path);
 
   private:
     TempPCHFile(std::string FilePath);
@@ -284,13 +275,16 @@ public:
   /// Creates wrapper class for PPCallbacks so we can also process information
   /// about includes that are inside of a preamble
   virtual std::unique_ptr<PPCallbacks> createPPCallbacks();
+  /// The returned CommentHandler will be added to the preprocessor if not null.
+  virtual CommentHandler *getCommentHandler();
 };
 
 enum class BuildPreambleError {
   CouldntCreateTempFile = 1,
   CouldntCreateTargetInfo,
   BeginSourceFileFailed,
-  CouldntEmitPCH
+  CouldntEmitPCH,
+  BadInputs
 };
 
 class BuildPreambleErrorCategory final : public std::error_category {

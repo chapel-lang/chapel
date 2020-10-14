@@ -1,9 +1,8 @@
 //===- MipsSEISelLowering.cpp - MipsSE DAG Lowering Interface -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,6 +34,7 @@
 #include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/IR/DebugLoc.h"
 #include "llvm/IR/Intrinsics.h"
+#include "llvm/IR/IntrinsicsMips.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
@@ -72,8 +72,8 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
 
   if (Subtarget.hasDSP() || Subtarget.hasMSA()) {
     // Expand all truncating stores and extending loads.
-    for (MVT VT0 : MVT::vector_valuetypes()) {
-      for (MVT VT1 : MVT::vector_valuetypes()) {
+    for (MVT VT0 : MVT::fixedlen_vector_valuetypes()) {
+      for (MVT VT1 : MVT::fixedlen_vector_valuetypes()) {
         setTruncStoreAction(VT0, VT1, Expand);
         setLoadExtAction(ISD::SEXTLOAD, VT0, VT1, Expand);
         setLoadExtAction(ISD::ZEXTLOAD, VT0, VT1, Expand);
@@ -214,6 +214,11 @@ MipsSETargetLowering::MipsSETargetLowering(const MipsTargetMachine &TM,
   setOperationAction(ISD::INTRINSIC_W_CHAIN, MVT::Other, Custom);
   setOperationAction(ISD::INTRINSIC_VOID, MVT::Other, Custom);
 
+  if (Subtarget.hasMips32r2() && !Subtarget.useSoftFloat() &&
+      !Subtarget.hasMips64()) {
+    setOperationAction(ISD::BITCAST, MVT::i64, Custom);
+  }
+
   if (NoDPLoadStore) {
     setOperationAction(ISD::LOAD, MVT::f64, Custom);
     setOperationAction(ISD::STORE, MVT::f64, Custom);
@@ -323,6 +328,7 @@ addMSAIntType(MVT::SimpleValueType Ty, const TargetRegisterClass *RC) {
   setOperationAction(ISD::EXTRACT_VECTOR_ELT, Ty, Custom);
   setOperationAction(ISD::INSERT_VECTOR_ELT, Ty, Legal);
   setOperationAction(ISD::BUILD_VECTOR, Ty, Custom);
+  setOperationAction(ISD::UNDEF, Ty, Legal);
 
   setOperationAction(ISD::ADD, Ty, Legal);
   setOperationAction(ISD::AND, Ty, Legal);
@@ -415,11 +421,8 @@ SDValue MipsSETargetLowering::lowerSELECT(SDValue Op, SelectionDAG &DAG) const {
                      Op->getOperand(2));
 }
 
-bool
-MipsSETargetLowering::allowsMisalignedMemoryAccesses(EVT VT,
-                                                     unsigned,
-                                                     unsigned,
-                                                     bool *Fast) const {
+bool MipsSETargetLowering::allowsMisalignedMemoryAccesses(
+    EVT VT, unsigned, unsigned, MachineMemOperand::Flags, bool *Fast) const {
   MVT::SimpleValueType SVT = VT.getSimpleVT().SimpleTy;
 
   if (Subtarget.systemSupportsUnalignedAccess()) {
@@ -463,6 +466,7 @@ SDValue MipsSETargetLowering::LowerOperation(SDValue Op,
   case ISD::BUILD_VECTOR:       return lowerBUILD_VECTOR(Op, DAG);
   case ISD::VECTOR_SHUFFLE:     return lowerVECTOR_SHUFFLE(Op, DAG);
   case ISD::SELECT:             return lowerSELECT(Op, DAG);
+  case ISD::BITCAST:            return lowerBITCAST(Op, DAG);
   }
 
   return MipsTargetLowering::LowerOperation(Op, DAG);
@@ -714,8 +718,31 @@ static bool shouldTransformMulToShiftsAddsSubs(APInt C, EVT VT,
                                                SelectionDAG &DAG,
                                                const MipsSubtarget &Subtarget) {
   // Estimate the number of operations the below transform will turn a
-  // constant multiply into. The number is approximately how many powers
-  // of two summed together that the constant can be broken down into.
+  // constant multiply into. The number is approximately equal to the minimal
+  // number of powers of two that constant can be broken down to by adding
+  // or subtracting them.
+  //
+  // If we have taken more than 12[1] / 8[2] steps to attempt the
+  // optimization for a native sized value, it is more than likely that this
+  // optimization will make things worse.
+  //
+  // [1] MIPS64 requires 6 instructions at most to materialize any constant,
+  //     multiplication requires at least 4 cycles, but another cycle (or two)
+  //     to retrieve the result from the HI/LO registers.
+  //
+  // [2] For MIPS32, more than 8 steps is expensive as the constant could be
+  //     materialized in 2 instructions, multiplication requires at least 4
+  //     cycles, but another cycle (or two) to retrieve the result from the
+  //     HI/LO registers.
+  //
+  // TODO:
+  // - MaxSteps needs to consider the `VT` of the constant for the current
+  //   target.
+  // - Consider to perform this optimization after type legalization.
+  //   That allows to remove a workaround for types not supported natively.
+  // - Take in account `-Os, -Oz` flags because this optimization
+  //   increases code size.
+  unsigned MaxSteps = Subtarget.isABI_O32() ? 8 : 12;
 
   SmallVector<APInt, 16> WorkStack(1, C);
   unsigned Steps = 0;
@@ -727,6 +754,9 @@ static bool shouldTransformMulToShiftsAddsSubs(APInt C, EVT VT,
     if (Val == 0 || Val == 1)
       continue;
 
+    if (Steps >= MaxSteps)
+      return false;
+
     if (Val.isPowerOf2()) {
       ++Steps;
       continue;
@@ -735,36 +765,15 @@ static bool shouldTransformMulToShiftsAddsSubs(APInt C, EVT VT,
     APInt Floor = APInt(BitWidth, 1) << Val.logBase2();
     APInt Ceil = Val.isNegative() ? APInt(BitWidth, 0)
                                   : APInt(BitWidth, 1) << C.ceilLogBase2();
-
     if ((Val - Floor).ule(Ceil - Val)) {
       WorkStack.push_back(Floor);
       WorkStack.push_back(Val - Floor);
-      ++Steps;
-      continue;
+    } else {
+      WorkStack.push_back(Ceil);
+      WorkStack.push_back(Ceil - Val);
     }
 
-    WorkStack.push_back(Ceil);
-    WorkStack.push_back(Ceil - Val);
     ++Steps;
-
-    // If we have taken more than 12[1] / 8[2] steps to attempt the
-    // optimization for a native sized value, it is more than likely that this
-    // optimization will make things worse.
-    //
-    // [1] MIPS64 requires 6 instructions at most to materialize any constant,
-    //     multiplication requires at least 4 cycles, but another cycle (or two)
-    //     to retrieve the result from the HI/LO registers.
-    //
-    // [2] For MIPS32, more than 8 steps is expensive as the constant could be
-    //     materialized in 2 instructions, multiplication requires at least 4
-    //     cycles, but another cycle (or two) to retrieve the result from the
-    //     HI/LO registers.
-
-    if (Steps > 12 && (Subtarget.isABI_N32() || Subtarget.isABI_N64()))
-      return false;
-
-    if (Steps > 8 && Subtarget.isABI_O32())
-      return false;
   }
 
   // If the value being multiplied is not supported natively, we have to pay
@@ -1221,6 +1230,36 @@ SDValue MipsSETargetLowering::lowerSTORE(SDValue Op, SelectionDAG &DAG) const {
                       Nd.getMemOperand()->getFlags(), Nd.getAAInfo());
 }
 
+SDValue MipsSETargetLowering::lowerBITCAST(SDValue Op,
+                                           SelectionDAG &DAG) const {
+  SDLoc DL(Op);
+  MVT Src = Op.getOperand(0).getValueType().getSimpleVT();
+  MVT Dest = Op.getValueType().getSimpleVT();
+
+  // Bitcast i64 to double.
+  if (Src == MVT::i64 && Dest == MVT::f64) {
+    SDValue Lo = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                             Op.getOperand(0), DAG.getIntPtrConstant(0, DL));
+    SDValue Hi = DAG.getNode(ISD::EXTRACT_ELEMENT, DL, MVT::i32,
+                             Op.getOperand(0), DAG.getIntPtrConstant(1, DL));
+    return DAG.getNode(MipsISD::BuildPairF64, DL, MVT::f64, Lo, Hi);
+  }
+
+  // Bitcast double to i64.
+  if (Src == MVT::f64 && Dest == MVT::i64) {
+    SDValue Lo =
+        DAG.getNode(MipsISD::ExtractElementF64, DL, MVT::i32, Op.getOperand(0),
+                    DAG.getConstant(0, DL, MVT::i32));
+    SDValue Hi =
+        DAG.getNode(MipsISD::ExtractElementF64, DL, MVT::i32, Op.getOperand(0),
+                    DAG.getConstant(1, DL, MVT::i32));
+    return DAG.getNode(ISD::BUILD_PAIR, DL, MVT::i64, Lo, Hi);
+  }
+
+  // Skip other cases of bitcast and use default lowering.
+  return SDValue();
+}
+
 SDValue MipsSETargetLowering::lowerMulDiv(SDValue Op, unsigned NewOpc,
                                           bool HasLo, bool HasHi,
                                           SelectionDAG &DAG) const {
@@ -1379,9 +1418,10 @@ static SDValue lowerMSASplatZExt(SDValue Op, unsigned OpNr, SelectionDAG &DAG) {
 
 static SDValue lowerMSASplatImm(SDValue Op, unsigned ImmOp, SelectionDAG &DAG,
                                 bool IsSigned = false) {
+  auto *CImm = cast<ConstantSDNode>(Op->getOperand(ImmOp));
   return DAG.getConstant(
       APInt(Op->getValueType(0).getScalarType().getSizeInBits(),
-            Op->getConstantOperandVal(ImmOp), IsSigned),
+            IsSigned ? CImm->getSExtValue() : CImm->getZExtValue(), IsSigned),
       SDLoc(Op), Op->getValueType(0));
 }
 
@@ -2557,7 +2597,8 @@ static SDValue lowerVECTOR_SHUFFLE_SHF(SDValue Op, EVT ResTy,
 
   SDLoc DL(Op);
   return DAG.getNode(MipsISD::SHF, DL, ResTy,
-                     DAG.getConstant(Imm, DL, MVT::i32), Op->getOperand(0));
+                     DAG.getTargetConstant(Imm, DL, MVT::i32),
+                     Op->getOperand(0));
 }
 
 /// Determine whether a range fits a regular pattern of values.
@@ -3024,13 +3065,13 @@ MipsSETargetLowering::emitBPOSGE32(MachineInstr &MI,
   BuildMI(BB, DL, TII->get(Mips::BPOSGE32C_MMR3)).addMBB(TBB);
 
   // Fill $FBB.
-  unsigned VR2 = RegInfo.createVirtualRegister(RC);
+  Register VR2 = RegInfo.createVirtualRegister(RC);
   BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::ADDiu), VR2)
     .addReg(Mips::ZERO).addImm(0);
   BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::B)).addMBB(Sink);
 
   // Fill $TBB.
-  unsigned VR1 = RegInfo.createVirtualRegister(RC);
+  Register VR1 = RegInfo.createVirtualRegister(RC);
   BuildMI(*TBB, TBB->end(), DL, TII->get(Mips::ADDiu), VR1)
     .addReg(Mips::ZERO).addImm(1);
 
@@ -3093,13 +3134,13 @@ MachineBasicBlock *MipsSETargetLowering::emitMSACBranchPseudo(
       .addMBB(TBB);
 
   // Fill $FBB.
-  unsigned RD1 = RegInfo.createVirtualRegister(RC);
+  Register RD1 = RegInfo.createVirtualRegister(RC);
   BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::ADDiu), RD1)
     .addReg(Mips::ZERO).addImm(0);
   BuildMI(*FBB, FBB->end(), DL, TII->get(Mips::B)).addMBB(Sink);
 
   // Fill $TBB.
-  unsigned RD2 = RegInfo.createVirtualRegister(RC);
+  Register RD2 = RegInfo.createVirtualRegister(RC);
   BuildMI(*TBB, TBB->end(), DL, TII->get(Mips::ADDiu), RD2)
     .addReg(Mips::ZERO).addImm(1);
 
@@ -3131,8 +3172,8 @@ MipsSETargetLowering::emitCOPY_FW(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Fd = MI.getOperand(0).getReg();
-  unsigned Ws = MI.getOperand(1).getReg();
+  Register Fd = MI.getOperand(0).getReg();
+  Register Ws = MI.getOperand(1).getReg();
   unsigned Lane = MI.getOperand(2).getImm();
 
   if (Lane == 0) {
@@ -3147,9 +3188,9 @@ MipsSETargetLowering::emitCOPY_FW(MachineInstr &MI,
 
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY), Fd).addReg(Wt, 0, Mips::sub_lo);
   } else {
-    unsigned Wt = RegInfo.createVirtualRegister(
-        Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass :
-                                  &Mips::MSA128WEvensRegClass);
+    Register Wt = RegInfo.createVirtualRegister(
+        Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass
+                                : &Mips::MSA128WEvensRegClass);
 
     BuildMI(*BB, MI, DL, TII->get(Mips::SPLATI_W), Wt).addReg(Ws).addImm(Lane);
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY), Fd).addReg(Wt, 0, Mips::sub_lo);
@@ -3176,15 +3217,15 @@ MipsSETargetLowering::emitCOPY_FD(MachineInstr &MI,
 
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
-  unsigned Fd = MI.getOperand(0).getReg();
-  unsigned Ws = MI.getOperand(1).getReg();
+  Register Fd = MI.getOperand(0).getReg();
+  Register Ws = MI.getOperand(1).getReg();
   unsigned Lane = MI.getOperand(2).getImm() * 2;
   DebugLoc DL = MI.getDebugLoc();
 
   if (Lane == 0)
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY), Fd).addReg(Ws, 0, Mips::sub_64);
   else {
-    unsigned Wt = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
+    Register Wt = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
 
     BuildMI(*BB, MI, DL, TII->get(Mips::SPLATI_D), Wt).addReg(Ws).addImm(1);
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY), Fd).addReg(Wt, 0, Mips::sub_64);
@@ -3206,13 +3247,13 @@ MipsSETargetLowering::emitINSERT_FW(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned Wd_in = MI.getOperand(1).getReg();
+  Register Wd = MI.getOperand(0).getReg();
+  Register Wd_in = MI.getOperand(1).getReg();
   unsigned Lane = MI.getOperand(2).getImm();
-  unsigned Fs = MI.getOperand(3).getReg();
-  unsigned Wt = RegInfo.createVirtualRegister(
-      Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass :
-                                &Mips::MSA128WEvensRegClass);
+  Register Fs = MI.getOperand(3).getReg();
+  Register Wt = RegInfo.createVirtualRegister(
+      Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass
+                              : &Mips::MSA128WEvensRegClass);
 
   BuildMI(*BB, MI, DL, TII->get(Mips::SUBREG_TO_REG), Wt)
       .addImm(0)
@@ -3242,11 +3283,11 @@ MipsSETargetLowering::emitINSERT_FD(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned Wd_in = MI.getOperand(1).getReg();
+  Register Wd = MI.getOperand(0).getReg();
+  Register Wd_in = MI.getOperand(1).getReg();
   unsigned Lane = MI.getOperand(2).getImm();
-  unsigned Fs = MI.getOperand(3).getReg();
-  unsigned Wt = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
+  Register Fs = MI.getOperand(3).getReg();
+  Register Wt = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
 
   BuildMI(*BB, MI, DL, TII->get(Mips::SUBREG_TO_REG), Wt)
       .addImm(0)
@@ -3288,10 +3329,10 @@ MachineBasicBlock *MipsSETargetLowering::emitINSERT_DF_VIDX(
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned SrcVecReg = MI.getOperand(1).getReg();
-  unsigned LaneReg = MI.getOperand(2).getReg();
-  unsigned SrcValReg = MI.getOperand(3).getReg();
+  Register Wd = MI.getOperand(0).getReg();
+  Register SrcVecReg = MI.getOperand(1).getReg();
+  Register LaneReg = MI.getOperand(2).getReg();
+  Register SrcValReg = MI.getOperand(3).getReg();
 
   const TargetRegisterClass *VecRC = nullptr;
   // FIXME: This should be true for N32 too.
@@ -3332,7 +3373,7 @@ MachineBasicBlock *MipsSETargetLowering::emitINSERT_DF_VIDX(
   }
 
   if (IsFP) {
-    unsigned Wt = RegInfo.createVirtualRegister(VecRC);
+    Register Wt = RegInfo.createVirtualRegister(VecRC);
     BuildMI(*BB, MI, DL, TII->get(Mips::SUBREG_TO_REG), Wt)
         .addImm(0)
         .addReg(SrcValReg)
@@ -3342,7 +3383,7 @@ MachineBasicBlock *MipsSETargetLowering::emitINSERT_DF_VIDX(
 
   // Convert the lane index into a byte index
   if (EltSizeInBytes != 1) {
-    unsigned LaneTmp1 = RegInfo.createVirtualRegister(GPRRC);
+    Register LaneTmp1 = RegInfo.createVirtualRegister(GPRRC);
     BuildMI(*BB, MI, DL, TII->get(ShiftOp), LaneTmp1)
         .addReg(LaneReg)
         .addImm(EltLog2Size);
@@ -3350,13 +3391,13 @@ MachineBasicBlock *MipsSETargetLowering::emitINSERT_DF_VIDX(
   }
 
   // Rotate bytes around so that the desired lane is element zero
-  unsigned WdTmp1 = RegInfo.createVirtualRegister(VecRC);
+  Register WdTmp1 = RegInfo.createVirtualRegister(VecRC);
   BuildMI(*BB, MI, DL, TII->get(Mips::SLD_B), WdTmp1)
       .addReg(SrcVecReg)
       .addReg(SrcVecReg)
       .addReg(LaneReg, 0, SubRegIdx);
 
-  unsigned WdTmp2 = RegInfo.createVirtualRegister(VecRC);
+  Register WdTmp2 = RegInfo.createVirtualRegister(VecRC);
   if (IsFP) {
     // Use insve.df to insert to element zero
     BuildMI(*BB, MI, DL, TII->get(InsveOp), WdTmp2)
@@ -3375,7 +3416,7 @@ MachineBasicBlock *MipsSETargetLowering::emitINSERT_DF_VIDX(
   // Rotate elements the rest of the way for a full rotation.
   // sld.df inteprets $rt modulo the number of columns so we only need to negate
   // the lane index to do this.
-  unsigned LaneTmp2 = RegInfo.createVirtualRegister(GPRRC);
+  Register LaneTmp2 = RegInfo.createVirtualRegister(GPRRC);
   BuildMI(*BB, MI, DL, TII->get(Subtarget.isABI_N64() ? Mips::DSUB : Mips::SUB),
           LaneTmp2)
       .addReg(Subtarget.isABI_N64() ? Mips::ZERO_64 : Mips::ZERO)
@@ -3402,12 +3443,12 @@ MipsSETargetLowering::emitFILL_FW(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned Fs = MI.getOperand(1).getReg();
-  unsigned Wt1 = RegInfo.createVirtualRegister(
+  Register Wd = MI.getOperand(0).getReg();
+  Register Fs = MI.getOperand(1).getReg();
+  Register Wt1 = RegInfo.createVirtualRegister(
       Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass
                               : &Mips::MSA128WEvensRegClass);
-  unsigned Wt2 = RegInfo.createVirtualRegister(
+  Register Wt2 = RegInfo.createVirtualRegister(
       Subtarget.useOddSPReg() ? &Mips::MSA128WRegClass
                               : &Mips::MSA128WEvensRegClass);
 
@@ -3437,10 +3478,10 @@ MipsSETargetLowering::emitFILL_FD(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned Fs = MI.getOperand(1).getReg();
-  unsigned Wt1 = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
-  unsigned Wt2 = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
+  Register Wd = MI.getOperand(0).getReg();
+  Register Fs = MI.getOperand(1).getReg();
+  Register Wt1 = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
+  Register Wt2 = RegInfo.createVirtualRegister(&Mips::MSA128DRegClass);
 
   BuildMI(*BB, MI, DL, TII->get(Mips::IMPLICIT_DEF), Wt1);
   BuildMI(*BB, MI, DL, TII->get(Mips::INSERT_SUBREG), Wt2)
@@ -3471,8 +3512,8 @@ MipsSETargetLowering::emitST_F16_PSEUDO(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Ws = MI.getOperand(0).getReg();
-  unsigned Rt = MI.getOperand(1).getReg();
+  Register Ws = MI.getOperand(0).getReg();
+  Register Rt = MI.getOperand(1).getReg();
   const MachineMemOperand &MMO = **MI.memoperands_begin();
   unsigned Imm = MMO.getOffset();
 
@@ -3484,11 +3525,11 @@ MipsSETargetLowering::emitST_F16_PSEUDO(MachineInstr &MI,
                                : (Subtarget.isABI_O32() ? &Mips::GPR32RegClass
                                                         : &Mips::GPR64RegClass);
   const bool UsingMips32 = RC == &Mips::GPR32RegClass;
-  unsigned Rs = RegInfo.createVirtualRegister(&Mips::GPR32RegClass);
+  Register Rs = RegInfo.createVirtualRegister(&Mips::GPR32RegClass);
 
   BuildMI(*BB, MI, DL, TII->get(Mips::COPY_U_H), Rs).addReg(Ws).addImm(0);
   if(!UsingMips32) {
-    unsigned Tmp = RegInfo.createVirtualRegister(&Mips::GPR64RegClass);
+    Register Tmp = RegInfo.createVirtualRegister(&Mips::GPR64RegClass);
     BuildMI(*BB, MI, DL, TII->get(Mips::SUBREG_TO_REG), Tmp)
         .addImm(0)
         .addReg(Rs)
@@ -3526,7 +3567,7 @@ MipsSETargetLowering::emitLD_F16_PSEUDO(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
+  Register Wd = MI.getOperand(0).getReg();
 
   // Caution: A load via the GOT can expand to a GPR32 operand, a load via
   //          spill and reload can expand as a GPR64 operand. Examine the
@@ -3537,7 +3578,7 @@ MipsSETargetLowering::emitLD_F16_PSEUDO(MachineInstr &MI,
                                                         : &Mips::GPR64RegClass);
 
   const bool UsingMips32 = RC == &Mips::GPR32RegClass;
-  unsigned Rt = RegInfo.createVirtualRegister(RC);
+  Register Rt = RegInfo.createVirtualRegister(RC);
 
   MachineInstrBuilder MIB =
       BuildMI(*BB, MI, DL, TII->get(UsingMips32 ? Mips::LH : Mips::LH64), Rt);
@@ -3545,7 +3586,7 @@ MipsSETargetLowering::emitLD_F16_PSEUDO(MachineInstr &MI,
     MIB.add(MI.getOperand(i));
 
   if(!UsingMips32) {
-    unsigned Tmp = RegInfo.createVirtualRegister(&Mips::GPR32RegClass);
+    Register Tmp = RegInfo.createVirtualRegister(&Mips::GPR32RegClass);
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY), Tmp).addReg(Rt, 0, Mips::sub_32);
     Rt = Tmp;
   }
@@ -3620,11 +3661,11 @@ MipsSETargetLowering::emitFPROUND_PSEUDO(MachineInstr &MI,
 
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Wd = MI.getOperand(0).getReg();
-  unsigned Fs = MI.getOperand(1).getReg();
+  Register Wd = MI.getOperand(0).getReg();
+  Register Fs = MI.getOperand(1).getReg();
 
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
-  unsigned Wtemp = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
+  Register Wtemp = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
   const TargetRegisterClass *GPRRC =
       IsFGR64onMips64 ? &Mips::GPR64RegClass : &Mips::GPR32RegClass;
   unsigned MFC1Opc = IsFGR64onMips64
@@ -3633,16 +3674,16 @@ MipsSETargetLowering::emitFPROUND_PSEUDO(MachineInstr &MI,
   unsigned FILLOpc = IsFGR64onMips64 ? Mips::FILL_D : Mips::FILL_W;
 
   // Perform the register class copy as mentioned above.
-  unsigned Rtemp = RegInfo.createVirtualRegister(GPRRC);
+  Register Rtemp = RegInfo.createVirtualRegister(GPRRC);
   BuildMI(*BB, MI, DL, TII->get(MFC1Opc), Rtemp).addReg(Fs);
   BuildMI(*BB, MI, DL, TII->get(FILLOpc), Wtemp).addReg(Rtemp);
   unsigned WPHI = Wtemp;
 
   if (IsFGR64onMips32) {
-    unsigned Rtemp2 = RegInfo.createVirtualRegister(GPRRC);
+    Register Rtemp2 = RegInfo.createVirtualRegister(GPRRC);
     BuildMI(*BB, MI, DL, TII->get(Mips::MFHC1_D64), Rtemp2).addReg(Fs);
-    unsigned Wtemp2 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
-    unsigned Wtemp3 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
+    Register Wtemp2 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
+    Register Wtemp3 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
     BuildMI(*BB, MI, DL, TII->get(Mips::INSERT_W), Wtemp2)
         .addReg(Wtemp)
         .addReg(Rtemp2)
@@ -3655,7 +3696,7 @@ MipsSETargetLowering::emitFPROUND_PSEUDO(MachineInstr &MI,
   }
 
   if (IsFGR64) {
-    unsigned Wtemp2 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
+    Register Wtemp2 = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
     BuildMI(*BB, MI, DL, TII->get(Mips::FEXDO_W), Wtemp2)
         .addReg(WPHI)
         .addReg(WPHI);
@@ -3725,8 +3766,8 @@ MipsSETargetLowering::emitFPEXTEND_PSEUDO(MachineInstr &MI,
 
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   DebugLoc DL = MI.getDebugLoc();
-  unsigned Fd = MI.getOperand(0).getReg();
-  unsigned Ws = MI.getOperand(1).getReg();
+  Register Fd = MI.getOperand(0).getReg();
+  Register Ws = MI.getOperand(1).getReg();
 
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   const TargetRegisterClass *GPRRC =
@@ -3734,10 +3775,10 @@ MipsSETargetLowering::emitFPEXTEND_PSEUDO(MachineInstr &MI,
   unsigned MTC1Opc = IsFGR64onMips64
                          ? Mips::DMTC1
                          : (IsFGR64onMips32 ? Mips::MTC1_D64 : Mips::MTC1);
-  unsigned COPYOpc = IsFGR64onMips64 ? Mips::COPY_S_D : Mips::COPY_S_W;
+  Register COPYOpc = IsFGR64onMips64 ? Mips::COPY_S_D : Mips::COPY_S_W;
 
-  unsigned Wtemp = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
-  unsigned WPHI = Wtemp;
+  Register Wtemp = RegInfo.createVirtualRegister(&Mips::MSA128WRegClass);
+  Register WPHI = Wtemp;
 
   BuildMI(*BB, MI, DL, TII->get(Mips::FEXUPR_W), Wtemp).addReg(Ws);
   if (IsFGR64) {
@@ -3746,15 +3787,15 @@ MipsSETargetLowering::emitFPEXTEND_PSEUDO(MachineInstr &MI,
   }
 
   // Perform the safety regclass copy mentioned above.
-  unsigned Rtemp = RegInfo.createVirtualRegister(GPRRC);
-  unsigned FPRPHI = IsFGR64onMips32
+  Register Rtemp = RegInfo.createVirtualRegister(GPRRC);
+  Register FPRPHI = IsFGR64onMips32
                         ? RegInfo.createVirtualRegister(&Mips::FGR64RegClass)
                         : Fd;
   BuildMI(*BB, MI, DL, TII->get(COPYOpc), Rtemp).addReg(WPHI).addImm(0);
   BuildMI(*BB, MI, DL, TII->get(MTC1Opc), FPRPHI).addReg(Rtemp);
 
   if (IsFGR64onMips32) {
-    unsigned Rtemp2 = RegInfo.createVirtualRegister(GPRRC);
+    Register Rtemp2 = RegInfo.createVirtualRegister(GPRRC);
     BuildMI(*BB, MI, DL, TII->get(Mips::COPY_S_W), Rtemp2)
         .addReg(WPHI)
         .addImm(1);
@@ -3779,8 +3820,8 @@ MipsSETargetLowering::emitFEXP2_W_1(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   const TargetRegisterClass *RC = &Mips::MSA128WRegClass;
-  unsigned Ws1 = RegInfo.createVirtualRegister(RC);
-  unsigned Ws2 = RegInfo.createVirtualRegister(RC);
+  Register Ws1 = RegInfo.createVirtualRegister(RC);
+  Register Ws2 = RegInfo.createVirtualRegister(RC);
   DebugLoc DL = MI.getDebugLoc();
 
   // Splat 1.0 into a vector
@@ -3808,8 +3849,8 @@ MipsSETargetLowering::emitFEXP2_D_1(MachineInstr &MI,
   const TargetInstrInfo *TII = Subtarget.getInstrInfo();
   MachineRegisterInfo &RegInfo = BB->getParent()->getRegInfo();
   const TargetRegisterClass *RC = &Mips::MSA128DRegClass;
-  unsigned Ws1 = RegInfo.createVirtualRegister(RC);
-  unsigned Ws2 = RegInfo.createVirtualRegister(RC);
+  Register Ws1 = RegInfo.createVirtualRegister(RC);
+  Register Ws2 = RegInfo.createVirtualRegister(RC);
   DebugLoc DL = MI.getDebugLoc();
 
   // Splat 1.0 into a vector

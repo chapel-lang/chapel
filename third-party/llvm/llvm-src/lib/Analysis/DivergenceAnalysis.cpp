@@ -1,9 +1,8 @@
 //===- DivergenceAnalysis.cpp --------- Divergence Analysis Implementation -==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -413,6 +412,12 @@ bool DivergenceAnalysis::isDivergent(const Value &V) const {
   return DivergentValues.find(&V) != DivergentValues.end();
 }
 
+bool DivergenceAnalysis::isDivergentUse(const Use &U) const {
+  Value &V = *U.get();
+  Instruction &I = *cast<Instruction>(U.getUser());
+  return isDivergent(V) || isTemporalDivergent(*I.getParent(), V);
+}
+
 void DivergenceAnalysis::print(raw_ostream &OS, const Module *) const {
   if (DivergentValues.empty())
     return;
@@ -448,6 +453,10 @@ GPUDivergenceAnalysis::GPUDivergenceAnalysis(Function &F,
 
 bool GPUDivergenceAnalysis::isDivergent(const Value &val) const {
   return DA.isDivergent(val);
+}
+
+bool GPUDivergenceAnalysis::isDivergentUse(const Use &use) const {
+  return DA.isDivergentUse(use);
 }
 
 void GPUDivergenceAnalysis::print(raw_ostream &OS, const Module *mod) const {

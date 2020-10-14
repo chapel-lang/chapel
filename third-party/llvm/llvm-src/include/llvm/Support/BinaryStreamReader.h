@@ -1,9 +1,8 @@
 //===- BinaryStreamReader.h - Reads objects from a binary stream *- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -97,6 +96,18 @@ public:
     return Error::success();
   }
 
+  /// Read an unsigned LEB128 encoded value.
+  ///
+  /// \returns a success error code if the data was successfully read, otherwise
+  /// returns an appropriate error code.
+  Error readULEB128(uint64_t &Dest);
+
+  /// Read a signed LEB128 encoded value.
+  ///
+  /// \returns a success error code if the data was successfully read, otherwise
+  /// returns an appropriate error code.
+  Error readSLEB128(int64_t &Dest);
+
   /// Read a null terminated string from \p Dest.  Whether a copy occurs depends
   /// on the implementation of the underlying stream.  Updates the stream's
   /// offset to point after the newly read data.
@@ -137,14 +148,14 @@ public:
   /// returns an appropriate error code.
   Error readStreamRef(BinaryStreamRef &Ref, uint32_t Length);
 
-  /// Read \p Length bytes from the underlying stream into \p Stream.  This is
+  /// Read \p Length bytes from the underlying stream into \p Ref.  This is
   /// equivalent to calling getUnderlyingStream().slice(Offset, Length).
   /// Updates the stream's offset to point after the newly read object.  Never
   /// causes a copy.
   ///
   /// \returns a success error code if the data was successfully read, otherwise
   /// returns an appropriate error code.
-  Error readSubstream(BinarySubstreamRef &Stream, uint32_t Size);
+  Error readSubstream(BinarySubstreamRef &Ref, uint32_t Length);
 
   /// Get a pointer to an object of type T from the underlying stream, as if by
   /// memcpy, and store the result into \p Dest.  It is up to the caller to
@@ -187,7 +198,7 @@ public:
     if (auto EC = readBytes(Bytes, NumElements * sizeof(T)))
       return EC;
 
-    assert(alignmentAdjustment(Bytes.data(), alignof(T)) == 0 &&
+    assert(isAddrAligned(Align::Of<T>(), Bytes.data()) &&
            "Reading at invalid alignment!");
 
     Array = ArrayRef<T>(reinterpret_cast<const T *>(Bytes.data()), NumElements);

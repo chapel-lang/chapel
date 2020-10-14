@@ -1,9 +1,8 @@
 //=- AArch64RegisterInfo.td - Describe the AArch64 Registers -*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -188,6 +187,10 @@ def GPR64z : RegisterOperand<GPR64> {
   let GIZeroRegister = XZR;
 }
 
+// GPR argument registers.
+def GPR32arg : RegisterClass<"AArch64", [i32], 32, (sequence "W%u", 0, 7)>;
+def GPR64arg : RegisterClass<"AArch64", [i64], 64, (sequence "X%u", 0, 7)>;
+
 // GPR register classes which include WZR/XZR AND SP/WSP. This is not a
 // constraint used by any instructions, it is used as a common super-class.
 def GPR32all : RegisterClass<"AArch64", [i32], 32, (add GPR32common, WZR, WSP)>;
@@ -205,6 +208,11 @@ def tcGPR64 : RegisterClass<"AArch64", [i64], 64, (sub GPR64common, X19, X20, X2
 // indirectly branch (not call) to the "BTI c" instruction at the start of a
 // BTI-protected function.
 def rtcGPR64 : RegisterClass<"AArch64", [i64], 64, (add X16, X17)>;
+
+// Register set that excludes registers that are reserved for procedure calls.
+// This is used for pseudo-instructions that are actually implemented using a
+// procedure call.
+def GPR64noip : RegisterClass<"AArch64", [i64], 64, (sub GPR64, X16, X17, LR)>;
 
 // GPR register classes for post increment amount of vector load/store that
 // has alternate printing when Rm=31 and prints a constant immediate value
@@ -473,7 +481,7 @@ def QQQQ : RegisterClass<"AArch64", [untyped], 128, (add QSeqQuads)> {
 
 
 // Vector operand versions of the FP registers. Alternate name printing and
-// assmebler matching.
+// assembler matching.
 def VectorReg64AsmOperand : AsmOperandClass {
   let Name = "VectorReg64";
   let PredicateMethod = "isNeonVectorReg";
@@ -850,35 +858,19 @@ def PPR3b64  : PPRRegOp<"d", PPRAsmOp3b64,  ElementSizeD, PPR_3b>;
 
 //******************************************************************************
 
-// SVE vector register class
-def ZPR : RegisterClass<"AArch64",
-                        [nxv16i8, nxv8i16, nxv4i32, nxv2i64,
-                         nxv2f16, nxv4f16, nxv8f16,
-                         nxv1f32, nxv2f32, nxv4f32,
-                         nxv1f64, nxv2f64],
-                        128, (sequence "Z%u", 0, 31)> {
+// SVE vector register classes
+class ZPRClass<int lastreg> : RegisterClass<"AArch64",
+                                            [nxv16i8, nxv8i16, nxv4i32, nxv2i64,
+                                             nxv2f16, nxv4f16, nxv8f16,
+                                             nxv2f32, nxv4f32,
+                                             nxv2f64],
+                                            128, (sequence "Z%u", 0, lastreg)> {
   let Size = 128;
 }
 
-// SVE restricted 4 bit scalable vector register class
-def ZPR_4b : RegisterClass<"AArch64",
-                         [nxv16i8, nxv8i16, nxv4i32, nxv2i64,
-                          nxv2f16, nxv4f16, nxv8f16,
-                          nxv1f32, nxv2f32, nxv4f32,
-                          nxv1f64, nxv2f64],
-                         128, (sequence "Z%u", 0, 15)> {
-  let Size = 128;
-}
-
-// SVE restricted 3 bit scalable vector register class
-def ZPR_3b : RegisterClass<"AArch64",
-                         [nxv16i8, nxv8i16, nxv4i32, nxv2i64,
-                          nxv2f16, nxv4f16, nxv8f16,
-                          nxv1f32, nxv2f32, nxv4f32,
-                          nxv1f64, nxv2f64],
-                         128, (sequence "Z%u", 0, 7)> {
-  let Size = 128;
-}
+def ZPR    : ZPRClass<31>;
+def ZPR_4b : ZPRClass<15>; // Restricted 4 bit SVE vector register class.
+def ZPR_3b : ZPRClass<7>;  // Restricted 3 bit SVE vector register class.
 
 class ZPRAsmOperand<string name, int Width, string RegClassSuffix = "">
     : AsmOperandClass {

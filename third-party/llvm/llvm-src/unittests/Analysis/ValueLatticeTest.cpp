@@ -1,9 +1,8 @@
 //===- ValueLatticeTest.cpp - ScalarEvolution unit tests --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -42,6 +41,23 @@ TEST_F(ValueLatticeTest, ValueLatticeGetters) {
   auto *C2 = ConstantFP::get(FloatTy, 1.1);
   EXPECT_TRUE(ValueLatticeElement::get(C2).isConstant());
   EXPECT_TRUE(ValueLatticeElement::getNot(C2).isNotConstant());
+}
+
+TEST_F(ValueLatticeTest, MarkConstantRange) {
+  auto LV1 =
+      ValueLatticeElement::getRange({APInt(32, 10, true), APInt(32, 20, true)});
+
+  // Test markConstantRange() with an equal range.
+  EXPECT_FALSE(
+      LV1.markConstantRange({APInt(32, 10, true), APInt(32, 20, true)}));
+
+  // Test markConstantRange() with supersets of existing range.
+  EXPECT_TRUE(LV1.markConstantRange({APInt(32, 5, true), APInt(32, 20, true)}));
+  EXPECT_EQ(LV1.getConstantRange().getLower().getLimitedValue(), 5U);
+  EXPECT_EQ(LV1.getConstantRange().getUpper().getLimitedValue(), 20U);
+  EXPECT_TRUE(LV1.markConstantRange({APInt(32, 5, true), APInt(32, 23, true)}));
+  EXPECT_EQ(LV1.getConstantRange().getLower().getLimitedValue(), 5U);
+  EXPECT_EQ(LV1.getConstantRange().getUpper().getLimitedValue(), 23U);
 }
 
 TEST_F(ValueLatticeTest, MergeIn) {

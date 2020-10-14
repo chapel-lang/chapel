@@ -1,9 +1,8 @@
 //===- MCSymbolWasm.h -  ----------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_MC_MCSYMBOLWASM_H
@@ -19,8 +18,10 @@ class MCSymbolWasm : public MCSymbol {
   bool IsWeak = false;
   bool IsHidden = false;
   bool IsComdat = false;
+  mutable bool IsUsedInGOT = false;
   Optional<std::string> ImportModule;
   Optional<std::string> ImportName;
+  Optional<std::string> ExportName;
   wasm::WasmSignature *Signature = nullptr;
   Optional<wasm::WasmGlobalType> GlobalType;
   Optional<wasm::WasmEventType> EventType;
@@ -47,6 +48,20 @@ public:
   wasm::WasmSymbolType getType() const { return Type; }
   void setType(wasm::WasmSymbolType type) { Type = type; }
 
+  bool isExported() const {
+    return getFlags() & wasm::WASM_SYMBOL_EXPORTED;
+  }
+  void setExported() const {
+    modifyFlags(wasm::WASM_SYMBOL_EXPORTED, wasm::WASM_SYMBOL_EXPORTED);
+  }
+
+  bool isNoStrip() const {
+    return getFlags() & wasm::WASM_SYMBOL_NO_STRIP;
+  }
+  void setNoStrip() const {
+    modifyFlags(wasm::WASM_SYMBOL_NO_STRIP, wasm::WASM_SYMBOL_NO_STRIP);
+  }
+
   bool isWeak() const { return IsWeak; }
   void setWeak(bool isWeak) { IsWeak = isWeak; }
 
@@ -64,6 +79,7 @@ public:
   }
   void setImportModule(StringRef Name) { ImportModule = Name; }
 
+  bool hasImportName() const { return ImportName.hasValue(); }
   const StringRef getImportName() const {
       if (ImportName.hasValue()) {
           return ImportName.getValue();
@@ -71,6 +87,13 @@ public:
       return getName();
   }
   void setImportName(StringRef Name) { ImportName = Name; }
+
+  bool hasExportName() const { return ExportName.hasValue(); }
+  const StringRef getExportName() const { return ExportName.getValue(); }
+  void setExportName(StringRef Name) { ExportName = Name; }
+
+  void setUsedInGOT() const { IsUsedInGOT = true; }
+  bool isUsedInGOT() const { return IsUsedInGOT; }
 
   const wasm::WasmSignature *getSignature() const { return Signature; }
   void setSignature(wasm::WasmSignature *Sig) { Signature = Sig; }

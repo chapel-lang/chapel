@@ -54,7 +54,7 @@ module ArrayViewSlice {
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
-    const dom; // Seems like the compiler requires a field called 'dom'...
+    var dom; // Seems like the compiler requires a field called 'dom'...
 
     // the representation of the sliced array
     const _ArrPid;
@@ -75,6 +75,8 @@ module ArrayViewSlice {
       this._ArrInstance = _ArrInstance;
 
       this.indexCache = buildIndexCacheHelper(_ArrInstance, dom);
+
+      this.dom.definedConst = dom.definedConst;
     }
 
     forwarding arr except these,
@@ -188,6 +190,7 @@ module ArrayViewSlice {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
@@ -387,7 +390,7 @@ module ArrayViewSlice {
       // no elements allocated here, so no action necessary
     }
 
-    override proc dsiDestroyArr(param deinitElts:bool) {
+    override proc dsiDestroyArr(deinitElts:bool) {
       // no elements allocated here, so no action necessary
     }
 

@@ -579,6 +579,7 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
+pragma "not order independent yielding loops"
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
@@ -748,6 +749,7 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
       yield result;
 }
 
+pragma "not order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
@@ -799,6 +801,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
@@ -809,6 +812,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out

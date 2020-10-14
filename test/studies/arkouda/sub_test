@@ -35,20 +35,34 @@ else
   if ! nice make -j $($CHPL_HOME/util/buildRelease/chpl-make-cpu_count) install-deps ; then
     log_fatal_error "installing dependencies"
   fi
+  export "PATH=${ARKOUDA_HOME}/dep/hdf5-install/bin:$PATH"
 fi
 
 # Compile Arkouda
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
-  export ARKOUDA_PRINT_PASSES_FILE="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION/comp-time"
-  mkdir -p $(dirname $ARKOUDA_PRINT_PASSES_FILE)
-fi
-if ! make ; then
-  log_fatal_error "compiling arkouda"
+  PERF_SUB_DIR="$CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION"
+  mkdir -p "$PERF_SUB_DIR"
+  export ARKOUDA_PRINT_PASSES_FILE="$PERF_SUB_DIR/comp-time"
+  export ARKOUDA_EMITTED_CODE_SIZE_FILE="$PERF_SUB_DIR/emitted-code-size"
+  export CHPL_DEBUG_FLAGS="${CHPL_DEBUG_FLAGS} --print-emitted-code-size"
+
+  make 2>&1 | tee $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+  if [ ${PIPESTATUS[0]} -ne "0" ] ; then
+    log_fatal_error "compiling arkouda"
+  fi
+  if grep -q "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp ; then
+    grep "Statements emitted:" $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp > $ARKOUDA_EMITTED_CODE_SIZE_FILE
+    rm -f $ARKOUDA_EMITTED_CODE_SIZE_FILE.tmp
+  fi
+else
+  if ! make ; then
+    log_fatal_error "compiling arkouda"
+  fi
 fi
 
 # Install Arkouda and python dependencies to a python-deps subdir
 export PYTHONUSERBASE=$ARKOUDA_HOME/python-deps
-if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir -e .[test] --user ; then
+if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir -e .[dev] --user ; then
   log_fatal_error "installing arkouda"
 fi
 
@@ -57,10 +71,9 @@ test_start "make check"
 if make check ; then
   log_success "make check output"
 else
-  test_end "make check"
   log_fatal_error "running make check"
 fi
-test_end "make check"
+test_end
 
 # Run Python unit tests
 test_start "make test-python"
@@ -69,7 +82,7 @@ if make test-python ; then
 else
   log_error "running make test-python"
 fi
-test_end "make test-python"
+test_end
 
 # Run benchmarks
 if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
@@ -91,6 +104,9 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   if [[ -n $CHPL_TEST_PERF_CONFIGS ]]; then
     benchmark_opts="${benchmark_opts} --configs $CHPL_TEST_PERF_CONFIGS"
   fi
+  if [[ -n $CHPL_TEST_ARKOUDA_BENCHMARKS ]]; then
+    benchmark_opts="${benchmark_opts} $CHPL_TEST_ARKOUDA_BENCHMARKS"
+  fi
 
   test_start "benchmarks"
   if ./benchmarks/run_benchmarks.py ${benchmark_opts} ; then
@@ -98,7 +114,7 @@ if [ "${CHPL_TEST_ARKOUDA_PERF}" = "true" ] ; then
   else
     log_error "running benchmarks"
   fi
-  test_end "benchmarks"
+  test_end
 fi
 
 subtest_end

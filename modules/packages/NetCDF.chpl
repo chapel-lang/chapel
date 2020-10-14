@@ -47,6 +47,7 @@ module NetCDF {
      https://www.unidata.ucar.edu/software/netcdf/docs
    */
   module C_NetCDF {
+    public use SysCTypes, SysBasic;
     // Generated with c2chapel version 0.1.0
 
     // Header given to c2chapel:

@@ -1,9 +1,8 @@
 //===- llvm/ADT/StringExtras.h - Useful string functions --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -346,7 +345,7 @@ inline void join_items_impl(std::string &Result, Sep Separator, const Arg1 &A1,
   join_items_impl(Result, Separator, std::forward<Args>(Items)...);
 }
 
-inline size_t join_one_item_size(char C) { return 1; }
+inline size_t join_one_item_size(char) { return 1; }
 inline size_t join_one_item_size(const char *S) { return S ? ::strlen(S) : 0; }
 
 template <typename T> inline size_t join_one_item_size(const T &Str) {

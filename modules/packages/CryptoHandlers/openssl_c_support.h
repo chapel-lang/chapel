@@ -22,6 +22,7 @@
 //  * work around issues with openssl defining I in conflict with C std
 //  * insulate the Chapel code from fiddly differences between 1.0.2 and 1.1
 //  * work around issues with constant pointers in generated C code
+//  * work around problems with macro-functions for the LLVM backend
 
 #undef I
 #include <openssl/rsa.h>
@@ -91,3 +92,7 @@ static inline EVP_CIPHER_CTX* CHPL_EVP_CIPHER_CTX_ptr(CHPL_EVP_CIPHER_CTX* arg) 
 
 #endif
 
+static inline void CHPL_OpenSSL_add_all_digests(void) {
+  // OpenSSL_add_all_digests is a complex macro in some implementations
+  OpenSSL_add_all_digests();
+}

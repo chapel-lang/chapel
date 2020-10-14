@@ -1,0 +1,3 @@
+#!/bin/sh
+
+grep dynamicFastFollow c_code/staticCheck.c >> $1.exec.out.tmp

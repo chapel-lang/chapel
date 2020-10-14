@@ -27,9 +27,11 @@ module ChapelTaskData {
   // Chapel task-local data format:
   // up to 16 bytes of wide pointer for _remoteEndCountType
   // 1 byte for serial_state
+  // 1 byte for nextCoStmtSerial
   private const chpl_offset_endCount = 0:size_t;
   private const chpl_offset_serial = sizeof_endcount_ptr();
-  private const chpl_offset_end = chpl_offset_serial+1;
+  private const chpl_offset_nextCoStmtSerial = chpl_offset_serial+1;
+  private const chpl_offset_end = chpl_offset_nextCoStmtSerial+1;
 
   // What is the size of a wide _EndCount pointer?
   private
@@ -96,6 +98,26 @@ module ChapelTaskData {
     // check we got 1 or 0 if bounds checking is on
     // (to detect runtime implementation errors where this part of
     //  the argument bundle is stack trash)
+    if boundsChecking then
+      assert(v == 0 || v == 1);
+    return v == 1;
+  }
+
+  proc chpl_task_data_setNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t), makeSerial: bool) : void {
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_nextCoStmtSerial;
+    var v:uint(8) = 0;
+    if makeSerial then
+      v = 1;
+    c_memcpy(c_ptrTo(prv[i]), c_ptrTo(v), c_sizeof(uint(8)));
+  }
+
+  proc chpl_task_data_getNextCoStmtSerial(tls:c_ptr(chpl_task_infoChapel_t)) : bool {
+    var ret:bool = false;
+    var prv = tls:c_ptr(c_uchar);
+    var i = chpl_offset_nextCoStmtSerial;
+    var v:uint(8) = 0;
+    c_memcpy(c_ptrTo(v), c_ptrTo(prv[i]), c_sizeof(uint(8)));
     if boundsChecking then
       assert(v == 0 || v == 1);
     return v == 1;

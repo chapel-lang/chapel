@@ -8,7 +8,7 @@ var totalMemLeaked = 0:uint(64);
 proc computeMemTrackOverhead() {
   const m0 = memoryUsed();
   {
-    var mu: [LocaleSpace] uint(64);
+    var mu: [0..#numLocales] uint(64);
     const m1 = memoryUsed();
     mu; // keep it alive
     return m1-m0;
@@ -26,7 +26,7 @@ proc allMemoryUsed(first=true) {
     if !first && verboseMemLeaks then printMemAllocsByType();
     return memoryUsed();
   } else {
-    var mu: [LocaleSpace] uint(64);
+    var mu: [0..#numLocales] uint(64);
     for loc in Locales do on loc do mu[here.id] = memoryUsed();
     if first && verboseMem then startVerboseMem();
     if !first && verboseMemLeaks then

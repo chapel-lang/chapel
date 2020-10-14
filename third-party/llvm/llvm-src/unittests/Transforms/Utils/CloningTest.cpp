@@ -1,20 +1,21 @@
 //===- Cloning.cpp - Unit tests for the Cloner ----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallPtrSet.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/AsmParser/Parser.h"
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DIBuilder.h"
 #include "llvm/IR/DebugInfo.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
@@ -356,6 +357,91 @@ TEST_F(CloneInstruction, DuplicateInstructionsToSplitBlocksEq2) {
   delete F;
 }
 
+static void runWithLoopInfoAndDominatorTree(
+    Module &M, StringRef FuncName,
+    function_ref<void(Function &F, LoopInfo &LI, DominatorTree &DT)> Test) {
+  auto *F = M.getFunction(FuncName);
+  ASSERT_NE(F, nullptr) << "Could not find " << FuncName;
+
+  DominatorTree DT(*F);
+  LoopInfo LI(DT);
+
+  Test(*F, LI, DT);
+}
+
+static std::unique_ptr<Module> parseIR(LLVMContext &C, const char *IR) {
+  SMDiagnostic Err;
+  std::unique_ptr<Module> Mod = parseAssemblyString(IR, Err, C);
+  if (!Mod)
+    Err.print("CloneLoop", errs());
+  return Mod;
+}
+
+TEST(CloneLoop, CloneLoopNest) {
+  // Parse the module.
+  LLVMContext Context;
+
+  std::unique_ptr<Module> M = parseIR(
+    Context,
+    R"(define void @foo(i32* %A, i32 %ub) {
+entry:
+  %guardcmp = icmp slt i32 0, %ub
+  br i1 %guardcmp, label %for.outer.preheader, label %for.end
+for.outer.preheader:
+  br label %for.outer
+for.outer:
+  %j = phi i32 [ 0, %for.outer.preheader ], [ %inc.outer, %for.outer.latch ]
+  br i1 %guardcmp, label %for.inner.preheader, label %for.outer.latch
+for.inner.preheader:
+  br label %for.inner
+for.inner:
+  %i = phi i32 [ 0, %for.inner.preheader ], [ %inc, %for.inner ]
+  %idxprom = sext i32 %i to i64
+  %arrayidx = getelementptr inbounds i32, i32* %A, i64 %idxprom
+  store i32 %i, i32* %arrayidx, align 4
+  %inc = add nsw i32 %i, 1
+  %cmp = icmp slt i32 %inc, %ub
+  br i1 %cmp, label %for.inner, label %for.inner.exit
+for.inner.exit:
+  br label %for.outer.latch
+for.outer.latch:
+  %inc.outer = add nsw i32 %j, 1
+  %cmp.outer = icmp slt i32 %inc.outer, %ub
+  br i1 %cmp.outer, label %for.outer, label %for.outer.exit
+for.outer.exit:
+  br label %for.end
+for.end:
+  ret void
+})"
+    );
+
+  runWithLoopInfoAndDominatorTree(
+      *M, "foo", [&](Function &F, LoopInfo &LI, DominatorTree &DT) {
+        Function::iterator FI = F.begin();
+        // First basic block is entry - skip it.
+        BasicBlock *Preheader = &*(++FI);
+        BasicBlock *Header = &*(++FI);
+        assert(Header->getName() == "for.outer");
+        Loop *L = LI.getLoopFor(Header);
+        EXPECT_NE(L, nullptr);
+        EXPECT_EQ(Header, L->getHeader());
+        EXPECT_EQ(Preheader, L->getLoopPreheader());
+
+        ValueToValueMapTy VMap;
+        SmallVector<BasicBlock *, 4> ClonedLoopBlocks;
+        Loop *NewLoop = cloneLoopWithPreheader(Preheader, Preheader, L, VMap,
+                                               "", &LI, &DT, ClonedLoopBlocks);
+        EXPECT_NE(NewLoop, nullptr);
+        EXPECT_EQ(NewLoop->getSubLoops().size(), 1u);
+        Loop::block_iterator BI = NewLoop->block_begin();
+        EXPECT_TRUE((*BI)->getName().startswith("for.outer"));
+        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner.preheader"));
+        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner"));
+        EXPECT_TRUE((*(++BI))->getName().startswith("for.inner.exit"));
+        EXPECT_TRUE((*(++BI))->getName().startswith("for.outer.latch"));
+      });
+}
+
 class CloneFunc : public ::testing::Test {
 protected:
   void SetUp() override {
@@ -566,6 +652,62 @@ TEST_F(CloneFunc, DebugIntrinsics) {
   }
 }
 
+static int GetDICompileUnitCount(const Module& M) {
+  if (const auto* LLVM_DBG_CU = M.getNamedMetadata("llvm.dbg.cu")) {
+    return LLVM_DBG_CU->getNumOperands();
+  }
+  return 0;
+}
+
+TEST(CloneFunction, CloneFunctionToDifferentModule) {
+  StringRef ImplAssembly = R"(
+    define void @foo() {
+      ret void, !dbg !5
+    }
+
+    !llvm.module.flags = !{!0}
+    !llvm.dbg.cu = !{!2, !6}
+    !0 = !{i32 1, !"Debug Info Version", i32 3}
+    !1 = distinct !DISubprogram(unit: !2)
+    !2 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3)
+    !3 = !DIFile(filename: "foo.c", directory: "/tmp")
+    !4 = distinct !DISubprogram(unit: !2)
+    !5 = !DILocation(line: 4, scope: !1)
+    !6 = distinct !DICompileUnit(language: DW_LANG_C99, file: !3)
+  )";
+  StringRef DeclAssembly = R"(
+    declare void @foo()
+  )";
+
+  LLVMContext Context;
+  SMDiagnostic Error;
+
+  auto ImplModule = parseAssemblyString(ImplAssembly, Error, Context);
+  EXPECT_TRUE(ImplModule != nullptr);
+  // DICompileUnits: !2, !6. Only !2 is reachable from @foo().
+  EXPECT_TRUE(GetDICompileUnitCount(*ImplModule) == 2);
+  auto* ImplFunction = ImplModule->getFunction("foo");
+  EXPECT_TRUE(ImplFunction != nullptr);
+
+  auto DeclModule = parseAssemblyString(DeclAssembly, Error, Context);
+  EXPECT_TRUE(DeclModule != nullptr);
+  // No DICompileUnits defined here.
+  EXPECT_TRUE(GetDICompileUnitCount(*DeclModule) == 0);
+  auto* DeclFunction = DeclModule->getFunction("foo");
+  EXPECT_TRUE(DeclFunction != nullptr);
+
+  ValueToValueMapTy VMap;
+  VMap[ImplFunction] = DeclFunction;
+  // No args to map
+  SmallVector<ReturnInst*, 8> Returns;
+  CloneFunctionInto(DeclFunction, ImplFunction, VMap, true, Returns);
+
+  EXPECT_FALSE(verifyModule(*ImplModule, &errs()));
+  EXPECT_FALSE(verifyModule(*DeclModule, &errs()));
+  // DICompileUnit !2 shall be inserted into DeclModule.
+  EXPECT_TRUE(GetDICompileUnitCount(*DeclModule) == 1);
+}
+
 class CloneModule : public ::testing::Test {
 protected:
   void SetUp() override {
@@ -622,7 +764,7 @@ protected:
 
     DBuilder.createGlobalVariableExpression(
         Subprogram, "unattached", "unattached", File, 1,
-        DBuilder.createNullPtrType(), false, Expr);
+        DBuilder.createNullPtrType(), false, true, Expr);
 
     auto *Entry = BasicBlock::Create(C, "", F);
     IBuilder.SetInsertPoint(Entry);

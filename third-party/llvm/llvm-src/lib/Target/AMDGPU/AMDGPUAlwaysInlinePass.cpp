@@ -1,9 +1,8 @@
 //===-- AMDGPUAlwaysInlinePass.cpp - Promote Allocas ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -119,7 +118,7 @@ bool AMDGPUAlwaysInline::runOnModule(Module &M) {
 
   for (GlobalVariable &GV : M.globals()) {
     // TODO: Region address
-    unsigned AS = GV.getType()->getAddressSpace();
+    unsigned AS = GV.getAddressSpace();
     if (AS != AMDGPUAS::LOCAL_ADDRESS && AS != AMDGPUAS::REGION_ADDRESS)
       continue;
 

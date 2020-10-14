@@ -1,9 +1,8 @@
 //===- FunctionTest.cpp - Function unit tests -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,6 +32,14 @@ TEST(FunctionTest, hasLazyArguments) {
 
   // The argument list should be populated at first access.
   (void)F->arg_begin();
+  EXPECT_FALSE(F->hasLazyArguments());
+
+  // Checking that getArg gets the arguments from F1 in the correct order.
+  unsigned i = 0;
+  for (Argument &A : F->args()) {
+    EXPECT_EQ(&A, F->getArg(i));
+    ++i;
+  }
   EXPECT_FALSE(F->hasLazyArguments());
 }
 
@@ -128,6 +135,31 @@ TEST(FunctionTest, setSection) {
   F->setSection(".text.test2");
   EXPECT_TRUE(F->getSection() == ".text.test2");
   EXPECT_TRUE(F->hasSection());
+}
+
+TEST(FunctionTest, GetPointerAlignment) {
+  LLVMContext Context;
+  Type *VoidType(Type::getVoidTy(Context));
+  FunctionType *FuncType(FunctionType::get(VoidType, false));
+  std::unique_ptr<Function> Func(Function::Create(
+      FuncType, GlobalValue::ExternalLinkage));
+  EXPECT_EQ(MaybeAlign(), Func->getPointerAlignment(DataLayout("")));
+  EXPECT_EQ(Align(1), Func->getPointerAlignment(DataLayout("Fi8")));
+  EXPECT_EQ(Align(1), Func->getPointerAlignment(DataLayout("Fn8")));
+  EXPECT_EQ(Align(2), Func->getPointerAlignment(DataLayout("Fi16")));
+  EXPECT_EQ(Align(2), Func->getPointerAlignment(DataLayout("Fn16")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fi32")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fn32")));
+
+  Func->setAlignment(Align(4));
+
+  EXPECT_EQ(MaybeAlign(), Func->getPointerAlignment(DataLayout("")));
+  EXPECT_EQ(Align(1), Func->getPointerAlignment(DataLayout("Fi8")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fn8")));
+  EXPECT_EQ(Align(2), Func->getPointerAlignment(DataLayout("Fi16")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fn16")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fi32")));
+  EXPECT_EQ(Align(4), Func->getPointerAlignment(DataLayout("Fn32")));
 }
 
 } // end namespace

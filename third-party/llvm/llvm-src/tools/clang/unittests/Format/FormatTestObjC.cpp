@@ -1,9 +1,8 @@
 //===- unittest/Format/FormatTestObjC.cpp - Formatting unit tests----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -115,7 +114,12 @@ TEST(FormatTestObjCStyle, DetectsObjCInHeaders) {
   EXPECT_EQ(FormatStyle::LK_Cpp, Style->Language);
 
   Style =
-      getStyle("{}", "a.h", "none", "typedef NS_ENUM(NSInteger, Foo) {};\n");
+      getStyle("{}", "a.h", "none", "typedef NS_ENUM(int, Foo) {};\n");
+  ASSERT_TRUE((bool)Style);
+  EXPECT_EQ(FormatStyle::LK_ObjC, Style->Language);
+
+  Style = getStyle("{}", "a.h", "none",
+                   "typedef NS_CLOSED_ENUM(int, Foo) {};\n");
   ASSERT_TRUE((bool)Style);
   EXPECT_EQ(FormatStyle::LK_ObjC, Style->Language);
 
@@ -166,6 +170,20 @@ TEST(FormatTestObjCStyle, DetectsObjCInHeaders) {
   EXPECT_EQ(FormatStyle::LK_ObjC, Style->Language);
 }
 
+TEST(FormatTestObjCStyle, AvoidDetectingDesignatedInitializersAsObjCInHeaders) {
+  auto Style = getStyle("LLVM", "a.h", "none",
+                        "static const char *names[] = {[0] = \"foo\",\n"
+                        "[kBar] = \"bar\"};");
+  ASSERT_TRUE((bool)Style);
+  EXPECT_EQ(FormatStyle::LK_Cpp, Style->Language);
+
+  Style = getStyle("LLVM", "a.h", "none",
+                   "static const char *names[] = {[0] EQ \"foo\",\n"
+                   "[kBar] EQ \"bar\"};");
+  ASSERT_TRUE((bool)Style);
+  EXPECT_EQ(FormatStyle::LK_Cpp, Style->Language);
+}
+
 TEST_F(FormatTestObjC, FormatObjCTryCatch) {
   verifyFormat("@try {\n"
                "  f();\n"
@@ -189,7 +207,7 @@ TEST_F(FormatTestObjC, FormatObjCAutoreleasepool) {
                "  f();\n"
                "}\n");
   Style.BreakBeforeBraces = FormatStyle::BS_Custom;
-  Style.BraceWrapping.AfterControlStatement = true;
+  Style.BraceWrapping.AfterControlStatement = FormatStyle::BWACS_Always;
   verifyFormat("@autoreleasepool\n"
                "{\n"
                "  f();\n"
@@ -219,7 +237,7 @@ TEST_F(FormatTestObjC, FormatObjCSynchronized) {
                "  f();\n"
                "}\n");
   Style.BreakBeforeBraces = FormatStyle::BS_Custom;
-  Style.BraceWrapping.AfterControlStatement = true;
+  Style.BraceWrapping.AfterControlStatement = FormatStyle::BWACS_Always;
   verifyFormat("@synchronized(self)\n"
                "{\n"
                "  f();\n"
@@ -598,6 +616,7 @@ TEST_F(FormatTestObjC, FormatObjCMethodDeclarations) {
 
 TEST_F(FormatTestObjC, FormatObjCMethodExpr) {
   verifyFormat("[foo bar:baz];");
+  verifyFormat("[foo bar]->baz;");
   verifyFormat("return [foo bar:baz];");
   verifyFormat("return (a)[foo bar:baz];");
   verifyFormat("f([foo bar:baz]);");
@@ -871,6 +890,18 @@ TEST_F(FormatTestObjC, FormatObjCMethodExpr) {
   verifyFormat("[[[obj foo] bar] aa:42\n"
                "                 bb:42\n"
                "                 cc:42];");
+
+  // Avoid breaking between unary operators and ObjC method expressions.
+  Style.ColumnLimit = 45;
+  verifyFormat("if (a012345678901234567890123 &&\n"
+               "    ![foo bar]) {\n"
+               "}");
+  verifyFormat("if (a012345678901234567890123 &&\n"
+               "    +[foo bar]) {\n"
+               "}");
+  verifyFormat("if (a012345678901234567890123 &&\n"
+               "    -[foo bar]) {\n"
+               "}");
 
   Style.ColumnLimit = 70;
   verifyFormat(
@@ -1313,6 +1344,58 @@ TEST_F(FormatTestObjC, AlwaysBreakBeforeMultilineStrings) {
                "        rr:42\n"
                "    ssssss:@\"ee\"\n"
                "           @\"fffff\"];");
+}
+
+TEST_F(FormatTestObjC, DisambiguatesCallsFromCppLambdas) {
+  verifyFormat("x = ([a foo:bar] && b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] + b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] + !b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] + ~b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] - b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] / b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] % b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] | b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] || b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] && b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] == b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] != b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] <= b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] >= b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] << b->c == 'd');");
+  verifyFormat("x = ([a foo:bar] ? b->c == 'd' : 'e');");
+  // FIXME: The following are wrongly classified as C++ lambda expressions.
+  // For example this code:
+  //   x = ([a foo:bar] & b->c == 'd');
+  // is formatted as:
+  //   x = ([a foo:bar] & b -> c == 'd');
+  // verifyFormat("x = ([a foo:bar] & b->c == 'd');");
+  // verifyFormat("x = ([a foo:bar] > b->c == 'd');");
+  // verifyFormat("x = ([a foo:bar] < b->c == 'd');");
+  // verifyFormat("x = ([a foo:bar] >> b->c == 'd');");
+}
+
+TEST_F(FormatTestObjC,  DisambiguatesCallsFromStructuredBindings) {
+  verifyFormat("int f() {\n"
+               "  if (a && [f arg])\n"
+               "    return 0;\n"
+               "}");
+  verifyFormat("int f() {\n"
+               "  if (a & [f arg])\n"
+               "    return 0;\n"
+               "}");
+  verifyFormat("int f() {\n"
+               "  for (auto &[elem] : list)\n"
+               "    return 0;\n"
+               "}");
+  verifyFormat("int f() {\n"
+               "  for (auto &&[elem] : list)\n"
+               "    return 0;\n"
+               "}");
+  verifyFormat(
+      "int f() {\n"
+      "  for (auto /**/ const /**/ volatile /**/ && /**/ [elem] : list)\n"
+      "    return 0;\n"
+      "}");
 }
 
 } // end namespace

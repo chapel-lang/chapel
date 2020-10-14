@@ -40,9 +40,10 @@ static void removePODinitDestroy()
         // argument removed
         continue;
 
-      // We expect both initCopy and autoCopy functions to have one argument
-      // whose type is the same as the return type.
-      INT_ASSERT(fn->numFormals() >= 1);
+      // We expect both initCopy and autoCopy functions to have two arguments
+      // second argument: whose type is the same as the return type
+      // definedConst: whether the LHS was defined const
+      INT_ASSERT(fn->numFormals() >= 2);
 
       if (fn->getFormal(1)->type != fn->retType)
         // In some cases, the autoCopy function has a different return type than
@@ -85,7 +86,7 @@ static void removePODinitDestroy()
           if (lhsType->getValType() != rhsType->getValType()) {
             INT_FATAL(actual, "Type mismatch in updateAutoCopy");
           } else {
-            call->replace(actual->remove());
+            removeInitOrAutoCopyPostResolution(call);
           }
         }
       }

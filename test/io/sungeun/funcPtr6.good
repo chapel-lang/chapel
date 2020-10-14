@@ -1,1 +1,1 @@
-funcPtr6.chpl:5: error: FIX ME!
+funcPtr6.chpl:5: error: 'foo' cannot be captured as a value because it is a generic function

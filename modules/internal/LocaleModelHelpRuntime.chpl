@@ -56,13 +56,6 @@ module LocaleModelHelpRuntime {
   pragma "fn synchronization free"
   extern proc chpl_comm_on_bundle_task_bundle(bundle:chpl_comm_on_bundle_p):chpl_task_bundle_p;
 
-  // We need an explicit copy constructor because the compiler cannot create
-  // a correct one for a record type whose members are not known to it.
-  pragma "init copy fn"
-  pragma "fn synchronization free"
-  extern "chpl__initCopy_chpl_rt_localeID_t"
-  proc chpl__initCopy(initial: chpl_localeID_t): chpl_localeID_t;
-
   // Runtime interface for manipulating global locale IDs.
   pragma "fn synchronization free"
   extern
@@ -71,11 +64,11 @@ module LocaleModelHelpRuntime {
 
   pragma "fn synchronization free"
   extern
-    proc chpl_rt_nodeFromLocaleID(loc: chpl_localeID_t): chpl_nodeID_t;
+    proc chpl_rt_nodeFromLocaleID(in loc: chpl_localeID_t): chpl_nodeID_t;
 
   pragma "fn synchronization free"
   extern
-    proc chpl_rt_sublocFromLocaleID(loc: chpl_localeID_t): chpl_sublocID_t;
+    proc chpl_rt_sublocFromLocaleID(in loc: chpl_localeID_t): chpl_sublocID_t;
 
   // Compiler (and module code) interface for manipulating global locale IDs..
   pragma "insert line file info"
@@ -85,12 +78,12 @@ module LocaleModelHelpRuntime {
 
   pragma "insert line file info"
   export
-  proc chpl_nodeFromLocaleID(loc: chpl_localeID_t)
+  proc chpl_nodeFromLocaleID(in loc: chpl_localeID_t)
     return chpl_rt_nodeFromLocaleID(loc);
 
   pragma "insert line file info"
   export
-  proc chpl_sublocFromLocaleID(loc: chpl_localeID_t)
+  proc chpl_sublocFromLocaleID(in loc: chpl_localeID_t)
     return chpl_rt_sublocFromLocaleID(loc);
 
   //////////////////////////////////////////
@@ -172,6 +165,10 @@ module LocaleModelHelpRuntime {
                              ) {
     var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
+    if chpl_task_data_getNextCoStmtSerial(tls) {
+      isSerial = true;
+      chpl_task_data_setNextCoStmtSerial(tls, false);
+    }
     if isSerial {
       chpl_ftable_call(fn, args);
     } else {
@@ -191,6 +188,18 @@ module LocaleModelHelpRuntime {
     // been executed. Tasking layers should tolerate empty task
     // lists for this reason.
     chpl_task_executeTasksInList(task_list);
+  }
+
+  // wrap around runtime's chpl__initCopy
+  proc chpl__initCopy(initial: chpl_localeID_t,
+                      definedConst: bool): chpl_localeID_t {
+    // We need an explicit copy constructor because the compiler cannot create
+    // a correct one for a record type whose members are not known to it.
+    pragma "init copy fn"
+    pragma "fn synchronization free"
+    extern proc chpl__initCopy_chpl_rt_localeID_t(initial: chpl_localeID_t): chpl_localeID_t;
+
+    return chpl__initCopy_chpl_rt_localeID_t(initial);
   }
 
 }

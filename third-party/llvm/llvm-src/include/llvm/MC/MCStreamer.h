@@ -1,9 +1,8 @@
 //===- MCStreamer.h - High-level Streaming Machine Code Output --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,7 +19,6 @@
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/MC/MCDirectives.h"
-#include "llvm/MC/MCDwarf.h"
 #include "llvm/MC/MCLinkerOptimizationHint.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCWinEH.h"
@@ -44,15 +42,24 @@ class MCAsmBackend;
 class MCCodeEmitter;
 struct MCCodePaddingContext;
 class MCContext;
+struct MCDwarfFrameInfo;
 class MCExpr;
 class MCInst;
 class MCInstPrinter;
+class MCRegister;
 class MCSection;
 class MCStreamer;
 class MCSymbolRefExpr;
 class MCSubtargetInfo;
 class raw_ostream;
 class Twine;
+
+namespace codeview {
+struct DefRangeRegisterRelHeader;
+struct DefRangeSubfieldRegisterHeader;
+struct DefRangeRegisterHeader;
+struct DefRangeFramePointerRelHeader;
+}
 
 using MCSectionSubPair = std::pair<MCSection *, const MCExpr *>;
 
@@ -96,8 +103,9 @@ public:
   // Allow a target to add behavior to the emitAssignment of MCStreamer.
   virtual void emitAssignment(MCSymbol *Symbol, const MCExpr *Value);
 
-  virtual void prettyPrintAsm(MCInstPrinter &InstPrinter, raw_ostream &OS,
-                              const MCInst &Inst, const MCSubtargetInfo &STI);
+  virtual void prettyPrintAsm(MCInstPrinter &InstPrinter, uint64_t Address,
+                              const MCInst &Inst, const MCSubtargetInfo &STI,
+                              raw_ostream &OS);
 
   virtual void emitDwarfFileDirective(StringRef Directive);
 
@@ -215,6 +223,13 @@ class MCStreamer {
 
   bool UseAssemblerInfoForParsing;
 
+  /// Is the assembler allowed to insert padding automatically?  For
+  /// correctness reasons, we sometimes need to ensure instructions aren't
+  /// seperated in unexpected ways.  At the moment, this feature is only
+  /// useable from an integrated assembler, but assembly syntax is under
+  /// discussion for future inclusion.
+  bool AllowAutoPadding = false;
+
 protected:
   MCStreamer(MCContext &Ctx);
 
@@ -259,6 +274,9 @@ public:
     return TargetStreamer.get();
   }
 
+  void setAllowAutoPadding(bool v) { AllowAutoPadding = v; }
+  bool getAllowAutoPadding() const { return AllowAutoPadding; }
+
   /// When emitting an object file, create and emit a real label. When emitting
   /// textual assembly, this should do nothing to avoid polluting our output.
   virtual MCSymbol *EmitCFILabel();
@@ -267,10 +285,8 @@ public:
   /// closed. Otherwise, issue an error and return null.
   WinEH::FrameInfo *EnsureValidWinFrameInfo(SMLoc Loc);
 
-  unsigned getNumFrameInfos() { return DwarfFrameInfos.size(); }
-  ArrayRef<MCDwarfFrameInfo> getDwarfFrameInfos() const {
-    return DwarfFrameInfos;
-  }
+  unsigned getNumFrameInfos();
+  ArrayRef<MCDwarfFrameInfo> getDwarfFrameInfos() const;
 
   bool hasUnfinishedDwarfFrameInfo();
 
@@ -539,6 +555,17 @@ public:
   /// \param Symbol - Symbol the image relative relocation should point to.
   virtual void EmitCOFFImgRel32(MCSymbol const *Symbol, int64_t Offset);
 
+  /// Emits an lcomm directive with XCOFF csect information.
+  ///
+  /// \param LabelSym - Label on the block of storage.
+  /// \param Size - The size of the block of storage.
+  /// \param CsectSym - Csect name for the block of storage.
+  /// \param ByteAlignment - The alignment of the symbol in bytes. Must be a
+  /// power of 2.
+  virtual void EmitXCOFFLocalCommonSymbol(MCSymbol *LabelSym, uint64_t Size,
+                                          MCSymbol *CsectSym,
+                                          unsigned ByteAlignment);
+
   /// Emit an ELF .size directive.
   ///
   /// This corresponds to an assembler statement such as:
@@ -629,13 +656,20 @@ public:
   /// to pass in a MCExpr for constant integers.
   virtual void EmitIntValue(uint64_t Value, unsigned Size);
 
+  /// Special case of EmitValue that avoids the client having to pass
+  /// in a MCExpr for constant integers & prints in Hex format for certain
+  /// modes.
+  virtual void EmitIntValueInHex(uint64_t Value, unsigned Size) {
+    EmitIntValue(Value, Size);
+  }
+
   virtual void EmitULEB128Value(const MCExpr *Value);
 
   virtual void EmitSLEB128Value(const MCExpr *Value);
 
   /// Special case of EmitULEB128Value that avoids the client having to
   /// pass in a MCExpr for constant integers.
-  void EmitULEB128IntValue(uint64_t Value);
+  void EmitULEB128IntValue(uint64_t Value, unsigned PadTo = 0);
 
   /// Special case of EmitSLEB128Value that avoids the client having to
   /// pass in a MCExpr for constant integers.
@@ -782,7 +816,7 @@ public:
   /// implements the DWARF2 '.file 4 "foo.c"' assembler directive.
   unsigned EmitDwarfFileDirective(unsigned FileNo, StringRef Directory,
                                   StringRef Filename,
-                                  MD5::MD5Result *Checksum = nullptr,
+                                  Optional<MD5::MD5Result> Checksum = None,
                                   Optional<StringRef> Source = None,
                                   unsigned CUID = 0) {
     return cantFail(
@@ -797,12 +831,12 @@ public:
   /// '.file 4 "dir/foo.c" md5 "..." source "..."' assembler directive.
   virtual Expected<unsigned> tryEmitDwarfFileDirective(
       unsigned FileNo, StringRef Directory, StringRef Filename,
-      MD5::MD5Result *Checksum = nullptr, Optional<StringRef> Source = None,
+      Optional<MD5::MD5Result> Checksum = None, Optional<StringRef> Source = None,
       unsigned CUID = 0);
 
   /// Specify the "root" file of the compilation, using the ".file 0" extension.
   virtual void emitDwarfFile0Directive(StringRef Directory, StringRef Filename,
-                                       MD5::MD5Result *Checksum,
+                                       Optional<MD5::MD5Result> Checksum,
                                        Optional<StringRef> Source,
                                        unsigned CUID = 0);
 
@@ -855,6 +889,22 @@ public:
   virtual void EmitCVDefRangeDirective(
       ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
       StringRef FixedSizePortion);
+
+  virtual void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeRegisterRelHeader DRHdr);
+
+  virtual void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeSubfieldRegisterHeader DRHdr);
+
+  virtual void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeRegisterHeader DRHdr);
+
+  virtual void EmitCVDefRangeDirective(
+      ArrayRef<std::pair<const MCSymbol *, const MCSymbol *>> Ranges,
+      codeview::DefRangeFramePointerRelHeader DRHdr);
 
   /// This implements the CodeView '.cv_stringtable' assembler directive.
   virtual void EmitCVStringTableDirective() {}
@@ -913,13 +963,13 @@ public:
   virtual void EmitWinCFIFuncletOrFuncEnd(SMLoc Loc = SMLoc());
   virtual void EmitWinCFIStartChained(SMLoc Loc = SMLoc());
   virtual void EmitWinCFIEndChained(SMLoc Loc = SMLoc());
-  virtual void EmitWinCFIPushReg(unsigned Register, SMLoc Loc = SMLoc());
-  virtual void EmitWinCFISetFrame(unsigned Register, unsigned Offset,
+  virtual void EmitWinCFIPushReg(MCRegister Register, SMLoc Loc = SMLoc());
+  virtual void EmitWinCFISetFrame(MCRegister Register, unsigned Offset,
                                   SMLoc Loc = SMLoc());
   virtual void EmitWinCFIAllocStack(unsigned Size, SMLoc Loc = SMLoc());
-  virtual void EmitWinCFISaveReg(unsigned Register, unsigned Offset,
+  virtual void EmitWinCFISaveReg(MCRegister Register, unsigned Offset,
                                  SMLoc Loc = SMLoc());
-  virtual void EmitWinCFISaveXMM(unsigned Register, unsigned Offset,
+  virtual void EmitWinCFISaveXMM(MCRegister Register, unsigned Offset,
                                  SMLoc Loc = SMLoc());
   virtual void EmitWinCFIPushFrame(bool Code, SMLoc Loc = SMLoc());
   virtual void EmitWinCFIEndProlog(SMLoc Loc = SMLoc());
@@ -953,9 +1003,7 @@ public:
   virtual void EmitAddrsigSym(const MCSymbol *Sym) {}
 
   /// Emit the given \p Instruction into the current section.
-  /// PrintSchedInfo == true then schedul comment should be added to output
-  virtual void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI,
-                               bool PrintSchedInfo = false);
+  virtual void EmitInstruction(const MCInst &Inst, const MCSubtargetInfo &STI);
 
   /// Set the bundle alignment mode from now on in the section.
   /// The argument is the power of 2 to which the alignment is set. The

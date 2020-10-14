@@ -29,7 +29,7 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 || -z $5 ]]; then
 fi
 
 # Ensure that PrgEnv-gnu is loaded
-existing_prgenv=$(module list --terse 2>&1 | grep PrgEnv-)
+existing_prgenv=$(module -t list 2>&1 | grep PrgEnv-)
 if [ -z "${existing_prgenv}" ]
 then
   # No PrgEnv loaded, load PrgEnv-gnu
@@ -51,7 +51,7 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 # linker option for static linking with it. While it's not always
 # used with Chapel programs, it is expected to be the common case
 # when running on a Cray X*, so just always linking it is acceptable.
-# (We don't add it for Cray Shasta systems, where it's not needed.)
+# (We don't add it for HPE Cray EX systems, where it's not needed.)
 #
 # Note that the GCC option -### causes the compiler to not actually
 # compile anything but just print out what it would do to stderr.
@@ -61,29 +61,43 @@ export PE_CHAPEL_PKGCONFIG_LIBS=`$CHPL_HOME/util/config/gather-pe-chapel-pkgconf
 #
 # -lchpl_lib_token allows the Chapel compiler to know
 # where to put additional arguments (they replace that argument).
-if [[ "$2" == "cray-shasta" ]] ; then
-  COMMANDS=`cc -craype-verbose -### -lchpl_lib_token /dev/null 2>/dev/null`
-else
-  COMMANDS=`cc -craype-verbose -### -lhugetlbfs -lchpl_lib_token /dev/null 2>/dev/null`
+LHUGETLBFS="-lhugetlbfs"
+if [[ "$2" == "hpe-cray-ex" ]] ; then
+  LHUGETLBFS=""
 fi
 
-  for arg in $COMMANDS
-  do
-    if [[ $arg == -I* && $COMPILE == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -D* && $COMPILE == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -Wl* && $LINK == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -L* && $LINK == 1 ]]
-    then
-      echo $arg
-    elif [[ $arg == -l* && $LINK == 1 ]]
-    then
-      echo $arg
-    fi
-  done
+# LIBRARY_PATH is only output to stderr but sometimes includes paths
+# we need to include with -L so gather that as well.
+# The 2> >(command) is a process substitution.
+COMMANDS=`cc -craype-verbose -### $LHUGETLBFS -lchpl_lib_token /dev/null 2> >(grep LIBRARY_PATH)`
+
+for arg in $COMMANDS
+do
+  if [[ $arg == LIBRARY_PATH* && $LINK == 1 ]]
+  then
+    # remove LIBRARY_PATH=
+    arg=${arg#LIBRARY_PATH=}
+    # convert : to spaces
+    arg=${arg//:/ }
+    for subarg in $arg
+    do
+      echo -L$subarg
+    done
+  elif [[ $arg == -I* && $COMPILE == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -D* && $COMPILE == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -Wl* && $LINK == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -L* && $LINK == 1 ]]
+  then
+    echo $arg
+  elif [[ $arg == -l* && $LINK == 1 ]]
+  then
+    echo $arg
+  fi
+done
 

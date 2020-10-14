@@ -1,9 +1,8 @@
 //===- BypassSlowDivision.cpp - Bypass slow division ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -449,12 +448,16 @@ bool llvm::bypassSlowDivision(BasicBlock *BB,
   DivCacheTy PerBBDivCache;
 
   bool MadeChange = false;
-  Instruction* Next = &*BB->begin();
+  Instruction *Next = &*BB->begin();
   while (Next != nullptr) {
     // We may add instructions immediately after I, but we want to skip over
     // them.
-    Instruction* I = Next;
+    Instruction *I = Next;
     Next = Next->getNextNode();
+
+    // Ignore dead code to save time and avoid bugs.
+    if (I->hasNUses(0))
+      continue;
 
     FastDivInsertionTask Task(I, BypassWidths);
     if (Value *Replacement = Task.getReplacement(PerBBDivCache)) {

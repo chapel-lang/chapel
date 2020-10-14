@@ -1,9 +1,8 @@
 //- WebAssemblyISelLowering.h - WebAssembly DAG Lowering Interface -*- C++ -*-//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -25,8 +24,16 @@ namespace WebAssemblyISD {
 enum NodeType : unsigned {
   FIRST_NUMBER = ISD::BUILTIN_OP_END,
 #define HANDLE_NODETYPE(NODE) NODE,
+#define HANDLE_MEM_NODETYPE(NODE)
+#include "WebAssemblyISD.def"
+  FIRST_MEM_OPCODE = ISD::FIRST_TARGET_MEMORY_OPCODE,
+#undef HANDLE_NODETYPE
+#undef HANDLE_MEM_NODETYPE
+#define HANDLE_NODETYPE(NODE)
+#define HANDLE_MEM_NODETYPE(NODE) NODE,
 #include "WebAssemblyISD.def"
 #undef HANDLE_NODETYPE
+#undef HANDLE_MEM_NODETYPE
 };
 
 } // end namespace WebAssemblyISD
@@ -47,7 +54,6 @@ private:
   AtomicExpansionKind shouldExpandAtomicRMWInIR(AtomicRMWInst *) const override;
   FastISel *createFastISel(FunctionLoweringInfo &FuncInfo,
                            const TargetLibraryInfo *LibInfo) const override;
-  bool isOffsetFoldingLegal(const GlobalAddressSDNode *GA) const override;
   MVT getScalarShiftAmountTy(const DataLayout &DL, EVT) const override;
   MachineBasicBlock *
   EmitInstrWithCustomInserter(MachineInstr &MI,
@@ -62,9 +68,10 @@ private:
                              unsigned AS,
                              Instruction *I = nullptr) const override;
   bool allowsMisalignedMemoryAccesses(EVT, unsigned AddrSpace, unsigned Align,
+                                      MachineMemOperand::Flags Flags,
                                       bool *Fast) const override;
   bool isIntDivCheap(EVT VT, AttributeList Attr) const override;
-
+  bool isVectorLoadExtDesirable(SDValue ExtVal) const override;
   EVT getSetCCResultType(const DataLayout &DL, LLVMContext &Context,
                          EVT VT) const override;
   bool getTgtMemIntrinsic(IntrinsicInfo &Info, const CallInst &I,
@@ -87,9 +94,17 @@ private:
                                const SDLoc &DL, SelectionDAG &DAG,
                                SmallVectorImpl<SDValue> &InVals) const override;
 
+  void ReplaceNodeResults(SDNode *N, SmallVectorImpl<SDValue> &Results,
+                          SelectionDAG &DAG) const override;
+
+  const char *getClearCacheBuiltinName() const override {
+    report_fatal_error("llvm.clear_cache is not supported on wasm");
+  }
+
   // Custom lowering hooks.
   SDValue LowerOperation(SDValue Op, SelectionDAG &DAG) const override;
   SDValue LowerFrameIndex(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerRETURNADDR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerFRAMEADDR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerExternalSymbol(SDValue Op, SelectionDAG &DAG) const;
@@ -97,10 +112,11 @@ private:
   SDValue LowerJumpTable(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerVASTART(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerCopyToReg(SDValue Op, SelectionDAG &DAG) const;
-  SDValue LowerINTRINSIC_WO_CHAIN(SDValue Op, SelectionDAG &DAG) const;
-  SDValue LowerINTRINSIC_VOID(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerIntrinsic(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerSIGN_EXTEND_INREG(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerBUILD_VECTOR(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerVECTOR_SHUFFLE(SDValue Op, SelectionDAG &DAG) const;
+  SDValue LowerSETCC(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerAccessVectorElement(SDValue Op, SelectionDAG &DAG) const;
   SDValue LowerShift(SDValue Op, SelectionDAG &DAG) const;
 };

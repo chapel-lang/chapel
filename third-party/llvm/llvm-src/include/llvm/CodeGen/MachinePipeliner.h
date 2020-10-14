@@ -1,9 +1,8 @@
 //===- MachinePipeliner.h - Machine Software Pipeliner Pass -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -41,10 +40,13 @@
 #ifndef LLVM_LIB_CODEGEN_MACHINEPIPELINER_H
 #define LLVM_LIB_CODEGEN_MACHINEPIPELINER_H
 
+#include "llvm/Analysis/AliasAnalysis.h"
+
 #include "llvm/CodeGen/MachineDominators.h"
 #include "llvm/CodeGen/RegisterClassInfo.h"
 #include "llvm/CodeGen/ScheduleDAGInstrs.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
+#include "llvm/InitializePasses.h"
 
 namespace llvm {
 
@@ -63,6 +65,8 @@ public:
   const InstrItineraryData *InstrItins;
   const TargetInstrInfo *TII = nullptr;
   RegisterClassInfo RegClassInfo;
+  bool disabledByPragma = false;
+  unsigned II_setByPragma = 0;
 
 #ifndef NDEBUG
   static int NumTries;
@@ -100,6 +104,7 @@ private:
   bool canPipelineLoop(MachineLoop &L);
   bool scheduleLoop(MachineLoop &L);
   bool swingModuloScheduler(MachineLoop &L);
+  void setPragmaPipelineOptions(MachineLoop &L);
 };
 
 /// This class builds the dependence graph for the instructions in a loop,
@@ -108,11 +113,14 @@ class SwingSchedulerDAG : public ScheduleDAGInstrs {
   MachinePipeliner &Pass;
   /// The minimum initiation interval between iterations for this schedule.
   unsigned MII = 0;
+  /// The maximum initiation interval between iterations for this schedule.
+  unsigned MAX_II = 0;
   /// Set to true if a valid pipelined schedule is found for the loop.
   bool Scheduled = false;
   MachineLoop &Loop;
   LiveIntervals &LIS;
   const RegisterClassInfo &RegClassInfo;
+  unsigned II_setByPragma = 0;
 
   /// A toplogical ordering of the SUnits, which is needed for changing
   /// dependences and iterating over the SUnits.
@@ -143,7 +151,7 @@ class SwingSchedulerDAG : public ScheduleDAGInstrs {
 
   /// We may create a new instruction, so remember it because it
   /// must be deleted when the pass is finished.
-  SmallPtrSet<MachineInstr *, 4> NewMIs;
+  DenseMap<MachineInstr*, MachineInstr *> NewMIs;
 
   /// Ordered list of DAG postprocessing steps.
   std::vector<std::unique_ptr<ScheduleDAGMutation>> Mutations;
@@ -190,12 +198,12 @@ class SwingSchedulerDAG : public ScheduleDAGInstrs {
 
 public:
   SwingSchedulerDAG(MachinePipeliner &P, MachineLoop &L, LiveIntervals &lis,
-                    const RegisterClassInfo &rci)
+                    const RegisterClassInfo &rci, unsigned II)
       : ScheduleDAGInstrs(*P.MF, P.MLI, false), Pass(P), Loop(L), LIS(lis),
-        RegClassInfo(rci), Topo(SUnits, &ExitSU) {
+        RegClassInfo(rci), II_setByPragma(II), Topo(SUnits, &ExitSU) {
     P.MF->getSubtarget().getSMSMutations(Mutations);
     if (SwpEnableCopyToPhi)
-      Mutations.push_back(llvm::make_unique<CopyToPhiMutation>());
+      Mutations.push_back(std::make_unique<CopyToPhiMutation>());
   }
 
   void schedule() override;
@@ -253,9 +261,6 @@ public:
     return 0;
   }
 
-  /// Set the Minimum Initiation Interval for this schedule attempt.
-  void setMII(unsigned mii) { MII = mii; }
-
   void applyInstrChange(MachineInstr *MI, SMSchedule &Schedule);
 
   void fixupRegisterOverlaps(std::deque<SUnit *> &Instrs);
@@ -295,57 +300,16 @@ private:
   void computeNodeOrder(NodeSetType &NodeSets);
   void checkValidNodeOrder(const NodeSetType &Circuits) const;
   bool schedulePipeline(SMSchedule &Schedule);
-  void generatePipelinedLoop(SMSchedule &Schedule);
-  void generateProlog(SMSchedule &Schedule, unsigned LastStage,
-                      MachineBasicBlock *KernelBB, ValueMapTy *VRMap,
-                      MBBVectorTy &PrologBBs);
-  void generateEpilog(SMSchedule &Schedule, unsigned LastStage,
-                      MachineBasicBlock *KernelBB, ValueMapTy *VRMap,
-                      MBBVectorTy &EpilogBBs, MBBVectorTy &PrologBBs);
-  void generateExistingPhis(MachineBasicBlock *NewBB, MachineBasicBlock *BB1,
-                            MachineBasicBlock *BB2, MachineBasicBlock *KernelBB,
-                            SMSchedule &Schedule, ValueMapTy *VRMap,
-                            InstrMapTy &InstrMap, unsigned LastStageNum,
-                            unsigned CurStageNum, bool IsLast);
-  void generatePhis(MachineBasicBlock *NewBB, MachineBasicBlock *BB1,
-                    MachineBasicBlock *BB2, MachineBasicBlock *KernelBB,
-                    SMSchedule &Schedule, ValueMapTy *VRMap,
-                    InstrMapTy &InstrMap, unsigned LastStageNum,
-                    unsigned CurStageNum, bool IsLast);
-  void removeDeadInstructions(MachineBasicBlock *KernelBB,
-                              MBBVectorTy &EpilogBBs);
-  void splitLifetimes(MachineBasicBlock *KernelBB, MBBVectorTy &EpilogBBs,
-                      SMSchedule &Schedule);
-  void addBranches(MBBVectorTy &PrologBBs, MachineBasicBlock *KernelBB,
-                   MBBVectorTy &EpilogBBs, SMSchedule &Schedule,
-                   ValueMapTy *VRMap);
   bool computeDelta(MachineInstr &MI, unsigned &Delta);
-  void updateMemOperands(MachineInstr &NewMI, MachineInstr &OldMI,
-                         unsigned Num);
-  MachineInstr *cloneInstr(MachineInstr *OldMI, unsigned CurStageNum,
-                           unsigned InstStageNum);
-  MachineInstr *cloneAndChangeInstr(MachineInstr *OldMI, unsigned CurStageNum,
-                                    unsigned InstStageNum,
-                                    SMSchedule &Schedule);
-  void updateInstruction(MachineInstr *NewMI, bool LastDef,
-                         unsigned CurStageNum, unsigned InstrStageNum,
-                         SMSchedule &Schedule, ValueMapTy *VRMap);
   MachineInstr *findDefInLoop(unsigned Reg);
-  unsigned getPrevMapVal(unsigned StageNum, unsigned PhiStage, unsigned LoopVal,
-                         unsigned LoopStage, ValueMapTy *VRMap,
-                         MachineBasicBlock *BB);
-  void rewritePhiValues(MachineBasicBlock *NewBB, unsigned StageNum,
-                        SMSchedule &Schedule, ValueMapTy *VRMap,
-                        InstrMapTy &InstrMap);
-  void rewriteScheduledInstr(MachineBasicBlock *BB, SMSchedule &Schedule,
-                             InstrMapTy &InstrMap, unsigned CurStageNum,
-                             unsigned PhiNum, MachineInstr *Phi,
-                             unsigned OldReg, unsigned NewReg,
-                             unsigned PrevReg = 0);
   bool canUseLastOffsetValue(MachineInstr *MI, unsigned &BasePos,
                              unsigned &OffsetPos, unsigned &NewBase,
                              int64_t &NewOffset);
   void postprocessDAG();
+  /// Set the Minimum Initiation Interval for this schedule attempt.
+  void setMII(unsigned ResMII, unsigned RecMII);
+  /// Set the Maximum Initiation Interval for this schedule attempt.
+  void setMAX_II();
 };
 
 /// A NodeSet contains a set of SUnit DAG nodes with additional information
@@ -457,6 +421,56 @@ public:
 #endif
 };
 
+// 16 was selected based on the number of ProcResource kinds for all
+// existing Subtargets, so that SmallVector don't need to resize too often.
+static const int DefaultProcResSize = 16;
+
+class ResourceManager {
+private:
+  const MCSubtargetInfo *STI;
+  const MCSchedModel &SM;
+  const bool UseDFA;
+  std::unique_ptr<DFAPacketizer> DFAResources;
+  /// Each processor resource is associated with a so-called processor resource
+  /// mask. This vector allows to correlate processor resource IDs with
+  /// processor resource masks. There is exactly one element per each processor
+  /// resource declared by the scheduling model.
+  llvm::SmallVector<uint64_t, DefaultProcResSize> ProcResourceMasks;
+
+  llvm::SmallVector<uint64_t, DefaultProcResSize> ProcResourceCount;
+
+public:
+  ResourceManager(const TargetSubtargetInfo *ST)
+      : STI(ST), SM(ST->getSchedModel()), UseDFA(ST->useDFAforSMS()),
+        ProcResourceMasks(SM.getNumProcResourceKinds(), 0),
+        ProcResourceCount(SM.getNumProcResourceKinds(), 0) {
+    if (UseDFA)
+      DFAResources.reset(ST->getInstrInfo()->CreateTargetScheduleState(*ST));
+    initProcResourceVectors(SM, ProcResourceMasks);
+  }
+
+  void initProcResourceVectors(const MCSchedModel &SM,
+                               SmallVectorImpl<uint64_t> &Masks);
+  /// Check if the resources occupied by a MCInstrDesc are available in
+  /// the current state.
+  bool canReserveResources(const MCInstrDesc *MID) const;
+
+  /// Reserve the resources occupied by a MCInstrDesc and change the current
+  /// state to reflect that change.
+  void reserveResources(const MCInstrDesc *MID);
+
+  /// Check if the resources occupied by a machine instruction are available
+  /// in the current state.
+  bool canReserveResources(const MachineInstr &MI) const;
+
+  /// Reserve the resources occupied by a machine instruction and change the
+  /// current state to reflect that change.
+  void reserveResources(const MachineInstr &MI);
+
+  /// Reset the state
+  void clearResources();
+};
+
 /// This class represents the scheduled code.  The main data structure is a
 /// map from scheduled cycle to instructions.  During scheduling, the
 /// data structure explicitly represents all stages/iterations.   When
@@ -472,12 +486,6 @@ private:
 
   /// Map from instruction to execution cycle.
   std::map<SUnit *, int> InstrToCycle;
-
-  /// Map for each register and the max difference between its uses and def.
-  /// The first element in the pair is the max difference in stages. The
-  /// second is true if the register defines a Phi value and loop value is
-  /// scheduled before the Phi.
-  std::map<unsigned, std::pair<unsigned, bool>> RegToStageDiff;
 
   /// Keep track of the first cycle value in the schedule.  It starts
   /// as zero, but the algorithm allows negative values.
@@ -495,17 +503,15 @@ private:
   /// Virtual register information.
   MachineRegisterInfo &MRI;
 
-  std::unique_ptr<DFAPacketizer> Resources;
+  ResourceManager ProcItinResources;
 
 public:
   SMSchedule(MachineFunction *mf)
-      : ST(mf->getSubtarget()), MRI(mf->getRegInfo()),
-        Resources(ST.getInstrInfo()->CreateTargetScheduleState(ST)) {}
+      : ST(mf->getSubtarget()), MRI(mf->getRegInfo()), ProcItinResources(&ST) {}
 
   void reset() {
     ScheduledInstrs.clear();
     InstrToCycle.clear();
-    RegToStageDiff.clear();
     FirstCycle = 0;
     LastCycle = 0;
     InitiationInterval = 0;
@@ -563,28 +569,6 @@ public:
   /// Return the maximum stage count needed for this schedule.
   unsigned getMaxStageCount() {
     return (LastCycle - FirstCycle) / InitiationInterval;
-  }
-
-  /// Return the max. number of stages/iterations that can occur between a
-  /// register definition and its uses.
-  unsigned getStagesForReg(int Reg, unsigned CurStage) {
-    std::pair<unsigned, bool> Stages = RegToStageDiff[Reg];
-    if (CurStage > getMaxStageCount() && Stages.first == 0 && Stages.second)
-      return 1;
-    return Stages.first;
-  }
-
-  /// The number of stages for a Phi is a little different than other
-  /// instructions. The minimum value computed in RegToStageDiff is 1
-  /// because we assume the Phi is needed for at least 1 iteration.
-  /// This is not the case if the loop value is scheduled prior to the
-  /// Phi in the same stage.  This function returns the number of stages
-  /// or iterations needed between the Phi definition and any uses.
-  unsigned getStagesForPhi(int Reg) {
-    std::pair<unsigned, bool> Stages = RegToStageDiff[Reg];
-    if (Stages.second)
-      return Stages.first;
-    return Stages.first - 1;
   }
 
   /// Return the instructions that are scheduled at the specified cycle.

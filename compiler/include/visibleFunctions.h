@@ -23,14 +23,51 @@
 
 #include "vec.h"
 
+#include <set>
+
 class BlockStmt;
 class CallExpr;
 class CallInfo;
 class Expr;
 class FnSymbol;
 
-void       findVisibleFunctions(CallInfo&       info,
-                                Vec<FnSymbol*>& visibleFns);
+class VisibilityInfo {
+public:
+  // for proper scope traversal
+  BlockStmt* currStart;
+  BlockStmt* nextPOI;
+
+  // for CalledFunInfo
+  std::vector<BlockStmt*> visitedScopes; // in visited order  
+  std::vector<BlockStmt*> instnPoints;   // one per POI depth
+  int poiDepth;
+  CallExpr* call;
+
+  VisibilityInfo(CallExpr* call_) :
+    currStart(NULL), nextPOI(NULL), poiDepth(-1), call(call_) { }
+
+  bool inPOI() { return poiDepth > 0; }
+};
+
+bool isTypeHelperName(const char* fnName);
+bool cachedInstantiationIsAlwaysApplicable(FnSymbol* fn);
+bool cachedInstantiationIsAlwaysApplicable(CallExpr* call);
+bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
+
+void       findVisibleFunctionsAllPOIs(CallInfo&       info,
+                                       Vec<FnSymbol*>& visibleFns);
+
+void       findVisibleFunctions(CallInfo&             info,
+                                VisibilityInfo*       visInfo,
+                                std::set<BlockStmt*>* visited,
+                                int*                  numVisitedP,
+                                Vec<FnSymbol*>&       visibleFns);
+
+void       getVisibleFunctions(const char*                name,
+                                CallExpr*                call,
+                                VisibilityInfo*          visInfo,
+                                std::set<BlockStmt*>*    visited,
+                                Vec<FnSymbol*>&          visibleFns);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
@@ -39,6 +76,7 @@ void       getVisibleFunctions(const char*      name,
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);
 
+void       initTypeHelperNames();
 void       visibleFunctionsClear();
 
 #endif

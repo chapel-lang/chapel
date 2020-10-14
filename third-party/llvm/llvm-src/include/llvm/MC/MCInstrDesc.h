@@ -1,9 +1,8 @@
 //===-- llvm/MC/MCInstrDesc.h - Instruction Descriptors -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,7 +37,12 @@ enum OperandConstraint {
 /// These are flags set on operands, but should be considered
 /// private, all access should go through the MCOperandInfo accessors.
 /// See the accessors for a description of what these are.
-enum OperandFlags { LookupPtrRegClass = 0, Predicate, OptionalDef };
+enum OperandFlags {
+  LookupPtrRegClass = 0,
+  Predicate,
+  OptionalDef,
+  BranchTarget
+};
 
 /// Operands are tagged with one of the values of this enum.
 enum OperandType {
@@ -57,7 +61,11 @@ enum OperandType {
   OPERAND_GENERIC_5 = 11,
   OPERAND_LAST_GENERIC = 11,
 
-  OPERAND_FIRST_TARGET = 12,
+  OPERAND_FIRST_GENERIC_IMM = 12,
+  OPERAND_GENERIC_IMM_0 = 12,
+  OPERAND_LAST_GENERIC_IMM = 12,
+
+  OPERAND_FIRST_TARGET = 13,
 };
 
 }
@@ -95,6 +103,9 @@ public:
   /// Set if this operand is a optional def.
   bool isOptionalDef() const { return Flags & (1 << MCOI::OptionalDef); }
 
+  /// Set if this operand is a branch target.
+  bool isBranchTarget() const { return Flags & (1 << MCOI::BranchTarget); }
+
   bool isGenericType() const {
     return OperandType >= MCOI::OPERAND_FIRST_GENERIC &&
            OperandType <= MCOI::OPERAND_LAST_GENERIC;
@@ -103,6 +114,16 @@ public:
   unsigned getGenericTypeIndex() const {
     assert(isGenericType() && "non-generic types don't have an index");
     return OperandType - MCOI::OPERAND_FIRST_GENERIC;
+  }
+
+  bool isGenericImm() const {
+    return OperandType >= MCOI::OPERAND_FIRST_GENERIC_IMM &&
+           OperandType <= MCOI::OPERAND_LAST_GENERIC_IMM;
+  }
+
+  unsigned getGenericImmIndex() const {
+    assert(isGenericImm() && "non-generic immediates don't have an index");
+    return OperandType - MCOI::OPERAND_FIRST_GENERIC_IMM;
   }
 };
 
@@ -116,7 +137,8 @@ namespace MCID {
 /// not use these directly.  These all correspond to bitfields in the
 /// MCInstrDesc::Flags field.
 enum Flag {
-  Variadic = 0,
+  PreISelOpcode = 0,
+  Variadic,
   HasOptionalDef,
   Pseudo,
   Return,
@@ -135,6 +157,7 @@ enum Flag {
   FoldableAsLoad,
   MayLoad,
   MayStore,
+  MayRaiseFPException,
   Predicable,
   NotDuplicable,
   UnmodeledSideEffects,
@@ -153,6 +176,7 @@ enum Flag {
   Add,
   Trap,
   VariadicOpsAreDefs,
+  Authenticated,
 };
 }
 
@@ -228,6 +252,10 @@ public:
   /// Return flags of this instruction.
   uint64_t getFlags() const { return Flags; }
 
+  /// \returns true if this instruction is emitted before instruction selection
+  /// and should be legalized/regbankselected/selected.
+  bool isPreISelOpcode() const { return Flags & (1ULL << MCID::PreISelOpcode); }
+
   /// Return true if this instruction can have a variable number of
   /// operands.  In this case, the variable operands will be after the normal
   /// operands but before the implicit definitions and uses (if any are
@@ -285,7 +313,7 @@ public:
   /// block.  The TargetInstrInfo::AnalyzeBranch method can be used to get more
   /// information about this branch.
   bool isConditionalBranch() const {
-    return isBranch() & !isBarrier() & !isIndirectBranch();
+    return isBranch() && !isBarrier() && !isIndirectBranch();
   }
 
   /// Return true if this is a branch which always
@@ -293,7 +321,7 @@ public:
   /// TargetInstrInfo::AnalyzeBranch method can be used to get more information
   /// about this branch.
   bool isUnconditionalBranch() const {
-    return isBranch() & isBarrier() & !isIndirectBranch();
+    return isBranch() && isBarrier() && !isIndirectBranch();
   }
 
   /// Return true if this is a branch or an instruction which directly
@@ -389,6 +417,15 @@ public:
     return Flags & (1ULL << MCID::VariadicOpsAreDefs);
   }
 
+  /// Return true if this instruction authenticates a pointer (e.g. LDRAx/BRAx
+  /// from ARMv8.3, which perform loads/branches with authentication).
+  ///
+  /// An authenticated instruction may fail in an ABI-defined manner when
+  /// operating on an invalid signed pointer.
+  bool isAuthenticated() const {
+    return Flags & (1ULL << MCID::Authenticated);
+  }
+
   //===--------------------------------------------------------------------===//
   // Side Effect Analysis
   //===--------------------------------------------------------------------===//
@@ -403,6 +440,11 @@ public:
   /// instructions, they may store a modified value based on their operands, or
   /// may not actually modify anything, for example.
   bool mayStore() const { return Flags & (1ULL << MCID::MayStore); }
+
+  /// Return true if this instruction may raise a floating-point exception.
+  bool mayRaiseFPException() const {
+    return Flags & (1ULL << MCID::MayRaiseFPException);
+  }
 
   /// Return true if this instruction has side
   /// effects that are not modeled by other flags.  This does not return true

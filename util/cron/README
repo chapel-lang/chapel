@@ -1,31 +1,8 @@
-Cray Testing
-============
+Chapel Testing
+==============
 
 The Chapel team at HPE manages a suite of correctness and performance
 tests on a variety of platforms and environments.
-
-TODO: list the cray tests here... (thomasvandoren, 2014-07-01)
-
-Discontinued testing (that we might like to revive)
-===================================================
-- opts   (start_opt_test, nightly-opts-all.cron, nightly-opts-examples.cron)
-
-Discontinued testing (that we don't care about anymore)
-=======================================================
-- mpi    (was: nightly.chap04     up to r19116)
-- XMT (was nightly.chap07, preserved as nightly.xmt)
-
-Other notes
-===========
-
-start_opt_test
---------------
-
-Currently unused - in part because there were always holes and there
-wasn't a good diffing system as with the normal nightly runs. So
-sifting through logs to see what was changing required a lot of
-human effort. We keep it around in hopes of resurrecting it.
-
 
 
 Testing changes to these scripts
@@ -33,7 +10,7 @@ Testing changes to these scripts
 
 export CHPL_NIGHTLY_LOGDIR=$PWD/chapel-test-logs
 export CHPL_NIGHTLY_CRON_LOGDIR=$PWD/chapel-test-logs
-export CHPL_NIGHTLY_CRON_RECIPIENT=$USER@cray.com
+export CHPL_NIGHTLY_CRON_RECIPIENT=[your email address]
 export CHPL_NIGHTLY_TEST_CONFIG_NAME=$USER.test
 
 # Run the script, if appropriate
@@ -41,4 +18,3 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME=$USER.test
 
 # or run nightly directly
 ./util/cron/nightly -cron -hellos
-

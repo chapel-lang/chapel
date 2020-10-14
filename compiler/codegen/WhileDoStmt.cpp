@@ -44,12 +44,10 @@ GenRet WhileDoStmt::codegen()
   GenRet   ret;
 
   codegenStmt(this);
-  fixVectorizable();
+  reportVectorizable();
 
   if (outfile)
   {
-    codegenVectorHint();
-
     std::string hdr = "while (" + codegenValue(condExprGet()).c + ") ";
 
     info->cStatements.push_back(hdr);

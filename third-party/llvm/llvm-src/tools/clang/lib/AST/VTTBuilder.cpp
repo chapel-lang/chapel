@@ -1,9 +1,8 @@
 //===- VTTBuilder.cpp - C++ VTT layout builder ----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -65,8 +64,8 @@ void VTTBuilder::LayoutSecondaryVTTs(BaseSubobject Base) {
     if (I.isVirtual())
         continue;
 
-    const CXXRecordDecl *BaseDecl =
-      cast<CXXRecordDecl>(I.getType()->getAs<RecordType>()->getDecl());
+    const auto *BaseDecl =
+        cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
 
     const ASTRecordLayout &Layout = Ctx.getASTRecordLayout(RD);
     CharUnits BaseOffset = Base.getBaseOffset() +
@@ -91,8 +90,8 @@ VTTBuilder::LayoutSecondaryVirtualPointers(BaseSubobject Base,
     return;
 
   for (const auto &I : RD->bases()) {
-    const CXXRecordDecl *BaseDecl =
-      cast<CXXRecordDecl>(I.getType()->getAs<RecordType>()->getDecl());
+    const auto *BaseDecl =
+        cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
 
     // Itanium C++ ABI 2.6.2:
     //   Secondary virtual pointers are present for all bases with either
@@ -155,8 +154,8 @@ VTTBuilder::LayoutSecondaryVirtualPointers(BaseSubobject Base,
 void VTTBuilder::LayoutVirtualVTTs(const CXXRecordDecl *RD,
                                    VisitedVirtualBasesSetTy &VBases) {
   for (const auto &I : RD->bases()) {
-    const CXXRecordDecl *BaseDecl =
-      cast<CXXRecordDecl>(I.getType()->getAs<RecordType>()->getDecl());
+    const auto *BaseDecl =
+        cast<CXXRecordDecl>(I.getType()->castAs<RecordType>()->getDecl());
 
     // Check if this is a virtual base.
     if (I.isVirtual()) {

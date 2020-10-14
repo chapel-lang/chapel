@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/ReplaceFileTest.cpp - unit tests -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -53,7 +52,8 @@ class ScopedFD {
 };
 
 bool FDHasContent(int FD, StringRef Content) {
-  auto Buffer = MemoryBuffer::getOpenFile(FD, "", -1);
+  auto Buffer =
+      MemoryBuffer::getOpenFile(sys::fs::convertFDToNativeFile(FD), "", -1);
   assert(Buffer);
   return Buffer.get()->getBuffer() == Content;
 }
@@ -147,8 +147,9 @@ TEST(rename, ExistingTemp) {
     std::error_code EC;
     ASSERT_NO_ERROR(fs::openFileForRead(TargetFileName, TargetFD));
     ScopedFD X(TargetFD);
-    sys::fs::mapped_file_region MFR(
-        TargetFD, sys::fs::mapped_file_region::readonly, 10, 0, EC);
+    sys::fs::mapped_file_region MFR(sys::fs::convertFDToNativeFile(TargetFD),
+                                    sys::fs::mapped_file_region::readonly, 10,
+                                    0, EC);
     ASSERT_FALSE(EC);
 
     ASSERT_NO_ERROR(fs::rename(SourceFileName, TargetFileName));

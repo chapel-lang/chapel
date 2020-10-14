@@ -22,6 +22,7 @@ _chpl ()
     -*)
       # developer options
       local devel_opts="\
+--allow-noinit-array-not-pod \
 --atomics \
 --auto-local-access \
 --auto-local-access-dynamic \
@@ -139,6 +140,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-allow-noinit-array-not-pod \
 --no-auto-local-access \
 --no-auto-local-access-dynamic \
 --no-bounds-checks \
@@ -230,7 +232,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -312,7 +313,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --verify \
 --version \
@@ -451,7 +451,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-warn-unstable \
 --no-warnings \
@@ -494,7 +493,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --version \
 --warn-unstable \
