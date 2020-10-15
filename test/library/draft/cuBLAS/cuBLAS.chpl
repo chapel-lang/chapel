@@ -1,6 +1,8 @@
 module cuBLAS {
 
   use C_CUBLAS;
+  public use CPtr;
+  public use SysBasic;
   public use SysCTypes;
 
   proc cublas_create_handle(){
@@ -378,6 +380,8 @@ module cuBLAS {
 }
 
   module C_CUBLAS {
+    use CPtr;
+    use SysBasic;
     use SysCTypes;
 
     //extern type complex = complex(64);
