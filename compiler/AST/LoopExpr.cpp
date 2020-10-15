@@ -711,15 +711,23 @@ static int isLoopExprArrayType(LoopExpr *loopExpr, int count) {
     return count;
   }
   if (BlockStmt *loopBody = toBlockStmt(loopExpr->loopBody)) {
-    if (loopBody->length() == 1) {
+    if (loopBody->length() == 1) { // is this a type?
       if (SymExpr *bodySymExpr = toSymExpr(loopBody->body.get(1))) {
         if (bodySymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
           return count+1;
         }
       }
-      else {
-        if (LoopExpr *bodyLoopExpr = toLoopExpr(loopBody->body.get(1))) {
-          return isLoopExprArrayType(bodyLoopExpr, count+1);
+      else if (LoopExpr *bodyLoopExpr = toLoopExpr(loopBody->body.get(1))) {
+        return isLoopExprArrayType(bodyLoopExpr, count+1);
+      }
+    }
+    else if (loopBody->length() == 2) { // are we computing a type?
+      if (BlockStmt *bodyBlock = toBlockStmt(loopBody->body.get(1))) {
+        if (SymExpr *bodySymExpr = toSymExpr(loopBody->body.get(2))) {
+          if (bodyBlock->blockTag == BLOCK_TYPE &&
+              bodySymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+            return count+1;
+          }
         }
       }
     }
