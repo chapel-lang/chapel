@@ -1084,40 +1084,44 @@ static void insertGlobalAutoDestroyCalls() {
 
 static void lowerAutoDestroyRuntimeType(CallExpr* call) {
   if (SymExpr* rttSE = toSymExpr(call->get(1))) {
-    insertAutoDestroyForRuntimeType(rttSE->symbol(), call);
-  }
-  // Whether we expanded it above or it is a no-op, we are done with it.
-  call->remove();
-}
-
-static void insertAutoDestroyForRuntimeType(Symbol *rttAG,
-                                            CallExpr *call) {
+    Symbol *rttSym = rttSE->symbol();
     // toAggregateType() filters out calls in unresolved generic functions.
-  if (AggregateType* rttAG = toAggregateType(rttSE->symbol()->type)) {
-    if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-      // Todo: the same for the element type component and
-      // for the case of a runtime type for a domain.
-      // Todo: avoid hard-coding the field names.
-      if (Symbol* domField = rttAG->getField("dom", false)) {
-        if (FnSymbol* destroyFn = autoDestroyMap.get(domField->getValType())) {
-          // Invoke destroyFn on rttSE->dom.
-          INT_ASSERT(call->getStmtExpr() == call);
-          SET_LINENO(call);
-          VarSymbol* domTemp = newTemp("domTemp", domField->getValType());
-          call->insertBefore(new DefExpr(domTemp));
-          call->insertBefore("'move'(%S,'.v'(%E,%S))", domTemp,
-              rttSE->remove(), domField);
-          call->insertBefore(new CallExpr(destroyFn, domTemp));
+    if (AggregateType* rttAG = toAggregateType(rttSym->type)) {
+      if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+        // Todo: the same for the element type component and
+        // for the case of a runtime type for a domain.
+        // Todo: avoid hard-coding the field names.
+        if (Symbol* domField = rttAG->getField("dom", false)) {
+          if (FnSymbol* destroyFn = autoDestroyMap.get(domField->getValType())) {
+            // Invoke destroyFn on rttSE->dom.
+            //INT_ASSERT(call->getStmtExpr() == call);
+            SET_LINENO(call);
+            VarSymbol* domTemp = newTemp("domTemp", domField->getValType());
+            call->insertBefore(new DefExpr(domTemp));
+            call->insertBefore("'move'(%S,'.v'(%E,%S))", domTemp,
+                new SymExpr(rttSym), domField);
+            call->insertBefore(new CallExpr(destroyFn, domTemp));
+          }
         }
-      }
 
-      if(Symbol *eltTypeField = rttAG->getField("eltType", false)) {
-        if (AggregateType *eltTypeAG = toAggregateType(eltTypeField->type)) {
-          insertAutoDestroyForRuntimeType(eltTypeField, call);
+        if (Symbol* eltField = rttAG->getField("eltType", false)) {
+          if (AggregateType* eltFieldAG = toAggregateType(eltField->type)) {
+            if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+              SET_LINENO(call);
+              VarSymbol* eltTemp = newTemp("eltTemp", eltField->getValType());
+              call->insertBefore(new DefExpr(eltTemp));
+              call->insertBefore("'move'(%S,'.v'(%E,%S))", eltTemp,
+                new SymExpr(rttSym), eltField);
+              CallExpr *innerDestroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, eltTemp);
+              call->insertBefore(innerDestroyCall);
+            }
+          }
         }
       }
     }
   }
+
+  call->remove();
 }
 
 static void insertDestructorCalls() {
