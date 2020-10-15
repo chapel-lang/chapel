@@ -1966,6 +1966,30 @@ proc =(ref lhs:channel, rhs:channel) {
 }
 
 pragma "no doc"
+proc ==(const ref a: channel, const ref b: channel): bool {
+  if a.writing != b.writing return false;
+  else if a.kind != b.kind return false;
+  else if a.locking != b.locking return false;
+  else if a.home != b.home return false;
+  else if a._channel_internal != b._channel_internal return false;
+  else if a._readWriteThisFromLocale != b._readWriteThisFromLocale return false;
+
+  return true;
+}
+
+pragma "no doc"
+proc !=(const ref a: channel, const ref b: channel): bool {
+  if a.writing == b.writing return false;
+  else if a.kind == b.kind return false;
+  else if a.locking == b.locking return false;
+  else if a.home == b.home return false;
+  else if a._channel_internal == b._channel_internal return false;
+  else if a._readWriteThisFromLocale == b._readWriteThisFromLocale return false;
+
+  return true;
+}
+
+pragma "no doc"
 proc channel.init(param writing:bool, param kind:iokind, param locking:bool) {
   this.writing = writing;
   this.kind = kind;
