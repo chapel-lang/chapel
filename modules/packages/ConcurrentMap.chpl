@@ -587,6 +587,20 @@ prototype module ConcurrentMap {
       return (found, res);
     }
 
+    /*
+      Returns `true` if the given key is a member of this map, and `false`
+      otherwise.
+      :arg key: The key to test for membership.
+      :type key: keyType
+      :arg tok: Token for EpochManager
+      :returns: Whether or not the given key is a member of this map.
+      :rtype: `bool`
+    */
+    proc const contains(const key : keyType, tok : owned TokenWrapper = getToken()) : bool {
+      var (found, res) = find(key, tok);
+      return found;
+    }
+
     proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
@@ -849,7 +863,11 @@ prototype module ConcurrentMap {
       map.insert(i, i**2, tok);
     }
 
-    var count : atomic int = 0;
+    forall i in 1..(N+5) with (var tok = map.getToken()) {
+      writeln(i, map.contains(i, tok));
+    }
+
+    // var count : atomic int = 0;
     // for i in map {
     //   count += 1;
     //   // writeln(i);
@@ -857,11 +875,11 @@ prototype module ConcurrentMap {
 
     // writeln(count);
 
-    forall i in map {
+    // forall i in map {
       // writeln(i);
-      count.add(1);
-    }
-    writeln(count.read());
+      // count.add(1);
+    // }
+    // writeln(count.read());
 
     // map.insert(1,1);
     // map.insert(2,4);
