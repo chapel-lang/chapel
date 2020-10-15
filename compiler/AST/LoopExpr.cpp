@@ -708,17 +708,12 @@ static void scopeResolveAndNormalize(FnSymbol* fn) {
 
 static int isLoopExprArrayType(LoopExpr *loopExpr, int count) {
   if (!loopExpr->forall) {
-    if (count > 0) {
-      std::cout << "HEYOOX\n";
-      nprint_view(loopExpr);
-    }
     return count;
   }
   if (BlockStmt *loopBody = toBlockStmt(loopExpr->loopBody)) {
     if (loopBody->length() == 1) {
       if (SymExpr *bodySymExpr = toSymExpr(loopBody->body.get(1))) {
         if (bodySymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-          std::cout << "returning " << count+1 << std::endl;
           return count+1;
         }
       }
@@ -818,8 +813,6 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   BlockStmt* block = fn->body;
 
   if (arrayTypeDims > 0) {
-    std::cout << "Found an array type expr. num dims = " << arrayTypeDims << std::endl;
-    nprint_view(ret);
     multiDimArrTypeCalls[ret] = arrayTypeDims;
   }
 
