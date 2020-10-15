@@ -23,6 +23,7 @@
 #endif
 
 
+#include "view.h"
 #include "AstVisitor.h"
 #include "AstVisitorTraverse.h"
 #include "astutil.h"
@@ -40,6 +41,8 @@
 #include "wellknown.h"
 
 #include <vector>
+
+std::map<CallExpr *, int> multiDimArrTypeCalls;
 
 // Finds all the UnresolvedSymExprs in the LoopExpr's indices expression and
 // populates a flat AList of DefExprs. Used during scope resolution.
@@ -703,6 +706,37 @@ static void scopeResolveAndNormalize(FnSymbol* fn) {
   normalize(fn);
 }
 
+static int isLoopExprArrayType(LoopExpr *loopExpr, int count) {
+  if (!loopExpr->forall) {
+    if (count > 0) {
+      std::cout << "HEYOOX\n";
+      nprint_view(loopExpr);
+    }
+    return count;
+  }
+  if (BlockStmt *loopBody = toBlockStmt(loopExpr->loopBody)) {
+    if (loopBody->length() == 1) {
+      if (SymExpr *bodySymExpr = toSymExpr(loopBody->body.get(1))) {
+        if (bodySymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+          std::cout << "returning " << count+1 << std::endl;
+          return count+1;
+        }
+      }
+      else {
+        if (LoopExpr *bodyLoopExpr = toLoopExpr(loopBody->body.get(1))) {
+          return isLoopExprArrayType(bodyLoopExpr, count+1);
+        }
+      }
+    }
+  }
+
+  return count;
+}
+
+static int isLoopExprArrayType(LoopExpr *loopExpr) {
+  return isLoopExprArrayType(loopExpr, 0);
+}
+
 // Returns a call to the top-level function wrapper for this loop-expr
 static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   SET_LINENO(loopExpr);
@@ -715,6 +749,8 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   // chpl__loopexpr function).
   bool insideArgSymbol = isArgSymbol(loopExpr->parentSymbol) ||
                          isTypeSymbol(loopExpr->parentSymbol);
+
+  int arrayTypeDims = isLoopExprArrayType(loopExpr);
 
   std::set<Symbol*> outerVars;
   findOuterVars(loopExpr, outerVars);
@@ -736,6 +772,18 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->setGeneric(true);
   if (forall) fn->addFlag(FLAG_MAYBE_ARRAY_TYPE);
+
+  //bool arrTypeForSure = false;
+
+  //if (forall) {
+    //if (loopBody->length() == 1) {
+      //if (SymExpr *bodySymExpr = toSymExpr(loopBody->body.get(1))) {
+        //if (bodySymExpr->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
+          //arrTypeForSure = true;
+        //}
+      //}
+    //}
+  //}
 
   if (insideArgSymbol) {
     loopExpr->getModule()->block->insertAtHead(new DefExpr(fn));
@@ -768,6 +816,12 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
                                    &iteratorExprArg);
 
   BlockStmt* block = fn->body;
+
+  if (arrayTypeDims > 0) {
+    std::cout << "Found an array type expr. num dims = " << arrayTypeDims << std::endl;
+    nprint_view(ret);
+    multiDimArrTypeCalls[ret] = arrayTypeDims;
+  }
 
   // Only possibly true for forall-exprs
   if (maybeArrayType) {

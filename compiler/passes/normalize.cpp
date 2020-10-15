@@ -24,6 +24,7 @@
  ***/
 
 #include "passes.h"
+#include "view.h"
 
 #include "astutil.h"
 #include "build.h"
@@ -2299,9 +2300,17 @@ static void evaluateAutoDestroy(CallExpr* call, VarSymbol* tmp) {
 
   if (UnresolvedSymExpr *callBase = toUnresolvedSymExpr(call->baseExpr)) {
     if (startsWith(callBase->unresolved, astr_forallexpr)) {
-      fn->insertBeforeEpilogue(new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, tmp));
+      //fn->insertBeforeEpilogue(new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, tmp));
+      if (multiDimArrTypeCalls.count(call) > 0) {
+        std::cout << "Adding auto destroy. Num dims = " << multiDimArrTypeCalls[call] << std::endl;
+        nprint_view(call);
+        fn->insertBeforeEpilogue(new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, tmp));
+        //tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+        //globalTemps.insert(tmp);
+      }
     }
   }
+  
 
   FnSymbol* initFn = fn->getModule()->initFn;
 
