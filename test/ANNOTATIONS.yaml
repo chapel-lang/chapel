@@ -1962,6 +1962,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Give errors in reexporting ambiguities (#15316)
   04/16/20:
     - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  04/28/20:
+    - Move compiler performance jobs to chapcs04
+  06/15/20:
+    - machine update (McAfee)
   07/27/20:
     - Replace some where-clauses with formals types (#16130)
     - Handle bool tests in the compiler (#16062)
@@ -1997,6 +2001,17 @@ arkouda: &arkouda-base
     - Reduce fragmentation for large allocations (#15992)
   09/23/20:
     - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
+      config: 16-node-cs, 16-node-xc
+  10/02/20:
+    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda/#503)
+      config: 16-node-cs
+  10/03/20:
+    - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
+      config: 16-node-xc
+    - text: Move XC testing from elogin back to login node
+      config: 16-node-xc
+  10/06/20:
+    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda/#509)
       config: 16-node-cs, 16-node-xc
 
 
