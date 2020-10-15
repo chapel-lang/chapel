@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 prototype module ConcurrentMap {
+  use Memory;
   use AtomicObjects;
   use LockFreeStack;
   use LockFreeQueue;
@@ -45,9 +46,9 @@ prototype module ConcurrentMap {
 
   class DeferredNode {
     type eltType;
-    var val : eltType?;
-    var prev : unmanaged DeferredNode(eltType?)?;
-    var next : unmanaged DeferredNode(eltType?)?;
+    var val : eltType;
+    var prev : unmanaged DeferredNode(eltType)?;
+    var next : unmanaged DeferredNode(eltType)?;
 
     proc init(type eltType) {
       this.eltType = eltType;
@@ -62,12 +63,12 @@ prototype module ConcurrentMap {
       var prevNode = prev;
       var nextNode = next;
       if (prevNode == nil) {
-        if (nextNode != nil) then nextNode.prev = nil;
+        if (nextNode != nil) then nextNode!.prev = nil;
       } else {
-        if (nextNode == nil) then prevNode.next = nil;
+        if (nextNode == nil) then prevNode!.next = nil;
         else {
-          prevNode.next = nextNode;
-          nextNode.prev = prevNode;
+          prevNode!.next = nextNode;
+          nextNode!.prev = prevNode;
         }
       }
     }
@@ -134,7 +135,7 @@ prototype module ConcurrentMap {
     // Is always either 'nil' if its the root, or a
     // a 'Buckets', but I cannot make the field of
     // type 'Buckets' as it is not defined yet.
-    var parent : unmanaged Base(keyType?, valType?)?;
+    var parent : unmanaged Base(keyType, valType)?;
 
     proc init(type keyType, type valType) {
       this.keyType = keyType;
@@ -175,7 +176,7 @@ prototype module ConcurrentMap {
     var seed : uint(64);
     var size : int;
     var bucketsDom = {0..-1};
-    var buckets : [bucketsDom] AtomicObject(unmanaged Base(keyType?, valType?)?, hasABASupport=false, hasGlobalSupport=true);
+    var buckets : [bucketsDom] AtomicObject(unmanaged Base(keyType, valType)?, hasABASupport=false, hasGlobalSupport=true);
     // var buckets : [0..(size-1)] AtomicObject(unmanaged Base(keyType?, valType?)?, hasABASupport=false, hasGlobalSupport=true);
 
     proc init(type keyType, type valType) {
@@ -256,22 +257,22 @@ prototype module ConcurrentMap {
             delete newList;
           }
         }
-        else if (next.lock.read() == P_INNER) {
+        else if (next!.lock.read() == P_INNER) {
           curr = next : unmanaged Buckets(keyType, valType);
           idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
         }
-        else if (next.lock.read() == E_AVAIL) {
+        else if (next!.lock.read() == E_AVAIL) {
           // We now own the bucket...
-          if (next.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+          if (next!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
             // Non-insertions don't care.
             if !isInsertion then return next : unmanaged Bucket(keyType, valType);
             // Insertions cannot have a full bucket...
             // If it is not full return it
             var bucket = next : unmanaged Bucket(keyType, valType)?;
-            if bucket.count < BUCKET_NUM_ELEMS then
+            if bucket!.count < BUCKET_NUM_ELEMS then
               return bucket;
 
-            for k in bucket.keys {
+            for k in bucket!.keys {
               if k == key {
                 return bucket;
               }
@@ -280,19 +281,19 @@ prototype module ConcurrentMap {
             // writeln(bucket.count);
             // Rehash into new Buckets
             var newBuckets = new unmanaged Buckets(curr);
-            for (k,v) in zip(bucket.keys, bucket.values) {
+            for (k,v) in zip(bucket!.keys, bucket!.values) {
               var idx = (newBuckets.hash(k) % newBuckets.size:uint):int;
               if newBuckets.buckets[idx].read() == nil {
                 newBuckets.buckets[idx].write(new unmanaged Bucket(newBuckets));
               }
               var buck = newBuckets.buckets[idx].read() : unmanaged Bucket(keyType, valType)?;
-              buck.count += 1;
-              buck.keys[buck.count] = k;
-              buck.values[buck.count] = v;
+              buck!.count += 1;
+              buck!.keys[buck!.count] = k;
+              buck!.values[buck!.count] = v;
             }
 
             // TODO: Need to pass this to 'EpochManager.deferDelete'
-            next.lock.write(GARBAGE);
+            next!.lock.write(GARBAGE);
             tok.deferDelete(next);
             curr.buckets[idx].write(newBuckets: unmanaged Base(keyType, valType));
             curr = newBuckets;
@@ -309,7 +310,7 @@ prototype module ConcurrentMap {
     // temporary function to facilitate deletion of EList
     proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType {
       var found : unmanaged Bucket(keyType, valType)?;
-      var retNil : PEListType?;
+      var retNil : PEListType;
       var curr = root;
       var shouldYield = false;
       const defaultHash = chpl__defaultHash(key);
@@ -334,22 +335,22 @@ prototype module ConcurrentMap {
             delete newList;
           }
         }
-        else if (next.lock.read() == P_INNER) {
+        else if (next!.lock.read() == P_INNER) {
           curr = next : unmanaged Buckets(keyType, valType);
           idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
         }
-        else if (next.lock.read() == E_AVAIL) {
+        else if (next!.lock.read() == E_AVAIL) {
           // We now own the bucket...
-          if (next.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+          if (next!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
             // Non-insertions don't care.
             if !isInsertion then return (next : unmanaged Bucket(keyType, valType), curr, idx);
             // Insertions cannot have a full bucket...
             // If it is not full return it
             var bucket = next : unmanaged Bucket(keyType, valType)?;
-            if bucket.count < BUCKET_NUM_ELEMS then
+            if bucket!.count < BUCKET_NUM_ELEMS then
               return (bucket, curr, idx);
 
-            for k in bucket.keys {
+            for k in bucket!.keys {
               if k == key {
                 return (bucket, curr, idx);
               }
@@ -358,19 +359,19 @@ prototype module ConcurrentMap {
             // writeln(bucket.count);
             // Rehash into new Buckets
             var newBuckets = new unmanaged Buckets(curr);
-            for (k,v) in zip(bucket.keys, bucket.values) {
+            for (k,v) in zip(bucket!.keys, bucket!.values) {
               var idx = (newBuckets.hash(k) % newBuckets.size:uint):int;
               if newBuckets.buckets[idx].read() == nil {
                 newBuckets.buckets[idx].write(new unmanaged Bucket(newBuckets));
               }
               var buck = newBuckets.buckets[idx].read() : unmanaged Bucket(keyType, valType)?;
-              buck.count += 1;
-              buck.keys[buck.count] = k;
-              buck.values[buck.count] = v;
+              buck!.count += 1;
+              buck!.keys[buck!.count] = k;
+              buck!.values[buck!.count] = v;
             }
 
             // TODO: Need to pass this to 'EpochManager.deferDelete'
-            next.lock.write(GARBAGE);
+            next!.lock.write(GARBAGE);
             tok.deferDelete(next);
             curr.buckets[idx].write(newBuckets: unmanaged Base(keyType, valType));
             curr = newBuckets;
@@ -395,24 +396,24 @@ prototype module ConcurrentMap {
       var deferred : unmanaged DeferredNode(deferredType)?;
       var restore = true;
       var curr : unmanaged Buckets(keyType, valType)? = root;
-      var start = ((iterRNG.getNext())%(curr.buckets.size):uint):int;
+      var start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
       var startIndex = 0;
 
       while (true) {
         restore = true;
-        for i in startIndex..(curr.buckets.size-1) {
-          var idx = (start + i)%curr.buckets.size;
-          var bucketBase = curr.buckets[idx].read();
+        for i in startIndex..(curr!.buckets.size-1) {
+          var idx = (start + i)%curr!.buckets.size;
+          var bucketBase = curr!.buckets[idx].read();
           if (bucketBase != nil) {
-            if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+            if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
               var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-              for j in 1..bucket.count do yield (bucket.keys[j], bucket.values[j]);
-              bucket.lock.write(E_AVAIL);
-            } else if (bucketBase.lock.read() == P_INNER) {
+              for j in 0..#bucket!.count do yield (bucket!.keys[j], bucket!.values[j]);
+              bucket!.lock.write(E_AVAIL);
+            } else if (bucketBase!.lock.read() == P_INNER) {
               var stackElem = (curr, start, i);
               recursionStack.push(stackElem);
               curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-              start = ((iterRNG.getNext())%(curr.buckets.size):uint):int;
+              start = ((iterRNG.getNext())%(curr!.buckets.size):uint):int;
               startIndex = 0;
               restore = false;
               break;
@@ -420,7 +421,7 @@ prototype module ConcurrentMap {
               var deferredElem = (curr, idx);
               var deferredNode = new unmanaged DeferredNode(deferredElem);
               deferredNode.next = deferred;
-              deferred.prev = deferredNode;
+              deferred!.prev = deferredNode;
               deferred = deferredNode;
             }
           }
@@ -429,30 +430,30 @@ prototype module ConcurrentMap {
         if (restore == true) {
         var (hasState, state) = recursionStack.pop();
           if (hasState) {
-            curr = state[1];
-            start = state[2];
-            startIndex = state[3] + 1;
+            curr = state[0];
+            start = state[1];
+            startIndex = state[2] + 1;
             continue;
           } else {
             var head = deferred;
             var continueFlag = false;
             while (head != nil) {
-              var pList = head.val[1];
-              var idx = head.val[2];
-              var bucketBase = pList.buckets[idx].read();
-              var next = head.next;
-              if (bucketBase.lock.read() == P_INNER) {
+              var pList = head!.val[0];
+              var idx = head!.val[1];
+              var bucketBase = pList!.buckets[idx].read();
+              var next = head!.next;
+              if (bucketBase!.lock.read() == P_INNER) {
                 delete head;
                 curr = bucketBase : unmanaged Buckets(keyType, valType)?;
-                start = ((iterRNG.getNext())%(curr.size):uint):int;
+                start = ((iterRNG.getNext())%(curr!.size):uint):int;
                 startIndex = 0;
                 continueFlag = true;
                 break;
-              } else if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+              } else if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
                 delete head;
                 var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-                for j in 1..bucket.count do yield (bucket.keys[j], bucket.values[j]);
-                bucket.lock.write(E_AVAIL);
+                for j in 0..#bucket!.count do yield (bucket!.keys[j], bucket!.values[j]);
+                bucket!.lock.write(E_AVAIL);
               }
               head = next;
             }
@@ -483,7 +484,7 @@ prototype module ConcurrentMap {
         if (bucketBase != nil) {
           if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
             var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-            for j in 1..bucket.count do yield (bucket.keys[j], bucket.values[j]);
+            for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
             bucket.lock.write(E_AVAIL);
           } else if (bucketBase.lock.read() == P_INNER) {
             var bucket = bucketBase : unmanaged Buckets(keyType, valType)?;
@@ -513,7 +514,7 @@ prototype module ConcurrentMap {
             if (bucketBase != nil) {
               if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
                 var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-                for j in 1..bucket.count do yield (bucket.keys[j], bucket.values[j]);
+                for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
                 bucket.lock.write(E_AVAIL);
                 continue;
               } else if (bucketBase.lock.read() == P_INNER) {
@@ -532,7 +533,7 @@ prototype module ConcurrentMap {
             if (bucketBase != nil) {
               if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
                 var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-                for j in 1..bucket.count do yield (bucket.keys[j], bucket.values[j]);
+                for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
                 bucket.lock.write(E_AVAIL);
               } else if (bucketBase.lock.read() == P_INNER) {
                 var bucket = bucketBase : unmanaged Buckets(keyType, valType)?;
@@ -553,17 +554,17 @@ prototype module ConcurrentMap {
     proc insert(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var elist = getEList(key, true, tok);
-      for i in 1..elist.count {
-        if (elist.keys[i] == key) {
-          elist.lock.write(E_AVAIL);
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          elist!.lock.write(E_AVAIL);
           tok.unpin();
           return false;
         }
       }
-      elist.count += 1;
-      elist.keys[elist.count] = key;
-      elist.values[elist.count] = val;
-      elist.lock.write(E_AVAIL);
+      elist!.count += 1;
+      elist!.keys[elist!.count-1] = key;
+      elist!.values[elist!.count-1] = val;
+      elist!.lock.write(E_AVAIL);
       tok.unpin();
       return true;
     }
@@ -571,17 +572,17 @@ prototype module ConcurrentMap {
     proc find(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) {
       tok.pin();
       var elist = getEList(key, false, tok);
-      var res : valType?;
+      var res : valType;
       if (elist == nil) then return (false, res);
       var found = false;
-      for i in 1..elist.count {
-        if (elist.keys[i] == key) {
-          res = elist.values[i];
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          res = elist!.values[i];
           found = true;
           break;
         }
       }
-      elist.lock.write(E_AVAIL);
+      elist!.lock.write(E_AVAIL);
       tok.unpin();
       return (found, res);
     }
@@ -591,21 +592,21 @@ prototype module ConcurrentMap {
       var (elist, pList, idx) = getPEList(key, false, tok);
       if (elist == nil) then return false;
       var res = false;
-      for i in 1..elist.count {
-        if (elist.keys[i] == key) {
-          elist.keys[i] = elist.keys[elist.count];
-          elist.values[i] = elist.values[elist.count];
-          elist.count -= 1;
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          elist!.keys[i] = elist!.keys[elist!.count-1];
+          elist!.values[i] = elist!.values[elist!.count-1];
+          elist!.count -= 1;
           res = true;
           break;
         }
       }
 
-      if elist.count == 0 {
-        pList.buckets[idx].write(nil);
-        elist.lock.write(GARBAGE);
+      if elist!.count == 0 {
+        pList!.buckets[idx].write(nil);
+        elist!.lock.write(GARBAGE);
         tok.deferDelete(elist);
-      } else elist.lock.write(E_AVAIL);
+      } else elist!.lock.write(E_AVAIL);
       tok.unpin();
       return res;
     }
@@ -726,7 +727,7 @@ prototype module ConcurrentMap {
   proc iterationBenchmark() {
     writeln("Iteration Test: ");
     var map = new ConcurrentMap(int, int);
-    map.insert(1..65536, 0);
+    forall i in 0..65535 do map.insert(i, 0);
     var timer = new Timer();
     timer.start();
     forall i in map {
@@ -767,7 +768,7 @@ prototype module ConcurrentMap {
   proc eraseOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    map.insert(0..65535, 0);
+    forall i in 0..65535 do map.insert(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -783,10 +784,23 @@ prototype module ConcurrentMap {
     writeln(tasks, " tasks, ", ((10**9)*timer.elapsed())/totalOps, " ns/op");
   }
 
+  proc reclaimBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
+    var map = new ConcurrentMap(int, int);
+    writeln(memoryUsed());
+    forall i in 0..65535 with (var tok = map.getToken()) { map.insert(i, 0, tok); }
+    writeln(memoryUsed());
+    forall i in 0..65535 with (var tok = map.getToken()) { map.erase(i, tok); }
+    writeln(memoryUsed());
+    map.tryReclaim();
+    map.tryReclaim();
+    map.tryReclaim();
+    writeln(memoryUsed());
+  }
+
   proc findOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    map.insert(0..65535, 0);
+    forall i in 0..65535 do map.insert(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -805,7 +819,7 @@ prototype module ConcurrentMap {
   proc intSetStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    map.insert(0..65535, 0);
+    forall i in 0..65535 do map.insert(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -830,26 +844,54 @@ prototype module ConcurrentMap {
   }
 
   proc main() {
-    var tasksArray = [1,2,4,8,16,32,44];
-    writeln("Insert Benchmark:");
-    for tasks in tasksArray {
-      insertOpStrongBenchmark(max(uint(16)), tasks);
+    var map = new ConcurrentMap(int, int);
+    forall i in 1..N with (var tok = map.getToken()) {
+      map.insert(i, i**2, tok);
     }
-    writeln();
-    writeln("Erase Benchmark:");
-    for tasks in tasksArray {
-      eraseOpStrongBenchmark(max(uint(16)), tasks);
+
+    var count = 0;
+    for i in map {
+      count += 1;
+      writeln(i);
     }
-    writeln();
-    writeln("Find Benchmark:");
-    for tasks in tasksArray {
-      findOpStrongBenchmark(max(uint(16)), tasks);
-    }
-    writeln();
-    writeln("Intset Benchmark:");
-    for tasks in tasksArray {
-      intSetStrongBenchmark(max(uint(16)), tasks);
-    }
+
+    writeln(count);
+
+    // forall i in map {
+    //   writeln(i);
+    // }
+
+    // map.insert(1,1);
+    // map.insert(2,4);
+    // map.insert(3,9);
+    // map.insert(4,16);
+    // map.insert(5,25);
+
+    // for i in 1..6 do
+    // writeln(map.find(i));
+    // map.erase(3);
+    // for i in 1..6 do
+    // writeln(map.find(i));
+    // var tasksArray = [1, 2, 4, 8, 16, 32, here.maxTaskPar];
+    // writeln("Insert Benchmark:");
+    // for tasks in tasksArray {
+    //   insertOpStrongBenchmark(max(uint(16)), tasks);
+    // }
+    // writeln();
+    // writeln("Erase Benchmark:");
+    // for tasks in tasksArray {
+      // reclaimBenchmark(max(uint(16)));
+    // }
+    // writeln();
+    // writeln("Find Benchmark:");
+    // for tasks in tasksArray {
+    //   findOpStrongBenchmark(max(uint(16)), tasks);
+    // }
+    // writeln();
+    // writeln("Intset Benchmark:");
+    // for tasks in tasksArray {
+    //   intSetStrongBenchmark(max(uint(16)), tasks);
+    // }
     // var map = new ConcurrentMap(int, int);
     // var dist : [0..#DEFAULT_NUM_BUCKETS] int;
     // for i in 1..N {
