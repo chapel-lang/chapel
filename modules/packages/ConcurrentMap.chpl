@@ -482,11 +482,11 @@ prototype module ConcurrentMap {
         var idx = (_startIdx + i)%root.buckets.size;
         var bucketBase = root.buckets[idx].read();
         if (bucketBase != nil) {
-          if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+          if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
             var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-            for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
-            bucket.lock.write(E_AVAIL);
-          } else if (bucketBase.lock.read() == P_INNER) {
+            for j in 0..#bucket!.count do yield (bucket!.keys[j], bucket!.values[j]);
+            bucket!.lock.write(E_AVAIL);
+          } else if (bucketBase!.lock.read() == P_INNER) {
             var bucket = bucketBase : unmanaged Buckets(keyType, valType)?;
             started.add(1);
             workList.enqueue(bucket, _workListTok);
@@ -508,16 +508,16 @@ prototype module ConcurrentMap {
               if (started.read() == finished.read()) then break;
               else continue;
             }
-            var pList = deferredNode[1];
-            var idx = deferredNode[2];
-            var bucketBase = pList.buckets[idx].read();
+            var pList = deferredNode[0];
+            var idx = deferredNode[1];
+            var bucketBase = pList!.buckets[idx].read();
             if (bucketBase != nil) {
-              if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+              if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
                 var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-                for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
-                bucket.lock.write(E_AVAIL);
+                for j in 0..#bucket!.count do yield (bucket!.keys[j], bucket!.values[j]);
+                bucket!.lock.write(E_AVAIL);
                 continue;
-              } else if (bucketBase.lock.read() == P_INNER) {
+              } else if (bucketBase!.lock.read() == P_INNER) {
                 _node = bucketBase : unmanaged Buckets(keyType, valType)?;
               } else {
                 deferredList.enqueue(deferredNode, deferredListTok);
@@ -526,16 +526,16 @@ prototype module ConcurrentMap {
             }
           } else finished.add(1);
 
-          var startIdx = ((iterRNG.getNext())%(_node.buckets.size):uint):int;
-          for i in 0..(_node.buckets.size-1) {
-            var idx = (startIdx + i)%_node.buckets.size;
-            var bucketBase = _node.buckets[idx].read();
+          var startIdx = ((iterRNG.getNext())%(_node!.buckets.size):uint):int;
+          for i in 0..(_node!.buckets.size-1) {
+            var idx = (startIdx + i)%_node!.buckets.size;
+            var bucketBase = _node!.buckets[idx].read();
             if (bucketBase != nil) {
-              if (bucketBase.lock.read() == E_AVAIL && bucketBase.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
+              if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, E_LOCK)) {
                 var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
-                for j in 0..#bucket.count do yield (bucket.keys[j], bucket.values[j]);
-                bucket.lock.write(E_AVAIL);
-              } else if (bucketBase.lock.read() == P_INNER) {
+                for j in 0..#bucket!.count do yield (bucket!.keys[j], bucket!.values[j]);
+                bucket!.lock.write(E_AVAIL);
+              } else if (bucketBase!.lock.read() == P_INNER) {
                 var bucket = bucketBase : unmanaged Buckets(keyType, valType)?;
                 started.add(1);
                 workList.enqueue(bucket, workListTok);
@@ -849,17 +849,19 @@ prototype module ConcurrentMap {
       map.insert(i, i**2, tok);
     }
 
-    var count = 0;
-    for i in map {
-      count += 1;
-      writeln(i);
-    }
-
-    writeln(count);
-
-    // forall i in map {
-    //   writeln(i);
+    var count : atomic int = 0;
+    // for i in map {
+    //   count += 1;
+    //   // writeln(i);
     // }
+
+    // writeln(count);
+
+    forall i in map {
+      // writeln(i);
+      count.add(1);
+    }
+    writeln(count.read());
 
     // map.insert(1,1);
     // map.insert(2,4);
