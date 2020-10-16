@@ -717,6 +717,12 @@ static int isLoopExprArrayType(LoopExpr *loopExpr, int count) {
           return count+1;
         }
       }
+      else if (CallExpr *bodyCallExpr = toCallExpr(loopBody->body.get(1))) {
+        if (bodyCallExpr->isNamed("_owned") ||
+            bodyCallExpr->isNamed("_shared")) {
+          return count+1;
+        }
+      }
       else if (LoopExpr *bodyLoopExpr = toLoopExpr(loopBody->body.get(1))) {
         return isLoopExprArrayType(bodyLoopExpr, count+1);
       }
