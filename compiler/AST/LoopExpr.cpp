@@ -827,7 +827,11 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   BlockStmt* block = fn->body;
 
   if (arrayTypeDims > 0) {
-    multiDimArrTypeCalls[ret] = arrayTypeDims;
+    if (CallExpr *iterCall = toCallExpr(iteratorExpr)) {
+      if (iterCall->isNamed("chpl_build_bounded_range")) {
+        multiDimArrTypeCalls[ret] = arrayTypeDims;
+      }
+    }
   }
 
   // Only possibly true for forall-exprs
