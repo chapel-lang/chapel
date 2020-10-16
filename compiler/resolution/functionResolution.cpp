@@ -26,6 +26,7 @@
 #endif
 
 #include "resolution.h"
+#include "view.h"
 
 #include "AstCount.h"
 #include "astutil.h"
@@ -45,6 +46,7 @@
 #include "initializerRules.h"
 #include "iterator.h"
 #include "lifetime.h"
+#include "LoopExpr.h"
 #include "ModuleSymbol.h"
 #include "optimizations.h"
 #include "ParamForLoop.h"
@@ -96,6 +98,8 @@ public:
   bool fn1WeakestPreferred;
   bool fn2WeakestPreferred;
 };
+
+std::set<CallExpr *> cleanedForallCalls;
 
 // map: (block id) -> (map: sym -> sym)
 typedef std::map<int, SymbolMap*> CapturedValueMap;
@@ -9821,6 +9825,44 @@ static void ensureAndResolveInitStringLiterals() {
   resolveFunction(initStringLiterals);
 }
 
+static void handleRuntimeTypeCleanup() {
+  //if (multiDimArrTypeCalls.count(call) > 0) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+  if (true) {
+    if (!isArgSymbol(call->parentSymbol)) {
+      if (FnSymbol *callee = call->resolvedFunction()) {
+
+      if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+        if (startsWith(callee->name, astr_forallexpr)) {
+          if (SymExpr *argSE = toSymExpr(call->get(1))) {
+            if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
+              if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+                if (parentCall->isPrimitive(PRIM_MOVE)) {
+                  if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
+                    if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+                      if (cleanedForallCalls.count(call) == 0) {
+                        call->getFunction()->insertBeforeEpilogue(
+                            new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
+                              new SymExpr(targetSE->symbol())));
+
+                        //std::cout << "Autodestroy in " << call->stringLoc() << std::endl;
+                        //nprint_view(call);
+                        cleanedForallCalls.insert(call);
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }}
+  }
+  }
+
+}
+
 
 static void handleRuntimeTypes()
 {
@@ -9836,6 +9878,8 @@ static void handleRuntimeTypes()
   replaceTypeFormalsWithRuntimeTypes();
   replaceReturnedTypesWithRuntimeTypes();
   replaceRuntimeTypeVariableTypes();
+
+  handleRuntimeTypeCleanup();
 }
 
 
