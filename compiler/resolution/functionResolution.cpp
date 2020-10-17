@@ -9841,6 +9841,7 @@ static void handleRuntimeTypeCleanup() {
                   if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
                     if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
                       if (cleanedForallCalls.count(call) == 0) {
+                        SET_LINENO(call);
                         call->getFunction()->insertBeforeEpilogue(
                             new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
                               new SymExpr(targetSE->symbol())));
