@@ -9834,12 +9834,18 @@ static void handleRuntimeTypeCleanup() {
 
       if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
         if (startsWith(callee->name, astr_forallexpr)) {
+          // TODO move checks up to this point to resolveCall etc,
+          // cache those calls, then here, only iterate those calls
+
+
+          // TODO what happens for [1..2, 1..3] ?
           if (SymExpr *argSE = toSymExpr(call->get(1))) {
             if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
               if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
                 if (parentCall->isPrimitive(PRIM_MOVE)) {
                   if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
-                    if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP)) {
+                    if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+                        targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                       if (cleanedForallCalls.count(call) == 0) {
                         SET_LINENO(call);
                         call->getFunction()->insertBeforeEpilogue(
