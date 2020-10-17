@@ -1893,7 +1893,7 @@ module ChapelArray {
       
       var idx: (rank*_value.idxType);
       var div = this.size;
-      
+
       for param i in 0..<rank {
           var currDim = this.dim(i);
           div /= currDim.size;
@@ -1902,8 +1902,10 @@ module ChapelArray {
           const stride = currDim.stride;
           const zeroInd = order/div;
           var currInd = zeroInd*stride;
-          if stride<0 then currInd+=hi;
-          else currInd+=lo;
+          if stride < 0 then
+            currInd+=hi;
+          else
+            currInd+=lo;
           idx[i] = currInd;
           order = order%div;
       }
