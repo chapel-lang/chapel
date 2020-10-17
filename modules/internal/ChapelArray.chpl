@@ -1887,24 +1887,32 @@ module ChapelArray {
 
     pragma "no doc"
     proc orderToIndex(in order) where (isRectangularDom(this) && isNumericType(this.idxType)){
-      if(order>=this.size || order <0) then
-        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+      
+      if boundsChecking then
+        checkOrderBounds(order);
+      
       var idx: (rank*_value.idxType);
       var div = this.size;
-      for i in 0..rank-1 {
+      
+      for param i in 0..<rank {
           var currDim = this.dim(i);
-          div/=currDim.size;
+          div /= currDim.size;
           const lo = currDim.alignedLow;
           const hi = currDim.alignedHigh;
-          const stride = (currDim.stride);
+          const stride = currDim.stride;
           const zeroInd = order/div;
-          var currInd = (zeroInd*stride);
+          var currInd = zeroInd*stride;
           if stride<0 then currInd+=hi;
           else currInd+=lo;
           idx[i] = currInd;
           order = order%div;
       }
       return idx;
+    }
+
+    proc checkOrderBounds(in order){
+      if order >= this.size || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
     }
 
     pragma "no doc"

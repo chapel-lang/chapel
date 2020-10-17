@@ -1,5 +1,0 @@
-(2, 3, 3)
-(2, 1, 3)
-(3, 3, 4)
-(3, 2, 2)
-test2DdomainOrderToIndex.chpl:23: error: halt reached - Order out of bounds. Order must lie in 0..8
