@@ -1885,7 +1885,19 @@ module ChapelArray {
     pragma "no doc"
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
 
-    pragma "no doc"
+    /*
+       Returns domain index for a given order in the domain
+
+       .. note::
+
+         Right now, this method supports only dense local arrays with
+         numeric indices
+
+       :arg order: Order for which the corresponding index in the domain
+                    has to be found.
+
+       :returns: Returns a tuple of size ``domain.rank``  of type ``domain.idxType``
+    */
     proc orderToIndex(in order) where (isRectangularDom(this) && isNumericType(this.idxType)){
       
       if boundsChecking then
