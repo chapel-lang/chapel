@@ -1890,7 +1890,7 @@ module ChapelArray {
 
        .. note::
 
-         Right now, this method supports only dense local arrays with
+         Right now, this method supports only dense rectangular domains with
          numeric indices
 
        :arg order: Order for which the corresponding index in the domain
