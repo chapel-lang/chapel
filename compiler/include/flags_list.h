@@ -245,7 +245,6 @@ symbolFlag( FLAG_MANAGED_POINTER , ypr, "managed pointer" , "e.g. Owned and Shar
 symbolFlag( FLAG_MANAGED_POINTER_NONNILABLE , npr, "managed pointer nonnilable" , "e.g. non-nilable Owned and Shared" )
 symbolFlag( FLAG_MARKED_GENERIC , npr, "marked generic" , "formal is marked generic using the type query syntax" )
 symbolFlag( FLAG_MAYBE_ARRAY_TYPE , npr, "maybe array type" , "function may be computing array type")
-symbolFlag( FLAG_ARRAY_TYPE_FOR_SURE , npr, "array type for sure" , "function is computing array type")
 symbolFlag( FLAG_MAYBE_COPY_ELIDED , npr, "maybe copy elided" , "symbol might be dead early due to copy elision" )
 symbolFlag( FLAG_MAYBE_PARAM , npr, "maybe param" , "symbol can resolve to a param" )
 symbolFlag( FLAG_MAYBE_REF , npr, "maybe ref" , "symbol can resolve to a ref" )
