@@ -26,7 +26,6 @@
 #endif
 
 #include "resolution.h"
-#include "view.h"
 
 #include "AstCount.h"
 #include "astutil.h"
@@ -46,7 +45,6 @@
 #include "initializerRules.h"
 #include "iterator.h"
 #include "lifetime.h"
-#include "LoopExpr.h"
 #include "ModuleSymbol.h"
 #include "optimizations.h"
 #include "ParamForLoop.h"
@@ -98,8 +96,6 @@ public:
   bool fn1WeakestPreferred;
   bool fn2WeakestPreferred;
 };
-
-std::set<CallExpr *> cleanedForallCalls;
 
 // map: (block id) -> (map: sym -> sym)
 typedef std::map<int, SymbolMap*> CapturedValueMap;
@@ -9825,44 +9821,6 @@ static void ensureAndResolveInitStringLiterals() {
   resolveFunction(initStringLiterals);
 }
 
-static void handleRuntimeTypeCleanup() {
-  // can we cache the CallExprs we care about in resolveCall etc?
-  for_alive_in_Vec(CallExpr, call, gCallExprs) {
-    // don't need to touch ArgSymbols
-    if (!isArgSymbol(call->parentSymbol)) {
-      // are we calling a resolved call_forallexpr?
-      if (FnSymbol *callee = call->resolvedFunction()) {
-        if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
-          if (startsWith(callee->name, astr_forallexpr)) {
-            // is the argument a range? -- if so, this call will create a domain
-            // that we need to clean in the calling scope
-            if (SymExpr *argSE = toSymExpr(call->get(1))) {
-              if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
-                // are we moving the result of the call to an expr temp (so that
-                // it is not a user variable) that is a runtime type value?
-                if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-                  if (parentCall->isPrimitive(PRIM_MOVE)) {
-                    if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
-                      if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-                          targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-                        SET_LINENO(call);
-                        call->getFunction()->insertBeforeEpilogue(
-                              new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
-                              new SymExpr(targetSE->symbol())));
-
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
 
 static void handleRuntimeTypes()
 {
@@ -9878,8 +9836,6 @@ static void handleRuntimeTypes()
   replaceTypeFormalsWithRuntimeTypes();
   replaceReturnedTypesWithRuntimeTypes();
   replaceRuntimeTypeVariableTypes();
-
-  handleRuntimeTypeCleanup();
 }
 
 
