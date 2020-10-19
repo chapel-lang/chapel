@@ -9826,35 +9826,30 @@ static void ensureAndResolveInitStringLiterals() {
 }
 
 static void handleRuntimeTypeCleanup() {
-  //if (multiDimArrTypeCalls.count(call) > 0) {
+  // can we cache the CallExprs we care about in resolveCall etc?
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
-  if (true) {
+    // don't need to touch ArgSymbols
     if (!isArgSymbol(call->parentSymbol)) {
+      // are we calling a resolved call_forallexpr?
       if (FnSymbol *callee = call->resolvedFunction()) {
-
-      if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
-        if (startsWith(callee->name, astr_forallexpr)) {
-          // TODO move checks up to this point to resolveCall etc,
-          // cache those calls, then here, only iterate those calls
-
-
-          // TODO what happens for [1..2, 1..3] ?
-          if (SymExpr *argSE = toSymExpr(call->get(1))) {
-            if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
-              if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-                if (parentCall->isPrimitive(PRIM_MOVE)) {
-                  if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
-                    if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-                        targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-                      if (cleanedForallCalls.count(call) == 0) {
+        if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+          if (startsWith(callee->name, astr_forallexpr)) {
+            // is the argument a range? -- if so, this call will create a domain
+            // that we need to clean in the calling scope
+            if (SymExpr *argSE = toSymExpr(call->get(1))) {
+              if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
+                // are we moving the result of the call to an expr temp (so that
+                // it is not a user variable) that is a runtime type value?
+                if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+                  if (parentCall->isPrimitive(PRIM_MOVE)) {
+                    if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
+                      if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+                          targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
                         SET_LINENO(call);
                         call->getFunction()->insertBeforeEpilogue(
-                            new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
+                              new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
                               new SymExpr(targetSE->symbol())));
 
-                        //std::cout << "Autodestroy in " << call->stringLoc() << std::endl;
-                        //nprint_view(call);
-                        cleanedForallCalls.insert(call);
                       }
                     }
                   }
@@ -9864,10 +9859,8 @@ static void handleRuntimeTypeCleanup() {
           }
         }
       }
-    }}
+    }
   }
-  }
-
 }
 
 
