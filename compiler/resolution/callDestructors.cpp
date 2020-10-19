@@ -1088,33 +1088,40 @@ static void lowerAutoDestroyRuntimeType(CallExpr* call) {
     // toAggregateType() filters out calls in unresolved generic functions.
     if (AggregateType* rttAG = toAggregateType(rttSym->type)) {
       if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-        // Todo: the same for the element type component and
-        // for the case of a runtime type for a domain.
-        // Todo: avoid hard-coding the field names.
-        if (Symbol* domField = rttAG->getField("dom", false)) {
-          if (FnSymbol* destroyFn = autoDestroyMap.get(domField->getValType())) {
-            // Invoke destroyFn on rttSE->dom.
-            //INT_ASSERT(call->getStmtExpr() == call);
-            SET_LINENO(call);
-            VarSymbol* domTemp = newTemp("domTemp", domField->getValType());
-            call->insertBefore(new DefExpr(domTemp));
-            call->insertBefore("'move'(%S,'.v'(%E,%S))", domTemp,
-                new SymExpr(rttSym), domField);
-            call->insertBefore(new CallExpr(destroyFn, domTemp));
-          }
-        }
 
-        if (Symbol* eltField = rttAG->getField("eltType", false)) {
-          if (AggregateType* eltFieldAG = toAggregateType(eltField->type)) {
-            if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
-              SET_LINENO(call);
-              VarSymbol* eltTemp = newTemp("eltTemp", eltField->getValType());
-              call->insertBefore(new DefExpr(eltTemp));
-              call->insertBefore("'move'(%S,'.v'(%E,%S))", eltTemp,
-                new SymExpr(rttSym), eltField);
-              CallExpr *innerDestroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, eltTemp);
-              call->insertBefore(innerDestroyCall);
+        for_fields(field, rttAG) {
+          bool destroyField = false;
+          bool destroyFieldRTT = false;
+          FnSymbol *destroyFn = autoDestroyMap.get(field->getValType());
+
+          if (destroyFn != NULL) {
+            INT_ASSERT(call->getStmtExpr() == call);
+            destroyField = true;
+          }
+          else if (AggregateType* fieldAG = toAggregateType(field->type)) {
+            if (fieldAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+              destroyFieldRTT = true;
             }
+          }
+
+          if (destroyField || destroyFieldRTT) {
+            SET_LINENO(call);
+            VarSymbol* fieldTemp = newTemp("fieldTemp", field->getValType());
+            call->insertBefore(new DefExpr(fieldTemp));
+            call->insertBefore("'move'(%S,'.v'(%E,%S))", fieldTemp,
+              new SymExpr(rttSym), field);
+
+            CallExpr *destroyCall = NULL;
+            if (destroyField) {
+              // Invoke destroyFn on the field
+              destroyCall = new CallExpr(destroyFn, fieldTemp);
+            }
+            else {
+              // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
+              destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
+            }
+            
+            call->insertBefore(destroyCall);
           }
         }
       }
@@ -1905,6 +1912,45 @@ static void removeElidedOnBlocks() {
   }
 }
 
+static void insertAutoDestroyPrimsForLoopExprTemps() {
+  // can we cache the CallExprs we care about in resolveCall etc?
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    // don't need to touch ArgSymbols
+    if (!isArgSymbol(call->parentSymbol)) {
+      // are we calling a resolved call_forallexpr?
+      if (FnSymbol *callee = call->resolvedFunction()) {
+        if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+          if (startsWith(callee->name, astr_forallexpr)) {
+            // is the argument a range? -- if so, this call will create a domain
+            // that we need to clean in the calling scope
+            if (SymExpr *argSE = toSymExpr(call->get(1))) {
+              if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
+                // are we moving the result of the call to an expr temp (so that
+                // it is not a user variable) that is a runtime type value?
+                if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+                  if (parentCall->isPrimitive(PRIM_MOVE)) {
+                    if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
+                      if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+                          targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                        SET_LINENO(call);
+                        call->getFunction()->insertBeforeEpilogue(
+                              new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
+                              new SymExpr(targetSE->symbol())));
+
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -1918,6 +1964,8 @@ void callDestructors() {
   createIteratorBreakBlocks();
 
   fixupDestructors();
+
+  insertAutoDestroyPrimsForLoopExprTemps();
 
   insertDestructorCalls();
 
