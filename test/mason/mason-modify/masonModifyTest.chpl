@@ -17,10 +17,10 @@ proc main(args: [] string) {
   if exists(basename) then rmTree(basename);
 
   // Create new mason project directory
-  mkdir(basename);
+  mkdir('tmp/' + basename, parents=true);
 
   // Replace manifest file
-  const tomlFile = 'tmp/' + basename + '.toml';
+  const tomlFile = basename + '.toml';
   const manifestFile = 'tmp/' + basename + '/Mason.toml';
   FileSystem.copyFile(tomlFile, manifestFile);
 
