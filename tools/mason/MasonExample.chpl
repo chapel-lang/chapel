@@ -193,7 +193,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
 
     // Get buildInfo: dependencies, path to src code, compopts,
