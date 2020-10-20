@@ -86,9 +86,17 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     const lockPath = projectHome + "/" + lf;
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
+    var updated = false;
     if isFile(tomlPath) {
-      if TomlFile['dependencies']!.A.size > 0 then updateRegistry(skipUpdate);
-      else writeln("Skipping registry update since no dependency found in manifest file.");
+      if TomlFile.pathExists('dependencies') {
+        if TomlFile['dependencies']!.A.size > 0 {
+          updateRegistry(skipUpdate);
+          updated = true;
+        }
+      }
+      if !updated {
+        writeln("Skipping registry update since no dependency found in manifest file.");
+      }
     }
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
       if getSpackVersion != spackVersion then
