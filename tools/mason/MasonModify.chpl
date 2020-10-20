@@ -19,6 +19,7 @@
  */
 
 use Regexp;
+use FileSystem;
 use TOML;
 use MasonUtils;
 private use Map;
@@ -88,7 +89,7 @@ proc masonModify(args: [] string) throws {
     //       this function is only executed when 'add' or 'rm' is passed
 
     // Modify the manifest file based on arguments
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, "Mason.toml");
 
     const result = modifyToml(add, dep, external, system, projectHome);

@@ -80,7 +80,7 @@ proc masonInit(args: [] string) throws {
 
     if dirName == '' {
       if defaultBehavior {
-        const cwd = getEnv("PWD");
+        const cwd = here.cwd();
         var name = basename(cwd);
         const path = '.';
         if packageName.size > 0 then name = packageName;

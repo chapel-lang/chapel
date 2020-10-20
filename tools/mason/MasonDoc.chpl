@@ -31,7 +31,7 @@ proc masonDoc(args: [] string) throws {
       exit(0);
     }
     const tomlName = 'Mason.toml';
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
 
     const projectHome = getProjectHome(cwd, tomlName);
     const tomlPath = projectHome + "/" + tomlName;
