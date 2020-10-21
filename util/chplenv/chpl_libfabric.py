@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from distutils.spawn import find_executable
 import sys
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
