@@ -3,7 +3,7 @@ from distutils.spawn import find_executable
 import sys
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
-from utils import error, memoize, run_command_deluxe
+from utils import error, memoize, try_run_command
 
 
 @memoize
@@ -13,10 +13,9 @@ def get():
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
         platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            exists, returncode = run_command_deluxe(['pkg-config',
-                                                    '--exists',
-                                                    'libfabric'])[0:2]
-
+            exists, returncode = try_run_command(['pkg-config',
+                                                  '--exists',
+                                                  'libfabric'])[0:2]
             if exists and returncode == 0:
                 libfabric_val = 'system'
             else:
