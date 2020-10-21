@@ -94,19 +94,38 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 // code.  The call on non-0 locales is made from chpl_main(), above.
 //
 void chpl_rt_preUserCodeHook(void) {
-  chpl_comm_barrier("pre-user-code hook begin");
-
+  //
+  // The module initialization functions have all completed on each
+  // node, locally, before we are called. 
+  //
+  // The module init code can leave the running task counts incorrect.
+  // Once module init is complete, we can set those counts to the right
+  // values on all nodes: 1 on node 0 for the program itself, and 0 on
+  // all other nodes.  We have to barrier first because on-stmts during
+  // module init can change the running task count on any node.
+  //
+  chpl_comm_barrier("pre-user-code hook: init done");
   chpl_taskRunningCntReset(0, 0);
   if (chpl_nodeID == 0) {
     chpl_taskRunningCntInc(0, 0);
   }
 
   //
-  // Set up any memory tracking requested.
+  // We don't want to track memory during the module init phase, but we
+  // do want to track it in the user code, so we set up memory tracking
+  // now.  This will cause on-stmts from non-zero nodes back to node 0,
+  // which will adjust the running task count, so we have to do another
+  // barrier to make sure the task counts are stable before doing it.
   //
+  chpl_comm_barrier("pre-user-code hook: task counts stable");
   chpl_setMemFlags();
 
-  chpl_comm_barrier("pre-user-code hook end");
+  //
+  // Finally, we have to do a third barrier to make sure all the nodes
+  // have set up memory tracking (if needed) before node 0 enters the
+  // user code and execution starts spreading around the nodes.
+  //
+  chpl_comm_barrier("pre-user-code hook: mem tracking inited");
 }
 
 
