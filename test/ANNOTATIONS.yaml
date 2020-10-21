@@ -2013,6 +2013,8 @@ arkouda: &arkouda-base
   10/06/20:
     - text: Optimize aggregators by yielding more often (mhmerrill/arkouda/#509)
       config: 16-node-cs, 16-node-xc
+  10/21/20:
+    - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
 
 
 arkouda-comp:
