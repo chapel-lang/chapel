@@ -33,8 +33,9 @@ class CommandError(Exception):
     pass
 
 
-def run_command_deluxe(command, stdout=True, stderr=False, cmd_input=None):
-    """Command subprocess wrapper.
+def try_run_command(command, stdout=True, stderr=False, cmd_input=None):
+    """Command subprocess wrapper tolerating failure to find or run the cmd.
+       For normal usage the vanilla run_command() may be simpler to use.
        This should be the only invocation of subprocess in all chplenv scripts.
        This could be replaced by subprocess.check_output, but that
        is only available after Python 2.7, and we still support 2.6 :("""
@@ -59,8 +60,10 @@ def run_command_deluxe(command, stdout=True, stderr=False, cmd_input=None):
 
 
 def run_command(command, stdout=True, stderr=False, cmd_input=None):
-    exists, returncode, output = run_command_deluxe(command, stdout, stderr,
-                                                    cmd_input)
+    """Command subprocess wrapper.
+       This is the usual way to run a command and collect its output."""
+    exists, returncode, output = try_run_command(command, stdout, stderr,
+                                                 cmd_input)
     if not exists:
         error("command not found: {0}".format(command[0]), OSError)
     if returncode != 0:
