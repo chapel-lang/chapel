@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This script fixes up the test output to remove the compiler version
 # number and then generates a .good file based on the output of

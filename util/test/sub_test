@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # Rewrite of sub_test by Sung-Eun Choi (sungeun@cray.com)
 #  sub_test is used by start_test in the Chapel Testing system

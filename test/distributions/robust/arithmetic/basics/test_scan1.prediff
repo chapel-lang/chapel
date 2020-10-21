@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Figure out which of TESTNAME.*.good is applicable; copy it to TESTNAME.good.
 #

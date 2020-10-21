@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Provides simple 'get()' interface for accessing default value overrides
 Checks environment variables first, then chplconfig file for definitions
