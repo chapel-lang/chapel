@@ -23,6 +23,7 @@ chplvars = [
              'CHPL_COMM',
              'CHPL_COMM_SUBSTRATE',
              'CHPL_GASNET_SEGMENT',
+             'CHPL_LIBFABRIC',
              'CHPL_TASKS',
              'CHPL_LAUNCHER',
              'CHPL_TIMERS',
