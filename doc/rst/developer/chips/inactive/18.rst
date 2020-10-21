@@ -2,7 +2,7 @@ NUMA-Aware Array Storage
 ========================
 
 Status
-  Draft
+  Inactive - some strategies implemented and some adopted
 
 Authors
   Greg Titus (lead),
