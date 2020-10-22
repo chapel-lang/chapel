@@ -1913,6 +1913,10 @@ static void removeElidedOnBlocks() {
 }
 
 static void insertAutoDestroyPrimsForLoopExprTemps() {
+  // below is a workaround for stopping the leaks coming from forall exprs that
+  // are array types. This leak only occurs if the expression is not assigned to
+  // a type variable, and it uses ranges and not domains.
+  //
   // can we cache the CallExprs we care about in resolveCall etc?
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     // don't need to touch ArgSymbols
