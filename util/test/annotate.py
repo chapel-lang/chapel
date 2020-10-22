@@ -2,6 +2,7 @@ import socket, time
 import json
 from collections import defaultdict
 
+import activate_chpl_test_venv
 import yaml
 try:
   # Use CLoader if available for the speed boost
