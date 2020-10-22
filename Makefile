@@ -130,6 +130,11 @@ third-party-chpldoc-venv: FORCE
 	cd third-party && $(MAKE) chpldoc-venv; \
 	fi
 
+third-party-c2chapel-venv: FORCE
+	@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then \
+	cd third-party && $(MAKE) c2chapel-venv; \
+	fi
+
 test-venv: third-party-test-venv
 
 chpldoc: compiler third-party-chpldoc-venv
@@ -156,7 +161,7 @@ mason: chpldoc notcompiler FORCE
 protoc-gen-chpl: chpldoc notcompiler FORCE
 	cd tools/protoc-gen-chpl && $(MAKE) && $(MAKE) install
 
-c2chapel: FORCE
+c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
