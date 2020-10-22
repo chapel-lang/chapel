@@ -90,6 +90,10 @@ chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
 $(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
+c2chapel-venv: $(CHPL_VENV_C2CHAPEL_REQS)
+$(CHPL_VENV_C2CHAPEL_REQS): $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE)
+	cd chpl-venv && $(MAKE) c2chapel-venv
+
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
 $(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
