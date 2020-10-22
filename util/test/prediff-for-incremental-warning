@@ -33,7 +33,7 @@ try:
       if(line == "warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.\n"):
         sys.exit(0)
 except IOError:
-    print "Can't find "+sys.argv[1]+".good"
+    print("Can't find "+sys.argv[1]+".good")
 
 # Matches the warning we are looking for
 pattern = re.compile("warning: Compiling with --incremental along with optimizations enabled may lead to a slower execution time compared to --fast or using -O optimizations directly.")
