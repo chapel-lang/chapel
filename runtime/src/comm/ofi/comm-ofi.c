@@ -241,6 +241,10 @@ static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static inline size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
+static inline void waitForPutsVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*,
+                                         chpl_comm_taskPrvData_t*);
+static inline void waitForPutsVisAllNodes(struct perTxCtxInfo_t*,
+                                          chpl_comm_taskPrvData_t*, chpl_bool);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -1478,7 +1482,7 @@ void init_ofiEp(void) {
   // is needed.  It uses poll and wait sets to manage this, if it can.
   // Note: we'll either have both a poll and a wait set, or neither.
   //
-  // We don't use poll and waits sets with the efa provider because that
+  // We don't use poll and wait sets with the efa provider because that
   // doesn't support wait objects.  I tried just setting the cq_attr
   // wait object to FI_WAIT_UNSPEC for all providers, since we don't
   // reference the wait object explicitly anyway, but then saw hangs
@@ -2559,12 +2563,14 @@ void chpl_comm_impl_unordered_task_fence(void) {
 inline
 void chpl_comm_impl_task_create(void) {
   retireDelayedAmDone(false /*taskIsEnding*/);
+  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
 }
 
 
 void chpl_comm_impl_task_end(void) {
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
   retireDelayedAmDone(true /*taskIsEnding*/);
+  waitForPutsVisAllNodes(NULL, NULL, true /*taskIsEnding*/);
 }
 
 
@@ -2995,6 +3001,20 @@ void amRequestCommon(c_nodeid_t node,
     DBG_PRINTF(DBG_AM | DBG_AMSEND, "AM req BB: %p", myReq);
     CHK_TRUE(mrGetDesc(NULL, myReq, reqSize) == 0);
     memcpy(myReq, req, reqSize);
+  }
+
+  //
+  // We're ready to send the request.  But for on-stmts and AMOs, before
+  // we do so MCM conformance requires that we make all our outstanding
+  // PUTs visible.  Similarly, for GET ops, we have to make PUTs to the
+  // same node visible.  No other AM ops depend on PUT visibilty.
+  //
+  if (myReq->b.op == am_opExecOn
+      || myReq->b.op == am_opExecOnLrg
+      || myReq->b.op == am_opAMO) {
+    waitForPutsVisAllNodes(myTcip, NULL, false /*taskIsEnding*/);
+  } else if (myReq->b.op == am_opGet) {
+    waitForPutsVisOneNode(node, myTcip, NULL);
   }
 
   //
@@ -4061,11 +4081,27 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
 
+    //
+    // If we're using delivery-complete for MCM conformance we just
+    // write the data and wait for the CQ event.  If we're using message
+    // ordering and have bound tx contexts, instead we write the data,
+    // count this as an outstanding PUT, and return right away.  We'll
+    // collect the CQ events as they roll in, or if at some later time
+    // we need all our outstanding PUTs to be complete we'll wait for
+    // all of them then.  Finally, if we're using message ordering but
+    // don't have bound tx contexts, then we have to follow the write
+    // with a read from the same node and wait for the event belonging
+    // to the read instead.  Since we have read-after-write ordering and
+    // libfabric defaults to delivery-complete (locally) for reads, once
+    // the CQ event for the read arrives we can assume the write is also
+    // visible.
+    //
+    assert(tcip->txCQ != NULL);  // PUTs require a CQ, at least for now
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
-    void* ctx = (tcip->txCQ == NULL)
-                ? NULL
-                : txnTrkEncode(txnTrkDone, &txnDone);
+    void* ctx = haveDeliveryComplete
+                ? txnTrkEncode(txnTrkDone, &txnDone)
+                : NULL;
 
     DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
                "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
@@ -4073,27 +4109,27 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     OFI_RIDE_OUT_EAGAIN(tcip,
                         fi_write(tcip->txCtx, myAddr, size,
                                  mrDesc, rxRmaAddr(tcip, node),
-                                 mrRaddr, mrKey,
-                                 haveDeliveryComplete ? ctx : NULL));
+                                 mrRaddr, mrKey, ctx));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
 
-    //
-    // If we're using delivery-complete for MCM conformance we just
-    // write the data and wait for the CQ event.  But if we're using
-    // message ordering, instead we write the data, follow that with a
-    // read from the same node, and then wait for the event belonging to
-    // the read instead.  Since we have read-after-write and libfabric
-    // defaults to delivery-complete (locally) for reads, once the CQ
-    // event for the read arrives we assume the write is also visible.
-    //
-    if (!haveDeliveryComplete) {
+    if (haveDeliveryComplete) {
+      waitForTxnComplete(tcip, ctx);
+    } else if (tcip->bound) {
+      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+      assert(prvData != NULL);
+      if (prvData->putBitmap == NULL) {
+        prvData->putBitmap = bitmapAlloc(chpl_numNodes);
+      }
+      bitmapSet(prvData->putBitmap, node);
+    } else {
       DBG_PRINTF(DBG_ORDER,
                  "dummy GET from %d for PUT ordering", (int) node);
+      ctx = txnTrkEncode(txnTrkDone, &txnDone);
       ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+      waitForTxnComplete(tcip, ctx);
     }
 
-    waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
     tciFree(tcip);
   } else {
@@ -4372,6 +4408,19 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
                                 mrRaddr, mrKey, ctx));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
+
+    //
+    // This GET will force any outstanding PUT to the same node
+    // to be visible.
+    //
+    if (!haveDeliveryComplete && tcip->bound) {
+      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+      assert(prvData != NULL);
+      if (prvData->putBitmap != NULL) {
+        bitmapClear(prvData->putBitmap, node);
+      }
+    }
+
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
     tciFree(tcip);
@@ -4898,6 +4947,64 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
     while (tcip->numTxnsOut > 0) {
       sched_yield();
       (*tcip->ensureProgressFn)(tcip);
+    }
+  }
+}
+
+
+static inline
+void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
+                           chpl_comm_taskPrvData_t* prvData) {
+  //
+  // Enforce MCM: at the end of a task, make sure all our outstanding
+  // PUTs have actually completed on their target nodes.
+  //
+  if (!haveDeliveryComplete && tcip->bound) {
+    chpl_comm_taskPrvData_t* myPrvData = prvData;
+    if (myPrvData == NULL) {
+      CHK_TRUE((myPrvData = get_comm_taskPrvdata()) != NULL);
+    }
+
+    if (myPrvData->putBitmap != NULL
+        && bitmapTest(myPrvData->putBitmap, node)) {
+      bitmapClear(myPrvData->putBitmap, node);
+      mcmReleaseOneNode(node, tcip, true /*useRMA*/, "PUT");
+    }
+  }
+}
+
+
+static inline
+void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
+                            chpl_comm_taskPrvData_t* prvData,
+                            chpl_bool taskIsEnding) {
+  //
+  // Enforce MCM: at the end of a task, make sure all our outstanding
+  // PUTs have actually completed on their target nodes.
+  //
+  if (chpl_numNodes > 1 && !haveDeliveryComplete) {
+    struct perTxCtxInfo_t* myTcip = tcip;
+    if (myTcip == NULL) {
+      CHK_TRUE((myTcip = tciAlloc()) != NULL);
+    }
+
+    if (myTcip->bound) {
+      chpl_comm_taskPrvData_t* myPrvData = prvData;
+      if (myPrvData == NULL) {
+        CHK_TRUE((myPrvData = get_comm_taskPrvdata()) != NULL);
+      }
+
+      if (myPrvData->putBitmap != NULL) {
+        mcmReleaseAllNodes(myPrvData->putBitmap, NULL, true /*useRMA*/, "PUT");
+        if (taskIsEnding) {
+          bitmapFree(myPrvData->putBitmap);
+          myPrvData->putBitmap = NULL;
+        }
+      }
+    }
+
+    if (myTcip != tcip) {
+      tciFree(myTcip);
     }
   }
 }
@@ -5665,6 +5772,12 @@ void chpl_comm_barrier(const char *msg) {
   }
 
   //
+  // Ensure our outstanding PUTs are visible.  (Visibility of PUTs done
+  // by other tasks on this node is the caller's responsibility.)
+  //
+  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
+
+  //
   // Wait for our child locales to notify us that they have reached the
   // barrier.
   //
@@ -5716,6 +5829,11 @@ void chpl_comm_barrier(const char *msg) {
               sizeof(one));
     }
   }
+
+  //
+  // Ensure the PUTs we just did are visible before returning.
+  //
+  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
 
   DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via PUTs",
              (msg == NULL) ? "" : msg);
