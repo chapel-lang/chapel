@@ -539,7 +539,7 @@ def runSkipIf(skipifName):
     return stdout
 
 # Translate some known failures into more easily understood forms
-def translateOutput(output):
+def translateOutput(output_in):
     xlates = (('slurmstepd: Munge decode failed: Expired credential',
                'Jira 18 -- Expired slurm credential for'),
               ('output file from job .* does not exist',
@@ -563,6 +563,10 @@ def translateOutput(output):
 
     known_error = ''
     was_timeout = False
+
+    output = output_in
+    if isinstance(output, bytes):
+        output = str(output, encoding='utf-8', errors='surrogateescape')
 
     for x in xlates:
         if re.search(x[0], output, re.IGNORECASE) != None:
@@ -595,7 +599,7 @@ def filter_compiler_errors(compiler_output):
 
     return error_msg
 
-def filter_errors(output, pre_exec_output, execgoodfile, execlog):
+def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
     """Identify common errors that occur in runtime or compiler warnings.
     Return message to emit when error found."""
 
@@ -608,6 +612,11 @@ def filter_errors(output, pre_exec_output, execgoodfile, execlog):
                    'Slave got an xSocket: connection closed on recv',
                    'recursive failure in AMUDP_SPMDShutdown',
                    'AM_ERR_RESOURCE \(Problem with requested resource\)']
+
+    output = output_in
+    if isinstance(output, bytes):
+        output = str(output, encoding='utf-8', errors='surrogateescape')
+
     for s in err_strings:
         if re.search(s, output, re.IGNORECASE) != None:
             extra_msg = '(possible JIRA 154) '
