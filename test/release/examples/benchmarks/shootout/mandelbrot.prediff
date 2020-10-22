@@ -38,8 +38,19 @@ else:
     if os.path.isfile(clbg_expect):
       expect = clbg_expect
 
-  if os.path.getsize(testout) != os.path.getsize(expect):
+  outsize = os.path.getsize(testout)
+  expectsize = os.path.getsize(expect)
+  if outsize != expectsize:
     error = "File lengths do not match"
+
+    # If there is extra stuff in the output, emit it
+    # (in case it is e.g. GASNet errors)
+    if outsize > expectsize:
+      with open(testout, "rb") as outF:
+        outF.seek(expectsize)
+        rest = outF.read()
+        rest = str(rest, encoding='utf-8', errors='backslashreplace')
+        error = error + "\n" + rest
 
   else:
 
