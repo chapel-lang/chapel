@@ -28,13 +28,15 @@ DefaultRectangular doing optimized swap. Domains: (0..4) (0..9 by 2)
 simple case: everything should be optimized
 'Forward' swap
 BlockArr doing optimized swap. Domains: {1..10} {1..10} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
+DefaultRectangular doing optimized swap. Domains: (1..5) (1..5)
+DefaultRectangular doing optimized swap. Domains: (6..10) (6..10)
 20 20 20 20 20 20 20 20 20 20
 10 10 10 10 10 10 10 10 10 10
 
 'Backward' swap
 BlockArr doing optimized swap. Domains: {1..10} {1..10} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
+DefaultRectangular doing optimized swap. Domains: (1..5) (1..5)
+DefaultRectangular doing optimized swap. Domains: (6..10) (6..10)
 10 10 10 10 10 10 10 10 10 10
 20 20 20 20 20 20 20 20 20 20
 
@@ -54,13 +56,15 @@ BlockArr doing unoptimized swap. Domains: {1..10} {0..9} Bounding boxes: {1..10}
 both are unevenly distributed, but they align with each other
 'Forward' swap
 BlockArr doing optimized swap. Domains: {0..9} {0..9} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (0..9) (0..9)
+DefaultRectangular doing optimized swap. Domains: (0..5) (0..5)
+DefaultRectangular doing optimized swap. Domains: (6..9) (6..9)
 20 20 20 20 20 20 20 20 20 20
 10 10 10 10 10 10 10 10 10 10
 
 'Backward' swap
 BlockArr doing optimized swap. Domains: {0..9} {0..9} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (0..9) (0..9)
+DefaultRectangular doing optimized swap. Domains: (0..5) (0..5)
+DefaultRectangular doing optimized swap. Domains: (6..9) (6..9)
 10 10 10 10 10 10 10 10 10 10
 20 20 20 20 20 20 20 20 20 20
 
@@ -80,13 +84,15 @@ BlockArr doing unoptimized swap. Type mismatch
 both are strided and aligned
 'Forward' swap
 BlockArr doing optimized swap. Domains: {0..9 by 2} {0..9 by 2} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (0..9 by 2) (0..9 by 2)
+DefaultRectangular doing optimized swap. Domains: (0..5 by 2) (0..5 by 2)
+DefaultRectangular doing optimized swap. Domains: (6..9 by 2) (6..9 by 2)
 20 20 20 20 20
 10 10 10 10 10
 
 'Backward' swap
 BlockArr doing optimized swap. Domains: {0..9 by 2} {0..9 by 2} Bounding boxes: {1..10} {1..10}
-DefaultRectangular doing optimized swap. Domains: (0..9 by 2) (0..9 by 2)
+DefaultRectangular doing optimized swap. Domains: (0..5 by 2) (0..5 by 2)
+DefaultRectangular doing optimized swap. Domains: (6..9 by 2) (6..9 by 2)
 10 10 10 10 10
 20 20 20 20 20
 
