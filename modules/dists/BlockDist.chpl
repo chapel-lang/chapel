@@ -1538,9 +1538,46 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
   return true;
 }
 
+proc BlockArr.canDoOptimizedSwap(other) {
+  var domValuesEqual = true;
+  var domShapesMatch = true;
+  if this.dom != other.dom {
+    domValuesEqual = false;
+  }
+
+  if domValuesEqual {
+    for param i in 0..this.dom.rank-1 {
+      if (this.dom.whole.dim(i) != other.dom.whole.dim(i)) {
+        if this.dom.whole.dim(i).size != other.dom.whole.dim(i).size {
+          domShapesMatch = false;
+        }
+        domValuesEqual = false;
+      }
+    }
+  }
+
+  if domValuesEqual {
+    // distributions must be equal, too
+    return this.dom.dist.dsiEqualDMaps(other.dom.dist);
+  }
+  // we can handle different domains if:
+  // their shapes match, and
+  // they also match their respective distributions' boundingBoxes
+  else if domShapesMatch {
+    return this.dom.dist.boundingBox == this.dom.whole &&
+           other.dom.dist.boundingBox == other.dom.whole;
+  }
+  return false;
+}
+
 // Block1 <=> Block2 
 proc BlockArr.doiOptimizedSwap(other) {
-  if(this.dom.dist.dsiEqualDMaps(other.dom.dist) && this.dom == other.dom) {
+  if(canDoOptimizedSwap(other)) {
+    if debugOptimizedSwap {
+      writeln("BlockArr doing optimized swap. Domains: ", 
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
     coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
       on locarr1 {
         locarr1.myElems <=> locarr2.myElems;
@@ -1549,6 +1586,11 @@ proc BlockArr.doiOptimizedSwap(other) {
     }
     return true;
   } else {
+    if debugOptimizedSwap {
+      writeln("BlockArr doing unoptimized swap. Domains: ", 
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
     return false;
   }
 }

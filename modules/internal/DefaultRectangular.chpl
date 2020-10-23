@@ -2280,10 +2280,18 @@ module DefaultRectangular {
     
     if(this.locale == other.locale &&
        size1 == size2) {
+      if debugOptimizedSwap {
+        writeln("DefaultRectangular doing optimized swap. Domains: ", 
+                this.dom.ranges, " ", other.dom.ranges);
+      }
       this.data <=> other.data;
       this.initShiftedData();
       other.initShiftedData();
       return true;
+    }
+    if debugOptimizedSwap {
+      writeln("DefaultRectangular doing unoptimized swap. Domains: ", 
+              this.dom.ranges, " ", other.dom.ranges);
     }
     return false;
   }
