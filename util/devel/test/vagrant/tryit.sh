@@ -15,11 +15,13 @@ echo > log2
 echo "Running command on images:" | tee -a log
 echo "$*" | tee -a log
 
+DIR=`pwd`
+
 i=0
 
 # compute longest length for padding
 maxlen=0
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
@@ -30,7 +32,7 @@ do
   fi
 done
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
@@ -38,18 +40,17 @@ do
     display=`printf "%${maxlen}s" $name`
     NAME[$i]=$display
     echo
-    echo "     ---- $display ---- " | tee -a ../log
-    vagrant up 2>&1 | tee -a ../log
-    ( vagrant ssh --command "$*" -- -q 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> ../log2 | tee -a ../log
-    case "$(tail -n 1 ../log2)" in
+    echo "     ---- $display ---- " | tee -a "$DIR"/log
+    vagrant up 2>&1 | tee -a "$DIR"/log
+    ( vagrant ssh --command "$*" -- -q 2>&1 && echo >&3 ok || echo >&3 error exit $? ) 3> "$DIR"/log2 | tee -a "$DIR"/log
+    case "$(tail -n 1 "$DIR"/log2)" in
     ( ok )
       echo
-      lastline=`tail -n 1 ../log`
+      lastline=`tail -n 1 "$DIR"/log`
       RESULT[$i]="  OK: $lastline"
-      #echo "     SUCCESS:" $name
       ;;
     ( error* )
-      lastline=`tail -n 1 ../log`
+      lastline=`tail -n 1 "$DIR"/log`
       RESULT[$i]="FAIL: $lastline"
       echo "     FAIL:" $name
       echo "     Leaving virtual machine up"
@@ -64,8 +65,8 @@ do
       exit 1
       ;;
     esac
-    vagrant halt 2>&1 | tee -a ../log
-    cd ..
+    vagrant halt 2>&1 | tee -a "$DIR"/log
+    cd "$DIR"
 
     ((i++))
   fi
@@ -74,7 +75,7 @@ done
 echo "     -------- SUMMARY --------"
 
 i=0
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

@@ -9,12 +9,12 @@ Vagrant.configure("2") do |config|
   config.vm.box = "opensuse/Leap-15.2.x86_64"
 
   config.vm.provision "shell",
-    path: "../provision-scripts/zypper-deps.sh"
+    path: "../../provision-scripts/zypper-deps.sh"
 
   config.vm.provision "shell", privileged: false,
-    path: "../provision-scripts/git-clone-chapel.sh"
+    path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
-    path: "../provision-scripts/make-chapel-quick.sh"
+    path: "../../provision-scripts/make-chapel-quick.sh"
 
 end
