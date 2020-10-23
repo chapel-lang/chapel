@@ -1,38 +1,204 @@
+*** Default Rectangular ***
 simple case: everything should be optimized
+'Forward' swap
+DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+One of the domains are strided
+'Forward' swap
+DefaultRectangular doing optimized swap. Domains: (0..9 by 2) (0..4)
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangular doing optimized swap. Domains: (0..4) (0..9 by 2)
+10 10 10 10 10
+20 20 20 20 20
+
+
+
+*** Block ***
+simple case: everything should be optimized
+'Forward' swap
 BlockArr doing optimized swap. Domains: {1..10} {1..10} Bounding boxes: {1..10} {1..10}
 DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
 20 20 20 20 20 20 20 20 20 20
 10 10 10 10 10 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing optimized swap. Domains: {1..10} {1..10} Bounding boxes: {1..10} {1..10}
+DefaultRectangular doing optimized swap. Domains: (1..10) (1..10)
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
 one array is unevenly distributed. block shouldn't optimize
+'Forward' swap
 BlockArr doing unoptimized swap. Domains: {0..9} {1..10} Bounding boxes: {1..10} {1..10}
 20 20 20 20 20 20 20 20 20 20
 10 10 10 10 10 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing unoptimized swap. Domains: {1..10} {0..9} Bounding boxes: {1..10} {1..10}
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
 both are unevenly distributed, but they align with each other
+'Forward' swap
 BlockArr doing optimized swap. Domains: {0..9} {0..9} Bounding boxes: {1..10} {1..10}
 DefaultRectangular doing optimized swap. Domains: (0..9) (0..9)
 20 20 20 20 20 20 20 20 20 20
 10 10 10 10 10 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing optimized swap. Domains: {0..9} {0..9} Bounding boxes: {1..10} {1..10}
+DefaultRectangular doing optimized swap. Domains: (0..9) (0..9)
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
 One of the domains are strided
-BlockArr doing unoptimized swap (type mismatch). Domains: {0..9 by 2} {0..4} Bounding boxes: {1..10} {1..10}
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
 20 20 20 20 20
 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
 both are strided and aligned
+'Forward' swap
 BlockArr doing optimized swap. Domains: {0..9 by 2} {0..9 by 2} Bounding boxes: {1..10} {1..10}
 DefaultRectangular doing optimized swap. Domains: (0..9 by 2) (0..9 by 2)
 20 20 20 20 20
 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing optimized swap. Domains: {0..9 by 2} {0..9 by 2} Bounding boxes: {1..10} {1..10}
+DefaultRectangular doing optimized swap. Domains: (0..9 by 2) (0..9 by 2)
+10 10 10 10 10
+20 20 20 20 20
+
+
 both are strided, have same number of elements but not aligned, block shouldn't optimize
+'Forward' swap
 BlockArr doing unoptimized swap. Domains: {0..9 by 2} {1..10 by 2} Bounding boxes: {1..10} {1..10}
 20 20 20 20 20
 10 10 10 10 10
 
+'Backward' swap
+BlockArr doing unoptimized swap. Domains: {1..10 by 2} {0..9 by 2} Bounding boxes: {1..10} {1..10}
+10 10 10 10 10
+20 20 20 20 20
+
+
 both are strided and misaligned
+'Forward' swap
 BlockArr doing unoptimized swap. Domains: {0..9 by 2} {0..9 by 2 align 1} Bounding boxes: {1..10} {1..10}
 20 20 20 20 20
 10 10 10 10 10
+
+'Backward' swap
+BlockArr doing unoptimized swap. Domains: {0..9 by 2 align 1} {0..9 by 2} Bounding boxes: {1..10} {1..10}
+10 10 10 10 10
+20 20 20 20 20
+
+
+
+*** Cross type ***
+Cross type swaps shouldn't be optimized
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+Cross type swaps shouldn't be optimized
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided, have same number of elements but not aligned, block shouldn't optimize
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
+both are strided and misaligned
+'Forward' swap
+BlockArr doing unoptimized swap. Type mismatch
+20 20 20 20 20
+10 10 10 10 10
+
+'Backward' swap
+DefaultRectangularArr doing unoptimized swap. Type mismatch
+10 10 10 10 10
+20 20 20 20 20
+
+
 

@@ -2264,10 +2264,17 @@ module DefaultRectangular {
     return res;
   }
 
+  // <=> implementation uses Reflection to check whether this is implemented, so
+  // it is OK for this to not resolve without debugOptimizedSwap.
+  proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+    writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
+    return false;
+  }
+
   // A helper routine that will perform a pointer swap on an array
   // instead of doing a deep copy of that array. Returns true
   // if used the optimized swap, false otherwise
-  proc DefaultRectangularArr.doiOptimizedSwap(other) {
+  proc DefaultRectangularArr.doiOptimizedSwap(other: this.type) {
    // Get shape of array
     var size1: rank*(this.dom.ranges(0).intIdxType);
     for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do

@@ -1575,10 +1575,10 @@ proc BlockArr.canDoOptimizedSwap(other) {
   return false;
 }
 
+// <=> implementation uses Reflection to check whether this is implemented, so
+// it is OK for this to not resolve without debugOptimizedSwap.
 proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
-  writeln("BlockArr doing unoptimized swap (type mismatch). Domains: ", 
-          this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
-          this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+  writeln("BlockArr doing unoptimized swap. Type mismatch");
   return false;
 }
 
