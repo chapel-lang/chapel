@@ -43,10 +43,19 @@ def activate_venv():
         if not os.path.isfile(activation_file):
             error('Activation file {0} is missing'.format(activation_file))
 
+        old_path = os.environ.get('PATH', '')
+
         # actually activate
         with open(activation_file) as f:
             code = compile(f.read(), activation_file, 'exec')
             exec(code, dict(__file__=activation_file))
 
+        # put PATH back so that the system python may be used.
+        # python scripts using the virtualenv dependencies should use
+        #
+        #   from test import activate_chpl_test_venv
+        #
+        # near to the 'import' of a virtual dependency.
+        os.environ['PATH'] = old_path
 
 activate_venv()
