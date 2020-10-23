@@ -48,7 +48,7 @@ source: module-docs primers hellos symlinks
 module-docs: clean-module-docs
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
-	(cd ../modules && make documentation)
+	(cd ../modules && $(MAKE) documentation)
 	cp -f $(SOURCEDIR)/meta/modules/* $(SOURCEDIR)/modules/
 	cp -f $(SOURCEDIR)/meta/builtins/* $(SOURCEDIR)/builtins/
 
