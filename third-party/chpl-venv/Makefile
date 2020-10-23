@@ -134,7 +134,7 @@ rm-chplspell-reqs: FORCE
 # Python installation (ie, the Python used was not installed under "/usr/...").
 # Only applicable when building a Cray Chapel module under certain conditions.
 use-system-python: FORCE
-	@./venv-use-sys-python.py $(CHPL_VENV_INSTALL_DIR)
+	@$(PYTHON) ./venv-use-sys-python.py $(CHPL_VENV_INSTALL_DIR)
 
 FORCE:
 
