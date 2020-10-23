@@ -18,9 +18,9 @@ about your environment for using Chapel:
   * You are using an environment that supports standard UNIX commands
     such as: ``cd, mkdir, rm, echo``
 
-  * You have a Bourne shell available at ``/bin/sh``, the C-shell
-    available at ``/bin/csh``, 'env' available at ``/usr/bin/env``, and
-    that 'env' can locate ``python3`` or ``python`` on your system.
+  * You have a Bourne shell available at ``/bin/sh``, 'env' available at
+    ``/usr/bin/env``, and that 'env' can locate ``python3`` or ``python``
+    on your system.
 
   * You have Python 2.7 or newer.
 
