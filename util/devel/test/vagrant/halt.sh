@@ -2,7 +2,7 @@
 
 # Stop any running VMs
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

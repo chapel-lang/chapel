@@ -3,7 +3,7 @@
 # Bring each VM up and then shut it down.
 # Useful for making sure they are basically working.
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then
