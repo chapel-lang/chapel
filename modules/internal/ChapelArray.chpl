@@ -3889,14 +3889,15 @@ module ChapelArray {
   proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
   pragma "no doc"
-  proc checkArrayShapesUponAssignment(a: [], b: []) {
+  proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
     if isRectangularArr(a) && isRectangularArr(b) {
       const aDims = a._value.dom.dsiDims(),
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
       for param i in 0..aDims.size-1 {
         if aDims(i).size != bDims(i).size then
-          halt("assigning between arrays of different shapes in dimension ",
+          halt(if forSwap then "swapping" else "assigning",
+               " between arrays of different shapes in dimension ",
                i, ": ", aDims(i).size, " vs. ", bDims(i).size);
       }
     } else {
@@ -4452,6 +4453,12 @@ module ChapelArray {
   // Swap operator for arrays
   //
   inline proc <=>(x: [?xD], y: [?yD]) {
+    if x.rank != y.rank then
+      compilerError("rank mismatch in array swap");
+
+    if boundsChecking then
+      checkArrayShapesUponAssignment(x, y, forSwap=true);
+
     var hasSwapped: bool = false;
     // Check if array can use optimized pointer swap
     if Reflection.canResolveMethod(x._value, "doiOptimizedSwap", y._value) {
