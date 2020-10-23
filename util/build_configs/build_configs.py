@@ -563,7 +563,8 @@ def check_output(command, chpl_home, env, stdin=None, file=None):
         stdout=stdout,
         stderr=stderr,
         cwd=chpl_home,
-        env=env
+        env=env,
+        encoding='utf-8'
     )
     out, err = p.communicate(input=stdin)
     retcode = p.returncode
