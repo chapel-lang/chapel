@@ -192,7 +192,7 @@ module ChapelArray {
   config param disableConstDomainOpt = false;
 
   pragma "no doc"
-  config param debugOptimizedSwap = true;
+  config param debugOptimizedSwap = false;
 
   // Return POD values from arrays as values instead of const ref?
   pragma "no doc"
