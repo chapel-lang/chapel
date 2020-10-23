@@ -1539,24 +1539,23 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 }
 
 proc BlockArr.canDoOptimizedSwap(other) {
-  var domValuesEqual = true;
+  var domsMatch = true;
   var domShapesMatch = true;
-  if this.dom != other.dom {
-    domValuesEqual = false;
-  }
 
-  if domValuesEqual {
-    for param i in 0..this.dom.rank-1 {
-      if (this.dom.whole.dim(i) != other.dom.whole.dim(i)) {
-        if this.dom.whole.dim(i).size != other.dom.whole.dim(i).size {
-          domShapesMatch = false;
+  if this.dom != other.dom { // no need to check if this is true
+    if domsMatch {
+      for param i in 0..this.dom.rank-1 {
+        if (this.dom.whole.dim(i) != other.dom.whole.dim(i)) {
+          if this.dom.whole.dim(i).size != other.dom.whole.dim(i).size {
+            domShapesMatch = false;
+          }
+          domsMatch = false;
         }
-        domValuesEqual = false;
       }
     }
   }
 
-  if domValuesEqual {
+  if domsMatch {
     // distributions must be equal, too
     return this.dom.dist.dsiEqualDMaps(other.dom.dist);
   }
@@ -1564,14 +1563,30 @@ proc BlockArr.canDoOptimizedSwap(other) {
   // their shapes match, and
   // they also match their respective distributions' boundingBoxes
   else if domShapesMatch {
+    // TODO: this rule can be relaxed a bit.  ie. arrays on the following
+    // domains can be swapped with a pointer swap, but that's not what happens
+    // because of this line.
+    //
+    // var d1 = {0..9 by 2 align 0} dmapped Block({1..10});
+    // var d2 = {0..9 by 2 align 1} dmapped Block({1..10});
     return this.dom.dist.boundingBox == this.dom.whole &&
            other.dom.dist.boundingBox == other.dom.whole;
   }
   return false;
 }
 
+proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+  writeln("BlockArr doing unoptimized swap (type mismatch). Domains: ", 
+          this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+          this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+  return false;
+}
+
 // Block1 <=> Block2 
-proc BlockArr.doiOptimizedSwap(other) {
+proc BlockArr.doiOptimizedSwap(other: this.type) 
+    where this.stridable == other.stridable &&
+          this.rank == other.rank {
+
   if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {
       writeln("BlockArr doing optimized swap. Domains: ", 
