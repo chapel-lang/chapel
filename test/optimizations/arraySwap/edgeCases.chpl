@@ -13,8 +13,21 @@ proc test(d1, d2) {
   writeln(a2);
 }
 
-var d1 = {0..99} dmapped Block({1..100});
-var d2 = {1..100} dmapped Block({1..100});
 
-test(d1, d2);
+{
+  // simple case: everything should be optimized
+  var d1 = {1..10} dmapped Block({1..10});
+  var d2 = {1..10} dmapped Block({1..10});
+
+  test(d1, d2);
+}
+
+
+{
+  // one array is unevenly distributed. block shouldn't optimize
+  var d1 = {0..9} dmapped Block({1..10});
+  var d2 = {1..10} dmapped Block({1..10});
+
+  test(d1, d2);
+}
 
