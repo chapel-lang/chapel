@@ -6,7 +6,7 @@
 # backwards compatibility). Please don't change it unless you know what
 # you're doing.
 Vagrant.configure("2") do |config|
-  config.vm.box = "bento/centos-5.11"
+  config.vm.box = "centos/6"
 
   config.vm.provision "shell",
     path: "../../provision-scripts/yum-deps.sh"
