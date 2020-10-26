@@ -20,7 +20,7 @@ Overview
     git clone <url_for_fork>
     cd sphinxcontrib-chapeldomain/
     git checkout -b <branch_name>
-    pip install -r requirements.txt -r test-requirements.txt
+    python3 -m pip install -r requirements.txt -r test-requirements.txt
     ... develop ...
     tox
 

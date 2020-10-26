@@ -21,7 +21,7 @@ Installation
 
 To install::
 
-    pip install sphinxcontrib-chapeldomain
+    python3 -m pip install sphinxcontrib-chapeldomain
 
 To install from source on github_::
 
