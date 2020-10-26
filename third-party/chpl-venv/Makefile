@@ -48,6 +48,21 @@ check-python:
             exit 1 ; \
 	    ;; \
 	esac
+	@# Check to see if python3 -m pip succeeds and install pip if not
+	@PIP_VERS=`$(PIP) --version` ; \
+	if $(PIP) --version ; then \
+	  : ; \
+	else \
+	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
+	  (mkdir -p install && \
+	   cd install && \
+	   ( (curl -O $(GETPIP) || wget $(GETPIP)) || \
+	     { echo "Failed getpip download with" ; \
+	       echo "  curl -O $(GETPIP) || wget $(GETPIP)" ; \
+	       echo "Try adding pip to your Python installation" ; \
+	       exit 1; }) && \
+	   $(GET_PIP_COMMAND) ) ; \
+	fi
 
 check-exes: check-python
 
@@ -56,6 +71,7 @@ $(CHPL_VENV_INSTALL_DIR):
 
 # Install virtualenv program.
 $(CHPL_VENV_VIRTUALENV): check-exes
+	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
 	$(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
 	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) -r virtualenv.txt
 
