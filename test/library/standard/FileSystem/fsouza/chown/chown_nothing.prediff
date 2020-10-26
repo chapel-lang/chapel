@@ -7,8 +7,8 @@
 
 set -e
 
-file_user=$(python -c 'import os ; print(os.stat("file.txt").st_uid)')
-file_group=$(python -c 'import os ; print(os.stat("file.txt").st_gid)')
+file_user=$(python3 -c 'import os ; print(os.stat("file.txt").st_uid)')
+file_group=$(python3 -c 'import os ; print(os.stat("file.txt").st_gid)')
 
 expected_file_group=$(cat file.gid)
 expected_file_user=$(cat file.uid)
