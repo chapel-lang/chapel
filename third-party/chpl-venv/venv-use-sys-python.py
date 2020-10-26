@@ -37,7 +37,11 @@ def rm_python_bins(bindir):
         for f in os.listdir(bindir):
             abs_f = os.path.join(bindir, f)
             # abs_f is the abs path to some file system object under bindir
-            if f in [ 'python', 'python2', 'python2.6', 'python2.7' ]:
+            if f in [ 'python', 'python3', 'python2',
+                      'python2.6', 'python2.7',
+                      'python3.0', 'python3.1', 'python3.2', 'python3.3',
+                      'python3.4', 'python3.5', 'python3.6', 'python3.7',
+                      'python3.8' ]:
                 print('Removing {0}'.format(abs_f))
                 os.remove(abs_f)
     else:
