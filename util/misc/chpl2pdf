@@ -1,5 +1,16 @@
 #!/usr/bin/env python3
 
+"""
+This script creates a .pdf file presenting the code in a .chpl
+with highlighting.
+
+For example
+
+  ./util/misc/chpl2pdf examples/hello.chpl
+
+will produce hello.pdf.
+"""
+
 import sys, os.path, tempfile, shutil
 
 if len(sys.argv) != 2: sys.exit('usage: '+sys.argv[0]+' filename.chpl')
