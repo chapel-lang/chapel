@@ -5310,6 +5310,9 @@ module ChapelArray {
       pragma "no copy"
       var A = D.buildArrayWith(elemType, data, size:int);
 
+      // in lieu of automatic memory management for runtime types
+      __primitive("auto destroy runtime type", elemType);
+
       return A;
     }
   }
