@@ -47,3 +47,11 @@ PIPLIB64_VER=$(CHPL_VENV_INSTALL_DIR)/lib64/python$(PYTHON_VERSION)/site-package
 PIPLIB64=$(CHPL_VENV_INSTALL_DIR)/lib64/python/site-packages
 
 PIPLIBS=$(PIPLIB_VER):$(PIPLIB):$(PIPLIB64_VER):$(PIPLIB64)
+
+GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && $(PYTHON) get-pip.py --user --no-warn-conflicts
+ifdef VIRTUAL_ENV
+  PIP=$(VIRTUAL_ENV)/bin/pip
+  GET_PIP_COMMAND=$(PYTHON) get-pip.py --no-warn-conflicts
+endif
+
+GETPIP=https://bootstrap.pypa.io/get-pip.py
