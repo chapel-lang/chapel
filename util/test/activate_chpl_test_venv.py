@@ -10,8 +10,8 @@ import chpl_home_utils
 import chpl_make
 
 def error(message):
-    sys.stdout.write('[Error: {0}]\n'.format(message))
-    exit(1)
+    sys.stdout.write('[Warning: {0}]\n'.format(message))
+    raise ImportError(message)
 
 def log(message):
     sys.stdout.write('[{0}]\n'.format(message))
