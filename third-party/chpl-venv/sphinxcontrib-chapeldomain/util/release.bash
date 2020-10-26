@@ -27,7 +27,7 @@ fi
 echo "Version number is: ${version}"
 
 echo "Ensuring requirements are up-to-date..."
-pip install -r requirements.txt -r test-requirements.txt -r docs-requirements.txt
+python3 -m pip install -r requirements.txt -r test-requirements.txt -r docs-requirements.txt
 
 echo "Ensuring package is installed..."
 python setup.py develop
