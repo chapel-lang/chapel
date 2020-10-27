@@ -64,6 +64,11 @@ def rw_shebangs(root):
 
             abs_f = os.path.join(root, f)
             # abs_f is the abs path to some file system object under root
+
+            # look into the bin directory
+            if os.path.isdir(abs_f) and f == "bin":
+                rw_shebangs(abs_f)
+
             if os.path.isfile(abs_f) and not os.path.islink(abs_f):
                 # abs_f is a file
                 with open(abs_f) as fin:
