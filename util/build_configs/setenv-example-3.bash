@@ -24,8 +24,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # current list of selected components initially empty
     components=
-    valid_components="compiler,runtime,tools,clean"
-    default_components="compiler,runtime"
+    valid_components="compiler,runtime,venv,mason,clean"
+    default_components="compiler,runtime,venv,mason"
         ## clean is not default; more developer-friendly
         ## tools could be default, except that would makes this example script less portable
 
