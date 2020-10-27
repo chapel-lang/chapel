@@ -36,8 +36,12 @@ def rm_python_bins(bindir):
     if os.path.isdir(bindir) and not os.path.islink(bindir):
         for f in os.listdir(bindir):
             abs_f = os.path.join(bindir, f)
+            ver = sys.version_info
+            p0 = 'python'
+            p1 = 'python{0}'.format(ver[0]) # e.g. python3
+            p2 = 'python{0}.{1}'.format(ver[0], ver[1]) # e.g. python3.8
             # abs_f is the abs path to some file system object under bindir
-            if f in [ 'python', 'python2', 'python2.6', 'python2.7' ]:
+            if f in [ p0, p1, p2 ]:
                 print('Removing {0}'.format(abs_f))
                 os.remove(abs_f)
     else:
@@ -60,6 +64,11 @@ def rw_shebangs(root):
 
             abs_f = os.path.join(root, f)
             # abs_f is the abs path to some file system object under root
+
+            # look into the bin directory
+            if os.path.isdir(abs_f) and f == "bin":
+                rw_shebangs(abs_f)
+
             if os.path.isfile(abs_f) and not os.path.islink(abs_f):
                 # abs_f is a file
                 with open(abs_f) as fin:
