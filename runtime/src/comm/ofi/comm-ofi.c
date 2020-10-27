@@ -2509,34 +2509,27 @@ static inline void retireDelayedAmDone(chpl_bool);
 
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
-                       chpl_bool useRMA, const char* dbgOrderStr) {
-  if (useRMA) {
-    DBG_PRINTF(DBG_ORDER,
-               "dummy GET from %d for %s ordering",
-               (int) node, dbgOrderStr);
-    if (tcip->txCQ != NULL) {
-      atomic_bool txnDone;
-      atomic_init_bool(&txnDone, false);
-      void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
-      ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
-      waitForTxnComplete(tcip, ctx);
-      atomic_destroy_bool(&txnDone);
-    } else {
-      ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, NULL, tcip);
-      waitForTxnComplete(tcip, NULL);
-    }
+                       const char* dbgOrderStr) {
+  DBG_PRINTF(DBG_ORDER,
+             "dummy GET from %d for %s ordering",
+             (int) node, dbgOrderStr);
+  if (tcip->txCQ != NULL) {
+    atomic_bool txnDone;
+    atomic_init_bool(&txnDone, false);
+    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+    waitForTxnComplete(tcip, ctx);
+    atomic_destroy_bool(&txnDone);
   } else {
-    DBG_PRINTF(DBG_ORDER,
-               "dummy AM to %d for %s ordering",
-               (int) node, dbgOrderStr);
-    amRequestNop(node, true /*blocking*/);
+    ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, NULL, tcip);
+    waitForTxnComplete(tcip, NULL);
   }
 }
 
 
 static
 void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
-                        chpl_bool useRMA, const char* dbgOrderStr) {
+                        const char* dbgOrderStr) {
   //
   // Do a transaction (dummy GET or no-op AM) on every node in a bitmap.
   // Combined with our ordering assertions, this forces the results of
@@ -2559,7 +2552,7 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
       sched_yield();
       (*myTcip->checkTxCmplsFn)(myTcip);
     }
-    mcmReleaseOneNode(node, myTcip, useRMA, dbgOrderStr);
+    mcmReleaseOneNode(node, myTcip, dbgOrderStr);
   } BITMAP_FOREACH_SET_END
 
   if (tcip == NULL) {
@@ -4334,7 +4327,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  mcmReleaseAllNodes(b, tcip, true /*useRMA*/, "unordered PUT");
+  mcmReleaseAllNodes(b, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
@@ -5035,7 +5028,7 @@ void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
     if (myPrvData->putBitmap != NULL
         && bitmapTest(myPrvData->putBitmap, node)) {
       bitmapClear(myPrvData->putBitmap, node);
-      mcmReleaseOneNode(node, tcip, true /*useRMA*/, "PUT");
+      mcmReleaseOneNode(node, tcip, "PUT");
     }
   }
 }
@@ -5065,7 +5058,7 @@ void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
       }
 
       if (myPrvData->putBitmap != NULL) {
-        mcmReleaseAllNodes(myPrvData->putBitmap, NULL, true /*useRMA*/, "PUT");
+        mcmReleaseAllNodes(myPrvData->putBitmap, NULL, "PUT");
         if (taskIsEnding) {
           bitmapFree(myPrvData->putBitmap);
           myPrvData->putBitmap = NULL;
