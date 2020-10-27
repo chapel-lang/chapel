@@ -41,7 +41,7 @@ def rm_python_bins(bindir):
                       'python2.6', 'python2.7',
                       'python3.0', 'python3.1', 'python3.2', 'python3.3',
                       'python3.4', 'python3.5', 'python3.6', 'python3.7',
-                      'python3.8' ]:
+                      'python3.8', 'python3.9' ]:
                 print('Removing {0}'.format(abs_f))
                 os.remove(abs_f)
     else:
