@@ -1322,12 +1322,7 @@ void init_ofiFabricDomain(void) {
   // If we can find a good provider that supports the transaction
   // orderings we want, then use that.
   //
-  uint64_t msg_order_more = (((hints->caps & FI_ATOMIC) == 0)
-                             ? (FI_ORDER_RMA_RAW | FI_ORDER_SAW)
-                             : (FI_ORDER_RAW
-                                | FI_ORDER_ATOMIC_WAR
-                                | FI_ORDER_ATOMIC_WAW
-                                | FI_ORDER_SAW));
+  uint64_t msg_order_more = FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
   hints->tx_attr->msg_order |= msg_order_more;
   hints->rx_attr->msg_order = hints->tx_attr->msg_order;
 
