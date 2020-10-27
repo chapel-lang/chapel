@@ -3028,16 +3028,27 @@ void amRequestCommon(c_nodeid_t node,
   }
 
   //
-  // We're ready to send the request.  But for on-stmts and AMOs, before
-  // we do so MCM conformance requires that we make all our outstanding
-  // PUTs visible.  Similarly, for GET ops, we have to make PUTs to the
-  // same node visible.  No other AM ops depend on PUT visibilty.
+  // We're ready to send the request.  But for on-stmts and AMOs that
+  // might modify their target variable, MCM conformance requires us
+  // first to ensure that all previous PUTs are visible.  Similarly, for
+  // GET and PUT ops, we have to ensure that PUTs to the same node are
+  // visible.  No other ops depend on PUT visibility.
+  //
+  // A note about including RMA PUT ops here -- at first glance it would
+  // seem that all PUTs targeting a given address would either be done
+  // using the RMA interface or the message interface, rather than that
+  // some PUTs would use one interface and others using the other.  But
+  // whether we use RMA or messaging depends on whether we have an MR
+  // key for the entire [address, address+size-1] memory range, so to
+  // be strictly correct we need to allow for overlapping transfers to
+  // go via different methods.
   //
   if (myReq->b.op == am_opExecOn
       || myReq->b.op == am_opExecOnLrg
-      || myReq->b.op == am_opAMO) {
+      || (myReq->b.op == am_opAMO && myReq->amo.ofiOp != FI_ATOMIC_READ)) {
     waitForPutsVisAllNodes(myTcip, NULL, false /*taskIsEnding*/);
-  } else if (myReq->b.op == am_opGet) {
+  } else if (myReq->b.op == am_opGet
+             || myReq->b.op == am_opPut) {
     waitForPutsVisOneNode(node, myTcip, NULL);
   }
 
@@ -3558,6 +3569,11 @@ void amWrapPut(struct taskArg_RMA_t* tsk_rma) {
   CHK_TRUE(mrGetKey(NULL, NULL, rma->b.node, rma->raddr, rma->size) == 0);
   (void) ofi_put(rma->addr, rma->b.node, rma->raddr, rma->size);
 
+  //
+  // Note: the RMA bytes must be visible in target memory before the
+  // 'done' indicator is.
+  //
+
   DBG_PRINTF(DBG_AM | DBG_AMRECV, "%s", am_reqDoneStr((amRequest_t*) rma));
   amSendDone(rma->b.node, rma->b.pAmDone);
 }
@@ -3577,13 +3593,8 @@ void amHandleAMO(struct amRequest_AMO_t* amo) {
     (void) ofi_put(&result, amo->b.node, amo->result, resSize);
 
     //
-    // We must guarantee the result has arrived at the destination
-    // before we send the 'done' indicator.  Currently ofi_put() does
-    // not return until after the data is visible in target memory, so
-    // the guarantee holds.  But someday we might like to get better
-    // comm/compute overlap by starting the next AM while this result
-    // PUT is still in flight, and sending 'done' later once we know
-    // the latter got there.
+    // Note: the result must be visible in target memory before the
+    // 'done' indicator is.
     //
   }
 
@@ -4127,53 +4138,64 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     //
     // If we're using delivery-complete for MCM conformance we just
     // write the data and wait for the CQ event.  If we're using message
-    // ordering and have bound tx contexts, instead we write the data,
-    // count this as an outstanding PUT, and return right away.  We'll
-    // collect the CQ events as they roll in, or if at some later time
-    // we need all our outstanding PUTs to be complete we'll wait for
-    // all of them then.  Finally, if we're using message ordering but
-    // don't have bound tx contexts, then we have to follow the write
-    // with a read from the same node and wait for the event belonging
-    // to the read instead.  Since we have read-after-write ordering and
-    // libfabric defaults to delivery-complete (locally) for reads, once
-    // the CQ event for the read arrives we can assume the write is also
-    // visible.
+    // ordering we have to force the data into visibility by following
+    // the PUT with a dummy GET from the same node, taking advantage of
+    // our asserted read-after-write ordering.  If we don't have bound
+    // tx contexts we have to do that immediately, here, because message
+    // ordering only works within endpoint pairs.  But if we do have
+    // bound tx contexts we can delay that dummy GET or even avoid it
+    // altogether, if a real GET happens to come along after this.  A
+    // wrinkle is that we don't currently delay the GET if the PUT data
+    // is too big to inject, because we want to return immediately and
+    // that isn't safe until the source buffer has been injected.  But
+    // this could be dealt with in the future by using fi_writemsg() and
+    // asking for injection completion.
     //
     assert(tcip->txCQ != NULL);  // PUTs require a CQ, at least for now
-    atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = haveDeliveryComplete
-                ? txnTrkEncode(txnTrkDone, &txnDone)
-                : NULL;
 
-    DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
-               "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
-               (int) node, raddr, myAddr, size, mrKey, ctx);
-    OFI_RIDE_OUT_EAGAIN(tcip,
-                        fi_write(tcip->txCtx, myAddr, size,
-                                 mrDesc, rxRmaAddr(tcip, node),
-                                 mrRaddr, mrKey, ctx));
-    tcip->numTxnsOut++;
-    tcip->numTxnsSent++;
+    if (haveDeliveryComplete
+        || !tcip->bound
+        || size > ofi_info->tx_attr->inject_size) {
+      atomic_bool txnDone;
+      atomic_init_bool(&txnDone, false);
+      void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
 
-    if (haveDeliveryComplete) {
+      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+                 "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
+                 (int) node, raddr, myAddr, size, mrKey, ctx);
+      OFI_RIDE_OUT_EAGAIN(tcip,
+                          fi_write(tcip->txCtx, myAddr, size,
+                                   mrDesc, rxRmaAddr(tcip, node),
+                                   mrRaddr, mrKey,
+                                   haveDeliveryComplete ? ctx : NULL));
+      tcip->numTxnsOut++;
+      tcip->numTxnsSent++;
+
+      if (!haveDeliveryComplete) {
+        DBG_PRINTF(DBG_ORDER,
+                   "dummy GET from %d for PUT ordering", (int) node);
+        ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
+      }
+
       waitForTxnComplete(tcip, ctx);
-    } else if (tcip->bound) {
+      atomic_destroy_bool(&txnDone);
+    } else {
+      DBG_PRINTF(DBG_RMA | DBG_RMAWRITE,
+                 "tx write inject: %d:%p <= %p, size %zd, key 0x%" PRIx64,
+                 (int) node, raddr, myAddr, size, mrKey);
+      OFI_RIDE_OUT_EAGAIN(tcip,
+                          fi_inject_write(tcip->txCtx, myAddr, size,
+                                          rxRmaAddr(tcip, node),
+                                          mrRaddr, mrKey));
+      tcip->numTxnsSent++;
       chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
       assert(prvData != NULL);
       if (prvData->putBitmap == NULL) {
         prvData->putBitmap = bitmapAlloc(chpl_numNodes);
       }
       bitmapSet(prvData->putBitmap, node);
-    } else {
-      DBG_PRINTF(DBG_ORDER,
-                 "dummy GET from %d for PUT ordering", (int) node);
-      ctx = txnTrkEncode(txnTrkDone, &txnDone);
-      ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
-      waitForTxnComplete(tcip, ctx);
     }
 
-    atomic_destroy_bool(&txnDone);
     tciFree(tcip);
   } else {
     //
@@ -4695,6 +4717,10 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   struct perTxCtxInfo_t* tcip;
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
+  if (ofiOp != FI_ATOMIC_READ) {
+    waitForPutsVisAllNodes(tcip, NULL, false /*taskIsEnding*/);
+  }
+
   atomic_bool txnDone;
   atomic_init_bool(&txnDone, false);
   void* ctx = (tcip->txCQ == NULL)
@@ -5000,7 +5026,10 @@ void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
                            chpl_comm_taskPrvData_t* prvData) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.
+  // PUTs have actually completed on their target nodes.  Note that
+  // we can only have PUTs outstanding if we're forced to use message
+  // ordering because the provider lacks delivery-complete and we've
+  // got a bound tx context.
   //
   if (!haveDeliveryComplete && tcip->bound) {
     chpl_comm_taskPrvData_t* myPrvData = prvData;
@@ -5023,7 +5052,10 @@ void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
                             chpl_bool taskIsEnding) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.
+  // PUTs have actually completed on their target nodes.  Note that
+  // we can only have PUTs outstanding if we're forced to use message
+  // ordering because the provider lacks delivery-complete and we've
+  // got a bound tx context.
   //
   if (chpl_numNodes > 1 && !haveDeliveryComplete) {
     struct perTxCtxInfo_t* myTcip = tcip;
@@ -5432,6 +5464,9 @@ void doAMO(c_nodeid_t node, void* object,
     // object is on this node do it directly; otherwise, use an AM.
     //
     if (node == chpl_nodeID) {
+      if (ofiOp != FI_ATOMIC_READ) {
+        waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
+      }
       doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
     } else {
       amRequestAMO(node, object, operand1, operand2, result,
@@ -5815,9 +5850,11 @@ void chpl_comm_barrier(const char *msg) {
   }
 
   //
-  // Ensure our outstanding PUTs are visible.  (Visibility of PUTs done
-  // by other tasks on this node is the caller's responsibility.)
+  // Ensure our outstanding nonfetching AMOs and PUTs are visible.
+  // (Visibility of operations done by other tasks on this node is
+  // the caller's responsibility.)
   //
+  retireDelayedAmDone(false /*taskIsEnding*/);
   waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
 
   //
@@ -5872,11 +5909,6 @@ void chpl_comm_barrier(const char *msg) {
               sizeof(one));
     }
   }
-
-  //
-  // Ensure the PUTs we just did are visible before returning.
-  //
-  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
 
   DBG_PRINTF(DBG_BARRIER, "barrier '%s' done via PUTs",
              (msg == NULL) ? "" : msg);
