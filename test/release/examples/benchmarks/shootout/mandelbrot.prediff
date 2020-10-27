@@ -8,6 +8,7 @@
 
 import os
 import os.path
+import shutil
 import socket
 import sys
 
@@ -74,6 +75,16 @@ else:
            str(diffs) + " bit differences]")
     if diffs > diffs_to_allow:
       error = "There were " + str(diffs) + " bit differences"
+
+# Save a copy of the failed output but only if there was an error
+savefile=testout + ".save"
+if error != "":
+  shutil.copyfile(testout, testout + ".save");
+else:
+  try:
+    os.remove(savefile)
+  except:
+    pass
 
 # Now output error to testout
 with open(testout, "w") as outF:
