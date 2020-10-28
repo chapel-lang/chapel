@@ -399,11 +399,6 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
     if (oldFn != NULL && newFn != NULL) {
       retval = true;
 
-    // e.g. record String and proc String(...)
-    } else if (isAggregateTypeAndConstructor(oldSym, newSym) == true ||
-               isAggregateTypeAndConstructor(newSym, oldSym) == true) {
-      retval = true;
-
     // Methods currently leak their scope and can conflict with variables
     } else if (isSymbolAndMethod(oldSym, newSym)             == true ||
                isSymbolAndMethod(newSym, oldSym)             == true) {
@@ -440,21 +435,6 @@ bool ResolveScope::extend(VisibilityStmt* stmt) {
   }
 
   return true;
-}
-
-bool ResolveScope::isAggregateTypeAndConstructor(Symbol* sym0, Symbol* sym1) {
-  TypeSymbol* typeSym = toTypeSymbol(sym0);
-  FnSymbol*   funcSym = toFnSymbol(sym1);
-  bool        retval  = false;
-
-  if (typeSym != NULL && funcSym != NULL && funcSym->_this != NULL) {
-    AggregateType* type0 = toAggregateType(typeSym->type);
-    AggregateType* type1 = toAggregateType(funcSym->_this->type);
-
-    retval = (type0 == type1) ? true : false;
-  }
-
-  return retval;
 }
 
 bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
