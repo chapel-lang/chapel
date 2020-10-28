@@ -3655,7 +3655,7 @@ module HDF5 {
       }
 
       otherwise {
-        halt("Unhandled type in getHDF5Type: ", eltType:string);
+        compilerError("Unhandled type in getHDF5Type: " + eltType:string);
       }
     }
     return hdf5Type;
