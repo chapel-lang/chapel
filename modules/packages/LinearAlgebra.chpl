@@ -1515,7 +1515,7 @@ proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK{
       var rowsB = Bdom.size;
       var B_mat :[1..rowsB,1..1] real;
       hasError = _solve(A,B_mat);
-      _handleError(hasError);
+      _handleSolveError(hasError);
       return B_mat;
     }
     else
@@ -1524,7 +1524,7 @@ proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK{
   else
     hasError = -2;
 
-  _handleError(hasError);
+  _handleSolveError(hasError);
   return B;
 }
 
@@ -1541,7 +1541,7 @@ proc _solve(A:[?Adom], B:[?Bdom]){
   return info;
 }
 
-proc _handleError(hasError){
+proc _handleSolveError(hasError){
   if(hasError > 0){
     halt("Argument matrix A is singular");
   }
