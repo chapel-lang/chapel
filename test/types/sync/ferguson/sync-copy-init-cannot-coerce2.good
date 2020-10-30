@@ -1,5 +1,5 @@
 sync-copy-init-cannot-coerce2.chpl:3: error: could not find a copy initializer ('init=') for type 'sync string' from type 'int(64)'
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:146: note: this candidate did not match: _syncvar.init=(const other: _syncvar(?))
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:146: note: this candidate did not match: _syncvar.init=(const ref other: _syncvar)
 sync-copy-init-cannot-coerce2.chpl:3: note: because call actual argument #1 with type int(64)
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:146: note: is passed to formal 'const other: _syncvar'
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:170: note: candidates are: _syncvar.init=(const other: this.valType)
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:146: note: is passed to formal 'const ref other: _syncvar'
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:170: note: candidates are: _syncvar.init=(const ref other: this.valType)

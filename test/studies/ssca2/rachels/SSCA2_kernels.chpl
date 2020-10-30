@@ -465,7 +465,7 @@ module SSCA2_kernels
               ( BCaux[u].path_count$.readFF() / 
                 BCaux[v].path_count$.readFF() )      *
               ( 1.0 + BCaux[v].depend );
-            Between_Cent$ (u) += BCaux[u].depend;
+              Between_Cent$ (u).writeEF(Between_Cent$ (u).readFE() + BCaux[u].depend);
           }
 
           // back up to last level
@@ -514,9 +514,9 @@ module SSCA2_kernels
       }
 
       if VALIDATE_BC then
-	Sum_Min_Dist = Sum_Min_Dist$;
+	      Sum_Min_Dist = Sum_Min_Dist$.readFE();
       
-      Between_Cent = Between_Cent$;
+      Between_Cent = Between_Cent$.readFE();
 
       if DELETE_KERNEL4_DS {
         coforall t in TPVSpace do on t {
