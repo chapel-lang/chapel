@@ -8023,7 +8023,6 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
       //   extern var x: c_ptr(c_int);
       if ((vs->hasFlag(FLAG_EXTERN) == true || isGlobal(vs)) &&
           vs->defPoint             != NULL &&
-          vs->defPoint->init       != NULL &&
           vs->getValType()         == dtUnknown ) {
         vs->type = resolveTypeAlias(se);
       }
