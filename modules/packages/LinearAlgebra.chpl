@@ -1500,7 +1500,7 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) where !usingLAPACK{
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);
@@ -1508,6 +1508,50 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
   return x;
 }
 
+proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK{
+  var hasError : int;
+  if(isSquare(A)){
+    if(Bdom.rank==1){
+      var rowsB = Bdom.size;
+      var B_mat :[1..rowsB,1..1] real;
+      hasError = _solve(A,B_mat);
+      _handleError(hasError);
+      return B_mat;
+    }
+    else
+      hasError = _solve(A,B);
+  }
+  else
+    hasError = -2;
+
+  _handleError(hasError);
+  return B;
+}
+
+proc _solve(A:[?Adom], B:[?Bdom]){
+  use SysCTypes;
+  var n = Adom.dim(0).size;
+  var m = Bdom.dim(0).size;
+
+  if(n!=m) then
+    return -1;
+  
+  var ipiv:[1..n] c_int;
+  var info = LAPACK.gesv(lapack_memory_order.row_major,A,ipiv,B);
+  return info;
+}
+
+proc _handleError(hasError){
+  if(hasError > 0){
+    halt("Argument matrix A is singular");
+  }
+  if(hasError == -1){
+    halt("Dimension mismatch between argument matrices A and B");
+  }
+  if(hasError == -2){
+    halt("Argument matrix A must be square");
+  }
+}
 /* Compute least-squares solution to ``A * x = b``.
    Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
 
