@@ -1508,18 +1508,18 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) where !usingLAPACK{
   return x;
 }
 
-proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK{
+proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK {
   var hasError : int;
-  if(isSquare(A)){
+  if isSquare(A) {
     if(Bdom.rank==1){
-      var rowsB = Bdom.size;
-      var B_mat :[1..rowsB,1..1] real;
-      hasError = _solve(A,B_mat);
+      const rowsB = Bdom.size;
+      var B_mat :[1..rowsB, 1..1] real;
+      hasError = _solve(A, B_mat);
       _handleSolveError(hasError);
       return B_mat;
     }
     else
-      hasError = _solve(A,B);
+      hasError = _solve(A, B);
   }
   else
     hasError = -2;
@@ -1528,20 +1528,20 @@ proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK{
   return B;
 }
 
-proc _solve(A:[?Adom], B:[?Bdom]){
+private proc _solve(A:[?Adom], B:[?Bdom]){
   use SysCTypes;
-  var n = Adom.dim(0).size;
-  var m = Bdom.dim(0).size;
+  const n = A.shape[0];
+  const m = B.shape[0];
 
   if(n!=m) then
     return -1;
   
   var ipiv:[1..n] c_int;
-  var info = LAPACK.gesv(lapack_memory_order.row_major,A,ipiv,B);
+  var info = LAPACK.gesv(lapack_memory_order.row_major, A, ipiv,B);
   return info;
 }
 
-proc _handleSolveError(hasError){
+private proc _handleSolveError(hasError){
   if(hasError > 0){
     halt("Argument matrix A is singular");
   }
