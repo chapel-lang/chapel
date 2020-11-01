@@ -1968,11 +1968,11 @@ proc =(ref lhs:channel, rhs:channel) {
 pragma "no doc"
 proc ==(const ref a: channel, const ref b: channel): bool {
   if a.writing != b.writing return false;
-  else if a.kind != b.kind return false;
-  else if a.locking != b.locking return false;
-  else if a.home != b.home return false;
-  else if a._channel_internal != b._channel_internal return false;
-  else if a._readWriteThisFromLocale != b._readWriteThisFromLocale return false;
+  if a.kind != b.kind return false;
+  if a.locking != b.locking return false;
+  if a.home != b.home return false;
+  if a._channel_internal != b._channel_internal return false;
+  if a._readWriteThisFromLocale != b._readWriteThisFromLocale return false;
 
   return true;
 }
@@ -1980,11 +1980,11 @@ proc ==(const ref a: channel, const ref b: channel): bool {
 pragma "no doc"
 proc !=(const ref a: channel, const ref b: channel): bool {
   if a.writing == b.writing return false;
-  else if a.kind == b.kind return false;
-  else if a.locking == b.locking return false;
-  else if a.home == b.home return false;
-  else if a._channel_internal == b._channel_internal return false;
-  else if a._readWriteThisFromLocale == b._readWriteThisFromLocale return false;
+  if a.kind == b.kind return false;
+  if a.locking == b.locking return false;
+  if a.home == b.home return false;
+  if a._channel_internal == b._channel_internal return false;
+  if a._readWriteThisFromLocale == b._readWriteThisFromLocale return false;
 
   return true;
 }
