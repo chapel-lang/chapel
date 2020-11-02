@@ -7,4 +7,4 @@ docutils==0.16
 argparse==1.4.0
 sphinx-rtd-theme==0.4.3
 sphinxcontrib-chapeldomain==0.0.17
-babel==2.7.0
+babel==2.8.0
