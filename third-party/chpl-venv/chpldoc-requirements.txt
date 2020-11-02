@@ -3,9 +3,6 @@ Jinja2==2.11.2
 MarkupSafe==1.1.1
 Pygments==2.7.1
 Sphinx==3.2.1
-# Sphinx==2.0.1 # requires python 3
-# Sphinx==2.1.2 # requires python 3
-# Sphinx==2.2.0 # requires python 3
 docutils==0.15.2
 argparse==1.4.0
 sphinx-rtd-theme==0.4.3
