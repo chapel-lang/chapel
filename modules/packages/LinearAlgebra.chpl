@@ -1499,6 +1499,16 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 }
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
+    where A is an ``n x n`` square matrix and b is an ``n`` dimensional
+    vector.
+
+    .. note::
+
+      Using LAPACK support, this procedure can solve multiple linear equations
+      with the right-hand sides as columns in ``b``. That is to simultaneously solve
+      ``m`` different linear equations with the same argument ``A``, ``b``
+      must be a matrix with dimensions ``n x m``.
+
 */
 proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) where !usingLAPACK{
   var (LU, ipiv) = lu(A);
@@ -1508,7 +1518,8 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) where !usingLAPACK{
   return x;
 }
 
-proc solve(A: [?Adom], B: [?Bdom]) where usingLAPACK {
+proc solve(A: [?Adom] ?t, B: [?Bdom] t)
+where usingLAPACK && isLAPACKType(t) {
   var hasError : int;
   if isSquare(A) {
     if(Bdom.rank==1){
