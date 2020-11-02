@@ -122,12 +122,12 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
     var lockFile = owned.create(parseToml(toParse));
     const projectName = lockFile["root"]!["name"]!.s;
-    
+
     // --fast
     var binLoc = 'debug';
     if release then
@@ -182,7 +182,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
   }
   catch e: MasonError {
     stderr.writeln(e.message());
-    exit(1);  
+    exit(1);
   }
 }
 
@@ -303,14 +303,14 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
     const cmpFlags = lock["root"]!["compopts"]!.s;
     compopts.append(cmpFlags);
   }
-  
+
   if lock.pathExists('external') {
     const exDeps = lock['external']!;
     for (name, depInfo) in exDeps.A.items() {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + val.s); 
+            when "libs" do compopts.append("-L" + val.s);
             when "include" do compopts.append("-I" + val.s);
             when "other" do compopts.append("-I" + val.s);
             otherwise continue;

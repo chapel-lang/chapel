@@ -8,7 +8,7 @@ proc main() {
   masonNew(args);
 
   // Confirm structure
-  var pwd = getEnv('PWD');
+  var pwd = here.cwd();
   if isDir(pwd + '/Test/src') {
     if isFile(pwd + '/Test/src/Test.chpl') {
       writeln('File structure: correct');

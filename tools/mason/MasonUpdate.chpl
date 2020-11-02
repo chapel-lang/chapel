@@ -80,7 +80,7 @@ proc masonUpdate(args: [?d] string) {
 proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
