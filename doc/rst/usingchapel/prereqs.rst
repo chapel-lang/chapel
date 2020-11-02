@@ -41,7 +41,8 @@ about your environment for using Chapel:
 
   * If you wish to use chpldoc or Chapel's test system, Python 3.5 or
     newer is required and the ``python3`` and ``pip3`` commands must be
-    available. Additionally, ``curl``, ``perl``, and ``python3-devel``
+    available. The ``venv`` Python package must be available.
+    Additionally, ``curl``, ``perl``, and ``python3-devel``
     (or equivalent packages for your platform) are required.
 
   * If you wish to use :ref:`readme-mason`, chapel's package manager,
@@ -62,7 +63,7 @@ We have used the following commands to install the above prerequisites:
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-dev bash make mawk git pkg-config
+      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config
 
   * FreeBSD::
 
