@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Run Chapel test (execution only) inside pbs or slurm batch job.
 
@@ -57,8 +57,8 @@ def main():
     """Run the program!"""
     job = AbstractJob.init_from_environment()
     (stdout, stderr) = job.run()
-    sys.stdout.write(stdout)
-    sys.stderr.write(stderr)
+    sys.stdout.buffer.write(stdout)
+    sys.stderr.buffer.write(stderr)
 
 
 class AbstractJob(object):
@@ -288,8 +288,8 @@ class AbstractJob(object):
 
 
     def run(self):
-        """Run batch job in subprocess and wait for job to complete. When finished,
-        returns output as string.
+        """Run batch job in subprocess and wait for job to complete.
+        When finished, returns output as bytes.
 
         :rtype: str
         :returns: stdout/stderr from job
@@ -388,15 +388,15 @@ class AbstractJob(object):
                 pass
 
             logging.debug('Reading output file.')
-            with open(output_file, 'r') as fp:
+            with open(output_file, 'rb') as fp:
                 output = fp.read()
 
             logging.debug('Reading error file.')
-            with open(error_file, 'r') as fp:
+            with open(error_file, 'rb') as fp:
                 error = fp.read()
 
             try:
-                with open('{0}.more'.format(error_file), 'r') as fp:
+                with open('{0}.more'.format(error_file), 'rb') as fp:
                     error += fp.read()
             except:
                 pass

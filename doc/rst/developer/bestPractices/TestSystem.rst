@@ -318,7 +318,7 @@ For instance:
 
   .. code-block:: python
 
-     #!/usr/bin/env python
+     #!/usr/bin/env python3
 
      import os
      print(os.getenv('CHPL_TEST_PERF') == 'on' and

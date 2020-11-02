@@ -125,9 +125,6 @@ private:
 
   void                  addBuiltIns();
 
-  bool                  isAggregateTypeAndConstructor(Symbol* sym0,
-                                                      Symbol* sym1);
-
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
 

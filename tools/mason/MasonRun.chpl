@@ -83,7 +83,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const tomlFile = owned.create(parseToml(toParse));

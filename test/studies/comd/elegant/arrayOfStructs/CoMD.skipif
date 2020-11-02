@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Skip this test for gasnet+mpi and gasnet+ibv-large performance testing.
 # Also skip this test when using MPI-based launchers in other configs,

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """
@@ -56,7 +56,7 @@ def save_to(outdir, chapter, name, data, isexe=False):
         os.makedirs(os.path.dirname(path))
 
     #print('Writing to: ', path)
-    with open(path, 'w') as handle:
+    with open(path, 'w', encoding='utf-8') as handle:
         handle.write(data)
 
     if isexe:
@@ -110,7 +110,7 @@ def extract_tests(rstfile, outdir):
     print("Processing .rst file: ", rstfile)
 
     lines = ( )
-    with open(rstfile, 'r') as handle:
+    with open(rstfile, 'r', encoding='utf-8') as handle:
         lines = handle.readlines()
 
     chapter = ""

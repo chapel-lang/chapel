@@ -8,7 +8,6 @@ See the first CHIP for an overview.
 * [12 Basics of Initialization](12.rst)
 * [15 Chapel Incremental Compilation](15.rst)
 * [17 GPU Programming Features](17.rst)
-* [18 NUMA-Aware Array Storage](18.rst)
 * [19 Dynamically Loading Chapel Code](19.rst)
 * [20 Function Hijacking](20.rst)
 * [22 Chapel GPU Language Support](22.rst)
