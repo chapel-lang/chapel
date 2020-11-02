@@ -3,7 +3,7 @@ Jinja2==2.11.2
 MarkupSafe==1.1.1
 Pygments==2.7.1
 Sphinx==3.2.1
-docutils==0.15.2
+docutils==0.16
 argparse==1.4.0
 sphinx-rtd-theme==0.4.3
 sphinxcontrib-chapeldomain==0.0.17
