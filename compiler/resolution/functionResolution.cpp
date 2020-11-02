@@ -6894,7 +6894,16 @@ void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction(astrInitEquals);
 
+      // If there is an error in that initCopy call,
+      // just mark it for later (rather than raising the error now)
+      // since the initCopy might be removed later in compilation.
+      inTryResolve++;
+      tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
       resolveExpr(call);
+
+      tryResolveStates.pop_back();
+      inTryResolve--;
 
       dst->type = call->resolvedFunction()->_this->getValType();
 
