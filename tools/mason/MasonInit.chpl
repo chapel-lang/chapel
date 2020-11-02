@@ -18,9 +18,12 @@
  * limitations under the License.
  */
 
-use TOML;
+use FileSystem;
 use Path;
 use Spawn;
+use TOML;
+private use List;
+
 use MasonEnv;
 use MasonNew;
 use MasonBuild;
@@ -28,8 +31,6 @@ use MasonHelp;
 use MasonUtils;
 use MasonExample;
 use MasonModify;
-use FileSystem;
-private use List;
 
 /*
 Initialises a library project in a project directory
@@ -80,7 +81,7 @@ proc masonInit(args: [] string) throws {
 
     if dirName == '' {
       if defaultBehavior {
-        const cwd = getEnv("PWD");
+        const cwd = here.cwd();
         var name = basename(cwd);
         const path = '.';
         if packageName.size > 0 then name = packageName;
@@ -202,7 +203,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, inte
     fileName = basename(path);
   }
   else {
-    const pwd = getEnv("PWD");
+    const pwd = here.cwd();
     fileName = basename(pwd);
   }
   var moduleName = fileName + '.chpl';
@@ -250,7 +251,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, inte
       if show then writeln("Created .gitignore");
     }
     else if metafile == '/src' && path == '.' {
-      const pwd = getEnv("PWD");
+      const pwd = here.cwd();
       const newPath = basename(pwd);
       var fileName = basename(newPath);
       if isNameDiff then fileName = name;
