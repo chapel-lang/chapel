@@ -47,9 +47,6 @@ VENV_DIR=$(INSTALL)/venv
 
 FAKES=$(INSTALL)/fakeHeaders
 
-VIRTUAL_ENV=$(shell which virtualenv)
-THIRD_PARTY_VENV=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV)
-
 .PHONY: clean clobber c2chapel c2chapel-venv install venv
 
 all: c2chapel install
