@@ -1,0 +1,1 @@
+getUnsupportedHDF5type.chpl:3: error: Unhandled type in getHDF5Type: R
