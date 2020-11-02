@@ -2,7 +2,7 @@
 
 # Bring each VM up and leave it running.
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

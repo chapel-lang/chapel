@@ -7,7 +7,7 @@ use MasonNew;
 
 proc main(){
   masonNew(['mason', 'new', 'publishCheck']);
-  var pwd = getEnv("PWD");
+  var pwd = here.cwd();
   here.chdir(pwd + '/publishCheck');
   if doesGitOriginExist() == false {
     here.chdir(pwd);

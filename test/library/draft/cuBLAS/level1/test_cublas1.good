@@ -1,0 +1,54 @@
+samax : 2 PASSED, 0 FAILED
+damax : 2 PASSED, 0 FAILED
+camax : 2 PASSED, 0 FAILED
+zamax : 2 PASSED, 0 FAILED
+samin : 2 PASSED, 0 FAILED
+damin : 2 PASSED, 0 FAILED
+camin : 2 PASSED, 0 FAILED
+zamin : 2 PASSED, 0 FAILED
+sasum : 1 PASSED, 0 FAILED
+dasum : 1 PASSED, 0 FAILED
+casum : 1 PASSED, 0 FAILED
+zasum : 1 PASSED, 0 FAILED
+saxpy : 3 PASSED, 0 FAILED
+daxpy : 3 PASSED, 0 FAILED
+caxpy : 3 PASSED, 0 FAILED
+zaxpy : 3 PASSED, 0 FAILED
+scopy : 3 PASSED, 0 FAILED
+dcopy : 3 PASSED, 0 FAILED
+ccopy : 3 PASSED, 0 FAILED
+zcopy : 3 PASSED, 0 FAILED
+ sdot : 1 PASSED, 0 FAILED
+ ddot : 1 PASSED, 0 FAILED
+cdotu : 1 PASSED, 0 FAILED
+zdotu : 1 PASSED, 0 FAILED
+cdotc : 1 PASSED, 0 FAILED
+zdotc : 1 PASSED, 0 FAILED
+snrm2 : 1 PASSED, 0 FAILED
+dnrm2 : 1 PASSED, 0 FAILED
+cnrm2 : 1 PASSED, 0 FAILED
+znrm2 : 1 PASSED, 0 FAILED
+ srot : 4 PASSED, 0 FAILED
+ drot : 4 PASSED, 0 FAILED
+ccrot : 4 PASSED, 0 FAILED
+csrot : 4 PASSED, 0 FAILED
+ zrot : 4 PASSED, 0 FAILED
+zdrot : 4 PASSED, 0 FAILED
+srotg : 4 PASSED, 0 FAILED
+drotg : 4 PASSED, 0 FAILED
+crotg : 4 PASSED, 0 FAILED
+zrotg : 4 PASSED, 0 FAILED
+srotm : 4 PASSED, 0 FAILED
+drotm : 4 PASSED, 0 FAILED
+srotmg : 2 PASSED, 0 FAILED
+drotmg : 2 PASSED, 0 FAILED
+sscal : 3 PASSED, 0 FAILED
+dscal : 3 PASSED, 0 FAILED
+cscal : 3 PASSED, 0 FAILED
+csscal : 3 PASSED, 0 FAILED
+zscal : 3 PASSED, 0 FAILED
+zdscal : 3 PASSED, 0 FAILED
+sswap : 6 PASSED, 0 FAILED
+dswap : 6 PASSED, 0 FAILED
+cswap : 6 PASSED, 0 FAILED
+zswap : 6 PASSED, 0 FAILED

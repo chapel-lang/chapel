@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Portable email sender. Acts as replacement for mail, Mail, mailx,
 email (cygwin). Message body is taken from stdin.

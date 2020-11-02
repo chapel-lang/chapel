@@ -20,8 +20,20 @@
 # limitations under the License.
 #
 
+if [ -z "$CHPL_HOME" ]; then
+  echo "Error: CHPL_HOME is not set"
+  exit 1
+fi
+
+python=$($CHPL_HOME/util/config/find-python.sh)
+venv_path=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+
+if [ ! -d "$venv_path" ]; then
+  echo "Error: virtualenv '$venv_path' does not exist"
+  exit 1
+fi
+
+. ${venv_path}/bin/activate
+
 PREFIX=$CHPL_HOME/tools/c2chapel
-
-. ${PREFIX}/install/venv/bin/activate
-
 exec ${PREFIX}/c2chapel.py "${@}"

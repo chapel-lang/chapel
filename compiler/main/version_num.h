@@ -22,7 +22,7 @@
 #define _version_num_H_
 
 #define MAJOR_VERSION 1
-#define MINOR_VERSION 23
+#define MINOR_VERSION 24
 #define UPDATE_VERSION 0
 
 static const char* BUILD_VERSION =
@@ -32,6 +32,6 @@ static const char* BUILD_VERSION =
 // Flip this to 'true' when we're ready to roll out a release; then
 // back after branching
 //
-static bool officialRelease = true;
+static bool officialRelease = false;
 
 #endif

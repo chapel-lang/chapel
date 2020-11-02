@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os
 import sys
@@ -10,8 +10,8 @@ import chpl_home_utils
 import chpl_make
 
 def error(message):
-    sys.stdout.write('[Error: {0}]\n'.format(message))
-    exit(1)
+    sys.stdout.write('[Warning: {0}]\n'.format(message))
+    raise ImportError(message)
 
 def log(message):
     sys.stdout.write('[{0}]\n'.format(message))
@@ -43,10 +43,19 @@ def activate_venv():
         if not os.path.isfile(activation_file):
             error('Activation file {0} is missing'.format(activation_file))
 
+        old_path = os.environ.get('PATH', '')
+
         # actually activate
         with open(activation_file) as f:
             code = compile(f.read(), activation_file, 'exec')
             exec(code, dict(__file__=activation_file))
 
+        # put PATH back so that the system python may be used.
+        # python scripts using the virtualenv dependencies should use
+        #
+        #   from test import activate_chpl_test_venv
+        #
+        # near to the 'import' of a virtual dependency.
+        os.environ['PATH'] = old_path
 
 activate_venv()

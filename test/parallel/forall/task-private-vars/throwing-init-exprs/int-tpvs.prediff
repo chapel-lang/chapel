@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Given that tasks #2 and #3 will run concurrently, collate their outputs
 # for deterministic matching against .good files.

@@ -1,6 +1,2 @@
 -M ../must-init-record
-# -M ../assert-locale-record -- disabled for semantic reasons
-# --no-warnings to avoid whole domain assignment serialized
-#
-# 2016/02/29 MDN Temporarily disable this comp opt
-# -M ../tracking-record -M ../tracking  --no-warnings
+-M ../tracking-record -M ../tracking
