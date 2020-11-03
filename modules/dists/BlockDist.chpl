@@ -1545,7 +1545,7 @@ proc BlockArr.canDoOptimizedSwap(other) {
   if this.dom != other.dom { // no need to check if this is true
     if domsMatch {
       for param i in 0..this.dom.rank-1 {
-        if (this.dom.whole.dim(i) != other.dom.whole.dim(i)) {
+        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
           if this.dom.whole.dim(i).size != other.dom.whole.dim(i).size {
             domShapesMatch = false;
           }
@@ -1564,8 +1564,9 @@ proc BlockArr.canDoOptimizedSwap(other) {
   // they also match their respective distributions' boundingBoxes
   else if domShapesMatch {
     // TODO: this rule can be relaxed a bit.  ie. arrays on the following
-    // domains can be swapped with a pointer swap, but that's not what happens
-    // because of this line.
+    // domains have matching shaped and can be swapped with a pointer swap, but
+    // that's not what happens because of this line is only checking for a very
+    // specific case.
     //
     // var d1 = {0..9 by 2 align 0} dmapped Block({1..10});
     // var d2 = {0..9 by 2 align 1} dmapped Block({1..10});
@@ -1575,7 +1576,7 @@ proc BlockArr.canDoOptimizedSwap(other) {
   return false;
 }
 
-// <=> implementation uses Reflection to check whether this is implemented, so
+// <=> implementation uses Reflection to check whether this resolves, so
 // it is OK for this to not resolve without debugOptimizedSwap.
 proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
   writeln("BlockArr doing unoptimized swap. Type mismatch");
