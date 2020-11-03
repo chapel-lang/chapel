@@ -68,6 +68,9 @@ def remove_chpl_from_path(path_val, delim):
     return delim.join(newpath)
 
 
+def update_path_env():
+    os.environ["PATH"] = remove_chpl_from_path(os.environ["PATH"], ":")
+
 def main():
     parser = optparse.OptionParser(usage=__doc__)
     parser.add_option('--shell', dest='shell', default='bash',
