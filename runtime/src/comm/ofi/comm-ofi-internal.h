@@ -41,47 +41,59 @@
 //
 #ifdef CHPL_COMM_DEBUG
 
+#define OFI_ALL_DEBUGS(m)                                               \
+  m(CFG,                    "config: fabric resources used")            \
+  m(CFG_AV,                 "config: address vectors")                  \
+  m(PROV,                   "provider: selection")                      \
+  m(PROV_HINTS,             "provider: hints")                          \
+  m(PROV_ALL,               "provider: all matching")                   \
+  m(IFACE,                  "interface calls")                          \
+  m(IFACE_SETUP,            "interface calls: setup")                   \
+  m(IFACE_AMO,              "interface calls: AMOs")                    \
+  m(IFACE_AMO_READ,         "interface calls: AMO reads")               \
+  m(IFACE_AMO_WRITE,        "interface calls: AMO writes")              \
+  m(IFACE_MCM,              "interface calls: MCM conformance")         \
+  m(AM,                     "AMs")                                      \
+  m(AM_SEND,                "AMs: sends")                               \
+  m(AM_RECV,                "AMs: receives")                            \
+  m(AM_BUF,                 "AMs: receive buffers")                     \
+  m(RMA,                    "RMA")                                      \
+  m(RMA_READ,               "RMA: reads (loads, GETs)")                 \
+  m(RMA_WRITE,              "RMA: writes (stores, PUTs)")               \
+  m(RMA_UNORD,              "RMA: unordered operations")                \
+  m(AMO,                    "AMOs")                                     \
+  m(AMO_READ,               "AMOs: reads")                              \
+  m(AMO_UNORD,              "AMOs: unordered operations")               \
+  m(ACK,                    "tx acknowledgements")                      \
+  m(ORDER,                  "ops done only for ordering")               \
+  m(MR,                     "mem reg: regions")                         \
+  m(MR_DESC,                "mem reg: local region descs")              \
+  m(MR_KEY,                 "mem reg: remote region keys")              \
+  m(HUGEPAGES,              "hugepages")                                \
+  m(TCIPS,                  "tx context alloc/free")                    \
+  m(OOB,                    "out-of-band calls")                        \
+  m(BARRIER,                "barriers")                                 \
+  m(TSTAMP,                 "timestamp output")
+
+//
+// Define the enumeration constants for the debug code bit offsets.
+//
+#define OFIDBG_MACRO(_enum, _desc)  DBG_##_enum##_BOFF,
+typedef enum {
+  OFI_ALL_DEBUGS(OFIDBG_MACRO)
+} ofiDbgBOff_t;
+#undef OFIDBG_MACRO
+
+//
+// Define the debug codes themselves.
+//
+#define OFIDBG_MACRO(_enum, _desc)  \
+  static const uint64_t DBG_##_enum = (uint64_t) 1 << DBG_##_enum##_BOFF;
+OFI_ALL_DEBUGS(OFIDBG_MACRO)
+#undef OFIDBG_MACRO
+
 extern uint64_t chpl_comm_ofi_dbg_level;
 extern FILE* chpl_comm_ofi_dbg_file;
-
-#define DBG_STATS                      0x1UL
-#define DBG_STATSNODES                 0x2UL
-#define DBG_STATSTHREADS               0x4UL
-#define DBG_STATSPROGRESS              0x8UL
-#define DBG_CFG                       0x10UL
-#define DBG_CFGFAB                   0x100UL
-#define DBG_CFGFABHINTS              0x200UL
-#define DBG_CFGFABSALL               0x400UL
-#define DBG_CFGAV                    0x800UL
-#define DBG_THREADS                 0x1000UL
-#define DBG_THREADDETAILS           0x2000UL
-#define DBG_TCIPS                   0x8000UL
-#define DBG_IFACE                  0x10000UL
-#define DBG_IFACE_AMO              0x20000UL
-#define DBG_IFACE_AMO_READ         0x40000UL
-#define DBG_IFACE_AMO_WRITE        0x80000UL
-#define DBG_IFACE_MCM             0x100000UL
-#define DBG_IFACE_SETUP           0x200000UL
-#define DBG_AM                   0x1000000UL
-#define DBG_AMSEND               0x2000000UL
-#define DBG_AMRECV               0x4000000UL
-#define DBG_AMBUFFERS            0x8000000UL
-#define DBG_RMA                 0x10000000UL
-#define DBG_RMAWRITE            0x20000000UL
-#define DBG_RMAREAD             0x40000000UL
-#define DBG_RMAUNORD            0x80000000UL
-#define DBG_AMO                0x100000000UL
-#define DBG_AMOREAD            0x200000000UL
-#define DBG_ACK               0x1000000000UL
-#define DBG_ORDER             0x2000000000UL
-#define DBG_MR               0x10000000000UL
-#define DBG_MRDESC           0x20000000000UL
-#define DBG_MRKEY            0x40000000000UL
-#define DBG_HUGEPAGES        0x80000000000UL
-#define DBG_BARRIER         0x100000000000UL
-#define DBG_OOB            0x1000000000000UL
-#define DBG_TSTAMP        0x10000000000000UL
-
 void chpl_comm_ofi_dbg_init(void);
 char* chpl_comm_ofi_dbg_prefix(void);
 char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
