@@ -24,8 +24,5 @@ export CHPL_LAUNCHER_CORES_PER_LOCALE=56
 export CHPL_LAUNCHER=slurm-srun
 nightly_args="${nightly_args} -no-buildcheck"
 
-# XC has new enough python, but missing pip
-source /cray/css/users/chapelu/setup_python36.bash
-
 test_nightly
 sync_graphs
