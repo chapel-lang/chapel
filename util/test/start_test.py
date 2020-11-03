@@ -27,6 +27,11 @@ chplenv_dir = os.path.join(util_dir, 'chplenv')
 sys.path.insert(0, os.path.abspath(util_dir))
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
+# update PATH to PATH_CHPL_NO_VENV if it exists
+# (so that prediff etc can use the system python instead of the test venv)
+if "PATH_CHPL_NO_VENV" in os.environ:
+    os.environ["PATH"] = os.environ["PATH_CHPL_NO_VENV"]
+
 from chplenv import *
 
 # these are in the test/ directory with us

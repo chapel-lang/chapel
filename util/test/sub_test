@@ -142,6 +142,11 @@ import shlex
 import datetime
 import errno
 
+# update PATH to PATH_CHPL_NO_VENV if it exists
+# (so that prediff etc can use the system python instead of the test venv)
+if "PATH_CHPL_NO_VENV" in os.environ:
+    os.environ["PATH"] = os.environ["PATH_CHPL_NO_VENV"]
+
 localdir = ''
 sub_test_start_time = time.time()
 def elapsed_sub_test_time():
