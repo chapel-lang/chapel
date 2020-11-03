@@ -6082,7 +6082,7 @@ void chpl_comm_ofi_dbg_init(void) {
         }
 
         chpl_comm_ofi_oob_fini();
-        exit(0);
+        chpl_exit_any(0);
       }
     }
   }
