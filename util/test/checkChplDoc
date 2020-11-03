@@ -80,10 +80,8 @@ fi
 
 # Find examples test directory.
 if [ -d $CHPL_HOME/test/release/examples ] ; then
-    # Install from source repo.
     TEST_DIR=$CHPL_HOME/test/release/examples
 elif [ -d $CHPL_HOME/examples ] ; then
-    # Install from tarball.
     TEST_DIR=$CHPL_HOME/examples
 else
     log_error "Could not find test cases in CHPL_HOME: ${CHPL_HOME}."
