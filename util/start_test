@@ -3,4 +3,5 @@
 # get the chpl home directory
 CWD=$(cd $(dirname $0) ; cd ..; pwd)
 
+export PATH_CHPL_NO_VENV="$PATH"
 $CWD/util/run-in-venv.bash $CWD/util/test/start_test.py "$@"
