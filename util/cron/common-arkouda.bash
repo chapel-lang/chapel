@@ -16,11 +16,18 @@ export CHPL_NIGHTLY_TEST_DIRS=studies/arkouda/
 export CHPL_TEST_ARKOUDA=true
 export CHPL_TEST_ARKOUDA_PERF=true
 
-ARKOUDA_DEP_DIR=/cray/css/users/chapelu/arkouda-deps
+CSS_DIR=/cray/css/users/chapelu
+ARKOUDA_DEP_DIR=$CSS_DIR/arkouda-deps
 if [ -d "$ARKOUDA_DEP_DIR" ]; then
   export ARKOUDA_ZMQ_PATH=${ARKOUDA_ZMQ_PATH:-$ARKOUDA_DEP_DIR/zeromq-install}
   export ARKOUDA_HDF5_PATH=${ARKOUDA_HDF5_PATH:-$ARKOUDA_DEP_DIR/hdf5-install}
   export PATH="$ARKOUDA_HDF5_PATH/bin:$PATH"
+fi
+
+# Arkouda requires Python >= 3.7
+SETUP_PYTON=$CSS_DIR/setup_python37.bash
+if [ -d $SETUP_PYTON ]; then
+  source $SETUP_PYTON
 fi
 
 # test against Chapel release (checking our current test/cron directories)
