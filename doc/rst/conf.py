@@ -51,7 +51,7 @@ templates_path = ['meta/templates']
 
 # Setup CSS files
 def setup(app):
-    app.add_stylesheet('style.css')
+    app.add_css_file('style.css')
 
 # The suffix of source filenames.
 source_suffix = '.rst'
