@@ -41,7 +41,8 @@ about your environment for using Chapel:
 
   * If you wish to use chpldoc or Chapel's test system, Python 3.5 or
     newer is required and the ``python3`` and ``pip3`` commands must be
-    available. The ``venv`` Python package must be available.
+    available. The ``venv`` Python package must be available (note that
+    it is often included by default in a Python 3 installation).
     Additionally, ``curl``, ``perl``, and ``python3-devel``
     (or equivalent packages for your platform) are required.
 
