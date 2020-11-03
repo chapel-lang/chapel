@@ -260,6 +260,8 @@ myinstalldir  modules                 "$DEST_CHPL_HOME"/modules
 # copy util/printchplenv
 myinstallfile util/printchplenv       "$DEST_CHPL_HOME"/util/
 
+myinstallfile util/run-in-venv.bash   "$DEST_CHPL_HOME"/util/
+
 # copy util/chplenv
 myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 
