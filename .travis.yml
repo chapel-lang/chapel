@@ -3,6 +3,10 @@ os:
   - linux
 compiler:
   - gcc
+addons:
+  apt:
+    packages:
+    - python3-venv
 
 matrix:
   include:
