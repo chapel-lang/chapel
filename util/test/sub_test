@@ -142,10 +142,14 @@ import shlex
 import datetime
 import errno
 
-# update PATH to PATH_CHPL_NO_VENV if it exists
+util_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'util')
+config_dir = os.path.join(util_dir, 'config')
+sys.path.insert(0, os.path.abspath(config_dir))
+
+# update PATH to remove CHPL_HOME paths if any
 # (so that prediff etc can use the system python instead of the test venv)
-if "PATH_CHPL_NO_VENV" in os.environ:
-    os.environ["PATH"] = os.environ["PATH_CHPL_NO_VENV"]
+import fixpath
+fixpath.update_path_env()
 
 localdir = ''
 sub_test_start_time = time.time()
