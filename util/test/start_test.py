@@ -30,7 +30,9 @@ sys.path.insert(0, os.path.abspath(chplenv_dir))
 sys.path.insert(0, os.path.abspath(config_dir))
 
 # update PATH to remove CHPL_HOME paths if any
-# (so that prediff etc can use the system python instead of the test venv)
+# This essentially deactivates the venv that sub_test is run in,
+# because the test venv is built inside of CHPL_HOME.
+# We do this so tests/prediffs can use the system python instead of the venv
 import fixpath
 fixpath.update_path_env()
 
