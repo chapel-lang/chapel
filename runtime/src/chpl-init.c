@@ -316,8 +316,8 @@ void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
 }
 
 // These are currently defined in 'modules/internal/ExportWrappers.chpl'.
-extern void chpl_libraryModuleLevelSetup(void);
-extern void chpl_libraryModuleLevelCleanup(void);
+void chpl_libraryModuleLevelSetup(void);
+void chpl_libraryModuleLevelCleanup(void);
 
 //
 // A program using Chapel as a library might look like:
