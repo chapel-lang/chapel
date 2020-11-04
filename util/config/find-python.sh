@@ -1,7 +1,14 @@
 #!/bin/sh
 
 for cmd in python3 python python2; do
-  command -v > /dev/null $cmd && echo $cmd && exit 0
+  if command -v $cmd > /dev/null 2>&1
+  then
+    if $cmd --version > /dev/null 2>&1
+    then
+      echo $cmd
+      exit 0
+    fi
+  fi
 done
 
 echo "python3 not found - please install python3 and add it to PATH" 1>&2
