@@ -1,0 +1,14 @@
+#!/usr/bin/env sh
+
+# get the chpl home directory
+FIND_CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
+
+python=$($FIND_CHPL_HOME/util/config/find-python.sh)
+venv_path=$("$python" "$FIND_CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+
+# activate the venv if it exists but also proceed if it does not
+if [ -d "$venv_path" ]; then
+  . "$venv_path/bin/activate"
+fi
+
+$python $FIND_CHPL_HOME/util/test/genGraphs.py "$@"
