@@ -230,11 +230,12 @@ sub mysystem {
         if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
             open(MAIL, $mailcommand);
-            print MAIL "=== Summary - testRelease ===================================================\n";
+            print MAIL "=== Summary - testRelease =====================================\n";
             print MAIL "ERROR $_[1]: $status\n";
             $host = `hostname`; chomp($host);
             print MAIL "(workspace left at $host:$tmpdir)\n";
-            print MAIL "===============================================================\n";
+            print MAIL "(or better, visit 'release-tarball-smoke-test' in jenkins)\n";
+            print MAIL "=== End Summary ===============================================\n";
             close(MAIL);
         } else {
             print "CHPL_TEST_NOMAIL: No $mailcommand\n";
