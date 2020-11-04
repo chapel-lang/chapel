@@ -12,4 +12,4 @@ resolve this by installing it yourself with ``python3 -m pip install
 PyYAML`` or by using the version bundled with the testing system::
 
     cd $CHPL_HOME && make test-venv
-    $CHPL_HOME/util/run-in-venv.bash $CHPL_HOME/util/test/check_annotations.py
+    $CHPL_HOME/util/config/run-in-venv.bash $CHPL_HOME/util/test/check_annotations.py

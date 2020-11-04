@@ -59,7 +59,7 @@ jobs:
     - name: check annotations
       run: |
         make test-venv
-        CHPL_HOME=$PWD ./util/run-in-venv.bash ./util/test/check_annotations.py
+        CHPL_HOME=$PWD ./util/config/run-in-venv.bash ./util/test/check_annotations.py
 
   bad_rt_calls:
     runs-on: ubuntu-latest
