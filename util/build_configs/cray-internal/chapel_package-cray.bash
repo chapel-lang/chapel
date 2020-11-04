@@ -200,7 +200,27 @@ chmod 755 "$rpmbuild_dir/set_default_chapel_$pkg_version"
 # Generate chapel.spec, w versions
 
 log_debug "Generate chapel.spec ..."
-$cwd/generate-rpmspec.bash > "$rpmbuild_dir/chapel.spec"
+
+(
+    if [ "$chpl_platform" = hpe-cray-ex ]; then
+        # HPE Cray EX rpm may be relocatable; all %files start with %prefix.
+        platform_prefix=/opt/cray
+        set_def_subdir=admin-pe/set_default_files
+    else
+        # Before HPE Cray EX, rpm is not relocatable.
+        platform_prefix=/opt
+        set_def_subdir=cray/admin-pe/set_default_files
+    fi
+    $cwd/process-template.py basename_of_CHPL_HOME="${CHPL_HOME##*/}" \
+                             chpl_platform="$chpl_platform" \
+                             pkg_version="$pkg_version" \
+                             platform_prefix="$platform_prefix" \
+                             rpm_release="$rpm_release" \
+                             rpm_version="$rpm_version" \
+                             set_def_subdir="$set_def_subdir" \
+        --template $cwd/chapel.spec.template \
+        --output $rpmbuild_dir/chapel.spec
+)
 
 # Prepare the rpmbuild_dir subdirectory structure, with hardlinked files from CHPL_HOME/...
 

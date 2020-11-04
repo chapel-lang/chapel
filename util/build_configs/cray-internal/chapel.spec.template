@@ -1,62 +1,13 @@
-#!/bin/bash
-
-# Generate an RPM spec file for Chapel Cray Module
-# Writes to stdout
-
-set -e
-
-cwd=$( cd $(dirname "${BASH_SOURCE[0]}" ) && pwd )
-source $cwd/../functions.bash
-
-# Accept command line parameters of the form NAME=Value. Or use environment variables.
-
-while test $# -gt 0; do
-    case $1 in ( *=* ) export "$1" ;; esac
-    shift
-done
-
-# Cray-internal-specific shell variables
-
-source $cwd/common.bash
-
-# Generate the first part of the spec file with shell expansion
-
-if [ "$chpl_platform" = hpe-cray-ex ]; then
-    # HPE Cray EX rpm may be relocatable, since all %files start with %prefix.
-    platform_prefix=/opt/cray
-    set_def_subdir=admin-pe/set_default_files
-else
-    # Before HPE Cray EX, rpm is not relocatable.
-    platform_prefix=/opt
-    set_def_subdir=cray/admin-pe/set_default_files
-fi
-
-cat <<PART_1
-%define name chapel-$pkg_version
+%define name chapel-@@{pkg_version}
 %define real_name chapel
-%define version $rpm_version
-%define pkg_version $pkg_version
-%define chpl_home_basename $( basename "$CHPL_HOME" )
-%define pkg_release $rpm_release
-%define build_type $chpl_platform
-%define platform_prefix $platform_prefix
-%define set_def_subdir $set_def_subdir
+%define version @@{rpm_version}
+%define pkg_version @@{pkg_version}
+%define chpl_home_basename @@{basename_of_CHPL_HOME}
+%define pkg_release @@{rpm_release}
+%define build_type @@{chpl_platform}
+%define platform_prefix @@{platform_prefix}
+%define set_def_subdir @@{set_def_subdir}
 %define _binary_payload w9.gzdio
-PART_1
-
-# Notes:
-#
-#   "Source: %{chpl_home_basename}.tar.gz" (below) is bogus.
-#   There is no such file. We do not use the usual RPM %setup macro.
-#   Instead, we provide a _builddir (RPM_BUILD_DIR) already
-#   pre-populated, to save the time of tarring/un-tarring the big
-#   compressed tar file.
-#   Rpmbuild uses the given "Source:" filename only to infer the
-#   "basename" of RPM_BUILD_DIR (e.g. chapel-1.17.1).
-
-# Generate the rest of the spec file, without shell expansion
-
-cat <<\PART_2
 Summary: Chapel language compiler and libraries
 Name:    %{name}
 Version: %{version}
@@ -156,4 +107,3 @@ fi
 %{prefix}/%{real_name}/%{pkg_version}
 %{prefix}/modulefiles/%{real_name}/%{pkg_version}
 %{prefix}/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
-PART_2
