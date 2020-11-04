@@ -29,12 +29,13 @@ all: $(TARGETS)
 chpldoc: $(CHPLDOC_MANPAGE)
 
 clean:
-	rm $(TARGETS)
+	rm -f $(TARGETS) $(CHPLDOC_MANPAGE)
 
 man1/%.1: %.rst Makefile
 	mkdir -p $(shell dirname $@)
 	sed "/conf$</r conf$<" $< > $<.tmp
-	$(RST2MAN) $<.tmp > $@
+	$(CHPL_MAKE_HOME)/util/run-in-venv.bash $(RST2MAN) $<.tmp > $<.tmp.out
+	mv $<.tmp.out $@
 	rm -f $<.tmp
 
 %.ps: man1/%.1

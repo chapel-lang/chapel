@@ -127,8 +127,8 @@ considered if no input is given.""");
   while(1){
     try {
       if !gotCorrectPackageName {
-        write("Package name ");
-        if defPackageName != '' then write("(" + defPackageName + ") ");
+        write("Package name");
+        if defPackageName != '' then write(" (" + defPackageName + ")");
         write(": ");
         IO.stdout.flush();
         IO.stdin.readline(packageName);

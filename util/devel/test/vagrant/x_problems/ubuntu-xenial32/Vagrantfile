@@ -9,12 +9,12 @@ Vagrant.configure("2") do |config|
   config.vm.box = "ubuntu/xenial32"
 
   config.vm.provision "shell",
-    path: "../provision-scripts/apt-get-deps.sh"
+    path: "../../provision-scripts/apt-get-deps.sh"
 
   config.vm.provision "shell", privileged: false,
-    path: "../provision-scripts/git-clone-chapel.sh"
+    path: "../../provision-scripts/git-clone-chapel.sh"
 
   config.vm.provision "shell", privileged: false,
-    path: "../provision-scripts/make-chapel-quick.sh"
+    path: "../../provision-scripts/make-chapel-quick.sh"
 
 end

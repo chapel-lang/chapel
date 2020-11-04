@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/standard/Regexp.chpl:594: warning: string-by-default regexp is deprecated. Use regexp(string) or regexp(bytes) instead.
-regexp(string)
