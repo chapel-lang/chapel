@@ -18,8 +18,6 @@
 
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
-PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
-
 develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
