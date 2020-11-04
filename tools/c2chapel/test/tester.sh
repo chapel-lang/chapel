@@ -2,6 +2,7 @@
 
 # This script must be run within c2chapel/test
 
+
 # Only use colors for stdout with a color-supporting terminal
 if test -t 1; then
   nc=$(tput colors)
@@ -13,9 +14,16 @@ if test -t 1; then
   fi
 fi
 
+C2CHAPEL=c2chapel
 if ! type "c2chapel" > /dev/null 2>&1; then
-  printf "${RED}Failure: c2chapel command not found${NORMAL}\n"
-  exit 1;
+  BINDIR="$CHPL_HOME"/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`
+  C2CHAPEL="$BINDIR/c2chapel"
+  if [[ -f "$C2CHAPEL"  && -x "$C2CHAPEL" ]]; then
+    :
+  else
+    printf "${RED}Failure: c2chapel command not found${NORMAL}\n"
+    exit 1;
+  fi
 fi
 
 numFailures=0
@@ -36,7 +44,7 @@ function helper() {
   fi
 
   printf "%s: " "$msg"
-  c2chapel $args > $outFile 2>&1
+  "$C2CHAPEL" $args > $outFile 2>&1
   if diff $outFile $good > $diffFile 2>&1; then
     printf "${GREEN}OK${NORMAL}\n"
   elif diff $outFile $good2 > $diffFile 2>&1; then
