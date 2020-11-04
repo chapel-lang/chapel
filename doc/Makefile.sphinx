@@ -1,8 +1,15 @@
 # Makefile for Sphinx documentation
-#
+
+ifndef CHPL_MAKE_PYTHON
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+endif
+
+VENV_DIR = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --venv)
+
+
 # You can set these variables from the command line.
 SPHINXOPTS    = -W -n
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(VENV_DIR)/bin/sphinx-build
 PAPER         =
 SOURCEDIR     = rst
 BUILDDIR      = ../build/doc
@@ -12,7 +19,6 @@ BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 export CHPLDOC_AUTHOR=Hewlett Packard Enterprise Development LP
 
 # User-friendly check for sphinx-build
-SPHINXTEST=$(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?)
 SPHINXERROR="Error - The '$(SPHINXBUILD)' command was not found. Make sure you \
 have Sphinx installed, then set the SPHINXBUILD environment variable to point \
 to the full path of the '$(SPHINXBUILD)' executable. Alternatively you can add \
@@ -64,7 +70,13 @@ help-sphinx:
 check-sphinxbuild:
 	@echo
 	@echo "Confirming that sphinx-build is available..."
-	@if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
+	@if $(SPHINXBUILD) --version > /dev/null 2>&1 ; \
+	then \
+	  echo OK ; \
+	else \
+	  echo $(SPHINXERROR) ; \
+	  exit 1 ; \
+	fi
 
 html-release: check-sphinxbuild source clean-build
 	@echo
