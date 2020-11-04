@@ -23,13 +23,12 @@ def get_chpl_third_party():
     return chpl_third_party
 
 # Get the chpl-venv install directory:
-# $CHPL_HOME/third-party/chpl-venv/install/$bin_subdir/$py_version/chpl-virtualenv
+# $CHPL_HOME/third-party/chpl-venv/install/$bin_subdir/chpl-virtualenv
 @memoize
 def get_chpl_venv():
     chpl_venv = os.path.join(get_chpl_third_party(), 'chpl-venv')
     bin_subdir = chpl_bin_subdir.get('host')
-    py_version = 'py{0}'.format(chpl_python_version.get())
-    uniq_path = os.path.join(bin_subdir, py_version)
+    uniq_path = bin_subdir
     venv_dir = os.path.join(chpl_venv, 'install', uniq_path, 'chpl-virtualenv')
     return venv_dir
 

@@ -18,12 +18,10 @@ CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.tx
 # Python version
 PYTHON=$(CHPL_MAKE_PYTHON)
 PIP=$(PYTHON) -m pip
-# Python version has 2 digits, like "2.6" or "2.7"
 PYTHON_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py || echo "_not_found")
-PYTHON_MAJOR_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only || echo "_not_found")
 
 # chpl-venv installation path depends on Python version
-CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)/py$(PYTHON_VERSION)
+CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)
 CHPL_VENV_INSTALL_SUBDIR=install/$(CHPL_VENV_UNIQUE_SUBDIR)
 CHPL_VENV_INSTALL_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_INSTALL_SUBDIR)
 CHPL_VENV_VIRTUALENV=$(CHPL_VENV_INSTALL_SUBDIR)/bin/virtualenv
