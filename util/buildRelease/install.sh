@@ -260,8 +260,6 @@ myinstalldir  modules                 "$DEST_CHPL_HOME"/modules
 # copy util/printchplenv
 myinstallfile util/printchplenv       "$DEST_CHPL_HOME"/util/
 
-myinstallfile util/run-in-venv.bash   "$DEST_CHPL_HOME"/util/
-
 # copy util/chplenv
 myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 
@@ -276,6 +274,10 @@ myinstallfile util/config/compileline.py "$DEST_CHPL_HOME"/util/config/
 # copy util/config/find-python.py
 # (needed by setchplenv*, Makefiles, compileline, printchplenv wrappers)
 myinstallfile util/config/find-python.sh "$DEST_CHPL_HOME"/util/config/
+
+# copy util/config/run-in-venv.bash
+# (needed primarily by start_test)
+myinstallfile util/config/run-in-venv.bash "$DEST_CHPL_HOME"/util/config
 
 # copy util/config/fixpath.py
 # (needed by setchplenv*)

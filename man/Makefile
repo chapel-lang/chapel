@@ -34,7 +34,7 @@ clean:
 man1/%.1: %.rst Makefile
 	mkdir -p $(shell dirname $@)
 	sed "/conf$</r conf$<" $< > $<.tmp
-	$(CHPL_MAKE_HOME)/util/run-in-venv.bash $(RST2MAN) $<.tmp > $<.tmp.out
+	$(CHPL_MAKE_HOME)/util/config/run-in-venv.bash $(RST2MAN) $<.tmp > $<.tmp.out
 	mv $<.tmp.out $@
 	rm -f $<.tmp
 
