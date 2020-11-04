@@ -25,9 +25,9 @@ if [ -d "$ARKOUDA_DEP_DIR" ]; then
 fi
 
 # Arkouda requires Python >= 3.7
-SETUP_PYTON=$CSS_DIR/setup_python37.bash
-if [ -d $SETUP_PYTON ]; then
-  source $SETUP_PYTON
+SETUP_PYTHON=$CSS_DIR/setup_python37.bash
+if [ -f "$SETUP_PYTHON" ]; then
+  source $SETUP_PYTHON
 fi
 
 # test against Chapel release (checking our current test/cron directories)
