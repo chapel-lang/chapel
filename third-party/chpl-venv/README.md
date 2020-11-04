@@ -63,6 +63,16 @@ Use with Sphinx as theme for html documentation.
 
 **Website**: https://pypi.python.org/pypi/sphinx_rtd_theme
 
+### chpllexer
+
+Pygments lexer for Chapel.
+
+This is a local mirror of Pygments' Chapel lexer. 
+
+**License**: BSD
+
+**Website**: https://github.com/pygments/pygments/blob/master/pygments/lexers/chapel.py
+
 ### argparse
 
 Command line argument parsing library, backported from Python 2.7.

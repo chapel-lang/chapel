@@ -29,7 +29,7 @@ from docutils.parsers.rst import Directive
 from sphinx.util.docfields import Field, GroupedField, TypedField
 from sphinx.util.nodes import make_refnode
 
-from chpllexer.lexer import ChapelLexer
+from chpllexer.chapel import ChapelLexer
 
 
 VERSION = '0.0.15'
