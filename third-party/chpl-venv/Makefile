@@ -77,6 +77,8 @@ $(CHPL_VENV_VIRTUALENV_DIR):
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install \
 	--upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
+	rm  $(CHPL_VENV_VIRTUALENV_BIN)/python3
+	cp python3-wrapper $(CHPL_VENV_VIRTUALENV_BIN)/python3
 	touch $(CHPL_VENV_VIRTUALENV_DIR)
 
 # Phony convenience target for creating virtualenv.
