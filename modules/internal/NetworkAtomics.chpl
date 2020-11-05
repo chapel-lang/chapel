@@ -22,6 +22,7 @@ pragma "atomic module"
 module NetworkAtomics {
   private use ChapelStandard;
   private use MemConsistency;
+  private use CPtr;
 
   private proc externFunc(param s: string, type T) param {
     if isInt(T)  then return "chpl_comm_atomic_" + s + "_int"  + numBits(T):string;
