@@ -31,14 +31,15 @@ else
 
   fi
 
-  if [ ! -f "$venv_dir/bin/activate" ]
-  then
-    echo "Activation file $venv_dir/bin/activate is missing" 1>&2
+  if [ ! -f "$venv_dir/bin/python3" ]; then
+    echo "python3 wrapper file $venv_dir/bin/python3 is missing" 1>&2
     exit 1
-
   fi
 
-  source "$venv_dir/bin/activate"
+  # these steps correspond to what a venv activate script contains
+  export VIRTUAL_ENV="$venv_dir"
+  export PATH="$VIRTUAL_ENV/bin:$PATH"
+  unset PYTHONHOME
 
 fi
 

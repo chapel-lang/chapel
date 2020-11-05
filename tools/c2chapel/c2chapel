@@ -25,15 +25,6 @@ if [ -z "$CHPL_HOME" ]; then
   exit 1
 fi
 
-python=$($CHPL_HOME/util/config/find-python.sh)
-venv_path=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+exec $CHPL_HOME/util/config/run-in-venv.bash \
+     $CHPL_HOME/tools/c2chapel/c2chapel.py "$@"
 
-if [ ! -d "$venv_path" ]; then
-  echo "Error: virtualenv '$venv_path' does not exist"
-  exit 1
-fi
-
-. ${venv_path}/bin/activate
-
-PREFIX=$CHPL_HOME/tools/c2chapel
-exec ${PREFIX}/c2chapel.py "${@}"
