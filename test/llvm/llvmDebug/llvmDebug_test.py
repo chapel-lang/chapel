@@ -4,6 +4,7 @@
 # is generated properly during Chapel compilation
 
 import os, subprocess, sys
+import shutil
 
 chpl_home = sys.argv[1]
 
@@ -26,11 +27,6 @@ for line in chplenv.splitlines():
   if key == 'CHPL_LLVM':
     CHPL_LLVM= val
 
-llvm_tool_path = ""
-if CHPL_LLVM == "llvm":
-  llvm_tool_path = (chpl_home + '/third-party/llvm/install/' +
-                    CHPL_LLVM_UNIQ_CFG_PATH + '/bin/')
-
 build_options = '--baseline --llvm -g'
 source_path = os.getcwd() #same as target path
 source = source_path + os.sep + 'llvmDebug_test.chpl'
@@ -44,15 +40,28 @@ else:
     os._exit(1) #exit without raising an exception
 
 # Determine syntax from LLVM version
+llvm_vers_maj = 0
 with open(chpl_home + '/third-party/llvm/LLVM_VERSION', 'r') as f:
-    llvm_version = float(f.readline())
-if llvm_version < 6.0:
+    llvm_vers_maj = int(f.readline().split('.')[0])
+if llvm_vers_maj < 6:
     debug_option = ' -debug-dump=str '
 else:
     debug_option = ' -debug-str '
 
+llvm_dwarfdump = None
+if CHPL_LLVM == "llvm":
+    llvm_dwarfdump = (chpl_home + '/third-party/llvm/install/' +
+                      CHPL_LLVM_UNIQ_CFG_PATH + '/bin/llvm-dwarfdump')
+else:
+    llvm_dwarfdump = "llvm-dwarfdump-" + str(llvm_vers_maj)
+    if not shutil.which(llvm_dwarfdump):
+        llvm_dwarfdump = "llvm-dwarfdump"
+        if not shutil.which(llvm_dwarfdump):
+            print ('Could not find llvm-dwarfdump')
+            os._exit(1) #exit without raising an exception
+
 # Check Debug Info Existence
-Command_check = llvm_tool_path + 'llvm-dwarfdump' + debug_option + target
+Command_check = llvm_dwarfdump + debug_option + target
 
 output_bytes = subprocess.check_output(Command_check, shell=True)
 output = str(output_bytes, encoding='utf-8', errors='surrogateescape')
