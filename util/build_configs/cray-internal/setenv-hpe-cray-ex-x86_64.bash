@@ -396,13 +396,6 @@ else
         ;;
     ( venv )
         load_prgenv_gnu
-
-        # If the installed libssl is too old to support TLS 1.1, some
-        # workarounds exist to enable building Chapel python-venv tools anyway.
-        # For example, the following gives a URL to a local PyPI mirror.
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
         ;;
     ( "" )
         : ok
