@@ -70,6 +70,8 @@ $(CHPL_VENV_INSTALL_DIR):
 	mkdir -p $@
 
 # Create the virtualenv.
+# Replace the symlink to python3 with python3-wrapper
+#  (to allow for a different path to the system python3 in the future)
 $(CHPL_VENV_VIRTUALENV_DIR):
 	$(PYTHON) -m venv $@
 	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
@@ -77,8 +79,8 @@ $(CHPL_VENV_VIRTUALENV_DIR):
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install \
 	--upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
-	rm  $(CHPL_VENV_VIRTUALENV_BIN)/python3
-	cp python3-wrapper $(CHPL_VENV_VIRTUALENV_BIN)/python3
+	rm -f $(CHPL_VENV_VIRTUALENV_BIN)/python3 && \
+	cp python3-wrapper $(CHPL_VENV_VIRTUALENV_BIN)/python3 && \
 	touch $(CHPL_VENV_VIRTUALENV_DIR)
 
 # Phony convenience target for creating virtualenv.
