@@ -3,8 +3,8 @@
 # usage: ./run-in-venv prog [args]
 
 if [ -z "$CHPL_HOME" ]; then
-  echo "Error: CHPL_HOME is not set" 1>&2
-  exit 1
+  # compute the chpl home directory
+  export CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
 fi
 
 python=$($CHPL_HOME/util/config/find-python.sh)
