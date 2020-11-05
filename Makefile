@@ -171,6 +171,7 @@ third-party-fltk: FORCE
 
 clean: FORCE
 	cd compiler && $(MAKE) clean
+	if [ -e man/Makefile ]; then cd man && $(MAKE) clean; fi
 	cd modules && $(MAKE) clean
 	cd runtime && $(MAKE) clean
 	cd third-party && $(MAKE) clean
@@ -179,6 +180,7 @@ clean: FORCE
 
 cleanall: FORCE
 	cd compiler && $(MAKE) cleanall
+	if [ -e man/Makefile ]; then cd man && $(MAKE) cleanall; fi
 	cd modules && $(MAKE) cleanall
 	cd runtime && $(MAKE) cleanall
 	cd third-party && $(MAKE) cleanall
@@ -192,6 +194,7 @@ cleandeps: FORCE
 
 clobber: FORCE
 	cd compiler && $(MAKE) clobber
+	if [ -e man/Makefile ]; then cd man && $(MAKE) clobber; fi
 	cd modules && $(MAKE) clobber
 	cd runtime && $(MAKE) clobber
 	cd third-party && $(MAKE) clobber

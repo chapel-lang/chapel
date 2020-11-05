@@ -31,6 +31,10 @@ chpldoc: $(CHPLDOC_MANPAGE)
 clean:
 	rm -f $(TARGETS) $(CHPLDOC_MANPAGE)
 
+clobber: clean
+
+cleanall: clean
+
 man1/%.1: %.rst Makefile
 	mkdir -p $(shell dirname $@)
 	sed "/conf$</r conf$<" $< > $<.tmp
