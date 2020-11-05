@@ -66,7 +66,7 @@ module ChapelDebugPrint {
   pragma "no doc"
   config param chpl__testParFlag = false;
   pragma "no doc"
-  var chpl__testParOn = false;
+  config var chpl__testParOn = true;
 
   pragma "no doc"
   proc chpl__testParStart() {
