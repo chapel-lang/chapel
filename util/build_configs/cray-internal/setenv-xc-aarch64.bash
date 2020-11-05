@@ -330,11 +330,6 @@ else
         ;;
     ( venv )
         load_prgenv_gnu
-
-        # The following gives a URL to a local PyPI mirror that accepts http. It is optional for this build.
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
         ;;
     ( "" )
         : ok
