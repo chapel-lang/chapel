@@ -41,6 +41,18 @@ DefaultRectangular doing optimized swap. Domains: (6..10) (6..10)
 20 20 20 20 20 20 20 20 20 20
 
 
+shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now
+'Forward' swap
+BlockArr doing unoptimized swap. Domains: {1..10} {0..9} Bounding boxes: {1..10} {0..9}
+20 20 20 20 20 20 20 20 20 20
+10 10 10 10 10 10 10 10 10 10
+
+'Backward' swap
+BlockArr doing unoptimized swap. Domains: {0..9} {1..10} Bounding boxes: {0..9} {1..10}
+10 10 10 10 10 10 10 10 10 10
+20 20 20 20 20 20 20 20 20 20
+
+
 one array is unevenly distributed. block shouldn't optimize
 'Forward' swap
 BlockArr doing unoptimized swap. Domains: {0..9} {1..10} Bounding boxes: {1..10} {1..10}
