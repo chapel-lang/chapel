@@ -55,6 +55,16 @@ writeln("*** Block ***");
   writeln();
 }
 
+{
+  writeln("shapes match and domains are aligned with their distribions but are different. We decided not to optimized this for now");
+  var d1 = {1..10} dmapped Block({1..10});
+  var d2 = {0..9} dmapped Block({0..9});
+
+  test(d1, d2);
+  
+  writeln();
+}
+
 
 {
   writeln("one array is unevenly distributed. block shouldn't optimize");

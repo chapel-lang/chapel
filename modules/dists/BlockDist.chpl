@@ -1540,15 +1540,11 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
 
 proc BlockArr.canDoOptimizedSwap(other) {
   var domsMatch = true;
-  var domShapesMatch = true;
 
   if this.dom != other.dom { // no need to check if this is true
     if domsMatch {
       for param i in 0..this.dom.rank-1 {
         if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
-          if this.dom.whole.dim(i).size != other.dom.whole.dim(i).size {
-            domShapesMatch = false;
-          }
           domsMatch = false;
         }
       }
@@ -1558,20 +1554,6 @@ proc BlockArr.canDoOptimizedSwap(other) {
   if domsMatch {
     // distributions must be equal, too
     return this.dom.dist.dsiEqualDMaps(other.dom.dist);
-  }
-  // we can handle different domains if:
-  // their shapes match, and
-  // they also match their respective distributions' boundingBoxes
-  else if domShapesMatch {
-    // TODO: this rule can be relaxed a bit.  ie. arrays on the following
-    // domains have matching shaped and can be swapped with a pointer swap, but
-    // that's not what happens because of this line is only checking for a very
-    // specific case.
-    //
-    // var d1 = {0..9 by 2 align 0} dmapped Block({1..10});
-    // var d2 = {0..9 by 2 align 1} dmapped Block({1..10});
-    return this.dom.dist.boundingBox == this.dom.whole &&
-           other.dom.dist.boundingBox == other.dom.whole;
   }
   return false;
 }
