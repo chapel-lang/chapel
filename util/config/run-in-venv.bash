@@ -15,6 +15,11 @@ if [ ! -d "$venv_path" ]; then
   exit 1
 fi
 
+if [ ! -f "$venv_path/bin/activate" ]; then
+  echo "Activation file $venv_path/bin/activate is missing" 1>&2
+  exit 1
+fi
+
 source "$venv_path/bin/activate"
 
 exec "$1" "${@:2}"
