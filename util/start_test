@@ -3,4 +3,5 @@
 # get the chpl home directory
 FIND_CHPL_HOME=$(cd $(dirname $0) ; cd ..; pwd)
 
+$FIND_CHPL_HOME/util/test/check-test-venv.bash && \
 $FIND_CHPL_HOME/util/config/run-in-venv.bash $FIND_CHPL_HOME/util/test/start_test.py "$@"
