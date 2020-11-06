@@ -27,7 +27,7 @@ assert(cnt == numTrials);
 // Estimate for how much memory we can allocate. Based on
 // chpl_comm_regMemHeapInfo if using a fixed heap, otherwise physical memory
 proc availMem() {
-  use SysCTypes;
+  use SysCTypes, CPtr;
   extern proc chpl_comm_regMemHeapInfo(ref start: c_void_ptr, ref size: size_t): void;
   var unused: c_void_ptr;
   var heap_size: size_t;
