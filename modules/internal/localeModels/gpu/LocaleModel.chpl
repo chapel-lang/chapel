@@ -29,7 +29,7 @@
 //
 module LocaleModel { 
 
-  public use LocaleModelHelpFlat;
+  public use LocaleModelHelpGPU;
   public use LocaleModelHelpMem;
 
   use IO;
@@ -52,6 +52,93 @@ module LocaleModel {
     return execution_subloc;  // no info needed from full sublocale
   }
 
+
+  class CPULocale : AbstractLocaleModel {
+    const sid: chpl_sublocID_t;
+    const name: string;
+
+    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    override proc chpl_localeid() {
+      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
+                                sid);
+    }
+    override proc chpl_name() return name;
+
+    proc init() {
+    }
+
+    proc init(_sid, _parent) {
+      super.init(new locale(_parent));
+      sid = _sid;
+      name = _parent.chpl_name() + "-CPU" + sid:string;
+    }
+
+    override proc writeThis(f) throws {
+      parent.writeThis(f);
+      f <~> '.'+name;
+    }
+
+    override proc getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+    proc addChild(loc:locale) {
+      halt("Cannot add children to this locale type.");
+    }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a CPULocale locale");
+      return new locale(this);
+    }
+  }
+
+  class GPULocale : AbstractLocaleModel {
+    const sid: chpl_sublocID_t;
+    const name: string;
+
+    override proc chpl_id() return (parent:LocaleModel)._node_id; // top-level node id
+    override proc chpl_localeid() {
+      return chpl_buildLocaleID((parent:LocaleModel)._node_id:chpl_nodeID_t,
+                                sid);
+    }
+    override proc chpl_name() return name;
+
+    proc init() {
+    }
+    proc deinit() {
+     extern proc hsa_shutdown(): void ;
+
+     // Comment out this until runtime support for HSA is added
+
+     //     hsa_shutdown();
+    }
+
+
+    proc init(_sid, _parent) {
+      super.init(new locale(_parent));
+      sid = _sid;
+      name = _parent.chpl_name() + "-GPU" + sid:string;
+    }
+
+    override proc writeThis(f) throws {
+      parent.writeThis(f);
+      f <~> '.'+name;
+    }
+
+    override proc getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+    proc addChild(loc:locale) {
+      halt("Cannot add children to this locale type.");
+    }
+    override proc getChild(idx:int) : locale {
+      halt("requesting a child from a GPULocale locale");
+      return new locale(this);
+    }
+  }
+
   const chpl_emptyLocaleSpace: domain(1) = {1..0};
   pragma "unsafe"
   const chpl_emptyLocales: [chpl_emptyLocaleSpace] locale;
@@ -63,6 +150,9 @@ module LocaleModel {
     const _node_id : int;
     var local_name : string; // should never be modified after first assignment
 
+    var numSublocales: int;
+    var GPU: unmanaged GPULocale?;
+    var CPU: unmanaged CPULocale?;
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
@@ -151,7 +241,8 @@ module LocaleModel {
     //- Implementation (private)
     //-
     proc setup() {
-      helpSetupLocaleFlat(this, local_name);
+      //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
+      helpSetupLocaleGPU(this, local_name, numSublocales, CPULocale, GPULocale);
     }
     //------------------------------------------------------------------------}
   }
