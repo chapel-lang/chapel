@@ -1558,17 +1558,14 @@ proc BlockArr.canDoOptimizedSwap(other) {
   return false;
 }
 
-// <=> implementation uses Reflection to check whether this resolves, so
-// it is OK for this to not resolve without debugOptimizedSwap.
-proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
-  writeln("BlockArr doing unoptimized swap. Type mismatch");
-  return false;
-}
-
-// Block1 <=> Block2 
-proc BlockArr.doiOptimizedSwap(other: this.type) 
-    where this.stridable == other.stridable &&
-          this.rank == other.rank {
+// A helper routine that will perform a pointer swap on an array
+// instead of doing a deep copy of that array. Returns true
+// if used the optimized swap, false otherwise
+//
+// TODO: stridability causes issues with RAD swap, and somehow isn't captured by
+// the formal type when we check whether this resolves.
+proc BlockArr.doiOptimizedSwap(other: this.type)  
+  where this.stridable == other.stridable {
 
   if(canDoOptimizedSwap(other)) {
     if debugOptimizedSwap {
@@ -1591,6 +1588,17 @@ proc BlockArr.doiOptimizedSwap(other: this.type)
     }
     return false;
   }
+}
+
+
+// The purpose of this overload is to provide debugging output in the event that
+// debugOptimizedSwap is on and the main routine doesn't resolve (e.g., due to a
+// type, stridability, or rank mismatch in the other argument). When
+// debugOptimizedSwap is off, this overload will be ignored due to its where
+// clause.
+proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+  writeln("BlockArr doing unoptimized swap. Type mismatch");
+  return false;
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {

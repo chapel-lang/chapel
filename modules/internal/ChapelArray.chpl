@@ -4460,10 +4460,17 @@ module ChapelArray {
       checkArrayShapesUponAssignment(x, y, forSwap=true);
 
     var hasSwapped: bool = false;
-    // Check if array can use optimized pointer swap
-    if Reflection.canResolveMethod(x._value, "doiOptimizedSwap", y._value) {
-      hasSwapped = x._value.doiOptimizedSwap(y._value);
+
+    // we don't want to do anything optimized for arrays with different element
+    // types, if their eltTypes can coerce to one another let the forall handle
+    // it
+    if x.eltType == y.eltType {
+      // Check if array can use optimized pointer swap
+      if Reflection.canResolveMethod(x._value, "doiOptimizedSwap", y._value) {
+        hasSwapped = x._value.doiOptimizedSwap(y._value);
+      }
     }
+
     if !hasSwapped {
       forall (a,b) in zip(x, y) do
         a <=> b;
