@@ -22,10 +22,8 @@ module IO {
 
   extern type syserr;
   extern type qio_channel_ptr_t;
-
   private extern proc qio_int_to_err(a:int(32)):syserr;
-
-  type c_void_ptr = chpl__c_void_ptr;
+  extern type c_void_ptr = chpl__c_void_ptr;
 
   export proc chpl_qio_setup_plugin_channel(file:c_void_ptr, ref plugin_ch:c_void_ptr, start:int(64), end:int(64), qio_ch:qio_channel_ptr_t):syserr {
     return qio_int_to_err(0);
