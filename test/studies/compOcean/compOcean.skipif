@@ -17,6 +17,5 @@ from socket import gethostname
 
 foundLib = not (find_library('netcdf') is None)
 isXC = getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
-isWhitebox = gethostname().startswith("esxbld");
 
-print((not foundLib) or isXC or isWhitebox)
+print((not foundLib) or isXC)
