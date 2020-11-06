@@ -36,6 +36,7 @@ module LocaleModelHelpSetup {
   use ChapelEnv;
   use Sys;
   use SysCTypes;
+  require "-lcudart";
 
   config param debugLocaleModel = false;
 
@@ -206,6 +207,31 @@ module LocaleModelHelpSetup {
     chpl_task_setSubloc(1:chpl_sublocID_t);
 
     dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
+    chpl_task_setSubloc(origSubloc);
+  }
+
+  //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
+  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string, out
+      numSublocales, type CPULocale, type GPULocale){
+
+    extern proc cudaGetDeviceCount(ref n: int);
+
+    var nDevices: int;
+    cudaGetDeviceCount(nDevices);
+
+    //1 cpu and number of GPU devices on a node
+    numSublocales = 1 + nDevices;
+
+    const origSubloc = chpl_task_getRequestedSubloc();
+
+    chpl_task_setSubloc(0:chpl_sublocID_t);
+    dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
+
+    for i in 1..numSublocales {
+      chpl_task_setSubloc(1:chpl_sublocID_t);
+      dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
+    }
+
     chpl_task_setSubloc(origSubloc);
   }
 }
