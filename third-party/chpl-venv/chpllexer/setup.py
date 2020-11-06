@@ -5,6 +5,7 @@ with open('README.rst', 'r') as fp:
 
 setup(
     name='chpllexer',
+    version='2.7.2+0',
     license='Apache License v2.0',
     author='Chapel Team',
     description='Chapel lexer for Pygments',
