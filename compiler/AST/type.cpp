@@ -203,6 +203,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
+    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
+      retval = "c_void_ptr";
     }
 
     if (retval == NULL)
