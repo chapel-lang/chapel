@@ -32,7 +32,7 @@ module CPtr {
 
 
   /* A Chapel type alias for 'void*' in C. */
-  type c_void_ptr = chpl__c_void_ptr;
+  extern type c_void_ptr = chpl__c_void_ptr;
 
 
   /* A Chapel version of a C NULL pointer. */
