@@ -1228,45 +1228,63 @@ static bool argumentCanModifyActual(IntentTag intent) {
   return false;
 }
 
-static void errorIfValueCoercionToRef(CallExpr* call, ArgSymbol* formal) {
+static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
+                                      ArgSymbol* formal) {
   IntentTag intent = getIntent(formal);
+  bool isRefFormal = formal->isRef() || (intent & INTENT_REF);
+  FnSymbol* calledFn = formal->getFunction();
+  Type* atype = actual->typeInfo();
+  Type* ftype = formal->typeInfo();
 
+  if (inGenerousResolutionForErrors()) {
+    return;
+  }
+
+  // Ignore this class of error for tuples since the compiler is currently
+  // producing this pattern for chpl__unref. This is a workaround and a
+  // better solution would be preferred.
   if (formal->getValType()->symbol->hasFlag(FLAG_TUPLE)) {
-    // Ignore this class of error for tuples since the
-    // compiler is currently producing this pattern for chpl__unref.
-    // This is a workaround and a better solution would be preferred.
-  } else if (argumentCanModifyActual(intent)) {
-   if (! inGenerousResolutionForErrors()) {
-    // Error for coerce->value passed to ref / out / etc
-    USR_FATAL_CONT(call,
-                   "value from coercion passed to ref formal '%s'",
-                   formal->name);
-    USR_PRINT(formal->getFunction(),
-                   "to function '%s' defined here",
-                   formal->getFunction()->name);
-   }
-  } else {
-    // Error for coerce->value passed to 'const ref' (ref case handled above).
-    // Note that coercing SubClass to ParentClass is theoretically
-    // OK with a 'const ref' but right now there are errors at C
-    // compilation time if this error is left out.
-    // Additionally, if a new value is created for this kind of
-    // coercion, it disrupts the desired semantics (a value passed
-    // by const ref could be modified during the call & the change
-    // visible).
-    bool formalIsRef = formal->isRef() || (intent & INTENT_REF);
+    return;
+  }
 
-    if (formalIsRef && ! inGenerousResolutionForErrors()) {
-      USR_FATAL_CONT(call,
-                     "value from coercion passed to const ref formal '%s'",
-                     formal->name);
-      USR_PRINT(formal->getFunction(),
-                     "to function '%s' defined here",
-                     formal->getFunction()->name);
+  // Error for coerce->value passed to ref / out / etc
+  if (argumentCanModifyActual(intent)) {
+    USR_FATAL_CONT(call, "cannot pass value produced by coercion to "
+                         "ref formal '%s'",
+                         formal->name);
+
+    USR_PRINT(calledFn, "in call to '%s', defined here",
+                        calledFn->name);
+
+    if (isManagedPtrType(atype) && isManagedPtrType(ftype)) {
+      USR_PRINT(call, "implicit coercion from %s to %s",
+                      atype->symbol->name,
+                      ftype->symbol->name);
+    }
+
+  // Error for coerce->value passed to 'const ref' (ref case handled above).
+  // Note that coercing SubClass to ParentClass is theoretically
+  // OK with a 'const ref' but right now there are errors at C
+  // compilation time if this error is left out.
+  // Additionally, if a new value is created for this kind of
+  // coercion, it disrupts the desired semantics (a value passed
+  // by const ref could be modified during the call & the change
+  // visible).
+  } else if (isRefFormal) {
+    USR_FATAL_CONT(call, "cannot pass value produced by coercion to "
+                         "ref formal '%s'",
+                         formal->name);
+
+    USR_PRINT(calledFn, "in call to '%s', defined here",
+                        calledFn->name);
+
+    if (isManagedPtrType(atype) && isManagedPtrType(ftype)) {
+      USR_PRINT(call, "implicit coercion from %s to %s",
+                atype->symbol->name,
+                ftype->symbol->name);
     }
   }
 }
-
 
 // Add a coercion; set actual's symbol to a new temp storing the result
 // of a coercion.
@@ -1443,7 +1461,7 @@ static void addArgCoercion(FnSymbol*  fn,
   // Check for coercions resulting in a value that
   // they are not passed by ref or const ref.
   if (!castTemp->isRef()) {
-    errorIfValueCoercionToRef(call, formal);
+      errorIfValueCoercionToRef(call, prevActual, formal);
   }
 }
 
