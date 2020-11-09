@@ -204,8 +204,8 @@ log_debug "Generate Lua modulefile ..."
     $cwd/process-template.py pkg_version="$pkg_version" \
                              platform_prefix="$platform_prefix" \
         --template $cwd/chapel.modulefile.lua.template \
-        --output $rpmbuild_dir/chapel.$pkg_version.lua
-    chmod 644 $rpmbuild_dir/chapel.$pkg_version.lua
+        --output $rpmbuild_dir/modulefile-lua-$pkg_version
+    chmod 644 $rpmbuild_dir/modulefile-lua-$pkg_version
 )
 
 # Generate set_default script, w versions
@@ -214,22 +214,26 @@ log_debug "Generate set_default_chapel_$pkg_version ..."
 $cwd/generate-set_default.bash > "$rpmbuild_dir/set_default_chapel_$pkg_version"
 chmod 755 "$rpmbuild_dir/set_default_chapel_$pkg_version"
 
-# Generate chapel.spec, w versions
+# Generate RPM spec file.
 
 log_debug "Generate chapel.spec ..."
 
 (
     if [ "$chpl_platform" = hpe-cray-ex ]; then
-        # HPE Cray EX rpm may be relocatable; all %files start with %prefix.
+        lmod_network=ofi
         platform_prefix=/opt/cray
         set_def_subdir=admin-pe/set_default_files
     else
-        # Before HPE Cray EX, rpm is not relocatable.
         platform_prefix=/opt
         set_def_subdir=cray/admin-pe/set_default_files
     fi
+    lmod_prefix=/opt/cray/pe/lmod/modulefiles/mpi
+    lmod_suffix=${lmod_network}/1.0/cray-mpich/8.0
     $cwd/process-template.py basename_of_CHPL_HOME="${CHPL_HOME##*/}" \
                              chpl_platform="$chpl_platform" \
+                             lmod_prefix="$lmod_prefix" \
+                             lmod_suffix="$lmod_suffix" \
+                             lmod_tgt_compilers="crayclang/10.0 gnu/8.0" \
                              pkg_version="$pkg_version" \
                              platform_prefix="$platform_prefix" \
                              rpm_release="$rpm_release" \
