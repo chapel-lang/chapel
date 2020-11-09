@@ -35,5 +35,6 @@ module Prefetch {
 }
 
 module Prefetch_internal {
+  use CPtr;
   extern proc chpl_prefetch(addr: c_void_ptr);
 }
