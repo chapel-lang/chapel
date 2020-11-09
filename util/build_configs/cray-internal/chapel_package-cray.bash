@@ -191,6 +191,23 @@ log_debug "Generate modulefile-$pkg_version ..."
 $cwd/generate-modulefile.bash > "$rpmbuild_dir/modulefile-$pkg_version"
 chmod 644 "$rpmbuild_dir/modulefile-$pkg_version"
 
+# Generate Lua modulefile for PE Lmod Hierarchy.
+
+log_debug "Generate Lua modulefile ..."
+
+(
+    if [ "$chpl_platform" = hpe-cray-ex ]; then
+        platform_prefix=/opt/cray
+    else
+        platform_prefix=/opt
+    fi
+    $cwd/process-template.py pkg_version="$pkg_version" \
+                             platform_prefix="$platform_prefix" \
+        --template $cwd/chapel.modulefile.lua.template \
+        --output $rpmbuild_dir/chapel.$pkg_version.lua
+    chmod 644 $rpmbuild_dir/chapel.$pkg_version.lua
+)
+
 # Generate set_default script, w versions
 
 log_debug "Generate set_default_chapel_$pkg_version ..."
