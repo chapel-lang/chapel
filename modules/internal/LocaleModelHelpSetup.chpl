@@ -36,7 +36,6 @@ module LocaleModelHelpSetup {
   use ChapelEnv;
   use Sys;
   use SysCTypes;
-  require "-lcudart";
 
   config param debugLocaleModel = false;
 
@@ -104,6 +103,8 @@ module LocaleModelHelpSetup {
     root_accum.setRootLocaleValues(dst);
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
+
+  //TODO: Create a helpSetupRootLocale function for GPUs
 
   // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
   private inline proc localSpawn() {
@@ -210,29 +211,12 @@ module LocaleModelHelpSetup {
     chpl_task_setSubloc(origSubloc);
   }
 
-  //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
-  //helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain)
-  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string, out
-      numSublocales, out childSpace, type CPULocale, type GPULocale){
+  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, numSublocales: int,
+      out local_name:string, type CPULocale, type GPULocale){
 
-    extern proc cudaGetDeviceCount(ref n: int);
-
-    var nDevices: int;
-    cudaGetDeviceCount(nDevices);
-
-    //1 cpu and number of GPU devices on a node
-    numSublocales = 1 + nDevices;
-
-    //TODO: resize childSpace; childSpace = {0..#numSublocales};
-    childSpace = {0..#numSublocales};
+    var childSpace = {0..#numSublocales};
 
     const origSubloc = chpl_task_getRequestedSubloc();
-
-    //chpl_task_setSubloc(0:chpl_sublocID_t);
-
-    //TODO: if i == 0, then add cpu, otherwise GPU
-
-    //dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
 
     for i in childSpace {
         chpl_task_setSubloc(i:chpl_sublocID_t);
@@ -241,12 +225,6 @@ module LocaleModelHelpSetup {
         else
           dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
     }
-/*
-    for i in 1..numSublocales {
-      chpl_task_setSubloc(i:chpl_sublocID_t);
-      dst.GPU = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
-    }
-*/
     chpl_task_setSubloc(origSubloc);
   }
 }
