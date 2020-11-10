@@ -1,5 +1,4 @@
 /*
- * Copyright 2017 Advanced Micro Devices, Inc.
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -26,7 +25,7 @@ module LocaleModelHelpGPU {
   use SysCTypes;
 
   pragma "no doc"
-  config param debugAPULocale = false;
+  config param debugGPULocale = false;
 
   //////////////////////////////////////////
   //
@@ -90,7 +89,7 @@ module LocaleModelHelpGPU {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     
-    if (debugAPULocale) {
+    if (debugGPULocale) {
       if (dsubloc == 0) {
           chpl_debug_writeln("** executing on CPU");
       }
