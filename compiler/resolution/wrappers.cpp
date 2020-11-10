@@ -1272,7 +1272,7 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
   // visible).
   } else if (isRefFormal) {
     USR_FATAL_CONT(call, "cannot pass value produced by coercion to "
-                         "ref formal '%s'",
+                         "const ref formal '%s'",
                          formal->name);
 
     USR_PRINT(calledFn, "in call to '%s', defined here",
