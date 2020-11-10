@@ -86,17 +86,6 @@ esac
 # building with newer compilers.
 source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 
-# Always load the right version of GCC since we use it sometimes
-# to e.g. build the Chapel compiler with COMP_TYPE=TARGET
-if [ "${COMPILER}" != "gnu" ] ; then
-    ### TEMPORARY
-    # Restore the following line when we can.
-    # module load gcc/${CHPL_GCC_TARGET_VERSION}
-    # For now, we need to force it to gcc 7.3.0 so its libraries will
-    # link with earlier versions of the Intel compiler.
-    module load gcc/7.3.0
-fi
-
 # Then load the selected compiler
 load_target_compiler ${COMPILER}
 
