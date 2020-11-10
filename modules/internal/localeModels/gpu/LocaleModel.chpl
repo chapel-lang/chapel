@@ -71,7 +71,8 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(new locale(_parent));
       sid = _sid;
-      name = _parent.chpl_name() + "-CPU" + sid:string;
+      //name = _parent.chpl_name() + "-CPU" + sid:string;
+      name = "node" + _parent._node_id:string + "-CPU" + sid:string;
     }
 
     override proc writeThis(f) throws {
@@ -168,7 +169,8 @@ module LocaleModel {
     proc init(_sid, _parent) {
       super.init(new locale(_parent));
       sid = _sid;
-      name = _parent.chpl_name() + "-GPU" + sid:string;
+      //name = _parent.chpl_name() + "-GPU" + sid:string;
+      name = "node"+ _parent._node_id:string + "-GPU" + sid:string;
     }
 
     override proc writeThis(f) throws {
@@ -365,16 +367,6 @@ module LocaleModel {
     proc setup() {
       //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
       helpSetupLocaleGPU(this, local_name, numSublocales, childSpace, CPULocale, GPULocale);
-      writeln(numSublocales);
-      //writeln(getChild(0).name);
-      //writeln(getChild(1).name);
-      //for child in this.getChildren() do {
-        //writeln(child.name);
-      //}
-      for idx in {0..#numSublocales} {
-        writeln(idx);
-        writeln(getChild(idx).name);
-      }
     }
     //------------------------------------------------------------------------}
   }
@@ -405,7 +397,7 @@ module LocaleModel {
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc setup() {
-      helpSetupRootLocaleFlat(this);
+      helpSetupRootLocaleNUMA(this);
     }
 
     // Has to be globally unique and not equal to a node ID.
