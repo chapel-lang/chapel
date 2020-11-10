@@ -211,8 +211,9 @@ module LocaleModelHelpSetup {
   }
 
   //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
+  //helpSetupLocaleNUMA(dst:borrowed LocaleModel, out local_name:string, numSublocales, type NumaDomain)
   proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string, out
-      numSublocales, type CPULocale, type GPULocale){
+      numSublocales, out childSpace, type CPULocale, type GPULocale){
 
     extern proc cudaGetDeviceCount(ref n: int);
 
@@ -222,16 +223,30 @@ module LocaleModelHelpSetup {
     //1 cpu and number of GPU devices on a node
     numSublocales = 1 + nDevices;
 
+    //TODO: resize childSpace; childSpace = {0..#numSublocales};
+    childSpace = {0..#numSublocales};
+
     const origSubloc = chpl_task_getRequestedSubloc();
 
-    chpl_task_setSubloc(0:chpl_sublocID_t);
-    dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
+    //chpl_task_setSubloc(0:chpl_sublocID_t);
 
-    for i in 1..numSublocales {
-      chpl_task_setSubloc(1:chpl_sublocID_t);
-      dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
+    //TODO: if i == 0, then add cpu, otherwise GPU
+
+    //dst.CPU = new unmanaged CPULocale(0:chpl_sublocID_t, dst);
+
+    for i in childSpace {
+        chpl_task_setSubloc(i:chpl_sublocID_t);
+        if i == 0 then
+          dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
+        else
+          dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
     }
-
+/*
+    for i in 1..numSublocales {
+      chpl_task_setSubloc(i:chpl_sublocID_t);
+      dst.GPU = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+    }
+*/
     chpl_task_setSubloc(origSubloc);
   }
 }

@@ -31,6 +31,7 @@ module LocaleModel {
 
   public use LocaleModelHelpGPU;
   public use LocaleModelHelpMem;
+  require "-lcudart";
 
   use IO;
 
@@ -91,7 +92,57 @@ module LocaleModel {
       return new locale(this);
     }
   }
+/*
+  class GPUDomain : AbstractLocaleModel {
+    const sid: chpl_sublocID_t;
+    const gpuName: string; // note: locale provides `proc name`
 
+    // top-level node id
+    override proc chpl_id(){
+      return (parent._instance: borrowed LocaleModel?)!._node_id;
+    }
+    override proc chpl_localeid() {
+      return chpl_buildLocaleID(
+          (parent._instance: borrowed LocaleModel?)!._node_id:chpl_nodeID_t,
+          sid);
+    }
+    override proc chpl_name() return ndName;
+
+    proc init() {
+    }
+
+    proc init(_sid, _parent) {
+      super.init(_parent);
+      sid = _sid;
+      gpuName = "GPUDom"+sid:string;
+    }
+
+    override proc writeThis(f) throws {
+      if parent._instance then
+        parent.writeThis(f);
+      f <~> '.'+gpuName;
+    }
+
+    override proc getChildCount(): int { return 0; }
+    iter getChildIndices() : int {
+      halt("No children to iterate over.");
+      yield -1;
+    }
+    proc addChild(loc:locale) {
+      halt("Cannot add children to this locale type.");
+    }
+    pragma "unsafe"
+    override proc getChild(idx:int) : locale {
+      halt("Cannot getChild with this locale type");
+      var ret: locale; // default-initialize
+      return ret;
+    }
+
+    iter getChildren() : locale {
+      halt("No children to iterate over.");
+    }
+  }
+*/
   class GPULocale : AbstractLocaleModel {
     const sid: chpl_sublocID_t;
     const name: string;
@@ -153,6 +204,27 @@ module LocaleModel {
     var numSublocales: int;
     var GPU: unmanaged GPULocale?;
     var CPU: unmanaged CPULocale?;
+
+    const GPUSpace: domain(1);
+    const childSpace: domain(1);
+
+    //extern proc cudaGetDeviceCount(ref n: int);
+
+    //var nDevices: int;
+    //cudaGetDeviceCount(nDevices);
+
+    //1 cpu and number of GPU devices on a node
+    //numSublocales = 1 + nDevices;
+
+    //childSpace = {0..#numSublocales};
+    // Todo: avoid the pragma by having helpSetupLocaleGPU return this array
+    // and initialize the field from it. Need GPUSpace to be const?
+    pragma "unsafe"
+    var childLocales: [childSpace] unmanaged AbstractLocaleModel;
+    //var GPULocales: [GPUSpace] unmanaged GPUDomain;
+
+    //replace GPULocales above with var ChildLocales: [childSpace] unmanaged AbstractLocaleModel;
+
     // This constructor must be invoked "on" the node
     // that it is intended to represent.  This trick is used
     // to establish the equivalence the "locale" field of the locale object
@@ -163,9 +235,21 @@ module LocaleModel {
       }
       _node_id = chpl_nodeID: int;
 
+      extern proc cudaGetDeviceCount(ref n: int);
+      var nDevices: int;
+      cudaGetDeviceCount(nDevices);
+
+      //1 cpu and number of GPU devices on a node
+      numSublocales = 1 + nDevices;
+      childSpace = {0..#numSublocales};
+
+
       this.complete();
 
       setup();
+
+      //numSublocales includes both CPU and GPU locales
+      //childSpace = {0...#numSublocales};
     }
 
     proc init(parent_loc : locale) {
@@ -177,9 +261,19 @@ module LocaleModel {
 
       _node_id = chpl_nodeID: int;
 
+      extern proc cudaGetDeviceCount(ref n: int);
+      var nDevices: int;
+      cudaGetDeviceCount(nDevices);
+
+      //1 cpu and number of GPU devices on a node
+      numSublocales = 1 + nDevices;
+      childSpace = {0..#numSublocales};
+
       this.complete();
 
       setup();
+
+      //childSpace = {0...#numSublocales};
     }
 
     // top-level locale (node) number
@@ -196,6 +290,7 @@ module LocaleModel {
     //
     // The flat memory model assumes only one memory.
     //
+    /*
     override proc defaultMemory() : locale {
       return new locale(this);
     }
@@ -211,30 +306,57 @@ module LocaleModel {
     override proc highBandwidthMemory() : locale {
       return new locale(this);
     }
+*/
+    proc getChildSpace() return childSpace;
 
-    proc getChildSpace() return chpl_emptyLocaleSpace;
-
-    override proc getChildCount() return 0;
+    override proc getChildCount() return numSublocales;
 
     iter getChildIndices() : int {
-      for idx in chpl_emptyLocaleSpace do
+      for idx in {0..#numSublocales} do // chpl_emptyLocaleSpace do
         yield idx;
     }
 
-    pragma "unsafe"
     override proc getChild(idx:int) : locale {
-      halt("requesting a child from a flat LocaleModel locale");
-      var tmp:locale; // nil
-      return tmp;
+      if boundsChecking then
+        if (idx < 0) || (idx >= numSublocales) then
+          halt("sublocale child index out of bounds (",idx,")");
+      return new locale(childLocales[idx]);
+      /*
+      if idx >= 1
+        then return new locale(GPU!);
+      else
+        return new locale(CPU!);
+        */
+      /*
+      if boundsChecking then
+        if (idx < 0) || (idx >= numSublocales) then
+          halt("sublocale child index out of bounds (",idx,")");
+
+      if idx == 0
+        then return new locale(CPU!);
+      else
+        return new locale(childLocales[idx]);
+        */
     }
 
     iter getChildren() : locale  {
-      for loc in chpl_emptyLocales do
-        yield loc;
+      for loc in childLocales do
+        yield new locale(loc);
+      /*
+      halt("in here");
+      for idx in {0..#numSublocales} {
+        if idx >= 1
+          then yield GPU;
+        else
+          yield CPU;
+      }
+      */
     }
 
     proc getChildArray() {
-      return chpl_emptyLocales;
+      return [loc in childLocales] loc;
+      //halt ("in get child Array");
+      //return chpl_emptyLocales;
     }
 
     //------------------------------------------------------------------------{
@@ -242,7 +364,17 @@ module LocaleModel {
     //-
     proc setup() {
       //helpSetupLocaleAPU(this, local_name, numSublocales, CPULocale, GPULocale);
-      helpSetupLocaleGPU(this, local_name, numSublocales, CPULocale, GPULocale);
+      helpSetupLocaleGPU(this, local_name, numSublocales, childSpace, CPULocale, GPULocale);
+      writeln(numSublocales);
+      //writeln(getChild(0).name);
+      //writeln(getChild(1).name);
+      //for child in this.getChildren() do {
+        //writeln(child.name);
+      //}
+      for idx in {0..#numSublocales} {
+        writeln(idx);
+        writeln(getChild(idx).name);
+      }
     }
     //------------------------------------------------------------------------}
   }
