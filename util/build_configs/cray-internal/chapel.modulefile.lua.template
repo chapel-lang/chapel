@@ -65,7 +65,7 @@ else
 end
 
 -- set chapel install location
-local CHPL_LOC = INSTALL_ROOT .. myModuleName() .. "/" .. MOD_LEVEL .. "/" ..CHPL_HOST_PLATFORM
+local CHPL_LOC = INSTALL_ROOT .. "/" .. myModuleName() .. "/" .. MOD_LEVEL .. "/" ..CHPL_HOST_PLATFORM
 
 -- information variables
 local REL_FILE           = CHPL_LOC .. "/release_info"
