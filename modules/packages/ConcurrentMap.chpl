@@ -623,6 +623,19 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
+    /*
+      Extends this map with the contents of the other, overwriting the values
+      for already-existing keys.
+
+      :arg m: The other map
+      :type m: ConcurrentMap(keyType, valType)
+    */
+    proc extend(m : ConcurrentMap(keyType, valType)) {
+      forall (key, value) in m with (var tok = getToken()) {
+        addOrSet(key, value, tok);
+      }
+    }
+
     proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
@@ -659,6 +672,30 @@ prototype module ConcurrentMap {
     // Use map as an integer-based set
     writeln("Random operations test: ");
     var timer = new Timer();
+    /*var set : domain(int, parSafe=true);
+    for i in 1..(maxLimit:int) {
+      set += i;
+    }
+    timer.start();
+    coforall tid in 1..here.maxTaskPar with (ref set) {
+      var rng = new RandomStream(real);
+      var keyRng = new RandomStream(int);
+      for i in 1..N {
+        var key = keyRng.getNext(0, maxLimit:int);
+        var s = rng.getNext();
+        if s < 0.33 {
+          set += key;
+        } else if s < 0.66 {
+          set -= key;
+        } else {
+          set.contains(key);
+        }
+      }
+    }
+    timer.stop();
+    writeln("Assocaitive Array: ", timer.elapsed());
+    timer.clear();
+  */
     var map = new ConcurrentMap(int, int);
     map.insert(1..(maxLimit:int), 0);
     timer.start();
@@ -857,19 +894,24 @@ prototype module ConcurrentMap {
 
   proc main() {
     var map = new ConcurrentMap(int, int);
+    var map1 = new ConcurrentMap(int, int);
     forall i in 1..N with (var tok = map.getToken()) {
       map.addOrSet(i, i**2, tok);
     }
+    forall i in N-5..N+5 with (var tok = map.getToken()) {
+      map1.addOrSet(i, i**3, tok);
+    }
+    map.extend(map1);
     for (key,val) in map {
       writeln(key, " ", val);
     }
-
-    forall i in 1..(N+5) with (var tok = map.getToken()) {
-      // writeln(i, map.contains(i, tok));
-      map.addOrSet(i, 1);
-    }
-    for (key,val) in map {
-      writeln(key, " ", val);
-    }
+    writeln();
+    // forall i in 1..(N+5) with (var tok = map.getToken()) {
+    //   // writeln(i, map.contains(i, tok));
+    //   map.addOrSet(i, 1);
+    // }
+    // for (key,val) in map {
+    //   writeln(key, " ", val);
+    // }
   }
 }
