@@ -18,17 +18,17 @@ Overview:
 
 #. `Design`_
 
-    #. `When design discussion is needed`_
-    #. `Creating a design issue`_
-    #. `Leading a design discussion`_
+   #. `When design discussion is needed`_
+   #. `Creating a design issue`_
+   #. `Leading a design discussion`_
 
 #. `Development`_
 
-    #. `Get set up`_
-    #. `Create new branch`_
-    #. `Develop and test contributions locally`_
+   #. `Get set up`_
+   #. `Create new branch`_
+   #. `Develop and test contributions locally`_
 
-       #. `Add new tests`_
+      #. `Add new tests`_
 
 
 #. `Contributing changes`_
@@ -344,9 +344,9 @@ Before merging
 Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
+- all commits contain the required "Signed-off-by:" line to indicate
+  compliance with the `Developer Certificate of Origin`_ (DCO)
 - the PR has been reviewed
-- the "signed-off-by" comments have been added in all commits to accept
-  `Developer Certificate of Origin`_ (DCO)
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -456,26 +456,17 @@ Configure your local git
 
 .. _Commit messages setup
 
-Set up commit messages with a .gitmessage Template
-++++++++++++++++++++++++++++++++++++++++++++++++++
+Make sure you understand how to create signed commits
++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Chapel enforces the Developer Certificate of Origin (DCO) on pull requests.
-It requires all commit message to contain the Signed-off-by line with an email
-address that matches the commit author and the name on your GitHub account.
+Chapel enforces the Developer Certificate of Origin (DCO) on all pull requests.
+This requires all commits you make to be signed to indicate that they adhere
+to the DCO policy.  If you're not already familiar with DCOs, read `Getting
+started with Chapel and the Developer Certificate of Origin`_ to learn more
+about them and how to sign your commits.
 
-To tell Git to use the default message with the ``Signed-off-by`` line that appears in your 
-editor when you run ``git commit``, set the commit.template configuration value:
+.. _Getting started with Chapel and the Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst
 
-.. code-block:: bash
-
-     git config --global commit.template ~/.gitmessage
-
-Then create ~/.gitmessage template with the ``Signed-off-by`` line:
-
-.. code-block:: bash
-
-     ---
-     Signed-off-by: Random J Developer <random@developer.example.org>
 
 
 .. _New branch command:
