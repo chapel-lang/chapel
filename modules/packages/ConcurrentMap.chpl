@@ -601,6 +601,28 @@ prototype module ConcurrentMap {
       return found;
     }
 
+    /* If the map doesn't contain a value at position `k` add one and
+       set it to `v`. If the map already contains a value at position
+       `k`, update it to the value `v`.
+     */
+    proc addOrSet(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) {
+      tok.pin();
+      var elist = getEList(key, true, tok);
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          elist!.values[i] = val;
+          elist!.lock.write(E_AVAIL);
+          tok.unpin();
+          return;
+        }
+      }
+      elist!.count += 1;
+      elist!.keys[elist!.count-1] = key;
+      elist!.values[elist!.count-1] = val;
+      elist!.lock.write(E_AVAIL);
+      tok.unpin();
+    }
+
     proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
@@ -637,30 +659,6 @@ prototype module ConcurrentMap {
     // Use map as an integer-based set
     writeln("Random operations test: ");
     var timer = new Timer();
-    /*var set : domain(int, parSafe=true);
-    for i in 1..(maxLimit:int) {
-      set += i;
-    }
-    timer.start();
-    coforall tid in 1..here.maxTaskPar with (ref set) {
-      var rng = new RandomStream(real);
-      var keyRng = new RandomStream(int);
-      for i in 1..N {
-        var key = keyRng.getNext(0, maxLimit:int);
-        var s = rng.getNext();
-        if s < 0.33 {
-          set += key;
-        } else if s < 0.66 {
-          set -= key;
-        } else {
-          set.contains(key);
-        }
-      }
-    }
-    timer.stop();
-    writeln("Assocaitive Array: ", timer.elapsed());
-    timer.clear();
-  */
     var map = new ConcurrentMap(int, int);
     map.insert(1..(maxLimit:int), 0);
     timer.start();
@@ -860,71 +858,18 @@ prototype module ConcurrentMap {
   proc main() {
     var map = new ConcurrentMap(int, int);
     forall i in 1..N with (var tok = map.getToken()) {
-      map.insert(i, i**2, tok);
+      map.addOrSet(i, i**2, tok);
+    }
+    for (key,val) in map {
+      writeln(key, " ", val);
     }
 
     forall i in 1..(N+5) with (var tok = map.getToken()) {
-      writeln(i, map.contains(i, tok));
+      // writeln(i, map.contains(i, tok));
+      map.addOrSet(i, 1);
     }
-
-    // var count : atomic int = 0;
-    // for i in map {
-    //   count += 1;
-    //   // writeln(i);
-    // }
-
-    // writeln(count);
-
-    // forall i in map {
-      // writeln(i);
-      // count.add(1);
-    // }
-    // writeln(count.read());
-
-    // map.insert(1,1);
-    // map.insert(2,4);
-    // map.insert(3,9);
-    // map.insert(4,16);
-    // map.insert(5,25);
-
-    // for i in 1..6 do
-    // writeln(map.find(i));
-    // map.erase(3);
-    // for i in 1..6 do
-    // writeln(map.find(i));
-    // var tasksArray = [1, 2, 4, 8, 16, 32, here.maxTaskPar];
-    // writeln("Insert Benchmark:");
-    // for tasks in tasksArray {
-    //   insertOpStrongBenchmark(max(uint(16)), tasks);
-    // }
-    // writeln();
-    // writeln("Erase Benchmark:");
-    // for tasks in tasksArray {
-      // reclaimBenchmark(max(uint(16)));
-    // }
-    // writeln();
-    // writeln("Find Benchmark:");
-    // for tasks in tasksArray {
-    //   findOpStrongBenchmark(max(uint(16)), tasks);
-    // }
-    // writeln();
-    // writeln("Intset Benchmark:");
-    // for tasks in tasksArray {
-    //   intSetStrongBenchmark(max(uint(16)), tasks);
-    // }
-    // var map = new ConcurrentMap(int, int);
-    // var dist : [0..#DEFAULT_NUM_BUCKETS] int;
-    // for i in 1..N {
-    // map.insert(i, i**2);
-    // }
-
-    // visit(map.root);
-    // for (x,y) in zip(hist, histDom) do writeln("[" + y:string + "]: " + x:string);
-    // var count = 0;
-    // for i in map {
-    // count += 1;
-    // }
-    // writeln("Iterated elements: " + count:string);
-    // writeln("Total elements in map: " + map.size:string);
+    for (key,val) in map {
+      writeln(key, " ", val);
+    }
   }
 }
