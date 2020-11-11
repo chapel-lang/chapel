@@ -729,7 +729,7 @@ How to open a PR:
 
   and you can discuss the patch with your reviewers there.
 
-.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
 
 .. _How to merge a PR:
 

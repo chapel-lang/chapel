@@ -56,12 +56,13 @@ please refer to [Chapel's use of the Developer Certificate of Origin
 For further information about contributing effectively to the Chapel
 project, please refer to:
 
-[Contributing Page][1] : A high-level description about how to get started with contributing to Chapel.
+[Contributing Page][2] : A high-level description about how to get started with contributing to Chapel.
 
-[ContributorInfo.rst][2] : A more detailed description of how to contribute to Chapel's code base.
+[ContributorInfo.rst][3] : A more detailed description of how to contribute to Chapel's code base.
 
 ---
 
 [0]: https://developercertificate.org/
-[1]: https://chapel-lang.org/contributing.html
-[2]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/ContributorInfo.rst
+[1]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/DCO.rst
+[2]: https://chapel-lang.org/contributing.html
+[3]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/ContributorInfo.rst
