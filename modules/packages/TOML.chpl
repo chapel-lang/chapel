@@ -367,6 +367,7 @@ module TomlParser {
         }
         // Time
         else if ti.match(val) {
+          use IO;
           var raw = getToken(source).split(":");
           var sec = '%.6dr'.format(raw[2]: real).split('.');
           var t: time;
