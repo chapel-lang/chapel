@@ -377,17 +377,12 @@ static char * checkProjectVersion(char * projectVersion) {
  * outputDir for generated html files.
  */
 void generateSphinxOutput(std::string sphinxDir, std::string outputDir) {
-  // Set the PATH and VIRTUAL_ENV variables in the environment. The values are
-  // based on the install path in the third-party/chpl-venv/ dir.
-
-  const char * venvDir = astr(getVenvDir().c_str());
-  const char * venvBinDir = astr(venvDir, "/bin");
-  const char * sphinxBuild = astr("sphinx-build");
+  const char * sphinxBuild = astr("python3", " ",
+                                  getChplDepsApp().c_str(), " ",
+                                  "sphinx-build");
   const char * venvProjectVersion = checkProjectVersion(fDocsProjectVersion);
 
-  const char * envVars = astr("export PATH=\"", venvBinDir, ":$PATH\" && "
-                              "export VIRTUAL_ENV=", venvDir, " && "
-                              "export CHPLDOC_AUTHOR='", fDocsAuthor, "' && "
+  const char * envVars = astr("export CHPLDOC_AUTHOR='", fDocsAuthor, "' && "
                               "export CHPLDOC_PROJECT_VERSION='", venvProjectVersion, "'");
 
   // Run:

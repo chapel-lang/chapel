@@ -1,5 +1,5 @@
 html: FORCE
-	../../../../util/run-in-venv.bash sphinx-build -b html -d ./doctrees -W . ./html
+	../../../../util/config/run-in-venv.bash sphinx-build -b html -d ./doctrees -W . ./html
 
 update: FORCE
 	../../../util/update-readme.bash

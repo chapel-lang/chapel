@@ -203,6 +203,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
+    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
+      retval = "c_void_ptr";
     }
 
     if (retval == NULL)
@@ -691,7 +693,7 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 

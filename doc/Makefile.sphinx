@@ -4,12 +4,12 @@ ifndef CHPL_MAKE_PYTHON
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 endif
 
-VENV_DIR = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --venv)
+CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps)
 
 
 # You can set these variables from the command line.
 SPHINXOPTS    = -W -n
-SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(VENV_DIR)/bin/sphinx-build
+SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) sphinx-build
 PAPER         =
 SOURCEDIR     = rst
 BUILDDIR      = ../build/doc
