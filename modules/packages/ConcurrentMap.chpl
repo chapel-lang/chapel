@@ -584,11 +584,51 @@ prototype module ConcurrentMap {
       return true;
     }
 
+    /*
+      Sets the value associated with a key. Method returns `false` if the key
+      does not exist in the map.
+
+     :arg key: The key whose value needs to change
+     :type key: keyType
+
+     :arg val: The desired value to the key ``key``
+     :type val: valueType
+
+     :arg tok: Token for EpochManager
+
+     :returns: `true` if `key` was in the map and its value is updated with `val`.
+               `false` otherwise.
+     :rtype: bool
+    */
+    proc set(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()): bool {
+      tok.pin();
+      var elist = getEList(key, false, tok);
+      var res : valType;
+      if (elist == nil) {
+        tok.unpin();
+        return false;
+      }
+      var found = false;
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          elist!.values[i] = val;
+          found = true;
+          break;
+        }
+      }
+      elist!.lock.write(E_AVAIL);
+      tok.unpin();
+      return found;
+    }
+
     proc find(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) {
       tok.pin();
       var elist = getEList(key, false, tok);
       var res : valType;
-      if (elist == nil) then return (false, res);
+      if (elist == nil) {
+        tok.unpin();
+        return (false, res);
+      }
       var found = false;
       for i in 0..#elist!.count {
         if (elist!.keys[i] == key) {
@@ -684,7 +724,10 @@ prototype module ConcurrentMap {
     proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
-      if (elist == nil) then return false;
+      if (elist == nil) {
+        tok.unpin();
+        return false;
+      }
       var res = false;
       for i in 0..#elist!.count {
         if (elist!.keys[i] == key) {
@@ -966,13 +1009,11 @@ prototype module ConcurrentMap {
       map.addOrSet(i, i**2, tok);
     }
     writeln(map);
-    // for i in 1..N {
-    //   writeln();
-    //   writeln(map.getAndRemove(i));
-    //   writeln();
-    //   forall (key, val) in map {
-    //     writeln(key, " ", val);
-    //   }
-    // }
+
+    for i in N/2..N+2 {
+      writeln(map.set(i, i**3));
+    }
+
+    writeln(map);
   }
 }
