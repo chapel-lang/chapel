@@ -9,10 +9,12 @@ CHPL_VENV_TEST_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/test-requirements.txt
 CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chpldoc-requirements.txt
 CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/c2chapel-requirements.txt
 
+CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.txt
+CHPL_VENV_CHPLSPELL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-chplspell-reqs
+
 # Do not include this file from $(CHPL_MAKE_HOME)/make/Makefile.base.
-# Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv stuff
-# is not used by the chpl compiler.
-# The following Python version processing would needlessly add to chpl's run times.
+# Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv
+# stuff is not used by the chpl compiler.
 
 # Python version
 PYTHON=$(CHPL_MAKE_PYTHON)
