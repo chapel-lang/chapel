@@ -32,17 +32,24 @@
 # 4. It invokes the scspell that's installed in the Chapel virtualenv.
 
 
-# RunInVENV
-RIVENV=$CHPL_HOME/util/config/run-in-venv.bash
-SCSPELL=scspell
-CHPL_DICT=$CHPL_HOME/util/devel/chplspell-dictionary
+VENVBIN="$CHPL_HOME/third-party/chpl-venv/build/build-venv/bin"
+SCSPELL="$VENVBIN/scspell"
 
 # Check that scspell exists in the venv
-if ! $RIVENV $SCSPELL --help > /dev/null 2> /dev/null; then
+if [ ! -f "$SCSPELL" ]; then
     echo "Error: chplspell virtualenv is not available." >&2
     echo "Run \`make chplspell-venv\` from $CHPL_HOME" >&2
     exit 1
 fi
+
+# Check that scspell can be run
+if ! "$SCSPELL" --version > /dev/null 2> /dev/null; then
+    echo "Error: chplspell virtualenv is not available." >&2
+    echo "Run \`make chplspell-venv\` from $CHPL_HOME" >&2
+    exit 1
+fi
+
+CHPL_DICT=$CHPL_HOME/util/devel/chplspell-dictionary
 
 # Normal files to look for when searching directories.
 # This is used to build a commandline for /usr/bin/find.
@@ -128,7 +135,7 @@ DELETE_INVOKED=0
 while true; do
     case "$1" in
 	--help)
-	    $RIVENV $SCSPELL --help
+	    $SCSPELL --help
 	    echo;
 	    echo "chplspell sets --override-dictionary to $CHPL_DICT"
 	    echo "and --relative-to to $CHPL_HOME"
@@ -264,7 +271,7 @@ fi
 
 nrval=0  # normal rval
 if [ $JUSTARGS == 0 -a ${#NORMALFILES[@]} != 0 ]; then
-    $RIVENV $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
+    $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
 	     --relative-to $CHPL_HOME \
 	     "${ARGS[@]}" "${NORMALFILES[@]}" "$@"
     nrval=$?
@@ -272,7 +279,7 @@ fi
 
 lrval=0  # latex rval
 if [ $JUSTARGS == 0 -a ${#LATEXFILES[@]} != 0 ]; then
-    $RIVENV $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
+    $SCSPELL --use-builtin-base-dict --override-dictionary $CHPL_DICT \
 	     --relative-to $CHPL_HOME \
 	     "${ARGS[@]}" --no-c-escapes "${LATEXFILES[@]}" "$@"
     lrval=$?
@@ -283,7 +290,7 @@ if [ $JUSTARGS == 1 -o ${#NORMALFILES[@]} == 0 -a ${#LATEXFILES[@]} == 0 ]; then
     if [ $# != 0 -o ${#ARGS[@]} != 0 ]; then
 	# Can't sort these, or we'd break the relationship or ordering
 	# of --rename-file or --merge-fileids and their arguments
-	$RIVENV $SCSPELL --use-builtin-base-dict --override-dictionary \
+	$SCSPELL --use-builtin-base-dict --override-dictionary \
 		 $CHPL_DICT --relative-to $CHPL_HOME \
 		 "${ARGS[@]}" "$@"
 	orval=$?
