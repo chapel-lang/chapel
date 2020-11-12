@@ -13,9 +13,9 @@ MANPAGE = man1/$(PROGRAM).1
 CHPLDOC_MANPAGE = man1/$(CHPLDOC).1
 TARGETS = $(MANPAGE) $(PROGRAM).pdf $(CHPLDOC).pdf
 
-VENV_DIR = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --venv)
+CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps)
 
-RST2MAN = $(shell which rst2man.py || echo $(CHPL_MAKE_PYTHON) $(VENV_DIR)/bin/rst2man.py)
+RST2MAN = $(shell which rst2man.py || echo $(CHPL_MAKE_PYTHON) $(CHPLDEPS) rst2man.py)
 
 STARS = \*\*\*\*\*
 
@@ -34,7 +34,7 @@ clean:
 man1/%.1: %.rst Makefile
 	mkdir -p $(shell dirname $@)
 	sed "/conf$</r conf$<" $< > $<.tmp
-	$(CHPL_MAKE_HOME)/util/config/run-in-venv.bash $(RST2MAN) $<.tmp > $<.tmp.out
+	$(RST2MAN) $<.tmp > $<.tmp.out
 	mv $<.tmp.out $@
 	rm -f $<.tmp
 
