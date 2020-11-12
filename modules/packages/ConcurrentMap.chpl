@@ -17,13 +17,12 @@
  * limitations under the License.
  */
 prototype module ConcurrentMap {
-  use Memory;
-  use AtomicObjects;
-  use LockFreeStack;
-  use LockFreeQueue;
-  use EpochManager;
-  use Random;
-  use VisualDebug;
+  private use AtomicObjects;
+  private use LockFreeStack;
+  private use LockFreeQueue;
+  private use EpochManager;
+  private use Random;
+  private use IO;
 
   param BUCKET_UNLOCKED = 0;
   param BUCKET_LOCKED = 1;
@@ -709,6 +708,29 @@ prototype module ConcurrentMap {
     proc tryReclaim() {
       _manager.tryReclaim();
     }
+
+    /*
+      Writes the contents of this map to a channel. The format looks like:
+
+        .. code-block:: chapel
+
+           {k1: v1, k2: v2, .... , kn: vn}
+
+      :arg ch: A channel to write to.
+    */
+    proc readWriteThis(ch: channel) throws {
+      ch <~> "{";
+      var first = true;
+      for (key, val) in this {
+        if first {
+          ch <~> key <~> ": " <~> val;
+          first = false;
+        } else {
+          ch <~> ", " <~> key <~> ": " <~> val;
+        }
+      }
+      ch <~> "}";
+    }
   }
 
   config const N = 1024;
@@ -943,13 +965,14 @@ prototype module ConcurrentMap {
     forall i in 1..N with (var tok = map.getToken()) {
       map.addOrSet(i, i**2, tok);
     }
-    for i in 1..N {
-      writeln();
-      writeln(map.getAndRemove(i));
-      writeln();
-      forall (key, val) in map {
-        writeln(key, " ", val);
-      }
-    }
+    writeln(map);
+    // for i in 1..N {
+    //   writeln();
+    //   writeln(map.getAndRemove(i));
+    //   writeln();
+    //   forall (key, val) in map {
+    //     writeln(key, " ", val);
+    //   }
+    // }
   }
 }
