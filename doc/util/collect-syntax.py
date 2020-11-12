@@ -168,13 +168,17 @@ _prelude_text = """.. default-domain:: chpl
 
 .. _Chapter-Syntax:
 
-Collected Syntax Productions
-============================
+Syntax
+======
 
 This appendix collects the syntax productions listed throughout the
 language specification. There are no new syntax productions listed
 in this appendix. The productions are listed both alphabetically and
 in application order for convenience.
+
+:ref:`Productions_Listed_Alphabetical_Order`
+
+:ref:`Productions_Listed_Application_Order`
 
 """
 
