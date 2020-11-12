@@ -323,7 +323,7 @@ def DiffBinaryFiles(f1, f2):
                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     myoutput = p.communicate()[0] # grab stdout to avoid potential deadlock
     if p.returncode != 0:
-        sys.stdout.write(trim_output(myoutput))
+        sys.stdout.write('Binary files differed\n')
     return p.returncode
 
 # diff output vs. .bad file, filtering line numbers out of error messages that arise
@@ -1639,6 +1639,7 @@ for testname in testsrc:
         if (status!=0 or not executebin):
             # Save original output
             origoutput = output;
+            dealWithBinary = False
 
             # Compare compiler output with expected program output
             if catfiles:
@@ -1647,7 +1648,22 @@ for testname in testsrc:
                 sys.stdout.flush()
                 p = py3_compat.Popen(['cat']+catfiles.split(),
                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                output += p.communicate()[0]
+                catoutput = p.communicate()[0]
+                # If the python 3 compatible popen command to concatenate files
+                # has given us a bytes back but the output up to this point was
+                # all str, then we may not be able to translate the cat output
+                # into a str and may have to go the other way
+                if (isinstance(catoutput, bytes) and
+                    not isinstance(output, bytes)):
+                    try:
+                        decodedcat = catoutput.decode('utf_8')
+                        output += decodedcat
+                    except UnicodeDecodeError:
+                        dealWithBinary = True
+                        output = output.encode('utf_8')
+                        output += catoutput
+                else:
+                    output += catoutput
 
             # Sadly these scripts require an actual file
             with open(complog, 'w') as complogfile:
@@ -1715,7 +1731,10 @@ for testname in testsrc:
                 cleanup(printpassesfile)
                 continue # on to next compopts
 
-            result = DiffFiles(goodfile, complog)
+            if (dealWithBinary):
+                result = DiffBinaryFiles(goodfile, complog)
+            else:
+                result = DiffFiles(goodfile, complog)
             if result==0:
                 os.unlink(complog)
                 sys.stdout.write('%s[Success '%(futuretest))
