@@ -636,6 +636,36 @@ prototype module ConcurrentMap {
       }
     }
 
+    /* Remove the element at position `key` from the map and return its value
+     */
+    proc getAndRemove(key: keyType, tok : owned TokenWrapper = getToken()) {
+      tok.pin();
+      var (elist, pList, idx) = getPEList(key, false, tok);
+      if (elist == nil) then halt("map index " + key:string + " out of bounds");
+      var res : valType;
+      var found = false;
+      for i in 0..#elist!.count {
+        if (elist!.keys[i] == key) {
+          res = elist!.values[i];
+          elist!.keys[i] = elist!.keys[elist!.count-1];
+          elist!.values[i] = elist!.values[elist!.count-1];
+          elist!.count -= 1;
+          found = true;
+          break;
+        }
+      }
+
+      if elist!.count == 0 {
+        pList!.buckets[idx].write(nil);
+        elist!.lock.write(GARBAGE);
+        tok.deferDelete(elist);
+      } else elist!.lock.write(E_AVAIL);
+      tok.unpin();
+
+      if found then return res;
+      else halt("map index " + key:string + " out of bounds");
+    }
+
     proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
@@ -894,24 +924,16 @@ prototype module ConcurrentMap {
 
   proc main() {
     var map = new ConcurrentMap(int, int);
-    var map1 = new ConcurrentMap(int, int);
     forall i in 1..N with (var tok = map.getToken()) {
       map.addOrSet(i, i**2, tok);
     }
-    forall i in N-5..N+5 with (var tok = map.getToken()) {
-      map1.addOrSet(i, i**3, tok);
+    for i in 1..N {
+      writeln();
+      writeln(map.getAndRemove(i));
+      writeln();
+      forall (key, val) in map {
+        writeln(key, " ", val);
+      }
     }
-    map.extend(map1);
-    for (key,val) in map {
-      writeln(key, " ", val);
-    }
-    writeln();
-    // forall i in 1..(N+5) with (var tok = map.getToken()) {
-    //   // writeln(i, map.contains(i, tok));
-    //   map.addOrSet(i, 1);
-    // }
-    // for (key,val) in map {
-    //   writeln(key, " ", val);
-    // }
   }
 }
