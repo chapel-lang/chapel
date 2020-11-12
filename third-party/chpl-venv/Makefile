@@ -95,6 +95,16 @@ c2chapel-venv: install-chpldeps
 
 install-requirements: install-chpldeps
 
+$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR) $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)
+	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	$(PIP) install \
+	  --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  -r $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE) && \
+	touch $(CHPL_VENV_CHPLSPELL_REQS)
+
+chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
+
 # Fix up the chpl-venv installation in a Cray Chapel module that was built using a non-standard
 # Python installation (ie, the Python used was not installed under "/usr/...").
 # Only applicable when building a Cray Chapel module under certain conditions.
@@ -103,6 +113,6 @@ use-system-python: FORCE
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv test-venv chpldoc-venv c2chapel-venv install-chpldeps
+.PHONY: install-requirements create-virtualenv test-venv chpldoc-venv c2chapel-venv chplspell-venv install-chpldeps
 
 .NOTPARALLEL:
