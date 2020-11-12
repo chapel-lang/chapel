@@ -21,7 +21,8 @@ _match_syntax_begin = re.compile(r"\s*.. code-block:: syntax\s*\n")
 _match_syntax_end = re.compile(r"\S+")
 _match_production = re.compile(r" {3}(?P<ident>([a-zA-Z0-9._-]+)):.*")
 _match_expansion = re.compile(r" {3} +")
-_match_symbol = re.compile(r"\s*('[a-zA-Z0-0._-]+')|([a-zA-Z0-0._-]+)")
+_match_nonterminal = re.compile(r"\s*('[ a-zA-Z0-9-()]+')|(\\[a-zA-Z]+)|([a-zA-Z0-9-]+)")
+
 
 # Global variables...
 _productions = {}
@@ -141,9 +142,9 @@ def get_all_files_to_process():
 def error_if_duplicate_rule(rstfile, ident, lineno):
   if ident in _productions:
     fname, lineno, _ = _productions[ident]
-    msg = 'In ' + str(rstfile) + ', line ' + str(lineno)
+    msg = 'In ' + str(rstfile) + ', line ' + str(lineno) + '\n'
     msg += 'Duplicate identifier for rule: ' + str(ident) + '\n'
-    msg += 'First defined in ' + str(fname) + ' on line ' + str(lineno)
+    msg += 'First defined in ' + str(fname) + ' line ' + str(lineno) + '\n'
     vprint(msg)
     raise Exception(msg)
   return
@@ -201,27 +202,57 @@ def output_productions_alphabetical(out):
   return
 
 
-def is_grammar_keyword(ident):
-  return ident == 'OPT'
+def is_meta_keyword(ident):
+  return ident == 'OPT' or ident == '-' or ident == '_' or ident == 'b'
 
 
-def get_nonterminals_in_expansion(ident, stack):
+def is_meta_sentence(line):
+  return line.lstrip().startswith('any character except')
+
+
+def get_nonterminals(line):
+  # Regex trick, third capture group contains valid nonterminals.
+  regex_groups = re.findall(_match_nonterminal, line)
+  result = []
+  for group in regex_groups:
+    quoted, escaped, ok = group
+    # ''' uninterpreted-single-quote-delimited-characters '''
+    # This odd nonterminal appears in 'uninterpreted-string-literal' and is
+    # triple quoted. Instead of handling it with a fourth regex group in
+    # _match_nonterminal, special case it here.
+    if quoted:
+      clean = quoted.lstrip('\' ').rstrip('\' ')
+      if clean == 'uninterpreted-single-quote-delimited-characters':
+        result.append(clean)
+        continue
+    if ok:
+      result.append(ok)
+  return result
+
+  
+def get_nonterminals_in_expansion(ident, stack, applied):
   global _productions
   fname, lineno, blob = _productions[ident]
-  vprint('Inspecting RHS of:', ident)
+  vprint('Inspecting expansions of:', ident)
+  vprint(blob)
   nonterminals = []
   for line in blob.split('\n'):
-    if re.match(_match_production, line):
+    if re.match(_match_production, line) or is_meta_sentence(line):
       continue
-    symbols = re.findall(_match_symbol, line)
-    # Regex trick, second capture group contains non-quoted symbols.
-    nonterminals += [group[1] for group in symbols if group[1]]
+    nonterminals += get_nonterminals(line)
   vprint('Found', len(nonterminals), 'nonterminals')
-  vprint(nonterminals)
-  for ident in nonterminals:
-    assert(ident)
-    if not is_grammar_keyword(ident) and not ident in stack:
-      stack.append(ident)
+  for n in nonterminals:
+    if is_meta_keyword(n):
+      continue
+    if not n in _productions:
+      if n == 'expr':
+        vprint('wtf')
+      msg = 'Nonterminal not in production list: ' + str(n)
+      vprint(msg)
+      raise Exception(msg)
+    if not n in applied:
+      stack.append(n)
+      applied.add(n)
   return
 
 
@@ -238,23 +269,17 @@ def output_productions_application_order(out):
   start = 'module-declaration-statement'
   vprint('Computing application-first ordering starting with:', start)
   stack = [start]
-  applied = []
-  count = 0
+  applied = {start}
+  # Do a breadth-first search over all productions...
   while stack:
-    ident = stack[0]
-    if not ident in _productions:
-      msg = 'Nonterminal not in production list: ' + str(ident)
-      vprint(msg)
-      raise Exception(msg)
-    get_nonterminals_in_expansion(ident, stack)
+    ident = stack.pop(0)
+    get_nonterminals_in_expansion(ident, stack, applied)
     _, _, blob = _productions[ident]
     out.write(blob)
     out.write('\n')
-    applied.append(stack.pop(0))
-    count += 1
   # Consider unapplied nonterminals a fatal error...
-  if count != len(_productions):
-    unapplied_count = len(_productions) - count
+  unapplied_count = len(_productions) - len(applied)
+  if unapplied_count != 0:
     msg = str(unapplied_count) + ' nonterminals are never applied'
     vprint(msg)
     for ident in _productions.keys():

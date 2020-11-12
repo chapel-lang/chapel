@@ -51,7 +51,7 @@ source: collect-syntax module-docs primers hellos symlinks
 collect-syntax: clean-collect-syntax
 	@echo
 	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
-	$(GETSYNTAX) rst/language/spec --outdir rst/language/spec --verbose
+	$(GETSYNTAX) rst/language/spec --outdir rst/language/spec
 
 module-docs: clean-module-docs
 	@echo
