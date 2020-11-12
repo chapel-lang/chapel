@@ -1606,7 +1606,7 @@ regexdna-submitted:
 regexdnaredux-submitted:
   <<: *regexdna-base
 
-remote-gets.ml-perf:
+remote-puts.ml-perf:
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
 
