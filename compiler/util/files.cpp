@@ -563,11 +563,11 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
-std::string getVenvDir() {
-  // Runs `util/chplenv/chpl_home_utils.py --venv` and removes the newline
+std::string getChplDepsApp() {
+  // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
   std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --venv 2> /dev/null";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps 2> /dev/null";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
