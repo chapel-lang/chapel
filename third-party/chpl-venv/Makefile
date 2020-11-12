@@ -48,20 +48,13 @@ check-python:
             exit 1 ; \
 	    ;; \
 	esac
-	@# Check to see if python3 -m pip succeeds and install pip if not
+	@# Check to see if python3 -m pip succeeds
 	@PIP_VERS=`$(PIP) --version` ; \
 	if $(PIP) --version ; then \
 	  : ; \
 	else \
-	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
-	  (mkdir -p install && \
-	   cd install && \
-	   ( (curl -O $(GETPIP) || wget $(GETPIP)) || \
-	     { echo "Failed getpip download with" ; \
-	       echo "  curl -O $(GETPIP) || wget $(GETPIP)" ; \
-	       echo "Try adding pip to your Python installation" ; \
-	       exit 1; }) && \
-	   $(GET_PIP_COMMAND) ) ; \
+	  echo "python3 -m pip failed" 1>&2 ; \
+	  echo "please add pip to your Python installation" 1>&2 ; \
 	fi
 
 check-exes: check-python
