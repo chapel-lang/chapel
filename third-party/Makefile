@@ -2,7 +2,6 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
-include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
 ifdef CHPL_DEVELOPER
 DEBUG=1
@@ -82,16 +81,13 @@ QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_DIR))
 RE2_DEPEND            := $(call find_3p_depend, $(RE2_DIR))
 
 
-test-venv: $(CHPL_VENV_TEST_REQS)
-$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
+test-venv: FORCE
 	cd chpl-venv && $(MAKE) test-venv
 
-chpldoc-venv: $(CHPL_VENV_CHPLDOC_REQS)
-$(CHPL_VENV_CHPLDOC_REQS): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
+chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
-c2chapel-venv: $(CHPL_VENV_C2CHAPEL_REQS)
-$(CHPL_VENV_C2CHAPEL_REQS): $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE)
+c2chapel-venv: FORCE
 	cd chpl-venv && $(MAKE) c2chapel-venv
 
 # See gasnet/Makefile for explanation of the post-install step
