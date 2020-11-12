@@ -245,8 +245,6 @@ def get_nonterminals_in_expansion(ident, stack, applied):
     if is_meta_keyword(n):
       continue
     if not n in _productions:
-      if n == 'expr':
-        vprint('wtf')
       msg = 'Nonterminal not in production list: ' + str(n)
       vprint(msg)
       raise Exception(msg)
