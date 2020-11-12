@@ -551,7 +551,23 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
-    proc insert(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool {
+    /*
+      Adds a key-value pair to the map. Method returns `false` if the key
+      already exists in the map.
+
+     :arg key: The key to add to the map
+     :type key: keyType
+
+     :arg val: The value that maps to ``k``
+     :type kal: valueType
+
+     :arg tok: Token for EpochManager
+
+     :returns: `true` if `key` was not in the map and added with value `val`.
+               `false` otherwise.
+     :rtype: bool
+    */
+    proc add(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
@@ -727,7 +743,7 @@ prototype module ConcurrentMap {
     timer.clear();
   */
     var map = new ConcurrentMap(int, int);
-    map.insert(1..(maxLimit:int), 0);
+    map.add(1..(maxLimit:int), 0);
     timer.start();
     coforall tid in 1..here.maxTaskPar {
       var tok = map.getToken();
@@ -737,7 +753,7 @@ prototype module ConcurrentMap {
         var s = rng.getNext();
         var key = keyRng.getNext(0, maxLimit:int);
         if s < 0.5 {
-          map.insert(key,i,tok);
+          map.add(key,i,tok);
         } else {
           map.erase(key, tok);
         }
@@ -753,7 +769,7 @@ prototype module ConcurrentMap {
   proc randomOpsStrongBenchmark (maxLimit : uint = max(uint(16))) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    map.insert(1..65536, 0);
+    map.add(1..65536, 0);
     var insertTime : atomic real;
     var eraseTime : atomic real;
     var insertCount : chpl__processorAtomicType(int);
@@ -773,7 +789,7 @@ prototype module ConcurrentMap {
       timer1.clear();
       if s < 0.10 {
         timer1.start();
-            map.insert(key,i, tok);
+            map.add(key,i, tok);
             timer1.stop();
             insertTime.add(timer1.elapsed());
             insertCount.add(1);
@@ -806,7 +822,7 @@ prototype module ConcurrentMap {
   proc iterationBenchmark() {
     writeln("Iteration Test: ");
     var map = new ConcurrentMap(int, int);
-    forall i in 0..65535 do map.insert(i, 0);
+    forall i in 0..65535 do map.add(i, 0);
     var timer = new Timer();
     timer.start();
     forall i in map {
@@ -836,7 +852,7 @@ prototype module ConcurrentMap {
       var tok = map.getToken();
       for i in 1..opspertask {
         var key = keyRng.getNext(0, maxLimit:int);
-        map.insert(key,i,tok);
+        map.add(key,i,tok);
       }
     }
     timer.stop();
@@ -847,7 +863,7 @@ prototype module ConcurrentMap {
   proc eraseOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    forall i in 0..65535 do map.insert(i, 0);
+    forall i in 0..65535 do map.add(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -866,7 +882,7 @@ prototype module ConcurrentMap {
   proc reclaimBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var map = new ConcurrentMap(int, int);
     writeln(memoryUsed());
-    forall i in 0..65535 with (var tok = map.getToken()) { map.insert(i, 0, tok); }
+    forall i in 0..65535 with (var tok = map.getToken()) { map.add(i, 0, tok); }
     writeln(memoryUsed());
     forall i in 0..65535 with (var tok = map.getToken()) { map.erase(i, tok); }
     writeln(memoryUsed());
@@ -879,7 +895,7 @@ prototype module ConcurrentMap {
   proc findOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    forall i in 0..65535 do map.insert(i, 0);
+    forall i in 0..65535 do map.add(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -898,7 +914,7 @@ prototype module ConcurrentMap {
   proc intSetStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
-    forall i in 0..65535 do map.insert(i, 0);
+    forall i in 0..65535 do map.add(i, 0);
     timer.start();
     const opspertask = N / tasks;
     coforall tid in 1..tasks {
@@ -911,7 +927,7 @@ prototype module ConcurrentMap {
         if s < 0.8 {
           map.find(key, tok);
         } else if s < 0.9 {
-          map.insert(key, i, tok);
+          map.add(key, i, tok);
         } else {
           map.erase(key, tok);
         }
