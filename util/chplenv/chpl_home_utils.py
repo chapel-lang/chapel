@@ -23,7 +23,7 @@ def get_chpl_third_party():
     return chpl_third_party
 
 # Get the chpl-venv install directory:
-# $CHPL_HOME/third-party/chpl-venv/install/chpldeps.pyz
+# $CHPL_HOME/third-party/chpl-venv/install/chpldeps
 @memoize
 def get_chpldeps():
     chpl_venv = os.path.join(get_chpl_third_party(), 'chpl-venv',

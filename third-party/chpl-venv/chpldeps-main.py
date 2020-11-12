@@ -1,3 +1,20 @@
+"""
+chpldeps/__main__.py
+======
+
+This Python module contains the dependencies used by the Chapel project.
+Dependencies can be invoked as subcommands in the following ways:
+
+  python3 path/to/chpldeps sphinx-build <sphinx options>
+  python3 path/to/chpldeps rst2man <rst2man options>
+  python3 path/to/chpldeps path/to/something.py <something.py options>
+
+For the last case, this program assumes that something.py has a
+'main' function that can be called with no arguments. The arguments
+to it will be communicated in sys.argv.
+
+"""
+
 import os
 import re
 import sys
