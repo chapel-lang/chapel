@@ -534,23 +534,18 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
       }
     }
 
-    {
-      BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+    // Recurse in the enclosing block
+    BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+    getVisibleMethodsImpl(name, call, next, visInfo, visited, visibleFns);
 
-      // Recurse in the enclosing block
-      getVisibleMethodsImpl(name, call, next, visInfo, visited,
-                            visibleFns);
-
-      if (instantiationPt != NULL) {
-        // Also look at the instantiation point
-       if (visInfo == NULL)
-        getVisibleMethodsImpl(name, call,   // visit all POIs right away
-                              instantiationPt, NULL, visited, visibleFns);
-       else
-        visInfo->nextPOI = instantiationPt; // come back to it later
-      }
+    if (instantiationPt != NULL) {
+      // Also look at the instantiation point
+     if (visInfo == NULL)
+      getVisibleMethodsImpl(name, call,   // visit all POIs right away
+                            instantiationPt, NULL, visited, visibleFns);
+     else
+      visInfo->nextPOI = instantiationPt; // come back to it later
     }
-
   }
 }
 
@@ -835,15 +830,10 @@ static void getVisibleFunctionsImpl(const char*       name,
     getVisibleFnsFromUseList(name, call, block, visInfo, visited, visibleFns,
                              inUseChain, firstVisit);
 
-  // Need to continue going up in case our parent scopes also had private
-  // uses that were skipped.
-  {
-    BlockStmt* next  = getVisibilityScopeNoParentModule(block);
-
-    // Recurse in the enclosing block
-    getVisibleFunctionsImpl(name, call, next, visInfo, visited,
-                            visibleFns, inUseChain);
-  }
+  // Recurse in the enclosing block
+  BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+  getVisibleFunctionsImpl(name, call, next, visInfo, visited,
+                          visibleFns, inUseChain);
 
   // Also look at the instantiation point
   if (instantiationPt != NULL)
@@ -922,7 +912,8 @@ BlockStmt* getVisibilityScope(Expr* expr) {
   while (cur != NULL) {
     // Pretend that ArgSymbols are in the function's body
     // (which is reasonable since functions cannot be defined
-    //  within an ArgSymbol), so we consult POIs as needed.
+    //  within an ArgSymbol). This way we can consult the function's POIs
+    // when resolving its ArgSymbol's code ex. in defaultExpr.
     // See e.g. test default-argument-generic.chpl
     if (isArgSymbol(cur->parentSymbol)) {
       return cur->getFunction()->body;
