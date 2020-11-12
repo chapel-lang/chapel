@@ -20,7 +20,10 @@ clobber: FORCE clean
 
 OLD_PYTHON_ERROR="python3 version 3.5 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
 
-check-python:
+# Create the virtualenv to use during build.
+#  (to allow for a different path to the system python3 in the future)
+$(CHPL_VENV_VIRTUALENV_DIR):
+	@# First check the python version is OK
 	@case `$(PYTHON) --version` in \
 	  *"Python 3.0"*) \
 	    echo $(OLD_PYTHON_ERROR) ; \
@@ -58,10 +61,7 @@ check-python:
 	  echo "please add pip to your Python installation" 1>&2 ; \
 	fi
 
-
-# Create the virtualenv to use during build.
-#  (to allow for a different path to the system python3 in the future)
-$(CHPL_VENV_VIRTUALENV_DIR): check-python
+	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
@@ -81,8 +81,9 @@ $(CHPL_VENV_CHPLDEPS): $(CHPL_VENV_VIRTUALENV_DIR) $(CHPL_VENV_TEST_REQUIREMENTS
 	  --target $(CHPL_VENV_CHPLDEPS) \
 	  -r $(CHPL_VENV_TEST_REQUIREMENTS_FILE) \
 	  -r $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE) \
-	  -r $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE)
-	cp chpldeps-main.py $(CHPL_VENV_CHPLDEPS)/__main__.py
+	  -r $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE) && \
+	cp chpldeps-main.py $(CHPL_VENV_CHPLDEPS)/__main__.py && \
+	touch $(CHPL_VENV_CHPLDEPS)
 
 install-chpldeps: $(CHPL_VENV_CHPLDEPS)
 
@@ -102,6 +103,6 @@ use-system-python: FORCE
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv install-chpldeps virtualenv check-python rm-chpldoc-reqs check-pip check-python
+.PHONY: install-requirements create-virtualenv test-venv chpldoc-venv c2chapel-venv install-chpldeps
 
 .NOTPARALLEL:
