@@ -279,7 +279,7 @@ def output_productions_application_order(out):
     _, _, blob = _productions[ident]
     out.write(blob)
     out.write('\n')
-  # Consider unapplied nonterminals a fatal error...
+  # Consider unapplied productions to be a fatal error...
   unapplied_count = len(_productions) - len(applied)
   if unapplied_count != 0:
     msg = str(unapplied_count) + ' nonterminals are never applied'
