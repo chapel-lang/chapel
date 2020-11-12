@@ -91,7 +91,7 @@ void genIncludeCommandLineHeaders(FILE* outfile);
 const char* createDebuggerFile(const char* debugger, int argc, char* argv[]);
 
 std::string runPrintChplEnv(std::map<std::string, const char*> varMap);
-std::string getVenvDir();
+std::string getChplDepsApp();
 bool compilingWithPrgEnv();
 std::string runCommand(std::string& command);
 
