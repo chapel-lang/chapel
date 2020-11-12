@@ -55,6 +55,8 @@ bool                 parsed                        = false;
 static bool          sFirstFile                    = true;
 static bool          sHandlingInternalModulesNow   = false;
 
+static const char* stdGenModulesPath;
+
 static void          countTokensInCmdLineFiles();
 
 static void          parseInternalModules();
@@ -189,15 +191,16 @@ void setupModulePaths() {
   //
   // Set up the search path for modulesRoot/standard
   //
-  sStdModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/standard/gen/",
-                      CHPL_TARGET_PLATFORM,
-                      "-",
-                      CHPL_TARGET_ARCH,
-                      "-",
-                      CHPL_TARGET_COMPILER));
+  stdGenModulesPath = astr(CHPL_HOME,
+                           "/",
+                           modulesRoot,
+                           "/standard/gen/",
+                           CHPL_TARGET_PLATFORM,
+                           "-",
+                           CHPL_TARGET_ARCH,
+                           "-",
+                           CHPL_TARGET_COMPILER);
+  sStdModPath.add(stdGenModulesPath);
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
 
@@ -285,7 +288,10 @@ static void parseInternalModules() {
     }
 
     // parse SysCTypes right away to provide well-known types.
-    parseMod("SysCTypes", false);
+    ModuleSymbol* sysctypes = parseMod("SysCTypes", false);
+    if (sysctypes == NULL && fMinimalModules == false) {
+      USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
+    }
 
     parseDependentModules(true);
 
