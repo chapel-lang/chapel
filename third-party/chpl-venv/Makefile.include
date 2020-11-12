@@ -8,7 +8,6 @@ CHPL_VENV_DIR=$(shell cd $(THIRD_PARTY_DIR)/chpl-venv && pwd)
 CHPL_VENV_TEST_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/test-requirements.txt
 CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chpldoc-requirements.txt
 CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/c2chapel-requirements.txt
-CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.txt
 
 # Do not include this file from $(CHPL_MAKE_HOME)/make/Makefile.base.
 # Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv stuff
@@ -18,38 +17,9 @@ CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.tx
 # Python version
 PYTHON=$(CHPL_MAKE_PYTHON)
 PIP=$(PYTHON) -m pip
-# Python version has 2 digits, like "2.6" or "2.7"
-PYTHON_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py || echo "_not_found")
-PYTHON_MAJOR_VERSION = $(shell $(PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only || echo "_not_found")
 
-# chpl-venv installation path depends on Python version
-CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)/py$(PYTHON_VERSION)
-CHPL_VENV_INSTALL_SUBDIR=install/$(CHPL_VENV_UNIQUE_SUBDIR)
-CHPL_VENV_INSTALL_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_INSTALL_SUBDIR)
-CHPL_VENV_VIRTUALENV=$(CHPL_VENV_INSTALL_SUBDIR)/bin/virtualenv
-CHPL_VENV_VIRTUALENV_NAME=chpl-virtualenv
-CHPL_VENV_VIRTUALENV_SUBDIR=$(CHPL_VENV_INSTALL_SUBDIR)/$(CHPL_VENV_VIRTUALENV_NAME)
-CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV_SUBDIR)
+CHPL_VENV_BUILD=$(CHPL_VENV_DIR)/build
+CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_BUILD)/build-venv
 CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
-
-# note - run-in-test-venv.bash also uses this path
-CHPL_VENV_TEST_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-test-reqs
-CHPL_VENV_CHPLDOC_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpldoc-reqs
-CHPL_VENV_C2CHAPEL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/c2chapel-reqs
-CHPL_VENV_CHPLSPELL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-chplspell-reqs
-
-# pip installation path variants
-PIPLIB_VER=$(CHPL_VENV_INSTALL_DIR)/lib/python$(PYTHON_VERSION)/site-packages
-PIPLIB=$(CHPL_VENV_INSTALL_DIR)/lib/python/site-packages
-PIPLIB64_VER=$(CHPL_VENV_INSTALL_DIR)/lib64/python$(PYTHON_VERSION)/site-packages
-PIPLIB64=$(CHPL_VENV_INSTALL_DIR)/lib64/python/site-packages
-
-PIPLIBS=$(PIPLIB_VER):$(PIPLIB):$(PIPLIB64_VER):$(PIPLIB64)
-
-GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && $(PYTHON) get-pip.py --user --no-warn-conflicts
-ifdef VIRTUAL_ENV
-  PIP=$(VIRTUAL_ENV)/bin/pip
-  GET_PIP_COMMAND=$(PYTHON) get-pip.py --no-warn-conflicts
-endif
-
-GETPIP=https://bootstrap.pypa.io/get-pip.py
+CHPL_VENV_INSTALL=$(CHPL_VENV_DIR)/install
+CHPL_VENV_CHPLDEPS=$(CHPL_VENV_INSTALL)/chpldeps

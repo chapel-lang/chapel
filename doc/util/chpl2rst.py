@@ -272,7 +272,7 @@ def write(rstoutput, output):
         handle.write(rstoutput)
 
 
-def main(**kwargs):
+def main_args(**kwargs):
     """Driver function - convert each file to rst and write to output"""
 
     # Parse keyword arguments
@@ -306,7 +306,10 @@ def main(**kwargs):
 
         write(rstoutput, fname)
 
-if __name__ == '__main__':
+def main():
     # Parse arguments and cast them into a dictionary
     arguments = vars(get_arguments())
-    main(**arguments)
+    main_args(**arguments)
+
+if __name__ == '__main__':
+    main()

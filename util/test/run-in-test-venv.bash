@@ -8,40 +8,41 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 python=$($CHPL_HOME/util/config/find-python.sh)
-venv_dir=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --test-venv)
-def_venv_dir=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+chpldeps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps)
 
-if [ "$venv_dir" = "none" ]
+if [ "$CHPL_TEST_VENV_DIR" = "none" ]
 then
-  echo "Skipping virtualenv activation because CHPL_TEST_VENV_DIR=$venv_dir."\
+  echo "Skipping virtualenv activation because CHPL_TEST_VENV_DIR=none."\
        "test-venv requirements must be available."
 
+  # run the command
+  exec "$1" "${@:2}"
+
 else
-  if [ "$venv_dir" != "$def_venv_dir" ]
+  if [ ! -z "$CHPL_TEST_VENV_DIR" ]
   then
     echo "Using custom virtualenv because CHPL_TEST_VENV_DIR=$venv_dir."\
          "test-venv requirements must be available"
 
-  elif [ ! -f "$venv_dir/chpl-test-reqs" ]
-  then
-    make=$("$python" "$CHPL_HOME/util/chplenv/chpl_make.py")
-    echo "Chapel test virtualenv not available."\
-         "Run a top-level $make test-venv" 1>&2
-    exit 1
+    if [ ! -f "$venv_dir/bin/python3" ]; then
+      echo "python3 wrapper file $venv_dir/bin/python3 is missing" 1>&2
+      exit 1
+    fi
+
+    # now run the command in the activated venv
+    source "$CHPL_TEST_VENV_DIR/bin/activate"
+    exec "$1" "${@:2}"
+
+  else
+
+    if [ ! -e "$chpldeps" ]; then
+      echo "chpl dependencies are missing - try make test-venv" 1>&2
+      exit 1
+    fi
+
+    # include the dependencies
+    export PYTHONPATH="$chpldeps":$PYTHONPATH
+    exec "$python" "$@"
 
   fi
-
-  if [ ! -f "$venv_dir/bin/python3" ]; then
-    echo "python3 wrapper file $venv_dir/bin/python3 is missing" 1>&2
-    exit 1
-  fi
-
-  # these steps correspond to what a venv activate script contains
-  export VIRTUAL_ENV="$venv_dir"
-  export PATH="$VIRTUAL_ENV/bin:$PATH"
-  unset PYTHONHOME
-
 fi
-
-# now run the command in the (possibly) activated venv
-exec "$1" "${@:2}"
