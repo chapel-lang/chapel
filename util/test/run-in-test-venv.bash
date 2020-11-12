@@ -42,7 +42,7 @@ else
 
     # include the dependencies
     export PYTHONPATH="$chpldeps":$PYTHONPATH
-    exec "$python" "$@"
+    exec "$1" "${@:2}"
 
   fi
 fi
