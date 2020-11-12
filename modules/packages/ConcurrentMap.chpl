@@ -721,7 +721,17 @@ prototype module ConcurrentMap {
       else halt("map index " + key:string + " out of bounds");
     }
 
-    proc erase(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
+    /*
+      Removes a key-value pair from the map, with the given key.
+
+     :arg key: The key to remove from the map
+
+     :arg tok: Token for EpochManager
+
+     :returns: `false` if `key` was not in the map.  `true` if it was and removed.
+     :rtype: bool
+    */
+    proc remove(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
       if (elist == nil) {
@@ -820,7 +830,7 @@ prototype module ConcurrentMap {
         if s < 0.5 {
           map.add(key,i,tok);
         } else {
-          map.erase(key, tok);
+          map.remove(key, tok);
         }
       }
     }
@@ -836,9 +846,9 @@ prototype module ConcurrentMap {
     var map = new ConcurrentMap(int, int);
     map.add(1..65536, 0);
     var insertTime : atomic real;
-    var eraseTime : atomic real;
+    var removeTime : atomic real;
     var insertCount : chpl__processorAtomicType(int);
-    var eraseCount : chpl__processorAtomicType(int);
+    var removeCount : chpl__processorAtomicType(int);
     var findTime : atomic real;
     var findCount : chpl__processorAtomicType(int);
     timer.start();
@@ -860,10 +870,10 @@ prototype module ConcurrentMap {
             insertCount.add(1);
       } else if s < 0.20 {
         timer1.start();
-            map.erase(key, tok);
+            map.remove(key, tok);
             timer1.stop();
-            eraseTime.add(timer1.elapsed());
-            eraseCount.add(1);
+            removeTime.add(timer1.elapsed());
+            removeCount.add(1);
       } else {
         timer1.start();
             map.find(key, tok);
@@ -877,7 +887,7 @@ prototype module ConcurrentMap {
     }
     timer.stop();
     writeln("Insert average Time: ", insertTime.read()*10**9/insertCount.read());
-      writeln("Erase average Time: ", eraseTime.read()*10**9/eraseCount.read());
+      writeln("remove average Time: ", removeTime.read()*10**9/removeCount.read());
       writeln("Find average Time: ", findTime.read()*10**9/findCount.read());
     writeln("Time taken : ", timer.elapsed());
     var opspersec = N/timer.elapsed();
@@ -925,7 +935,7 @@ prototype module ConcurrentMap {
     writeln(tasks, " tasks, ", ((10**9)*timer.elapsed())/totalOps, " ns/op");
   }
 
-  proc eraseOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
+  proc removeOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
     forall i in 0..65535 do map.add(i, 0);
@@ -936,7 +946,7 @@ prototype module ConcurrentMap {
       var tok = map.getToken();
       for i in 1..opspertask {
         var key = keyRng.getNext(0, maxLimit:int);
-        map.erase(key,tok);
+        map.remove(key,tok);
       }
     }
     timer.stop();
@@ -949,7 +959,7 @@ prototype module ConcurrentMap {
     writeln(memoryUsed());
     forall i in 0..65535 with (var tok = map.getToken()) { map.add(i, 0, tok); }
     writeln(memoryUsed());
-    forall i in 0..65535 with (var tok = map.getToken()) { map.erase(i, tok); }
+    forall i in 0..65535 with (var tok = map.getToken()) { map.remove(i, tok); }
     writeln(memoryUsed());
     map.tryReclaim();
     map.tryReclaim();
@@ -994,7 +1004,7 @@ prototype module ConcurrentMap {
         } else if s < 0.9 {
           map.add(key, i, tok);
         } else {
-          map.erase(key, tok);
+          map.remove(key, tok);
         }
       }
     }
@@ -1006,12 +1016,12 @@ prototype module ConcurrentMap {
   proc main() {
     var map = new ConcurrentMap(int, int);
     forall i in 1..N with (var tok = map.getToken()) {
-      map.addOrSet(i, i**2, tok);
+      map.add(i, i**2, tok);
     }
     writeln(map);
 
     for i in N/2..N+2 {
-      writeln(map.set(i, i**3));
+      writeln(map.remove(i));
     }
 
     writeln(map);
