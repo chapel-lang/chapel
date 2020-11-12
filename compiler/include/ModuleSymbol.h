@@ -117,6 +117,7 @@ private:
   bool                    hasTopLevelModule();
 };
 
+extern BlockStmt*         rootBlock;
 extern ModuleSymbol*      rootModule;
 extern ModuleSymbol*      theProgram;
 extern ModuleSymbol*      baseModule;

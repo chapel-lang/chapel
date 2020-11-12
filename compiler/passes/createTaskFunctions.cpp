@@ -48,21 +48,10 @@ Symbol*           markUnspecified = NULL;
 *   4) a call to update the endCount when the block completes                 *
 *                                                                             *
 * The byrefVars property is then a list of pairs { marker, variable } where   *
-* marker is one of 6 constant ArgSymbols that encode the intent.              *
+* the marker is one of the 6 ArgSymbols defined below - tiMarkBlank through   *
+* tiMarkRef - which encode the intent.                                        *
 *                                                                             *
-* 2017/05/18: The challenge is to prevent these ArgSymbols from being purged  *
-* by the cleanAST() phase at the end of each pass.  There is no  well defined *
-* way to do this currently.                                                   *
-*                                                                             *
-* The approach that is used here is to wrap the ArgSymbols in a dummy         *
-* function and insert this function in to the tree.                           *
-*                                                                             *
-* It is inserted in to rootModule to avoid cluttering the scope for the       *
-* module "theProgram".  This in turn implies that it must be pre-normalized   *
-* to avoid triggering the AST checks for --verify.                            *
-*                                                                             *
-* This dummy function is never resolved and is purged at the end of the       *
-* function resolution pass.                                                   *
+* Future work: switch to dedicated representation for task intents.           *
 *                                                                             *
 ************************************** | *************************************/
 
@@ -74,7 +63,15 @@ static ArgSymbol* tiMarkConstRef  = NULL;
 static ArgSymbol* tiMarkRef       = NULL;
 
 void initForTaskIntents() {
-  FnSymbol* tiMarkHost = NULL;
+  //
+  // The function 'tiMarkHost' exists solely to host the ArgSymbols
+  // created below. Otherwise they would be purged by cleanAST().
+  //
+  // As of this writing, it is the only function with defPoint in rootModule.
+  // It is there to avoid cluttering the scope for the module "theProgram".
+  // It is never resolved, never invoked, and purged at the end of resolve().
+  //
+  FnSymbol* tiMarkHost = new FnSymbol("tiMarkHost");
 
   markPruned      = gVoid;
   markUnspecified = gNil;
@@ -103,8 +100,6 @@ void initForTaskIntents() {
                                   "tiMarkRef",
                                   dtNothing);
 
-  tiMarkHost = new FnSymbol("tiMarkHost");
-
   tiMarkHost->insertFormalAtTail(tiMarkBlank);
   tiMarkHost->insertFormalAtTail(tiMarkIn);
   tiMarkHost->insertFormalAtTail(tiMarkConstDflt);
@@ -114,7 +109,7 @@ void initForTaskIntents() {
 
   tiMarkHost->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
 
-  rootModule->block->insertAtTail(new DefExpr(tiMarkHost));
+  rootBlock->insertAtTail(new DefExpr(tiMarkHost));
 }
 
 // Return the tiMark symbol for the given ForallIntentTag.
