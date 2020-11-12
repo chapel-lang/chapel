@@ -621,7 +621,9 @@ prototype module ConcurrentMap {
       return found;
     }
 
-    proc find(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) {
+    /* Get a copy of the element stored at position `key`.
+     */
+    proc getValue(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) {
       tok.pin();
       var elist = getEList(key, false, tok);
       var res : valType;
@@ -652,7 +654,7 @@ prototype module ConcurrentMap {
       :rtype: `bool`
     */
     proc const contains(const key : keyType, tok : owned TokenWrapper = getToken()) : bool {
-      var (found, res) = find(key, tok);
+      var (found, res) = getValue(key, tok);
       return found;
     }
 
@@ -849,8 +851,8 @@ prototype module ConcurrentMap {
     var removeTime : atomic real;
     var insertCount : chpl__processorAtomicType(int);
     var removeCount : chpl__processorAtomicType(int);
-    var findTime : atomic real;
-    var findCount : chpl__processorAtomicType(int);
+    var getValueTime : atomic real;
+    var getValueCount : chpl__processorAtomicType(int);
     timer.start();
     coforall tid in 1..here.maxTaskPar {
     var rng = new RandomStream(real);
@@ -876,10 +878,10 @@ prototype module ConcurrentMap {
             removeCount.add(1);
       } else {
         timer1.start();
-            map.find(key, tok);
+            map.getValue(key, tok);
             timer1.stop();
-            findTime.add(timer1.elapsed());
-            findCount.add(1);
+            getValueTime.add(timer1.elapsed());
+            getValueCount.add(1);
       }
     }
       // timer1.stop();
@@ -888,7 +890,7 @@ prototype module ConcurrentMap {
     timer.stop();
     writeln("Insert average Time: ", insertTime.read()*10**9/insertCount.read());
       writeln("remove average Time: ", removeTime.read()*10**9/removeCount.read());
-      writeln("Find average Time: ", findTime.read()*10**9/findCount.read());
+      writeln("getValue average Time: ", getValueTime.read()*10**9/getValueCount.read());
     writeln("Time taken : ", timer.elapsed());
     var opspersec = N/timer.elapsed();
     writeln("Completed ", N, " operations in ", timer.elapsed(), "s with ", opspersec, " operations/sec");
@@ -967,7 +969,7 @@ prototype module ConcurrentMap {
     writeln(memoryUsed());
   }
 
-  proc findOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
+  proc getValueOpStrongBenchmark (maxLimit : uint = max(uint(16)), tasks = here.maxTaskPar) {
     var timer = new Timer();
     var map = new ConcurrentMap(int, int);
     forall i in 0..65535 do map.add(i, 0);
@@ -978,7 +980,7 @@ prototype module ConcurrentMap {
       var tok = map.getToken();
       for i in 1..opspertask {
         var key = keyRng.getNext(0, maxLimit:int);
-        map.find(key,tok);
+        map.getValue(key,tok);
       }
     }
     timer.stop();
@@ -1000,7 +1002,7 @@ prototype module ConcurrentMap {
         var s = rng.getNext();
         var key = keyRng.getNext(0, maxLimit:int);
         if s < 0.8 {
-          map.find(key, tok);
+          map.getValue(key, tok);
         } else if s < 0.9 {
           map.add(key, i, tok);
         } else {
@@ -1018,12 +1020,12 @@ prototype module ConcurrentMap {
     forall i in 1..N with (var tok = map.getToken()) {
       map.add(i, i**2, tok);
     }
-    writeln(map);
+    // writeln(map);
 
     for i in N/2..N+2 {
-      writeln(map.remove(i));
+      writeln(map.getValue(i));
     }
 
-    writeln(map);
+    // writeln(map);
   }
 }
