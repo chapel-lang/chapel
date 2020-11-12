@@ -8,21 +8,13 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 python=$($CHPL_HOME/util/config/find-python.sh)
-venv_dir=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --venv)
+chpldeps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps)
 
-if [ ! -d "$venv_dir" ]; then
-  echo "Error: virtualenv '$venv_dir' does not exist" 1>&2
+if [ ! -e "$chpldeps" ]; then
+  echo "chpl dependencies are missing - try make test-venv" 1>&2
   exit 1
 fi
 
-if [ ! -f "$venv_dir/bin/python3" ]; then
-  echo "python3 wrapper file $venv_dir/bin/python3 is missing" 1>&2
-  exit 1
-fi
-
-# these steps correspond to what a venv activate script contains
-export VIRTUAL_ENV="$venv_dir"
-export PATH="$VIRTUAL_ENV/bin:$PATH"
-unset PYTHONHOME
-
-exec "$1" "${@:2}"
+# include the dependencies
+export PYTHONPATH="$chpldeps":$PYTHONPATH
+exec $python "$@"
