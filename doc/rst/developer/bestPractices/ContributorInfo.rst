@@ -107,8 +107,8 @@ decisions. Here are some strategies to make a good design issue:
 - It can be useful to consider alternative solutions to the problem and
   describe the trade-offs among them.
 - A design issue should have two developers not involved in the effort to review.
-- To find reviewers, send an email to chapel-developers_. Subscribe to the mailing list
-  before sending an email.
+- To find reviewers, post an inquiry to the `Chapel Developers`_
+  Discourse forum.
 
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation
@@ -187,12 +187,12 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
-#. If you're working on a long-term effort, announce it on the
-   chapel-developers_ mailing list to make sure toes are not being stepped on,
+#. If you're working on a long-term effort, announce it in the
+   `Chapel Developers`_ Discourse category to make sure toes are not being stepped on,
    work is not being pursued redundantly, etc.  Similarly, fundamental changes
-   to the language or architecture should be circulated to the
-   chapel-developers_ and/or chapel-users_ lists to make sure effort is not
-   wasted.
+   to the language or architecture should be circulated in the
+   `Chapel Developers`_ and/or `Chapel Users`_ categories to make sure effort is not
+   wasted pursuing an unpopular idea.
 
 #. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
    ID.
@@ -278,7 +278,7 @@ Discussion can take place in:
 
 - the `Work-in-progress pull request`_
 - a separate GitHub issue
-- the chapel-developers_ mailing list
+- the `Chapel Developers`_ Discourse forum
 - a private communication
 - some other strategy agreed upon by all involved parties
 
@@ -309,9 +309,9 @@ Find a reviewer
 * Once your PR is ready, you'll need to request a review.  If you know who you'd
   like to review it, @ mention them in a comment on the PR and ask them to have
   a look.  If you don't know their GitHub id, you can find them in the chat room
-  or send them an email.  If you don't know who should review the change, send
-  an email to the chapel-developers_ list requesting a review and linking to the
-  PR.  Such an email should have a subject line starting with `[PR]`.
+  or send them an email.  If you don't know who should review the change, post
+  to the `Chapel Developers`_ Discourse topic requesting a review and linking to the
+  PR.  By convention, such topics often use a `[PR]` prefix in their titles.
 
   Note: Ideally, someone should volunteer to review your pull request within a
   day or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -331,7 +331,7 @@ Work with your reviewers
   something really hard.  Try to make sure they understand the magnitude of the
   request, and try to discuss if it's really necessary to do before merging.  If
   you can't come to an agreement, one of you should bring other developers
-  (individually or via chapel-developers_) into the conversation to get a
+  (individually or via the `Chapel Developers`_ forum) into the conversation to get a
   broader opinion.  One of the jobs of the reviewer is to serve as a proxy for
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
@@ -379,16 +379,11 @@ After merging, a good contributor should watch automatic testing results for
 failures that they may need to address:
 
 * In short order, a smoke-test will be run against the commit to make sure that
-  nothing basic has been broken by it.  Monitor the
-  chapel-test-results-regressions_ mailing list to make sure that nothing
-  breaks.
+  nothing basic has been broken by it.  Your reviewer should alert you to any
+  problems.
 
-* For the day or two after the commit has gone in, check the
-  chapel-test-results-regressions_ mailing list to ensure that there are no new
-  failures caused by your commit.  Use the chapel-developers_ mailing list if
-  you are unsure (a member of the core Chapel team will be tasked with
-  diagnosing any testing failures on any given night, but it's nice when
-  developers notice the issue first themselves to save wasted effort).
+* After the commit has gone in, check with your reviewer to ensure that
+  there are no new failures caused by your commit in our nightly testing.
 
 .. _Other useful information:
 
@@ -909,8 +904,8 @@ Third-party code
 
 If your work will require committing any third-party code that you are not
 developing yourself (or code that you've developed as a standalone package),
-alert the chapel-developers_ mailing list of this as, presently, such code
-packages must be approved by our lawyers before being committed.
+alert the `Chapel Developers`_ Discourse forum of this as, presently, such code
+packages must be approved before being committed.
 
 Here are some guiding questions to determine whether a third-party package you
 rely on should be committed to the chapel repository:
@@ -957,8 +952,8 @@ rely on should be committed to the chapel repository:
   - If so, we will probably want to distribute this package, or at least include
     the modifications and an easy way to install them.
 
-Please include the answers to these questions when you contact the
-chapel-developers_ mailing list, if you believe the code should be included or
+Please include the answers to these questions when you post to the
+`Chapel Developers`_ forum, if you believe the code should be included or
 you remain uncertain.
 
 .. _Testing your patch:
@@ -1148,9 +1143,8 @@ Reviewer responsibilities
   decisions may need to be made (or at least understood) at a high
   level.
 
-.. _chapel-developers: chapel-developers@lists.sourceforge.net
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
-.. _chapel-users: chapel-users@lists.sourceforge.net
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
+.. _Chapel Users: https://chapel.discourse.group/c/users
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/

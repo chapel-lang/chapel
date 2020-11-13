@@ -2,8 +2,9 @@ Chapel Acknowledgements
 =======================
 
 The Chapel project's source repository and releases are currently
-hosted by [GitHub].  Our mailing lists are hosted by [SourceForge].
-We are grateful to both organizations for their ongoing support.
+hosted by [GitHub].  Our community discussion forums are hosted by
+[Discourse].  We are grateful to both organizations for their ongoing
+support.
 
 Thanks to Google for funding several students to work on projects
 within Chapel as part of the [Google Summer of Code] program.
@@ -48,6 +49,7 @@ initial years of the project for the purpose of portability testing.
 [Center for Adaptive Supercomputing Software for Multithreaded Architectures (CASS-MT)]: http://cass-mt.pnnl.gov/
 [Defense Advanced Research Projects Agency]: http://www.darpa.mil/
 [Department of Computer Science and Engineering]: http://cs.washington.edu
+[Discourse]: https://www.discourse.org/
 [GitHub]: https://github.com/
 [Google Summer of Code]: https://developers.google.com/open-source/gsoc/
 [HPCx]: http://www.hpcx.ac.uk/
@@ -60,7 +62,6 @@ initial years of the project for the purpose of portability testing.
 [Office of Science]: http://science.energy.gov/
 [Pacific Northwest National Laboratory]: http://www.pnl.gov/
 [SARA]: http://www.sara.nl/
-[SourceForge]: https://sourceforge.net/
 [University of Maryland]: http://www.umiacs.umd.edu/
 [University of Vienna]: http://www.univie.ac.at/
 [University of Washington]: http://www.washington.edu
