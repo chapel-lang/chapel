@@ -51,7 +51,7 @@ source: collect-syntax module-docs primers hellos symlinks
 collect-syntax: clean-collect-syntax
 	@echo
 	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
-	$(GETSYNTAX) rst/language/spec --outdir rst/language/spec
+	$(GETSYNTAX) rst/language/spec --outdir $(SPECSRCDIR)
 
 module-docs: clean-module-docs
 	@echo
@@ -111,6 +111,7 @@ clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks
 clean-collect-syntax: FORCE
 	@echo
 	@echo "Removing generated RST file for syntax productions"
+	touch $(SPECSRCDIR)/syntax.rst && rm $(SPECSRCDIR)/syntax.rst
 
 clean-module-docs: FORCE
 	@echo
