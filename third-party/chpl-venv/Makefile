@@ -52,14 +52,6 @@ $(CHPL_VENV_VIRTUALENV_DIR):
             exit 1 ; \
 	    ;; \
 	esac
-	@# Check to see if python3 -m pip succeeds
-	@PIP_VERS=`$(PIP) --version` ; \
-	if $(PIP) --version ; then \
-	  : ; \
-	else \
-	  echo "python3 -m pip failed" 1>&2 ; \
-	  echo "please add pip to your Python installation" 1>&2 ; \
-	fi
 
 	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
