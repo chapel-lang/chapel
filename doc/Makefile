@@ -28,7 +28,6 @@ CHPL_DOC_HELLO_DIR = $(SOURCEDIR)/examples/hellos
 CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
 SPECSRCDIR = $(SOURCEDIR)/language/spec
-GETSYNTAX = ../util/config/run-in-venv.bash ./util/collect-syntax.py
 
 help: help-sphinx help-source
 
@@ -61,7 +60,7 @@ source: collect-syntax module-docs primers hellos symlinks
 collect-syntax: clean-collect-syntax
 	@echo
 	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
-	$(GETSYNTAX) rst/language/spec --outdir $(SPECSRCDIR)
+	./util/collect-syntax.py rst/language/spec --outdir $(SPECSRCDIR)
 
 module-docs: clean-module-docs
 	@echo
