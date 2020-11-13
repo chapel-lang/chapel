@@ -999,4 +999,32 @@ prototype module ConcurrentMap {
       lhs.add(key, val, tok);
     }
   }
+
+  /*
+    Returns `true` if the contents of two maps are the same.
+
+    :arg a: A map to compare.
+    :type a: map
+
+    :arg b: A map to compare.
+    :type b: map (with same keyType and valType)
+
+    :return: `true` if the contents of two maps are equal.
+    :rtype: `bool`
+  */
+  proc ==(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool {
+    var atok = a.getToken();
+    var btok = b.getToken();
+    for (key, val) in a {                   // Can also be done parallely
+      var (found, Val) = b.getValue(key, btok);
+      if !found || val != Val then
+        return false;
+    }
+    for (key, val) in b {
+      var (found, Val) = a.getValue(key, atok);
+      if !found || val != Val then
+        return false;
+    }
+    return true;
+  }
 }
