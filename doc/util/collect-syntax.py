@@ -3,7 +3,46 @@
 
 
 """
-collect syntax
+
+Read the RST files in '$CHPL_HOME/doc/rst/language/spec' and look for
+any blocks of the form:
+
+```
+Normal text here...
+
+.. code-block:: syntax
+   production-1:
+     production-2 production-1
+
+   production-2:
+     'foo'
+
+Normal text here...
+```
+
+These are syntax blocks which describe the grammar of Chapel. The script
+parses each found block and keys all productions by name.
+
+The script outputs all productions in alphabetical order followed by
+application order. Application order is a breadth-first ordering
+rooted on the start symbol 'module-declaration-statement'.
+
+The script outputs all productions into the file:
+
+  '$CHPL_HOME/doc/rst/language/spec/syntax.rst'
+
+This script will complain if:
+
+  - There is more than one production with the same name
+  - A nonterminal has no corresponding production
+  - A production is defined but never applied
+  - A production has zero expansions (empty RHS)
+
+Caveats (to be TODO'd):
+
+  - Productions within a syntax block must be indented 3 spaces
+  - Expansions must be indented at least 3 spaces
+
 """
 
 
