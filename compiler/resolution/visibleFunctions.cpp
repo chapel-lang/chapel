@@ -404,6 +404,11 @@ static void lookAtTypeFirst(const char* name, CallExpr* call,
 
 static bool isScopeVisibleForMethods(ModuleSymbol* mod, CallExpr* call);
 
+static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block);
+
+static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
+                                   BlockStmt* instantiationPt);
+
 static void getVisibleMethodsVI(const char* name, CallExpr* call,
                                 VisibilityInfo*       visInfo,
                                 std::set<BlockStmt*>* visited,
@@ -457,51 +462,16 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   VisibilityInfo*       visInfo,
                                   std::set<BlockStmt*>& visited,
                                   Vec<FnSymbol*>&       visibleFns) {
+  if (block == rootBlock) return; // nothing there
   //
   // avoid infinite recursion due to modules with mutual uses
   //
   if (visited.find(block) == visited.end()) {
 
-    bool moduleBlock = false;
-    bool fnBlock = false;
-    ModuleSymbol* inMod = block->getModule();
-    FnSymbol* inFn = block->getFunction();
-    BlockStmt* instantiationPt = NULL;
-    if (block->parentExpr != NULL) {
-      // not a module or function level block
-    } else if (inMod && block == inMod->block) {
-      moduleBlock = true;
-    } else if (inFn != NULL) {
-      INT_ASSERT(block->parentSymbol == inFn ||
-                 isArgSymbol(block->parentSymbol) ||
-                 isShadowVarSymbol(block->parentSymbol));
-      fnBlock = true;
-      BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
-      if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
-        INT_FATAL(inFn, "instantiation point not in tree\n"
-                        "try --break-on-remove-id %i and consider making\n"
-                        "that block scopeless",
-                        inFnInstantiationPoint->id);
-      }
-      if (inFnInstantiationPoint && inFnInstantiationPoint->parentSymbol)
-        instantiationPt = inFnInstantiationPoint;
-    }
+    BlockStmt* instantiationPt = getVisibleFnsInstantiationPt(block);
 
     if (call->id == breakOnResolveID) {
-      if (moduleBlock)
-        printf("visible methods: block %i  module %s  %s\n",
-               block->id, inMod->name, debugLoc(block));
-      else if (fnBlock)
-        printf("visible methods: block %i  fn %s  %s\n",
-               block->id, inFn->name, debugLoc(block));
-      else
-        printf("visible methods: block %i  %s\n",
-               block->id, debugLoc(block));
-
-      if (instantiationPt) {
-        printf("  instantiated from block %i  %s\n",
-               instantiationPt->id, debugLoc(instantiationPt));
-      }
+      getVisibleFnsShowBlock("methods", block, instantiationPt);
     }
 
     // The following statement causes this to apply to all blocks,
@@ -564,23 +534,18 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
       }
     }
 
-    if (block != rootModule->block) {
-      BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+    // Recurse in the enclosing block
+    BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+    getVisibleMethodsImpl(name, call, next, visInfo, visited, visibleFns);
 
-      // Recurse in the enclosing block
-      getVisibleMethodsImpl(name, call, next, visInfo, visited,
-                            visibleFns);
-
-      if (instantiationPt != NULL) {
-        // Also look at the instantiation point
-       if (visInfo == NULL)
-        getVisibleMethodsImpl(name, call,   // visit all POIs right away
-                              instantiationPt, NULL, visited, visibleFns);
-       else
-        visInfo->nextPOI = instantiationPt; // come back to it later
-      }
+    if (instantiationPt != NULL) {
+      // Also look at the instantiation point
+     if (visInfo == NULL)
+      getVisibleMethodsImpl(name, call,   // visit all POIs right away
+                            instantiationPt, NULL, visited, visibleFns);
+     else
+      visInfo->nextPOI = instantiationPt; // come back to it later
     }
-
   }
 }
 
@@ -645,21 +610,15 @@ void getVisibleFunctions(const char*      name,
                           visited, visibleFns, false);
 }
 
-static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt*    block,
-                                               ModuleSymbol* inMod,
-                                               FnSymbol*     inFn) {
+static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt* block) {
   BlockStmt* instantiationPt = NULL;
 
-  if (block->parentExpr != NULL) {
-    // not a module or function level block
-  } else if (inMod && block == inMod->block) {
-    // module-level block
-  } else if (inFn != NULL) {
-    // TODO - probably remove this assert
-    INT_ASSERT(block->parentSymbol == inFn ||
-               isArgSymbol(block->parentSymbol) ||
-               isShadowVarSymbol(block->parentSymbol));
+  // We check for an instantiation point only at FnSymbols'
+  // top-level blocks, i.e. body, where, etc.
+  if (block->parentExpr != NULL)
+    return NULL;
 
+  if (FnSymbol* inFn = toFnSymbol(block->parentSymbol)) {
     BlockStmt* inFnInstantiationPoint = inFn->instantiationPoint();
 
     if (inFnInstantiationPoint && !inFnInstantiationPoint->parentSymbol) {
@@ -676,17 +635,21 @@ static BlockStmt* getVisibleFnsInstantiationPt(BlockStmt*    block,
   return instantiationPt;
 }
 
-static void getVisibleFnsShowBlock(BlockStmt* block, ModuleSymbol* inMod,
-                                   FnSymbol* inFn, BlockStmt* instantiationPt)
+// prints "visible fns: block ...." or "visible methods: block ....
+static void getVisibleFnsShowBlock(const char* context, BlockStmt* block,
+                                   BlockStmt* instantiationPt)
 {
+  ModuleSymbol* inMod = toModuleSymbol(block->parentSymbol);
+  FnSymbol*     inFn  = toFnSymbol(block->parentSymbol);
+
   if (inMod && block == inMod->block)
-    printf("visible fns: block %i  module %s  %s\n",
+    printf("visible %s: block %i  module %s  %s\n", context,
            block->id, inMod->name, debugLoc(block));
   else if (inFn && block == inFn->body)
-    printf("visible fns: block %i  fn %s  %s\n",
+    printf("visible %s: block %i  fn %s  %s\n", context,
            block->id, inFn->name, debugLoc(block));
   else
-    printf("visible fns: block %i  %s\n",
+    printf("visible %s: block %i  %s\n", context,
            block->id, debugLoc(block));
 
   if (instantiationPt)
@@ -843,6 +806,8 @@ static void getVisibleFunctionsImpl(const char*       name,
                                 Vec<FnSymbol*>&       visibleFns,
                                 bool                  inUseChain)
 {
+  if (block == rootBlock) return; // nothing there
+
   const bool firstVisit = (visited.find(block) == visited.end());
 
   if (!firstVisit && inUseChain) {
@@ -852,12 +817,10 @@ static void getVisibleFunctionsImpl(const char*       name,
     return;
   }
 
-  ModuleSymbol* inMod = block->getModule();
-  FnSymbol*     inFn  = block->getFunction();
-  BlockStmt*    instantiationPt = getVisibleFnsInstantiationPt(block,
-                                                               inMod, inFn);
+  BlockStmt* instantiationPt = getVisibleFnsInstantiationPt(block);
+
   if (firstVisit && call->id == breakOnResolveID)
-    getVisibleFnsShowBlock(block, inMod, inFn, instantiationPt);
+    getVisibleFnsShowBlock("fns", block, instantiationPt);
 
   // avoid infinite recursion due to modules with mutual uses
   if (firstVisit)
@@ -867,15 +830,10 @@ static void getVisibleFunctionsImpl(const char*       name,
     getVisibleFnsFromUseList(name, call, block, visInfo, visited, visibleFns,
                              inUseChain, firstVisit);
 
-  // Need to continue going up in case our parent scopes also had private
-  // uses that were skipped.
-  if (block != rootModule->block) {
-    BlockStmt* next  = getVisibilityScopeNoParentModule(block);
-
-    // Recurse in the enclosing block
-    getVisibleFunctionsImpl(name, call, next, visInfo, visited,
-                            visibleFns, inUseChain);
-  }
+  // Recurse in the enclosing block
+  BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+  getVisibleFunctionsImpl(name, call, next, visInfo, visited,
+                          visibleFns, inUseChain);
 
   // Also look at the instantiation point
   if (instantiationPt != NULL)
@@ -954,7 +912,8 @@ BlockStmt* getVisibilityScope(Expr* expr) {
   while (cur != NULL) {
     // Pretend that ArgSymbols are in the function's body
     // (which is reasonable since functions cannot be defined
-    //  within an ArgSymbol).
+    //  within an ArgSymbol). This way we can consult the function's POIs
+    // when resolving its ArgSymbol's code ex. in defaultExpr.
     // See e.g. test default-argument-generic.chpl
     if (isArgSymbol(cur->parentSymbol)) {
       return cur->getFunction()->body;
@@ -989,6 +948,10 @@ BlockStmt* getVisibilityScope(Expr* expr) {
  */
 static BlockStmt* getVisibilityScopeNoParentModule(Expr* expr) {
   BlockStmt* next = getVisibilityScope(expr);
+
+  if (expr->parentExpr != NULL || ! isModuleSymbol(expr->parentSymbol))
+    // If so, we know we are not crossing a module boundary.
+    return next;
 
   ModuleSymbol* blockMod = expr->getModule();
   ModuleSymbol* nextMod = next->getModule();
