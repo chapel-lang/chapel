@@ -387,6 +387,12 @@ prototype module ConcurrentMap {
     // TODO: RAII based Locks.
     // Current iterator can be locked indefinitely if function breaks
     // Eg: for i in map do break;
+    /*
+      Serially iterates over the key-value pairs of this map.
+
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
+    */
     iter these() : (keyType, valType) {
       var tok = getToken();
       tok.pin();
@@ -466,24 +472,46 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
+    /*
+      Serially iterates over the key-value pairs of this map.
+
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
+    */
     iter items() : (keyType, valType) {
       for i in this {
         yield i;
       }
     }
 
+    /*
+      Serially iterates over the keys of this map.
+
+      :yields: A copy of one of the keys contained in this map.
+    */
     iter keys() : keyType {
       for (key, val) in this {
         yield key;
       }
     }
 
+    /*
+      Serially iterates over the values of this map.
+
+      :yields: A copy of one of the values contained in this map.
+    */
     iter values() : valType {
       for (key, val) in this {
         yield val;
       }
     }
 
+    /*
+      Parallely iterates over the key-value pairs of this map.
+
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
+    */
     iter these(param tag:iterKind) where tag == iterKind.standalone {
       var tok = getToken();
       tok.pin();
@@ -568,18 +596,34 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
+    /*
+      Parallely iterates over the key-value pairs of this map.
+
+      :yields: A tuple whose elements are a copy of one of the key-value
+               pairs contained in this map.
+    */
     iter items(param tag:iterKind) where tag == iterKind.standalone {
       forall i in this {
         yield i;
       }
     }
 
+    /*
+      Parallely iterates over the keys of this map.
+
+      :yields: A copy of one of the keys contained in this map.
+    */
     iter keys(param tag:iterKind) where tag == iterKind.standalone {
       forall (key, val) in this {
         yield key;
       }
     }
 
+    /*
+      Parallely iterates over the values of this map.
+
+      :yields: A copy of one of the values contained in this map.
+    */
     iter values(param tag:iterKind) where tag == iterKind.standalone {
       forall (key, val) in this {
         yield val;
