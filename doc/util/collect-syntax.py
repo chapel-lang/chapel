@@ -50,8 +50,6 @@ import argparse
 import os
 import re
 import sys
-import stat
-import traceback
 
 
 # Regular expressions to identify productions within RST files.
