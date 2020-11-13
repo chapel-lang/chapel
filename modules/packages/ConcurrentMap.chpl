@@ -75,8 +75,8 @@ prototype module ConcurrentMap {
 
   class StackNode {
     type eltType;
-    var val : eltType?;
-    var next : unmanaged StackNode(eltType?)?;
+    var val : eltType;
+    var next : unmanaged StackNode(eltType)?;
 
     proc init(type eltType) {
       this.eltType = eltType;
@@ -90,37 +90,37 @@ prototype module ConcurrentMap {
 
   class Stack {
     type eltType;
-    var top : unmanaged StackNode(eltType?)?;
+    var top : unmanaged StackNode(eltType)?;
     var count : int;
 
     proc init(type eltType) {
       this.eltType = eltType;
     }
 
-    proc push(val : eltType?) {
+    proc push(val : eltType) {
       var node = new unmanaged StackNode(val);
       node.next = top;
       top = node;
       count += 1;
     }
 
-    proc pop() : eltType? {
+    proc pop() : eltType {
       if (count > 0) {
-        var ret = top.val;
-        var next = top.next;
+        var ret = top!.val;
+        var next = top!.next;
         delete top;
         top = next;
         count -= 1;
         return ret;
       } else {
-        var temp : eltType?;
+        var temp : eltType;
         return temp;
       }
     }
 
-  proc isEmpty() : bool {
-    return count == 0;
-  }
+    proc isEmpty() : bool {
+      return count == 0;
+    }
   }
 
   // Can be either a singular 'Bucket' or a plural 'Buckets'
@@ -760,6 +760,30 @@ prototype module ConcurrentMap {
       return res;
     }
 
+    /*
+      Returns a new 0-based array containing a copy of key-value pairs as
+      tuples.
+
+      :return: A new DefaultRectangular array.
+      :rtype: [] (keyType, valType)
+    */
+    proc toArray(): [] (keyType, valType) {
+      type stackType = (keyType, valType);
+      var stack = new Stack(stackType);
+      for i in this {
+        stack.push(i);
+      }
+
+      var size = stack.count;
+      var A: [0..#size] (keyType, valType);
+
+      for i in 0..#size {
+        A[i] = stack.pop();
+      }
+
+      return A;
+    }
+
     proc tryReclaim() {
       _manager.tryReclaim();
     }
@@ -1020,11 +1044,11 @@ prototype module ConcurrentMap {
     forall i in 1..N with (var tok = map.getToken()) {
       map.add(i, i**2, tok);
     }
-    // writeln(map);
+    writeln(map.toArray());
 
-    for i in N/2..N+2 {
-      writeln(map.getValue(i));
-    }
+    // for i in N/2..N+2 {
+    //   writeln(map.contains(i));
+    // }
 
     // writeln(map);
   }
