@@ -472,6 +472,12 @@ prototype module ConcurrentMap {
       }
     }
 
+    iter values() : valType {
+      for (key, val) in this {
+        yield val;
+      }
+    }
+
     iter these(param tag:iterKind) where tag == iterKind.standalone {
       var tok = getToken();
       tok.pin();
