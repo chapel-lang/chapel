@@ -2,9 +2,9 @@
 
 As an open-source project, Chapel welcomes contributions from the
 community.  This document describes the high-level requirements for
-contributing source to Chapel, while other documents linked at the
-bottom of this one provide additional detail about the process of
-contributing to Chapel.
+contributing changes via pull request to Chapel's git repository,
+while other documents linked at the bottom of this one provide
+additional detail about the process of contributing to Chapel.
 
 
 # Chapel and the Developer Certificate of Origin (DCO)
