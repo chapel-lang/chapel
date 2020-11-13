@@ -291,7 +291,8 @@ def output_productions_application_order(out):
   return
 
 
-def main(args):
+def main():
+  args = vars(get_script_arguments())
   global _do_list_productions, _rstfiles, _outdir, _verbose
   _do_list_productions = args['list_productions']
   _rstfiles = args['rstfiles']
@@ -315,13 +316,5 @@ def main(args):
 
 
 if __name__ == '__main__':
-  err = 0
-  try:
-    # Parse arguments and cast them into a dictionary.
-    arguments = vars(get_script_arguments())
-    main(arguments)
-  except Exception as e:
-    traceback.print_exc()
-    err = 1
-  sys.exit(err)
+  main()
 
