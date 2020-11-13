@@ -581,20 +581,19 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
     }
   }
 
-    // Recurse in the enclosing block
-    BlockStmt* next  = getVisibilityScopeNoParentModule(block);
-    getVisibleMethodsImpl(name, call, next, visInfo, visited, visibleFns,
-                          inUseChain);
+  // Recurse in the enclosing block
+  BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+  getVisibleMethodsImpl(name, call, next, visInfo, visited, visibleFns,
+                        inUseChain);
 
-    if (instantiationPt != NULL) {
-      // Also look at the instantiation point
-     if (visInfo == NULL)
+  if (instantiationPt != NULL) {
+    // Also look at the instantiation point
+    if (visInfo == NULL)
       getVisibleMethodsImpl(name, call,   // visit all POIs right away
                             instantiationPt, NULL, visited, visibleFns,
                             inUseChain);
-     else
+    else
       visInfo->nextPOI = instantiationPt; // come back to it later
-    }
   }
 }
 
