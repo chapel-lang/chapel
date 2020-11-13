@@ -10,7 +10,7 @@ Chapel workflow recommendations.
 Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
+.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
 
 Overview:
 
@@ -187,15 +187,24 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
+#. Make sure you understand how to sign your commits with respect to the DCO.
+
+   Chapel enforces the Developer Certificate of Origin (DCO) on all
+   pull requests.  This requires all commits you make to be signed to
+   indicate that they adhere to the DCO policy.  If you're not already
+   familiar with DCOs, read `Getting started with Chapel and the
+   Developer Certificate of Origin`_ to learn more about them and how
+   to sign your commits.
+
+.. _Getting started with Chapel and the Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst
+
+   
 #. If you're working on a long-term effort, announce it on the
    chapel-developers_ mailing list to make sure toes are not being stepped on,
    work is not being pursued redundantly, etc.  Similarly, fundamental changes
    to the language or architecture should be circulated to the
    chapel-developers_ and/or chapel-users_ lists to make sure effort is not
    wasted.
-
-#. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
-   ID.
 
 * You do not need commit/push access to the main repo in order to
   contribute code.  See
@@ -453,20 +462,6 @@ Configure your local git
     git remote set-url --push upstream no_push
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
-
-.. _Commit messages setup
-
-Make sure you understand how to create signed commits
-+++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-Chapel enforces the Developer Certificate of Origin (DCO) on all pull requests.
-This requires all commits you make to be signed to indicate that they adhere
-to the DCO policy.  If you're not already familiar with DCOs, read `Getting
-started with Chapel and the Developer Certificate of Origin`_ to learn more
-about them and how to sign your commits.
-
-.. _Getting started with Chapel and the Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst
-
 
 
 .. _New branch command:
@@ -1111,10 +1106,15 @@ Reviewer responsibilities
 +++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
-  team, be sure they have signed the `contributor license agreement`_ (see the
-  `Developer Workflow`_ instructions for this).  If the developer cannot
-  or will not sign the agreement, bring the situation to the attention
-  of the Chapel project leadership.
+  team, be sure their commits are signed via the DCO bot (one of several
+  github action checks that will run on each PR).  If they're not, help
+  the developer understand the requirement.
+
+  Note that using GitHub's "squash and merge" feature will effectively
+  drop all DCO signature lines from the pull request, and so should
+  not be used on external commits (or potentially even for commits
+  from the core team?) in order to preserve the signed nature of the
+  commits.
 
   Care may need to be taken when committing third-party code that
   originates from a different git[hub] repository.  As an example, in
@@ -1151,7 +1151,7 @@ Reviewer responsibilities
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
 
-By signing a Contributor Agreement, you have agreed that code you contribute
+By opening a PR with signed commits, you are agreeing that code you contribute
 will be governed by the license and copyright of the project as a whole.  A
 standard block of license text is required at the top of every compiler,
 runtime, and module code file.  Browse other files of the same type to see the
