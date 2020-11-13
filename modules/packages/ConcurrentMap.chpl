@@ -840,6 +840,54 @@ prototype module ConcurrentMap {
       return res;
     }
 
+    proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) {
+      var shouldYield = false;
+      var idx = 0;
+
+      while (idx < curr!.buckets.size) {
+        var increment = false;
+        var bucketBase = curr!.buckets[idx].read();
+
+        if (bucketBase != nil) {
+          if (bucketBase!.lock.read() == E_AVAIL && bucketBase!.lock.compareAndSwap(E_AVAIL, GARBAGE)) {
+            curr!.buckets[idx].write(nil);
+            var bucket = bucketBase : unmanaged Bucket(keyType, valType)?;
+            tok.deferDelete(bucket);
+            increment = true;
+          } else if (bucketBase!.lock.read() == P_INNER) {
+            var r = bucketBase : unmanaged Buckets(keyType, valType)?;
+            clearHelper(r, tok);
+            increment = true;
+          } else {
+            if shouldYield then chpl_task_yield(); // If lock could not be acquired
+            shouldYield = true;
+          }
+        } else {
+          increment = true;
+        }
+
+        if increment then idx += 1;
+      }
+    }
+
+    /*
+      Clears the contents of this map.
+    */
+
+    // Getting following error on naming the function 'clear'
+    // call_map.chpl:230: In function 'main':
+    // call_map.chpl:239: error: Illegal use of dead value
+    // call_map.chpl:235: note: 'map' is dead due to ownership transfer here
+    // call_map.chpl:242: error: Illegal use of dead value
+    // call_map.chpl:235: note: 'map' is dead due to ownership transfer here
+    // call_map.chpl:239: error: mention of non-nilable variable after ownership is transferred out of it
+    proc Clear(tok : owned TokenWrapper = getToken()) {
+      // var curr : unmanaged Buckets(keyType, valType)? = root;
+      tok.pin();
+      clearHelper(root, tok);
+      tok.unpin();
+    }
+
     /*
       Returns a new 0-based array containing a copy of key-value pairs as
       tuples.
