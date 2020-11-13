@@ -1027,4 +1027,20 @@ prototype module ConcurrentMap {
     }
     return true;
   }
+
+    /*
+    Returns `true` if the contents of two maps are not the same.
+
+    :arg a: A map to compare.
+    :type a: map
+
+    :arg b: A map to compare.
+    :type b: map (with same keyType and valType)
+
+    :return: `true` if the contents of two maps are not equal.
+    :rtype: `bool`
+  */
+  proc !=(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool {
+    return !(a == b);
+  }
 }
