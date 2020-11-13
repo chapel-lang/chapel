@@ -29,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+BlockStmt*                         rootBlock             = NULL;
 ModuleSymbol*                      rootModule            = NULL;
 ModuleSymbol*                      theProgram            = NULL;
 ModuleSymbol*                      baseModule            = NULL;
@@ -749,12 +750,11 @@ void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
 }
 
 void initRootModule() {
-  rootModule           = new ModuleSymbol("_root",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  rootBlock  = new BlockStmt();
+  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, rootBlock);
 
   rootModule->filename = astr("<internal>");
-  rootModule->block->parentSymbol = rootModule;
+  rootBlock->parentSymbol = rootModule;
 }
 
 void initStringLiteralModule() {
