@@ -562,6 +562,12 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
+    iter keys(param tag:iterKind) where tag == iterKind.standalone {
+      forall (key, val) in this {
+        yield key;
+      }
+    }
+
     /*
       Adds a key-value pair to the map. Method returns `false` if the key
       already exists in the map.
