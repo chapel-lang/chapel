@@ -93,7 +93,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
-    ChapelEnv('CHPL_LLVM_BY_DEFAULT', COMPILER | DEFAULT, 'llvm_default'),
+    ChapelEnv('CHPL_LLVM_BY_DEFAULT', COMPILER, 'llvm_default'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
