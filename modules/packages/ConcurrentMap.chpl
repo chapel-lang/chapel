@@ -568,6 +568,12 @@ prototype module ConcurrentMap {
       }
     }
 
+    iter values(param tag:iterKind) where tag == iterKind.standalone {
+      forall (key, val) in this {
+        yield val;
+      }
+    }
+
     /*
       Adds a key-value pair to the map. Method returns `false` if the key
       already exists in the map.
