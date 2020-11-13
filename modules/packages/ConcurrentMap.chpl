@@ -812,6 +812,29 @@ prototype module ConcurrentMap {
     }
 
     /*
+      Returns a new 0-based array containing a copy of values. Array is not
+      guaranteed to be in any particular order.
+
+      :return: A new DefaultRectangular array.
+      :rtype: [] valType
+    */
+    proc valuesToArray(): [] valType {
+      var stack = new Stack(valType);
+      for (key, val) in this {
+        stack.push(val);
+      }
+
+      var size = stack.count;
+      var A: [0..#size] valType;
+
+      for i in 0..#size {
+        A[i] = stack.pop();
+      }
+
+      return A;
+    }
+
+    /*
       Writes the contents of this map to a channel. The format looks like:
 
         .. code-block:: chapel
@@ -1067,7 +1090,7 @@ prototype module ConcurrentMap {
     forall i in 1..N with (var tok = map.getToken()) {
       map.add(i, i**2, tok);
     }
-    writeln(map.keysToArray());
+    writeln(map.valuesToArray());
 
     // for i in N/2..N+2 {
     //   writeln(map.contains(i));
