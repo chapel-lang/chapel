@@ -985,4 +985,18 @@ prototype module ConcurrentMap {
       ch <~> "}";
     }
   }
+
+  /*
+    Replace the content of this map with the other's.
+
+    :arg lhs: The map to assign to.
+    :arg rhs: The map to assign from.
+  */
+  proc =(ref lhs: ConcurrentMap, const ref rhs: ConcurrentMap) {
+    var tok = lhs.getToken();
+    lhs.Clear(tok);
+    for (key, val) in rhs { // Can also feature a parallel addition
+      lhs.add(key, val, tok);
+    }
+  }
 }
