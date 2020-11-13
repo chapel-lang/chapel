@@ -78,10 +78,25 @@ module ChapelIteratorSupport {
    } else if isDomain(x) {
     return if x.rank == 1 then x.idxType else x.rank * x.idxType;
    } else {
-    pragma "no copy" var ic = _getIterator(x);
-    pragma "no copy" var i = iteratorIndex(ic);
-    _freeIterator(ic);
-    return i.type;
+    // An earlier implementation invoked iteratorIndex(_getIterator(x)),
+    // which invokes ic.advance() and ic.getValue().
+    // Alas, 'ic' - the _iteratorClass returned by _getIterator(x) -
+    // contains, in turn, another iterator class.
+    // That latter does not get deallocated and leaks, as was observed in:
+    //   test/reductions/reduceLoopOfPromoted.chpl
+    //
+    // Instead, we iterate over 'x' into its first iteration.
+    // Breaking out of the loop with a 'return' somehow causes proper cleanup
+    // of the iterator classes at hand.
+    //
+    // Placing halt() - which the compiler knows terminates the program -
+    // after the loop allows the compiler to accept the return type
+    // produced by the 'return' within the loop.
+
+    for i in x do
+      return i.type;
+
+    halt("the iterator yields no elements, cannot determine its index type");
    }
   }
 
@@ -105,23 +120,15 @@ module ChapelIteratorSupport {
   }
 
   // A helper to handle #16027 ex. test/reductions/reduceLoopOfPromoted.chpl
+  //
+  // This function IS executed at runtime - and 'x' is advanced once -
+  // because the returned type is an array and so has a runtime component.
   pragma "no doc"
   proc chpl_elemTypeForReducingIterables(x) type {
 
     // Part 1 - get the first element yielded by 'x'
-    //
-    // An earlier attempt followed the lead of iteratorIndexType()
-    // and called iteratorIndex(_getIterator(x)). Alas in this case
-    // the _iteratorClass returned by _getIterator(x) contains, in turn,
-    // another iterator class. That latter does not get deallocated and leaks.
-    //
-    // Whereas iteratorIndex() invokes ic.advance() and ic.getValue(),
-    // here we go ahead an iterate over this iterator into its first
-    // iteration. Breaking out of the loop with a 'return' somehow causes
-    // proper cleanup of the iterator classes at hand
-    //
-    // This function IS executed at runtime because the returned type
-    // is an array and therefore has a runtime component.
+    // The for-loop here is analogous to the one in iteratorIndexType()
+    // for the case of a non-array non-domain argument.
 
     for i in x {
       compilerAssert(i.type <= _iteratorRecord); // prevent unintended use
@@ -130,7 +137,8 @@ module ChapelIteratorSupport {
       // analogously to the two versions of chpl__initCopy(_iteratorRecord)
       // that invoke chpl__initCopy_shapeHelp().
       if !chpl_iteratorHasDomainShape(i) then
-        compilerError("unsupported elements of the expression being reduced -- they are iterable expressions without a domain shape");
+        compilerError("unsupported elements of the expression being reduced ",
+                    "-- they are iterable expressions without a domain shape");
 
       // Part 2 - build the array type -- as in chpl__initCopy(_iteratorRecord)
       var shape = new _domain(i._shape_);
@@ -139,14 +147,16 @@ module ChapelIteratorSupport {
       type arrElt = iteratorIndexType(i);
       if isArray(arrElt) || isDomain(arrElt) then
         // This scenario needs testing esp. memory/leaks before enabling it.
-        compilerError("unsupported elements of the expression being reduced -- they are iterable expressions consisting of arrays or domains");
+        compilerError("unsupported elements of the expression being reduced ",
+           "-- they are iterable expressions consisting of arrays or domains");
 
       return chpl__buildArrayRuntimeType(shape, arrElt);
     }
 
     // We do not know the dimensions of the array in this case.
     // Can we produce an empty array here?
-    halt("the expression being reduced contains no elements, which is currently not supported");
+    halt("the expression being reduced contains no elements,",
+         " which is currently not supported");
   }
 
   //
