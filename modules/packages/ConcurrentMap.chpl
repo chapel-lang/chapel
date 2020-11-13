@@ -466,6 +466,12 @@ prototype module ConcurrentMap {
       tok.unpin();
     }
 
+    iter items() : (keyType, valType) {
+      for i in this {
+        yield i;
+      }
+    }
+
     iter keys() : keyType {
       for (key, val) in this {
         yield key;
@@ -560,6 +566,12 @@ prototype module ConcurrentMap {
       }
 
       tok.unpin();
+    }
+
+    iter items(param tag:iterKind) where tag == iterKind.standalone {
+      forall i in this {
+        yield i;
+      }
     }
 
     iter keys(param tag:iterKind) where tag == iterKind.standalone {
