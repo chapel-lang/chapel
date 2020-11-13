@@ -434,6 +434,29 @@ static void getVisibleMethods(const char* name, CallExpr* call,
   getVisibleMethodsImpl(name, call, block, NULL, visited, visibleFns, false);
 }
 
+static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
+                                  BlockStmt* block, AggregateType* curType,
+                                  VisibilityInfo* visInfo,
+                                  std::set<BlockStmt*>& visited,
+                                  Vec<FnSymbol*>& visibleFns) {
+  BlockStmt* typeScope = getVisibilityScope(curType->symbol->defPoint);
+  // If we are already in the scope where the type is defined, we need to
+  // indicate that.  However, if we are in a different scope (even if we're in a
+  // subscope of where the type is defined), then we should treat this check as
+  // though we are following an explicit use statement, and not follow private
+  // use and import statements.
+  bool inScopeJump = typeScope != block;
+
+  // Look at own methods
+  getVisibleMethodsImpl(name, call, typeScope, visInfo, visited, visibleFns,
+                        inScopeJump);
+
+  // Follow inheritance, if necessary
+  forv_Vec(AggregateType, pt, curType->dispatchParents) {
+    lookAtTypeFirstHelper(name, call, block, pt, visInfo, visited, visibleFns);
+  }
+}
+
 static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
                             VisibilityInfo*       visInfo,
                             std::set<BlockStmt*>& visited,
@@ -461,8 +484,13 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
   getVisibleMethodsImpl(name, call, typeScope, visInfo, visited, visibleFns,
                         inScopeJump);
 
-  // Follow inheritance?  (May be more necessary if I remove the support for
-  // following private uses)
+  if (AggregateType* at = toAggregateType(t)) {
+    // Follow inheritance, if necessary
+    forv_Vec(AggregateType, pt, at->dispatchParents) {
+      lookAtTypeFirstHelper(name, call, block, pt, visInfo, visited,
+                            visibleFns);
+    }
+  }
 }
 
 static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
