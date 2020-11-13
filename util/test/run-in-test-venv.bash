@@ -40,6 +40,11 @@ else
       exit 1
     fi
 
+    if [ ! -f "$chpldeps/__main__.py" ]; then
+      echo "chpl dependencies are missing - try make test-venv" 1>&2
+      exit 1
+    fi
+
     # include the dependencies
     export PYTHONPATH="$chpldeps":$PYTHONPATH
     exec "$1" "${@:2}"
