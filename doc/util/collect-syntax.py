@@ -20,8 +20,8 @@ Normal text here...
 Normal text here...
 ```
 
-These are syntax blocks which describe the grammar of Chapel. The script
-parses each found block and keys all productions by name.
+These are syntax blocks which describe the grammar of Chapel. The
+script parses each found block and keys all productions by name.
 
 The script outputs all productions in alphabetical order followed by
 application order. Application order is a breadth-first ordering
@@ -31,17 +31,21 @@ The script outputs all productions into the file:
 
   '$CHPL_HOME/doc/rst/language/spec/syntax.rst'
 
+This script expects the following formatting from syntax blocks:
+
+  - Code in a syntax block must be indented at least one space
+  - A syntax block ends upon hitting EOF or the first line to begin
+    with a non-whitespace character
+  - Within a block, lines containing only whitespace are ignored
+  - Expansions on the RHS of a production must be indented more than
+    the production's declaration
+
 This script will complain if:
 
   - There is more than one production with the same name
   - A nonterminal has no corresponding production
   - A production is defined but never applied
   - A production has zero expansions (empty RHS)
-
-Caveats (to be TODO'd):
-
-  - Productions within a syntax block must be indented 3 spaces
-  - Expansions must be indented at least 3 spaces
 
 """
 
@@ -52,21 +56,29 @@ import re
 import sys
 
 
-# Regular expressions to identify productions within RST files.
-_match_syntax_begin = re.compile(r"\s*.. code-block:: syntax\s*\n")
-_match_syntax_end = re.compile(r"\S+")
-_match_production = re.compile(r" {3}(?P<ident>([a-zA-Z0-9._-]+)):.*")
-_match_expansion = re.compile(r" {3} +")
-_match_nonterminal = re.compile(r"\s*('[ a-zA-Z0-9-()]+')|(\\[a-zA-Z]+)|([a-zA-Z0-9-]+)")
+# Group 1 = any amount of whitespace (all treated as spaces)
+_capture_leading_spaces = re.compile(r"(\s*)")
 
+# Group 1 = nonzero indentation | Group 2 = production name
+_capture_production = re.compile(r"(?P<indent>\s+)" +
+                                 r"(?P<symbol>([a-zA-Z0-9._-]+)):.*")
+
+# Group 1 = 'quoted' | Group 2 = \escaped | Group 3 = nonterminal
+_capture_nonterminal = re.compile(r"\s+('[ a-zA-Z0-9-()]+')|" +
+                                  r"(\\[a-zA-Z]+)|" +
+                                  r"([a-zA-Z0-9-]+)")
+
+_match_syntax_begin = re.compile(r"(\s*).. code-block:: syntax\s*\n")
+_match_syntax_end = re.compile(r"\S+")
+_match_all_whitespace= re.compile(r"\s*\Z")
 
 # Global variables...
 _productions = {}
-_do_list_productions = False
 _rstfiles = None
 _outdir = None
 _outfile = None
 _verbose = False
+_start = 'module-declaration-statement'
 
 
 def get_script_arguments():
@@ -89,11 +101,6 @@ def get_script_arguments():
       action='store_true',
       default=False,
       help='enable verbose output')
-  parser.add_argument(
-      '--list-productions',
-      action='store_true',
-      default=False,
-      help='print all collected productions')
   return parser.parse_args()
 
 
@@ -101,77 +108,96 @@ def vprint(*args):
   global _verbose
   if _verbose:
     print(*args)
-  return
 
 
-def collect_productions(rstfile):
-  lines = None
-  with open(rstfile, 'r', encoding='utf-8') as fp:
-    lines = fp.readlines()
-  block_start_line = None
-  result = []
-  i = 0
-  while i < len(lines):
-    line = lines[i]
-    if not block_start_line:
-      if re.match(_match_syntax_begin, line):
-        vprint('Syntax block begin on line:', (i + 1))
-        block_start_line = i
-      i += 1
-      continue
-    assert(block_start_line)
-    match_prod = re.search(_match_production, line)
-    while match_prod:
-      ident = match_prod.group('ident')
-      lineno = i
-      vprint('Production', ident, 'on line', lineno)
-      blob = line
-      expansions = 0
-      i += 1
-      while i < len(lines):
-        line = lines[i]
-        if not re.match(_match_expansion, line):
+class SyntaxParser(object):
+  def __init__(self, fname):
+    self._productions = []
+    self._fname = fname
+    self._lines = None
+    with open(fname, 'r', encoding='utf-8') as fp:
+      self._lines = fp.readlines()
+    assert(self._lines)
+    self._collect_productions()
+
+  def _parse_production_blob(self, start):
+    production = re.match(_capture_production, self._lines[start])
+    assert(production)
+    base_indent = len(production.group('indent'))
+    symbol = production.group('symbol')
+    fname = self._fname
+    vprint('Production', symbol, 'at', fname, ':', (start + 1))
+    blob = self._lines[start]
+    expansions = 0
+    i = start + 1
+    while i < len(self._lines):
+      line = self._lines[i]
+      if not re.match(_match_all_whitespace, line):
+        spaces = re.match(_capture_leading_spaces, line)
+        indent = len(spaces.group(0))
+        if indent <= base_indent:
           break
         expansions += 1
         blob += line
-        i += 1
-      if expansions == 0:
-        msg = 'No RHS for \'' + str(ident) + '\' on line: ' + str(lineno)
-        vprint(msg)
+      i += 1
+    if expansions == 0:
+      msg = 'No RHS for ' + symbol + ' at ' + fname + ':' + str(start + 1)
+      raise Exception(msg)
+    self._productions.append((symbol, start, blob))
+    return i
+
+  def _parse_syntax_block(self, start):
+    line = self._lines[start]
+    assert(re.match(_match_syntax_begin, line))
+    vprint('Syntax begin at', self._fname, ':', (start + 1))
+    i = start + 1
+    while i < len(self._lines):
+      line = self._lines[i]
+      if re.match(_match_syntax_end, line):
+        vprint('Syntax end at', self._fname, ':', (i + 1))
+        break
+      if not re.match(_match_all_whitespace, line):
+        production = re.match(_capture_production, line)
+        if production:
+          i = self._parse_production_blob(i)
+          continue
+        msg = 'Garbled syntax block at ' + self._fname + ':' + str(i + 1)
         raise Exception(msg)
-      result.append((ident, lineno, blob))
-      match_prod = re.search(_match_production, line)
-    if re.match(_match_syntax_end, line) or (i + 1) >= len(lines):
-      vprint('Syntax block end on line:', (i + 1))
-      block_start_line = None
-    i += 1
-    pass
-  if block_start_line:
-    msg = 'Unterminated syntax block, file ' + rstfile
-    msg += ' start line ' + str(block_start_line + 1)
-    vprint(msg)
-    raise Exception(msg)
-  return result 
+      i += 1
+    return i
+
+  def _collect_productions(self):
+    i = 0
+    while i < len(self._lines):
+      line = self._lines[i]
+      if re.match(_match_syntax_begin, line):
+        i = self._parse_syntax_block(i)
+        continue
+      i += 1
+
+  def get_productions(self):
+    return self._productions
 
 
 def get_all_files_to_process():
   result = []
   for rstfile in _rstfiles:
     if os.path.isfile(rstfile):
+      # Skip the file we're producing to avoid recursion.
       if not os.path.basename(rstfile) == 'syntax.rst':
         result.append(rstfile)
-      continue
-    if os.path.isdir(rstfile):
+    elif os.path.isdir(rstfile):
       for dirpath, dirnames, filenames, in os.walk(rstfile):
         for f in filenames:
-          if f.endswith('.rst'):
-            path = os.path.join(dirpath, f)
-            if not os.path.basename(path) == 'syntax.rst':
-              result.append(path)
-      continue
-    msg = 'File or directory not found: ' + str(rstfile)
-    vprint(msg)
-    raise Exception(msg)
+          if not f.endswith('.rst'):
+            continue
+          path = os.path.join(dirpath, f)
+          if os.path.basename(path) == 'syntax.rst':
+            continue
+          result.append(path)
+    else:
+      msg = 'File or directory not found: ' + str(rstfile)
+      raise Exception(msg)
   return result 
 
 
@@ -183,20 +209,19 @@ def error_if_duplicate_rule(rstfile, ident, lineno):
     msg += 'First defined in ' + str(fname) + ' line ' + str(lineno) + '\n'
     vprint(msg)
     raise Exception(msg)
-  return
 
 
 def collect_productions_from_files():
   fnames = get_all_files_to_process()
   for fname in fnames:
     vprint('Processing file:', fname)
-    collected = collect_productions(fname)
+    parser = SyntaxParser(fname)
+    collected = parser.get_productions()
     vprint('Captured', len(collected), 'productions in', fname)
     for ident, lineno, blob in collected:
       global _productions
       error_if_duplicate_rule(fname, ident, lineno)
       _productions[ident] = (fname, lineno, blob)
-  return
 
 
 # Use a triple escaped string to neatly capture prelude text blob.
@@ -221,7 +246,6 @@ in application order for convenience.
 
 def output_prelude(out):
   out.write(_prelude_text)
-  return
 
 
 def output_productions_alphabetical(out):
@@ -239,7 +263,6 @@ def output_productions_alphabetical(out):
     out.write(blob)
     out.write('\n')
     pass
-  return
 
 
 def is_meta_keyword(ident):
@@ -252,19 +275,19 @@ def is_meta_sentence(line):
 
 def get_nonterminals(line):
   # Regex trick, third capture group contains valid nonterminals.
-  regex_groups = re.findall(_match_nonterminal, line)
+  regex_groups = re.findall(_capture_nonterminal, line)
   result = []
   for group in regex_groups:
     quoted, escaped, ok = group
+    # TODO: Use some regex-fu to eliminate this special case?
     # ''' uninterpreted-single-quote-delimited-characters '''
     # This odd nonterminal appears in 'uninterpreted-string-literal' and is
     # triple quoted. Instead of handling it with a fourth regex group in
-    # _match_nonterminal, special case it here.
+    # _capture_nonterminal, special case it here.
     if quoted:
       clean = quoted.lstrip('\' ').rstrip('\' ')
       if clean == 'uninterpreted-single-quote-delimited-characters':
         result.append(clean)
-        continue
     if ok:
       result.append(ok)
   return result
@@ -277,21 +300,21 @@ def get_nonterminals_in_expansion(ident, stack, applied):
   vprint(blob)
   nonterminals = []
   for line in blob.split('\n'):
-    if re.match(_match_production, line) or is_meta_sentence(line):
+    if re.match(_capture_production, line) or is_meta_sentence(line):
       continue
     nonterminals += get_nonterminals(line)
   vprint('Found', len(nonterminals), 'nonterminals')
+  vprint(nonterminals)
+  vprint()
   for n in nonterminals:
     if is_meta_keyword(n):
       continue
     if not n in _productions:
       msg = 'Nonterminal not in production list: ' + str(n)
-      vprint(msg)
       raise Exception(msg)
     if not n in applied:
       stack.append(n)
       applied.add(n)
-  return
 
 
 def output_productions_application_order(out):
@@ -303,11 +326,10 @@ def output_productions_application_order(out):
   out.write('\n')
   out.write('.. code-block:: syntax\n')
   out.write('\n')
-  global _productions
-  start = 'module-declaration-statement'
-  vprint('Computing application-first ordering starting with:', start)
-  stack = [start]
-  applied = {start}
+  global _productions, _start
+  vprint('Computing application-first ordering starting with:', _start)
+  stack = [_start]
+  applied = {_start}
   # Do a breadth-first search over all productions...
   while stack:
     ident = stack.pop(0)
@@ -315,7 +337,7 @@ def output_productions_application_order(out):
     _, _, blob = _productions[ident]
     out.write(blob)
     out.write('\n')
-  # Consider unapplied productions to be a fatal error...
+  # Consider any unapplied productions to be a fatal error...
   unapplied_count = len(_productions) - len(applied)
   if unapplied_count != 0:
     msg = str(unapplied_count) + ' nonterminals are never applied'
@@ -324,31 +346,21 @@ def output_productions_application_order(out):
       if not ident in applied:
         vprint(ident)
     raise Exception(msg)
-  return
 
 
 def main():
   args = vars(get_script_arguments())
-  global _do_list_productions, _rstfiles, _outdir, _verbose
-  _do_list_productions = args['list_productions']
+  global _rstfiles, _outdir, _verbose
   _rstfiles = args['rstfiles']
   _outdir = args['outdir']
   _verbose = args['verbose']
   collect_productions_from_files()
-  if _do_list_productions:
-    global _productions
-    print('Collected', len(_productions))
-    for ident in sorted(_productions.keys()):
-      fname, lineno, blob = _productions[ident]
-      print(ident, 'in', fname, 'on line', lineno)
-      print(blob)
   outname = os.path.join(_outdir, 'syntax.rst')
   vprint('Writing output to:', outname)  
   with open(outname, 'w') as outfile:
     output_prelude(outfile)
     output_productions_alphabetical(outfile)
     output_productions_application_order(outfile)
-  return
 
 
 if __name__ == '__main__':
