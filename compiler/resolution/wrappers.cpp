@@ -1249,18 +1249,19 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
 
   // Error for coerce->value passed to ref / out / etc
   if (argumentCanModifyActual(intent)) {
-    USR_FATAL_CONT(call, "cannot pass value produced by coercion to "
-                         "ref formal '%s'",
-                         formal->name);
-
-    USR_PRINT(calledFn, "in call to '%s', defined here",
-                        calledFn->name);
+    USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
+                         "by reference",
+                         calledFn->name);
 
     if (isManagedPtrType(atype) && isManagedPtrType(ftype)) {
-      USR_PRINT(call, "implicit coercion from %s to %s",
+      USR_PRINT(call, "implicit coercion from '%s' to '%s'",
                       atype->symbol->name,
                       ftype->symbol->name);
     }
+
+    USR_PRINT(formal, "when passing to %s formal '%s'",
+                      intentDescrString(intent),
+                      formal->name);
 
   // Error for coerce->value passed to 'const ref' (ref case handled above).
   // Note that coercing SubClass to ParentClass is theoretically
@@ -1271,18 +1272,19 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
   // by const ref could be modified during the call & the change
   // visible).
   } else if (isRefFormal) {
-    USR_FATAL_CONT(call, "cannot pass value produced by coercion to "
-                         "const ref formal '%s'",
-                         formal->name);
-
-    USR_PRINT(calledFn, "in call to '%s', defined here",
-                        calledFn->name);
+    USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
+                         "by const reference",
+                         calledFn->name);
 
     if (isManagedPtrType(atype) && isManagedPtrType(ftype)) {
-      USR_PRINT(call, "implicit coercion from %s to %s",
-                atype->symbol->name,
-                ftype->symbol->name);
+      USR_PRINT(call, "implicit coercion from '%s' to '%s'",
+                      atype->symbol->name,
+                      ftype->symbol->name);
     }
+
+    USR_PRINT(formal, "when passing to %s formal '%s'",
+                      intentDescrString(intent),
+                      formal->name);
   }
 }
 
