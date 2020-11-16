@@ -1452,7 +1452,7 @@ static void addArgCoercion(FnSymbol*  fn,
   // Check for coercions resulting in a value that
   // they are not passed by ref or const ref.
   if (!castTemp->isRef()) {
-      errorIfValueCoercionToRef(call, prevActual, formal);
+    errorIfValueCoercionToRef(call, prevActual, formal);
   }
 }
 
