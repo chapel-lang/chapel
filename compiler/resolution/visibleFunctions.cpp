@@ -571,9 +571,11 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
   //
   const bool firstVisit = (visited.find(block) == visited.end());
   if (!firstVisit && inUseChain) {
-    // We've seen this block already, but we just found it again from going up
-    // in scope from the call site.  That means that we may have skipped private
-    // uses, so we should go through only the private uses - not in a use chain.
+    // We've seen this block already, but we just found it again.  If we found
+    // it again from another use chain, just return.  If we found it from going
+    // up in scope from the call site, that means that we may have skipped
+    // private uses, so we should go through only the private uses - not in a
+    // use chain.
     return;
   }
 
