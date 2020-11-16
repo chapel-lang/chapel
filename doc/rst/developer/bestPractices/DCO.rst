@@ -11,11 +11,12 @@ This means that the message for each commit you submit must contain a
 line that reads:
 
 .. code-block:: bash
+
      Signed-off-by: Random J Developer <random@developer.example.org>
 
 where the name and email address must match those of your GitHub
-account as indicated by `git config user.name` and `git config
-user.email`.  The presence of this line signifies that you're making
+account as indicated by ``git config user.name`` and ``git config
+user.email``.  The presence of this line signifies that you're making
 the commit in accordance with the DCO.
 
 The rest of this document describes some tips and tricks for signing
@@ -35,9 +36,9 @@ Ways to Sign Commits
    has the obvious downsides of being tedious and error-prone.
 
 
-#. Using `git -s`
+#. Using ``git -s``
 
-   Git has a `-s | --signoff` command-line flag that will
+   Git has a ``-s | --signoff`` command-line flag that will
    automatically add your 'Signed-off-by' line to your commit message.
    For an interactive commit like the following:
 
@@ -64,9 +65,9 @@ Ways to Sign Commits
    straightforward and making your signature visible to you when you
    commit.  However, a downside is that it doesn't apply your
    signature to git commits that skip the interactive editing of
-   commit messages, like `git revert` or `git commit -m ...`.
+   commit messages, like ``git revert`` or ``git commit -m ...``.
 
-   To take this approach, create a file (say, `~/.gitmessage`) that
+   To take this approach, create a file (say, ``~/.gitmessage``) that
    will form the basis for any interactive commit messages, containing
    your signature line:
 
@@ -83,7 +84,7 @@ Ways to Sign Commits
 
         git config commit.template ~/.gitmessage
 
-   To set it up across repositories via your `~/.gitconfig` file:
+   To set it up across repositories via your ``~/.gitconfig`` file:
      
    .. code-block:: bash
 
@@ -101,8 +102,8 @@ Ways to Sign Commits
    about.
 
    To take this approach, copy the script from
-   `$CHPL_HOME/util/misc/pre-commit-msg-hook` to
-   `$CHPL_HOME/.git/hooks/commit-msg`:
+   ``$CHPL_HOME/util/misc/pre-commit-msg-hook`` to
+   ``$CHPL_HOME/.git/hooks/commit-msg``:
 
    .. code-block:: bash
 
@@ -123,7 +124,7 @@ line, you can amend your commits and push them to GitHub.
      git commit --amend --signoff
 
 If you've pushed your changes to GitHub already you'll need to force
-push your branch after this with `git push -f`.
+push your branch after this with ``git push -f``.
 
 If your Pull Request fails the DCO check, it will be necessary to fix
 the entire commit history for the PR. Best practice is to squash the
