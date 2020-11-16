@@ -265,6 +265,30 @@ module List {
 
     /*
       Initializes a list containing elements that are copy initialized from
+      the elements yielded by an iterator expression.
+
+      Used in new expressions.
+
+      :arg other: The iterator expression to initialize from.
+
+      :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
+    */
+    proc init(other: _iteratorRecord, param parSafe=false) {
+      // get the type yielded by the iterator
+      type t = __primitive("scalar promotion type", other.type);
+
+      _checkType(t);
+      this.eltType = t;
+      this.parSafe = parSafe;
+
+      this.complete();
+      _commonInitFromIterable(other);
+    }
+
+
+    /*
+      Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
       ``this.parSafe`` will default to ``false`` if it is not yet set.
@@ -340,6 +364,32 @@ module List {
       this.eltType = if this.type.eltType != ?
                      then this.type.eltType
                      else other.idxType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
+      this.complete();
+      _commonInitFromIterable(other);
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements yielded by an iterator expression.
+
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
+      :arg other: The iterator expression to initialize from.
+      :type other: iterator expression
+    */
+    proc init=(other: _iteratorRecord) {
+      // get the type yielded by the iterator
+      type t = __primitive("scalar promotion type", other.type);
+
+      // set eltType to other.idxType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else t;
       // set parSafe to false if it was not already provided in lhs type
       this.parSafe = if this.type.parSafe != ?
                      then this.type.parSafe
