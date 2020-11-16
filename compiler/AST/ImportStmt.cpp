@@ -105,7 +105,7 @@ ImportStmt::ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
 
 ImportStmt* ImportStmt::copyInner(SymbolMap* map) {
   ImportStmt* _this = NULL;
-  if (modRename != astr("")) {
+  if (modRename[0] != '\0') {
     _this = new ImportStmt(COPY_INT(src), modRename, isPrivate);
   } else {
     _this = new ImportStmt(COPY_INT(src), &unqualified, &renamed, isPrivate);
@@ -194,7 +194,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // The user wanted to rename this symbol when bringing it in.
             // Move the module rename to be the rename for the symbol
             renamed[modRename] = sym->name;
-            modRename = "";
+            modRename = astr("");
           } else {
             // We want to only enable unqualified access of this particular
             // symbol in the module
