@@ -10,4 +10,4 @@ please refer to [Chapel's use of the Developer Certificate of Origin
 (DCO)][1].
 
 [0]: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
-[1]: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst
+[1]: ../bestPractices/DCO.rst
