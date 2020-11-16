@@ -22,7 +22,7 @@ Variables are declared with the following syntax:
    variable-declaration-statement:
      privacy-specifier[OPT] config-extern-or-export[OPT] variable-kind variable-declaration-list ;
 
-   config-or-extern: one of
+   config-extern-or-export: one of
      'config' 'extern' 'export'
 
    variable-kind:
