@@ -1,0 +1,1 @@
+sizeMismatchError.chpl:12: error: halt reached - swapping between arrays of different shapes in dimension 0: 5 vs. 10

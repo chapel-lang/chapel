@@ -51,7 +51,7 @@ templates_path = ['meta/templates']
 
 # Setup CSS files
 def setup(app):
-    app.add_stylesheet('style.css')
+    app.add_css_file('style.css')
 
 # The suffix of source filenames.
 source_suffix = '.rst'
@@ -311,16 +311,6 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 # -- Custom options -------------------------------------------------------
-
-## Patch to disable nonlocal image warning for Chapel logo in README.rst
-original_warn_mode = sphinx.environment.BuildEnvironment.warn_node
-
-def allow_nonlocal_image_warn_node(self, msg, node):
-    if not msg.startswith('nonlocal image URI found:'):
-        original_warn_mode(self, msg, node)
-
-sphinx.environment.BuildEnvironment.warn_node = allow_nonlocal_image_warn_node
-
 
 ### Custom lexers for syntax listings
 from pygments.lexer import RegexLexer

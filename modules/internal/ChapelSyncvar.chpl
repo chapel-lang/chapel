@@ -920,6 +920,7 @@ module ChapelSyncvar {
 private module SyncVarRuntimeSupport {
   use ChapelStandard, SysCTypes;
   use AlignedTSupport;
+  use CPtr;
 
   //
   // Sync var externs

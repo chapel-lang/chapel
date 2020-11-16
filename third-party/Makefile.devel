@@ -1,3 +1,2 @@
-chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
-$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)
+chplspell-venv: FORCE
 	cd chpl-venv && $(MAKE) chplspell-venv

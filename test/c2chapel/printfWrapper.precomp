@@ -1,3 +1,5 @@
 #!/usr/bin/env bash
 
-c2chapel printfWrapper.h > printfGen.chpl
+BINDIR="$CHPL_HOME"/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`
+
+"$BINDIR"/c2chapel printfWrapper.h > printfGen.chpl

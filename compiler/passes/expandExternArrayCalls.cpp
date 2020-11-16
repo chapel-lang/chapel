@@ -92,7 +92,7 @@ void expandExternArrayCalls() {
           SET_LINENO(formal);
           formal->typeExpr->replace(
               new BlockStmt(
-                new UnresolvedSymExpr("c_void_ptr")));
+                new UnresolvedSymExpr("chpl__c_void_ptr")));
         }
       }
       current_formal++;
