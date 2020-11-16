@@ -92,14 +92,17 @@ To set it up across repositories via your `~/.gitconfig` file:
 This approach uses a script to automatically add your signature line
 to new commits within a given repository if it isn't found in the
 commit message.  Relative to the previous approach, it has the
-advantage of being used more consistently for different styles of
-committing, but the slight downsides of needing to be set up for each
-repository and making the fact that you're signing your commits less
-visible to you / easier to forget about.
+advantage of being used more consistently across different styles of
+committing, but the slight downside of making the fact that you're
+signing your commits less visible to you / easier to forget about.
 
 To take this approach, copy the script from
 `$CHPL_HOME/util/misc/pre-commit-msg-hook` to
-`$CHPL_HOME/.git/hooks/commit-msg`.
+`$CHPL_HOME/.git/hooks/commit-msg`:
+
+.. code-block:: bash
+
+     cp $CHPL_HOME/util/misc/pre-commit-msg-hook $CHPL_HOME/.git/hooks/commit-msg
 
 You can also use variations on this script to exit with an error if
 the signature line is missing rather than adding it automatically.
