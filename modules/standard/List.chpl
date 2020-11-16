@@ -660,7 +660,7 @@ module List {
         on this do _maybeReleaseMem(1);
         return;
       }
-      
+
       on this {
         for i in idx..(_size - 2) {
           ref src = _getRef(i + 1);
@@ -675,7 +675,7 @@ module List {
 
     //
     // Assumes that a copy of the input element has already been made at some
-    // previous boundary, IE giving a parameter the "in" intent. Whatever 
+    // previous boundary, IE giving a parameter the "in" intent. Whatever
     // copy you've made, make sure that the "no auto destroy" pragma is
     // attached so that you avoid firing a destructor early (and in the worst
     // case, fire it twice).
@@ -789,12 +789,12 @@ module List {
         _leave();
         boundsCheckHalt("Called \"list.last\" on an empty list.");
       }
-     
+
       // TODO: How to make this work with on clauses?
       ref result = _getRef(_size-1);
       _leave();
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -883,7 +883,7 @@ module List {
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
-      
+
         Inserting an element into this list may invalidate existing references
         to the elements contained in this list.
 
@@ -923,7 +923,7 @@ module List {
       if !result then
         _destroy(x);
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -964,7 +964,7 @@ module List {
     /*
       Insert an array of elements `arr` into this list at index `idx`,
       shifting all elements at and following the index `arr.size` positions
-      to the right. 
+      to the right.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -1019,9 +1019,9 @@ module List {
       :rtype: `bool`
     */
     proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
-      
+
       var result = false;
-      
+
       // Prevent deadlock if we are trying to insert this into itself.
       const size = lst.size;
 
@@ -1225,7 +1225,7 @@ module List {
 
       _sanity(_totalCapacity != 0);
       _sanity(_arrayCapacity != 0);
-    
+
       on this {
         // Remember to use zero-based indexing with `_ddata`!
         for i in 0..#_arrayCapacity {
@@ -1279,7 +1279,7 @@ module List {
 
       .. warning::
 
-        Calling this method on an empty list or with values of `start` or 
+        Calling this method on an empty list or with values of `start` or
         `end` that are out of bounds will cause the currently running program
         to halt. If the `--fast` flag is used, no safety checks will be
         performed.
@@ -1395,7 +1395,7 @@ module List {
           _firstTimeInitializeArrays();
           _extendGeneric(arr);
         }
-        
+
         _leave();
       }
       return;
@@ -1478,7 +1478,7 @@ module List {
     }
 
     /*
-      Update a value in this list in a parallel safe manner via an updater 
+      Update a value in this list in a parallel safe manner via an updater
       object.
 
       The updater object passed to the `update()` method must
@@ -1656,7 +1656,7 @@ module List {
     */
     proc readWriteThis(ch: channel) throws {
       _enter();
-      
+
       ch <~> "[";
 
       for i in 0..(_size - 2) do
@@ -1759,7 +1759,7 @@ module List {
       `lhs`.
 
     :arg lhs: The list to assign to.
-    :arg rhs: The list to assign from. 
+    :arg rhs: The list to assign from.
   */
   proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();
