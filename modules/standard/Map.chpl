@@ -550,7 +550,7 @@ module Map {
      :type k: keyType
 
      :arg v: The value that maps to ``k``
-     :type k: valueType
+     :type v: valueType
 
      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.
