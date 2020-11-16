@@ -99,7 +99,7 @@ visible to you / easier to forget about.
 
 To take this approach, copy the script from
 `$CHPL_HOME/util/misc/pre-commit-msg-hook` to
-`$CHPL_HOME/.git/hooks/commit-hook`.
+`$CHPL_HOME/.git/hooks/commit-msg`.
 
 You can also use variations on this script to exit with an error if
 the signature line is missing rather than adding it automatically.
