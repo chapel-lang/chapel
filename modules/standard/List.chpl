@@ -267,15 +267,24 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
 
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
       :arg other: The list to initialize from.
     */
-    proc init=(other: list(this.type.eltType, ?p)) {
+    proc init=(other: list) {
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that " +
                       "cannot be copied");
 
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
+      // set eltType to other.eltType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.eltType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -284,15 +293,24 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in an array.
 
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
       :arg other: The array to initialize from.
     */
-    proc init=(other: [?d] this.type.eltType) {
-      if !isCopyableType(this.type.eltType) then
+    proc init=(other: []) {
+      if !isCopyableType(other.eltType) then
         compilerError("Cannot copy list from array with element type " +
                       "that cannot be copied");
 
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
+      // set eltType to other.eltType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.eltType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -301,24 +319,31 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements yielded by a range.
 
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
       .. note::
 
         Attempting to initialize a list from an unbounded range will trigger
         a compiler error.
 
       :arg other: The range to initialize from.
-      :type other: `range(this.type.eltType)`
     */
-    proc init=(other: range(this.type.eltType, ?b, ?d)) {
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
-
+    proc init=(other: range(?)) {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
         compilerError(msg);
       }
+
+      // set eltType to other.idxType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.idxType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
 
       this.complete();
       _commonInitFromIterable(other);
