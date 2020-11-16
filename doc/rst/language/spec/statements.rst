@@ -29,6 +29,7 @@ Chapel provides the following statements:
      continue-statement
      param-for-statement
      use-statement
+     import-statement
      defer-statement
      empty-statement
      return-statement

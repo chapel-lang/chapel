@@ -27,6 +27,8 @@ CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=$(WEB_DOC_DI
 CHPL_DOC_HELLO_DIR = $(SOURCEDIR)/examples/hellos
 CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
+SPECSRCDIR = $(SOURCEDIR)/language/spec
+
 help: help-sphinx help-source
 
 help-source:
@@ -52,8 +54,13 @@ man-chapel: FORCE
 	$(MAKE) man
 
 
-source: module-docs primers hellos symlinks
+source: collect-syntax module-docs primers hellos symlinks
 
+
+collect-syntax: clean-collect-syntax
+	@echo
+	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
+	./util/collect-syntax.py rst/language/spec --outdir $(SPECSRCDIR)
 
 module-docs: clean-module-docs
 	@echo
@@ -109,6 +116,11 @@ cleanall: clean-source
 clobber: clean-source clean-build
 
 clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks
+
+clean-collect-syntax: FORCE
+	@echo
+	@echo "Removing generated RST file for syntax productions"
+	touch $(SPECSRCDIR)/syntax.rst && rm $(SPECSRCDIR)/syntax.rst
 
 clean-module-docs: FORCE
 	@echo
