@@ -103,7 +103,7 @@ module List {
 
   /* Check that element type is supported by list */
   pragma "no doc"
-  proc _checkType(type eltType) {
+  proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
