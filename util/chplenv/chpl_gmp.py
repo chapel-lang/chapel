@@ -12,10 +12,10 @@ def get():
     gmp_val = overrides.get('CHPL_GMP')
     if not gmp_val:
         target_compiler = chpl_compiler.get('target')
-        if target_compiler == 'cray-prgenv-cray':
+        target_platform = chpl_platform.get('target')
+        if target_compiler == 'cray-prgenv-cray' and target_platform.startswith('cray-x'):
             gmp_val = 'system'
         else:
-            target_platform = chpl_platform.get('target')
 
             # Detect if gmp has been built for this configuration.
             third_party = get_chpl_third_party()
