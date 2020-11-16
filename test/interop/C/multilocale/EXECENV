@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# If we don't do this then the dynamic linker will fail to load our library
+# when on Linux.
+unamestr=`uname`
+
+if [[ $unamestr == "Linux" ]]; then
+  CWD=$(cd $(dirname $0) ; pwd)
+  echo LD_LIBRARY_PATH=$CWD/lib:$LD_LIBRARY_PATH
+fi
+

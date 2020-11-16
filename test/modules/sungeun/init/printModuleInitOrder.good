@@ -6,7 +6,7 @@ Initializing Modules:
     NetworkAtomics
     ChapelThreads
     ChapelTuple
-      DSIUtil
+     DSIUtil
     ChapelRange
     ChapelTaskDataHelp
     LocaleModel
@@ -17,9 +17,9 @@ Initializing Modules:
         ChapelArray
          ChapelDebugPrint
           IO
-           SysError
            FormattedIO
             Regexp
+         ChapelPrivatization
          Sort
           List
            ChapelLocks
@@ -45,8 +45,8 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
+    ExportWrappers
     Builtins
     AlignedTSupport
-    CPtr
    printModuleInitOrder
     moduleInitTest
