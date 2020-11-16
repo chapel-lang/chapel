@@ -69,9 +69,6 @@ static Map<BlockStmt*, VisibleFunctionBlock*> visibleFunctionMap;
 
 static int                                    nVisibleFunctions       = 0;
 
-static std::map<std::pair<BlockStmt*, BlockStmt*>, bool> scopeIsVisForMethods;
-
-
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
