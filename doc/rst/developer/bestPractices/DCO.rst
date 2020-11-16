@@ -10,7 +10,8 @@ project.  The full text of the DCO is available in Chapel's
 This means that the message for each commit you submit must contain a
 line that reads:
 
-    Signed-off-by: Random J Developer <random@developer.example.org>
+.. code-block:: bash
+     Signed-off-by: Random J Developer <random@developer.example.org>
 
 where the name and email address must match those of your GitHub
 account as indicated by `git config user.name` and `git config
@@ -117,9 +118,9 @@ Troubleshooting DCOs
 If you have authored a commit that is missing its 'Signed-off-by'
 line, you can amend your commits and push them to GitHub.
 
-   .. code-block:: bash
+.. code-block:: bash
 
-        git commit --amend --signoff
+     git commit --amend --signoff
 
 If you've pushed your changes to GitHub already you'll need to force
 push your branch after this with `git push -f`.
@@ -130,11 +131,11 @@ commit history to a single commit, append the DCO sign-off as
 described above, and force push. For example, if you have 2 commits in
 your history (Note the ~2):
 
-   .. code-block:: bash
+.. code-block:: bash
 
-        git rebase -i HEAD~2
-        (interactive squash + DCO append)
-        git push origin -f
+     git rebase -i HEAD~2
+     (interactive squash + DCO append)
+     git push origin -f
 
 Note that, in general, rewriting history in this way may introduce
 issues to the review process and this should only be done to correct a
