@@ -196,9 +196,6 @@ grow).
    Developer Certificate of Origin`_ to learn more about them and how
    to sign your commits.
 
-.. _Getting started with Chapel and the Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/DCO.rst
-
-   
 #. If you're working on a long-term effort, announce it on the
    chapel-developers_ mailing list to make sure toes are not being stepped on,
    work is not being pursued redundantly, etc.  Similarly, fundamental changes
@@ -213,6 +210,9 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
+.. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
+
+   
 .. _Create new branch:
 
 Create new branch
