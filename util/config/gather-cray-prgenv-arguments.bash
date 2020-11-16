@@ -46,9 +46,14 @@ if module avail PrgEnv- 2>&1 | grep --quiet PrgEnv- ; then
     module unload "${existing_prgenv}" 2>/dev/null
     module load PrgEnv-gnu 2>/dev/null
   fi
-else if module savelist 2>&1 | grep --quiet PrgEnv-gnu ; then
+elif module savelist 2>&1 | grep --quiet PrgEnv-gnu ; then
   # We have a PrgEnv-gnu collection.
-  module restore PrgEnv-gnu 2> /dev/null
+  #
+  # The 'restore' will unload our Chapel module, so we have to preserve
+  # CHPL_HOME, which we'll need below.
+  save_CHPL_HOME=$CHPL_HOME
+  module restore PrgEnv-gnu &> /dev/null
+  export CHPL_HOME=$save_CHPL_HOME
 else
   # No PrgEnv-* meta-modules are available.  We can't tell the compiler
   # what to link.
