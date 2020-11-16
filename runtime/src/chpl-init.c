@@ -342,6 +342,7 @@ void chpl_library_init(int argc, char* argv[]) {
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
   chpl_libraryModuleLevelSetup();
 
+  // @dlongnecke-cray, 11/16/2020 
   // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
 }
 
