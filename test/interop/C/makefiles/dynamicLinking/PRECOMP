@@ -1,2 +1,2 @@
 #!/bin/bash
-chpl --library --dynamic FooLibrary.chpl
+$3 --library --dynamic FooLibrary.chpl

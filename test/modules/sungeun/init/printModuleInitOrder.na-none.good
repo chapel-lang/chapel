@@ -44,6 +44,7 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
+    ExportWrappers
     Builtins
     AlignedTSupport
    printModuleInitOrder

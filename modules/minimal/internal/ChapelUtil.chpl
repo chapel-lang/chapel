@@ -35,6 +35,13 @@ module ChapelUtil {
   extern proc chpl_rt_preUserCodeHook();
   extern proc chpl_rt_postUserCodeHook();
 
+  //
+  // Libraries can't make use of minimal modules, so just declare empty
+  // stubs here for the sake of the runtime.
+  //
+  export proc chpl_libraryModuleLevelSetup() {}
+  export proc chpl_libraryModuleLevelCleanup() {}
+
   // Deinitialization of modules and global variables will not happen.
   proc chpl_addModule(moduleName: c_string, deinitFun: c_fn_ptr) { }
 
