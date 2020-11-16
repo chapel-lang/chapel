@@ -25,28 +25,24 @@ module ExportWrappers {
   use SysCTypes;
 
   private proc _initDynamicEndCount() {
-    var endCount = _endCountAlloc(false);
-    __primitive('set dynamic end count', endCount);
-    return;
+    var endCount = _endCountAlloc(forceLocalTypes=false);
+    chpl_task_setDynamicEndCount(endCount);
   }
 
   private proc _destroyDynamicEndCount() {
-    var endCount = __primitive('get dynamic end count');
+    var endCount = chpl_task_getDynamicEndCount();
     _waitEndCount(endCount);
     _endCountFree(endCount);
-    return;
   }
 
   // TODO: Consider moving this to a separate "LibrarySupport" module.
   export proc chpl_libraryModuleLevelSetup(): void {
     _initDynamicEndCount();
-    return;
   }
 
   // TODO: Consider moving this to a separate "LibrarySupport" module.
   export proc chpl_libraryModuleLevelCleanup(): void {
     _destroyDynamicEndCount();
-    return;
   }
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".

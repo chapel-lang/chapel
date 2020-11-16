@@ -18,7 +18,7 @@ export proc hello3() {
   return;
 }
 
-export proc sleepTest() {
+proc sleepTest() {
   sleep(1);
   return;
 }
@@ -29,5 +29,18 @@ export proc hello4() {
   begin sleepTest();
   writeln('...World!');
   return;
+}
+
+proc recursiveBegin(level=0) {
+  if level >= 4 {
+    begin writeln('Hello there!');
+    return;
+  } else {
+    begin recursiveBegin(level+1);
+  }
+}
+
+export proc hello5() {
+  recursiveBegin();
 }
 

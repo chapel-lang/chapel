@@ -5,6 +5,7 @@
 unamestr=`uname`
 
 if [[ $unamestr == "Linux" ]]; then
-  echo LD_LIBRARY_PATH=$CHPL_HOME/test/interop/C/multilocale/lib:$LD_LIBRARY_PATH
+  CWD=$(cd $(dirname $0) ; pwd)
+  echo LD_LIBRARY_PATH=$CWD/lib:$LD_LIBRARY_PATH
 fi
 
