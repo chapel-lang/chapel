@@ -380,7 +380,6 @@ module List {
       ``this.parSafe`` will default to ``false`` if it is not yet set.
 
       :arg other: The iterator expression to initialize from.
-      :type other: iterator expression
     */
     proc init=(other: _iteratorRecord) {
       // get the type yielded by the iterator
