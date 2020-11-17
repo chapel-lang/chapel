@@ -1,0 +1,7 @@
+Aggregation helper files/implementation
+
+A rough snapshot of the Arkouda copy aggregators from
+https://github.com/mhmerrill/arkouda/commit/224a7c3
+
+Also contains some simplified versions of histo/indexgather to help with
+performance tuning/optimizations, but aren't run as part of nightly testing.
