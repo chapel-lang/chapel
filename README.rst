@@ -1,5 +1,6 @@
-.. image:: https://chapel-lang.org/images/cray-chapel-logo-200.png
+.. image:: https://chapel-lang.org/images/chapel-logo-650.png
     :align: center
+    :width: 200
 
 The Chapel Language
 ===================
