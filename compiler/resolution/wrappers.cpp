@@ -1233,8 +1233,8 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
   IntentTag intent = getIntent(formal);
   bool isRefFormal = formal->isRef() || (intent & INTENT_REF);
   FnSymbol* calledFn = formal->getFunction();
-  Type* atype = actual->typeInfo();
-  Type* ftype = formal->typeInfo();
+  Type* atype = actual->getValType();
+  Type* ftype = formal->getValType();
 
   if (inGenerousResolutionForErrors()) {
     return;
