@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Replace substitutable strings starting with // in templates.
+Replace substitutable strings starting with @@ in templates.
 """
 
 import argparse, sys
@@ -24,15 +24,16 @@ def cli_to_dict(keys):
         substitutions[words[0]] = words[1]
     return substitutions
 
-# Use // as the delimiter
-class SlashTemplate(Template):
+# Change the delimiter from the default '$', since that might occur in
+# places we don't want to change in the files we're dealing with.
+class MyTemplate(Template):
     delimiter = '@@'
 
 def _main():
     args, keys = create_parser().parse_known_args()
 
     substitutions = cli_to_dict(keys)
-    src = SlashTemplate(args.template.read())
+    src = MyTemplate(args.template.read())
     result = src.substitute(substitutions)
     args.output.write(result)
 
