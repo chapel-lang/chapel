@@ -196,7 +196,7 @@ if ($printusage == 1) {
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
-    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of the default mailing list(s)\n";
     print "\t-dist <dist>                   : run distribution robustness tests\n";
     print "\t-examples                      : run the release/examples tests only\n";
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
@@ -425,9 +425,9 @@ if ($debug == 1) {
     # "email", the mailer program used on cygwin platform, requires multiple
     # recipient addresses to be comma delimited instead of space delimited.
     if ($mailer eq "email") {
-        $recipient = "$failuremail,$allmail";
+        $recipient = "$failuremail";
     } else {
-        $recipient = "$failuremail $allmail";
+        $recipient = "$failuremail";
     }
     $nochangerecipient = $allmail;
 }

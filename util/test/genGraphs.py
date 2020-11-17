@@ -1118,7 +1118,7 @@ def main():
             # do nothing, we just want to create the file so we know that no
             # errors that we currently detect occurred and all the requires
             # files were copied over. This is used to see if we should sync the
-            # files over to sourceforge.
+            # files over to the website.
             sys.stdout.write('Created SUCCESS file\n')
             #
             # recursively chmod the html/ directory for access via web servers
