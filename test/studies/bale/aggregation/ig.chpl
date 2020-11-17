@@ -43,12 +43,6 @@ proc main() {
   var tmp: [UpdatesDom] int = -1;
 
   startTimer();
-  forall (t, r) in zip (tmp, Rindex) {
-    t = A[r];
-  }
-  stopTimer("AGP");
-
-  startTimer();
   forall (t, r) in zip (tmp, Rindex) with (var agg = new SrcAggregator(int)) {
     agg.copy(t, A[r]);
   }

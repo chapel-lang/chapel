@@ -11,4 +11,4 @@ N = 20000
 if ugni:
   N = 2000000
 
-print('--N={0} --printStats --useUnorderedAtomics=false # bale-hist-atomic-opt'.format(N))
+print('--N={0} --printStats --mode=Mode.ordered # bale-hist-atomic-opt'.format(N))
