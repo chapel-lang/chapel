@@ -37,8 +37,8 @@ Learning Chapel:       https://chapel-lang.org/learning.html
 Reporting bugs:        https://chapel-lang.org/bugs.html
 Chapel documentation:  https://chapel-lang.org/docs/
 GitHub:                https://github.com/chapel-lang/chapel
-Discussion Forums:     https://chapel.discourse.group
-Gitter Chat:           https://gitter.im/chapel-lang/chapel
+Discussion forums:     https://chapel.discourse.group
+Gitter chatroom:       https://gitter.im/chapel-lang/chapel
 Stack Overflow:        http://stackoverflow.com/questions/tagged/chapel
 Twitter:               https://twitter.com/ChapelLanguage
 Facebook:              https://www.facebook.com/ChapelLanguage

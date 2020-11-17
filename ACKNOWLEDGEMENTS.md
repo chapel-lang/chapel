@@ -2,7 +2,7 @@ Chapel Acknowledgements
 =======================
 
 The Chapel project's source repository and releases are currently
-hosted by [GitHub].  Our community discussion forums are hosted by
+hosted by [GitHub].  Our [community discussion forums] are hosted by
 [Discourse].  We are grateful to both organizations for their ongoing
 support.
 
@@ -47,6 +47,7 @@ initial years of the project for the purpose of portability testing.
 [Argonne National Laboratory]: http://www.anl.gov/
 [Barcelona Supercomputer Center]: http://www.bsc.es/
 [Center for Adaptive Supercomputing Software for Multithreaded Architectures (CASS-MT)]: http://cass-mt.pnnl.gov/
+[community discussion forums]: https://chapel.discourse.group/
 [Defense Advanced Research Projects Agency]: http://www.darpa.mil/
 [Department of Computer Science and Engineering]: http://cs.washington.edu
 [Discourse]: https://www.discourse.org/
