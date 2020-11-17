@@ -18,7 +18,7 @@ def get():
             if exists and returncode == 0:
                 libfabric_val = 'system'
             else:
-                libfabric_val = 'libfabric'
+                libfabric_val = 'bundled'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
         if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
@@ -26,6 +26,11 @@ def get():
                              'on HPE Cray EX\n')
     else:
         libfabric_val = 'none'
+
+    if libfabric_val == 'libfabric':
+        sys.stdout.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
+                         "Use CHPL_LIBFABRIC=bundled instead.\n")
+        libfabric_val = 'bundled'
 
     return libfabric_val
 
@@ -43,7 +48,7 @@ def get_uniq_cfg_path():
 @memoize
 def get_compile_args(libfabric=get()):
     flags = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         flags = third_party_utils.default_get_compile_args('libfabric',
                                                            ucp=get_uniq_cfg_path())
     elif libfabric == 'system':

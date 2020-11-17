@@ -33,7 +33,7 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
   else
     CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
   endif
-  ifeq ($(CHPL_MAKE_HWLOC),hwloc)
+  ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
   endif
 endif
