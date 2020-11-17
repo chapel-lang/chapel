@@ -1,3 +1,4 @@
 sync-coerce-to-ref.chpl:5: In function 'test':
-sync-coerce-to-ref.chpl:10: error: value from coercion passed to ref formal 'arg'
-sync-coerce-to-ref.chpl:1: note: to function 'acceptRef' defined here
+sync-coerce-to-ref.chpl:10: error: in call to 'acceptRef', cannot pass result of coercion by reference
+sync-coerce-to-ref.chpl:10: note: implicit coercion from 'sync int(64)' to 'int(64)'
+sync-coerce-to-ref.chpl:1: note: when passing to 'ref' intent formal 'arg'
