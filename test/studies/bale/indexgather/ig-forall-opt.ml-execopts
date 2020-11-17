@@ -13,4 +13,4 @@ N = 10000
 if ugni or gn_aries:
   N = 1000000
 
-print('--N={0} --printStats --useUnorderedCopy=false # bale-ig-opt'.format(N))
+print('--N={0} --printStats --mode=Mode.ordered # bale-ig-opt'.format(N))

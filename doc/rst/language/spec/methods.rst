@@ -29,7 +29,7 @@ Methods are declared with the following syntax:
 
    type-binding:
      identifier .
-     '(' expr ')' .
+     '(' expression ')' .
 
 Methods defined within the lexical scope of a class, record, or union
 are referred to as *primary methods*. For such methods, the

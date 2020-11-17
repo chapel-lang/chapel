@@ -1,2 +1,3 @@
---N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --useUnorderedCopy=false
---N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --useUnorderedCopy=true
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --mode=Mode.ordered
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --mode=Mode.unordered
+--N=20 --M=10 --printStats=false --printArrays=true --useRandomSeed=false --dataParTasksPerLocale=2 --mode=Mode.aggregated

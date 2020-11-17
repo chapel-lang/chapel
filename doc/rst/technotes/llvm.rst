@@ -51,11 +51,6 @@ Note:
 * You can set the environment variable ``CHPL_LLVM_DEVELOPER``
   to request a debug build of LLVM.
 
-* The pre-built LLVM that Apple distributes for Macs does not include
-  the header files needed for Chapel to use CHPL_LLVM=system.
-  However, you can install a Mac Homebrew version of LLVM with, for
-  example, ``brew install llvm@7`` and then set CHPL_LLVM=system.
-
 ---------------------------
 Activating the LLVM support
 ---------------------------

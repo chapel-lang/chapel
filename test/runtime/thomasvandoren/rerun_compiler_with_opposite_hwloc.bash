@@ -10,11 +10,11 @@ compiler=$3
 current_hwloc=$($CHPL_HOME/util/chplenv/chpl_hwloc.py)
 
 case $current_hwloc in
-    hwloc|system)
+    bundled|system)
         export CHPL_HWLOC=none
         ;;
     none)
-        export CHPL_HWLOC=hwloc
+        export CHPL_HWLOC=bundled
         ;;
     *)
         echo "[Warning: Did not recognize HWLOC value: ${current_hwloc}]"
