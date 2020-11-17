@@ -1,6 +1,6 @@
 .. image:: https://chapel-lang.org/images/chapel-logo-650.png
-    :align: center
     :width: 200
+    :align: center
 
 The Chapel Language
 ===================
