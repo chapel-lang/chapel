@@ -1,9 +1,7 @@
 
 .. raw:: html
 
-    <center>
     <img src="https://chapel-lang.org/images/chapel-logo-650.png" width="200px">
-    </center>
     
 The Chapel Language
 ===================
