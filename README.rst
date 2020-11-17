@@ -1,7 +1,10 @@
-.. image:: https://chapel-lang.org/images/chapel-logo-650.png
-    :width: 200
-    :align: center
 
+.. raw:: html
+
+    <center>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/0/0c/Cow_female_black_white.jpg" width="200px">
+    </center>
+    
 The Chapel Language
 ===================
 
