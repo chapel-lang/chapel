@@ -1,10 +1,9 @@
+The Chapel Language
+===================
 
 .. raw:: html
 
     <img src="https://chapel-lang.org/images/chapel-logo-650.png" width="200px">
-    
-The Chapel Language
-===================
 
 What is Chapel?
 ---------------
