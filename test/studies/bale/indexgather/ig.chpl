@@ -10,7 +10,8 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
-config const useUnorderedCopy = false;
+enum Mode {ordered, unordered, aggregated}
+config const mode = Mode.ordered;
 
 const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
                                                        else here.maxTaskPar;
@@ -41,13 +42,21 @@ proc main() {
   var t: Timer;
   t.start();
 
-  if useUnorderedCopy {
-    use UnorderedCopy;
-    forall i in D2 do
-      unorderedCopy(tmp[i], A[rindex[i]]);
-  } else {
-    forall i in D2 do
-      tmp[i] = A[rindex[i]];
+  select mode {
+    when Mode.ordered {
+      forall i in D2 do
+        tmp[i] = A[rindex[i]];
+    }
+    when Mode.unordered {
+      use UnorderedCopy;
+      forall i in D2 do
+        unorderedCopy(tmp[i], A[rindex[i]]);
+    }
+    when Mode.aggregated {
+      use CopyAggregation;
+      forall i in D2 with (var agg = new SrcAggregator(int)) do
+        agg.copy(tmp[i], A[rindex[i]]);
+    }
   }
 
   t.stop();
