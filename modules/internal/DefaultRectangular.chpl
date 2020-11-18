@@ -1719,7 +1719,7 @@ module DefaultRectangular {
 
     if false && !f.writing && !f.binary() &&
        rank == 1 && dom.dsiDim(0).stride == 1 &&
-       dom._arrs.size == 1 {
+       dom._arrs_containing_dom == 1 {
 
       // resize-on-read implementation, disabled right now
       // until we decide how it should work.
