@@ -197,6 +197,8 @@ llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_
 
 clang-included: llvm
 
+bundled: llvm
+
 system: $(LLVM_CLANG_CONFIG_FILE)
 
 system-minimal:
