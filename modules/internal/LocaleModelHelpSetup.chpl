@@ -39,7 +39,7 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
-  extern var chpl_nodeID: chpl_nodeID_t;
+  extern "get_chpl_nodeID" proc chpl_nodeID: chpl_nodeID_t;
 
   record chpl_root_locale_accum {
     var nPUsPhysAcc: atomic int;
