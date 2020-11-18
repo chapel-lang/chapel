@@ -135,6 +135,8 @@ while (@ARGV) {
         $futuresMode = 0;
     } elsif ($flag eq "-no-buildcheck") {
         $buildcheck = 0;
+    } elsif ($flag eq "-buildcheck-only") {
+        $buildcheckonly = 1;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -721,6 +723,11 @@ if ($runtests == 0) {
     } else {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
+
+} elsif ($buildcheckonly == 1) {
+
+  $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
+  mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
 
 } else {
 
