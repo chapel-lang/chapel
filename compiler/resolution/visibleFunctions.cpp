@@ -411,11 +411,12 @@ static void getVisibleMethodsVI(const char* name, CallExpr* call,
                                 Vec<FnSymbol*>&       visibleFns)
 {
   INT_ASSERT(visited->empty() == !visInfo->inPOI()); //fyi
-  BlockStmt* block = getVisibilityScope(call);
 
-  if (visited->empty())
+  if (visited->empty()) {
     // it is the first time we are here for this 'call'
+    BlockStmt* block = getVisibilityScope(call);
     lookAtTypeFirst(name, call, block, visInfo, *visited, visibleFns);
+  }
 
   getVisibleMethodsImpl(name, call, visInfo->currStart, visInfo,
                         *visited, visibleFns, false);
@@ -437,11 +438,8 @@ static void lookAtTypeFirstHelper(const char* name, CallExpr* call,
                                   std::set<BlockStmt*>& visited,
                                   Vec<FnSymbol*>& visibleFns) {
   BlockStmt* typeScope = getVisibilityScope(curType->symbol->defPoint);
-  // If we are already in the scope where the type is defined, we need to
-  // indicate that.  However, if we are in a different scope (even if we're in a
-  // subscope of where the type is defined), then we should treat this check as
-  // though we are following an explicit use statement, and not follow private
-  // use and import statements.
+  // When searching the type scope, don't follow private uses and imports if we
+  // aren't already in the scope where the type is defined.
   bool inScopeJump = typeScope != block;
 
   // Look at own methods
@@ -470,11 +468,8 @@ static void lookAtTypeFirst(const char* name, CallExpr* call, BlockStmt* block,
   Type* t = typeActual->getValType();
 
   BlockStmt* typeScope = getVisibilityScope(t->symbol->defPoint);
-  // If we are already in the scope where the type is defined, we need to
-  // indicate that.  However, if we are in a different scope (even if we're in a
-  // subscope of where the type is defined), then we should treat this check as
-  // though we are following an explicit use statement, and not follow private
-  // use and import statements.
+  // When searching the type scope, don't follow private uses and imports if we
+  // aren't already in the scope where the type is defined.
   bool inScopeJump = typeScope != block;
 
   // Look at own methods
@@ -568,11 +563,20 @@ static void getVisibleMethodsImpl(const char* name, CallExpr* call,
   //
   const bool firstVisit = (visited.find(block) == visited.end());
   if (!firstVisit && inUseChain) {
-    // We've seen this block already, but we just found it again.  If we found
-    // it again from another use chain, just return.  If we found it from going
-    // up in scope from the call site, that means that we may have skipped
-    // private uses, so we should go through only the private uses - not in a
-    // use chain.
+    // inUseChain tracks how we are currently finding the scope.  There's
+    // three scenarios:
+    // - found the scope the first time by traversing a use/import
+    //   - found the scope again by also traversing a use/import (which causes
+    //      us to enter this if branch)
+    //   - found the scope again by going up in scope from the call site (this
+    //     case will *not* cause us to enter this if branch)
+    // - found the scope the first time by going up in scope from the call site
+    //   and again by traversing a use/import (this case will also cause us to
+    //   enter this if branch)
+
+    // We don't want to traverse private use/import statements unless we found
+    // the scope with the use/import statement by going up in scope from the
+    // call site.
     return;
   }
 
