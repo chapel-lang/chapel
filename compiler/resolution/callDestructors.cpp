@@ -1027,6 +1027,13 @@ static void collectGlobals(ModuleSymbol* mod,
           if (VarSymbol* v = initsVariableOut(formal, actual))
             noteGlobalInitialization(mod, v, inited, initedSet);
         }
+
+        // Recurse into calls to compiler generated functions that
+        // return array types (forall expression functions).
+        // (Seach for globalTemps in normalize.cpp to see related code).
+        if (FnSymbol* calledFn = fCall->resolvedFunction())
+          if (calledFn->hasFlag(FLAG_MAYBE_ARRAY_TYPE))
+            collectGlobals(mod, calledFn->body, inited, initedSet);
       }
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
