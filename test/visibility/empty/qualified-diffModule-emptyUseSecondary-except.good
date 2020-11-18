@@ -1,0 +1,3 @@
+qualified-diffModule-emptyUseSecondary-except.chpl:12: In function 'main':
+qualified-diffModule-emptyUseSecondary-except.chpl:14: error: unresolved call 'Foo.secondary()'
+qualified-diffModule-emptyUseSecondary-except.chpl:14: note: because no functions named secondary found in scope

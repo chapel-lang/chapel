@@ -6,7 +6,7 @@ module M2 {
   proc Foo.secondary() { writeln("in secondary method"); }
 }
 module M3 {
-  use M only;
+  use M except *;
 
   proc main() {
     var x = new borrowed M.Foo();

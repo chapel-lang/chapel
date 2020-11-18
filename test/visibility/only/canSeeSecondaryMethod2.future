@@ -1,0 +1,2 @@
+feature request: allow `only MyType` to bring in methods defined on MyType
+#16710
