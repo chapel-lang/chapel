@@ -452,6 +452,9 @@ all:
   09/29/20:
     - text: Do sequential DR assignment if GETs are to be used (#16488)
       config: 16-node-xc, 16-node-cs
+  10/19/20:
+    - Improve the speed of tracking arrays declared over a domain (#16740)
+# End all
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -682,6 +685,9 @@ create-views:
     - Put param conditionals before others in domain record initialization (#15591)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  10/02/20:
+    - Only reference count a distribution's domains (#16528)
+
 
 cs-resize:
   03/05/19:
@@ -1145,6 +1151,7 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+# End memleaks
 
 memleaksfull:
   07/08/14:
@@ -1348,6 +1355,11 @@ memleaksfull:
     - Close leaks coming from unnamed array types (#16600)
   11/04/20:
     - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/04/20:
+    - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/19/20:
+    - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
+# End memleaksfull
 
 meteor:
   12/18/13:
