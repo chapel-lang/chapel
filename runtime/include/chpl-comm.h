@@ -41,6 +41,14 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.
+
+//
+// Helper function for Chapel to get the value of chpl_nodeID
+//
+static inline c_nodeid_t get_chpl_nodeID() {
+  return chpl_nodeID;
+}
+
 extern int32_t chpl_numNodes; // number of nodes
 
 size_t chpl_comm_getenvMaxHeapSize(void);
