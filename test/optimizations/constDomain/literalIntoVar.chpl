@@ -43,7 +43,7 @@ writeln("Passing around a literal returned from a function");
   var r = new R(makeDomainLiteral());
 
   writeln(r.d.definedConst);
-  writeln("How many arrays are tracked? ", r.d._value._arrs.size);
+  writeln("How many arrays are tracked? ",  +reduce for r.d._value._arrs do 1);
 }
 
 {
@@ -56,6 +56,6 @@ writeln("Passing around a literal returned from a function");
   var r = new R(makeDomainLiteral());
 
   writeln(r.d.definedConst);
-  writeln("How many arrays are tracked? ", r.d._value._arrs.size);
+  writeln("How many arrays are tracked? ",  +reduce for r.d._value._arrs do 1);
 }
 

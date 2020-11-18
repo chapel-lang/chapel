@@ -11,7 +11,7 @@ proc writeHeader(header) {
 }
 
 proc test(name, r) {
-  writef(fmt, name, r.d.definedConst, r.d._value._arrs.size == 1);
+  writef(fmt, name, r.d.definedConst, (+reduce for r.d._value._arrs do 1) == 1);
 }
 
 proc testAll(type t) {
