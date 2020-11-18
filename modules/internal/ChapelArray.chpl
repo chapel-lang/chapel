@@ -3248,12 +3248,6 @@ module ChapelArray {
              !this._value.stridable;
     }
 
-    inline proc chpl__assertSingleArrayDomain(fnName: string) {
-      if this.domain._value._arrs.size != 1 then
-        halt("cannot call " + fnName +
-             " on an array defined over a domain with multiple arrays");
-    }
-
     /* The following methods are intended to provide a list or vector style
        interface to 1D unstridable rectangular arrays.  They are only intended
        for use on arrays that have a 1:1 correspondence with their domains.

@@ -33,7 +33,6 @@ Initializing Modules:
          ChapelHashtable
         ExternalArray
         RangeChunk
-        ChapelHashing
        ChapelNumLocales
        Sys
       LocaleModelHelpRuntime
