@@ -1,0 +1,11 @@
+coforall: 
+chpl_nodeID: 0, here.id = 0
+chpl_nodeID: 1, here.id = 1
+chpl_nodeID: 2, here.id = 2
+chpl_nodeID: 3, here.id = 3
+
+forall: 
+chpl_nodeID: 0, here.id = 0
+chpl_nodeID: 1, here.id = 1
+chpl_nodeID: 2, here.id = 2
+chpl_nodeID: 3, here.id = 3
