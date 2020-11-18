@@ -681,8 +681,7 @@ uint32_t entry_to_offset(struct rdcache_s* tree, struct cache_entry_s* entry) {
 
 static void check_line_aligned(void* ptr)
 {
-  intptr_t val = (intptr_t) ptr;
-  assert(val % 64 == 0);
+  assert(((intptr_t) ptr) % 64 == 0);
 }
 
 // aka create_cache
@@ -1156,7 +1155,8 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
   entry = lookup_entry_prev(tree, node, raddr, &prev_table, &prev_list);
 
   // entry should be found in the tree
-  assert(entry);
+  // (redundancy here avoids warning about unused variable)
+  if (entry == NULL) assert(entry);
   // prev should be set for something in the tree.
   // prev will need adjustment.
   assert(prev_table);
