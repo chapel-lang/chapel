@@ -634,16 +634,8 @@ struct rdcache_s {
   chpl_comm_nb_handle_t *pending;
   cache_seqn_t *pending_sequence_numbers;
 
-  // padding to get table 64-byte aligned
-  uint64_t pad0;
-  uint64_t pad1;
-  uint64_t pad2;
-  uint64_t pad3;
-  uint64_t pad4;
-  uint64_t pad5;
-  uint64_t pad6;
-
   // Lookup table
+  __attribute__ ((aligned (64)))
   struct cache_table_slot_s table[];
 };
 
