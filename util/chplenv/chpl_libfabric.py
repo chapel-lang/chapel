@@ -74,7 +74,7 @@ def get_compile_args(libfabric=get()):
 @memoize
 def get_link_args(libfabric=get()):
     libs = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         return third_party_utils.default_get_link_args('libfabric',
                                                        ucp=get_uniq_cfg_path(),
                                                        libs=['libfabric.la'],
