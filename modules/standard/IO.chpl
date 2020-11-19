@@ -3460,55 +3460,11 @@ iter channel.lines() {
   this.unlock();
 }
 
-
-pragma "no doc"
-proc _can_stringify_direct(t) param : bool {
-  if (t.type == string ||
-      t.type == bytes ||
-      t.type == c_string ||
-      isRangeType(t.type) ||
-      isPrimitiveType(t.type)) {
-    return true;
-  } else if (isTupleType(t.type)) {
-    for param i in 0..t.size-1 {
-      if !_can_stringify_direct(t[i]) then
-        return false;
-    }
-    return true;
-  } else {
-    return false;
-  }
-}
-
-// This routine is called in DefaultRectangular in order
-// to report an out of bounds access for a halt. A normal
-// call to halt might not be possible because of module
-// order issues.
-pragma "no doc"
-proc _stringify_tuple(tup:?t) where isTuple(t)
-{
-  var str = "(";
-
-  for param i in 0..tup.size-1 {
-    if i != 0 then str += ", ";
-    if tup[i].type == c_string {
-      try! {
-        str += createStringWithNewBuffer(tup[i]);
-      }
-    }
-    else {
-      str += tup[i]:string;
-    }
-  }
-
- str += ")";
-
-  return str;
-}
+public use ChapelIOStringifyHelper;
 
 // Note that stringify is called with primitive/range/tuple arguments
 // in modules that are loaded early. To avoid module ordering issues,
-// it supports such types directly.
+// it supports such types directly via stringify_simple.
 /*
     Creates a string representing the result of writing the arguments.
 
@@ -3517,36 +3473,7 @@ proc _stringify_tuple(tup:?t) where isTuple(t)
   */
 proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
-    // As an optimization, use string concatenation for
-    // all primitive type stringify...
-    // This helps to work around some resolution errors
-    // when internal modules use halt, which calls stringify.
-
-    var str = "";
-
-    for param i in 0..k-1 {
-      if args[i].type == string {
-        str += args[i];
-      } else if args[i].type == c_string {
-        //decodePolicy.replace never throws
-        try! {
-          str += createStringWithNewBuffer(args[i],
-                                           policy=decodePolicy.replace);
-        }
-      } else if args[i].type == bytes {
-        //decodePolicy.replace never throws
-        try! {
-          str += args[i].decode(decodePolicy.replace);
-        }
-      } else if isRangeType(args[i].type) ||
-                isPrimitiveType(args[i].type) {
-        str += args[i]:string;
-      } else if isTupleType(args[i].type) {
-        str += _stringify_tuple(args[i]);
-      }
-    }
-
-    return str;
+    return stringify_simple(args);
   } else {
     // otherwise, write it using the I/O system.
     try! {
