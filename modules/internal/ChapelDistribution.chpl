@@ -237,20 +237,18 @@ module ChapelDistribution {
       var count = -1;
       on this {
         var cnt = -1;
-        local {
-          _arrsLock.lock();
-          _arrs_containing_dom -=1;
-          if rmFromList && trackArrays() {
-            if _arrs_head == x then _arrs_head = x.next;
-            if x.next != nil then x.next!.prev = x.prev;
-            if x.prev != nil then x.prev!.next = x.next;
-          }
-          cnt = _arrs_containing_dom;
-          // add one for the main domain record
-          if !_free_when_no_arrs then
-            cnt += 1;
-          _arrsLock.unlock();
+        _arrsLock.lock();
+        _arrs_containing_dom -=1;
+        if rmFromList && trackArrays() {
+          if _arrs_head == x then _arrs_head = x.next;
+          if x.next != nil then x.next!.prev = x.prev;
+          if x.prev != nil then x.prev!.next = x.next;
         }
+        cnt = _arrs_containing_dom;
+        // add one for the main domain record
+        if !_free_when_no_arrs then
+          cnt += 1;
+        _arrsLock.unlock();
         count = cnt;
       }
       return (count==0);
