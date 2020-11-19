@@ -211,19 +211,19 @@ module LocaleModelHelpSetup {
     chpl_task_setSubloc(origSubloc);
   }
 
-  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, numSublocales: int,
-      out local_name:string, type CPULocale, type GPULocale){
+  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
+      numSublocales: int, type CPULocale, type GPULocale){
 
     var childSpace = {0..#numSublocales};
 
     const origSubloc = chpl_task_getRequestedSubloc();
 
     for i in childSpace {
-        chpl_task_setSubloc(i:chpl_sublocID_t);
-        if i == 0 then
-          dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-        else
-          dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+      chpl_task_setSubloc(i:chpl_sublocID_t);
+      if i == 0 then
+        dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
+      else
+        dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
     }
     chpl_task_setSubloc(origSubloc);
   }
