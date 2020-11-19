@@ -28,7 +28,7 @@
 
 module ChapelDebugPrint {
   private use ChapelStandard, SysCTypes;
-  private use IO;
+  private use ChapelIOStringifyHelper;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
@@ -38,7 +38,7 @@ module ChapelDebugPrint {
         // Call stringify from IO.chpl. Note that stringify
         // is also called on halt, and so needs to handle
         // being resolved before IO.chpl is completely resolved.
-        str += stringify(tmp);
+        str += stringify_simple(tmp);
       } else {
         str += "?";
       }
