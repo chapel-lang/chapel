@@ -288,7 +288,6 @@ library/standard/Random/performance/getNextPerf.graph
 studies/rbc/tvandoren/RBC.graph
 exercises/c-ray/old/c-ray.graph
 scan/scanPerf.graph
-runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.graph
 # suite: Colorado State University
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
