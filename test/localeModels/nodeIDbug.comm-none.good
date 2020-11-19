@@ -1,0 +1,5 @@
+coforall: 
+chpl_nodeID: 0, here.id = 0
+
+forall: 
+chpl_nodeID: 0, here.id = 0
