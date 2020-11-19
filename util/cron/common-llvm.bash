@@ -4,26 +4,26 @@
 #
 # We examine the first commandline parameter,
 #   $ source $CWD/common-llvm.bash system # $1 is "system", for example
-# if $1 is "llvm" or "system", we set CHPL_LLVM = $1
-# all other cases, we set CHPL_LLVM = "llvm" for backward-compatibility
+# if $1 is "bundled" or "system", we set CHPL_LLVM = $1
+# all other cases, we set CHPL_LLVM = "bundled" for backward-compatibility
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
-# set CHPL_LLVM = "llvm" or "system", based on $1 if any
-# (default CHPL_LLVM = "llvm", and CHPL_LLVM = "none" is not allowed)
+# set CHPL_LLVM = "bundled" or "system", based on $1 if any
+# (default CHPL_LLVM = "bundled", and CHPL_LLVM = "none" is not allowed)
 
 case "$1" in
-( llvm | system )
+( bundled | system )
     export CHPL_LLVM=$1
     ;;
 ( * )
-    export CHPL_LLVM=llvm
+    export CHPL_LLVM=bundled
     ;;
 esac
 
-# setup environment based on CHPL_LLVM = "llvm" or "system"
+# setup environment based on CHPL_LLVM = "bundled" or "system"
 
-if test "$CHPL_LLVM" = llvm; then
+if test "$CHPL_LLVM" = bundled; then
 
     # Ensure that python 2.7 is at front of PATH. This is only done for
     # llvm configuration because the test systems are _very_ finicky about

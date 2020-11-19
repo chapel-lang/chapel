@@ -49,7 +49,7 @@ else:
     debug_option = ' -debug-str '
 
 llvm_dwarfdump = None
-if CHPL_LLVM == "llvm":
+if CHPL_LLVM == "bundled":
     llvm_dwarfdump = (chpl_home + '/third-party/llvm/install/' +
                       CHPL_LLVM_UNIQ_CFG_PATH + '/bin/llvm-dwarfdump')
 else:

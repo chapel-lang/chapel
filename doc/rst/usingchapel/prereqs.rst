@@ -32,7 +32,7 @@ about your environment for using Chapel:
     Cray and Intel.
 
     * Note that you will need a C++11 compiler to build LLVM or regular
-      expression support (i.e.  CHPL_LLVM=llvm or CHPL_REGEXP=re2). If
+      expression support (i.e.  CHPL_LLVM=bundled or CHPL_REGEXP=re2). If
       GCC is used, we recommend GCC version 5 or newer for this purpose.
 
   * Building GMP requires an M4 macro processor.
