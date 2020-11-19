@@ -89,7 +89,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-    export CHPL_LLVM=llvm       # llvm requires cmake
+    export CHPL_LLVM=bundled       # llvm requires cmake
     export CHPL_AUX_FILESYS=none
 
     # As a general rule, more CPUs --> faster make.

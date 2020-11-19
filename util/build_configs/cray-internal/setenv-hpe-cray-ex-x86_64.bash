@@ -90,7 +90,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
     export CHPL_LIBFABRIC=system
-    export CHPL_LLVM=llvm       # llvm requires py27 and cmake
+    export CHPL_LLVM=bundled       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
 
     # We default to CHPL_LIBFABRIC=system for EX.  We need to point to
