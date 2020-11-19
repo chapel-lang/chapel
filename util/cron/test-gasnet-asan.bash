@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Test ASAN-compatible configuration with gasnet on full suite with
-# ASAN on linux64.
+# Test ASAN-compatible configuration with gasnet & ASAN on linux64, running
+# multilocale tests only.
+#
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-gasnet.bash
