@@ -559,7 +559,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=true);
+      try copy(fileSrcName, fileDestName, metadata=false);
     }
   }
 
