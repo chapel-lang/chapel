@@ -29,17 +29,18 @@
 //
 typedef struct {
   int32_t node;
+  int32_t subloc;
 } chpl_localeID_t;
 
 //
 // This is the initializer for a chpl_localeID_t.  This macro is
 // referenced explicitly in the compiler, in symbol.cpp.
 //
-#define CHPL_LOCALEID_T_INIT  {0}
+#define CHPL_LOCALEID_T_INIT  {0, 0}
 
 //
 // This is the external copy constructor for a chpl_localeID_t, specified
-// by the module code for a flat locale model.
+// by the module code for a numa locale model.
 //
 static inline
 chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
@@ -52,8 +53,7 @@ chpl_localeID_t chpl__initCopy_chpl_rt_localeID_t(chpl_localeID_t initial) {
 //
 static inline
 chpl_localeID_t chpl_rt_buildLocaleID(c_nodeid_t node, c_sublocid_t subloc) {
-  chpl_localeID_t loc = { node };
-  //assert(subloc == c_sublocid_any);
+  chpl_localeID_t loc = { node, subloc };
   return loc;
 }
 
@@ -64,7 +64,7 @@ c_nodeid_t chpl_rt_nodeFromLocaleID(chpl_localeID_t loc) {
 
 static inline
 c_sublocid_t chpl_rt_sublocFromLocaleID(chpl_localeID_t loc) {
-  return c_sublocid_any;
+  return loc.subloc;
 }
 
 //
