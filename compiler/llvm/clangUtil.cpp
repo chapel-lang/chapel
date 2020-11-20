@@ -1952,7 +1952,8 @@ void runClang(const char* just_parse_filename) {
   if (0 == strcmp(CHPL_LLVM, "system")) {
     clangCC = get_clang_cc();
     clangCXX = get_clang_cxx();
-  } else if (0 == strcmp(CHPL_LLVM, "llvm")) {
+  } else if (0 == strcmp(CHPL_LLVM, "llvm") ||
+             0 == strcmp(CHPL_LLVM, "bundled")) {
     llvm_install += CHPL_THIRD_PARTY;
     llvm_install += "/llvm/install/";
     llvm_install += CHPL_LLVM_UNIQ_CFG_PATH;
