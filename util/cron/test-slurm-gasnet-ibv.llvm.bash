@@ -2,7 +2,7 @@
 #
 # Multi-node, multi-locale testing on a cray-cs with slurm-gasnetrun_ibv
 # launcher:
-# test gasnet configuration with CHPL_LLVM=llvm and pass --llvm flag to compiler.
+# test gasnet configuration with CHPL_LLVM=bundled and pass --llvm flag to compiler.
 # test against "examples"
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
