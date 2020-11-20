@@ -16,7 +16,7 @@
      indented are assumed to be modifiers of the corresponding top-level
      variable and will not be considered in this script (*** and also
      do not necessarily have to be prefixed with 'CHPL_')
- - Any aliases for the package name are defined in find_pkg_aliases().
+ - Any aliases for the package name are defined in generate_subdir_map().
    The keys take the form of <env_var_name>-<alias_name>. The vals
    are the directory name.
  - If the file COMPILERONLY exists in the third party directory,
@@ -36,7 +36,7 @@ def get_all_pkgs():
     all_pkgs = os.listdir(get_chpl_third_party())
     return all_pkgs
 
-def find_pkg_aliases():
+def generate_subdir_map():
     """ Find any aliases for third-party packages """
     pkg_aliases = dict()
 
@@ -60,7 +60,7 @@ def gather_chplenv():
 def compute_required_pkgs():
     """ Determine required third-party packages based on the chplenv """
     chplenv = gather_chplenv()
-    pkg_aliases = find_pkg_aliases()
+    pkg_aliases = generate_subdir_map()
 
     req_pkgs = set()
     for line in chplenv.split('\n'):
