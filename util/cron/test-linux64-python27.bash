@@ -9,4 +9,4 @@ source $CWD/common.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python27"
 
-$CWD/nightly -cron -buildcheck-only -examples ${nightly_args}
+$CWD/nightly -cron -python2 -examples ${nightly_args}
