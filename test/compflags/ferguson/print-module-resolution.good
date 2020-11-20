@@ -64,6 +64,10 @@ ChapelTuple
   from print-module-resolution.ChapelStandard.ChapelTuple
 Math
   from print-module-resolution.ChapelStandard.ChapelRange.Math
+ChapelIOStringifyHelper
+  from print-module-resolution.ChapelStandard.ChapelRange.ChapelDebugPrint.ChapelIOStringifyHelper
+ChapelDebugPrint
+  from print-module-resolution.ChapelStandard.ChapelRange.ChapelDebugPrint
 ChapelRange
   from print-module-resolution.ChapelStandard.ChapelRange
 ChapelReduce
@@ -84,16 +88,14 @@ ArrayViewRankChange
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewRankChange
 ArrayViewReindex
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ArrayViewReindex
-Regexp
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.FormattedIO.Regexp
-FormattedIO
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO.FormattedIO
-IO
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint.IO
-ChapelDebugPrint
-  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelDebugPrint
 ChapelPrivatization
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.ChapelPrivatization
+Regexp
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO.FormattedIO.Regexp
+FormattedIO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO.FormattedIO
+IO
+  from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List.IO
 List
   from print-module-resolution.ChapelStandard.LocaleModel.LocaleModelHelpFlat.LocaleModelHelpSetup.DefaultRectangular.ChapelArray.Sort.List
 RadixSortHelp
