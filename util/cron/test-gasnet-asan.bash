@@ -13,8 +13,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet-asan"
 
 export GASNET_QUIET=Y
 
-# "Should be able to detect most memory errors, since remote r/w are
-# performed using active messages instead of RDMA".
+# The ASAN best practices doc recommends that SUBSTRATE be set to 'udp' and
+# SEGMENT be set to 'everything' in order to encourage active messages
+# instead of RDMA. This will let ASAN detect more memory errors.
+#
 export CHPL_COMM_SUBSTRATE=udp
 export CHPL_GASNET_SEGMENT=everything
 
