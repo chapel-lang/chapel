@@ -73,11 +73,11 @@ use CPtr;
 /* Represents generally the current directory. This starts as the directory
    where the program is being executed from.
 */
-const curDir = ".";
+param curDir = ".";
 /* Represents generally the parent directory. */
-const parentDir = "..";
+param parentDir = "..";
 /* Denotes the separator between a directory and its child. */
-const pathSep = "/";
+param pathSep = "/";
 
 /*
    Localizes and unescapes string to create a bytes to be used for obtaining a
