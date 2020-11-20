@@ -35,9 +35,7 @@ module ChapelDebugPrint {
     for param i in 0..args.size-1 {
       var tmp = args(i);
       if _can_stringify_direct(tmp) {
-        // Call stringify from IO.chpl. Note that stringify
-        // is also called on halt, and so needs to handle
-        // being resolved before IO.chpl is completely resolved.
+        // Call stringify_simple from ChapelIOStringifyHelper.chpl
         str += stringify_simple(tmp);
       } else {
         str += "?";
