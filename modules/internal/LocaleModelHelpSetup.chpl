@@ -104,7 +104,18 @@ module LocaleModelHelpSetup {
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
   }
 
-  //TODO: Create a helpSetupRootLocale function for GPUs
+  proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
+    var root_accum:chpl_root_locale_accum;
+
+    forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
+      chpl_task_setSubloc(c_sublocid_any);
+      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
+      dst.myLocales[locIdx] = node;
+      root_accum.accum(node);
+    }
+
+    root_accum.setRootLocaleValues(dst);
+  }
 
   // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
   private inline proc localSpawn() {

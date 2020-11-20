@@ -272,7 +272,7 @@ module LocaleModel {
     // parallel) over the locales to set up the LocaleModel object.
     // In addition, the initial 'here' must be set.
     proc setup() {
-      helpSetupRootLocaleNUMA(this);
+      helpSetupRootLocaleGPU(this);
     }
 
     // Has to be globally unique and not equal to a node ID.
