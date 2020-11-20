@@ -157,6 +157,8 @@ module ChapelRange {
 
   use Math, DSIUtil;
 
+  private use ChapelDebugPrint only chpl_debug_writeln;
+
   // Turns on range iterator debugging.
   pragma "no doc"
   config param debugChapelRange = false;
