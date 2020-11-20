@@ -27,6 +27,10 @@ if [[ "$chpl_comm" != none ]]; then
       pe_chapel_pkgconfig_libs="cray-udreg:$pe_chapel_pkgconfig_libs"
     fi
   fi
+
+  if [[ "$chpl_comm" == ofi && $($CHPL_HOME/util/chplenv/chpl_libfabric.py) == system ]]; then
+    pe_chapel_pkgconfig_libs="libfabric:$pe_chapel_pkgconfig_libs"
+  fi
 fi
 
 
