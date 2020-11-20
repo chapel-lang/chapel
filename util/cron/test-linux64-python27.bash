@@ -5,8 +5,8 @@
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
 
-# Python 3 env is setup by jenkins
-
+# set the make flavor to avoid using `util/chplenv/chpl_make.py`
+export CHPL_NIGHTLY_MAKE=gmake
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python27"
 
 $CWD/nightly -cron -python2 -examples ${nightly_args}

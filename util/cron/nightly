@@ -484,27 +484,31 @@ if (-d "$chplhomedir/.git") {
 chomp($revision);
 $revision = "Revision: $revision";
 
-#
-# if on cygwin, blow away FILES files because they wreak havoc on stuff
-#
-$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-if ($hostplatform =~ "cygwin") {
-    mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
-}
+# we'll use some python3 to set platform-specific things. We are not using
+# python2 on those platforms so, skip those
+if ($python2 == 0) {
+  #
+  # if on cygwin, blow away FILES files because they wreak havoc on stuff
+  #
+  $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+  if ($hostplatform =~ "cygwin") {
+      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
+  }
 
-$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
+  $hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
 
-# Setup variables to pass to all make calls.
-$make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
+  # Setup variables to pass to all make calls.
+  $make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
 
-# Add OPTIMIZE=1 for most environments. If using the cray programming
-# environment, disable optimizations when building the compiler. This is an
-# experiment to see if it stabilizes the tests for the compiler when built with
-# cray C++/C compiler.
-if ($hostcompiler eq "cray-prgenv-cray") {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
-} else {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  # Add OPTIMIZE=1 for most environments. If using the cray programming
+  # environment, disable optimizations when building the compiler. This is an
+  # experiment to see if it stabilizes the tests for the compiler when built with
+  # cray C++/C compiler.
+  if ($hostcompiler eq "cray-prgenv-cray") {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
+  } else {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  }
 }
 
 
