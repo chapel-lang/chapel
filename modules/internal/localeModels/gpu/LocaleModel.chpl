@@ -310,18 +310,18 @@ module LocaleModel {
     override proc getDefaultLocaleArray() const ref return myLocales;
 
     override proc localeIDtoLocale(id : chpl_localeID_t) {
-      // In the default architecture, there are only nodes and no sublocales.
-      // What is more, the nodeID portion of a wide pointer is the same as
-      // the index into myLocales that yields the locale representing that
-      // node.
-      return myLocales[chpl_rt_nodeFromLocaleID(id)];
+      const node = chpl_nodeFromLocaleID(id);
+      const subloc = chpl_sublocFromLocaleID(id);
+      if (subloc == c_sublocid_none) || (subloc == c_sublocid_any) then
+        return (myLocales[node:int]):locale;
+      else
+        return (myLocales[node:int].getChild(subloc:int)):locale;
     }
 
     proc deinit() {
       for loc in myLocales {
         on loc {
           rootLocaleInitialized = false;
-          delete loc._instance;
         }
       }
     }
