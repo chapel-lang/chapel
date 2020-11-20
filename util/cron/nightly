@@ -65,6 +65,7 @@ $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
 $mason_build = 0;
+$python2 = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -135,8 +136,8 @@ while (@ARGV) {
         $futuresMode = 0;
     } elsif ($flag eq "-no-buildcheck") {
         $buildcheck = 0;
-    } elsif ($flag eq "-buildcheck-only") {
-        $buildcheckonly = 1;
+    } elsif ($flag eq "-python2") {
+        $python2 = 1;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -222,6 +223,7 @@ if ($printusage == 1) {
     print "\t-performance                   : run performance tests\n";
     print "\t-performance-configs <configs> : comma seperated configs to graph, ': v' after config to be visible by default\n";
     print "\t-performance-description <...> : run performance tests with additional description\n";
+    print "\t-python2                       : don't use features that needs python 3\n";
     print "\t-releasePerformance            : \$releasePerformance=1 ?\n";
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
@@ -514,15 +516,18 @@ $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compi
 print "Making $make_vars_opt third-party-try-opt\n";
 mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
-# Build chpldoc. Do not fail the build if it does not succeed. Do not send
-# mail either.
-print "Making $make_vars_opt chpldoc\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+# if we are using python2, we cannot build the test-venv and/or chpldoc
+if ($python2 == 0) {
+  # Build chpldoc. Do not fail the build if it does not succeed. Do not send
+  # mail either.
+  print "Making $make_vars_opt chpldoc\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
 
-# Build test virtualenv. Fail if the build does not succeed as virtualenv is
-# needed for start_test. Send mail on failure
-print "Making $make_var_opt test-venv\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+  # Build test virtualenv. Fail if the build does not succeed as virtualenv is
+  # needed for start_test. Send mail on failure
+  print "Making $make_var_opt test-venv\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+}
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -724,8 +729,10 @@ if ($runtests == 0) {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
 
-} elsif ($buildcheckonly == 1) {
+} elsif ($python2 == 1) {
 
+  # test system depends on python3, so with python2 we cannot do much other than
+  # `make check`
   $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
   mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
 
