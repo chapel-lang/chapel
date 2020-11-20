@@ -18,5 +18,5 @@ export GASNET_QUIET=Y
 export CHPL_COMM_SUBSTRATE=udp
 export CHPL_GASNET_SEGMENT=everything
 
-$CWD/nightly -cron ${nightly_args} $(get_nightly_paratest_args 6) -multilocale
+$CWD/nightly -cron -multilocale ${nightly_args} $(get_nightly_paratest_args 6)
 
