@@ -3473,7 +3473,7 @@ public use ChapelIOStringifyHelper;
   */
 proc stringify(const args ...?k):string {
   if _can_stringify_direct(args) {
-    return stringify_simple(args);
+    return stringify_simple((...args));
   } else {
     // otherwise, write it using the I/O system.
     try! {
