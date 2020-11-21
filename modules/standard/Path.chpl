@@ -337,6 +337,8 @@ proc commonPath(paths: []): string {
       writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
       writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
 
+   Note that this is different from the Unix ``dirname`` function.
+
    :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
    :type name: `string`
