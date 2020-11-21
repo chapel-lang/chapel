@@ -7,11 +7,9 @@ COMP=`$CHPL_HOME/util/chplenv/chpl_compiler.py --host`
 COMM=`$CHPL_HOME/util/chplenv/chpl_comm.py`
 
 # We test it only if we're on linux64 with LLVM
-if [ "$LLVM" != "llvm" ]; then
-  if [ "$LLVM" != "system" ]; then
-    echo "[Skipping test based on environment settings]";
-    exit 0;
-  fi
+if [ "$LLVM" = "none" ]; then
+  echo "[Skipping test based on environment settings]";
+  exit 0;
 fi
 
 if [ "$PLAT" != "linux64" ]; then
