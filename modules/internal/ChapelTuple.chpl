@@ -216,6 +216,19 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
+  pragma "no doc"
+  pragma "reference to const when const this"
+  pragma "star tuple accessor"
+  proc _tuple.this(i : bool) ref {
+    if !isHomogeneousTuple(this) then
+      compilerError("invalid access of non-homogeneous tuple by runtime value");
+    if boundsChecking then
+      if i < 0 || i > size-1 then
+        halt("tuple access out of bounds: ", i);
+    return __primitive("get svec member", this, i);
+  }
+
+
   // This is controlled with --[no-]warn-tuple-iteration
   // so we are not chpldoc-ing it.
   //
