@@ -13,7 +13,7 @@ proc test2() {
   var f = opentmp();
   var a = f.reader();
   var b:channel(writing=true,kind=iokind.dynamic,locking=true);
-  b; // prevent split-init
+  b;
   if b != a then
     writeln("Channels a and b are not equal.");
 }
