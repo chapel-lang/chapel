@@ -737,6 +737,8 @@ if ($runtests == 0) {
 
   # test system depends on python3, so with python2 we cannot do much other than
   # `make check`
+  $ENV{'CHPL_HOME'} = $chplhomedir;
+
   $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
   mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
 
