@@ -93,12 +93,12 @@ module LocaleModelHelpGPU {
       if (dsubloc == 0) {
           chpl_debug_writeln("** executing on CPU");
       }
-      else if (dsubloc == 1) {
+      else if (dsubloc >= 1) {
           chpl_debug_writeln("** executing on GPU");
       }
     }
 
-   if dnode != chpl_nodeID {
+    if dnode != chpl_nodeID {
       var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
