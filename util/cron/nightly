@@ -675,7 +675,7 @@ if (!($dist eq "")) {
 if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
 }
-if ($memleak == 1) {
+if ($memleaks == 1) {
     $testflags = "$testflags -memleaks";
 }
 if (!($memleakslog eq "")) {
