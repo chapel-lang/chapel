@@ -10,4 +10,4 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64-python35"
 
 set_python_version "3.5"
 
-$CWD/nightly -cron ${nightly_args}
+$CWD/nightly -cron -hellos ${nightly_args}
