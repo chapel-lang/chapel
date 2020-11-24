@@ -629,7 +629,7 @@ functionality is particularly useful when doing generic programming
    ``f()`` be evaluated for side effects?
 
    At first it might seem that ``f()`` should never be evaluated for side
-   effects. However, it must be evaluated for side effects if ``f()`` an
+   effects. However, it must be evaluated for side effects if ``f()`` returns an
    array or domain type, as these have a runtime component (see
    :ref:`Types_with_Runtime_Components`). As a result, should ``f()`` in
    such a setting always be evaluated for side effects?  The answer to

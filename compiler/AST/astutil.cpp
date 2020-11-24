@@ -157,7 +157,7 @@ void computeHasToplevelYields(BaseAST* ast, bool& result) {
   if (result)
     return;
   else if (CallExpr* call = toCallExpr(ast))
-    result = call->isPrimitive(PRIM_YIELD); // do not dig futher
+    result = call->isPrimitive(PRIM_YIELD); // do not dig further
   else if (isSymbol(ast) || isForallStmt(ast))
     ; // do not descend into these
   else
