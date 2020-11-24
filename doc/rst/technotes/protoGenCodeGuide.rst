@@ -189,7 +189,7 @@ A scalar message field can have one of the following types, the table shows the
 type specified in the ``.proto`` file, and the corresponding generated Chapel type:
 
 ..
-  This table is intended to match the order given by the proto3 languge documentation.
+  This table is intended to match the order given by the proto3 language documentation.
 
 .. list-table::
    :widths: 50 50
@@ -329,7 +329,7 @@ fields along with explicit ``get/set`` type methods:
     ...
   }
 
-The explicit methods are declared to allow the user toset at most one of the
+The explicit methods are declared to allow the user to set at most one of the
 fields in a oneof at a time. For example:
 
 .. code-block:: chpl

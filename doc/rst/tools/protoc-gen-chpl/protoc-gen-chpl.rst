@@ -35,7 +35,7 @@ It builds the ``protoc-gen-chpl`` binary so that the command line interface can 
 This installs ``protoc-gen-chpl`` in the same place as the chapel compiler (``chpl``) so that
 it can be used anywhere in the user's file system.
 
-To remove protobuf suppot, change directory to ``$CHPL_HOME/tools/protoc-gen-chpl`` and run:
+To remove protobuf support, change directory to ``$CHPL_HOME/tools/protoc-gen-chpl`` and run:
 
 .. code-block:: sh
 
@@ -49,7 +49,7 @@ a ``.proto`` file. The definitions in a ``.proto`` file contain a message for ea
 data structure you want to serialize, then specify a name and a type for each 
 field in the message.
 
-Below is an example of an ``addressbook`` for a person. This section descibes a
+Below is an example of an ``addressbook`` for a person. This section describes a
 simple ``.proto`` file and the corresponding generated chapel code. For complete
 details on ``.proto`` files see the links at the end of this document.
 

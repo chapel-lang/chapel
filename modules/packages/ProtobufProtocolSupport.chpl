@@ -24,7 +24,7 @@
 
     This module provides a Chapel implementation for protocol buffers binary
     `wire format <https://developers.google.com/protocol-buffers/docs/encoding/>`_
-    enoding algorithms. It has functions to support serialization and deserialization
+    encoding algorithms. It has functions to support serialization and deserialization
     of protocol buffer messages.
  */
 module ProtobufProtocolSupport {
