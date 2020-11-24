@@ -123,6 +123,7 @@ chown
 chplcast
 chplcgdecl
 chplcgfns
+chpldeps
 chpldev
 chpldirent
 chplenv
@@ -2705,6 +2706,7 @@ pnext
 rnext
 
 FILEID: 2d19bb3e-1d83-11e6-a3a6-10ddb1d4c3d5
+sysctypes
 urse
 wkfn
 yylloc
@@ -3243,6 +3245,7 @@ localt
 
 FILEID: 0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5
 kout
+subslots
 
 FILEID: 5dfff152-2952-11e6-a3a6-10ddb1d4c3d5
 ndex
@@ -3309,6 +3312,7 @@ postzero
 
 FILEID: dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5
 newbehavior
+ärvi
 
 FILEID: e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5
 conan
@@ -3770,6 +3774,8 @@ itid
 ncnt
 nucls
 probs
+аноним
+легионов
 
 FILEID: 24a5f32a-792f-11e6-807a-843835579daa
 eterm
@@ -3835,6 +3841,7 @@ FILEID: 7b9a1e46-8ab8-11e6-b915-843835579daa
 chplspell
 
 FILEID: c6d25ce8-a183-11e6-91b8-10ddb1d4c3d5
+atype
 bdce
 ccfbb
 urse
@@ -4742,6 +4749,7 @@ comparand
 configmore
 cqes
 cswap
+ctok
 ctxs
 dsrd
 dupinfo
@@ -4759,6 +4767,7 @@ mrdesc
 mrkey
 ofichkerr
 ofichkret
+ofidbg
 ofiwg
 olen
 opnd
@@ -4795,6 +4804,7 @@ ttcip
 txed
 txns
 txntrk
+underbars
 ungood
 waitset
 writemsg
@@ -5331,6 +5341,20 @@ logln
 FILEID: 22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5
 globalvars
 
+FILEID: f50f46a0-2e9e-11eb-adc5-acbc32c4f96b
+gitconfig
+gitmessage
+
+FILEID: fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b
+cyclicnuma
+ddatas
+
+FILEID: 1234061c-2e9f-11eb-adc5-acbc32c4f96b
+lcudart
+
+FILEID: fe77e30e-2e9f-11eb-adc5-acbc32c4f96b
+developercertificate
+
 NATURAL:
 aarch
 abcd
@@ -5352,6 +5376,7 @@ adjoint
 afaik
 afterwards
 aggregator
+aggregators
 akash
 akihiro
 akshansh
@@ -6268,6 +6293,7 @@ ghangas
 gilbert
 github
 gitignore
+gitter
 glagolitic
 glibc
 globalattr
@@ -7628,6 +7654,7 @@ sigkill
 sigmask
 signbit
 signedness
+signoff
 signum
 sigpipe
 sigplan
@@ -8210,4 +8237,8 @@ zlib
 zolotov
 zpos
 zypper
+álaga
+øbenhavns
+ławski
+śniak
 
