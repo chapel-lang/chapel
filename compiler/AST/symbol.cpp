@@ -772,9 +772,11 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
   // ArgSymbols appear only in formal parameter lists.
   if (defPoint) {
-    FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol);
-    INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->formals));
+    if (FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol)) {
+      INT_ASSERT(defPoint->list == &(pfs->formals));
+    } else {
+      INT_ASSERT(isTiMark(this));
+    }
   }
   if (intentsResolved) {
     if (intent == INTENT_BLANK || intent == INTENT_CONST) {
