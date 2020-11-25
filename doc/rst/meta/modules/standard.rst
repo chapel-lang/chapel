@@ -13,10 +13,6 @@ Automatic Modules
 All Chapel programs automatically ``use`` the modules :chpl:mod:`Builtins` ,
 :chpl:mod:`Math` , and :chpl:mod:`Types` by default.
 
-
-.. toctree::
-   :hidden:
-
 .. toctree::
    :maxdepth: 1
 
