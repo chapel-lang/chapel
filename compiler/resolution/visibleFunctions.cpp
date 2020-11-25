@@ -236,6 +236,10 @@ static void buildVisibleFunctionMap() {
         block = theProgram->block;
       } else {
         block = getVisibilityScope(fn->defPoint);
+        // As of PR #16695, getVisibleFunctions() et al do not check rootModule
+        // for visible functions. (Although they could, if desired.)
+        // So, ensure we do not add anything there.
+        INT_ASSERT(block != rootBlock);
       }
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
