@@ -1,1 +1,0 @@
-reinitFromCString.chpl:3: error: halt reached - Assigning a c_string with non-UTF-8 data
