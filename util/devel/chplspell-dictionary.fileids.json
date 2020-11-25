@@ -1,4 +1,7 @@
 {
+  "fe77e30e-2e9f-11eb-adc5-acbc32c4f96b": [
+    ".github/CONTRIBUTING.md"
+  ],
   "20acc50e-2ad9-11e6-a3a6-10ddb1d4c3d5": [
     "ACKNOWLEDGEMENTS.md"
   ],
@@ -307,6 +310,9 @@
   "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/ContributorInfo.rst"
   ],
+  "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/bestPractices/DCO.rst"
+  ],
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
   ],
@@ -328,9 +334,6 @@
   "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
     "doc/rst/developer/chips/17.rst"
   ],
-  "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/18.rst"
-  ],
   "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
     "doc/rst/developer/chips/19.rst"
   ],
@@ -342,6 +345,9 @@
   ],
   "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/inactive/11.rst"
+  ],
+  "fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/chips/inactive/18.rst"
   ],
   "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
     "doc/rst/developer/chips/inactive/21.rst"
@@ -561,6 +567,9 @@
   ],
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
+  ],
+  "1234061c-2e9f-11eb-adc5-acbc32c4f96b": [
+    "modules/internal/localeModels/gpu/LocaleModel.chpl"
   ],
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
