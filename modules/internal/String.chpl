@@ -740,6 +740,9 @@ module String {
     proc init=(cs: c_string) {
       this.complete();
       cStrAssignmentDeprWarn();
+      try! {
+        this.cachedNumCodepoints = validateEncoding(cs:bufferType, cs.size);
+      }
       initWithNewBuffer(this, cs:bufferType, length=cs.size, size=cs.size+1);
     }
 
