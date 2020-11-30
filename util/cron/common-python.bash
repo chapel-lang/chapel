@@ -32,7 +32,7 @@ function set_python_version() {
     export PATH=/cray/css/users/chapelu/no-python3:$PATH
   fi
 
-  local setup_script="/data/cf/chapel/setup_python$major_ver$minor_ver.bash"
+  local setup_script="/cray/css/users/chapelu/setup_python$major_ver$minor_ver.bash"
 
   if [[ -f "${setup_script}" ]] ; then
     source ${setup_script}
@@ -41,11 +41,10 @@ function set_python_version() {
     return 1
   fi
 
-  echo "Python version is set"
   if [[ $major_ver -eq 2 ]]; then
-    python2 --version
+    echo "Using $(python2 --version 2>&1)"
   else
-    python3 --version
+    echo "Using $(python3 --version)"
   fi
 }
 
