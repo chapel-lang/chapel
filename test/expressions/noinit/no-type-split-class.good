@@ -1,0 +1,2 @@
+no-type-split-class.chpl:3: In initializer:
+no-type-split-class.chpl:4: error: cannot use noinit on the variable 'x' declared without a type
