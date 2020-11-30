@@ -6652,7 +6652,8 @@ void resolveInitVar(CallExpr* call) {
   if (srcExpr && srcExpr->symbol() == gNoInit) {
     if (call->numActuals() < 3) {
       // no init needs a type, cannot infer from gNoInit.
-      INT_FATAL(call, "bad no init call");
+      USR_FATAL(call, "cannot use noinit on the variable '%s' "
+                      "declared without a type", dst->name);
     }
 
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
@@ -6660,7 +6661,8 @@ void resolveInitVar(CallExpr* call) {
 
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
       // no init needs a concrete type, cannot infer from gNoInit.
-      INT_FATAL(call, "bad no init call");
+      USR_FATAL(call, "cannot use noinit on the variable '%s' "
+                      "declared with generic type", dst->name);
     }
 
     // Since we are not initializing, just set the variable's type
