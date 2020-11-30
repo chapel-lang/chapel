@@ -40,6 +40,13 @@ function set_python_version() {
     echo "[Warning: cannot find the python configuration script: ${setup_script}]"
     return 1
   fi
+
+  echo "Python version is set"
+  if [[ $major_ver -eq 2 ]]; then
+    python2 --version
+  else
+    python3 --version
+  fi
 }
 
 
