@@ -2,7 +2,11 @@
 
 from distutils.spawn import find_executable
 
-if find_executable("protoc") is not None and find_executable("protoc-gen-chpl") is not None:
+import os
+
+chplPath = os.environ['CHPL_HOME'] + "/bin/" + os.environ['CHPL_BIN_SUBDIR']
+
+if find_executable("protoc") is not None and find_executable("protoc-gen-chpl", path=chplPath) is not None:
     print(False)
 else:
     print(True)
