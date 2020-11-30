@@ -1,0 +1,9 @@
+cStrAssignment.chpl:9: warning: Assigning to a string from a c_string is deprecated. Use createStringWith*Buffer functions instead.
+cStrAssignment.chpl:17: warning: Assigning to a string from a c_string is deprecated. Use createStringWith*Buffer functions instead.
+my C string
+11
+my C string
+11
+uncaught DecodeError: Invalid UTF-8 character encountered.
+  cStrAssignment.chpl:29: thrown here
+  cStrAssignment.chpl:29: uncaught here

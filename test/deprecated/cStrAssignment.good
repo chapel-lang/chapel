@@ -1,0 +1,4 @@
+cStrAssignment.chpl:5: warning: Assigning to a string from a c_string is deprecated. Use createStringWith*Buffer functions instead.
+cStrAssignment.chpl:12: warning: Assigning to a string from a c_string is deprecated. Use createStringWith*Buffer functions instead.
+my C string
+my C string
