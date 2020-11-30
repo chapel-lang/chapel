@@ -85,7 +85,7 @@ param parentDir;
 
 /* 
    Denotes the separator between a directory and its child.  On all the
-   platforms that Chapel supports this parameter is set to "/
+   platforms that Chapel supports this parameter is set to "/"
 */
 param pathSep;
 
