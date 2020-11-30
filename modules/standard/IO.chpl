@@ -1979,14 +1979,7 @@ proc ==(const ref a: channel, const ref b: channel): bool {
 
 pragma "no doc"
 proc !=(const ref a: channel, const ref b: channel): bool {
-  if a.writing == b.writing then return false;
-  if a.kind == b.kind then return false;
-  if a.locking == b.locking then return false;
-  if a.home == b.home then return false;
-  if a._channel_internal == b._channel_internal then return false;
-  if a._readWriteThisFromLocale == b._readWriteThisFromLocale then return false;
-
-  return true;
+  return !(a == b);
 }
 
 pragma "no doc"
