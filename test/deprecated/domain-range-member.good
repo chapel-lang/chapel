@@ -1,4 +1,0 @@
-domain-range-member.chpl:9: warning: domain.member is deprecated - please use domain.contains instead
-domain-range-member.chpl:10: warning: range.member is deprecated - please use range.contains instead
-true
-true
