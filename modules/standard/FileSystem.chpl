@@ -508,7 +508,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
-   including all contents, permissions, and metadata.  `dst` must not
+   including all contents and permissions. Metadata such as file creation and
+   modification times, uid, and gid will not be preserved.  `dst` must not
    previously exist, this function assumes it can create it and any missing
    parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
