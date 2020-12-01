@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Test default configuration with `make check`, on linux64, with python 3.5
+# Test default configuration running hellos, on linux64, with python 3.5
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common.bash
