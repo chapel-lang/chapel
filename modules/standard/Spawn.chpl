@@ -470,7 +470,7 @@ module Spawn {
           var env_c_str:c_string;
           var env_str:string;
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
-            env_str = env_c_str;
+            env_str = createStringWithNewBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw SystemError.fromSyserr(
                   EINVAL,
