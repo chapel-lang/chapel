@@ -32,7 +32,7 @@ Data Structures
    Map <standard/Map>
    Set <standard/Set>
 
-   
+
 Diagnostics
 -----------
 
@@ -41,9 +41,8 @@ Diagnostics
 
    CommDiagnostics <standard/CommDiagnostics>
    Memory <standard/Memory>
-   Time <standard/Time>
 
-   
+
 Files/IO
 --------
 .. toctree::
@@ -52,34 +51,18 @@ Files/IO
    FileSystem <standard/FileSystem>
    IO <standard/IO>
    Path <standard/Path>
-   Regexp <standard/Regexp>
 
 
-System/Interoperability
------------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   CPtr <standard/CPtr>
-   DateTime <standard/DateTime>
-   Spawn <standard/Spawn>
-   Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
-   SysCTypes <standard/SysCTypes>
-   SysError <standard/SysError>
-
-Language
---------
+Language Support
+----------------
 
 .. toctree::
    :maxdepth: 1
 
-   Help <standard/Help>
    Reflection <standard/Reflection>
    Types <standard/Types>
-   Version <standard/Version>
-   
+
+
 Math/Numerical
 --------------
 
@@ -92,7 +75,7 @@ Math/Numerical
    Math <standard/Math>
    Random <standard/Random>
 
-   
+
 Parallelism/Distributed Computing
 ---------------------------------
 
@@ -101,6 +84,32 @@ Parallelism/Distributed Computing
 
    Barriers <standard/Barriers>
    DynamicIters <standard/DynamicIters>
+
+System/Interoperability
+-----------------------
+
+.. toctree::
+   :maxdepth: 1
+
+   CPtr <standard/CPtr>
+   Spawn <standard/Spawn>
+   Sys <standard/Sys>
+   SysBasic <standard/SysBasic>
+   SysCTypes <standard/SysCTypes>
+   SysError <standard/SysError>
+
+Utilities
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   DateTime <standard/DateTime>
+   Help <standard/Help>
+   Regexp <standard/Regexp>
+   Time <standard/Time>
+   Version <standard/Version>
+
 
 Deprecated Modules
 ------------------
