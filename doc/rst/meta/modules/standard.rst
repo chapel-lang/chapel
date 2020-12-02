@@ -10,8 +10,8 @@ part of the Chapel Standard Library.
 Automatic Modules
 -----------------
 
-All Chapel programs automatically ``use`` the modules :chpl:mod:`Builtins` ,
-:chpl:mod:`Math` , and :chpl:mod:`Types` by default.
+All Chapel programs automatically ``use`` the following modules by
+default:
 
 .. toctree::
    :maxdepth: 1
