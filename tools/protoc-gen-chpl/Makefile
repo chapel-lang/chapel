@@ -32,7 +32,7 @@ linkFile=$(bdir)/protoc-gen-chpl
 SOURCES=$(wildcard *.cpp)
 HEADERS=$(wildcard *.h)
 LDFLAGS = -lprotobuf -lprotoc
-CPPFLAGS = -I.
+CPPFLAGS = -I. -std=c++11
 
 all: $(bdir)/protoc-gen-chpl FORCE
 
