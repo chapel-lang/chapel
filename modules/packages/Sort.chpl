@@ -1206,6 +1206,8 @@ module ShellSort {
   {
     chpl_check_comparator(comparator, eltType);
 
+    type idxType = Data.idxType;
+
     if Dom.rank != 1 then
       compilerError("shellSort() requires 1-D array");
     if Dom.stridable then
@@ -1216,9 +1218,9 @@ module ShellSort {
     // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
     // for the choice of these increments.
     var n = 1 + end - start;
-    var js,hs:int;
+    var js,hs:idxType;
     var v,tmp:Data.eltType;
-    const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+    const incs = (701, 301, 132, 57, 23, 10, 4, 1):(8*idxType);
     for h in incs {
       hs = h + start;
       for is in hs..end {
@@ -2210,8 +2212,8 @@ module TwoArrayPartitioning {
       // TODO: make it adjustable from the settings
       if sampleSize <= 1024*1024 {
         // base case sort, parallel OK
-        msbRadixSort(start_n, start_n + sampleSize - 1,
-                     A, criterion,
+        msbRadixSort(A, start_n, start_n + sampleSize - 1,
+                     criterion,
                      startbit, state.endbit,
                      settings=new MSBRadixSortSettings());
       } else {
@@ -2361,8 +2363,8 @@ module TwoArrayPartitioning {
 
         if task.doSort {
           // Sort it serially.
-          msbRadixSort(task.start, taskEnd,
-                       A, criterion,
+          msbRadixSort(A, task.start, taskEnd,
+                       criterion,
                        task.startbit, state.endbit,
                        settings=new MSBRadixSortSettings(alwaysSerial=true));
         }
@@ -2391,8 +2393,8 @@ module TwoArrayPartitioning {
     const intersect = curDomain[localSubdomain];
     if curDomain == intersect {
       if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     A.localSlice(curDomain), criterion,
+        msbRadixSort(A.localSlice(curDomain), start_n, end_n,
+                     criterion,
                      startbit, state.endbit,
                      settings=new MSBRadixSortSettings());
       } else {
@@ -2405,8 +2407,8 @@ module TwoArrayPartitioning {
       ShallowCopy.shallowCopy(LocalA, start_n, A, start_n, size);
       // Sort it
       if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     LocalA, criterion,
+        msbRadixSort(LocalA, start_n, end_n,
+                     criterion,
                      startbit, state.endbit,
                      settings=new MSBRadixSortSettings());
       } else {
@@ -2486,8 +2488,9 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int): void {
-
     //use BlockDist only;
+
+    type idxType = A.idxType;
 
     if !A.hasSingleLocalSubdomain() {
       compilerError("distributedPartitioningSortWithScratchSpace needs single local subdomain");
@@ -2675,7 +2678,7 @@ module TwoArrayPartitioning {
     }
 
     // Handle the local tasks
-    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
+    coforall (loc,tid) in zip(A.targetLocales(),0:idxType..) with (ref state) {
       on loc do {
         // Copy the tasks to do from locale 0
         var myTasks = state.localTasks[tid].localTasks;
@@ -2829,22 +2832,24 @@ module MSBRadixSort {
     if endbit < 0 then
       endbit = max(int);
 
-    msbRadixSort(start_n=Data.domain.low, end_n=Data.domain.high,
-                 Data, comparator,
+    msbRadixSort(Data, start_n=Data.domain.low, end_n=Data.domain.high,
+                 comparator,
                  startbit=0, endbit=endbit,
                  settings=new MSBRadixSortSettings());
   }
 
   // startbit counts from 0 and is a multiple of RADIX_BITS
-  proc msbRadixSort(start_n:int, end_n:int, A:[], criterion,
+  proc msbRadixSort(A:[], start_n:A.idxType, end_n:A.idxType, criterion,
                     startbit:int, endbit:int,
                     settings /* MSBRadixSortSettings */)
   {
+    type idxType = A.idxType;
     if startbit > endbit then
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
-      ShellSort.shellSort(A, criterion, start=start_n, end=end_n);
+      ShellSort.shellSort(A, criterion, start=start_n,
+                          end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
     }
@@ -2855,8 +2860,8 @@ module MSBRadixSort {
     const radix = (1 << radixbits) + 1;
 
     // 0th bin is for records where we've consumed all the key.
-    var offsets:[0..radix] int;
-    var end_offsets:[0..radix] int;
+    var offsets:[0..radix] idxType;
+    var end_offsets:[0..radix] idxType;
     type ubitsType = binForRecord(A[start_n], criterion, startbit)(1).type;
     var min_ubits: ubitsType = max(ubitsType);
     var max_ubits: ubitsType = 0;
@@ -2903,7 +2908,7 @@ module MSBRadixSort {
       var dataStartBit = findDataStartBit(startbit, min_ubits, max_ubits);
       if dataStartBit > startbit {
         // Re-start count again immediately at the new start position.
-        msbRadixSort(start_n, end_n, A, criterion,
+        msbRadixSort(A, start_n, end_n, criterion,
                      dataStartBit, endbit, settings);
         return;
       }
@@ -2912,7 +2917,7 @@ module MSBRadixSort {
     if settings.progress then writeln("accumulate");
 
     // Step 2: accumulate
-    var sum = 0;
+    var sum = 0:idxType;
     for (off,end) in zip(offsets,end_offsets) {
       var binstart = sum;
       sum += off;
@@ -3006,7 +3011,7 @@ module MSBRadixSort {
     if settings.alwaysSerial == false {
       const subbits = startbit + radixbits;
       var nbigsubs = 0;
-      var bigsubs:[0..radix] (int,int);
+      var bigsubs:[0..radix] (idxType,idxType);
       const runningNow = here.runningTasks();
 
       // Never recursively sort the first or last bins
@@ -3021,7 +3026,7 @@ module MSBRadixSort {
           // do nothing
         } else if num < settings.minForTask || runningNow >= settings.maxTasks {
           // sort it in this thread
-          msbRadixSort(bin_start, bin_end, A, criterion,
+          msbRadixSort(A, bin_start, bin_end, criterion,
                        subbits, endbit, settings);
         } else {
           // Add it to the list of things to do in parallel
@@ -3031,7 +3036,7 @@ module MSBRadixSort {
       }
 
       forall (bin,(bin_start,bin_end)) in zip(0..#nbigsubs,bigsubs) {
-        msbRadixSort(bin_start, bin_end, A, criterion, subbits, endbit, settings);
+        msbRadixSort(A, bin_start, bin_end, criterion, subbits, endbit, settings);
       }
     } else {
       // The serial version
@@ -3044,7 +3049,7 @@ module MSBRadixSort {
           // do nothing
         } else {
           // sort it in this thread
-          msbRadixSort(bin_start, bin_end, A, criterion,
+          msbRadixSort(A, bin_start, bin_end, criterion,
                        startbit + radixbits, endbit, settings);
         }
       }
