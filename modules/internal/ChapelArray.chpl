@@ -1810,20 +1810,6 @@ module ChapelArray {
       return contains(i);
     }
 
-    pragma "no doc"
-    inline proc member(i: rank*_value.idxType) {
-      compilerWarning("domain.member is deprecated - " +
-                      "please use domain.contains instead");
-      return this.contains(i);
-    }
-
-    /* Deprecated - please use :proc:`contains`. */
-    inline proc member(i: _value.idxType ...rank) {
-      compilerWarning("domain.member is deprecated - " +
-                      "please use domain.contains instead");
-      return this.contains(i);
-    }
-
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {

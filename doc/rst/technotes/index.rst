@@ -5,7 +5,7 @@ Technical Notes
 
 Technical Notes describe in-progress language features that are not
 yet stable enough to be in the language specification. Additionally, a
-Techinical Note can describe implementation details that can be ignored
+Technical Note can describe implementation details that can be ignored
 by most Chapel programmers.
 
 Base Language Features

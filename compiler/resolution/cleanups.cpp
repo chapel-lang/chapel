@@ -889,6 +889,8 @@ static void cleanupVoidVarsAndFields() {
 void pruneResolvedTree() {
   removeUnusedFunctions();
 
+  removeTiMarks();
+
   if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
   }

@@ -97,7 +97,7 @@ static int chpl_unwind_getLineNum(void *addr){
     // Try using the file path from the current executable
     path_len = readlink("/proc/self/exe", &buf[i], sizeof(buf)-i);
     if (path_len >= sizeof(buf)-i)
-      return 0; // truncation occured - give up.
+      return 0; // truncation occurred - give up.
     if (path_len == -1)
       return 0; // readlink returned error - give up.
   }

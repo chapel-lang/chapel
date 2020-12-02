@@ -127,7 +127,7 @@ public:
   // Loads/stores to/from loop local stack variables should not be considered
   // for this, so this variable tracks if a pointer must point to something
   // other than a local variable (e.g. an array element, a class field);
-  // or if it points to a value from outside any order indpendent loop.
+  // or if it points to a value from outside any order independent loop.
   bool mustPointOutsideOrderIndependentLoop;
 
   // always set if available

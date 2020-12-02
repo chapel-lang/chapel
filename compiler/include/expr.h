@@ -360,6 +360,7 @@ static inline Symbol* symbolForActual(Expr* actual) {
 }
 
 
+bool get_bool(Expr* e, uint64_t *i); // false is failure
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure

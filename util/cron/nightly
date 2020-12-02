@@ -65,6 +65,7 @@ $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
 $mason_build = 0;
+$protobuf_build = 0;
 $python2 = 0;
 
 while (@ARGV) {
@@ -158,6 +159,8 @@ while (@ARGV) {
         $asserts = 1;
     } elsif ($flag eq "-mason") {
         $mason_build = 1;
+    } elsif ($flag eq "-protobuf") {
+        $protobuf_build = 1;
     } else {
         $printusage = 1;
         last;
@@ -223,6 +226,7 @@ if ($printusage == 1) {
     print "\t-performance                   : run performance tests\n";
     print "\t-performance-configs <configs> : comma seperated configs to graph, ': v' after config to be visible by default\n";
     print "\t-performance-description <...> : run performance tests with additional description\n";
+    print "\t-protobuf                      : build the protobuf Chapel plugin before running tests\n";
     print "\t-python2                       : don't use features that needs python 3\n";
     print "\t-releasePerformance            : \$releasePerformance=1 ?\n";
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
@@ -566,6 +570,12 @@ if ($mason_build == 1) {
   mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", 1, 1);
 }
 
+# Build the protobuf Chapel plugin
+if ($protobuf_build == 1) {
+    print "Making the protobuf Chapel plugin\n";
+    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", 1, 1);
+}
+
 #
 # run tests
 #
@@ -675,7 +685,7 @@ if (!($dist eq "")) {
 if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
 }
-if ($memleak == 1) {
+if ($memleaks == 1) {
     $testflags = "$testflags -memleaks";
 }
 if (!($memleakslog eq "")) {

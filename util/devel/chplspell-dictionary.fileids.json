@@ -1,4 +1,7 @@
 {
+  "fe77e30e-2e9f-11eb-adc5-acbc32c4f96b": [
+    ".github/CONTRIBUTING.md"
+  ],
   "20acc50e-2ad9-11e6-a3a6-10ddb1d4c3d5": [
     "ACKNOWLEDGEMENTS.md"
   ],
@@ -184,6 +187,9 @@
   "eb10d276-d1a9-11e8-954d-10ddb1d4c3d5": [
     "compiler/optimizations/noAliasSets.cpp"
   ],
+  "ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5": [
+    "compiler/optimizations/preNormalizeOptimizations.cpp"
+  ],
   "26cda7c8-69e9-11e7-88ba-10ddb1d4c3d5": [
     "compiler/optimizations/refPropagation.cpp"
   ],
@@ -201,6 +207,9 @@
   ],
   "6379ee24-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/addInitGuards.cpp"
+  ],
+  "4bd54270-d6dc-11ea-8acb-843835579daa": [
+    "compiler/passes/checkResolved.cpp"
   ],
   "732b6fa0-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/cleanup.cpp"
@@ -301,11 +310,17 @@
   "21b197c2-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/ContributorInfo.rst"
   ],
+  "f50f46a0-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/bestPractices/DCO.rst"
+  ],
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
   ],
   "7b9a1e46-8ab8-11e6-b915-843835579daa": [
     "doc/rst/developer/bestPractices/README.rst"
+  ],
+  "53b60e8e-d6dc-11ea-8acb-843835579daa": [
+    "doc/rst/developer/bestPractices/Sanitizers.rst"
   ],
   "b557a264-8ab5-11e6-b915-843835579daa": [
     "doc/rst/developer/bestPractices/SpellChecking.rst"
@@ -313,17 +328,11 @@
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
   ],
-  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/11.rst"
-  ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
     "doc/rst/developer/chips/15.rst"
   ],
   "0cdb833a-fd7e-11e6-980e-10ddb1d4c3d5": [
     "doc/rst/developer/chips/17.rst"
-  ],
-  "b000f2de-fd7e-11e6-980e-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/18.rst"
   ],
   "c16e02ce-36bc-11e7-96a7-10ddb1d4c3d5": [
     "doc/rst/developer/chips/19.rst"
@@ -331,23 +340,29 @@
   "dde58592-2ac6-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/chips/2.rst"
   ],
-  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/21.rst"
-  ],
   "554af092-652a-11e7-88ba-10ddb1d4c3d5": [
     "doc/rst/developer/chips/22.rst"
   ],
+  "8ac11bda-2ac4-11e6-a3a6-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/11.rst"
+  ],
+  "fdcdfd40-2e9e-11eb-adc5-acbc32c4f96b": [
+    "doc/rst/developer/chips/inactive/18.rst"
+  ],
+  "45fe4b8e-62e1-11e7-88ba-10ddb1d4c3d5": [
+    "doc/rst/developer/chips/inactive/21.rst"
+  ],
   "1a4b12ba-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/3.rst"
+    "doc/rst/developer/chips/inactive/3.rst"
   ],
   "2ae96310-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/4.rst"
+    "doc/rst/developer/chips/inactive/4.rst"
   ],
   "5ee74a88-2ac5-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/5.rst"
+    "doc/rst/developer/chips/inactive/5.rst"
   ],
   "e13e71b8-2ac6-11e6-a3a6-10ddb1d4c3d5": [
-    "doc/rst/developer/chips/9.rst"
+    "doc/rst/developer/chips/inactive/9.rst"
   ],
   "6eb99dbc-1e45-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/compilerOverview/compiler.tex"
@@ -411,11 +426,17 @@
   "f824f208-a3e4-11ea-8acb-843835579daa": [
     "doc/rst/technotes/globalvars.rst"
   ],
+  "22cf2998-09c4-11eb-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/index.rst"
+  ],
   "5f5c9598-1e47-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/technotes/libraries.rst"
   ],
   "e8ed417a-624d-11e9-b712-843835579daa": [
     "doc/rst/technotes/lifetimeChecking.rst"
+  ],
+  "2393b51a-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/technotes/protoGenCodeGuide.rst"
   ],
   "cd80a742-ad6d-11e7-a204-10ddb1d4c3d5": [
     "doc/rst/technotes/reduceIntents.rst"
@@ -428,6 +449,9 @@
   ],
   "f81d91a2-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "doc/rst/tools/mason/mason.rst"
+  ],
+  "50034a8e-feca-11ea-b2e8-10ddb1d4c3d5": [
+    "doc/rst/tools/protoc-gen-chpl/protoc-gen-chpl.rst"
   ],
   "7ada2798-4027-11e6-907f-843835579daa": [
     "doc/rst/users-guide/base/forloops.rst"
@@ -544,6 +568,9 @@
   "e6ecf3ae-9c7b-11e8-b963-10ddb1d4c3d5": [
     "modules/internal/String.chpl"
   ],
+  "1234061c-2e9f-11eb-adc5-acbc32c4f96b": [
+    "modules/internal/localeModels/gpu/LocaleModel.chpl"
+  ],
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],
@@ -603,6 +630,9 @@
   ],
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
+  ],
+  "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "modules/packages/ProtobufProtocolSupport.chpl"
   ],
   "c0ac0568-bd81-11e9-8464-10ddb1d4c3d5": [
     "modules/packages/Sort.chpl"
@@ -699,6 +729,9 @@
   "73aae312-d1c1-11e8-954d-10ddb1d4c3d5": [
     "runtime/include/comm/ugni/comm-ugni-heap-pages.h"
   ],
+  "83d35d38-d6dc-11ea-8acb-843835579daa": [
+    "runtime/include/mem/jemalloc/chpl-mem-impl.h"
+  ],
   "cedb8f86-1fb5-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/include/qio/sys.h"
   ],
@@ -717,6 +750,9 @@
   "847163aa-bc39-11e6-9740-843835579daa": [
     "runtime/src/comm/gasnet/comm-gasnet.c"
   ],
+  "4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/comm/ofi/README.md"
+  ],
   "f2c0b4da-07e9-11e8-bed3-10ddb1d4c3d5": [
     "runtime/src/comm/ofi/comm-ofi-internal.h",
     "runtime/src/comm/ofi/comm-ofi.c"
@@ -732,6 +768,9 @@
   ],
   "aa0e6b5c-0c12-11e7-980e-10ddb1d4c3d5": [
     "runtime/src/comm/ugni/comm-ugni.c"
+  ],
+  "31db04f6-fecb-11ea-b2e8-10ddb1d4c3d5": [
+    "runtime/src/error.c"
   ],
   "e4e38696-e581-11e8-954d-10ddb1d4c3d5": [
     "runtime/src/launch/amudprun/launch-amudprun.c"
@@ -759,6 +798,9 @@
   ],
   "c756642a-c5e5-11e7-82fe-10ddb1d4c3d5": [
     "runtime/src/launch/smp/launch-smp.c"
+  ],
+  "88143c78-d6dc-11ea-8acb-843835579daa": [
+    "runtime/src/mem/jemalloc/mem-jemalloc.c"
   ],
   "a2b5a7e0-2404-11e6-a3a6-10ddb1d4c3d5": [
     "runtime/src/qio/auxFilesys/curl/qio_plugin_curl.c"
