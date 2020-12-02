@@ -3470,7 +3470,7 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
     info->cStatements.push_back(stmt);
   } else {
     // LLVM version of a += b is just a = a + b.
-    codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
+    codegenAssign(aLocal, codegenOp(codegenValue(aLocal), bv));
   }
 
   if( aIsRemote ) {
