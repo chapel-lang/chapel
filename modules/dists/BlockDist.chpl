@@ -1405,6 +1405,7 @@ proc BlockArr.chpl__serialize() {
 }
 
 proc type BlockArr.chpl__deserialize(data) {
+  compilerWarning("BlockArr.chpl__deserialize");
   return chpl_getPrivatizedCopy(
            unmanaged BlockArr(rank=this.rank,
                               idxType=this.idxType,

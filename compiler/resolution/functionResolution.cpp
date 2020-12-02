@@ -9296,7 +9296,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
                                                   : at->symbol->cname;
           USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", rt, att);
         } else {
-          USR_WARN("*** resolved chpl__deserialize for %s\n", at->symbol->cname);
+          //USR_WARN("*** resolved chpl__deserialize for %s\n", at->symbol->cname);
         }
       }
 
@@ -9385,7 +9385,8 @@ static void resolveSerializers() {
             ts->addFlag(FLAG_ALWAYS_RVF);
           }
         }
-        if (isRecord(at) == true || ts->hasFlag(FLAG_TUPLE)) {
+        if ((!ts->hasFlag(FLAG_TUPLE) && isRecord(at) == true) || 
+            (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_ALWAYS_RVF))) {
           bool success = resolveSerializeDeserialize(at);
           if (success) {
             resolveBroadcasters(at);

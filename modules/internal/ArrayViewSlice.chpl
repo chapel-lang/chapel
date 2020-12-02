@@ -92,18 +92,18 @@ module ArrayViewSlice {
     proc chpl__rvfMe() param {
       use Reflection;
 
-      compilerWarning("*** Resolving chpl__rvfMe() ***");
+      //compilerWarning("*** Resolving chpl__rvfMe() ***");
       if chpl_serializeSlices == false then {
-        compilerWarning("*** returning false ***");
+        compilerWarning("*** rvfMe returning false 1 ***");
         return false;
       }
       if (dom.dsiSupportsPrivatization() && arr.dsiSupportsPrivatization() &&
           canResolveMethod(dom, "chpl__serialize") &&
           canResolveMethod(arr, "chpl__serialize")) {
-        compilerWarning("*** returning true ***");
+        compilerWarning("*** rvfMe returning true 2 ***");
         return true;
       } else {
-        compilerWarning("*** returning false ***");
+        compilerWarning("*** rvfMe returning false 3 ***");
         return false;
       }
     }
@@ -129,15 +129,19 @@ module ArrayViewSlice {
     // to them.
     //
     proc type chpl__deserialize(data) {
+      compilerWarning("ArrayViewSliceArr.chpl__deserialize");
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
       const dom = _to_borrowed(domType).chpl__deserialize(data(0));
       const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
-      return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
+      var r = new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
                                              _DomPid=data(0),
                                              dom = dom,
                                              _ArrPid=data(1),
                                              _ArrInstance=arr);
+      compilerWarning("ArrayViewSliceArr returning ", r.type:string);
+
+      return r;
     }
 
 

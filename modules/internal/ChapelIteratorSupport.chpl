@@ -667,8 +667,10 @@ module ChapelIteratorSupport {
   }
 
   proc chpl__dynamicFastFollowCheck(x: [], lead) {
-    if chpl__staticFastFollowCheck(x, lead) then
+    if chpl__staticFastFollowCheck(x, lead) then {
+      compilerWarning("dynamicFastFollowCheck ", x.type:string);
       return x._value.dsiDynamicFastFollowCheck(lead);
+    }
     else
       return false;
   }

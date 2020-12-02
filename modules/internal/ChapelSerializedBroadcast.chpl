@@ -44,9 +44,11 @@ module ChapelSerializedBroadcast {
     // being serialized rather than querying it from localeZeroGlobal
     // since it knows the precise type.
     //
-    if isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal) {
+    if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
+       (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
+      compilerWarning("localeZeroGlobal.type: ", localeZeroGlobal.type:string);
       const data = localeZeroGlobal.chpl__serialize();
       const root = here.id;
       coforall loc in Locales do on loc {
@@ -54,9 +56,12 @@ module ChapelSerializedBroadcast {
           pragma "no copy"
           pragma "no auto destroy"
           var temp = localeZeroGlobal.type.chpl__deserialize(data);
+          compilerWarning("temp.type: ", temp.type:string);
 
           const destVoidPtr = chpl_get_global_serialize_table(id);
           const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
+          compilerWarning("dest.type: ", dest.type:string);
+          compilerWarning("dest.deref().type: ", dest.deref().type:string);
 
           __primitive("=", dest.deref(), temp);
         }
