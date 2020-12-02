@@ -10823,9 +10823,19 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     int idx = -1;
     bool hasErrored = false;
 
+    // Work around current problems in array/ assoc array types.
+    bool unsafe = call->getFunction()->hasFlag(FLAG_UNSAFE) ||
+                  call->getModule()->hasFlag(FLAG_UNSAFE) ||
+                  val->hasFlag(FLAG_UNSAFE);
+
     // Emit errors for any non-default-initializable tuple fields.
     for_fields(field, at) {
       if (!isDefaultInitializable(field->type)) {
+
+        // Skip non-nilable fields if the value is marked unsafe.
+        if (unsafe && isNonNilableClassType(field->type)) {
+          continue;
+        }
 
         if (!hasErrored) {
           hasErrored = true;
@@ -10856,9 +10866,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     // initialized. This way avoid emitting confusing errors from within
     // the `_defaultOf` and give other code a chance to emit errors as well.
     //
-    // TODO: Prune/don't generate `_defaultOf` for tuples containing non-
-    // default-initializable elements?
-    //
     if (!hasErrored) {
       CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
       CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
@@ -10866,7 +10873,28 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
       call->insertBefore(move);
       call->convertToNoop();
 
+      resolveCall(defaultCall);
+
+      // Workaround issues in array/assoc. The module code that initializes
+      // array elements declares a temporary marked "unsafe". If the type
+      // of the temporary is a non-nilable class, "unsafe" will permit
+      // the compiler to default initialize it. This can't happen for a
+      // tuple containing a non-nilable class, because default initializing
+      // a tuple calls "_defaultOf", which tries to default initialize a
+      // different temporary that isn't marked unsafe...
+      // With all that said, the best I can come up with at this point is
+      // to go ahead and mark "_defaultOf" unsafe if it contains a non-
+      // nilable class element. 
+      if (unsafe) {
+        if (FnSymbol* calledFn = defaultCall->resolvedFunction()) {
+          if (!calledFn->hasFlag(FLAG_UNSAFE)) {
+            calledFn->addFlag(FLAG_UNSAFE);
+          }
+        }
+      }
+
       resolveCallAndCallee(defaultCall);
+
       resolveExpr(move);
     }
 
