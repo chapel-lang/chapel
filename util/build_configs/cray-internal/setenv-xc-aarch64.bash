@@ -89,7 +89,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-    export CHPL_LLVM=llvm       # llvm requires cmake
+    export CHPL_LLVM=bundled       # llvm requires cmake
     export CHPL_AUX_FILESYS=none
 
     # As a general rule, more CPUs --> faster make.
@@ -330,11 +330,6 @@ else
         ;;
     ( venv )
         load_prgenv_gnu
-
-        # The following gives a URL to a local PyPI mirror that accepts http. It is optional for this build.
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
         ;;
     ( "" )
         : ok

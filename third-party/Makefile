@@ -2,7 +2,6 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
-include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
 ifdef CHPL_DEVELOPER
 DEBUG=1
@@ -82,13 +81,14 @@ QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_DIR))
 RE2_DEPEND            := $(call find_3p_depend, $(RE2_DIR))
 
 
-test-venv: $(CHPL_VENV_TEST_REQS)
-$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
+test-venv: FORCE
 	cd chpl-venv && $(MAKE) test-venv
 
-chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
-$(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
+chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
+
+c2chapel-venv: FORCE
+	cd chpl-venv && $(MAKE) c2chapel-venv
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
@@ -135,10 +135,10 @@ $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	cd llvm && $(MAKE)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
-ifeq ($(CHPL_MAKE_HWLOC), hwloc)
+ifeq ($(CHPL_MAKE_HWLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
 endif
-ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
+ifeq ($(CHPL_MAKE_JEMALLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
 # Qthreads uses our memory allocator, trigger rebuilds if our interface changes

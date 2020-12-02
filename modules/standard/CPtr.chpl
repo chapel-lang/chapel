@@ -30,6 +30,11 @@ module CPtr {
   private use SysBasic, SysError, SysCTypes;
   private import HaltWrappers;
 
+
+  /* A Chapel type alias for 'void*' in C. */
+  extern type c_void_ptr = chpl__c_void_ptr;
+
+
   /* A Chapel version of a C NULL pointer. */
   inline proc c_nil:c_void_ptr {
     return __primitive("cast", c_void_ptr, nil);

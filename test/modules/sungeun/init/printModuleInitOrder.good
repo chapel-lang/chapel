@@ -6,8 +6,10 @@ Initializing Modules:
     NetworkAtomics
     ChapelThreads
     ChapelTuple
-      DSIUtil
+     DSIUtil
     ChapelRange
+     ChapelDebugPrint
+      ChapelIOStringifyHelper
     ChapelTaskDataHelp
     LocaleModel
      LocaleModelHelpFlat
@@ -15,14 +17,13 @@ Initializing Modules:
        ChapelLocale
        DefaultRectangular
         ChapelArray
-         ChapelDebugPrint
-          IO
-           SysError
-           FormattedIO
-            Regexp
+         ChapelPrivatization
          Sort
           List
            ChapelLocks
+           IO
+            FormattedIO
+             Regexp
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -33,7 +34,6 @@ Initializing Modules:
          ChapelHashtable
         ExternalArray
         RangeChunk
-        ChapelHashing
        ChapelNumLocales
        Sys
       LocaleModelHelpRuntime
@@ -45,8 +45,8 @@ Initializing Modules:
     MemTracking
     ChapelUtil
     ChapelError
+    ExportWrappers
     Builtins
     AlignedTSupport
-    CPtr
    printModuleInitOrder
     moduleInitTest

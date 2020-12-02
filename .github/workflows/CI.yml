@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+env:
+  NIGHTLY_TEST_SETTINGS: true
+  # By default `smokeTest` will run `make check`, `make mason`, and `make
+  # docs`. We split those into 3 separate jobs to speed up CI times, so
+  # disable all options here, and selectively enable below
+  CHPL_SMOKE_SKIP_MAKE_CHECK: true
+  CHPL_SMOKE_SKIP_MAKE_MASON: true
+  CHPL_SMOKE_SKIP_DOC: true
+
+jobs:
+  make_check:
+    runs-on: ubuntu-latest
+    env:
+      CHPL_SMOKE_SKIP_MAKE_CHECK: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: make check
+      run: |
+        ./util/buildRelease/smokeTest
+
+  make_doc:
+    runs-on: ubuntu-latest
+    env:
+      CHPL_SMOKE_SKIP_DOC: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: make check-chpldoc && make docs
+      run: |
+        ./util/buildRelease/smokeTest
+    - name: upload docs
+      uses: actions/upload-artifact@v2
+      with:
+        name: documentation
+        path: doc/html
+
+  make_mason:
+    runs-on: ubuntu-latest
+    env:
+      CHPL_SMOKE_SKIP_MAKE_MASON: false
+    steps:
+    - uses: actions/checkout@v2
+    - name: make mason
+      run: |
+        ./util/buildRelease/smokeTest
+
+  check_annotations:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        fetch-depth: 100000
+    - name: check annotations
+      run: |
+        make test-venv
+        CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+
+  bad_rt_calls:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install deps
+      run: sudo apt-get install cscope
+    - name: find bad runtime calls
+      run: |
+        ./util/devel/lookForBadRTCalls

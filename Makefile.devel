@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-PYTHON_VERSION_DIR = py$(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
 develall:
 	@$(MAKE) always-build-man
@@ -53,9 +53,6 @@ always-build-chplspell-venv: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLSPELL_VENV" ]; then \
 	$(MAKE) chplspell-venv; \
 	fi
-
-spec: FORCE
-	cd spec && $(MAKE)
 
 test: FORCE
 	cd test && start_test

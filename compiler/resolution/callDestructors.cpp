@@ -1027,6 +1027,14 @@ static void collectGlobals(ModuleSymbol* mod,
           if (VarSymbol* v = initsVariableOut(formal, actual))
             noteGlobalInitialization(mod, v, inited, initedSet);
         }
+
+        // Recurse into calls to compiler generated functions that
+        // return array types (forall expression functions).
+        // (Search for globalTemps in normalize.cpp to see related code).
+        if (FnSymbol* calledFn = fCall->resolvedFunction())
+          if (calledFn->hasFlag(FLAG_MAYBE_ARRAY_TYPE))
+            if (calledFn->hasFlag(FLAG_COMPILER_GENERATED))
+              collectGlobals(mod, calledFn->body, inited, initedSet);
       }
 
     // Recurse in to a BlockStmt (or sub-classes of BlockStmt e.g. a loop)
@@ -1083,27 +1091,52 @@ static void insertGlobalAutoDestroyCalls() {
 
 
 static void lowerAutoDestroyRuntimeType(CallExpr* call) {
- if (SymExpr* rttSE = toSymExpr(call->get(1)))
-  // toAggregateType() filters out calls in unresolved generic functions.
-  if (AggregateType* rttAG = toAggregateType(rttSE->symbol()->type))
-   if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-    // Todo: the same for the element type component and
-    // for the case of a runtime type for a domain.
-    // Todo: avoid hard-coding the field names.
-    if (Symbol* domField = rttAG->getField("dom", false))
-     if (FnSymbol* destroyFn = autoDestroyMap.get(domField->getValType()))
-      {
-       // Invoke destroyFn on rttSE->dom.
-       INT_ASSERT(call->getStmtExpr() == call);
-       SET_LINENO(call);
-       VarSymbol* domTemp = newTemp("domTemp", domField->getValType());
-       call->insertBefore(new DefExpr(domTemp));
-       call->insertBefore("'move'(%S,'.v'(%E,%S))", domTemp,
-                          rttSE->remove(), domField);
-       call->insertBefore(new CallExpr(destroyFn, domTemp));
+  if (SymExpr* rttSE = toSymExpr(call->get(1))) {
+    Symbol *rttSym = rttSE->symbol();
+    // toAggregateType() filters out calls in unresolved generic functions.
+    if (AggregateType* rttAG = toAggregateType(rttSym->type)) {
+      if (rttAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+
+        for_fields(field, rttAG) {
+          bool destroyField = false;
+          bool destroyFieldRTT = false;
+          FnSymbol *destroyFn = autoDestroyMap.get(field->getValType());
+
+          if (destroyFn != NULL) {
+            INT_ASSERT(call->getStmtExpr() == call);
+            destroyField = true;
+          }
+          else if (AggregateType* fieldAG = toAggregateType(field->type)) {
+            if (fieldAG->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+              destroyFieldRTT = true;
+            }
+          }
+
+          if (destroyField || destroyFieldRTT) {
+            SET_LINENO(call);
+            VarSymbol* fieldTemp = newTemp("fieldTemp", field->getValType());
+            call->insertBefore(new DefExpr(fieldTemp));
+            call->insertBefore("'move'(%S,'.v'(%E,%S))", fieldTemp,
+              new SymExpr(rttSym), field);
+
+            CallExpr *destroyCall = NULL;
+            if (destroyField) {
+              // Invoke destroyFn on the field
+              destroyCall = new CallExpr(destroyFn, fieldTemp);
+            }
+            else {
+              // Add another PRIM_AUTO_DESTROY_RUNTIME_TYPE for the field
+              destroyCall = new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE, fieldTemp);
+            }
+            
+            call->insertBefore(destroyCall);
+          }
+        }
       }
- // Whether we expanded it above or it is a no-op, we are done with it.
- call->remove();
+    }
+  }
+
+  call->remove();
 }
 
 static void insertDestructorCalls() {
@@ -1887,6 +1920,49 @@ static void removeElidedOnBlocks() {
   }
 }
 
+static void insertAutoDestroyPrimsForLoopExprTemps() {
+  // below is a workaround for stopping the leaks coming from forall exprs that
+  // are array types. This leak only occurs if the expression is not assigned to
+  // a type variable, and it uses ranges and not domains.
+  //
+  // can we cache the CallExprs we care about in resolveCall etc?
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
+    // don't need to touch ArgSymbols
+    if (!isArgSymbol(call->parentSymbol)) {
+      // are we calling a resolved call_forallexpr?
+      if (FnSymbol *callee = call->resolvedFunction()) {
+        if (callee->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
+          if (startsWith(callee->name, astr_forallexpr)) {
+            // is the argument a range? -- if so, this call will create a domain
+            // that we need to clean in the calling scope
+            if (SymExpr *argSE = toSymExpr(call->get(1))) {
+              if (argSE->symbol()->type->symbol->hasFlag(FLAG_RANGE)) {
+                // are we moving the result of the call to an expr temp (so that
+                // it is not a user variable) that is a runtime type value?
+                if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+                  if (parentCall->isPrimitive(PRIM_MOVE)) {
+                    if (SymExpr *targetSE = toSymExpr(parentCall->get(1))) {
+                      if (targetSE->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
+                          targetSE->symbol()->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                        SET_LINENO(call);
+                        call->getFunction()->insertBeforeEpilogue(
+                              new CallExpr(PRIM_AUTO_DESTROY_RUNTIME_TYPE,
+                              new SymExpr(targetSE->symbol())));
+
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 * Entry point                                                                 *
@@ -1900,6 +1976,8 @@ void callDestructors() {
   createIteratorBreakBlocks();
 
   fixupDestructors();
+
+  insertAutoDestroyPrimsForLoopExprTemps();
 
   insertDestructorCalls();
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import os
 import sys
 
@@ -12,7 +12,7 @@ def get():
     mem_val = chpl_mem.get('target')
     if not jemalloc_val:
         if mem_val == 'jemalloc':
-            jemalloc_val = 'jemalloc'
+            jemalloc_val = 'bundled'
         else:
             jemalloc_val = 'none'
 
@@ -21,6 +21,11 @@ def get():
 
     if mem_val != 'jemalloc' and jemalloc_val != 'none':
       error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
+
+    if jemalloc_val == 'jemalloc':
+        sys.stderr.write("Warning: CHPL_JEMALLOC=jemalloc is deprecated. "
+                         "Use CHPL_JEMALLOC=bundled instead\n")
+        jemalloc_val = 'bundled'
 
     return jemalloc_val
 
@@ -41,7 +46,7 @@ def get_jemalloc_config_file():
 
 @memoize
 def get_link_args(target_mem):
-    if target_mem == 'jemalloc':
+    if target_mem == 'bundled':
         jemalloc_config = get_jemalloc_config_file()
         libs = ['-ljemalloc']
         if os.access(jemalloc_config, os.X_OK):

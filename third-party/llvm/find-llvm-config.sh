@@ -76,7 +76,7 @@ else
   then
     echo "Found version $BAD_VERSION at path $BAD" 1>&2
     echo "Please install an LLVM with version $ALLOW_VERS" 1>&2
-    echo "or set CHPL_LLVM=llvm to use the included LLVM" 1>&2
+    echo "or set CHPL_LLVM=bundled to use the included LLVM" 1>&2
   fi
   echo missing-llvm-config
 fi

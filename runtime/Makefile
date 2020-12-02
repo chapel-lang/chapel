@@ -65,7 +65,7 @@ $(CHPL_ENV_HEADER): $(CHPL_MAKE_HOME)/util/printchplenv $(CHPL_MAKE_HOME)/util/c
           awk '{ print "#define " $$1 "_" toupper($$2) }' >> $(CHPL_ENV_HEADER)
 	@echo "#endif /* _CHPL_ENV_GEN_H_ */" >> $(CHPL_ENV_HEADER)
 
-THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
+THIRD_PARTY_PKGS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/third-party-pkgs)
 # NOTE: If any of these builds fail, we won't stop building
 third-party-pkgs:
 ifneq (, $(THIRD_PARTY_PKGS))

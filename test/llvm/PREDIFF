@@ -8,7 +8,7 @@ FILECHECK='FileCheck'
 
 USE_LLVM=`$CHPL_HOME/util/chplenv/chpl_llvm.py`
 
-if [ "$USE_LLVM" = llvm ]
+if [ "$USE_LLVM" = bundled -o "$USE_LLVM" = llvm ]
 then
   tmp=`$CHPL_HOME/util/printchplenv --all --internal --simple | grep CHPL_LLVM_UNIQ_CFG_PATH`
   LLVM_UNIQUE_SUBDIR=${tmp/CHPL_LLVM_UNIQ_CFG_PATH=/}

@@ -89,7 +89,7 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     export CHPL_COMM_SUBSTRATE=none
     export CHPL_TASKS=qthreads
     export CHPL_LAUNCHER=none
-    export CHPL_LLVM=llvm       # llvm requires py27 and cmake
+    export CHPL_LLVM=bundled       # llvm requires py27 and cmake
     export CHPL_AUX_FILESYS=none
 
     # As a general rule, more CPUs --> faster make.
@@ -158,66 +158,37 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
     case ",$components," in
     ( *,venv,* )
 
-        # Build Chapel python-venv tools with the system-installed Python, no matter which version
-
         log_info "Building Chapel component: venv ($venv_targets)"
 
         log_debug "Checking the system-installed Python"
 
-        pyLT27=$( /usr/bin/python -c "import sys; print(sys.version_info[0:2] < (2, 7))" || : ok )
-        whichPy=$( which python || : ok )
-        case "$pyLT27" in
-        ( False | True )
-            case "$whichPy" in
-            ( /usr/bin/python )
-                ;;
-            ( * )
-                log_error "Found unexpected path to default python executable: '$whichPy'"
-                log_error "The expected path was '/usr/bin/python'"
-                exit 2
-                ;;
-            esac
-            ;;
-        ( * )
-            log_error "/usr/bin/python broken or not found"
-            echo >&2 "stdout:'$pyLT27'"
-            ls -ldL >&2 /usr/bin/python || : ok
-            exit 2
-            ;;
-        esac
-
-            # Chapel python-venv tools requires a working internet connection and either:
-            # - modern version of libssl that supports TLS 1.1
-            # - local workarounds such as the variables shown in the "venv" callback, below.
+        # Chapel python-venv tools requires a working internet connection and either:
+        # - modern version of libssl that supports TLS 1.1
+        # - local workarounds such as the variables shown in the "venv" callback, below.
 
         log_info "Start build_configs $dry_run $verbose -- $venv_targets"
 
         $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv.log" \
             --target-compiler=venv -- $venv_targets
 
-        if [ "$pyLT27" = "True" ]; then
-
-            # If the system-installed Python was 2.6, Build a second copy of Chapel
-            # python-venv tools using the alternate Python 2.7 installation,
-            # which must be implemented by the "venv_py27" callback, below.
-
-            log_info "Building Chapel component: venv ($venv_targets with venv_py27 callback)"
-
-            log_info "Start build_configs $dry_run $verbose -- $venv_targets"
-
-            $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27.log" \
-                --target-compiler=venv_py27 -- $venv_targets
-
-            # Custom Chapel make target to rm files or links named "python" from the installed py27
-            # bin dir, forcing users of the installed Chapel RPM to get "python" from the system.
-
+        # If we are not using the system-installed python, update
+        # the scripts in chpl-venv to use the system-installed python.
+        findPy=$($CHPL_HOME/util/config/find-python.sh)
+        whichPy=$( which $findPy || : ok )
+        case "$whichPy" in
+        ( /usr/bin/python* )
+            log_info "Found system python $whichPy"
+            ;;
+        ( * )
+            log_info "Found non-system python $whichPy - adjusting paths"
+            # Custom Chapel make target to rm files or links named "python3"
+            # from the installed bin dir, forcing users of the installed
+            # Chapel RPM to get "python3" from the system.
             use_system_python="-C third-party/chpl-venv use-system-python"
-
-            log_info "Start build_configs $dry_run $verbose -- $use_system_python"
-
             $cwd/../build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
-                --target-compiler=venv_py27 -- $use_system_python
-        fi
+                --target-compiler=venv -- $use_system_python
+            ;;
+        esac
         ;;
     ( * )
         log_info "NO building Chapel component: venv"
@@ -395,15 +366,6 @@ else
         load_module $target
     }
 
-    function use_python27() {
-        log_info "Using Python 2.7 from /cray/css/users/chapelu/setup_python27.bash"
-        if [ ! -f /cray/css/users/chapelu/setup_python27.bash ] ; then
-            log_error "Python 2.7 setup script is not accessible at /cray/css/users/chapelu/setup_python27.bash"
-            exit 1
-        fi
-        source /cray/css/users/chapelu/setup_python27.bash
-    }
-
     # ---
 
     # NOTE: The CHPL_TARGET_COMPILER env values from build_configs are not passed to Chapel.
@@ -424,27 +386,6 @@ else
         ;;
     ( venv )
         load_prgenv_gnu
-
-        # If the installed libssl is too old to support TLS 1.1, some workarounds exist to
-        # enable building Chapel python-venv tools anyway.
-        # For example, the following gives a URL to a local PyPI mirror that accepts http,
-        # and the location of a pre-installed "pip" on the host machine.
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-        export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
-        ;;
-    ( venv_py27 )
-        load_prgenv_gnu
-
-        # Alternate python version
-        use_python27
-
-        export CHPL_EASY_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple"
-        export CHPL_PIP_INSTALL_PARAMS="-i http://slemaster.us.cray.com/pypi/simple --trusted-host slemaster.us.cray.com"
-        export CHPL_PIP=/cray/css/users/chapelu/opt/lib/pip/__main__.py
-        export CHPL_PYTHONPATH=/cray/css/users/chapelu/opt/lib
         ;;
     ( "" )
         : ok

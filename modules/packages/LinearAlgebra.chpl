@@ -1538,6 +1538,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
+  use IO; // for string.format
   import LAPACK;
   require LAPACK.header;
 

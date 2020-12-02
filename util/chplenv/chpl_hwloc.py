@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
@@ -11,9 +11,14 @@ def get():
     if not hwloc_val:
         tasks_val = chpl_tasks.get()
         if tasks_val == 'qthreads':
-            hwloc_val = 'hwloc'
+            hwloc_val = 'bundled'
         else:
             hwloc_val = 'none'
+    elif hwloc_val == 'hwloc':
+        sys.stdout.write("Warning: CHPL_HWLOC=hwloc is deprecated. "
+                         "Use CHPL_HWLOC=bundled instead.\n");
+        hwloc_val = 'bundled'
+
     return hwloc_val
 
 
@@ -25,7 +30,7 @@ def get_uniq_cfg_path():
 
 @memoize
 def get_link_args(hwloc):
-    if hwloc == 'hwloc':
+    if hwloc == 'bundled':
         return third_party_utils.default_get_link_args('hwloc',
                                                        ucp=get_uniq_cfg_path())
     elif hwloc == 'system':

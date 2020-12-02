@@ -33,7 +33,9 @@ release/examples/benchmarks/hpcc/variants/stream-promoted.ml-perf.graph
 release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 studies/bale/histogram/histo-atomics.ml-perf.graph
+studies/bale/histogram/histo-atomics-agg.ml-perf.graph
 studies/bale/indexgather/ig.ml-perf.graph
+studies/bale/indexgather/ig-agg.ml-perf.graph
 studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: - NAS Parallel Benchmarks (perf)
@@ -55,7 +57,9 @@ release/examples/benchmarks/ssca2/SSCA2_main.ml-perf.graph
 studies/prk/Stencil/prk-stencil.ml-perf.graph
 # suite: - Bale (perf)
 studies/bale/histogram/histo-atomics.ml-perf.graph
+studies/bale/histogram/histo-atomics-agg.ml-perf.graph
 studies/bale/indexgather/ig.ml-perf.graph
+studies/bale/indexgather/ig-agg.ml-perf.graph
 studies/bale/indexgather/ig-variants.ml-perf.graph
 
 # suite: <empty>
@@ -150,3 +154,4 @@ performance/array/distCreate-small-deinit.ml-perf.graph
 performance/array/distCreate-large-init.ml-perf.graph
 performance/array/distCreate-large-deinit.ml-perf.graph
 library/packages/Sort/performance/dist-performance.ml-perf.graph
+runtime/ferguson/cache-remote-mock-tests/mock-ra-perf.ml-time.graph

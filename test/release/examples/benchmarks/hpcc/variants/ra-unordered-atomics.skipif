@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This test creates a large array of atomics designed to use ~1/4 of available
 # memory. However, that calculation is done based off the size of the raw type,

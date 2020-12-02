@@ -1,5 +1,5 @@
 class Obj { var x : int; var y : int; var z : int;}
-
+use CPtr;
 proc fn(f : c_void_ptr) {
 	writeln(f : borrowed Obj?);
 }

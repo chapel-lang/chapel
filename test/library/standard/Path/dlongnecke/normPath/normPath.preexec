@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Python (2.7) code with proper output for os.path.normpath(). Use this to
 # generate the output for "testcases_normPath.good".

@@ -3,7 +3,7 @@
 # Downloads new vagrant boxes, but doesn't take any
 # action to get the VMs to use them.
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

@@ -8,8 +8,5 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.arkouda.release"
 source $CWD/common-arkouda.bash
 
-# chapcs only has python 3.4, need newer one for arkouda
-source /cray/css/users/chapelu/setup_python36.bash
-
 test_release
 sync_graphs

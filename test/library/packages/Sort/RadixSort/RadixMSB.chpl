@@ -54,7 +54,7 @@
      }
    
      //swap slices of array and aux array   
-     array[startIndex..endIndex] <=> auxArray[1..(endIndex-startIndex)];
+     array[startIndex..endIndex] <=> auxArray[1..(endIndex-startIndex+1)];
  
 
      //recursive call for subparts of array

@@ -2418,7 +2418,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 
   if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
     // handle non-split initialization
-    emitTypeAliasInit(defExpr, var, init);
+    emitTypeAliasInit(defExpr, var, init->remove());
   } else {
     // handle split initialization for type aliases
     var->addFlag(FLAG_SPLIT_INITED);

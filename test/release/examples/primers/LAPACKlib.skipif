@@ -1,13 +1,12 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import os, os.path
 
 isXC = os.getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
 isGNU = 'gnu' in str(os.getenv('CHPL_TARGET_COMPILER'))
-isWB = not (os.path.exists('/etc/opt/cray/release/CLEinfo') or os.path.exists('/etc/opt/cray/release/cle-release'))
 isLLVM = '--llvm' in str(os.getenv('COMPOPTS'))
 
-if isXC and isGNU and not isWB and not isLLVM:
+if isXC and isGNU and not isLLVM:
   print(False) # Don't skip
 else:
   print(True) # Do skip

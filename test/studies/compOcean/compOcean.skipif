@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # The NetCDF package requires the netCDF library.
 #
@@ -17,6 +17,5 @@ from socket import gethostname
 
 foundLib = not (find_library('netcdf') is None)
 isXC = getenv('CHPL_TARGET_PLATFORM') == 'cray-xc'
-isWhitebox = gethostname().startswith("esxbld");
 
-print((not foundLib) or isXC or isWhitebox)
+print((not foundLib) or isXC)

@@ -103,7 +103,7 @@ module List {
 
   /* Check that element type is supported by list */
   pragma "no doc"
-  proc _checkType(type eltType) {
+  proc _checkType(type eltType) param {
     if isGenericType(eltType) {
       compilerWarning("creating a list with element type " +
                       eltType:string);
@@ -265,17 +265,50 @@ module List {
 
     /*
       Initializes a list containing elements that are copy initialized from
+      the elements yielded by an iterator expression.
+
+      Used in new expressions.
+
+      :arg other: The iterator expression to initialize from.
+
+      :arg parSafe: If `true`, this list will use parallel safe operations.
+      :type parSafe: `param bool`
+    */
+    proc init(other: _iteratorRecord, param parSafe=false) {
+      // get the type yielded by the iterator
+      type t = __primitive("scalar promotion type", other.type);
+
+      _checkType(t);
+      this.eltType = t;
+      this.parSafe = parSafe;
+
+      this.complete();
+      _commonInitFromIterable(other);
+    }
+
+
+    /*
+      Initializes a list containing elements that are copy initialized from
       the elements contained in another list.
+
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
 
       :arg other: The list to initialize from.
     */
-    proc init=(other: list(this.type.eltType, ?p)) {
+    proc init=(other: list) {
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot copy list with element type that " +
                       "cannot be copied");
 
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
+      // set eltType to other.eltType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.eltType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -284,15 +317,24 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements contained in an array.
 
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
       :arg other: The array to initialize from.
     */
-    proc init=(other: [?d] this.type.eltType) {
-      if !isCopyableType(this.type.eltType) then
+    proc init=(other: []) {
+      if !isCopyableType(other.eltType) then
         compilerError("Cannot copy list from array with element type " +
                       "that cannot be copied");
 
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
+      // set eltType to other.eltType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.eltType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
       this.complete();
       _commonInitFromIterable(other);
     }
@@ -301,24 +343,56 @@ module List {
       Initializes a list containing elements that are copy initialized from
       the elements yielded by a range.
 
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
       .. note::
 
         Attempting to initialize a list from an unbounded range will trigger
         a compiler error.
 
       :arg other: The range to initialize from.
-      :type other: `range(this.type.eltType)`
     */
-    proc init=(other: range(this.type.eltType, ?b, ?d)) {
-      this.eltType = this.type.eltType;
-      this.parSafe = this.type.parSafe;
-
+    proc init=(other: range(?)) {
       if !isBoundedRange(other) {
         param e = this.type:string;
         param f = other.type:string;
         param msg = "Cannot init " + e + " from unbounded " + f;
         compilerError(msg);
       }
+
+      // set eltType to other.idxType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else other.idxType;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
+
+      this.complete();
+      _commonInitFromIterable(other);
+    }
+
+    /*
+      Initializes a list containing elements that are copy initialized from
+      the elements yielded by an iterator expression.
+
+      ``this.parSafe`` will default to ``false`` if it is not yet set.
+
+      :arg other: The iterator expression to initialize from.
+    */
+    proc init=(other: _iteratorRecord) {
+      // get the type yielded by the iterator
+      type t = __primitive("scalar promotion type", other.type);
+
+      // set eltType to other.idxType if it was not already provided in lhs type
+      this.eltType = if this.type.eltType != ?
+                     then this.type.eltType
+                     else t;
+      // set parSafe to false if it was not already provided in lhs type
+      this.parSafe = if this.type.parSafe != ?
+                     then this.type.parSafe
+                     else false;
 
       this.complete();
       _commonInitFromIterable(other);
@@ -585,7 +659,7 @@ module List {
         on this do _maybeReleaseMem(1);
         return;
       }
-      
+
       on this {
         for i in idx..(_size - 2) {
           ref src = _getRef(i + 1);
@@ -600,7 +674,7 @@ module List {
 
     //
     // Assumes that a copy of the input element has already been made at some
-    // previous boundary, IE giving a parameter the "in" intent. Whatever 
+    // previous boundary, IE giving a parameter the "in" intent. Whatever
     // copy you've made, make sure that the "no auto destroy" pragma is
     // attached so that you avoid firing a destructor early (and in the worst
     // case, fire it twice).
@@ -714,12 +788,12 @@ module List {
         _leave();
         boundsCheckHalt("Called \"list.last\" on an empty list.");
       }
-     
+
       // TODO: How to make this work with on clauses?
       ref result = _getRef(_size-1);
       _leave();
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -808,7 +882,7 @@ module List {
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
-      
+
         Inserting an element into this list may invalidate existing references
         to the elements contained in this list.
 
@@ -848,7 +922,7 @@ module List {
       if !result then
         _destroy(x);
 
-      return result;  
+      return result;
     }
 
     pragma "no doc"
@@ -889,7 +963,7 @@ module List {
     /*
       Insert an array of elements `arr` into this list at index `idx`,
       shifting all elements at and following the index `arr.size` positions
-      to the right. 
+      to the right.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
@@ -944,9 +1018,9 @@ module List {
       :rtype: `bool`
     */
     proc ref insert(idx: int, lst: list(eltType)): bool lifetime this < lst {
-      
+
       var result = false;
-      
+
       // Prevent deadlock if we are trying to insert this into itself.
       const size = lst.size;
 
@@ -1150,7 +1224,7 @@ module List {
 
       _sanity(_totalCapacity != 0);
       _sanity(_arrayCapacity != 0);
-    
+
       on this {
         // Remember to use zero-based indexing with `_ddata`!
         for i in 0..#_arrayCapacity {
@@ -1204,7 +1278,7 @@ module List {
 
       .. warning::
 
-        Calling this method on an empty list or with values of `start` or 
+        Calling this method on an empty list or with values of `start` or
         `end` that are out of bounds will cause the currently running program
         to halt. If the `--fast` flag is used, no safety checks will be
         performed.
@@ -1320,7 +1394,7 @@ module List {
           _firstTimeInitializeArrays();
           _extendGeneric(arr);
         }
-        
+
         _leave();
       }
       return;
@@ -1403,7 +1477,7 @@ module List {
     }
 
     /*
-      Update a value in this list in a parallel safe manner via an updater 
+      Update a value in this list in a parallel safe manner via an updater
       object.
 
       The updater object passed to the `update()` method must
@@ -1581,7 +1655,7 @@ module List {
     */
     proc readWriteThis(ch: channel) throws {
       _enter();
-      
+
       ch <~> "[";
 
       for i in 0..(_size - 2) do
@@ -1684,7 +1758,7 @@ module List {
       `lhs`.
 
     :arg lhs: The list to assign to.
-    :arg rhs: The list to assign from. 
+    :arg rhs: The list to assign from.
   */
   proc =(ref lhs: list(?t, ?), rhs: list(t, ?)) {
     lhs.clear();

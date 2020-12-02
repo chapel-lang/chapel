@@ -1719,7 +1719,7 @@ module DefaultRectangular {
 
     if false && !f.writing && !f.binary() &&
        rank == 1 && dom.dsiDim(0).stride == 1 &&
-       dom._arrs.size == 1 {
+       dom._arrs_containing_dom == 1 {
 
       // resize-on-read implementation, disabled right now
       // until we decide how it should work.
@@ -2267,7 +2267,7 @@ module DefaultRectangular {
   // A helper routine that will perform a pointer swap on an array
   // instead of doing a deep copy of that array. Returns true
   // if used the optimized swap, false otherwise
-  proc DefaultRectangularArr.doiOptimizedSwap(other) {
+  proc DefaultRectangularArr.doiOptimizedSwap(other: this.type) {
    // Get shape of array
     var size1: rank*(this.dom.ranges(0).intIdxType);
     for (i, r) in zip(0..#this.dom.ranges.size, this.dom.ranges) do
@@ -2280,11 +2280,29 @@ module DefaultRectangular {
     
     if(this.locale == other.locale &&
        size1 == size2) {
+      if debugOptimizedSwap {
+        writeln("DefaultRectangular doing optimized swap. Domains: ", 
+                this.dom.ranges, " ", other.dom.ranges);
+      }
       this.data <=> other.data;
       this.initShiftedData();
       other.initShiftedData();
       return true;
     }
+    if debugOptimizedSwap {
+      writeln("DefaultRectangular doing unoptimized swap. Domains: ", 
+              this.dom.ranges, " ", other.dom.ranges);
+    }
+    return false;
+  }
+
+  // The purpose of this overload is to provide debugging output in the event
+  // that debugOptimizedSwap is on and the main routine doesn't resolve (e.g.,
+  // due to a type, stridability, or rank mismatch in the other argument). When
+  // debugOptimizedSwap is off, this overload will be ignored due to its where
+  // clause.
+  proc DefaultRectangularArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+    writeln("DefaultRectangularArr doing unoptimized swap. Type mismatch");
     return false;
   }
 

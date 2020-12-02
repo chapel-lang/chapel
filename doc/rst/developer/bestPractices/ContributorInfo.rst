@@ -10,7 +10,7 @@ Chapel workflow recommendations.
 Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
+.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
 
 Overview:
 
@@ -18,17 +18,17 @@ Overview:
 
 #. `Design`_
 
-    #. `When design discussion is needed`_
-    #. `Creating a design issue`_
-    #. `Leading a design discussion`_
+   #. `When design discussion is needed`_
+   #. `Creating a design issue`_
+   #. `Leading a design discussion`_
 
 #. `Development`_
 
-    #. `Get set up`_
-    #. `Create new branch`_
-    #. `Develop and test contributions locally`_
+   #. `Get set up`_
+   #. `Create new branch`_
+   #. `Develop and test contributions locally`_
 
-       #. `Add new tests`_
+      #. `Add new tests`_
 
 
 #. `Contributing changes`_
@@ -107,8 +107,8 @@ decisions. Here are some strategies to make a good design issue:
 - It can be useful to consider alternative solutions to the problem and
   describe the trade-offs among them.
 - A design issue should have two developers not involved in the effort to review.
-- To find reviewers, send an email to chapel-developers_. Subscribe to the mailing list
-  before sending an email.
+- To find reviewers, post an inquiry to the `Chapel Developers`_
+  Discourse forum.
 
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation
@@ -187,15 +187,21 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
-#. If you're working on a long-term effort, announce it on the
-   chapel-developers_ mailing list to make sure toes are not being stepped on,
-   work is not being pursued redundantly, etc.  Similarly, fundamental changes
-   to the language or architecture should be circulated to the
-   chapel-developers_ and/or chapel-users_ lists to make sure effort is not
-   wasted.
+#. Make sure you understand how to sign your commits with respect to the DCO.
 
-#. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
-   ID.
+   Chapel enforces the Developer Certificate of Origin (DCO) on all
+   pull requests.  This requires all commits you make to be signed to
+   indicate that they adhere to the DCO policy.  If you're not already
+   familiar with DCOs, read `Getting started with Chapel and the
+   Developer Certificate of Origin`_ to learn more about them and how
+   to sign your commits.
+
+#. If you're working on a long-term effort, announce it in the
+   `Chapel Developers`_ Discourse category to make sure toes are not being stepped on,
+   work is not being pursued redundantly, etc.  Similarly, fundamental changes
+   to the language or architecture should be circulated in the
+   `Chapel Developers`_ and/or `Chapel Users`_ categories to make sure effort is not
+   wasted pursuing an unpopular idea.
 
 * You do not need commit/push access to the main repo in order to
   contribute code.  See
@@ -204,6 +210,9 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
+.. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
+
+   
 .. _Create new branch:
 
 Create new branch
@@ -278,7 +287,7 @@ Discussion can take place in:
 
 - the `Work-in-progress pull request`_
 - a separate GitHub issue
-- the chapel-developers_ mailing list
+- the `Chapel Developers`_ Discourse forum
 - a private communication
 - some other strategy agreed upon by all involved parties
 
@@ -309,9 +318,9 @@ Find a reviewer
 * Once your PR is ready, you'll need to request a review.  If you know who you'd
   like to review it, @ mention them in a comment on the PR and ask them to have
   a look.  If you don't know their GitHub id, you can find them in the chat room
-  or send them an email.  If you don't know who should review the change, send
-  an email to the chapel-developers_ list requesting a review and linking to the
-  PR.  Such an email should have a subject line starting with `[PR]`.
+  or send them an email.  If you don't know who should review the change, post
+  to the `Chapel Developers`_ Discourse topic requesting a review and linking to the
+  PR.  By convention, such topics often use a `[PR]` prefix in their titles.
 
   Note: Ideally, someone should volunteer to review your pull request within a
   day or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -331,7 +340,7 @@ Work with your reviewers
   something really hard.  Try to make sure they understand the magnitude of the
   request, and try to discuss if it's really necessary to do before merging.  If
   you can't come to an agreement, one of you should bring other developers
-  (individually or via chapel-developers_) into the conversation to get a
+  (individually or via the `Chapel Developers`_ forum) into the conversation to get a
   broader opinion.  One of the jobs of the reviewer is to serve as a proxy for
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
@@ -344,8 +353,9 @@ Before merging
 Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
+- all commits contain the required "Signed-off-by:" line to indicate
+  compliance with the `Developer Certificate of Origin`_ (DCO)
 - the PR has been reviewed
-- the `contributor license agreement`_ (CLA) has been signed
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -378,16 +388,11 @@ After merging, a good contributor should watch automatic testing results for
 failures that they may need to address:
 
 * In short order, a smoke-test will be run against the commit to make sure that
-  nothing basic has been broken by it.  Monitor the
-  chapel-test-results-regressions_ mailing list to make sure that nothing
-  breaks.
+  nothing basic has been broken by it.  Your reviewer should alert you to any
+  problems.
 
-* For the day or two after the commit has gone in, check the
-  chapel-test-results-regressions_ mailing list to ensure that there are no new
-  failures caused by your commit.  Use the chapel-developers_ mailing list if
-  you are unsure (a member of the core Chapel team will be tasked with
-  diagnosing any testing failures on any given night, but it's nice when
-  developers notice the issue first themselves to save wasted effort).
+* After the commit has gone in, check with your reviewer to ensure that
+  there are no new failures caused by your commit in our nightly testing.
 
 .. _Other useful information:
 
@@ -452,6 +457,7 @@ Configure your local git
     git remote set-url --push upstream no_push
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
+
 
 .. _New branch command:
 
@@ -534,7 +540,9 @@ Committing staged changes:
 
 .. code-block:: bash
 
-    git commit [-m <message>]
+    # Accept the Developer Certificate of Origin by adding a Signed-off-by line to commit messages:
+
+    git commit -s [-m <message>]
 
     # similar to: svn commit [-m <message>]
 
@@ -703,7 +711,7 @@ How to open a PR:
   `Final merge message`_ for recommendations on what that commit message should
   look like.
 
-  You will have to have signed a `contributor license agreement`_ (CLA).
+  You will have to add "signed-off-by" in your commits to accept `Developer Certificate of Origin`_ (DCO)
 
   Your pull request will be available at a URL like:
 
@@ -711,7 +719,7 @@ How to open a PR:
 
   and you can discuss the patch with your reviewers there.
 
-.. _contributor license agreement: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
 
 .. _How to merge a PR:
 
@@ -882,8 +890,8 @@ Third-party code
 
 If your work will require committing any third-party code that you are not
 developing yourself (or code that you've developed as a standalone package),
-alert the chapel-developers_ mailing list of this as, presently, such code
-packages must be approved by our lawyers before being committed.
+alert the `Chapel Developers`_ Discourse forum of this as, presently, such code
+packages must be approved before being committed.
 
 Here are some guiding questions to determine whether a third-party package you
 rely on should be committed to the chapel repository:
@@ -930,8 +938,8 @@ rely on should be committed to the chapel repository:
   - If so, we will probably want to distribute this package, or at least include
     the modifications and an easy way to install them.
 
-Please include the answers to these questions when you contact the
-chapel-developers_ mailing list, if you believe the code should be included or
+Please include the answers to these questions when you post to the
+`Chapel Developers`_ forum, if you believe the code should be included or
 you remain uncertain.
 
 .. _Testing your patch:
@@ -1093,10 +1101,15 @@ Reviewer responsibilities
 +++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
-  team, be sure they have signed the `contributor license agreement`_ (see the
-  `Developer Workflow`_ instructions for this).  If the developer cannot
-  or will not sign the agreement, bring the situation to the attention
-  of the Chapel project leadership.
+  team, be sure their commits are signed via the DCO bot (one of several
+  github action checks that will run on each PR).  If they're not, help
+  the developer understand the requirement.
+
+  Note that using GitHub's "squash and merge" feature will effectively
+  drop all DCO signature lines from the pull request, and so should
+  not be used on external commits (or potentially even for commits
+  from the core team?) in order to preserve the signed nature of the
+  commits.
 
   Care may need to be taken when committing third-party code that
   originates from a different git[hub] repository.  As an example, in
@@ -1121,9 +1134,8 @@ Reviewer responsibilities
   decisions may need to be made (or at least understood) at a high
   level.
 
-.. _chapel-developers: chapel-developers@lists.sourceforge.net
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
-.. _chapel-users: chapel-users@lists.sourceforge.net
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
+.. _Chapel Users: https://chapel.discourse.group/c/users
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/
@@ -1133,7 +1145,7 @@ Reviewer responsibilities
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
 
-By signing a Contributor Agreement, you have agreed that code you contribute
+By opening a PR with signed commits, you are agreeing that code you contribute
 will be governed by the license and copyright of the project as a whole.  A
 standard block of license text is required at the top of every compiler,
 runtime, and module code file.  Browse other files of the same type to see the

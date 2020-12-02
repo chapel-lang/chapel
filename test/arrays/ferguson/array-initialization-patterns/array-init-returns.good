@@ -1,0 +1,45 @@
+testr11
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr12
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr13
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr21
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr22
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr23
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr31
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr32
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-
+testr33
+init 1 1
+(x = 1, ptr = {xx = 1})
+deinit 1 1
+-

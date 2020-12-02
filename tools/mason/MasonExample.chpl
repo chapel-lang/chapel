@@ -19,16 +19,18 @@
  */
 
 
+
 private use List;
 private use Map;
 use TOML;
 use Spawn;
+use Path;
+use FileSystem;
+
 use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
-use Path;
-use FileSystem;
 use MasonEnv;
 
 /* Runs the .chpl files found within the /example directory */
@@ -193,7 +195,7 @@ private proc runExamples(show: bool, run: bool, build: bool, release: bool,
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
 
     // Get buildInfo: dependencies, path to src code, compopts,
@@ -359,7 +361,7 @@ proc getExamplePath(fullPath: string, examplePath = "") : string {
 // used when user calls `mason run --example` without argument
 proc printAvailableExamples() {
   try! {
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd);
     const toParse = open(projectHome + "/Mason.toml", iomode.r);
     const toml = owned.create(parseToml(toParse));

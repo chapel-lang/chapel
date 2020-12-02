@@ -1,0 +1,16 @@
+# try a variety of configurations to stress cache
+--nLocales=2 --spacePerLocale=8
+--nLocales=2 --spacePerLocale=1024
+--nLocales=2 --spacePerLocale=1048576
+--nLocales=2 --spacePerLocale=1073741824
+--nLocales=2 --spacePerLocale=1099511627776
+--nLocales=1024 --spacePerLocale=8
+--nLocales=1024 --spacePerLocale=1024
+--nLocales=1024 --spacePerLocale=1048576
+--nLocales=1024 --spacePerLocale=1073741824
+--nLocales=1024 --spacePerLocale=1099511627776
+--nLocales=1048576 --spacePerLocale=8
+--nLocales=1048576 --spacePerLocale=1024
+--nLocales=1048576 --spacePerLocale=1048576
+--nLocales=1048576 --spacePerLocale=1073741824
+--nLocales=1048576 --spacePerLocale=1099511627776

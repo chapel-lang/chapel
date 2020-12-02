@@ -102,7 +102,8 @@ case "$PREFIX" in
 esac
 
 # Gather the version number for the Chapel binary.
-CHPL_BIN_SUBDIR=`"$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
+CHPL_PYTHON=`"$CHPL_HOME"/util/config/find-python.sh`
+CHPL_BIN_SUBDIR=`"$CHPL_PYTHON" "$CHPL_HOME"/util/chplenv/chpl_bin_subdir.py`
 VERS=`$CHPL_HOME/bin/$CHPL_BIN_SUBDIR/chpl --version`
 # Remove the "chpl version " part
 VERS=${VERS#chpl version }
@@ -265,6 +266,18 @@ myinstalldir  util/chplenv            "$DEST_CHPL_HOME"/util/chplenv/
 # copy util/config/compileline
 # (needed for LLVM builds)
 myinstallfile util/config/compileline "$DEST_CHPL_HOME"/util/config/
+
+# copy util/config/compileline.py
+# (needed for LLVM builds)
+myinstallfile util/config/compileline.py "$DEST_CHPL_HOME"/util/config/
+
+# copy util/config/find-python.py
+# (needed by setchplenv*, Makefiles, compileline, printchplenv wrappers)
+myinstallfile util/config/find-python.sh "$DEST_CHPL_HOME"/util/config/
+
+# copy util/config/run-in-venv.bash
+# (needed primarily by start_test)
+myinstallfile util/config/run-in-venv.bash "$DEST_CHPL_HOME"/util/config
 
 # copy util/config/fixpath.py
 # (needed by setchplenv*)

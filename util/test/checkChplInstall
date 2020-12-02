@@ -157,9 +157,12 @@ if [ "${CHPL_CHECK_DEBUG}" == 1 ] ; then
     $CHPL_HOME/util/printchplenv --all --no-tidy
 fi
 
+# Compute python interperet to use for helpers
+chpl_py="$($CHPL_HOME/util/config/find-python.sh)"
+
 # Collect comm protocol environment variables (lowercase to avoid conflicts)
-chpl_comm="$($CHPL_HOME/util/chplenv/chpl_comm.py)"
-chpl_launcher="$($CHPL_HOME/util/chplenv/chpl_launcher.py)"
+chpl_comm="$($chpl_py $CHPL_HOME/util/chplenv/chpl_comm.py)"
+chpl_launcher="$($chpl_py $CHPL_HOME/util/chplenv/chpl_launcher.py)"
 
 backend="C"
 if [ ${CHPL_LLVM_CODEGEN:-0} -ne 0 ]; then

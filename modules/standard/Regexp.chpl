@@ -340,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regexp {
-  private use SysBasic, SysError, SysCTypes;
+  private use SysBasic, SysError, SysCTypes, CPtr;
 
 pragma "no doc"
 extern type qio_regexp_t;
@@ -489,22 +489,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   return ret;
 }
 
-pragma "no doc"
-pragma "last resort"  // otherwise compile("some regex") resolves calling this
-proc compile(pattern: string, utf8=true, posix=false, literal=false,
-             nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
-             /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
-  compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
-
-  if utf8 == false then
-    throw new owned IllegalArgumentError("utf8 argument cannot be false");
-  else
-    return compile(pattern, posix, literal, noCapture=nocapture,
-                   ignoreCase=ignorecase, multiLine=multiline, dotnl,
-                   nonGreedy=nongreedy);
-}
-
-
 /*  The reMatch record records a regular expression search match
     or a capture group.
 
@@ -572,13 +556,6 @@ proc bytes.this(m:reMatch) {
 
  private use IO;
 
-pragma "no doc"
-proc warnIfNoDefArg() type {
-  compilerWarning("string-by-default regexp is deprecated. ",
-                  "Use regexp(string) or regexp(bytes) instead.");
-  return string;
-}
-
 /*  This class represents a compiled regular expression. Regular expressions
     are currently cached on a per-thread basis and are reference counted.
     To create a compiled regular expression, use the proc:`compile` function.
@@ -591,7 +568,7 @@ pragma "ignore noinit"
 record regexp {
 
   pragma "no doc"
-  type exprType = warnIfNoDefArg();
+  type exprType;
   pragma "no doc"
   var home: locale = here;
   pragma "no doc"

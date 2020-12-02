@@ -1,3 +1,11 @@
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/..
+endif
+
+ifndef CHPL_MAKE_PYTHON
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+endif
+
 # Makefile for Chapel documentation
 
 # for a release, change the following to 'release/' and 'x.yz' (the
@@ -9,7 +17,9 @@ WEB_DOC_VERSION=master
 # Makefile.sphinx interfaces with sphinx build commands
 include Makefile.sphinx
 
-CHPL2RST     = ../util/run-in-venv.bash ./util/chpl2rst.py
+CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps)
+
+CHPL2RST = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) ./util/chpl2rst.py
 
 CHPL_DOC_PRIMERS_DIR = $(SOURCEDIR)/primers
 CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
@@ -17,13 +27,15 @@ CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=$(WEB_DOC_DI
 CHPL_DOC_HELLO_DIR = $(SOURCEDIR)/examples/hellos
 CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
+SPECSRCDIR = $(SOURCEDIR)/language/spec
+
 help: help-sphinx help-source
 
 help-source:
 	@echo "Source Help:"
-	@echo "  docs           to invoke 'make html' in the virtualenv"
-	@echo "  checkdocs      to invoke 'make check' in the virtualenv"
-	@echo "  man-chapel     to invoke 'make man' in the virtualenv"
+	@echo "  docs           to invoke 'make html'"
+	@echo "  checkdocs      to invoke 'make check'"
+	@echo "  man-chapel     to invoke 'make man'"
 	@echo "  module-docs    to invoke 'make documentation' in ../modules"
 	@echo "  primers        to generate primer docs in $(SOURCEDIR)/primers/"
 	@echo "  hellos         to generate hellos docs in $(SOURCEDIR)/examples/"
@@ -35,20 +47,25 @@ help-source:
 
 
 docs: FORCE
-	@../util/run-in-venv.bash $(MAKE) html-release || $(MAKE) error_docs
+	@$(MAKE) html-release || $(MAKE) error_docs
 
 
 man-chapel: FORCE
-	../util/run-in-venv.bash $(MAKE) man
+	$(MAKE) man
 
 
-source: module-docs primers hellos symlinks
+source: collect-syntax module-docs primers hellos symlinks
 
+
+collect-syntax: clean-collect-syntax
+	@echo
+	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
+	./util/collect-syntax.py rst/language/spec --outdir $(SPECSRCDIR)
 
 module-docs: clean-module-docs
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
-	(cd ../modules && make documentation)
+	(cd ../modules && $(MAKE) documentation)
 	cp -f $(SOURCEDIR)/meta/modules/* $(SOURCEDIR)/modules/
 	cp -f $(SOURCEDIR)/meta/builtins/* $(SOURCEDIR)/builtins/
 
@@ -78,10 +95,10 @@ symlinks: clean-symlinks
 	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples
 
 checkdocs: FORCE
-	../util/run-in-venv.bash $(MAKE) check
+	$(MAKE) check
 
 %.docs: FORCE
-	../util/run-in-venv.bash $(MAKE) $*.html
+	$(MAKE) $*.html
 
 prunedocs: FORCE
 	rm -f html/_downloads/quickReference.pdf
@@ -99,6 +116,11 @@ cleanall: clean-source
 clobber: clean-source clean-build
 
 clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks
+
+clean-collect-syntax: FORCE
+	@echo
+	@echo "Removing generated RST file for syntax productions"
+	touch $(SPECSRCDIR)/syntax.rst && rm $(SPECSRCDIR)/syntax.rst
 
 clean-module-docs: FORCE
 	@echo

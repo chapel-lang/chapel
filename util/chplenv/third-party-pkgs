@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
  Print the names of any third-party packages needed for the current
@@ -16,10 +16,9 @@
      indented are assumed to be modifiers of the corresponding top-level
      variable and will not be considered in this script (*** and also
      do not necessarily have to be prefixed with 'CHPL_')
- - $CHPL_HOME/third-party/<pkg>/Makefile.include defines any aliases
-   for the package name in a variable called XXX_ALIASES where XXX
-   is the directory name in all caps. The alias must be defined with =
-   assignment. For example: `QTHREAD_ALIASES=qthreads`
+ - Any aliases for the package name are defined in generate_subdir_map().
+   The keys take the form of <env_var_name>-<alias_name>. The vals
+   are the directory name.
  - If the file COMPILERONLY exists in the third party directory,
    that package is emitted if --compiler is passed,
    and not by default (which gives dependencies for runtime).
@@ -37,21 +36,19 @@ def get_all_pkgs():
     all_pkgs = os.listdir(get_chpl_third_party())
     return all_pkgs
 
-def find_pkg_aliases():
+def generate_subdir_map():
     """ Find any aliases for third-party packages """
     pkg_aliases = dict()
-    for pkg in get_all_pkgs():
-        make_include = os.path.join(get_chpl_third_party(), pkg, 'Makefile.include')
-        alias_var = '{0}_ALIASES'.format(pkg.upper())
-        if os.path.isfile(make_include):
-            with open(make_include, 'r') as f:
-                for line in f.readlines():
-                    var_value = line.strip().split('=')
-                    if var_value[0] == alias_var:
-                        aliases = var_value[1].split()
-                        for alias in aliases:
-                            pkg_aliases[alias] = pkg
-                        break
+
+    pkg_aliases['CHPL_LLVM-clang-included'] = 'llvm'
+    pkg_aliases['CHPL_TASKS-qthreads'] = 'qthread'
+    pkg_aliases['CHPL_GMP-bundled'] = 'gmp'
+    pkg_aliases['CHPL_HWLOC-bundled'] = 'hwloc'
+    pkg_aliases['CHPL_JEMALLOC-bundled'] = 'jemalloc'
+    pkg_aliases['CHPL_LIBFABRIC-bundled'] = 'libfabric'
+    pkg_aliases['CHPL_LLVM-bundled'] = 'llvm'
+    pkg_aliases['CHPL_UNWIND-bundled'] = 'libunwind'
+
     return pkg_aliases
 
 def gather_chplenv():
@@ -63,7 +60,7 @@ def gather_chplenv():
 def compute_required_pkgs():
     """ Determine required third-party packages based on the chplenv """
     chplenv = gather_chplenv()
-    pkg_aliases = find_pkg_aliases()
+    pkg_aliases = generate_subdir_map()
 
     req_pkgs = set()
     for line in chplenv.split('\n'):
@@ -76,8 +73,8 @@ def compute_required_pkgs():
             if not (var.endswith('_PLATFORM') or var == 'CHPL_MEM'):
                 if val in get_all_pkgs():
                     req_pkgs.add(val)
-                elif val in pkg_aliases:
-                    req_pkgs.add(pkg_aliases[val])
+                elif var + '-' + val in pkg_aliases:
+                    req_pkgs.add(pkg_aliases[var + '-' + val])
     return req_pkgs
 
 def comp_only_pkg(pkg):

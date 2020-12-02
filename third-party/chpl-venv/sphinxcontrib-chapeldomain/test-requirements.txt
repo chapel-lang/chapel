@@ -1,7 +1,0 @@
-coveralls
-flake8
-mock
-nose
-nose-cov
-tox
-unittest2

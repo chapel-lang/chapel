@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 import chpl_platform, overrides, third_party_utils
@@ -12,14 +12,19 @@ def get():
     osx = platform_val.startswith('darwin')
     val = overrides.get('CHPL_UNWIND')
 
+    if val == 'libunwind':
+        sys.stderr.write("Warning: CHPL_UNWIND=libunwind is deprecated. "
+                         "Use CHPL_UNWIND=bundled instead\n")
+        val = 'bundled'
+
     if linux:
-        if val == 'libunwind':
-            return 'libunwind'
+        if val == 'bundled':
+            return 'bundled'
         elif val == 'system':
             return 'system'
     if osx:
-        if val == 'libunwind':
-            error("Using CHPL_UNWIND=libunwind is not supported on Mac OS X."
+        if val == 'bundled':
+            error("Using CHPL_UNWIND=bundled is not supported on Mac OS X."
                   "\nUse CHPL_UNWIND=system instead.", ValueError)
         elif val == 'system':
             return 'system'
@@ -48,7 +53,7 @@ def get_link_args(unwind):
       # libunwind with.
       libs = third_party_utils.pkgconfig_get_link_args(
                        'libunwind', system=True, static=True)
-    elif unwind == 'libunwind':
+    elif unwind == 'bundled':
       # the pkg-config file for libunwind is nice, but as of 1.1
       # it doesn't include -lzma when it probably should.
       # So try to get the libraries out of libunwind.la.

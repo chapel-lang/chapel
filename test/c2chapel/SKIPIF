@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
 
-command -v c2chapel > /dev/null 2>&1 || { echo "True"; exit 0; }
-echo "False"
+BINDIR="$CHPL_HOME"/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`
+C2CHAPEL="$BINDIR/c2chapel"
+if [[ -f "$C2CHAPEL"  && -x "$C2CHAPEL" ]]
+then
+  echo False
+else
+  echo True
+fi

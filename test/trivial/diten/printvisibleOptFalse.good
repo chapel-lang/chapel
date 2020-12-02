@@ -15,10 +15,13 @@ printvisibleOptFalse.chpl:2: Printing symbols visible from here:
   modules/minimal/internal/ChapelUtil.chpl:28: chpl_main_argument
   modules/minimal/internal/ChapelUtil.chpl:35: chpl_rt_preUserCodeHook
   modules/minimal/internal/ChapelUtil.chpl:36: chpl_rt_postUserCodeHook
-  modules/minimal/internal/ChapelUtil.chpl:39: chpl_addModule
-  modules/minimal/internal/ChapelUtil.chpl:41: chpl_deinitModules
+  modules/minimal/internal/ChapelUtil.chpl:42: chpl_libraryModuleLevelSetup
+  modules/minimal/internal/ChapelUtil.chpl:43: chpl_libraryModuleLevelCleanup
+  modules/minimal/internal/ChapelUtil.chpl:46: chpl_addModule
+  modules/minimal/internal/ChapelUtil.chpl:48: chpl_deinitModules
   modules/minimal/internal/IO.chpl:23: syserr
   modules/minimal/internal/IO.chpl:24: qio_channel_ptr_t
+  modules/minimal/internal/IO.chpl:26: c_void_ptr
   modules/minimal/internal/IO.chpl:28: chpl_qio_setup_plugin_channel
   modules/minimal/internal/IO.chpl:31: chpl_qio_read_atleast
   modules/minimal/internal/IO.chpl:34: chpl_qio_write

@@ -1,8 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
-from utils import error, memoize
+from utils import error, memoize, try_run_command
 
 
 @memoize
@@ -12,10 +12,13 @@ def get():
         libfabric_val = overrides.get('CHPL_LIBFABRIC')
         platform_val = chpl_platform.get('target')
         if not libfabric_val:
-            if platform_val == 'hpe-cray-ex':
+            exists, returncode = try_run_command(['pkg-config',
+                                                  '--exists',
+                                                  'libfabric'])[0:2]
+            if exists and returncode == 0:
                 libfabric_val = 'system'
             else:
-                libfabric_val = 'libfabric'
+                libfabric_val = 'bundled'
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
         if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
@@ -23,6 +26,11 @@ def get():
                              'on HPE Cray EX\n')
     else:
         libfabric_val = 'none'
+
+    if libfabric_val == 'libfabric':
+        sys.stdout.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
+                         "Use CHPL_LIBFABRIC=bundled instead.\n")
+        libfabric_val = 'bundled'
 
     return libfabric_val
 
@@ -40,7 +48,7 @@ def get_uniq_cfg_path():
 @memoize
 def get_compile_args(libfabric=get()):
     flags = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         flags = third_party_utils.default_get_compile_args('libfabric',
                                                            ucp=get_uniq_cfg_path())
     elif libfabric == 'system':
@@ -69,7 +77,7 @@ def get_compile_args(libfabric=get()):
 @memoize
 def get_link_args(libfabric=get()):
     libs = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         return third_party_utils.default_get_link_args('libfabric',
                                                        ucp=get_uniq_cfg_path(),
                                                        libs=['libfabric.la'],

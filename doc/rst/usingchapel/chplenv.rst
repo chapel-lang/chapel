@@ -212,7 +212,7 @@ CHPL_*_COMPILER
    ``CHPL_TARGET_COMPILER`` will default to the same value as ``CHPL_HOST_COMPILER``.
 
    .. note::
-     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=llvm``)
+     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=bundled``)
      will build the runtime twice: once with the compiler as described above and
      once with clang-included. We do this in order to avoid issues in linking
      objects built by different compilers.
@@ -658,17 +658,17 @@ CHPL_LLVM
        ============== ======================================================
        Value          Description
        ============== ======================================================
-       llvm           use the llvm/clang distribution in third-party
+       bundled        use the llvm/clang distribution in third-party
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
-       none           do not support llvm-/clang-related features
+       none           do not support llvm/clang-related features
        ============== ======================================================
 
    .. (comment) -minimal can be used but is only interesting for developers
        llvm-minimal   as above, but only build and link LLVM ADTs
        system-minimal as above, but only link LLVM ADTs
 
-   If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
+   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
    Chapel currently supports LLVM 10.0.

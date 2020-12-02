@@ -452,6 +452,9 @@ all:
   09/29/20:
     - text: Do sequential DR assignment if GETs are to be used (#16488)
       config: 16-node-xc, 16-node-cs
+  10/19/20:
+    - Improve the speed of tracking arrays declared over a domain (#16740)
+# End all
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -682,6 +685,9 @@ create-views:
     - Put param conditionals before others in domain record initialization (#15591)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  10/02/20:
+    - Only reference count a distribution's domains (#16528)
+
 
 cs-resize:
   03/05/19:
@@ -780,6 +786,9 @@ ep.ml-time:
 empty-chpl-barrier.ml-time:
   08/02/18:
     - Optimize the atomic barrier implementation for network atomics (#10633)
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+
 
 exchange:
   04/18/19:
@@ -1142,6 +1151,7 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+# End memleaks
 
 memleaksfull:
   07/08/14:
@@ -1341,6 +1351,15 @@ memleaksfull:
     - Close a trivial test leak (#15871)
   07/14/20:
     - Add tests for set, map, list of arrays (#16034)
+  10/23/20:
+    - Close leaks coming from unnamed array types (#16600)
+  11/04/20:
+    - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/04/20:
+    - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/19/20:
+    - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
+# End memleaksfull
 
 meteor:
   12/18/13:
@@ -1598,6 +1617,14 @@ regexdna-submitted:
   <<: *regexdna-base
 regexdnaredux-submitted:
   <<: *regexdna-base
+
+remote-puts.ml-perf:
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+
+remote-fetchAmos.ml-perf:
+  11/03/20:
+    - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
 
 remote-ons.ml-perf:
   05/17/19:
@@ -1962,6 +1989,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Give errors in reexporting ambiguities (#15316)
   04/16/20:
     - Cache whether a ResolveScope or UseStmt can reexport (#15517)
+  04/28/20:
+    - Move compiler performance jobs to chapcs04
+  06/15/20:
+    - machine update (McAfee)
   07/27/20:
     - Replace some where-clauses with formals types (#16130)
     - Handle bool tests in the compiler (#16062)
@@ -1998,6 +2029,19 @@ arkouda: &arkouda-base
   09/23/20:
     - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
       config: 16-node-cs, 16-node-xc
+  10/02/20:
+    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda/#503)
+      config: 16-node-cs
+  10/03/20:
+    - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
+      config: 16-node-xc
+    - text: Move XC testing from elogin back to login node
+      config: 16-node-xc
+  10/06/20:
+    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda/#509)
+      config: 16-node-cs, 16-node-xc
+  10/21/20:
+    - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
 
 
 arkouda-comp:

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Removes path components that begin with $CHPL_HOME from the given path.
 
@@ -67,6 +67,9 @@ def remove_chpl_from_path(path_val, delim):
 
     return delim.join(newpath)
 
+
+def update_path_env():
+    os.environ["PATH"] = remove_chpl_from_path(os.environ["PATH"], ":")
 
 def main():
     parser = optparse.OptionParser(usage=__doc__)

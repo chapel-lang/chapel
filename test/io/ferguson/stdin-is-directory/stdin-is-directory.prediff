@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # This prediff exists to change an absolute
 # paths like /home/user/chapel/test/io/ferguson/test-dir

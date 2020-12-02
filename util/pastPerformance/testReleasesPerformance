@@ -55,7 +55,8 @@ export CHPL_HOME_ORIG=$CHPL_HOME
 export CHPL_TEST_UTIL_DIR=$CHPL_HOME_ORIG/util
 
 if [[ -z $CHPL_TEST_VENV_DIR ]]; then
-    export CHPL_TEST_VENV_DIR=`python $CHPL_TEST_UTIL_DIR/chplenv/chpl_home_utils.py --test-venv`
+    echo "ERROR: script needs updating to work without CHPL_TEST_VENV_DIR set"
+    exit 1
 fi
 if [[ ! -d $CHPL_TEST_VENV_DIR ]]; then
     echo "ERROR: incorrect or missing CHPL_TEST_VENV_DIR='$CHPL_TEST_VENV_DIR'"
@@ -144,6 +145,10 @@ testReleasePerformance
 
 export CHPL_TEST_PERF_DATE="04/07/20"
 export CHPL_HOME=$chpl_release_home/chapel-1.22.0
+testReleasePerformance
+
+export CHPL_TEST_PERF_DATE="10/08/20"
+export CHPL_HOME=$chpl_release_home/chapel-1.23.0
 testReleasePerformance
 
 #

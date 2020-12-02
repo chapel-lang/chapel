@@ -65,6 +65,7 @@ $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
 $mason_build = 0;
+$python2 = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -135,6 +136,8 @@ while (@ARGV) {
         $futuresMode = 0;
     } elsif ($flag eq "-no-buildcheck") {
         $buildcheck = 0;
+    } elsif ($flag eq "-python2") {
+        $python2 = 1;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -196,7 +199,7 @@ if ($printusage == 1) {
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
-    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of the default mailing list(s)\n";
     print "\t-dist <dist>                   : run distribution robustness tests\n";
     print "\t-examples                      : run the release/examples tests only\n";
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
@@ -220,6 +223,7 @@ if ($printusage == 1) {
     print "\t-performance                   : run performance tests\n";
     print "\t-performance-configs <configs> : comma seperated configs to graph, ': v' after config to be visible by default\n";
     print "\t-performance-description <...> : run performance tests with additional description\n";
+    print "\t-python2                       : don't use features that needs python 3\n";
     print "\t-releasePerformance            : \$releasePerformance=1 ?\n";
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
@@ -425,9 +429,9 @@ if ($debug == 1) {
     # "email", the mailer program used on cygwin platform, requires multiple
     # recipient addresses to be comma delimited instead of space delimited.
     if ($mailer eq "email") {
-        $recipient = "$failuremail,$allmail";
+        $recipient = "$failuremail";
     } else {
-        $recipient = "$failuremail $allmail";
+        $recipient = "$failuremail";
     }
     $nochangerecipient = $allmail;
 }
@@ -480,27 +484,31 @@ if (-d "$chplhomedir/.git") {
 chomp($revision);
 $revision = "Revision: $revision";
 
-#
-# if on cygwin, blow away FILES files because they wreak havoc on stuff
-#
-$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-if ($hostplatform =~ "cygwin") {
-    mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
-}
+# we'll use some python3 to set platform-specific things. We are not using
+# python2 on those platforms so, skip those
+if ($python2 == 0) {
+  #
+  # if on cygwin, blow away FILES files because they wreak havoc on stuff
+  #
+  $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+  if ($hostplatform =~ "cygwin") {
+      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
+  }
 
-$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
+  $hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
 
-# Setup variables to pass to all make calls.
-$make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
+  # Setup variables to pass to all make calls.
+  $make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
 
-# Add OPTIMIZE=1 for most environments. If using the cray programming
-# environment, disable optimizations when building the compiler. This is an
-# experiment to see if it stabilizes the tests for the compiler when built with
-# cray C++/C compiler.
-if ($hostcompiler eq "cray-prgenv-cray") {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
-} else {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  # Add OPTIMIZE=1 for most environments. If using the cray programming
+  # environment, disable optimizations when building the compiler. This is an
+  # experiment to see if it stabilizes the tests for the compiler when built with
+  # cray C++/C compiler.
+  if ($hostcompiler eq "cray-prgenv-cray") {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
+  } else {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  }
 }
 
 
@@ -512,15 +520,18 @@ $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compi
 print "Making $make_vars_opt third-party-try-opt\n";
 mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
-# Build chpldoc. Do not fail the build if it does not succeed. Do not send
-# mail either.
-print "Making $make_vars_opt chpldoc\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+# if we are using python2, we cannot build the test-venv and/or chpldoc
+if ($python2 == 0) {
+  # Build chpldoc. Do not fail the build if it does not succeed. Do not send
+  # mail either.
+  print "Making $make_vars_opt chpldoc\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
 
-# Build test virtualenv. Fail if the build does not succeed as virtualenv is
-# needed for start_test. Send mail on failure
-print "Making $make_var_opt test-venv\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+  # Build test virtualenv. Fail if the build does not succeed as virtualenv is
+  # needed for start_test. Send mail on failure
+  print "Making $make_var_opt test-venv\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+}
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -721,6 +732,15 @@ if ($runtests == 0) {
     } else {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
+
+} elsif ($python2 == 1) {
+
+  # test system depends on python3, so with python2 we cannot do much other than
+  # `make check`
+  $ENV{'CHPL_HOME'} = $chplhomedir;
+
+  $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
+  mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
 
 } else {
 

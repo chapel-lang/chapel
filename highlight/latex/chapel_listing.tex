@@ -1,0 +1,74 @@
+\lstdefinelanguage{chapel}
+  {
+    morekeywords={
+      align, as, atomic,
+      begin, bool, borrowed, break, by, bytes
+      catch, class, cobegin, coforall, complex, config, const, continue,
+      defer, delete, dmapped, do, domain,
+      else, enum, except, export, extern,
+      false, for, forall, forwarding,
+      if, imag, in, index, inline, inout, int, iter,
+      label, lambda, let, lifetime, local, locale,
+      module,
+      new, nil, noinit,
+      on, only, opaque, otherwise, out, override, owned,
+      param, pragma, primitive, private, proc, prototype, public,
+      range, real, record, reduce, ref, require, return,
+      scan, select, serial, shared, single, sparse, string, subdomain, sync,
+      then, this, throw, throws, true, try, type,
+      uint, union, unmanaged, use,
+      var,
+      when, where, while, with,
+      yield,
+      zip
+    },
+    sensitive=false,
+    mathescape=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+}
+
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    keywordstyle=\bfseries,
+    commentstyle=\em,
+    showstringspaces=false,
+    flexiblecolumns=false,
+    numbers=left,
+    numbersep=5pt,
+    numberstyle=\tiny,
+    numberblanklines=false,
+    stepnumber=0,
+    escapeinside={(*}{*)},
+    language=chapel,
+  }
+
+%\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\ttfamily,keywordstyle=\bfseries]!#1!}
+\newcommand{\chpl}[1]{\lstinline[language=chapel,basicstyle=\small\ttfamily,keywordstyle=]!#1!}
+\newcommand{\varname}[1]{\emph{#1}}
+\newcommand{\typename}[1]{\emph{#1}}
+\newcommand{\fnname}[1]{\chpl{#1}}
+
+\lstnewenvironment{chapel}{\lstset{language=chapel,xleftmargin=2pc,stepnumber=0}}{}
+\lstnewenvironment{invisible}{\lstset{language=chapel,xleftmargin=2pc,stepnumber=0,keywordstyle=\bfseries\color{white},basicstyle=\small\ttfamily\color{white}}}{}
+\lstnewenvironment{chapel0}{\lstset{language=chapel,stepnumber=0}}{}
+
+\lstnewenvironment{numberedchapel}{\lstset{language=chapel,xleftmargin=15pt,stepnumber=1}}{}
+
+\lstnewenvironment{chapelcode}{\lstset{language=chapel,stepnumber=1}}{}
+
+% Uses the same listing style as the {chapel} environment, but keyword
+% formatting is turned off.  The argument is ignored in LaTeX
+% but used to name the .good file during test extraction.
+% The argument must be supplied but may be empty.
+% If empty it defaults to null, which signals the test extractor to 
+% autogenerate the .good file name as ``<test_name>.good''.
+\lstnewenvironment{chapelprintoutput}[1]
+  {\lstset{language=chapel,xleftmargin=2pc,stepnumber=0,keywordstyle=}}{}
+
+\lstnewenvironment{commandline}{\lstset{keywordstyle=,xleftmargin=2pc}}{}
+
+\lstnewenvironment{protohead}{\lstset{language=chapel,xleftmargin=0pc,belowskip=-10pt,stepnumber=0}}{}
+
+\newenvironment{protobody}{\begin{description}\item[\quad\quad] }{\end{description}}

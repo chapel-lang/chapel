@@ -149,7 +149,10 @@ module ChapelDistribution {
   //
   pragma "base domain"
   class BaseDom {
-    var _arrs: chpl__simpleSet(unmanaged BaseArr); // arrays declared over this domain
+    // Head pointer to doubly-linked-list of arrays declared over this domain.
+    // Only used when trackArrays() is true. Instead of having an external list
+    // data structure, we just store the prev/next pointers directly in BaseArr
+    var _arrs_head: unmanaged BaseArr?;
     var _arrs_containing_dom: int; // number of arrays using this domain
                                    // as var A: [D] [1..2] real
                                    // is using {1..2}
@@ -163,6 +166,15 @@ module ChapelDistribution {
     }
 
     proc deinit() {
+    }
+
+    pragma "order independent yielding loops"
+    iter _arrs: unmanaged BaseArr {
+      var tmp = _arrs_head;
+      while tmp != nil {
+        yield tmp!;
+        tmp = tmp!.next;
+      }
     }
 
     proc dsiMyDist(): unmanaged BaseDist {
@@ -225,17 +237,18 @@ module ChapelDistribution {
       var count = -1;
       on this {
         var cnt = -1;
-        local {
-          _arrsLock.lock();
-          _arrs_containing_dom -=1;
-          if rmFromList && trackArrays() then
-            _arrs.remove(x);
-          cnt = _arrs_containing_dom;
-          // add one for the main domain record
-          if !_free_when_no_arrs then
-            cnt += 1;
-          _arrsLock.unlock();
+        _arrsLock.lock();
+        _arrs_containing_dom -=1;
+        if rmFromList && trackArrays() {
+          if _arrs_head == x then _arrs_head = x.next;
+          if x.next != nil then x.next!.prev = x.prev;
+          if x.prev != nil then x.prev!.next = x.next;
         }
+        cnt = _arrs_containing_dom;
+        // add one for the main domain record
+        if !_free_when_no_arrs then
+          cnt += 1;
+        _arrsLock.unlock();
         count = cnt;
       }
       return (count==0);
@@ -251,8 +264,14 @@ module ChapelDistribution {
         if locking then
           _arrsLock.lock();
         _arrs_containing_dom += 1;
-        if addToList && trackArrays() then
-          _arrs.add(x);
+        if addToList && trackArrays() {
+          assert (x.prev == nil && x.next == nil);
+          if _arrs_head != nil {
+            x.next = _arrs_head;
+            _arrs_head!.prev = x;
+          }
+          _arrs_head = x;
+        }
         if locking then
           _arrsLock.unlock();
       }
@@ -658,6 +677,9 @@ module ChapelDistribution {
   //
   pragma "base array"
   class BaseArr {
+    var prev: unmanaged BaseArr?;
+    var next: unmanaged BaseArr?;
+
     var pid:int = nullPid; // privatized ID, if privatization is supported
     var _decEltRefCounts : bool = false;
 

@@ -86,22 +86,6 @@ esac
 # building with newer compilers.
 source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 
-# Always load the right version of GCC since we use it sometimes
-# to e.g. build the Chapel compiler with COMP_TYPE=TARGET
-if [ "${COMPILER}" != "gnu" ] ; then
-    ### TEMPORARY
-    # Restore the following line when we can.
-    # module load gcc/${CHPL_GCC_TARGET_VERSION}
-    # For now, we need to force it to gcc 7.3.0 so its libraries will
-    # link with earlier versions of the Intel compiler.
-    module load gcc/7.3.0
-fi
-
-# quiet libu warning about cpuid detection failure
-if [ "${COMPILER}" == "cray" ] ; then
-  export RFE_811452_DISABLE=true
-fi
-
 # Then load the selected compiler
 load_target_compiler ${COMPILER}
 
@@ -126,9 +110,6 @@ case $COMPILER in
         ;;
 esac
 
-log_info "Unloading cray-libsci module"
-module unload cray-libsci
-
 log_info "Unloading cray-mpich module"
 module unload cray-mpich
 
@@ -151,29 +132,15 @@ export CHPL_COMM=none
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}
 export CHPL_NIGHTLY_CRON_LOGDIR="$CHPL_NIGHTLY_LOGDIR"
 
-# Ensure that one of the CPU modules is loaded.
-my_arch=$($CHPL_HOME/util/chplenv/chpl_cpu.py 2> /dev/null)
-if [ "${my_arch}" = "none" ] ; then
-    log_info "Loading craype-shanghai module to stifle chpl_cpu.py warnings."
-    module load craype-shanghai
-fi
+# Ensure compatible CPU targeting module is loaded. Unload any existing one
+# (craype- that's not network/ hugepages) and load sandybridge, the LCD for XC
+log_info "Loading craype-sandybridge."
+module unload $(module -t list 2>&1 | grep craype- | grep -v network  | grep -v hugepage)
+module load craype-sandybridge
 
-# no cpu targeting module supports the esxbld CPUs, so force x86-64
-if [ "${HOSTNAME:0:6}" = "esxbld" ] ; then
-    module unload $(module -t list 2>&1| grep craype-| grep -v craype-network |grep -v craype-target)
-    log_info "Setting CRAY_CPU_TARGET to x86-64 to stifle chpl_cpu.py warnings."
-    export CRAY_CPU_TARGET=x86-64
-fi
 
-if [ "${COMP_TYPE}" != "HOST-TARGET-no-PrgEnv" ] ; then
-    # We want cray-fftw with PrgEnv compilers.  But that in turns loads
-    # cray-mpich and our PGI target compiler is so old that bringing in
-    # cray-mpich has become impossible, so skip cray-fftw with PGI.
-    if [ "${COMPILER}" != "pgi" ] ; then
-      log_info "Loading cray-fftw module."
-      module load cray-fftw
-    fi
-fi
+log_info "Loading cray-fftw module."
+module load cray-fftw
 
 log_info "Current loaded modules:"
 module list

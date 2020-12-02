@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """CLI for building multiple Chapel configurations."""
@@ -563,7 +563,8 @@ def check_output(command, chpl_home, env, stdin=None, file=None):
         stdout=stdout,
         stderr=stderr,
         cwd=chpl_home,
-        env=env
+        env=env,
+        encoding='utf-8'
     )
     out, err = p.communicate(input=stdin)
     retcode = p.returncode

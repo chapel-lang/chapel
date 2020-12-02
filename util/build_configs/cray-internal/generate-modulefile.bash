@@ -132,8 +132,13 @@ if { [string match aarch64 $CHPL_HOST_ARCH] } {
 }
 
 if { ! [ info exists env(PE_ENV) ] } {
-    module load PrgEnv-gnu
-    set compiler GNU
+    if { [string match hpe-cray-ex $CHPL_HOST_PLATFORM] } {
+        puts stderr "Error: The Chapel module requires a cpe-* module to be loaded."
+        exit 1
+    } else {
+        module load PrgEnv-gnu
+        set compiler GNU
+    }
 } else {
     set compiler $env(PE_ENV)
 }

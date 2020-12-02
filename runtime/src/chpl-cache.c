@@ -289,16 +289,7 @@ use.
 
 #ifdef HAS_CHPL_CACHE_FNS
 
-// This is now just set at compile time.
-//int CHPL_CACHE_REMOTE = 1;
 #define VERIFY 0
-
-// We try to auto-size the cache so that we
-// can have CACHE_PAGES_PER_NODE cache pages per locale, but we
-// do so within the below bounds.
-#define CACHE_PAGES_PER_NODE 4
-#define MIN_CACHE_DATA_SIZE (1024*1024)
-#define MAX_CACHE_DATA_SIZE (256*1024*1024)
 
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
@@ -329,6 +320,10 @@ use.
 typedef int8_t line_per_page_t; 
 // What type for a number of lines to read ahead?
 typedef int16_t readahead_distance_t;
+
+// used to compress top_index_list / bottom_index arrays
+// the entry pointer is entry_base + idx*sizeof(entry type)
+typedef int16_t entry_id_t;
 
 // When prefetching, what is the maximum number of pages
 // we are willing to prefetch? This is also the maximum
@@ -403,42 +398,8 @@ struct rdcache_s;
 
 //////////////// REMOTE DATA CACHE IMPLEMENTATION ////////////////////
 
-/*     (big endian diagram)
-
-   |            64-bit address ^ (node_number << 32)                    |
-   +---------------------------------------------------------------------+
-   |    17 bits        | 10 bits  |     17 bits       | 10 bits  |10 bits|
-   +------------------------------+------------------------------+-------+
-         top half                 |      bottom half             |
-
-   The structure defined in this file is a two-level hashtable representing
-   memory, designed to be indexed by 64-bit addresses.  Given a 64-bit
-   address, use the 10 bits from the "top half" of the address to figure
-   out which top-level bucket to examine.  Each bucket contains a linked
-   list, each entry of which is a top_index_entry.  The full 27 bits of the
-   "top half" are matched with the entries in the linked list to find the
-   correct one.
-
-   Once the appropriate top_index_entry has been located, follow its
-   bottom_index element to another hash table organized in the same way.
-   Searching the linked list in the appropriate bucket in the bottom_index
-   array will eventually lead to a bottom_index_entry which contains a 64
-   byte cacheline, and we use the low-order 6 bits to index into this
-   cacheline.  There is a bitmask tracking the validity of each byte in
-   the cacheline.
-   
-   Attempts to read a byte from the cache which is not valid results in
-   failure.
-*/
-
-#define TOP_BITS 10
-#define BOTTOM_BITS 10
-#define OTHER_BITS ((64-TOP_BITS-BOTTOM_BITS-CACHEPAGE_BITS)/2)
-#define HALF_BITS (TOP_BITS+OTHER_BITS)
-
-#define TOP_SIZE (1 << TOP_BITS)
-#define BOTTOM_SIZE (1 << BOTTOM_BITS)
-#define HALF_SIZE (1L << HALF_BITS)
+#define TABLE_BITS 9
+#define TABLE_SIZE (1 << TABLE_BITS)
 
 // How many uint64_t words do we need to create a bitmask for CACHEPAGE_SIZE?
 // Divide # bytes in cache by 64, rounding up.
@@ -451,12 +412,37 @@ struct rdcache_s;
 // ie, a mask recording a bit per cache line?
 #define CACHE_LINES_PER_PAGE_BITMASK_WORDS (((CACHEPAGE_SIZE/CACHELINE_SIZE)+63)/64)
 
-struct cache_entry_base_s {
-  uint32_t index_bits;
+// Storing a remote address (node number is separate).
+typedef uintptr_t raddr_t;
+
+// This type contains the needed entry information to store in a lookup table.
+// 16 bytes.
+struct cache_table_entry_s {
+  raddr_t raddr;   // always aligned to CACHEPAGE_SIZE
   c_nodeid_t node;
-  struct cache_entry_base_s* next; // hashtable collision chaining/freelist.
+  uint32_t offset; // Add this number of bytes to cache base pointer
+                   // to get pointer to struct cache_entry_s.
+                   // Last bit stolen to indicate if more entries in list.
+                   // 0 means no entry here.
 };
 
+// Similar to cache_table_entry_s but this type implements linked list
+// chaining among entries in the case of too many collisions.
+struct cache_list_entry_s {
+  raddr_t raddr;   // always aligned to CACHEPAGE_SIZE
+  c_nodeid_t node;
+  struct cache_list_entry_s* next;
+};
+
+// Table entry. Intended to be 64 bytes.
+#define TABLE_ENTRIES_PER_SLOT 4
+struct cache_table_slot_s {
+  struct cache_table_entry_s m[TABLE_ENTRIES_PER_SLOT];
+};
+
+// List for storing free pages. ~16 bytes/page
+// TODO: could convert many of the next sections to use cache base-relative
+// addressing and as a result save about 1/2 the space.
 struct page_list_s {
   struct page_list_s* next;
   unsigned char* page;
@@ -464,7 +450,7 @@ struct page_list_s {
 
 // this data structure manages dirty pages. It is allocated separately
 // from cache entries, so the majority of pages (which are clean) don't
-// have the big bitmap.
+// have the big bitmap. ~150 bytes/dirty entry.
 struct dirty_entry_s {
   // linked list of currently dirty pages
   struct dirty_entry_s* next;
@@ -480,8 +466,6 @@ struct dirty_entry_s {
 #define QUEUE_AOUT 2
 #define QUEUE_AM 3
 
-// Storing a remote address (node number is separate).
-typedef uintptr_t raddr_t;
 static inline
 raddr_t raddr_max(raddr_t a, raddr_t b)
 {
@@ -493,10 +477,10 @@ raddr_t raddr_min(raddr_t a, raddr_t b)
     return (a<b)?a:b;
 }
 
-// used to be bottom_index_entry.
+// This entry stores the main information for the cache.
+// ~88 bytes. TODO: can we shrink it to 64 bytes?
 struct cache_entry_s {
-  struct cache_entry_base_s base; // contains what we hashed to...
-  raddr_t raddr; // cached data is for (base.node,raddr), aligned to CACHE_PAGESIZE
+  struct cache_list_entry_s base; // contains raddr, node, next offset
   // Queue information. This entry could be in Ain, Aout, or Am queues.
   int queue;
   // Readahead information.
@@ -523,9 +507,6 @@ struct cache_entry_s {
   // If we try to read data from this cache entry, we need to make sure that
   // we have completed all pending prefetches before the lines are considered valid.
   cache_seqn_t max_prefetch_sequence_number;
-  // If there are dirty bits in this page, what sequence number did
-  // we promise to use in order to complete them?
-  //cache_seqn_t dirty_sequence_number;
 };
 
 // Note skip/len are in line numbers, NOT byte offsets!
@@ -551,22 +532,6 @@ static void unset_valid_lines(uint64_t* valid, uintptr_t skip, uintptr_t len)
   uint64_t myvalid[CACHE_LINES_PER_PAGE_BITMASK_WORDS];
   unset_valids_for_skip_len(valid, myvalid, skip, len, CACHE_LINES_PER_PAGE_BITMASK_WORDS);  
 }
-/*
-static int count_valid_lines_before(uint64_t* valid, uintptr_t at)
-{
-  return count_valid_before(valid, at, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
-}
-static int count_valid_lines_at_after(uint64_t* valid, uintptr_t at)
-{
-  return count_valid_at_after(valid, at, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
-}
-*/
-
-struct top_entry_s {
-  struct cache_entry_base_s base; // contains what we hashed to...
-  size_t num_entries;
-  struct cache_entry_s* bottom_index[BOTTOM_SIZE];
-};
 
 struct rdcache_s {
   // A 2Q cache.
@@ -588,6 +553,10 @@ struct rdcache_s {
   // Since e.g. with ugni, a comm event can cause the implementation
   // to switch tasks, only allow one task at a time to manipulate the cache.
   int cacheInUse;
+
+  // Used with the lookup table. This is the number of bits
+  // for the number of table slots.
+  int table_bits;
 
   // The variable names Ain Aout and Am come from the 2Q paper
 
@@ -625,14 +594,13 @@ struct rdcache_s {
   
   int max_pages;
   int max_entries;
-  int max_top_nodes;
 
   // Free pages
   struct page_list_s* free_pages_head; // singly-linked list
   // Free page list entries (all page pointers should be NULL)
   struct page_list_s* free_page_list_entries_head; // singly-linked list
   // Free nodes
-  struct cache_entry_base_s* free_entries_head; // singly-linked list with base.next
+  struct cache_list_entry_s* free_entries_head; // singly-linked list
 
   // Ain, a FIFO queue of entries not seen before
   unsigned int ain_max; // maximum; corresponds to Kin
@@ -666,27 +634,76 @@ struct rdcache_s {
   chpl_comm_nb_handle_t *pending;
   cache_seqn_t *pending_sequence_numbers;
 
-  // space for mid-level entries
-  int max_top_entries;
-  struct cache_entry_base_s* free_top_nodes_head; // a linked list.
+  // padding to get table 64-byte aligned
+  uint64_t pad0;
+  uint64_t pad1;
+  uint64_t pad2;
+  uint64_t pad3;
+  uint64_t pad4;
+  uint64_t pad5;
+  uint64_t pad6;
 
-  // The entry into the 'pointer tree' hashtable structure.
-  struct top_entry_s* top_index_list[TOP_SIZE];
+  // Lookup table
+  struct cache_table_slot_s table[];
 };
 
 static void validate_cache(struct rdcache_s* tree);
 
+static inline
+uint32_t clear_offset_stolen_bits(uint32_t offset_with_bits) {
+  uint32_t no_last_bit;
+  no_last_bit = 1;
+  no_last_bit = ~no_last_bit;
+  return offset_with_bits & no_last_bit;
+}
 
+static inline
+struct cache_entry_s* offset_to_entry(struct rdcache_s* tree,
+                                      uint32_t offset_with_bits) {
+  uint32_t offset;
+  unsigned char* base;
+  unsigned char* ptr;
+  struct cache_entry_s* ret;
+
+  offset = clear_offset_stolen_bits(offset_with_bits);
+
+  base = (unsigned char*) tree;
+  ptr = base + offset;
+  ret = (struct cache_entry_s*) ptr;
+
+  return (offset!=0)?ret:NULL;
+}
+
+static inline
+uint32_t entry_to_offset(struct rdcache_s* tree, struct cache_entry_s* entry) {
+  uint32_t offset;
+  unsigned char* base;
+  unsigned char* ptr;
+
+  base = (unsigned char*)tree;
+  ptr = (unsigned char*) entry;
+  offset = ptr - base;
+
+  return (entry!=NULL)?offset:0;
+}
+
+static void check_line_aligned(void* ptr)
+{
+  assert(((intptr_t) ptr) % 64 == 0);
+}
+
+// aka create_cache
 static
 struct rdcache_s* cache_create(void) {
   struct rdcache_s* c;
   int cache_pages;
   int ain_pages, aout_pages;
   int dirty_pages;
-  int top_entries;
   int i;
   int n_entries;
-  struct top_entry_s* top_nodes = NULL;
+  int table_entries;
+  int table_slots;
+  int table_bits;
   struct page_list_s* page_list_entries = NULL;
   struct cache_entry_s *entries = NULL;
   struct dirty_entry_s *dirty_nodes = NULL;
@@ -698,47 +715,67 @@ struct rdcache_s* cache_create(void) {
   unsigned char* buffer;
   unsigned char* pages;
 
-  cache_pages = CACHE_PAGES_PER_NODE * chpl_numNodes;
-  if( cache_pages < MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MIN_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
-  if( cache_pages > MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE )
-    cache_pages = MAX_CACHE_DATA_SIZE/CACHEPAGE_SIZE;
+  // This used to grow based on the number of locales, but that
+  // would mean increasing memory usage per node, which isn't acceptable.
+  cache_pages = 1024;
 
   ain_pages = cache_pages / 4; // 2Q: "Kin should be 25% of page slots"
+                               // but here we set it smaller so that
+                               // we can have #top_entries == ain
+                               // and still have limited overhead.
   aout_pages = cache_pages / 2; // 2Q: "Kout should hold identifiers for as
                                 // many pages as would fit in 50% of the
                                 // buffer"
   // How many pages can be dirty at once?
-  dirty_pages = 16 + cache_pages / 64; 
-  // How many mid-level elements can we have in our tree? Note each is 8k in the current config..
-  top_entries = cache_pages / 16;
+  dirty_pages = 16 + cache_pages / 64;
+
   // How many cache entries do we need? 
   n_entries = cache_pages + aout_pages;
 
+  // Lookup table size (note each slot is 4 entries, so this is 4x slots)
+  // table_entries and table_slots must both be a power of 2
+  table_entries = 2 * cache_pages;
+  assert((table_entries & (table_entries - 1)) == 0); // check it's a power of 2
+  table_slots = table_entries * sizeof(struct cache_table_entry_s) /
+                                sizeof(struct cache_table_slot_s);
+  assert((table_slots & (table_slots - 1)) == 0); // check it's a power of 2
+  // compute the number of bits in table_slots so that
+  // table_slots == 1 << table_bits
+  table_bits = 0;
+  while ( (1 << table_bits) < table_slots ) {
+    table_bits++;
+  }
+  assert( (1 << table_bits) == table_slots );
+
   total_size += sizeof(struct rdcache_s);
+  total_size += table_slots * sizeof(struct cache_table_slot_s);
   total_size += sizeof(struct page_list_s) * cache_pages;
   total_size += sizeof(struct cache_entry_s) * n_entries;
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
   total_size += sizeof(chpl_comm_nb_handle_t) * pending_len;
   total_size += sizeof(cache_seqn_t) * pending_len;
-  total_size += sizeof(struct top_entry_s) * top_entries;
   // We allocate an extra page for alignment
   total_size += CACHEPAGE_SIZE + CACHEPAGE_SIZE * cache_pages;
 
   // Now, allocate it all in one go.
-  buffer = chpl_malloc(total_size);
+  buffer = chpl_memalign(64, total_size);
   allocated_size = total_size;
 
   // Now divvy up the portions...
   total_size = 0;
   c = (struct rdcache_s*) (buffer + total_size);
   total_size += sizeof(struct rdcache_s);
+  total_size += table_slots * sizeof(struct cache_table_slot_s);
+  check_line_aligned(c);
+  check_line_aligned(c->table);
+
   // page list entries
   page_list_entries = (struct page_list_s*) (buffer + total_size);
   total_size += sizeof(struct page_list_s) * cache_pages;
   // entries
   entries = (struct cache_entry_s*) (buffer + total_size);
   total_size += sizeof(struct cache_entry_s) * n_entries;
+  assert( (((uintptr_t) entries) & 1) == 0 ); // problems if stolen bit set
   // dirty entries
   dirty_nodes = (struct dirty_entry_s*) (buffer + total_size);
   total_size += sizeof(struct dirty_entry_s) * dirty_pages;
@@ -748,9 +785,6 @@ struct rdcache_s* cache_create(void) {
   // and the pending sequence numbers
   c->pending_sequence_numbers = (cache_seqn_t*) (buffer + total_size);
   total_size += sizeof(cache_seqn_t) * pending_len;
-  // and the top entries
-  top_nodes = (struct top_entry_s*) (buffer + total_size);
-  total_size += sizeof(struct top_entry_s) * top_entries;
   // Now, page-align the page allocations.
   offset = (((uintptr_t) buffer) + total_size) % CACHEPAGE_SIZE;
   if( offset != 0 ) offset = CACHEPAGE_SIZE - offset;
@@ -775,7 +809,6 @@ struct rdcache_s* cache_create(void) {
 
   c->max_pages = cache_pages;
   c->max_entries = n_entries;
-  c->max_top_nodes = top_entries;
 
   // Set up free_pages as a linked list of page list entries
   // pointing to the free pages.
@@ -794,7 +827,7 @@ struct rdcache_s* cache_create(void) {
   // Set up free_entries as a linked list of free entries.
   c->free_entries_head = &entries[0].base;
   for( i = 0; i < n_entries; i++ ) {
-    struct cache_entry_base_s* next;
+    struct cache_list_entry_s* next;
     if( i + 1 < n_entries ) next = &entries[i+1].base;
     else next = NULL;
     entries[i].base.next = next;
@@ -841,19 +874,15 @@ struct rdcache_s* cache_create(void) {
   // already set c->pending to allocated region
   // already set c->pending_sequence_numbers to allocated region
 
-  c->max_top_entries = top_entries;
-  // already set top_nodes
-  // Set up top_nodes in a linked list on the free list.
-  c->free_top_nodes_head = &top_nodes[0].base;
-  for( i = 0; i < top_entries; i++ ) {
-    struct cache_entry_base_s* next;
-    if( i + 1 < top_entries ) next = &top_nodes[i+1].base;
-    else next = NULL;
-    top_nodes[i].base.next = next;
+  // fill in the lookup table
+  c->table_bits = table_bits;
+  for( i = 0; i < table_slots; i++ ) {
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      c->table[i].m[j].raddr = 0;
+      c->table[i].m[j].node = 0;
+      c->table[i].m[j].offset = 0;
+    }
   }
-
-  // clear top_index_list.
-  memset(&c->top_index_list[0], 0, sizeof(struct top_entry_s*) * TOP_SIZE);
 
   if( VERIFY ) validate_cache(c);
 
@@ -867,17 +896,19 @@ void cache_destroy(struct rdcache_s *cache) {
 
 
 static
-void cache_entry_print(struct cache_entry_s* entry, const char* prefix, int print_data)
+void cache_entry_print(struct rdcache_s* cache, struct cache_entry_s* entry, const char* prefix, int print_data)
 {
   int i,j,line;
   int valid;
   int valid_line;
   int dirty;
-  printf("%scache entry %p index_bits %x node %i next %p\n",
+  printf("%scache entry id %i node %i next %i\n",
          prefix,
-         entry, entry->base.index_bits, entry->base.node, entry->base.next);
+         (int) entry_to_offset(cache, entry),
+         entry->base.node,
+         (int) entry_to_offset(cache, (struct cache_entry_s*)entry->base.next));
   printf("%sraddr %p queue %i readahead_skip %i readahead_len %i next %p prev %p page %p\n",
-         prefix, (void*) entry->raddr, entry->queue, (int) entry->readahead_skip, (int) entry->readahead_len, entry->next, entry->prev, entry->page);
+         prefix, (void*) entry->base.raddr, entry->queue, (int) entry->readahead_skip, (int) entry->readahead_len, entry->next, entry->prev, entry->page);
   printf("%smin_seq %d max_put_seq %d max_prefetch_seq %d\n", prefix,
          (int) entry->min_sequence_number,
          (int) entry->max_put_sequence_number,
@@ -935,15 +966,15 @@ void rdcache_print(struct rdcache_s* cache) {
   printf("  completed_request_number %d\n", (int) cache->completed_request_number);
   printf("  Ain:\n");
   for( entry = cache->ain_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "    ain ", 1);
+    cache_entry_print(cache, entry, "    ain ", 1);
   }
   printf("  Aout:\n");
   for( entry = cache->aout_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "   aout ", 1);
+    cache_entry_print(cache, entry, "   aout ", 1);
   }
   printf("  Am:\n");
   for( entry = cache->am_lru_head; entry; entry = entry->next ) {
-    cache_entry_print(entry, "     am ", 1);
+    cache_entry_print(cache, entry, "     am ", 1);
   }
 
   fflush(stdout);
@@ -952,145 +983,228 @@ void rdcache_print(struct rdcache_s* cache) {
 static
 void validate_cache(struct rdcache_s* tree);
 
-static
-int get_top_bits(raddr_t raddr, int32_t node) {
-  uint64_t val;
-
-  val = raddr;
-  val = val >> (HALF_BITS + CACHEPAGE_BITS);
-  val ^= (node & 0xaaaaaaaa); // spread node variation between top and bottom
-  val &= (TOP_SIZE-1);
-
-  return (int)val;
+static inline
+uint64_t hash_raddr(raddr_t raddr, int32_t node) {
+  uint64_t val = raddr >> CACHEPAGE_BITS;
+  val ^= node;
+  val ^= raddr >> (27 + CACHEPAGE_BITS);
+  return val;
 }
 
-static
-int get_bottom_bits(raddr_t raddr, int32_t node) {
-  uintptr_t val;
-  val = (raddr >> CACHEPAGE_BITS) & (BOTTOM_SIZE-1);
-  val ^= (node & 0x55555555); // spread node variation between top and bottom
-  return (int) val;
+static inline
+int hash_to_slot(uint64_t hash, unsigned int table_bits) {
+  unsigned int h = hash;
+  unsigned int table_mask = (1 << table_bits) - 1;
+  return (int) (h & table_mask);
+}
+static inline
+int hash_to_entry(uint64_t hash, unsigned int table_bits) {
+  unsigned int h = hash >> table_bits;
+  return (int) (h % TABLE_ENTRIES_PER_SLOT);
 }
 
+// Looks up raddr/node in the table and linked lists.
+// Returns an entry that is found to match.
+// If an entry is found, return it and:
+//  *prev_list will store the previous list entry (from entry.base)
+//  *prev_table will store the top level table entry ultimately used
+// If an entry is not found, return NULL and leave prev_table/prev_list NULL.
 static
-uint32_t get_high_bits(raddr_t raddr) {
-  uint64_t val = raddr;
-  return (val >> (HALF_BITS + CACHEPAGE_BITS)) & (HALF_SIZE-1);
-}
+struct cache_entry_s* lookup_entry_prev(struct rdcache_s* tree,
+                                        const int32_t node, const raddr_t raddr,
+                                        struct cache_table_entry_s** prev_table,
+                                        struct cache_entry_s** prev_list) {
 
-static
-uint32_t get_low_bits(raddr_t raddr) {
-  return (raddr >> CACHEPAGE_BITS) & (HALF_SIZE-1);
-}
+  struct cache_table_slot_s* slot;
+  uint64_t hash;
+  int hash_slot;
+  int hash_entry;
+  struct cache_entry_s* prev[TABLE_ENTRIES_PER_SLOT];
+  struct cache_entry_s* cur[TABLE_ENTRIES_PER_SLOT];
 
-static
-struct cache_entry_base_s* list_search(struct cache_entry_base_s *head, 
-    uint32_t target, int32_t node, struct cache_entry_base_s** prev) {
-  struct cache_entry_base_s *ptr;
-  struct cache_entry_base_s *prv = NULL;
+  hash = hash_raddr(raddr, node);
+  hash_slot = hash_to_slot(hash, tree->table_bits);
+  hash_entry = hash_to_entry(hash, tree->table_bits);
 
-  ptr = head;
-  while(ptr) {
-    if (ptr->index_bits == target && ptr->node == node) {
-      if( prev ) *prev = prv;
-      return ptr;
+  slot = &tree->table[hash_slot];
+
+  // Identify any entries in the main table that match and populate cur.
+  // Search starting at the preferred entry.
+  for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+    struct cache_table_entry_s* table_entry;
+    struct cache_entry_s* cache_entry;
+    int idx = (hash_entry+j) % TABLE_ENTRIES_PER_SLOT;
+    table_entry = &slot->m[idx];
+    cache_entry = offset_to_entry(tree, table_entry->offset);
+    if (raddr == table_entry->raddr &&
+        node == table_entry->node &&
+        0 != table_entry->offset) {
+      *prev_table = table_entry;
+      *prev_list = NULL;
+      return cache_entry;
     }
-
-    prv = ptr;
-    ptr = ptr->next;
+    // Track the lists we need to traverse
+    if ((table_entry->offset & 1) == 1)
+      cur[idx] = cache_entry;
+    else
+      cur[idx] = NULL;
   }
 
-  if( prev ) *prev = NULL;
+  // Advance all the lists by one entry since the raddr/node
+  // in the entry is the same as the one in the lookup table.
+  for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+    prev[idx] = cur[idx];
+    if (cur[idx] != NULL)
+      cur[idx] = (struct cache_entry_s*) cur[idx]->base.next;
+  }
+
+  // Traverse the lists
+  while (true) {
+    int any_lists = 0;
+    // Check each cur list for a match and note if all are NULL.
+    for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+      if (cur[idx] != NULL) {
+        any_lists = 1;
+        if (raddr == cur[idx]->base.raddr && node == cur[idx]->base.node) {
+          *prev_table = &slot->m[idx];
+          *prev_list = prev[idx];
+          return cur[idx];
+        }
+      }
+    }
+
+    // Stop if all cur lists are NULL
+    if (any_lists == 0)
+      break;
+
+    // Advance each list to the next
+    for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
+      if (cur[idx] != NULL) {
+        prev[idx] = cur[idx];
+        cur[idx] = (struct cache_entry_s*) cur[idx]->base.next;
+      }
+    }
+  }
+
+  // nothing found.
+  *prev_table = NULL;
+  *prev_list = NULL;
   return NULL;
 }
 
-static
-struct top_entry_s* top_list_search(struct top_entry_s* head,
-    uint32_t target, int32_t node, struct cache_entry_base_s ** prev) {
-  return (struct top_entry_s*) list_search((struct cache_entry_base_s*)head,
-                                           target, node,
-                                           (struct cache_entry_base_s**)prev);
+static inline
+struct cache_entry_s* lookup_entry(struct rdcache_s* tree,
+                                   int32_t node, raddr_t raddr) {
+
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s* prev_list;
+  return lookup_entry_prev(tree, node, raddr, &prev_table, &prev_list);
 }
 
+// When we know the entry is not in the tree, use this function
+// to find out the table location in which to add it.
 static
-struct cache_entry_s* bottom_list_search(struct cache_entry_s* head,
-    uint32_t target, int32_t node, struct cache_entry_base_s ** prev) {
-  return (struct cache_entry_s*) list_search((struct cache_entry_base_s*)head,
-                                             target, node,
-                                             (struct cache_entry_base_s**)prev);
-}
+struct cache_table_entry_s* lookup_entry_adding(struct rdcache_s* tree,
+                                                int32_t node, raddr_t raddr) {
 
-static
-void top_entry_free(struct rdcache_s* tree, struct top_entry_s* victim)
-{
-  struct cache_entry_base_s* b = &victim->base;
-  // Put the newly free top node into the free list
-  SINGLE_PUSH_HEAD(tree, b, free_top_nodes);
-}
+  struct cache_table_slot_s* slot;
+  uint64_t hash;
+  int hash_slot;
+  int hash_entry;
+  int first_empty_entry;
+  int use_entry;
 
+  hash = hash_raddr(raddr, node);
+  hash_slot = hash_to_slot(hash, tree->table_bits);
+  hash_entry = hash_to_entry(hash, tree->table_bits);
+
+  slot = &tree->table[hash_slot];
+
+  // Find an empty entry, if one exists.
+  first_empty_entry = -1;
+  for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+    struct cache_table_entry_s* table_entry;
+    // Visit entries starting from hash_entry to spread out
+    // where new entries go.
+    int idx = (hash_entry+j) % TABLE_ENTRIES_PER_SLOT;
+    table_entry = &slot->m[idx];
+    if (table_entry->offset == 0 && first_empty_entry == -1) {
+      first_empty_entry = idx;
+      break; // this break could be removed, if it helps
+    }
+  }
+
+  if (first_empty_entry == -1)
+    use_entry = hash_entry; // no empty entries, so use preferred one
+  else
+    use_entry = first_empty_entry;
+
+  return &slot->m[use_entry];
+}
 
 // Removes 'element' from the tree.
 // Does not wait for any operations to complete or free any cache entries
-// (it will return unused top_entries to the free list)
 static
 void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 {
-  struct cache_entry_base_s *prev;
-  struct cache_entry_base_s *prev_top;
-  struct top_entry_s **head;
-  struct top_entry_s *match;
-  struct cache_entry_s **bottom;
-  struct cache_entry_s *bottom_match;
-  int top_idx, bottom_idx;
-  uint32_t high_bits, low_bits;
-  int32_t node = element->base.node;
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s* prev_list;
+  struct cache_entry_s* entry;
+  int32_t node;
+  raddr_t raddr;
+  struct cache_entry_s* next;
 
   DEBUG_PRINT(("%d: Removing %p element %p\n", chpl_nodeID,
                (void*) element->raddr, element));
 
-  top_idx = get_top_bits(element->raddr, element->base.node);
-  bottom_idx = get_bottom_bits(element->raddr, element->base.node);
-  high_bits = get_high_bits(element->raddr);
-  low_bits = get_low_bits(element->raddr);
+  raddr = element->base.raddr;
+  node = element->base.node;
+  next = (struct cache_entry_s *) element->base.next;
+  entry = lookup_entry_prev(tree, node, raddr, &prev_table, &prev_list);
 
-  head = &tree->top_index_list[top_idx];
+  // entry should be found in the tree
+  // (redundancy here avoids warning about unused variable)
+  if (entry == NULL) assert(entry);
+  // prev should be set for something in the tree.
+  // prev will need adjustment.
+  assert(prev_table);
 
-  match = top_list_search(*head, high_bits, node, &prev_top);
-
-  assert( match );
-  assert(match->bottom_index);
-
-  prev = NULL;
-  bottom = &match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &prev);
-
-  assert( bottom_match );
-  assert( bottom_match == element );
-
-  // Remove bottom_match (== element) from the list.
-  if( prev ) {
-    prev->next = bottom_match->base.next;
-  } else {
-    // no prev means we are the list head.
-    *bottom = (struct cache_entry_s*) bottom_match->base.next;
-  }
-
-  match->num_entries--; // net loss of one element.
-
-  if( *bottom == NULL ) {
-    // If there are no entries left in the bottom bucket, and
-    // there are no entries left in the top bucket, remove that
-    // top bucket.
-    if( match->num_entries == 0 ) {
-      // Remove match from the list.
-      if( prev_top ) {
-        prev_top->next = match->base.next;
-      } else {
-        // No prev means we are the list head.
-        *head = (struct top_entry_s*) match->base.next;
-      }
-      // Put the newly free top node into the free list
-      top_entry_free(tree, match);
+  if (prev_list) {
+    // our entry was pointed to by another entry
+    if (prev_table &&
+        prev_list->base.raddr == prev_table->raddr &&
+        prev_list->base.node == prev_table->node &&
+        next == NULL) {
+      // e.g., when removing X
+      //      table -> entry -> X (at end of list)
+      // ->   table -> entry  and clear table entry's list bit
+      prev_table->offset &= clear_offset_stolen_bits(prev_table->offset);
+    }
+    // otherwise, just update the offset of the previous list entry
+    prev_list->base.next = (struct cache_list_entry_s*) next;
+  } else if (prev_table) {
+    // our entry was pointed to by the table
+    if (VERIFY) {
+      assert(prev_table->node == entry->base.node);
+      assert(prev_table->raddr == entry->base.raddr);
+      assert(clear_offset_stolen_bits(prev_table->offset) ==
+             entry_to_offset(tree, element));
+    }
+    if (next) {
+      // Store the next entry in the table
+      // Can use the same slot since it was a collision.
+      uint32_t next_offset;
+      next_offset = entry_to_offset(tree, next);
+      if (next->base.next)
+        next_offset |= 1; // set list flag if next entry has an next
+      prev_table->raddr = next->base.raddr;
+      prev_table->node = next->base.node;
+      prev_table->offset = next_offset;
+    } else {
+      // Clear out the table entry
+      prev_table->raddr = 0;
+      prev_table->node = 0;
+      prev_table->offset = 0;
     }
   }
 }
@@ -1127,7 +1241,7 @@ static
 void aout_evict(struct rdcache_s* cache)
 {
   struct cache_entry_s* z;
-  struct cache_entry_base_s* entry;
+  struct cache_list_entry_s* entry;
 
   z = cache->aout_tail;
 
@@ -1190,12 +1304,12 @@ void ain_evict(struct rdcache_s* cache, struct cache_entry_s* dont_evict_me)
   }
 }
 
- 
+
 static
 void am_evict(struct rdcache_s *cache, struct cache_entry_s* dont_evict_me) {
   struct cache_entry_s *y;
-  struct cache_entry_base_s* entry;
-    
+  struct cache_list_entry_s* entry;
+
   y = cache->am_lru_tail;
 
   if( !y ) return;
@@ -1224,40 +1338,6 @@ void am_evict(struct rdcache_s *cache, struct cache_entry_s* dont_evict_me) {
   // Add y to the free list
   entry = &y->base;
   SINGLE_PUSH_HEAD(cache, entry, free_entries);
-}
- 
-
-static
-struct top_entry_s* top_entry_allocate(struct rdcache_s* tree)
-{
-  struct cache_entry_base_s* ret;
-
-  while( ! tree->free_top_nodes_head ) {
-    // If there's nothing in our free list, we have to evict something
-    // from the cache.
-    // Take turns evicting from Aout, Ain, and Am.
-
-    // Evict from Aout 2x (since evicting Ain adds to Aout)
-    aout_evict(tree);
-    if( tree->free_top_nodes_head ) break; 
-    aout_evict(tree);
-    if( tree->free_top_nodes_head ) break; 
-
-    // Evict from Ain (will add an entry to aout)
-    ain_evict(tree, NULL);
-    if( tree->free_top_nodes_head ) break; 
-
-    // Evict from Am
-    am_evict(tree, NULL);
-    if( tree->free_top_nodes_head ) break; 
-  }
-
-  // Remove the top element from the list.
-  assert(tree->free_top_nodes_head);
-  ret = tree->free_top_nodes_head;
-  SINGLE_POP_HEAD(tree, free_top_nodes);
-  ret->next = NULL;
-  return (struct top_entry_s*) ret;
 }
 
 static
@@ -1309,7 +1389,7 @@ void ensure_free_page(struct rdcache_s* cache, struct cache_entry_s* dont_evict_
 
   reclaim(cache, dont_evict_me);
 
-  assert( cache->free_pages_head );
+  assert( cache->free_pages_head && cache->free_pages_head->page );
 }
 
 static
@@ -1416,32 +1496,6 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
   return sn;
 }
 
-static
-struct cache_entry_s* find_in_tree(struct rdcache_s* tree,
-                                   c_nodeid_t node, raddr_t raddr)
-{
-  int top_idx, bottom_idx;
-  uint32_t high_bits;
-  uint32_t low_bits;
-  struct top_entry_s **head, *top_match;
-  struct cache_entry_s **bottom, *bottom_match;
-  struct cache_entry_base_s* bottom_prev;
-
-  assert(raddr != 0);
-
-  top_idx = get_top_bits(raddr, node);
-  bottom_idx = get_bottom_bits(raddr, node);
-  high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
-
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
-  if (!top_match) return NULL;
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
-  return bottom_match;
-}
-
 #if VERIFY
 static
 int find_in_dirty(struct rdcache_s* tree, struct dirty_entry_s* entry)
@@ -1480,7 +1534,7 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
 
     // and check some additional properties. In tree?
     if( queue != QUEUE_FREE ) {
-      found = find_in_tree(tree, cur->base.node, cur->raddr);
+      found = lookup_entry(tree, cur->base.node, cur->base.raddr);
       assert(found == cur);
     }
 
@@ -1510,48 +1564,64 @@ int validate_queue(struct rdcache_s* tree, struct cache_entry_s* head, struct ca
 }
 #endif
 
+// aka verify_cache cache_verify cache_validate
 static
 void validate_cache(struct rdcache_s* tree)
 {
 #if VERIFY
-  int top, bottom;
-  struct top_entry_s* top_cur;
-  struct cache_entry_s* bottom_cur;
   int count;
   int in_ain;
   int in_aout;
   int in_am;
   int num_used_pages = 0;
-  int num_used_top_nodes = 0;
   int num_dirty = 0;
+  int table_slots;
+  raddr_t raddr_mask;
+
+  raddr_mask = CACHEPAGE_MASK;
+  raddr_mask = ~raddr_mask;
+
+  table_slots = 1 << tree->table_bits;
 
   // 0: All tree entries must be in either Ain, Aout, or Am,
   //    and num_entries is correct for each top entry.
-  for(top = 0; top < TOP_SIZE; top++) {
-    top_cur = tree->top_index_list[top];
-    while (top_cur) {
-      num_used_top_nodes++;
-      count = 0;
-      for( bottom = 0; bottom < BOTTOM_SIZE; bottom++ ) {
-        bottom_cur = top_cur->bottom_index[bottom];
-        while(bottom_cur) {
-          // Check that it is in ain, aout, or am.
-          in_ain = find_in_queue(tree->ain_head, bottom_cur);
-          in_aout = find_in_queue(tree->aout_head, bottom_cur);
-          in_am = find_in_queue(tree->am_lru_head, bottom_cur);
-          assert( in_ain || in_aout || in_am );
-          if( in_ain ) assert( bottom_cur->queue == QUEUE_AIN );
-          if( in_aout ) assert( bottom_cur->queue == QUEUE_AOUT );
-          if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
-          if( bottom_cur->page ) num_used_pages++;
-          if( bottom_cur->dirty ) num_dirty++;
-          bottom_cur = (struct cache_entry_s*)bottom_cur->base.next;
-          count++;
-        }
+  for (int i = 0; i < table_slots; i++) {
+    struct cache_table_slot_s* slot = &tree->table[i];
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      struct cache_table_entry_s* entry = &slot->m[j];
+      struct cache_entry_s* bottom_cur = offset_to_entry(tree, entry->offset);
+
+      // check that the address matches the entry
+      if (bottom_cur) {
+        assert(entry->raddr == bottom_cur->base.raddr);
+        assert(entry->node == bottom_cur->base.node);
       }
-      // Check that the count is correct.
-      assert(count == top_cur->num_entries);
-      top_cur = (struct top_entry_s*)top_cur->base.next;
+
+      // check that the table entry's list bit is set appropriately
+      if (bottom_cur && bottom_cur->base.next) {
+        assert((entry->offset & 1) == 1);
+      } else {
+        assert((entry->offset & 1) == 0);
+      }
+
+      while(bottom_cur) {
+        // check raddr is page-aligned
+        assert(bottom_cur->base.raddr == (bottom_cur->base.raddr & raddr_mask));
+
+        // Check that it is in ain, aout, or am.
+        in_ain = find_in_queue(tree->ain_head, bottom_cur);
+        in_aout = find_in_queue(tree->aout_head, bottom_cur);
+        in_am = find_in_queue(tree->am_lru_head, bottom_cur);
+        assert( in_ain || in_aout || in_am );
+        if( in_ain ) assert( bottom_cur->queue == QUEUE_AIN );
+        if( in_aout ) assert( bottom_cur->queue == QUEUE_AOUT );
+        if( in_am ) assert( bottom_cur->queue == QUEUE_AM );
+        assert( bottom_cur->queue != QUEUE_FREE );
+        if( bottom_cur->page ) num_used_pages++;
+        if( bottom_cur->dirty ) num_dirty++;
+        bottom_cur = (struct cache_entry_s*) bottom_cur->base.next;
+        count++;
+      }
     }
   }
 
@@ -1593,9 +1663,9 @@ void validate_cache(struct rdcache_s* tree)
   // 5: must not lose entries. Check that the entry free list
   // contains the right number of entries. 
   {
-    struct cache_entry_base_s* cur;
+    struct cache_list_entry_s* cur;
     int num_free_entries = 0;
-    for( cur = tree->free_entries_head; cur; cur = cur->next ) {
+    for (cur = tree->free_entries_head; cur; cur = cur->next) {
       num_free_entries++;
     }
     assert( in_ain + in_aout + in_am + num_free_entries == tree->max_entries );
@@ -1610,16 +1680,6 @@ void validate_cache(struct rdcache_s* tree)
       num_free_pages++;
     }
     assert( num_used_pages + num_free_pages == tree->max_pages );
-  }
-
-  // 7: must not lose top nodes
-  {
-    struct cache_entry_base_s* cur;
-    int num_free_top_nodes = 0;
-    for( cur = tree->free_top_nodes_head; cur; cur = cur->next ) {
-      num_free_top_nodes++;
-    }
-    assert( num_used_top_nodes + num_free_top_nodes == tree->max_top_nodes );
   }
 #endif
 }
@@ -1742,7 +1802,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
           handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
-                             (void*)(entry->raddr+start),
+                             (void*)(entry->base.raddr+start),
                              got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
 
@@ -1797,10 +1857,12 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
     // But, our entry no longer can have a page associated with it.
     page = entry->page;
     entry->page = NULL;
-    free_page_list_entry = cache->free_page_list_entries_head;
-    free_page_list_entry->page = page;
-    SINGLE_POP_HEAD(cache, free_page_list_entries);
-    SINGLE_PUSH_HEAD(cache, free_page_list_entry, free_pages);
+    if (page) {
+      free_page_list_entry = cache->free_page_list_entries_head;
+      SINGLE_POP_HEAD(cache, free_page_list_entries);
+      free_page_list_entry->page = page;
+      SINGLE_PUSH_HEAD(cache, free_page_list_entry, free_pages);
+    }
   }
 
 #ifdef DUMP
@@ -1814,64 +1876,51 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
 // it will move it to the front of any LRU queue
 // (particularly for the Am queue).
 static
-void use_entry(struct rdcache_s* cache, struct cache_entry_s* entry)
+void use_entry(struct rdcache_s* cache,
+               struct cache_entry_s* entry)
 {
-  // If X is in Am then move it to the head of Am
   // If it's on the Am queue, move it to the front of the Am queue.
   if( entry->queue == QUEUE_AM ) {
     DOUBLE_REMOVE(cache, entry, am_lru);
     DOUBLE_PUSH_HEAD(cache, entry, am_lru);
   } 
-  // Otherwise, leave it where it is.
-  // Else If X is in A1in then do nothing
+  // Otherwise (it is in Ain) so leave it where it is.
 }
 
-// Plumb a cache entry into the tree. We might need to replace something
-// in Aout in the process, but we should not be calling this function
-// to replace something in Ain or Am (ie anything with entry->page
-// already set).
+// Plumb a cache entry into the tree.
+// If aout_entry is not NULL, we will replace an existing entry from Aout
+// if one is present (and aout_entry is probably such an entry, but
+// cache manipulations might have removed it, e.g.). If the entry from Aout
+// exists, it will be moved to Am.
+//
+// Otherwise, this will create a new entry in Ain and it will assume
+// that the entry does not currently exist in the cache.
 static
 struct cache_entry_s* make_entry(struct rdcache_s* tree,
                                  c_nodeid_t node, raddr_t raddr,
-                                 unsigned char* page)
+                                 unsigned char* page,
+                                 struct cache_entry_s* aout_entry)
 {
-  int top_idx, bottom_idx;
-  uint32_t high_bits;
-  uint32_t low_bits;
-  struct top_entry_s **head, *top_match, *top_tmp;
-  struct cache_entry_s **bottom, *bottom_match, *bottom_tmp;
-  struct cache_entry_base_s* bottom_prev;
+  struct cache_table_entry_s* prev_table;
+  struct cache_entry_s *bottom_match;
+  struct cache_entry_s *bottom_tmp;
+  struct cache_entry_s *next;
 
   assert(raddr != 0);
 
-  top_idx = get_top_bits(raddr, node);
-  bottom_idx = get_bottom_bits(raddr, node);
-  high_bits = get_high_bits(raddr);
-  low_bits = get_low_bits(raddr);
-
-  head = &tree->top_index_list[top_idx];
-  top_match = top_list_search(*head, high_bits, node, NULL);
-  if (!top_match) {
-    // create a new entry
-    top_tmp = top_entry_allocate(tree);
-    top_tmp->base.index_bits = high_bits;
-    top_tmp->base.node = node;
-    top_tmp->base.next = (struct cache_entry_base_s*)*head;
-    top_tmp->num_entries = 0;
-    memset(top_tmp->bottom_index, 0, BOTTOM_SIZE*sizeof(struct cache_entry_s*));
-
-    *head = top_tmp;
-    top_match = *head;
-    DEBUG_PRINT(("  added a new top_index_entry: %p\n", top_match));
+  bottom_match = NULL;
+  if (aout_entry) {
+    if (aout_entry->base.raddr == raddr && aout_entry->base.node == node &&
+        aout_entry->queue == QUEUE_AOUT) {
+      // OK to reuse aout_entry - it was not removed.
+      bottom_match = aout_entry;
+    }
   }
 
-  bottom = &top_match->bottom_index[bottom_idx];
-  bottom_match = bottom_list_search(*bottom, low_bits, node, &bottom_prev);
-
   if( bottom_match ) {
-  // If X is in A1out then find space for X and add it to the head of Am
+    // If X is in A1out then find space for X and add it to the head of Am
     assert( bottom_match->base.node == node );
-    assert( bottom_match->raddr == raddr );
+    assert( bottom_match->base.raddr == raddr );
     // We shouldn't be replacing something in Ain or Am; use use_entry instead
     assert(bottom_match->queue == QUEUE_AOUT);
 
@@ -1895,19 +1944,20 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     bottom_match->max_put_sequence_number = NO_SEQUENCE_NUMBER;
     bottom_match->max_prefetch_sequence_number = NO_SEQUENCE_NUMBER;
   } else {
-  // Else If X is in no queue then find space for X and add it to A1in
+    // Else If X is in no queue then find space for X and add it to A1in
     DEBUG_PRINT(("%d: Found %p nowhere\n", chpl_nodeID, (void*) raddr));
 
     // This is our new entry...
-    bottom_tmp = allocate_entry(tree);
+    bottom_tmp = allocate_entry(tree); // note: can evict something & change tbl
+    // We know that this entry does not exist in the tree,
+    // so we only need to lookup where to add it.
+    prev_table = lookup_entry_adding(tree, node, raddr);
 
     // Fill in the entry...
-    bottom_tmp->base.index_bits = low_bits;
     bottom_tmp->base.node = node;
-    // Link to next hashtable element, adding not replacing.
-    bottom_tmp->base.next = (struct cache_entry_base_s*) *bottom;
+    bottom_tmp->base.raddr = raddr;
+    bottom_tmp->base.next = NULL;
 
-    bottom_tmp->raddr = raddr;
     bottom_tmp->queue = QUEUE_AIN;
     bottom_tmp->readahead_skip = 0;
     bottom_tmp->readahead_len = 0;
@@ -1925,13 +1975,23 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     DOUBLE_PUSH_HEAD(tree, bottom_tmp, ain);
     tree->ain_current++;
 
-    // Put it as the first element in the appropriate hashtable bucket.
-    *bottom = bottom_tmp;
+    // Put it as the first element in the appropriate table entry
+    // using the prev_table entry; adjust the next_offset for anything
+    // that was there already.
+
+    // Link to next hashtable element, adding not replacing.
+    next = offset_to_entry(tree, prev_table->offset);
+    bottom_tmp->base.next = &next->base;
+    // Replace the lookup table entry
+    prev_table->raddr = raddr;
+    prev_table->node = node;
+    prev_table->offset = entry_to_offset(tree, bottom_tmp);
+    if (bottom_tmp->base.next)
+      prev_table->offset |= 1; // set list flag
+
     bottom_match = bottom_tmp;
-    top_match->num_entries++; // adding an element.
     DEBUG_PRINT(("  added a new bottom_index_entry: %p\n", bottom_match));
   }
-
 
   return bottom_match;
 }
@@ -1944,6 +2004,7 @@ void cache_put(struct rdcache_s* cache,
                 int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
+  struct cache_entry_s* aout_entry;
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_next_page;
@@ -1984,11 +2045,15 @@ void cache_put(struct rdcache_s* cache,
     requested_size = requested_end - requested_start;
 
     // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
+    entry = lookup_entry(cache, node, ra_page);
+    aout_entry = NULL;
     page = NULL;
 
     // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
+    if( entry && ! entry->page ) {
+      aout_entry = entry;
+      entry = NULL;
+    }
 
     if( entry ) {
       // Is this cache line available for use, based on when we
@@ -2013,7 +2078,7 @@ void cache_put(struct rdcache_s* cache,
     }
 
     if( entry ) use_entry(cache, entry);
-    else entry = make_entry(cache, node, ra_page, page);
+    else entry = make_entry(cache, node, ra_page, page, aout_entry);
 
     // Make sure we have a dirty structure.
     if( ! entry->dirty ) {
@@ -2245,6 +2310,7 @@ void cache_get(struct rdcache_s* cache,
                 int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
+  struct cache_entry_s* aout_entry;
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_page;
@@ -2305,12 +2371,15 @@ void cache_get(struct rdcache_s* cache,
     requested_size = requested_end - requested_start;
 
     // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
+    entry = lookup_entry(cache, node, ra_page);
+    aout_entry = NULL;
     page = NULL;
 
-
     // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) entry = NULL;
+    if( entry && ! entry->page ) {
+      aout_entry = entry;
+      entry = NULL;
+    }
 
     if( entry ) {
       // Is this cache line available for use, based on when we
@@ -2497,7 +2566,7 @@ void cache_get(struct rdcache_s* cache,
     if( entry ) {
       use_entry(cache, entry);
     } else {
-      entry = make_entry(cache, node, ra_page, page);
+      entry = make_entry(cache, node, ra_page, page, aout_entry);
     }
 
     // Set the valid lines
@@ -2596,6 +2665,217 @@ void cache_get(struct rdcache_s* cache,
 #endif
 }
 
+// This is intended to match cache_get but
+//  * it will never prefetch
+//  * it doesn't actually GET; just memsets to 0 instead.
+// Returns 1 if the data was in the cache.
+static
+int mock_get(struct rdcache_s* cache,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              cache_seqn_t last_acquire,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn)
+{
+  struct cache_entry_s* entry;
+  struct cache_entry_s* aout_entry;
+  raddr_t ra_first_page;
+  raddr_t ra_last_page;
+  raddr_t ra_page;
+  raddr_t requested_start, requested_end, requested_size;
+  raddr_t ra_first_line;
+  raddr_t ra_last_line;
+  raddr_t ra_next_line;
+  raddr_t ra_line;
+  raddr_t ra_line_end;
+  int has_data;
+  unsigned char* page;
+  cache_seqn_t sn = NO_SEQUENCE_NUMBER;
+  int entry_after_acquire;
+#ifdef TIME
+  struct timespec start_get1, start_get2, wait1, wait2;
+#endif
+  int all_in_cache;
+
+  INFO_PRINT(("%i mock_get addr %p from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+
+  if (chpl_nodeID == node)
+    return 1;
+
+  // And don't do anything if it's a zero-length 
+  if( size == 0 ) {
+    return 1;
+  }
+
+  all_in_cache = 1;
+
+  // first_page = raddr of start of first needed page
+  ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // last_page = raddr of start of last needed page
+  ra_last_page = round_down_to_mask(raddr+size-1, CACHEPAGE_MASK);
+  // first_line = raddr of start of first needed line
+  ra_first_line = round_down_to_mask(raddr, CACHELINE_MASK);
+  // last_line = raddr of start of last needed line
+  ra_last_line = round_down_to_mask(raddr+size-1, CACHELINE_MASK);
+  ra_next_line = ra_last_line + CACHELINE_SIZE;
+
+  // Try to find it in the cache. Go through one page at a time.
+  for( ra_page = ra_first_page, ra_line = ra_first_line;
+       ra_page <= ra_last_page;
+       ra_page += CACHEPAGE_SIZE, ra_line = ra_page ) {
+    
+    // We will need from ra_line to ra_line_end.
+    ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
+    // Compute the portion of the page that was requested
+    requested_start = raddr_max(raddr,ra_page);
+    requested_end = raddr_min(raddr+size,ra_line_end);
+    requested_size = requested_end - requested_start;
+
+    // Is the page in the tree?
+    entry = lookup_entry(cache, node, ra_page);
+    aout_entry = NULL;
+    page = NULL;
+
+    // Ignore entries in Aout for now.
+    if( entry && ! entry->page ) {
+      aout_entry = entry;
+      entry = NULL;
+    }
+
+    if( entry ) {
+      // Is this cache line available for use, based on when we
+      // last ran an acquire fence?
+      entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
+     
+      // Is the relevant data available in the cache line?
+      has_data = check_valid_lines(entry->valid_lines,
+                                   (ra_line - ra_page) >> CACHELINE_BITS,
+                                   (ra_line_end - ra_line) >> CACHELINE_BITS);
+    } else {
+      entry_after_acquire = 1;
+      has_data = 0;
+    }
+
+    //printf("%i entry is %p after_acquire %i has_data %i\n", chpl_nodeID, entry, entry_after_acquire, has_data);
+
+    if( entry ) {
+      page = entry->page;
+
+      // Check for data in the dirty region
+      if( !has_data && entry->dirty ) {
+        has_data = all_set_for_skip_len(entry->dirty->dirty,
+                                        requested_start & CACHEPAGE_MASK,
+                                        requested_size,
+                                        CACHEPAGE_BITMASK_WORDS);
+      }
+
+      if( entry_after_acquire && has_data ) {
+        // Data is already in cache...  but to do a 'get' for previously
+        // prefetched data, we might have to wait for it.
+        {
+          if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
+#ifdef TIME
+            clock_gettime(CLOCK_REALTIME, &wait1);
+#endif
+
+            wait_for(cache, entry->max_prefetch_sequence_number);
+
+#ifdef TIME
+            clock_gettime(CLOCK_REALTIME, &wait2);
+
+            printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
+#endif
+          }
+        }
+        // If the cache line is in Am, move it to the front of Am.
+        use_entry(cache, entry);
+        // Would copy the data out here, but not in mock get
+        continue; // Move on to the next page.
+      }
+   
+      // Get ready to start a get !
+
+      // If there was an intervening acquire fence preventing
+      // us from using this cache line, we need to mark everything
+      // as invalid and clear the min and max request numbers.
+      // We also need to wait for pending puts using that data...
+
+      // If the cache line contains any overlapping writes or prefetches,
+      // we must wait for them to complete before we request new data.
+      // Prefetches might not yet have filled in the data according
+      // to the promised valid bits. GETs and PUTs must not have
+      // their buffers changed during operation.
+      flush_entry(cache, entry,
+                  entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
+                  ra_line, ra_line_end-ra_line);
+    }
+
+    // Otherwise -- pretend to start a "get" !
+    all_in_cache = 0;
+
+    if( ! page ) {
+      // get a page from the free list.
+      page = allocate_page(cache);
+    }
+
+    // Now we need to start a get into page.
+    // If we don't have entry set, we will also need to plumb
+    // it into the tree while we are awaiting our get.
+    // We'll get within ra_page from ra_line to ra_line_end.
+    INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
+                 (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+                 (int) (ra_line_end - ra_line)));
+
+    memset(page+(ra_line-ra_page), /*local addr*/
+           0,
+           ra_line_end - ra_line /*size*/);
+
+    if( entry ) {
+      use_entry(cache, entry);
+    } else {
+      entry = make_entry(cache, node, ra_page, page, aout_entry);
+    }
+
+    // Set the valid lines
+    set_valid_lines(entry->valid_lines,
+                    (ra_line - ra_page) >> CACHELINE_BITS,
+                    (ra_line_end - ra_line) >> CACHELINE_BITS);
+
+    {
+      // This will increment next request number so cache events are recorded.
+      sn = cache->next_request_number;
+      cache->next_request_number++;
+    }
+
+    // Set the minimum sequence number
+    entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+    // Update the last read location on a miss
+    // (as long as there was not an intervening acquire)
+    if( entry_after_acquire && sequential_readahead_length == 0 ) {
+      cache->last_cache_miss_read_node = node;
+      cache->last_cache_miss_read_addr = ra_line;
+    }
+
+    // Make sure that there is an available page for next time,
+    // but do it without evicting entry (that we are working with).
+    // This could happen if entry is the last element of Ain..
+    ensure_free_page(cache, entry);
+
+    // would copy the data out here, but not in mock get
+  }
+
+  if( VERIFY ) validate_cache(cache);
+
+#ifdef DUMP
+  printf("After mock_get cache is:\n");
+  rdcache_print(cache);
+#endif
+
+  return all_in_cache;
+}
+
+
 
 static
 void cache_invalidate(struct rdcache_s* cache,
@@ -2637,7 +2917,7 @@ void cache_invalidate(struct rdcache_s* cache,
     requested_size = requested_end - requested_start;
 
     // Is the page in the tree?
-    entry = find_in_tree(cache, node, ra_page);
+    entry = lookup_entry(cache, node, ra_page);
 
     if( entry && entry->page ) {
       flush_entry(cache, entry, FLUSH_INVALIDATE_REGION, requested_start, requested_size);
@@ -2730,12 +3010,7 @@ void chpl_cache_do_init(void)
 {
   static int inited = 0;
   if( ! inited ) {
-  
-    // Quick configuration check...
-    assert(OTHER_BITS+TOP_BITS+OTHER_BITS+BOTTOM_BITS+CACHEPAGE_BITS == 64);
-    assert(HALF_BITS + HALF_BITS + CACHEPAGE_BITS == 64);
-
-    // Otherwise, we will need some thread-local storage.
+    // We will need some thread-local storage.
     // We create two versions: cache_remote_data stores
     // our pointer to the struct rd_cache_s* and is what
     // we normally use, with __thread or CHPL_TLS_GET which is
@@ -2998,15 +3273,86 @@ void chpl_cache_assert_released(void)
   }
 }
 
-/*
-// Turn the cache on or off for debug purposes.
-void chpl_cache_set_enabled(int enabled)
-{
-  chpl_cache_fence(1,1, -1, NULL);
-  if( CHPL_CACHE_REMOTE == 0 && enabled == 1 ) chpl_cache_do_init();
-  CHPL_CACHE_REMOTE = enabled;
+// This is for debugging
+void chpl_cache_print_stats(void) {
+  struct rdcache_s* cache = tls_cache_remote_data();
+  int n_used_slots = 0;
+  int n_full_slots = 0;
+  int n_bottom_entries = 0;
+  int n_colliding_slots = 0;
+  int n_full_subslots = 0;
+  int n_subslots = 0;
+  int table_slots = 1 << cache->table_bits;
+  for (int i = 0; i < table_slots; i++) {
+    struct cache_table_slot_s* slot = &cache->table[i];
+    int full_entries_this_slot = 0;
+    int this_slot_collides = 0;
+    for (int j = 0; j < TABLE_ENTRIES_PER_SLOT; j++) {
+      struct cache_table_entry_s* entry = &slot->m[j];
+      struct cache_entry_s* bottom_cur = offset_to_entry(cache, entry->offset);
+      int bottom_entries_this_entry = 0;
+
+      if (entry->offset != 0)
+        full_entries_this_slot++;
+
+      while(bottom_cur) {
+        bottom_entries_this_entry++;
+        bottom_cur = (struct cache_entry_s*) bottom_cur->base.next;
+      }
+      n_bottom_entries += bottom_entries_this_entry;
+      if (bottom_entries_this_entry > 1)
+        this_slot_collides = 1;
+      n_subslots++;
+    }
+    if (this_slot_collides)
+      n_colliding_slots++;
+    if (full_entries_this_slot == TABLE_ENTRIES_PER_SLOT)
+      n_full_slots++;
+    if (full_entries_this_slot > 0)
+      n_used_slots++;
+    n_full_subslots += full_entries_this_slot;
+  }
+
+  printf("%d: task %d cache statistics "
+         "ain=%i/%i "
+         "aout=%i/%i am=%i "
+         "table=(%i lists/%i full/%i used/%i slots and %i/%i sub-slots) "
+         "entries=%i/%i\n",
+         chpl_nodeID, (int) chpl_task_getId(),
+         cache->ain_current, cache->ain_max,
+         cache->aout_current, cache->aout_max,
+         cache->am_current,
+         n_colliding_slots, n_full_slots, n_used_slots, table_slots,
+         n_full_subslots, n_subslots,
+         n_bottom_entries, cache->max_entries);
 }
-*/
+
+// Returns 1 if the data was already cached
+int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  int ret;
+
+  if (!chpl_cache_enabled())
+    chpl_internal_error("chpl_cache_mock_get called without --cache-remote");
+
+  cache_lock(cache);
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), node, (void*)raddr, addr));
+
+#ifdef DUMP
+  chpl_cache_print();
+#endif
+
+  ret = mock_get(cache, node, (raddr_t)raddr, size,
+                 task_local->last_acquire,
+                 0, 0, 0, 0);
+
+  cache_unlock(cache);
+  return ret;
+}
+
 
 #endif
 // end ifdef HAS_CHPL_CACHE_FNS

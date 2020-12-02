@@ -1,11 +1,3 @@
-check-gc-reuse-opers.chpl:32: warning: initializers defined outside the module where the type was originally defined may cause issues
-check-gc-reuse-opers.chpl:32: note: This will no longer be a problem when constructors are deprecated
-check-gc-reuse-opers.chpl:60: warning: initializers defined outside the module where the type was originally defined may cause issues
-check-gc-reuse-opers.chpl:60: note: This will no longer be a problem when constructors are deprecated
-check-gc-reuse-opers.chpl:104: warning: initializers defined outside the module where the type was originally defined may cause issues
-check-gc-reuse-opers.chpl:104: note: This will no longer be a problem when constructors are deprecated
-check-gc-reuse-opers.chpl:151: warning: initializers defined outside the module where the type was originally defined may cause issues
-check-gc-reuse-opers.chpl:151: note: This will no longer be a problem when constructors are deprecated
 check-gc-reuse-opers.chpl:39: In function 'u1':
 check-gc-reuse-opers.chpl:40: warning: User.u1
 check-gc-reuse-opers.chpl:22: In function 'libIN':

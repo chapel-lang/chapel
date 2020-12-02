@@ -1,3 +1,1 @@
-inDiffModule.chpl:22: warning: initializers defined outside the module where the type was originally defined may cause issues
-inDiffModule.chpl:22: note: This will no longer be a problem when constructors are deprecated
 {x = 10, y = false}

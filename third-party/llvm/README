@@ -17,7 +17,7 @@ to the Chapel team at https://chapel-lang.org/bugs.html.
 Using LLVM with Chapel
 ======================
 
-Chapel can be built (by setting CHPL_LLVM=llvm) to include LLVM
+Chapel can be built (by setting CHPL_LLVM=bundled) to include LLVM
 in order to enable extern block support and LLVM code generation.
 
 For more information on the current support for LLVM within Chapel,
