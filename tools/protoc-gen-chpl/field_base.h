@@ -37,7 +37,7 @@ namespace chapel {
   class FieldGeneratorBase {
    public:
     FieldGeneratorBase(const FieldDescriptor* descriptor);
-    ~FieldGeneratorBase();
+    virtual ~FieldGeneratorBase();
 
     virtual void GenerateMembers(Printer* printer) = 0;
     string name();
