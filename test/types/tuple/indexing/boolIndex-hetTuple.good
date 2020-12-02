@@ -1,0 +1,1 @@
+boolIndex.chpl:12: error: invalid access of non-homogeneous tuple by runtime value
