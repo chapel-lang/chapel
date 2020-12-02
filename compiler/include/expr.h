@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -161,7 +162,7 @@ class SymExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 
-  Symbol* symbol() {
+  Symbol* symbol() const {
     return var;
   }
 
@@ -359,6 +360,7 @@ static inline Symbol* symbolForActual(Expr* actual) {
 }
 
 
+bool get_bool(Expr* e, uint64_t *i); // false is failure
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure
@@ -391,11 +393,16 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 #ifdef HAVE_LLVM
 llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
 llvm::Value* createVarLLVM(llvm::Type* type);
+
+llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
+                                bool isSigned = false, bool force = false);
 #endif
 
 GenRet codegenValue(GenRet r);
 GenRet codegenValuePtr(GenRet r);
 
+GenRet createTempVar(const char* ctype);
+GenRet createTempVar(Type* t);
 GenRet createTempVarWith(GenRet v);
 
 GenRet codegenDeref(GenRet toDeref);

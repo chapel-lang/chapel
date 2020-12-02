@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -199,13 +200,13 @@ void AggregateType::codegenDef() {
   if (symbol->hasFlag(FLAG_STAR_TUPLE)) {
     if( outfile ) {
       fprintf(outfile, "typedef ");
-      fprintf(outfile, "%s", getField("x1")->type->codegen().c.c_str());
+      fprintf(outfile, "%s", getField("x0")->type->codegen().c.c_str());
       fprintf(outfile, " %s", symbol->codegen().c.c_str());
       fprintf(outfile, "[%d];\n\n", fields.length);
       return;
     } else {
 #ifdef HAVE_LLVM
-      llvm::Type *elementType = getField("x1")->type->codegen().type;
+      llvm::Type *elementType = getField("x0")->type->codegen().type;
       type = llvm::ArrayType::get(elementType, fields.length);
 #endif
     }
@@ -345,11 +346,7 @@ void AggregateType::codegenDef() {
         llvm::StructType * st;
         // handle an empty union.
         if( largestType ) {
-          st = llvm::StructType::get(largestType
-#if HAVE_LLVM_VER < 50
-                                     , NULL
-#endif
-                                     );
+          st = llvm::StructType::get(largestType);
         } else {
           st = llvm::StructType::get(info->module->getContext());
         }

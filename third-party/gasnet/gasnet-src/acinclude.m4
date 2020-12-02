@@ -363,6 +363,8 @@ AC_DEFUN([GASNET_CHECK_INTTYPES],[
       [$2]COMPLETE_[]uppername=1
       AC_SUBST([$2]COMPLETE_[]uppername)
       AC_DEFINE([$2]COMPLETE_[]uppername)
+    ],[
+      AC_DEFINE([$2]COMPLETE_[]uppername, 0)
     ])
   else 
     dnl otherwise, build and run the inttypes program to ensure the header values are actually correct
@@ -373,6 +375,8 @@ AC_DEFUN([GASNET_CHECK_INTTYPES],[
       [$2]COMPLETE_[]uppername=1
       AC_SUBST([$2]COMPLETE_[]uppername)
       AC_DEFINE([$2]COMPLETE_[]uppername)
+    ],[
+      AC_DEFINE([$2]COMPLETE_[]uppername, 0)
     ])
   fi
  fi
@@ -1860,6 +1864,8 @@ AC_DEFUN([GASNET_GET_GNU_ATTRIBUTES],[
             [__attribute__((__cold__)) int dummy(void) { return 1; }])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__deprecated__],
             [__attribute__((__deprecated__)) int dummy(void) { return 0; }])
+  GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__common__],
+            [__attribute__((__common__)) int x;])
   GASNET_CHECK_GNU_ATTRIBUTE([$1], [$2], [__fallthrough__],
             [int dummy(int x) {
                int result = 0;
@@ -2591,7 +2597,9 @@ AC_DEFUN([GASNET_PROG_PERL],[
   MIN_PERL_VERSION="5.005"
   AC_MSG_CHECKING(for perl version $MIN_PERL_VERSION or later)
   if $PERL -e "require $MIN_PERL_VERSION;" 2>/dev/null; then
-    AC_MSG_RESULT(yes)
+    dnl NOTE: unused $x below avoids unbalanced square brackets
+    PERL_VERSION=[`$PERL -e 'my $x="["; print (defined $^V ? $^V : $])'`]
+    AC_MSG_RESULT(yes: $PERL_VERSION)
   else
     AC_MSG_ERROR(cannot find perl $MIN_PERL_VERSION or later)
   fi
@@ -2727,6 +2735,7 @@ case "$$3" in
       ],[__VERSION__],[_gasnet_$2_gcc_version_string])
     case "$_gasnet_$2_gcc_version_string" in
       *gccfss*) $2_SUBFAMILY='GCCFSS';;
+      *Advance-Toolchain*) $2_SUBFAMILY='IBM';;
       *) GASNET_IFDEF(__APPLE_CC__, [$2_SUBFAMILY='APPLE'])
          GASNET_IFDEF(__NVCC__, [$2_SUBFAMILY='NVIDIA'])
          ;;

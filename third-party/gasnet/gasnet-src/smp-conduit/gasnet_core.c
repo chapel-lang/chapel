@@ -596,7 +596,7 @@ static int gasnetc_init(int *argc, char ***argv, gex_Flags_t flags) {
 
   /* allocate and attach an aux segment */
 
-  gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange);
+  (void) gasneti_auxsegAttach((uintptr_t)-1, &gasnetc_bootstrapExchange);
 
   /* determine Max{Local,GLobal}SegmentSize */
   gasneti_segmentInit(mmap_limit, &gasnetc_bootstrapExchange, flags);
@@ -660,43 +660,10 @@ static int gasnetc_attach_segment(gex_Segment_t                 *segment_p,
                                   uintptr_t                     segsize,
                                   gasneti_bootstrapExchangefn_t exchangefn,
                                   gex_Flags_t                   flags) {
-  // TODO-EX: crude detection of multiple calls until we support them
-  gasneti_assert(NULL == gasneti_seginfo[0].addr);
-
   /* ------------------------------------------------------------------------------------ */
-  /*  register segment  */
+  /*  register client segment  */
 
-  gasneti_segmentAttach(segsize, gasneti_seginfo, exchangefn, flags);
-
-  void *segbase = gasneti_seginfo[gasneti_mynode].addr;
-  segsize = gasneti_seginfo[gasneti_mynode].size;
-
-  gasneti_assert(((uintptr_t)segbase) % GASNET_PAGESIZE == 0);
-  gasneti_assert(segsize % GASNET_PAGESIZE == 0);
-
-  gasneti_EP_t ep = gasneti_import_tm(tm)->_ep;
-  ep->_segment = gasneti_alloc_segment(ep->_client, segbase, segsize, flags, 0);
-  gasneti_legacy_segment_attach_hook(ep);
-  *segment_p = gasneti_export_segment(ep->_segment);
-  
-  /* After local segment is attached, call optional client-provided hook
-     (###) should call BEFORE any conduit-specific pinning/registration of the segment
-   */
-  if (gasnet_client_attach_hook) {
-    gasnet_client_attach_hook(segbase, segsize);
-  }
-
-  /* ------------------------------------------------------------------------------------ */
-  /*  gather segment information */
-
-  /* (###) add code here to gather the segment assignment info into
-           gasneti_seginfo on each node (may be possible to use AMShortRequest here)
-           If gasneti_segmentAttach() was used above, this is already done.
-     Done in gasneti_segmentAttach(), above.
-   */
-
-  gasneti_assert(gasneti_seginfo[gasneti_mynode].addr == segbase &&
-                 gasneti_seginfo[gasneti_mynode].size == segsize);
+  (void) gasneti_segmentAttach(segment_p, 0, tm, segsize, exchangefn, flags);
 
   return GASNET_OK;
 }

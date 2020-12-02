@@ -1,3 +1,4 @@
+use CPtr;
 record Foo {
   var mem = c_nil:c_ptr(uint(64));
 }

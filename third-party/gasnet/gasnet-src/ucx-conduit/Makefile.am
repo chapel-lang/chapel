@@ -43,7 +43,7 @@ pmi_deps = $(pmi_srcdir)/*.[ch]
 endif
 
 # any conduit-specific subdirectories containing Makefile.am's
-SUBDIRS = .
+SUBDIRS = contrib
 
 # complete list of files in the conduit directory
 # include all headers, documentation, etc. 
@@ -55,14 +55,19 @@ CONDUIT_FILELIST =           \
       gasnet_core_help.h     \
       gasnet_core_internal.h \
       gasnet_core_sndrcv.c   \
-      gasnet_ucx_req.h
+      gasnet_ucx_req.h       \
+      gasnet_extended.c      \
+      gasnet_extended_fwd.h  \
+      gasnet_ratomic.c       \
+      gasnet_ratomic_fwd.h
 
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiler command line
 CONDUIT_SOURCELIST =          \
       $(srcdir)/gasnet_core.c \
       $(srcdir)/gasnet_core_sndrcv.c \
-      $(top_srcdir)/extended-ref/gasnet_extended.c \
+      $(srcdir)/gasnet_extended.c \
+      $(srcdir)/gasnet_ratomic.c \
       $(ssh_sources) $(pmi_sources)
 
 # additional -I or -D directives needed by this specific conduit
@@ -92,7 +97,7 @@ CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
 #   %Q = program arguments w/ an extra level of quotes
 #   %D = the current working directory
 #   %H = hostfile (if any)
-CONDUIT_RUNCMD = mpirun -np %N %P %A
+CONDUIT_RUNCMD = @TOP_BUILDDIR@/ucx-conduit/contrib/gasnetrun_ucx -np %N %P %A
 
 # conduit-specific tests in ../tests directory
 CONDUIT_TESTS =

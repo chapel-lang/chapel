@@ -1,0 +1,4 @@
+Vector.chpl:xxx: In initializer:
+Vector.chpl:xxx: error: Vector does not support an eltType that can't be default initialized, here: shared T
+VectorTest.chpl:xxx: called as vector.init(type eltType = shared T, param parSafe = 0) from function 'testVector'
+  testShared.chpl:xxx: called as testVector(type t = shared T)

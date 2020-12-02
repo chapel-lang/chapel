@@ -9,7 +9,7 @@ use driver;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Random, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -139,13 +139,13 @@ proc LUFactorize(n: indexType, Ab: [1..n, 1..n+1] elemType,
     // computation:
     //
     panelSolve(Ab, l, piv);
-    if (tr.numIndices > 0) then
+    if (tr.size > 0) then
       updateBlockRow(Ab, tl, tr);
     
     //
     // update trailing submatrix (if any)
     //
-    if (br.numIndices > 0) then
+    if (br.size > 0) then
       schurComplement(Ab, blk);
   }
 }
@@ -228,9 +228,9 @@ proc dgemm(A: [?AD] ?t,
            B: [?BD] t,
            C: [?CD] t) {
   // Calculate (i,j) using a dot product of a row of A and a column of B.
-  for i in AD.dim(1) do
-    for j in CD.dim(2) do
-      for k in AD.dim(2) do
+  for i in AD.dim(0) do
+    for j in CD.dim(1) do
+      for k in AD.dim(1) do
         C[i,j] -= A[i, k] * B[k, j];
 }
 
@@ -241,22 +241,22 @@ proc dgemm(A: [?AD] ?t,
 proc panelSolve(Ab: [] ?t,
                panel: domain(2, indexType) dmapped Dist2D,
                piv: [] indexType) {
-  const pnlRows = panel.dim(1),
-        pnlCols = panel.dim(2);
+  const pnlRows = panel.dim(0),
+        pnlCols = panel.dim(1);
 
   //
   // Ideally some type of assertion to ensure panel is embedded in Ab's
   // domain
   //
-  assert(piv.domain.dim(1) == Ab.domain.dim(1));
+  assert(piv.domain.dim(0) == Ab.domain.dim(0));
   
-  if (pnlCols.length == 0) then return;
+  if (pnlCols.size == 0) then return;
   
   for k in pnlCols {             // iterate through the columns
     var col = panel[k.., k..k];
     
     // If there are no rows below the current column return
-    if col.dim(1).length == 0 then return;
+    if col.dim(0).size == 0 then return;
     
     // Find the pivot, the element with the largest absolute value.
     const (_, (pivotRow, _)) = maxloc reduce zip(abs(Ab(col)), col),
@@ -289,10 +289,10 @@ proc panelSolve(Ab: [] ?t,
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(Ab: [] ?t, tl: domain(2) dmapped Dist2D, tr: domain(2) dmapped Dist2D) {
-  const tlRows = tl.dim(1),
-        tlCols = tl.dim(2),
-        trRows = tr.dim(1),
-        trCols = tr.dim(2);
+  const tlRows = tl.dim(0),
+        tlCols = tl.dim(1),
+        trRows = tr.dim(0),
+        trCols = tr.dim(1);
   
   assert(tlCols == trRows);
 

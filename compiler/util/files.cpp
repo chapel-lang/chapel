@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -203,7 +204,7 @@ static void ensureTmpDirExists() {
 }
 
 
-#if !defined(HAVE_LLVM) || HAVE_LLVM_VER < 50
+#if !defined(HAVE_LLVM)
 static
 void deleteDirSystem(const char* dirname) {
   const char* cmd = astr("rm -rf ", dirname);
@@ -214,7 +215,6 @@ void deleteDirSystem(const char* dirname) {
 #ifdef HAVE_LLVM
 static
 void deleteDirLLVM(const char* dirname) {
-#if HAVE_LLVM_VER >= 50
   // LLVM 5 added remove_directories
   std::error_code err = llvm::sys::fs::remove_directories(dirname, false);
   if (err) {
@@ -222,9 +222,6 @@ void deleteDirLLVM(const char* dirname) {
               dirname,
               err.message().c_str());
   }
-#else
-  deleteDirSystem(dirname);
-#endif
 }
 #endif
 
@@ -309,13 +306,8 @@ FILE* openfile(const char* filename,
   FILE* newfile = fopen(filename, mode);
 
   if (newfile == NULL) {
-    const char* errorstr = "opening ";
-    const char* errormsg = astr(errorstr,
-                                filename, ": ",
-                                strerror(errno));
-
     if (fatal == true) {
-      USR_FATAL(errormsg);
+      USR_FATAL("opening %s: %s", filename, strerror(errno));
     }
   }
 
@@ -325,10 +317,7 @@ FILE* openfile(const char* filename,
 
 void closefile(FILE* thefile) {
   if (fclose(thefile) != 0) {
-    const char* errorstr = "closing file: ";
-    const char* errormsg = astr(errorstr, strerror(errno));
-
-    USR_FATAL(errormsg);
+    USR_FATAL("closing file: %s", strerror(errno));
   }
 }
 
@@ -440,17 +429,14 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
 
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
-      USR_FATAL(astr("file '",
-                     filename[i],
-                     "' does not have a recognized suffix"));
+      USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
     }
     // WE SHOULDN"T TRY TO OPEN .h files, just .c and .chpl and .o
     if (!isCHeader(filename[i])) {
       FILE* testfile = openInputFile(filename[i]);
       if (fscanf(testfile, "%c", &achar) != 1) {
-        USR_FATAL(astr("source file '",
-                       filename[i],
-                       "' is either empty or a directory"));
+        USR_FATAL("source file '%s' is either empty or a directory",
+                  filename[i]);
       }
 
       closeInputFile(testfile);
@@ -542,8 +528,8 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
   } else if (strcmp(debugger, "lldb") == 0) {
     fprintf(dbgfile, "settings set -- target.run-args");
   } else {
-      INT_FATAL(astr("createDebuggerFile doesn't know how to handle the given "
-                     "debugger: '", debugger, "'"));
+      INT_FATAL("createDebuggerFile doesn't know how to handle the given "
+                "debugger: '%s'", debugger);
   }
   for (i=1; i<argc; i++) {
     if (strcmp(argv[i], astr("--", debugger)) != 0) {
@@ -577,11 +563,11 @@ std::string runPrintChplEnv(std::map<std::string, const char*> varMap) {
   return runCommand(command);
 }
 
-std::string getVenvDir() {
-  // Runs `util/chplenv/chpl_home_utils.py --venv` and removes the newline
+std::string getChplDepsApp() {
+  // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
-  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --venv 2> /dev/null";
+  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps 2> /dev/null";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
@@ -597,13 +583,11 @@ std::string runCommand(std::string& command) {
   // Run arbitrary command and return result
   char buffer[256];
   std::string result = "";
-  std::string error = "";
 
   // Call command
   FILE* pipe = popen(command.c_str(), "r");
   if (!pipe) {
-    error = "running " + command;
-    USR_FATAL(error.c_str());
+    USR_FATAL("running %s", command.c_str());
   }
 
   // Read output of command into result via buffer
@@ -614,8 +598,7 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    error = command + " did not run successfully";
-    USR_FATAL(error.c_str());
+    USR_FATAL("%s did not run successfully", command.c_str());
   }
 
   return result;
@@ -853,8 +836,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     lmode = dyn ? "$(LIB_DYNAMIC_FLAG)" : "$(LIB_STATIC_FLAG)";
   }
 
-  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s %s\n",
-          lmode, ldflags.c_str());
+  fprintf(makefile.fptr, "COMP_GEN_LFLAGS = %s\n",
+          lmode);
+  fprintf(makefile.fptr, "COMP_GEN_USER_LDFLAGS = %s\n",
+          ldflags.c_str());
 
   // Block of code for generating TAGS command, developer convenience.
   fprintf(makefile.fptr, "TAGS_COMMAND = ");
@@ -964,11 +949,16 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
   }
 }
 
-void readArgsFromFile(std::string path, std::vector<std::string>& args) {
+bool readArgsFromFile(std::string path, std::vector<std::string>& args,
+                      bool errFatal) {
 
   FILE* fd = fopen(path.c_str(), "r");
-  if (!fd)
-    USR_FATAL("Could not open file %s", path.c_str());
+  if (!fd) {
+    if (errFatal)
+      USR_FATAL("Could not open file %s", path.c_str());
+
+    return false;
+  }
 
   int ch;
   // Read arguments.
@@ -988,6 +978,8 @@ void readArgsFromFile(std::string path, std::vector<std::string>& args) {
   }
 
   fclose(fd);
+
+  return true;
 }
 
 // Expands variables like $CHPL_HOME in the string

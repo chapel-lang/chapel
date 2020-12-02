@@ -71,3 +71,13 @@ proc testRCapturesEOB() {
   // point 2
 }
 testRCapturesEOB();
+
+
+proc testAcapturesTemp() {
+  var A:[1..1] borrowed C?;
+
+  A[1] = new C(1);
+
+  writeln(A);
+}
+testAcapturesTemp();

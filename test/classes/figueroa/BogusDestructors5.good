@@ -1,1 +1,0 @@
-BogusDestructors5.chpl:2: error: destructor name must match class/record name or deinit()

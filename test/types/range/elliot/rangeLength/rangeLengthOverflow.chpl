@@ -2,7 +2,7 @@ proc writeLength(type t) {
   const min_t = min(t);
   const max_t = max(t);
 
-  writeln((min_t..max_t).length);
+  writeln((min_t..max_t).size);
 }
 
 writeLength(uint(8));

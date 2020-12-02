@@ -222,7 +222,7 @@ proc LevelVariable.clawOutput (
 
 
   //==== Time file ====
-  var n_grids = level.grids.numIndices;
+  var n_grids = level.grids.size;
 
   var outfile = open(time_filename, iomode.cw).writer();
   writeTimeFile(time, 1, n_grids, 0, outfile);

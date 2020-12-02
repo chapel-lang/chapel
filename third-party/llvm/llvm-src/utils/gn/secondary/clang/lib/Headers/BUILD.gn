@@ -15,13 +15,22 @@ clang_tablegen("arm_fp16") {
   output_name = "arm_fp16.h"
 }
 
+# Generate arm_mve.h
+clang_tablegen("arm_mve") {
+  args = [ "-gen-arm-mve-header" ]
+  td_file = "//clang/include/clang/Basic/arm_mve.td"
+  output_name = "arm_mve.h"
+}
+
 copy("arm_headers") {
   visibility = [ ":Headers" ]
   deps = [
     ":arm_fp16",
+    ":arm_mve",
     ":arm_neon",
   ]
-  sources = get_target_outputs(":arm_neon") + get_target_outputs(":arm_fp16")
+  sources = get_target_outputs(":arm_neon") + get_target_outputs(":arm_fp16") +
+            get_target_outputs(":arm_mve")
   outputs = [
     "$clang_resource_dir/include/{{source_file_part}}",
   ]
@@ -36,6 +45,7 @@ copy("Headers") {
   # Tell `gn format` to not reorder the sources list: Its order matches CMake,
   # and the ordering is alphabetical but ignores leading underscores.
   sources = [
+    "arm_cmse.h",
     "adxintrin.h",
     "altivec.h",
     "ammintrin.h",
@@ -43,6 +53,7 @@ copy("Headers") {
     "armintr.h",
     "arm64intr.h",
     "avx2intrin.h",
+    "avx512bf16intrin.h",
     "avx512bwintrin.h",
     "avx512bitalgintrin.h",
     "avx512vlbitalgintrin.h",
@@ -58,10 +69,13 @@ copy("Headers") {
     "avx512vbmivlintrin.h",
     "avx512vbmi2intrin.h",
     "avx512vlvbmi2intrin.h",
+    "avx512vlbf16intrin.h",
     "avx512vlbwintrin.h",
     "avx512vlcdintrin.h",
     "avx512vldqintrin.h",
     "avx512vlintrin.h",
+    "avx512vp2intersectintrin.h",
+    "avx512vlvp2intersectintrin.h",
     "avx512vpopcntdqvlintrin.h",
     "avx512vnniintrin.h",
     "avx512vlvnniintrin.h",
@@ -83,6 +97,7 @@ copy("Headers") {
     "clflushoptintrin.h",
     "clwbintrin.h",
     "emmintrin.h",
+    "enqcmdintrin.h",
     "f16cintrin.h",
     "float.h",
     "fma4intrin.h",
@@ -109,6 +124,7 @@ copy("Headers") {
     "mwaitxintrin.h",
     "nmmintrin.h",
     "opencl-c.h",
+    "opencl-c-base.h",
     "pconfigintrin.h",
     "pkuintrin.h",
     "pmmintrin.h",
@@ -154,6 +170,17 @@ copy("Headers") {
     "cuda_wrappers/algorithm",
     "cuda_wrappers/complex",
     "cuda_wrappers/new",
+    "ppc_wrappers/mmintrin.h",
+    "ppc_wrappers/xmmintrin.h",
+    "ppc_wrappers/mm_malloc.h",
+    "ppc_wrappers/emmintrin.h",
+    "ppc_wrappers/pmmintrin.h",
+    "ppc_wrappers/smmintrin.h",
+    "ppc_wrappers/tmmintrin.h",
+    "openmp_wrappers/math.h",
+    "openmp_wrappers/cmath",
+    "openmp_wrappers/__clang_openmp_math.h",
+    "openmp_wrappers/__clang_openmp_math_declares.h",
   ]
   outputs = [
     "$clang_resource_dir/include/{{source_target_relative}}",

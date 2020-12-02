@@ -1,0 +1,19 @@
+
+Start analyzing forall (staticSuccessDynamicFail.chpl:6)
+| Found loop domain (staticSuccessDynamicFail.chpl:4)
+| Will attempt static and dynamic optimizations (staticSuccessDynamicFail.chpl:6)
+|
+|  Start analyzing call (staticSuccessDynamicFail.chpl:7)
+|   Can optimize: Access base is the iterator's base (staticSuccessDynamicFail.chpl:7)
+|  This call is a static optimization candidate (staticSuccessDynamicFail.chpl:7)
+|
+|  Start analyzing call (staticSuccessDynamicFail.chpl:7)
+|   Can't determine the domain of access base (staticSuccessDynamicFail.chpl:3)
+|  This call is a dynamic optimization candidate (staticSuccessDynamicFail.chpl:7)
+|
+End analyzing forall (staticSuccessDynamicFail.chpl:6)
+
+Static check successful. Using localAccess (staticSuccessDynamicFail.chpl:7)
+Static check successful. Using localAccess with dynamic check (staticSuccessDynamicFail.chpl:7)
+Static check successful. Using localAccess (staticSuccessDynamicFail.chpl:7)
+0 0 0 0 0 0 0 0 0

@@ -1,0 +1,28 @@
+
+Start analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
+| Found loop domain (oneStaticFailOtherDynamicSuccess.chpl:16)
+| Will attempt static and dynamic optimizations (oneStaticFailOtherDynamicSuccess.chpl:23)
+|
+|  Start analyzing call (oneStaticFailOtherDynamicSuccess.chpl:24)
+|   Can't determine the domain of access base (oneStaticFailOtherDynamicSuccess.chpl:18)
+|  This call is a dynamic optimization candidate (oneStaticFailOtherDynamicSuccess.chpl:24)
+|
+|  Start analyzing call (oneStaticFailOtherDynamicSuccess.chpl:24)
+|   Can't determine the domain of access base (oneStaticFailOtherDynamicSuccess.chpl:19)
+|  This call is a dynamic optimization candidate (oneStaticFailOtherDynamicSuccess.chpl:24)
+|
+End analyzing forall (oneStaticFailOtherDynamicSuccess.chpl:23)
+
+Static check successful. Using localAccess with dynamic check (oneStaticFailOtherDynamicSuccess.chpl:24)
+Static check failed. Reverting optimization (oneStaticFailOtherDynamicSuccess.chpl:24)
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+Custom localAccess was called
+1 4 9 16 25 36 49 64 81 100

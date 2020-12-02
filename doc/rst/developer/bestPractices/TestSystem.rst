@@ -144,7 +144,7 @@ line - specifying multiple lines will result in multiple compilations of the
 test file.
 
 For instance, to specify that the program should be compiled statically, this
-file would provided:
+file would be provided:
 
 ``hi.compopts``
 
@@ -318,7 +318,7 @@ For instance:
 
   .. code-block:: python
 
-     #!/usr/bin/env python
+     #!/usr/bin/env python3
 
      import os
      print(os.getenv('CHPL_TEST_PERF') == 'on' and
@@ -563,7 +563,7 @@ like to graph, you'll create a ``.graph`` file indicating which data from
 which ``.dat`` files should be graphed.  For example, to compare the
 timing data from the ``foo.chpl`` and ``foo-c.c`` tests described above, one
 might use the following ``foo.graph`` file (note that the graph file's
-base name need not have any relation to the tests it is graphing since
+basename need not have any relation to the tests it is graphing since
 they are typically pulling from multiple ``.dat`` files; making the
 filename useful to human readers is the main consideration).
 
@@ -842,11 +842,9 @@ Successful tests will not be printed after the line beginning with ``[Test
 Summary`` unless they had a ``.future`` file (see `A Test That Tracks A
 Failure`_ for information about ``.future`` files).
 
-When nightly testing is run, a mail will be sent to
-`chapel-test-results-regressions`_ for every configuration with a new failure,
-warning, passing suppression, and/or passing future.
-
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
+When nightly testing is run, core developers will be notified of every
+configuration with a new failure, warning, passing suppression, and/or
+passing future.
 
 
 Summary of Testing Files
@@ -906,7 +904,7 @@ PREEXEC             directory-wide script that is run prior to execution
 -------------------------------------------------------------------------------
 **Testing System Settings**
 -------------------------------------------------------------------------------
-foo.cleanfiles      line separated list of files to remove before next test run
+foo.cleanfiles      line separated list of files to remove before the next test run
 CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.  See `Controlling How It Runs`_ for more

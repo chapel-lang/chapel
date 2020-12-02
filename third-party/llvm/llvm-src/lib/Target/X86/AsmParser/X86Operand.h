@@ -1,16 +1,15 @@
 //===- X86Operand.h - Parsed X86 machine instruction ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #ifndef LLVM_LIB_TARGET_X86_ASMPARSER_X86OPERAND_H
 #define LLVM_LIB_TARGET_X86_ASMPARSER_X86OPERAND_H
 
-#include "InstPrinter/X86IntelInstPrinter.h"
+#include "MCTargetDesc/X86IntelInstPrinter.h"
 #include "MCTargetDesc/X86MCTargetDesc.h"
 #include "X86AsmParserCommon.h"
 #include "llvm/ADT/STLExtras.h"
@@ -37,6 +36,7 @@ struct X86Operand final : public MCParsedAsmOperand {
   StringRef SymName;
   void *OpDecl;
   bool AddressOf;
+  bool CallOperand;
 
   struct TokOp {
     const char *Data;
@@ -53,6 +53,7 @@ struct X86Operand final : public MCParsedAsmOperand {
 
   struct ImmOp {
     const MCExpr *Val;
+    bool LocalRef;
   };
 
   struct MemOp {
@@ -78,7 +79,7 @@ struct X86Operand final : public MCParsedAsmOperand {
   };
 
   X86Operand(KindTy K, SMLoc Start, SMLoc End)
-      : Kind(K), StartLoc(Start), EndLoc(End) {}
+      : Kind(K), StartLoc(Start), EndLoc(End), CallOperand(false) {}
 
   StringRef getSymName() override { return SymName; }
   void *getOpDecl() override { return OpDecl; }
@@ -105,8 +106,8 @@ struct X86Operand final : public MCParsedAsmOperand {
       } else if (Val->getKind() == MCExpr::SymbolRef) {
         if (auto *SRE = dyn_cast<MCSymbolRefExpr>(Val)) {
           const MCSymbol &Sym = SRE->getSymbol();
-          if (auto SymName = Sym.getName().data())
-            OS << VName << SymName;
+          if (const char *SymNameStr = Sym.getName().data())
+            OS << VName << SymNameStr;
         }
       }
     };
@@ -261,6 +262,15 @@ struct X86Operand final : public MCParsedAsmOperand {
     return isImmSExti64i32Value(CE->getValue());
   }
 
+  bool isImmUnsignedi4() const {
+    if (!isImm()) return false;
+    // If this isn't a constant expr, reject it. The immediate byte is shared
+    // with a register encoding. We can't have it affected by a relocation.
+    const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(getImm());
+    if (!CE) return false;
+    return isImmUnsignedi4Value(CE->getValue());
+  }
+
   bool isImmUnsignedi8() const {
     if (!isImm()) return false;
     // If this isn't a constant expr, just assume it fits and let relaxation
@@ -270,13 +280,9 @@ struct X86Operand final : public MCParsedAsmOperand {
     return isImmUnsignedi8Value(CE->getValue());
   }
 
-  bool isOffsetOf() const override {
-    return OffsetOfLoc.getPointer();
-  }
+  bool isOffsetOfLocal() const override { return isImm() && Imm.LocalRef; }
 
-  bool needAddressOf() const override {
-    return AddressOf;
-  }
+  bool needAddressOf() const override { return AddressOf; }
 
   bool isMem() const override { return Kind == Memory; }
   bool isMemUnsized() const {
@@ -452,6 +458,31 @@ struct X86Operand final : public MCParsedAsmOperand {
       X86MCRegisterClasses[X86::GR64RegClassID].contains(getReg()));
   }
 
+  bool isVK1Pair() const {
+    return Kind == Register &&
+      X86MCRegisterClasses[X86::VK1RegClassID].contains(getReg());
+  }
+
+  bool isVK2Pair() const {
+    return Kind == Register &&
+      X86MCRegisterClasses[X86::VK2RegClassID].contains(getReg());
+  }
+
+  bool isVK4Pair() const {
+    return Kind == Register &&
+      X86MCRegisterClasses[X86::VK4RegClassID].contains(getReg());
+  }
+
+  bool isVK8Pair() const {
+    return Kind == Register &&
+      X86MCRegisterClasses[X86::VK8RegClassID].contains(getReg());
+  }
+
+  bool isVK16Pair() const {
+    return Kind == Register &&
+      X86MCRegisterClasses[X86::VK16RegClassID].contains(getReg());
+  }
+
   void addExpr(MCInst &Inst, const MCExpr *Expr) const {
     // Add as immediates when possible.
     if (const MCConstantExpr *CE = dyn_cast<MCConstantExpr>(Expr))
@@ -467,7 +498,7 @@ struct X86Operand final : public MCParsedAsmOperand {
 
   void addGR32orGR64Operands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
-    unsigned RegNo = getReg();
+    MCRegister RegNo = getReg();
     if (X86MCRegisterClasses[X86::GR64RegClassID].contains(RegNo))
       RegNo = getX86SubSuperRegister(RegNo, 32);
     Inst.addOperand(MCOperand::createReg(RegNo));
@@ -481,6 +512,30 @@ struct X86Operand final : public MCParsedAsmOperand {
   void addImmOperands(MCInst &Inst, unsigned N) const {
     assert(N == 1 && "Invalid number of operands!");
     addExpr(Inst, getImm());
+  }
+
+  void addMaskPairOperands(MCInst &Inst, unsigned N) const {
+    assert(N == 1 && "Invalid number of operands!");
+    unsigned Reg = getReg();
+    switch (Reg) {
+    case X86::K0:
+    case X86::K1:
+      Reg = X86::K0_K1;
+      break;
+    case X86::K2:
+    case X86::K3:
+      Reg = X86::K2_K3;
+      break;
+    case X86::K4:
+    case X86::K5:
+      Reg = X86::K4_K5;
+      break;
+    case X86::K6:
+    case X86::K7:
+      Reg = X86::K6_K7;
+      break;
+    }
+    Inst.addOperand(MCOperand::createReg(Reg));
   }
 
   void addMemOperands(MCInst &Inst, unsigned N) const {
@@ -524,7 +579,7 @@ struct X86Operand final : public MCParsedAsmOperand {
 
   static std::unique_ptr<X86Operand> CreateToken(StringRef Str, SMLoc Loc) {
     SMLoc EndLoc = SMLoc::getFromPointer(Loc.getPointer() + Str.size());
-    auto Res = llvm::make_unique<X86Operand>(Token, Loc, EndLoc);
+    auto Res = std::make_unique<X86Operand>(Token, Loc, EndLoc);
     Res->Tok.Data = Str.data();
     Res->Tok.Length = Str.size();
     return Res;
@@ -534,7 +589,7 @@ struct X86Operand final : public MCParsedAsmOperand {
   CreateReg(unsigned RegNo, SMLoc StartLoc, SMLoc EndLoc,
             bool AddressOf = false, SMLoc OffsetOfLoc = SMLoc(),
             StringRef SymName = StringRef(), void *OpDecl = nullptr) {
-    auto Res = llvm::make_unique<X86Operand>(Register, StartLoc, EndLoc);
+    auto Res = std::make_unique<X86Operand>(Register, StartLoc, EndLoc);
     Res->Reg.RegNo = RegNo;
     Res->AddressOf = AddressOf;
     Res->OffsetOfLoc = OffsetOfLoc;
@@ -545,20 +600,27 @@ struct X86Operand final : public MCParsedAsmOperand {
 
   static std::unique_ptr<X86Operand>
   CreateDXReg(SMLoc StartLoc, SMLoc EndLoc) {
-    return llvm::make_unique<X86Operand>(DXRegister, StartLoc, EndLoc);
+    return std::make_unique<X86Operand>(DXRegister, StartLoc, EndLoc);
   }
 
   static std::unique_ptr<X86Operand>
   CreatePrefix(unsigned Prefixes, SMLoc StartLoc, SMLoc EndLoc) {
-    auto Res = llvm::make_unique<X86Operand>(Prefix, StartLoc, EndLoc);
+    auto Res = std::make_unique<X86Operand>(Prefix, StartLoc, EndLoc);
     Res->Pref.Prefixes = Prefixes;
     return Res;
   }
 
   static std::unique_ptr<X86Operand> CreateImm(const MCExpr *Val,
-                                               SMLoc StartLoc, SMLoc EndLoc) {
-    auto Res = llvm::make_unique<X86Operand>(Immediate, StartLoc, EndLoc);
-    Res->Imm.Val = Val;
+                                               SMLoc StartLoc, SMLoc EndLoc,
+                                               StringRef SymName = StringRef(),
+                                               void *OpDecl = nullptr,
+                                               bool GlobalRef = true) {
+    auto Res = std::make_unique<X86Operand>(Immediate, StartLoc, EndLoc);
+    Res->Imm.Val      = Val;
+    Res->Imm.LocalRef = !GlobalRef;
+    Res->SymName      = SymName;
+    Res->OpDecl       = OpDecl;
+    Res->AddressOf    = true;
     return Res;
   }
 
@@ -567,7 +629,7 @@ struct X86Operand final : public MCParsedAsmOperand {
   CreateMem(unsigned ModeSize, const MCExpr *Disp, SMLoc StartLoc, SMLoc EndLoc,
             unsigned Size = 0, StringRef SymName = StringRef(),
             void *OpDecl = nullptr, unsigned FrontendSize = 0) {
-    auto Res = llvm::make_unique<X86Operand>(Memory, StartLoc, EndLoc);
+    auto Res = std::make_unique<X86Operand>(Memory, StartLoc, EndLoc);
     Res->Mem.SegReg   = 0;
     Res->Mem.Disp     = Disp;
     Res->Mem.BaseReg  = 0;
@@ -595,7 +657,7 @@ struct X86Operand final : public MCParsedAsmOperand {
     // The scale should always be one of {1,2,4,8}.
     assert(((Scale == 1 || Scale == 2 || Scale == 4 || Scale == 8)) &&
            "Invalid scale!");
-    auto Res = llvm::make_unique<X86Operand>(Memory, StartLoc, EndLoc);
+    auto Res = std::make_unique<X86Operand>(Memory, StartLoc, EndLoc);
     Res->Mem.SegReg   = SegReg;
     Res->Mem.Disp     = Disp;
     Res->Mem.BaseReg  = BaseReg;

@@ -2,9 +2,9 @@
 
 /*
 
-  This primer illustrates Chapel's atomic variables.  For more information
-  on Chapel's atomics, see the :ref:`Chapel Language Specification
-  <chapel-spec>`.
+  This primer illustrates Chapel's atomic variables.  For more information on
+  Chapel's atomics, see the :ref:`Atomic_Variables` section of the language
+  specification.
 
 */
 

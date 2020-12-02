@@ -93,6 +93,7 @@ proc ioExample0LM() {
 ioExample0LM();
 
 proc ioExample1LM() {
+  writeln("ioExample1LM");
   var tmp = opentmp();
 
   var A = [1,2,3,4];
@@ -111,6 +112,7 @@ proc ownedExample0LM() {
 ownedExample0LM();
 
 proc ownedExample1EOB() {
+  writeln("ownedExample1EOB");
   var b: borrowed C = (new owned C(1)).borrow();
   // point 1
   writeln(b);
@@ -118,26 +120,6 @@ proc ownedExample1EOB() {
   // point 2
 }
 ownedExample1EOB();
-
-proc ownedExample2EOB() {
-  var b: borrowed C?;
-  b = (new owned C(1)).borrow();
-  // point 1
-  writeln(b);
-  writeln();
-  // point 2
-}
-ownedExample2EOB();
-
-proc ownedExample3EOB() {
-  var b: borrowed C?;
-  setit(b, (new owned C(1)).borrow());
-  // point 1
-  writeln(b);
-  writeln();
-  // point 2
-}
-ownedExample3EOB();
 
 proc ownedExample4LM() {
   var x = new owned C(1);
@@ -197,6 +179,7 @@ proc arrayExample1LM() {
 arrayExample1LM();
 
 proc sliceExample1EOB() {
+  writeln("sliceExample1EOB");
   var A:[1..100] int;
   ref slice = A[1..10];
   // point 1
@@ -211,6 +194,7 @@ proc makeArray() {
   return A;
 }
 proc sliceExample2EOB() {
+  writeln("sliceExample2EOB");
   ref slice = makeArray()[1..10];
   // point 1
   writeln(slice);
@@ -220,6 +204,7 @@ proc sliceExample2EOB() {
 sliceExample2EOB();
 
 proc innerFnExample1() {
+  writeln("innerFnExample1");
   var c = new C(1);
   var b: borrowed C?;
   proc inner(arg: borrowed C) lifetime b < arg {
@@ -352,6 +337,7 @@ proc refIfExpr3EOB() {
 refIfExpr3EOB();
 
 proc splitInitLM() {
+  writeln("splitInitLM");
   var o;
   o = new owned C();
   writeln(o.borrow());

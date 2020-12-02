@@ -11,6 +11,13 @@ hasGlobalTypes
 
    use hasGlobalTypes;
 
+
+or
+
+.. code-block:: chapel
+
+   import hasGlobalTypes;
+
 This module has some global scoped types. 
 
 .. type:: type first = bool

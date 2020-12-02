@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -58,25 +59,27 @@ MAKE_SYS_BASIC_TYPES=$(CHPL_MAKE_HOME)/util/config/make_sys_basic_types.py
 
 $(SYS_CTYPES_MODULE): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) $(@F)
+	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) $(@F)
 
 $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	mkdir -p $(@D)
-	cd $(@D) && $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
+	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
 	standard/Assert.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
+	standard/Builtins.chpl \
 	standard/CommDiagnostics.chpl \
+	standard/CPtr.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
+	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/LinkedLists.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
@@ -92,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
+	standard/Version.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
@@ -109,11 +113,13 @@ PACKAGES_TO_DOCUMENT = \
 	packages/HDFS.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
+	packages/LinkedLists.chpl \
 	packages/LockFreeQueue.chpl \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \
@@ -161,7 +167,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
 	internal/ChapelEnv.chpl               \
-	internal/CPtr.chpl                    \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl
 

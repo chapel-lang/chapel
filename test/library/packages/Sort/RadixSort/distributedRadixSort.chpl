@@ -37,7 +37,7 @@ proc simpletestcore(input:[]) {
   }
 }
 proc simpletest(input:[]) {
-  var size = input.domain.numIndices;
+  var size = input.domain.size;
   simpletestcore(input.reindex(1..#size));
   simpletestcore(input.reindex(0..#size));
   simpletestcore(input.reindex(2..#size));

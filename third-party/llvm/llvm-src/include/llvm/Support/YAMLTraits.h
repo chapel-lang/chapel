@@ -1,9 +1,8 @@
 //===- llvm/Support/YAMLTraits.h --------------------------------*- C++ -*-===//
 //
-//                             The LLVM Linker
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -102,8 +101,7 @@ template <class T, class Context> struct MappingContextTraits {
 ///           io.enumCase(value, "green", cGreen);
 ///         }
 ///       };
-template<typename T>
-struct ScalarEnumerationTraits {
+template <typename T, typename Enable = void> struct ScalarEnumerationTraits {
   // Must provide:
   // static void enumeration(IO &io, T &value);
 };
@@ -119,8 +117,7 @@ struct ScalarEnumerationTraits {
 ///          io.bitSetCase(value, "round", flagRound);
 ///        }
 ///      };
-template<typename T>
-struct ScalarBitSetTraits {
+template <typename T, typename Enable = void> struct ScalarBitSetTraits {
   // Must provide:
   // static void bitset(IO &io, T &value);
 };
@@ -146,8 +143,7 @@ enum class QuotingType { None, Single, Double };
 ///      }
 ///      static QuotingType mustQuote(StringRef) { return QuotingType::Single; }
 ///    };
-template<typename T>
-struct ScalarTraits {
+template <typename T, typename Enable = void> struct ScalarTraits {
   // Must provide:
   //
   // Function to write the value as a string:
@@ -653,7 +649,8 @@ inline bool isBool(StringRef S) {
 inline QuotingType needsQuotes(StringRef S) {
   if (S.empty())
     return QuotingType::Single;
-  if (isspace(S.front()) || isspace(S.back()))
+  if (isspace(static_cast<unsigned char>(S.front())) ||
+      isspace(static_cast<unsigned char>(S.back())))
     return QuotingType::Single;
   if (isNull(S))
     return QuotingType::Single;
@@ -752,7 +749,7 @@ public:
   IO(void *Ctxt = nullptr);
   virtual ~IO();
 
-  virtual bool outputting() = 0;
+  virtual bool outputting() const = 0;
 
   virtual unsigned beginSequence() = 0;
   virtual bool preflightElement(unsigned, void *&) = 0;
@@ -846,7 +843,7 @@ public:
       Val = Val | ConstVal;
   }
 
-  void *getContext();
+  void *getContext() const;
   void setContext(void *);
 
   template <typename T> void mapRequired(const char *Key, T &Val) {
@@ -864,8 +861,8 @@ public:
     mapOptionalWithContext(Key, Val, Ctx);
   }
 
-  template <typename T>
-  void mapOptional(const char *Key, T &Val, const T &Default) {
+  template <typename T, typename DefaultT>
+  void mapOptional(const char *Key, T &Val, const DefaultT &Default) {
     EmptyContext Ctx;
     mapOptionalWithContext(Key, Val, Default, Ctx);
   }
@@ -891,10 +888,13 @@ public:
     this->processKey(Key, Val, false, Ctx);
   }
 
-  template <typename T, typename Context>
-  void mapOptionalWithContext(const char *Key, T &Val, const T &Default,
+  template <typename T, typename Context, typename DefaultT>
+  void mapOptionalWithContext(const char *Key, T &Val, const DefaultT &Default,
                               Context &Ctx) {
-    this->processKeyWithDefault(Key, Val, Default, false, Ctx);
+    static_assert(std::is_convertible<DefaultT, T>::value,
+                  "Default type must be implicitly convertible to value type!");
+    this->processKeyWithDefault(Key, Val, static_cast<const T &>(Default),
+                                false, Ctx);
   }
 
 private:
@@ -978,7 +978,7 @@ yamlize(IO &io, T &Val, bool, EmptyContext &Ctx) {
   bool DoClear;
   if ( io.beginBitSetScalar(DoClear) ) {
     if ( DoClear )
-      Val = static_cast<T>(0);
+      Val = T();
     ScalarBitSetTraits<T>::bitset(io, Val);
     io.endBitSetScalar();
   }
@@ -1243,12 +1243,14 @@ struct ScalarTraits<double> {
   static QuotingType mustQuote(StringRef) { return QuotingType::None; }
 };
 
-// For endian types, we just use the existing ScalarTraits for the underlying
-// type.  This way endian aware types are supported whenever a ScalarTraits
-// is defined for the underlying type.
+// For endian types, we use existing scalar Traits class for the underlying
+// type.  This way endian aware types are supported whenever the traits are
+// defined for the underlying type.
 template <typename value_type, support::endianness endian, size_t alignment>
-struct ScalarTraits<support::detail::packed_endian_specific_integral<
-    value_type, endian, alignment>> {
+struct ScalarTraits<
+    support::detail::packed_endian_specific_integral<value_type, endian,
+                                                     alignment>,
+    typename std::enable_if<has_ScalarTraits<value_type>::value>::type> {
   using endian_type =
       support::detail::packed_endian_specific_integral<value_type, endian,
                                                        alignment>;
@@ -1266,6 +1268,38 @@ struct ScalarTraits<support::detail::packed_endian_specific_integral<
 
   static QuotingType mustQuote(StringRef Str) {
     return ScalarTraits<value_type>::mustQuote(Str);
+  }
+};
+
+template <typename value_type, support::endianness endian, size_t alignment>
+struct ScalarEnumerationTraits<
+    support::detail::packed_endian_specific_integral<value_type, endian,
+                                                     alignment>,
+    typename std::enable_if<
+        has_ScalarEnumerationTraits<value_type>::value>::type> {
+  using endian_type =
+      support::detail::packed_endian_specific_integral<value_type, endian,
+                                                       alignment>;
+
+  static void enumeration(IO &io, endian_type &E) {
+    value_type V = E;
+    ScalarEnumerationTraits<value_type>::enumeration(io, V);
+    E = V;
+  }
+};
+
+template <typename value_type, support::endianness endian, size_t alignment>
+struct ScalarBitSetTraits<
+    support::detail::packed_endian_specific_integral<value_type, endian,
+                                                     alignment>,
+    typename std::enable_if<has_ScalarBitSetTraits<value_type>::value>::type> {
+  using endian_type =
+      support::detail::packed_endian_specific_integral<value_type, endian,
+                                                       alignment>;
+  static void bitset(IO &io, endian_type &E) {
+    value_type V = E;
+    ScalarBitSetTraits<value_type>::bitset(io, V);
+    E = V;
   }
 };
 
@@ -1369,7 +1403,7 @@ public:
   std::error_code error();
 
 private:
-  bool outputting() override;
+  bool outputting() const override;
   bool mapTag(StringRef, bool) override;
   void beginMapping() override;
   void endMapping() override;
@@ -1497,7 +1531,7 @@ private:
   document_iterator                   DocIterator;
   std::vector<bool>                   BitValuesUsed;
   HNode *CurrentNode = nullptr;
-  bool                                ScalarMatchFound;
+  bool                                ScalarMatchFound = false;
 };
 
 ///
@@ -1516,7 +1550,7 @@ public:
   /// anyway.
   void setWriteDefaultValues(bool Write) { WriteDefaultValues = Write; }
 
-  bool outputting() override;
+  bool outputting() const override;
   bool mapTag(StringRef, bool) override;
   void beginMapping() override;
   void endMapping() override;
@@ -1587,8 +1621,9 @@ private:
   bool NeedBitValueComma = false;
   bool NeedFlowSequenceComma = false;
   bool EnumerationMatchFound = false;
-  bool NeedsNewLine = false;
   bool WriteDefaultValues = false;
+  StringRef Padding;
+  StringRef PaddingBeforeContainer;
 };
 
 /// YAML I/O does conversion based on types. But often native data types
@@ -1872,6 +1907,11 @@ struct SequenceTraits<SmallVector<T, N>,
                       typename std::enable_if<CheckIsBool<
                           SequenceElementTraits<T>::flow>::value>::type>
     : SequenceTraitsImpl<SmallVector<T, N>, SequenceElementTraits<T>::flow> {};
+template <typename T>
+struct SequenceTraits<SmallVectorImpl<T>,
+                      typename std::enable_if<CheckIsBool<
+                          SequenceElementTraits<T>::flow>::value>::type>
+    : SequenceTraitsImpl<SmallVectorImpl<T>, SequenceElementTraits<T>::flow> {};
 
 // Sequences of fundamental types use flow formatting.
 template <typename T>
@@ -1994,5 +2034,10 @@ template <typename T> struct StdMapStringCustomMappingTraitsImpl {
       : public StdMapStringCustomMappingTraitsImpl<_type> {};                  \
   }                                                                            \
   }
+
+LLVM_YAML_IS_FLOW_SEQUENCE_VECTOR(llvm::yaml::Hex64)
+LLVM_YAML_IS_FLOW_SEQUENCE_VECTOR(llvm::yaml::Hex32)
+LLVM_YAML_IS_FLOW_SEQUENCE_VECTOR(llvm::yaml::Hex16)
+LLVM_YAML_IS_FLOW_SEQUENCE_VECTOR(llvm::yaml::Hex8)
 
 #endif // LLVM_SUPPORT_YAMLTRAITS_H

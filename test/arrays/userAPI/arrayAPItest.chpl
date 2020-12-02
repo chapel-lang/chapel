@@ -17,7 +17,7 @@ proc testArrayAPI1D(lbl, X: [], sliceDom, reindexDom) {
   writeln();
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
+
   writeln("shape is: ", X.shape);
   writeln();
   // Test I/O
@@ -115,7 +115,7 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test simple queries
   writeln("size is: ", X.size);
-  writeln("numElements is: ", X.numElements);
+
   writeln("shape is: ", X.shape);
   writeln();
 
@@ -209,8 +209,8 @@ proc testArrayAPI2D(lbl, X: [], sliceDom, reindexDom) {
 
   // Test views
   writeln("slice by ", sliceDom, ":\n", X[sliceDom]);
-  writeln("rank change 1: ", X[X.domain.alignedLow(1), ..]);
-  writeln("rank change 2: ", X[sliceDom.dim(1), X.domain.alignedHigh(2)]);
+  writeln("rank change 1: ", X[X.domain.alignedLow(0), ..]);
+  writeln("rank change 2: ", X[sliceDom.dim(0), X.domain.alignedHigh(1)]);
   for (i,x) in zip(reindexDom, X.reindex(reindexDom)) do
     writeln("reindexed X[", i, "] = ", x);
   writeln();

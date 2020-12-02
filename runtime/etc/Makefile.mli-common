@@ -1,4 +1,5 @@
-# Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -87,15 +88,13 @@ ifneq ($(SKIP_COMPILE_LINK),skip)
 		$(CHPL_MLI_INCS) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES)
 # Link the server, the runtime, and ZMQ together.
-	$(LD) $(CHPL_MAKE_BASE_LFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
+	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
+	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
 		$(GEN_DYNAMIC_FLAG) \
-		-o $(TMPSERVERNAME) \
-		$(TMPSERVERNAME).o $(CHPL_RT_LIB_DIR)/main.o \
-		$(CHPLUSEROBJ) $(CHPL_CL_OBJS) \
+		-o $(TMPSERVERNAME) $(TMPSERVERNAME).o $(CHPLUSEROBJ) \
+		$(CHPL_RT_LIB_DIR)/main.o $(CHPL_CL_OBJS) \
+		-L$(CHPL_RT_LIB_DIR) -lchpl $(LIBS) -lm \
 		$(CHPL_MAKE_THIRD_PARTY_LINK_ARGS) \
-		$(LIBS) \
-		-L$(CHPL_RT_LIB_DIR) \
-		-lchpl -lm \
 		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
 		-lzmq
 endif

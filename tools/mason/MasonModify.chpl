@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -18,12 +19,13 @@
  */
 
 use Regexp;
+use FileSystem;
 use TOML;
 use MasonUtils;
 private use Map;
 
 /* Modify manifest file */
-proc masonModify(args) throws {
+proc masonModify(args: [] string) throws {
   try! {
 
     // Check for help flags
@@ -87,12 +89,12 @@ proc masonModify(args) throws {
     //       this function is only executed when 'add' or 'rm' is passed
 
     // Modify the manifest file based on arguments
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, "Mason.toml");
 
     const result = modifyToml(add, dep, external, system, projectHome);
-    generateToml(result[1], result[2]);
-    delete result[1];
+    generateToml(result[0], result[1]);
+    delete result[0];
   }
   catch e: MasonError {
     writeln(e.message());
@@ -112,14 +114,17 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
 
     // Adding a dependency
     if add {
-      if spec.find("@") == 0 {
+      if spec.find("@") == -1 {
         throw new owned MasonError("Dependency formatted incorrectly.\nFormat: package@version");
       }
       const split = spec.split('@');
-      const dependency = split[1];
-      const version = split[2];
-      checkDepName(dependency);
-      checkVersion(version);
+      const dependency = split[0];
+      const version = split[1];
+      // Name and version checks are only valid for mason packages
+      if !external && !system {
+        checkDepName(dependency);
+        checkVersion(version);
+      }
 
       if system && add {
         writeln(" ".join("Adding system dependency", dependency, "version", version));
@@ -138,9 +143,9 @@ proc modifyToml(add: bool, spec: string, external: bool, system: bool,
     // Removing a dependency
     else {
       var depName: string;
-      if spec.find('@') != 0 {
+      if spec.find('@') != -1 {
         const split = spec.split('@');
-        depName = split[1];
+        depName = split[0];
       }
       else depName = spec;
       const dependency = depName;
@@ -281,7 +286,7 @@ private proc masonExternalRemove(toml: unmanaged Toml, toRm: string) throws {
 }
 
 /* Generate the modified Mason.toml */
-private proc generateToml(toml: borrowed Toml, tomlPath: string) {
+proc generateToml(toml: borrowed Toml, tomlPath: string) {
   const tomlFile = open(tomlPath, iomode.cw);
   const tomlWriter = tomlFile.writer();
   tomlWriter.writeln(toml);
@@ -289,9 +294,10 @@ private proc generateToml(toml: borrowed Toml, tomlPath: string) {
   tomlFile.close();
 }
 
-private proc checkVersion(version: string) throws {
+proc checkVersion(version: string) throws {
 
-  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+//  const pattern = compile("([0-9].[0-9].[0-9][a-zA-Z]?)");
+  const pattern = compile("""^((([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?)$""");
   if !pattern.match(version) {
     throw new owned MasonError("Version formatting incorrect. ex. 1.2.3");
   }

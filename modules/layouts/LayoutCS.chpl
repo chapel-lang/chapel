@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -17,7 +18,7 @@
  * limitations under the License.
  */
 
-use RangeChunk only ;
+import RangeChunk;
 
 pragma "no doc"
 /* Debug flag */
@@ -30,7 +31,7 @@ config param LayoutCSDefaultToSorted = true;
 pragma "no doc"
 /* Comparator used for sorting by columns */
 record _ColumnComparator {
-  proc key(idx: _tuple) { return (idx(2), idx(1));}
+  proc key(idx: _tuple) { return (idx(1), idx(0));}
 }
 
 pragma "no doc"
@@ -95,7 +96,7 @@ class CS: BaseDist {
     return false;
   }
 
-  proc dsiIsLayout() param {
+  override proc dsiIsLayout() param {
     return true;
   }
 } // CS
@@ -120,7 +121,7 @@ class CSDom: BaseSparseDomImpl {
   var startIdx: [startIdxDom] idxType;      // would like index(nnzDom)
   /* (row|col) idx */
   pragma "local field"
-  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(1))
+  var idx: [nnzDom] idxType;        // would like index(parentDom.dim(0))
 
   /* Initializer */
   proc init(param rank, type idxType, param compressRows, param sortedIndices, param stridable, dist: unmanaged CS(compressRows,sortedIndices), parentDom: domain) {
@@ -136,8 +137,8 @@ class CSDom: BaseSparseDomImpl {
     this.stridable = stridable;
 
     this.dist = dist;
-    rowRange = parentDom.dim(1);
-    colRange = parentDom.dim(2);
+    rowRange = parentDom.dim(0);
+    colRange = parentDom.dim(1);
     startIdxDom = if compressRows then {rowRange.low..rowRange.high+1} else {colRange.low..colRange.high+1};
 
     this.complete();
@@ -152,7 +153,8 @@ class CSDom: BaseSparseDomImpl {
   override proc dsiMyDist() return dist;
 
   proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-    if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+    if _to_borrowed(rhs._instance.type) == this.type && 
+       canDoDirectAssignment(rhs) {
       // Optimized CSC->CSC / CSR->CSR
 
       // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
@@ -168,7 +170,7 @@ class CSDom: BaseSparseDomImpl {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance.indices[rhs.nnzDom.low..#rhs._nnz],
+      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.low..#rhs._nnz],
                       dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
@@ -176,9 +178,13 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
-  proc dsiBuildArray(type eltType)
-    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts: bool) {
+    return new unmanaged CSArr(eltType=eltType, rank=rank, idxType=idxType,
+                               dom=_to_unmanaged(this),
+                               initElts=initElts);
+  }
 
+  pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
     for i in 1.._nnz by -1 {
@@ -193,6 +199,7 @@ class CSDom: BaseSparseDomImpl {
     }
   }
 
+  pragma "not order independent yielding loops"
   iter these() {
     // TODO: Is it faster to start at _private_findStart(1) ?
     var cursor = if this.compressRows then rowRange.low else colRange.low;
@@ -208,6 +215,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
+    use DSIUtil;
     // same as DefaultSparseDom's leader
     const numElems = _nnz;
     const numChunks = _computeNumChunks(numElems);
@@ -225,6 +233,7 @@ class CSDom: BaseSparseDomImpl {
     // pass to the tasks created in 'coforall' smaller ranges to search over.
   }
 
+  pragma "not order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) where tag == iterKind.follower {
     var (followThisDom, startIx, endIx) = followThis;
     if boundsChecking then
@@ -395,10 +404,10 @@ class CSDom: BaseSparseDomImpl {
   }
 
   override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
-      dataSorted=false, isUnique=false, addOn=nil:locale?) {
-    use Sort only;
+      dataSorted=false, isUnique=false, addOn=nilLocale) {
+    import Sort;
 
-    if addOn != nil {
+    if addOn != nilLocale {
       if addOn != this.locale {
         halt("Bulk index addition is only possible on the locale where the\
             sparse domain is created");
@@ -423,9 +432,9 @@ class CSDom: BaseSparseDomImpl {
       var current: idxType;
 
       if this.compressRows then
-        current = parentDom.dim(1).low;
+        current = parentDom.dim(0).low;
       else
-        current = parentDom.dim(2).low;
+        current = parentDom.dim(1).low;
 
       // Update startIdx && idx
       for (i,j) in inds {
@@ -493,9 +502,9 @@ class CSDom: BaseSparseDomImpl {
       else if newIndIdx >= indsDom.low && i == newLoc {
         // Put the new guy in
         if this.compressRows {
-          idx[i] = inds[newIndIdx][2];
-        } else {
           idx[i] = inds[newIndIdx][1];
+        } else {
+          idx[i] = inds[newIndIdx][0];
         }
         newIndIdx -= 1;
         if newIndIdx >= indsDom.low then
@@ -512,15 +521,15 @@ class CSDom: BaseSparseDomImpl {
     }
 
     // Aggregated row || col shift
-    var prevCursor = if this.compressRows then parentDom.dim(1).low else parentDom.dim(2).low;
+    var prevCursor = if this.compressRows then parentDom.dim(0).low else parentDom.dim(1).low;
     var cursor: int;
     var cursorCnt = 0;
     for (ind, p) in zip(inds, actualInsertPts)  {
       if p == -1 then continue;
       if this.compressRows {
-        cursor = ind[1];
+        cursor = ind[0];
       } else {
-        cursor = ind[2];
+        cursor = ind[1];
       }
       if cursor == prevCursor then cursorCnt += 1;
       else {
@@ -593,11 +602,12 @@ class CSDom: BaseSparseDomImpl {
     startIdx = 1;
   }
 
+  pragma "order independent yielding loops"
   iter dimIter(param d, ind) {
-    if (d != 2 && this.compressRows) {
-      compilerError("dimIter(1, ..) not supported on CS(compressRows=true) domains");
-    } else if (d != 1 && !this.compressRows) {
-      compilerError("dimIter(2, ..) not supported on CS(compressRows=false) domains");
+    if (d != 1 && this.compressRows) {
+      compilerError("dimIter(0, ..) not supported on CS(compressRows=true) domains");
+    } else if (d != 0 && !this.compressRows) {
+      compilerError("dimIter(1, ..) not supported on CS(compressRows=false) domains");
     }
 
     for i in startIdx[ind]..stopIdx[ind] do
@@ -633,6 +643,16 @@ class CSDom: BaseSparseDomImpl {
 
 
 class CSArr: BaseSparseArrImpl {
+
+  proc init(type eltType,
+            param rank : int,
+            type idxType,
+            dom,
+            param initElts:bool) {
+    super.init(eltType, rank, idxType, dom, initElts);
+  }
+
+  // dsiDestroyArr is defined in BaseSparseArrImpl
 
   proc dsiAccess(ind: rank*idxType) ref {
     // make sure we're in the dense bounding box
@@ -674,6 +694,7 @@ class CSArr: BaseSparseArrImpl {
 
 
 
+  pragma "order independent yielding loops"
   iter these() ref {
     for i in 1..dom._nnz do yield data[i];
   }
@@ -686,6 +707,7 @@ class CSArr: BaseSparseArrImpl {
       yield followThis;
   }
 
+  pragma "order independent yielding loops"
   iter these(param tag: iterKind, followThis: (?,?,?)) ref where tag == iterKind.follower {
     // simpler than CSDom's follower - no need to deal with rows (or columns)
     var (followThisDom, startIx, endIx) = followThis;

@@ -1,9 +1,8 @@
 //===-- APInt.cpp - Implement APInt class ---------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -188,7 +187,7 @@ APInt& APInt::operator--() {
   return clearUnusedBits();
 }
 
-/// Adds the RHS APint to this APInt.
+/// Adds the RHS APInt to this APInt.
 /// @returns this, after addition of RHS.
 /// Addition assignment operator.
 APInt& APInt::operator+=(const APInt& RHS) {
@@ -402,6 +401,33 @@ void APInt::insertBits(const APInt &subBits, unsigned bitPosition) {
   }
 }
 
+void APInt::insertBits(uint64_t subBits, unsigned bitPosition, unsigned numBits) {
+  uint64_t maskBits = maskTrailingOnes<uint64_t>(numBits);
+  subBits &= maskBits;
+  if (isSingleWord()) {
+    U.VAL &= ~(maskBits << bitPosition);
+    U.VAL |= subBits << bitPosition;
+    return;
+  }
+
+  unsigned loBit = whichBit(bitPosition);
+  unsigned loWord = whichWord(bitPosition);
+  unsigned hiWord = whichWord(bitPosition + numBits - 1);
+  if (loWord == hiWord) {
+    U.pVal[loWord] &= ~(maskBits << loBit);
+    U.pVal[loWord] |= subBits << loBit;
+    return;
+  }
+
+  static_assert(8 * sizeof(WordType) <= 64, "This code assumes only two words affected");
+  unsigned wordBits = 8 * sizeof(WordType);
+  U.pVal[loWord] &= ~(maskBits << loBit);
+  U.pVal[loWord] |= subBits << loBit;
+
+  U.pVal[hiWord] &= ~(maskBits >> (wordBits - loBit));
+  U.pVal[hiWord] |= subBits >> (wordBits - loBit);
+}
+
 APInt APInt::extractBits(unsigned numBits, unsigned bitPosition) const {
   assert(numBits > 0 && "Can't extract zero bits");
   assert(bitPosition < BitWidth && (numBits + bitPosition) <= BitWidth &&
@@ -437,6 +463,31 @@ APInt APInt::extractBits(unsigned numBits, unsigned bitPosition) const {
   }
 
   return Result.clearUnusedBits();
+}
+
+uint64_t APInt::extractBitsAsZExtValue(unsigned numBits,
+                                       unsigned bitPosition) const {
+  assert(numBits > 0 && "Can't extract zero bits");
+  assert(bitPosition < BitWidth && (numBits + bitPosition) <= BitWidth &&
+         "Illegal bit extraction");
+  assert(numBits <= 64 && "Illegal bit extraction");
+
+  uint64_t maskBits = maskTrailingOnes<uint64_t>(numBits);
+  if (isSingleWord())
+    return (U.VAL >> bitPosition) & maskBits;
+
+  unsigned loBit = whichBit(bitPosition);
+  unsigned loWord = whichWord(bitPosition);
+  unsigned hiWord = whichWord(bitPosition + numBits - 1);
+  if (loWord == hiWord)
+    return (U.pVal[loWord] >> loBit) & maskBits;
+
+  static_assert(8 * sizeof(WordType) <= 64, "This code assumes only two words affected");
+  unsigned wordBits = 8 * sizeof(WordType);
+  uint64_t retBits = U.pVal[loWord] >> loBit;
+  retBits |= U.pVal[hiWord] << (wordBits - loBit);
+  retBits &= maskBits;
+  return retBits;
 }
 
 unsigned APInt::getBitsNeeded(StringRef str, uint8_t radix) {
@@ -483,10 +534,13 @@ unsigned APInt::getBitsNeeded(StringRef str, uint8_t radix) {
   APInt tmp(sufficient, StringRef(p, slen), radix);
 
   // Compute how many bits are required. If the log is infinite, assume we need
-  // just bit.
+  // just bit. If the log is exact and value is negative, then the value is
+  // MinSignedValue with (log + 1) bits.
   unsigned log = tmp.logBase2();
   if (log == (unsigned)-1) {
     return isNegative + 1;
+  } else if (isNegative && tmp.isPowerOf2()) {
+    return isNegative + log;
   } else {
     return isNegative + log + 1;
   }
@@ -830,6 +884,31 @@ APInt APInt::trunc(unsigned width) const {
   return Result;
 }
 
+// Truncate to new width with unsigned saturation.
+APInt APInt::truncUSat(unsigned width) const {
+  assert(width < BitWidth && "Invalid APInt Truncate request");
+  assert(width && "Can't truncate to 0 bits");
+
+  // Can we just losslessly truncate it?
+  if (isIntN(width))
+    return trunc(width);
+  // If not, then just return the new limit.
+  return APInt::getMaxValue(width);
+}
+
+// Truncate to new width with signed saturation.
+APInt APInt::truncSSat(unsigned width) const {
+  assert(width < BitWidth && "Invalid APInt Truncate request");
+  assert(width && "Can't truncate to 0 bits");
+
+  // Can we just losslessly truncate it?
+  if (isSignedIntN(width))
+    return trunc(width);
+  // If not, then just return the new limits.
+  return isNegative() ? APInt::getSignedMinValue(width)
+                      : APInt::getSignedMaxValue(width);
+}
+
 // Sign extend to a new width.
 APInt APInt::sext(unsigned Width) const {
   assert(Width > BitWidth && "Invalid APInt SignExtend request");
@@ -1096,6 +1175,8 @@ APInt APInt::sqrt() const {
 /// however we simplify it to speed up calculating only the inverse, and take
 /// advantage of div+rem calculations. We also use some tricks to avoid copying
 /// (potentially large) APInts around.
+/// WARNING: a value of '0' may be returned,
+///          signifying that no multiplicative inverse exists!
 APInt APInt::multiplicativeInverse(const APInt& modulo) const {
   assert(ult(modulo) && "This APInt must be smaller than the modulo");
 
@@ -1915,12 +1996,19 @@ APInt APInt::smul_ov(const APInt &RHS, bool &Overflow) const {
 }
 
 APInt APInt::umul_ov(const APInt &RHS, bool &Overflow) const {
-  APInt Res = *this * RHS;
+  if (countLeadingZeros() + RHS.countLeadingZeros() + 2 <= BitWidth) {
+    Overflow = true;
+    return *this * RHS;
+  }
 
-  if (*this != 0 && RHS != 0)
-    Overflow = Res.udiv(RHS) != *this || Res.udiv(*this) != RHS;
-  else
-    Overflow = false;
+  APInt Res = lshr(1) * RHS;
+  Overflow = Res.isNegative();
+  Res <<= 1;
+  if ((*this)[0]) {
+    Res += RHS;
+    if (Res.ult(RHS))
+      Overflow = true;
+  }
   return Res;
 }
 
@@ -1985,6 +2073,46 @@ APInt APInt::usub_sat(const APInt &RHS) const {
   return APInt(BitWidth, 0);
 }
 
+APInt APInt::smul_sat(const APInt &RHS) const {
+  bool Overflow;
+  APInt Res = smul_ov(RHS, Overflow);
+  if (!Overflow)
+    return Res;
+
+  // The result is negative if one and only one of inputs is negative.
+  bool ResIsNegative = isNegative() ^ RHS.isNegative();
+
+  return ResIsNegative ? APInt::getSignedMinValue(BitWidth)
+                       : APInt::getSignedMaxValue(BitWidth);
+}
+
+APInt APInt::umul_sat(const APInt &RHS) const {
+  bool Overflow;
+  APInt Res = umul_ov(RHS, Overflow);
+  if (!Overflow)
+    return Res;
+
+  return APInt::getMaxValue(BitWidth);
+}
+
+APInt APInt::sshl_sat(const APInt &RHS) const {
+  bool Overflow;
+  APInt Res = sshl_ov(RHS, Overflow);
+  if (!Overflow)
+    return Res;
+
+  return isNegative() ? APInt::getSignedMinValue(BitWidth)
+                      : APInt::getSignedMaxValue(BitWidth);
+}
+
+APInt APInt::ushl_sat(const APInt &RHS) const {
+  bool Overflow;
+  APInt Res = ushl_ov(RHS, Overflow);
+  if (!Overflow)
+    return Res;
+
+  return APInt::getMaxValue(BitWidth);
+}
 
 void APInt::fromString(unsigned numbits, StringRef str, uint8_t radix) {
   // Check our assumptions here
@@ -2727,7 +2855,7 @@ APInt llvm::APIntOps::RoundingSDiv(const APInt &A, const APInt &B,
       return Quo;
     return Quo + 1;
   }
-  // Currently sdiv rounds twards zero.
+  // Currently sdiv rounds towards zero.
   case APInt::Rounding::TOWARD_ZERO:
     return A.sdiv(B);
   }
@@ -2870,7 +2998,7 @@ llvm::APIntOps::SolveQuadraticEquationWrap(APInt A, APInt B, APInt C,
   APInt Q = SQ * SQ;
   bool InexactSQ = Q != D;
   // The calculated SQ may actually be greater than the exact (non-integer)
-  // value. If that's the case, decremement SQ to get a value that is lower.
+  // value. If that's the case, decrement SQ to get a value that is lower.
   if (Q.sgt(D))
     SQ -= 1;
 
@@ -2922,4 +3050,65 @@ llvm::APIntOps::SolveQuadraticEquationWrap(APInt A, APInt B, APInt C,
   X += 1;
   LLVM_DEBUG(dbgs() << __func__ << ": solution (wrap): " << X << '\n');
   return X;
+}
+
+Optional<unsigned>
+llvm::APIntOps::GetMostSignificantDifferentBit(const APInt &A, const APInt &B) {
+  assert(A.getBitWidth() == B.getBitWidth() && "Must have the same bitwidth");
+  if (A == B)
+    return llvm::None;
+  return A.getBitWidth() - ((A ^ B).countLeadingZeros() + 1);
+}
+
+/// StoreIntToMemory - Fills the StoreBytes bytes of memory starting from Dst
+/// with the integer held in IntVal.
+void llvm::StoreIntToMemory(const APInt &IntVal, uint8_t *Dst,
+                            unsigned StoreBytes) {
+  assert((IntVal.getBitWidth()+7)/8 >= StoreBytes && "Integer too small!");
+  const uint8_t *Src = (const uint8_t *)IntVal.getRawData();
+
+  if (sys::IsLittleEndianHost) {
+    // Little-endian host - the source is ordered from LSB to MSB.  Order the
+    // destination from LSB to MSB: Do a straight copy.
+    memcpy(Dst, Src, StoreBytes);
+  } else {
+    // Big-endian host - the source is an array of 64 bit words ordered from
+    // LSW to MSW.  Each word is ordered from MSB to LSB.  Order the destination
+    // from MSB to LSB: Reverse the word order, but not the bytes in a word.
+    while (StoreBytes > sizeof(uint64_t)) {
+      StoreBytes -= sizeof(uint64_t);
+      // May not be aligned so use memcpy.
+      memcpy(Dst + StoreBytes, Src, sizeof(uint64_t));
+      Src += sizeof(uint64_t);
+    }
+
+    memcpy(Dst, Src + sizeof(uint64_t) - StoreBytes, StoreBytes);
+  }
+}
+
+/// LoadIntFromMemory - Loads the integer stored in the LoadBytes bytes starting
+/// from Src into IntVal, which is assumed to be wide enough and to hold zero.
+void llvm::LoadIntFromMemory(APInt &IntVal, uint8_t *Src, unsigned LoadBytes) {
+  assert((IntVal.getBitWidth()+7)/8 >= LoadBytes && "Integer too small!");
+  uint8_t *Dst = reinterpret_cast<uint8_t *>(
+                   const_cast<uint64_t *>(IntVal.getRawData()));
+
+  if (sys::IsLittleEndianHost)
+    // Little-endian host - the destination must be ordered from LSB to MSB.
+    // The source is ordered from LSB to MSB: Do a straight copy.
+    memcpy(Dst, Src, LoadBytes);
+  else {
+    // Big-endian - the destination is an array of 64 bit words ordered from
+    // LSW to MSW.  Each word must be ordered from MSB to LSB.  The source is
+    // ordered from MSB to LSB: Reverse the word order, but not the bytes in
+    // a word.
+    while (LoadBytes > sizeof(uint64_t)) {
+      LoadBytes -= sizeof(uint64_t);
+      // May not be aligned so use memcpy.
+      memcpy(Dst, Src + LoadBytes, sizeof(uint64_t));
+      Dst += sizeof(uint64_t);
+    }
+
+    memcpy(Dst + sizeof(uint64_t) - LoadBytes, Src, LoadBytes);
+  }
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,11 +22,16 @@
 #define _version_num_H_
 
 #define MAJOR_VERSION 1
-#define MINOR_VERSION "21"
-#define UPDATE_VERSION "0"
+#define MINOR_VERSION 24
+#define UPDATE_VERSION 0
 
 static const char* BUILD_VERSION =
 #include "BUILD_VERSION"
 ;
+
+// Flip this to 'true' when we're ready to roll out a release; then
+// back after branching
+//
+static bool officialRelease = false;
 
 #endif

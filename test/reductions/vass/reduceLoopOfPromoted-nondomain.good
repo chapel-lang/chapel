@@ -1,0 +1,1 @@
+reduceLoopOfPromoted-nondomain.chpl:7: error: unsupported elements of the expression being reduced -- they are iterable expressions without a domain shape

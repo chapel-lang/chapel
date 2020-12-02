@@ -1,0 +1,16 @@
+test1
+D is {1..10}
+D is now {2..2}
+A.domain is now {1..10}
+test2
+D is {1..2}
+D is now {2..2}
+A.domain is now {1..10}
+test3
+D is {1..10}
+D is now {2..2}
+A.domain is now {1..10}
+test4
+D is {1..2}
+D is now {2..2}
+A.domain is now {1..10}

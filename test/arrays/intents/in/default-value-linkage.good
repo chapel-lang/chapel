@@ -1,1 +1,12 @@
+simple(D, Linked)
+simple(D, Unlinked)
+defaultsType()
+defaultsType(D)
+defaultsType(D, Linked)
+defaultsType(D, Unlinked)
+defaultsType(A=Linked)
+defaultsType(A=Unlinked)
+defaultsValue()
+defaultsValue(D)
+defaultFromArg(D, Linked)
 SUCCESS

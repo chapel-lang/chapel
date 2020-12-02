@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import sys
 
 import chpl_comm, chpl_comm_substrate, overrides

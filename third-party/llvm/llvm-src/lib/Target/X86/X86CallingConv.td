@@ -1,9 +1,8 @@
 //===-- X86CallingConv.td - Calling Conventions X86 32/64 --*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -148,7 +147,8 @@ def CC_#NAME : CallingConv<[
       CCAssignToStack<32, 32>>,
 
     // 512-bit vectors get 64-byte stack slots that are 64-byte aligned.
-    CCIfType<[v16i32, v8i64, v16f32, v8f64], CCAssignToStack<64, 64>>
+    CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64],
+      CCAssignToStack<64, 64>>
 ]>;
 
 def RetCC_#NAME : CallingConv<[
@@ -346,6 +346,10 @@ def RetCC_X86_Win64_C : CallingConv<[
   // The X86-Win64 calling convention always returns __m64 values in RAX.
   CCIfType<[x86mmx], CCBitConvertToType<i64>>,
 
+  // GCC returns FP values in RAX on Win64.
+  CCIfType<[f32], CCIfNotSubtarget<"hasSSE1()", CCBitConvertToType<i32>>>,
+  CCIfType<[f64], CCIfNotSubtarget<"hasSSE1()", CCBitConvertToType<i64>>>,
+
   // Otherwise, everything is the same as 'normal' X86-64 C CC.
   CCDelegateTo<RetCC_X86_64_C>
 ]>;
@@ -433,6 +437,8 @@ defm X86_SysV64_RegCall :
 def RetCC_X86_32 : CallingConv<[
   // If FastCC, use RetCC_X86_32_Fast.
   CCIfCC<"CallingConv::Fast", CCDelegateTo<RetCC_X86_32_Fast>>,
+  CCIfCC<"CallingConv::Tail", CCDelegateTo<RetCC_X86_32_Fast>>,
+  // CFGuard_Check never returns a value so does not need a RetCC.
   // If HiPE, use RetCC_X86_32_HiPE.
   CCIfCC<"CallingConv::HiPE", CCDelegateTo<RetCC_X86_32_HiPE>>,
   CCIfCC<"CallingConv::X86_VectorCall", CCDelegateTo<RetCC_X86_32_VectorCall>>,
@@ -477,6 +483,7 @@ def RetCC_X86_64 : CallingConv<[
 ]>;
 
 // This is the return-value convention used for the entire X86 backend.
+let Entry = 1 in
 def RetCC_X86 : CallingConv<[
 
   // Check if this is the Intel OpenCL built-ins calling convention
@@ -567,7 +574,7 @@ def CC_X86_64_C : CallingConv<[
            CCAssignToStack<32, 32>>,
 
   // 512-bit vectors get 64-byte stack slots that are 64-byte aligned.
-  CCIfType<[v16i32, v8i64, v16f32, v8f64],
+  CCIfType<[v64i8, v32i16, v16i32, v8i64, v16f32, v8f64],
            CCAssignToStack<64, 64>>
 ]>;
 
@@ -604,21 +611,33 @@ def CC_X86_Win64_C : CallingConv<[
   // A SwiftError is passed in R12.
   CCIfSwiftError<CCIfType<[i64], CCAssignToReg<[R12]>>>,
 
+  // The 'CFGuardTarget' parameter, if any, is passed in RAX.
+  CCIfCFGuardTarget<CCAssignToReg<[RAX]>>,
+
   // 128 bit vectors are passed by pointer
   CCIfType<[v16i8, v8i16, v4i32, v2i64, v4f32, v2f64], CCPassIndirect<i64>>,
-
 
   // 256 bit vectors are passed by pointer
   CCIfType<[v32i8, v16i16, v8i32, v4i64, v8f32, v4f64], CCPassIndirect<i64>>,
 
   // 512 bit vectors are passed by pointer
-  CCIfType<[v16i32, v16f32, v8f64, v8i64], CCPassIndirect<i64>>,
+  CCIfType<[v64i8, v32i16, v16i32, v16f32, v8f64, v8i64], CCPassIndirect<i64>>,
 
   // Long doubles are passed by pointer
   CCIfType<[f80], CCPassIndirect<i64>>,
 
   // The first 4 MMX vector arguments are passed in GPRs.
   CCIfType<[x86mmx], CCBitConvertToType<i64>>,
+
+  // If SSE was disabled, pass FP values smaller than 64-bits as integers in
+  // GPRs or on the stack.
+  CCIfType<[f32], CCIfNotSubtarget<"hasSSE1()", CCBitConvertToType<i32>>>,
+  CCIfType<[f64], CCIfNotSubtarget<"hasSSE1()", CCBitConvertToType<i64>>>,
+
+  // The first 4 FP/Vector arguments are passed in XMM registers.
+  CCIfType<[f32, f64],
+           CCAssignToRegWithShadow<[XMM0, XMM1, XMM2, XMM3],
+                                   [RCX , RDX , R8  , R9  ]>>,
 
   // The first 4 integer arguments are passed in integer registers.
   CCIfType<[i8 ], CCAssignToRegWithShadow<[CL  , DL  , R8B , R9B ],
@@ -636,11 +655,6 @@ def CC_X86_Win64_C : CallingConv<[
 
   CCIfType<[i64], CCAssignToRegWithShadow<[RCX , RDX , R8  , R9  ],
                                           [XMM0, XMM1, XMM2, XMM3]>>,
-
-  // The first 4 FP/Vector arguments are passed in XMM registers.
-  CCIfType<[f32, f64, v16i8, v8i16, v4i32, v2i64, v4f32, v2f64],
-           CCAssignToRegWithShadow<[XMM0, XMM1, XMM2, XMM3],
-                                   [RCX , RDX , R8  , R9  ]>>,
 
   // Integer/FP values get stored in stack slots that are 8 bytes in size and
   // 8-byte aligned if there are no more registers to hold them.
@@ -934,6 +948,12 @@ def CC_X86_32_FastCC : CallingConv<[
   CCDelegateTo<CC_X86_32_Common>
 ]>;
 
+def CC_X86_Win32_CFGuard_Check : CallingConv<[
+  // The CFGuard check call takes exactly one integer argument
+  // (i.e. the target function address), which is passed in ECX.
+  CCIfType<[i32], CCAssignToReg<[ECX]>>
+]>;
+
 def CC_X86_32_GHC : CallingConv<[
   // Promote i8/i16 arguments to i32.
   CCIfType<[i8, i16], CCPromoteToType<i32>>,
@@ -985,14 +1005,6 @@ def CC_Intel_OCL_BI : CallingConv<[
   CCDelegateTo<CC_X86_32_C>
 ]>;
 
-def CC_X86_32_Intr : CallingConv<[
-  CCAssignToStack<4, 4>
-]>;
-
-def CC_X86_64_Intr : CallingConv<[
-  CCAssignToStack<8, 8>
-]>;
-
 //===----------------------------------------------------------------------===//
 // X86 Root Argument Calling Conventions
 //===----------------------------------------------------------------------===//
@@ -1001,12 +1013,14 @@ def CC_X86_64_Intr : CallingConv<[
 def CC_X86_32 : CallingConv<[
   // X86_INTR calling convention is valid in MCU target and should override the
   // MCU calling convention. Thus, this should be checked before isTargetMCU().
-  CCIfCC<"CallingConv::X86_INTR", CCDelegateTo<CC_X86_32_Intr>>,
+  CCIfCC<"CallingConv::X86_INTR", CCCustom<"CC_X86_Intr">>,
   CCIfSubtarget<"isTargetMCU()", CCDelegateTo<CC_X86_32_MCU>>,
   CCIfCC<"CallingConv::X86_FastCall", CCDelegateTo<CC_X86_32_FastCall>>,
   CCIfCC<"CallingConv::X86_VectorCall", CCDelegateTo<CC_X86_Win32_VectorCall>>,
   CCIfCC<"CallingConv::X86_ThisCall", CCDelegateTo<CC_X86_32_ThisCall>>,
+  CCIfCC<"CallingConv::CFGuard_Check", CCDelegateTo<CC_X86_Win32_CFGuard_Check>>,
   CCIfCC<"CallingConv::Fast", CCDelegateTo<CC_X86_32_FastCC>>,
+  CCIfCC<"CallingConv::Tail", CCDelegateTo<CC_X86_32_FastCC>>,
   CCIfCC<"CallingConv::GHC", CCDelegateTo<CC_X86_32_GHC>>,
   CCIfCC<"CallingConv::HiPE", CCDelegateTo<CC_X86_32_HiPE>>,
   CCIfCC<"CallingConv::X86_RegCall", CCDelegateTo<CC_X86_32_RegCall>>,
@@ -1029,7 +1043,7 @@ def CC_X86_64 : CallingConv<[
   CCIfCC<"CallingConv::X86_RegCall",
     CCIfSubtarget<"isTargetWin64()", CCDelegateTo<CC_X86_Win64_RegCall>>>,
   CCIfCC<"CallingConv::X86_RegCall", CCDelegateTo<CC_X86_SysV64_RegCall>>,
-  CCIfCC<"CallingConv::X86_INTR", CCDelegateTo<CC_X86_64_Intr>>,
+  CCIfCC<"CallingConv::X86_INTR", CCCustom<"CC_X86_Intr">>,
 
   // Mingw64 and native Win64 use Win64 CC
   CCIfSubtarget<"isTargetWin64()", CCDelegateTo<CC_X86_Win64_C>>,
@@ -1039,6 +1053,7 @@ def CC_X86_64 : CallingConv<[
 ]>;
 
 // This is the argument convention used for the entire X86 backend.
+let Entry = 1 in
 def CC_X86 : CallingConv<[
   CCIfCC<"CallingConv::Intel_OCL_BI", CCDelegateTo<CC_Intel_OCL_BI>>,
   CCIfSubtarget<"is64Bit()", CCDelegateTo<CC_X86_64>>,
@@ -1140,7 +1155,9 @@ def CSR_64_HHVM : CalleeSavedRegs<(add R12)>;
 // Register calling convention preserves few GPR and XMM8-15
 def CSR_32_RegCall_NoSSE : CalleeSavedRegs<(add ESI, EDI, EBX, EBP, ESP)>;
 def CSR_32_RegCall       : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE,
-                                           (sequence "XMM%u", 4, 7))>;                                            
+                                           (sequence "XMM%u", 4, 7))>;
+def CSR_Win32_CFGuard_Check_NoSSE : CalleeSavedRegs<(add CSR_32_RegCall_NoSSE, ECX)>;
+def CSR_Win32_CFGuard_Check       : CalleeSavedRegs<(add CSR_32_RegCall, ECX)>;
 def CSR_Win64_RegCall_NoSSE : CalleeSavedRegs<(add RBX, RBP, RSP,
                                               (sequence "R%u", 10, 15))>;
 def CSR_Win64_RegCall       : CalleeSavedRegs<(add CSR_Win64_RegCall_NoSSE,                                  

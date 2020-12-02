@@ -38,10 +38,10 @@ proc matrixMult_ijk(
     const B : [?BD] int,
     C : [?CD] int)
 {
-    for (ai,ci) in zip(AD.dim(1), CD.dim(1)) {
-        for (cj,bj) in zip(CD.dim(2), BD.dim(2)) {
+    for (ai,ci) in zip(AD.dim(0), CD.dim(0)) {
+        for (cj,bj) in zip(CD.dim(1), BD.dim(1)) {
             C[ci,cj] = 0;
-            for (ak,bk) in zip(AD.dim(2),BD.dim(1)) {
+            for (ak,bk) in zip(AD.dim(1),BD.dim(0)) {
                 C[ci,cj] += A[ai,ak] * B[bk,bj];
             }
         }

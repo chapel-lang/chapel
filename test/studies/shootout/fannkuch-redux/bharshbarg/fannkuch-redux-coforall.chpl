@@ -22,8 +22,7 @@ var maxFlips, checkSums : [0..#NTASKS] int;
 
 var taskCount : atomic int;
 
-var Fanns : [ntasks] owned Fann;
-for f in Fanns do f = new owned Fann();
+var Fanns : [ntasks] owned Fann = for ntasks do new owned Fann();
 
 coforall i in ntasks {
   var task = taskCount.fetchAdd(1);

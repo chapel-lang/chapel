@@ -1,9 +1,8 @@
 //===-- SafepointIRVerifier.cpp - Verify gc.statepoint invariants ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,6 +30,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "llvm/IR/SafepointIRVerifier.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/PostOrderIterator.h"
 #include "llvm/ADT/SetOperations.h"
@@ -39,14 +39,14 @@
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/IntrinsicInst.h"
+#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
-#include "llvm/IR/Value.h"
-#include "llvm/IR/SafepointIRVerifier.h"
 #include "llvm/IR/Statepoint.h"
-#include "llvm/Support/Debug.h"
+#include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Support/CommandLine.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/raw_ostream.h"
 
 #define DEBUG_TYPE "safepoint-ir-verifier"
@@ -103,11 +103,11 @@ public:
   }
 
   bool isDeadEdge(const Use *U) const {
-    assert(dyn_cast<Instruction>(U->getUser())->isTerminator() &&
+    assert(cast<Instruction>(U->getUser())->isTerminator() &&
            "edge must be operand of terminator");
     assert(cast_or_null<BasicBlock>(U->get()) &&
            "edge must refer to basic block");
-    assert(!isDeadBlock(dyn_cast<Instruction>(U->getUser())->getParent()) &&
+    assert(!isDeadBlock(cast<Instruction>(U->getUser())->getParent()) &&
            "isDeadEdge() must be applied to edge from live block");
     return DeadEdges.count(U);
   }
@@ -197,6 +197,17 @@ protected:
 
 static void Verify(const Function &F, const DominatorTree &DT,
                    const CFGDeadness &CD);
+
+namespace llvm {
+PreservedAnalyses SafepointIRVerifierPass::run(Function &F,
+                                               FunctionAnalysisManager &AM) {
+  const auto &DT = AM.getResult<DominatorTreeAnalysis>(F);
+  CFGDeadness CD;
+  CD.processFunction(F, DT);
+  Verify(F, DT, CD);
+  return PreservedAnalyses::all();
+}
+}
 
 namespace {
 

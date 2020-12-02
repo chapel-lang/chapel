@@ -1,18 +1,18 @@
 test1
 unmanaged MyClass
 owned MyClass
-in MyClass.deinit
 shared MyClass
-in MyClass.deinit
 borrowed MyClass
+in MyClass.deinit
+in MyClass.deinit
 in MyClass.deinit
 in MyClass.deinit
 test2
 unmanaged MyClass
 owned MyClass
-in MyClass.deinit
 shared MyClass
-in MyClass.deinit
 borrowed MyClass
+in MyClass.deinit
+in MyClass.deinit
 in MyClass.deinit
 in MyClass.deinit

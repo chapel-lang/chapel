@@ -1,0 +1,2 @@
+c-void-ptr-non-nilable-cast-1.chpl:3: In function 'main':
+c-void-ptr-non-nilable-cast-1.chpl:7: error: invalid cast from c_void_ptr to borrowed MyClass - cast to borrowed MyClass? instead

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,6 +25,8 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "IfExpr.h"
+#include "LoopExpr.h"
 
 AstToText::AstToText()
 {
@@ -617,6 +620,47 @@ bool AstToText::isTypeDefault(Expr* expr) const
   return retval;
 }
 
+//
+//  Helper function for appending domain calls with multiple arguments
+//
+void AstToText::appendDomain(CallExpr* expr, bool printingType)
+{
+  mText += "domain(";
+              
+  for(int i=2; i<=expr->numActuals(); i++)
+  {
+    if (i != 2)
+      mText += ", ";
+
+    if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (SymExpr* symi = toSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (CallExpr* symi = toCallExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else
+    {
+      mText += "AppendExpr.Call10";
+    }
+  }
+
+  mText += ")";
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Helper functions for handling the "hidden formals" for methods.           *
@@ -708,6 +752,12 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
     appendExpr(sel, printingType);
 
   else if (NamedExpr*         sel = toNamedExpr(expr))
+    appendExpr(sel, printingType);
+
+  else if (IfExpr*         sel = toIfExpr(expr))
+    appendExpr(sel, printingType);
+
+  else if (LoopExpr*         sel = toLoopExpr(expr))
     appendExpr(sel, printingType);
 
   else
@@ -860,7 +910,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
-        mText += "atomic";
+        mText += "atomic ";
         appendExpr(expr->get(1), printingType);
       }
 
@@ -875,7 +925,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       {
         mText += "{";
         appendExpr(expr->get(1), printingType);
-        for (int index = 2; index <= expr->numActuals(); index++)
+        
+        // last argument to chpl__buildDomainExpr is definedConst
+        for (int index = 2; index <= expr->numActuals()-1; index++)
         {
           mText += ", ";
           appendExpr(expr->get(index), printingType);
@@ -895,19 +947,16 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
       {
-        if (expr->numActuals() == 2)
+        if (expr->numActuals() > 1)
         {
-          if (isUnresolvedSymExpr(expr->get(1)) &&
-              isUnresolvedSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            UnresolvedSymExpr* sym2 = toUnresolvedSymExpr(expr->get(2));
 
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
+          if (isUnresolvedSymExpr(expr->get(1)))
+          {
+            UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr->get(1));
+
+            if (strcmp(sym->unresolved, "defaultDist") == 0)
             {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -918,19 +967,15 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             }
           }
 
-          else if (isSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
+          else if (isSymExpr(expr->get(1)))
           {
             SymExpr*   sym1 = toSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
 
             VarSymbol* arg1 = toVarSymbol(sym1->symbol());
-            ArgSymbol* arg2 = toArgSymbol(sym2->symbol());
 
-            if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
+            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -938,25 +983,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
               // NOAKES 2015/02/05  Debugging support.
               // Might become ASSERT in the future
               mText += "AppendExpr.Call01";
-            }
-          }
-
-          else if (isUnresolvedSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // Lydia 2015/02/17 Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call10";
             }
           }
 
@@ -1151,14 +1177,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += "AppendExpr.Call06";
       }
 
-      else if (expr->numActuals() == 1)
-      {
-        appendExpr(expr->baseExpr, printingType);
-        mText += '(';
-        appendExpr(expr->get(1), printingType);
-        mText += ')';
-      }
-
       else
       {
         appendExpr(expr->baseExpr, printingType);
@@ -1174,6 +1192,25 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         mText += ')';
       }
+    }
+
+    else if (isCallExpr(expr->baseExpr))
+    {
+      CallExpr* subCall = toCallExpr(expr->baseExpr);
+      appendExpr(subCall->get(1), printingType);
+      mText += '.';
+      appendExpr(subCall->get(2), printingType);
+      mText += '(';
+
+      for (int i = 1; i <= expr->numActuals(); i++)
+      {
+        if (i > 1)
+          mText += ", ";
+
+        appendExpr(expr->get(i), printingType);
+      }
+
+      mText += ')';
     }
 
     else
@@ -1306,6 +1343,109 @@ void AstToText::appendExpr(NamedExpr* expr, bool printingType)
   mText += expr->name;
   mText += " = ";
   appendExpr(expr->actual, printingType);
+}
+
+void AstToText::appendExpr(IfExpr* expr, bool printingType)
+{
+  mText += "if ";
+  if (Expr* sel = toExpr(expr->getCondition()))
+  {
+    appendExpr(sel, printingType);
+
+    if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
+    {
+      mText += " then ";
+      if (thenBlockStmt->body.length == 1)
+      {
+        Expr* exp = thenBlockStmt->body.get(1);
+        appendExpr(exp, printingType);
+
+        if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
+        {
+          mText += " else ";
+          if (elseBlockStmt->body.length == 1)
+          {
+            Expr* exp = elseBlockStmt->body.get(1);
+            appendExpr(exp, printingType);
+          }
+
+          else
+          {
+            mText += "AppendExpr.If00";
+          }
+        }
+
+        else
+        {
+          mText += "AppendExpr.If01";
+        }
+      }
+
+      else
+      {
+        mText += "AppendExpr.If02";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.If03";
+    }
+  }
+
+  else
+  {
+    mText += "AppendExpr.If04";
+  }
+}
+
+void AstToText::appendExpr(LoopExpr* expr, bool printingType)
+{
+  if (expr->forall)
+  {
+    if (expr->maybeArrayType)
+    {
+      mText += '[';
+      if(expr->indices)
+      {
+        appendExpr(expr->indices, printingType);
+        mText += " in ";
+      }
+      
+      if(expr->iteratorExpr)
+      {
+        appendExpr(expr->iteratorExpr, printingType);
+        mText += ']';
+
+        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+        {
+          mText += ' ';
+          appendExpr(bs->body.get(1), printingType);
+        }
+
+        else
+        {
+          mText += "AppendExpr.Loop01";
+        }
+      
+      }
+      
+      else
+      {
+        mText += "AppendExpr.Loop02";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.Loop03";
+    }
+  }
+
+  else
+  {
+    mText += "AppendExpr.Loop04";
+  }
 }
 
 void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType)

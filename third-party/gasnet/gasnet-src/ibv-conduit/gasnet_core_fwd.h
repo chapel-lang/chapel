@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.4
+#define GASNET_CORE_VERSION      2.5
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -23,12 +23,8 @@
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_IBV       1
 
-/* If you change GASNETC_BUFSZ then you probably want to also
- * adjust GASNETC_PUTINMOVE_LIMIT_MAX in firehose_fwd.h
- */
-#ifndef GASNETC_BUFSZ
-  #define GASNETC_BUFSZ 4096
-#endif
+// Size of a buffer to contain any AM with all its header, padding and payload
+#define GASNETC_BUFSZ GASNETC_IBV_MAX_MEDIUM
 
 /* 16K is the limit on the LID space, but we must allow more than 1 proc per node */
 /* 64K corresponds to 16 bits used in the AM Header and 16-bit gex_Rank_t */
@@ -85,10 +81,26 @@
      your conduit must provide the V-suffixed functions for any of these that
      are not defined.
    */
-/* #define GASNETC_HAVE_NP_REQ_MEDIUM 1 */
-/* #define GASNETC_HAVE_NP_REP_MEDIUM 1 */
+#define GASNETC_HAVE_NP_REQ_MEDIUM 1
+#define GASNETC_HAVE_NP_REP_MEDIUM 1
 /* #define GASNETC_HAVE_NP_REQ_LONG 1 */
 /* #define GASNETC_HAVE_NP_REP_LONG 1 */
+
+  /* uncomment for each GASNETC_HAVE_NP_* enabled above if the Commit function
+     has the numargs argument even in an NDEBUG build (it is always passed in
+     DEBUG builds).
+   */
+#define GASNETC_AM_COMMIT_REQ_MEDIUM_NARGS 1
+#define GASNETC_AM_COMMIT_REP_MEDIUM_NARGS 1
+//#define GASNETC_AM_COMMIT_REQ_LONG_NARGS 1
+//#define GASNETC_AM_COMMIT_REP_LONG_NARGS 1
+
+#define GASNETI_AM_SRCDESC_EXTRA \
+        int                 _have_flow;         \
+        void *              _buf_alloc;         \
+        void *              _cep;               \
+        void *              _ep;                \
+        uint8_t             _inline_buf[128+8];
 
   /* uncomment if your conduit's gasnetc_AMRequest{Short,Medium,Long}V()
      include a call to gasneti_AMPoll (or equivalent) for progress.
@@ -116,7 +128,6 @@
         CNT(C, GET_AMREQ_CREDIT, cnt)             \
 	TIME(C, GET_AMREQ_CREDIT_STALL, stalled time) \
 	TIME(C, GET_AMREQ_BUFFER_STALL, stalled time) \
-	TIME(C, AM_ROUNDTRIP_TIME, time) \
 	CNT(C, GET_BBUF, cnt)                     \
 	TIME(C, GET_BBUF_STALL, stalled time)     \
 	VAL(C, ALLOC_SREQ, sreqs)                 \
@@ -162,12 +173,6 @@
 #if PLATFORM_OS_DARWIN && !GASNET_SEQ
   #define GASNETC_PTHREAD_CREATE_OVERRIDE(create_fn, thread, attr, start_routine, arg) \
 	gasnetc_pthread_create(create_fn, thread, attr, start_routine, arg)
-#endif
-
-#if GASNETC_IBV_AMRDMA
-extern void gasnetc_amrdma_balance(void);
-#define GASNETC_PROGRESSFNS_LIST(FN) \
-  FN(gasnetc_pf_amrdma, COUNTED, gasnetc_amrdma_balance)
 #endif
 
 /* ------------------------------------------------------------------------------------ */

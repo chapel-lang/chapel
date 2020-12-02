@@ -27,8 +27,9 @@ proc test() {
     var hasMyError = errors.contains(borrowed MyError);
     writeln("contains MyError? ", hasMyError);
     writeln("iterating MyError:");
-    for error in errors.filter(borrowed MyError) {
-      writeln(error.x);
+    for error in errors.filter(borrowed MyError?) {
+      var e = error!:borrowed MyError;
+      writeln(e.x);
     }
     writeln("iterating everything else:");
     for error in errors {

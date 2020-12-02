@@ -1,5 +1,5 @@
 class NilClass { }
-override proc NilClass.writeThis(f) { f <~> "nil"; }
+override proc NilClass.writeThis(f) throws { f <~> "nil"; }
 var gNil = new owned NilClass();
 
 proc Nil(): borrowed NilClass
@@ -12,12 +12,12 @@ proc isNil(x): bool {
     return false;
 }
 
-proc car(x: (?T1, ?T2)) ref: T1 {
-  return x(1);
+proc car(x: (?T1, ?T2)) const ref: T1 {
+  return x(0);
 }
 
-proc cdr(x: (?T1, ?T2)) ref: T2 {
-  return x(2);
+proc cdr(x: (?T1, ?T2)) const ref: T2 {
+  return x(1);
 }
 
 proc cons(x: ?T1, y: ?T2): (T1, T2) {

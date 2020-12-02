@@ -1,9 +1,8 @@
 //===--- PS4CPU.cpp - PS4CPU ToolChain Implementations ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -63,7 +62,7 @@ void tools::PS4cpu::Assemble::ConstructJob(Compilation &C, const JobAction &JA,
 
   const char *Exec =
       Args.MakeArgString(getToolChain().GetProgramPath("orbis-as"));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 static void AddPS4SanitizerArgs(const ToolChain &TC, ArgStringList &CmdArgs) {
@@ -142,7 +141,7 @@ static void ConstructPS4LinkJob(const Tool &T, Compilation &C,
 
   const char *Exec = Args.MakeArgString(ToolChain.GetProgramPath("orbis-ld"));
 
-  C.addCommand(llvm::make_unique<Command>(JA, T, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, T, Exec, CmdArgs, Inputs));
 }
 
 static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
@@ -320,7 +319,7 @@ static void ConstructGoldLinkJob(const Tool &T, Compilation &C,
       Args.MakeArgString(ToolChain.GetProgramPath("orbis-ld"));
 #endif
 
-  C.addCommand(llvm::make_unique<Command>(JA, T, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, T, Exec, CmdArgs, Inputs));
 }
 
 void tools::PS4cpu::Link::ConstructJob(Compilation &C, const JobAction &JA,
@@ -426,6 +425,8 @@ bool toolchains::PS4CPU::HasNativeLLVMSupport() const { return true; }
 SanitizerMask toolchains::PS4CPU::getSupportedSanitizers() const {
   SanitizerMask Res = ToolChain::getSupportedSanitizers();
   Res |= SanitizerKind::Address;
+  Res |= SanitizerKind::PointerCompare;
+  Res |= SanitizerKind::PointerSubtract;
   Res |= SanitizerKind::Vptr;
   return Res;
 }

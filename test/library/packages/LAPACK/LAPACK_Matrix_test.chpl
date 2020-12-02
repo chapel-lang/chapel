@@ -5,12 +5,12 @@ config var verbose_test: bool;
 proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
   // no check. Cannot have ragged array literals
   assert( D1.rank == 1 && D2.rank == 2  );
-  var formed: domain(2) = {D1.dim(1), arrayOfArrays[D1.dim(1).low].domain.dim(1)};
-  assert( formed.dim(1).size == D2.dim(1).size && formed.dim(2).size == D2.dim(2).size );
-  var trans = ( D2.dim(1).low - formed.dim(1).low, D2.dim(2).low - formed.dim(2).low ); 
+  var formed: domain(2) = {D1.dim(0), arrayOfArrays[D1.dim(0).low].domain.dim(0)};
+  assert( formed.dim(0).size == D2.dim(0).size && formed.dim(1).size == D2.dim(1).size );
+  var trans = ( D2.dim(0).low - formed.dim(0).low, D2.dim(1).low - formed.dim(1).low ); 
   
   for (i,j) in D2 {
-    twoArray[i,j] = arrayOfArrays[i+trans[1]][j+trans[2]];
+    twoArray[i,j] = arrayOfArrays[i+trans[0]][j+trans[1]];
   }
 
 }
@@ -38,14 +38,18 @@ var A_1_col_f_row = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.col
 writeln( A_1_col_f_row.data, "\n", A_1_col_f_row.toString(), "\n" );
 
 // 1.5D data
+var input_1_5_row1: [1..2] real = [3.0, 1.0];
+var input_1_5_row2: [1..2] real = [4.0, 2.0];
 var input_1_5_row: [1..2][1..2] real =
-  [ [3.0, 1.0], 
-    [4.0, 2.0] ];
+  [ input_1_5_row1,
+    input_1_5_row2 ];
 //var A_1_5_row = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.row_major, input_array = input_1_5_row  ); 
 
+var input_1_5_col1: [1..2] real = [3.0, 4.0];
+var input_1_5_col2: [1..2] real = [1.0, 2.0];
 var input_1_5_col: [1..2][1..2] real =
-  [ [3.0, 4.0], 
-    [1.0, 2.0] ];
+  [ input_1_5_col1,
+    input_1_5_col2 ];
 //var A_1_5_col = new owned LAPACK_Matrix( real, 2, 2, lapack_memory_order.column_major, input_array = input_1_5_col  ); 
 
 

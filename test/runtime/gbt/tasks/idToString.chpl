@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 type buf_t = c_char;

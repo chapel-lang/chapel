@@ -1,4 +1,5 @@
 use TOML;
+use IO;
 
 /*
   Tests from TOML spec:

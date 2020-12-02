@@ -1,3 +1,0 @@
-generic-owned-q.chpl:10: warning: owned C(int(64))?
-generic-owned-q.chpl:14: warning: shared C(int(64))?
-generic-owned-q.chpl:16: error: done

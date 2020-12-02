@@ -1,9 +1,8 @@
 //===- CodeGenDAGPatterns.cpp - Read DAG patterns from .td file -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,6 +23,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/TypeSize.h"
 #include "llvm/TableGen/Error.h"
 #include "llvm/TableGen/Record.h"
 #include <algorithm>
@@ -68,8 +68,10 @@ static bool berase_if(MachineValueTypeSet &S, Predicate P) {
 // inference will apply to each mode separately.
 
 TypeSetByHwMode::TypeSetByHwMode(ArrayRef<ValueTypeByHwMode> VTList) {
-  for (const ValueTypeByHwMode &VVT : VTList)
+  for (const ValueTypeByHwMode &VVT : VTList) {
     insert(VVT);
+    AddrSpaces.push_back(VVT.PtrAddrSpace);
+  }
 }
 
 bool TypeSetByHwMode::isValueTypeByHwMode(bool AllowEmpty) const {
@@ -86,9 +88,13 @@ ValueTypeByHwMode TypeSetByHwMode::getValueTypeByHwMode() const {
   assert(isValueTypeByHwMode(true) &&
          "The type set has multiple types for at least one HW mode");
   ValueTypeByHwMode VVT;
+  auto ASI = AddrSpaces.begin();
+
   for (const auto &I : *this) {
     MVT T = I.second.empty() ? MVT::Other : *I.second.begin();
     VVT.getOrCreateTypeForMode(I.first, T);
+    if (ASI != AddrSpaces.end())
+      VVT.PtrAddrSpace = *ASI++;
   }
   return VVT;
 }
@@ -476,12 +482,12 @@ bool TypeInfer::EnforceSmallerThan(TypeSetByHwMode &Small,
 
     if (any_of(S, isIntegerOrPtr) && any_of(S, isIntegerOrPtr)) {
       auto NotInt = [](MVT VT) { return !isIntegerOrPtr(VT); };
-      Changed |= berase_if(S, NotInt) |
-                 berase_if(B, NotInt);
+      Changed |= berase_if(S, NotInt);
+      Changed |= berase_if(B, NotInt);
     } else if (any_of(S, isFloatingPoint) && any_of(B, isFloatingPoint)) {
       auto NotFP = [](MVT VT) { return !isFloatingPoint(VT); };
-      Changed |= berase_if(S, NotFP) |
-                 berase_if(B, NotFP);
+      Changed |= berase_if(S, NotFP);
+      Changed |= berase_if(B, NotFP);
     } else if (S.empty() || B.empty()) {
       Changed = !S.empty() || !B.empty();
       S.clear();
@@ -492,32 +498,30 @@ bool TypeInfer::EnforceSmallerThan(TypeSetByHwMode &Small,
     }
 
     if (none_of(S, isVector) || none_of(B, isVector)) {
-      Changed |= berase_if(S, isVector) |
-                 berase_if(B, isVector);
+      Changed |= berase_if(S, isVector);
+      Changed |= berase_if(B, isVector);
     }
   }
 
   auto LT = [](MVT A, MVT B) -> bool {
-    return A.getScalarSizeInBits() < B.getScalarSizeInBits() ||
-           (A.getScalarSizeInBits() == B.getScalarSizeInBits() &&
-            A.getSizeInBits() < B.getSizeInBits());
+    // Always treat non-scalable MVTs as smaller than scalable MVTs for the
+    // purposes of ordering.
+    auto ASize = std::make_tuple(A.isScalableVector(), A.getScalarSizeInBits(),
+                                 A.getSizeInBits());
+    auto BSize = std::make_tuple(B.isScalableVector(), B.getScalarSizeInBits(),
+                                 B.getSizeInBits());
+    return ASize < BSize;
   };
-  auto LE = [](MVT A, MVT B) -> bool {
+  auto SameKindLE = [](MVT A, MVT B) -> bool {
     // This function is used when removing elements: when a vector is compared
-    // to a non-vector, it should return false (to avoid removal).
-    if (A.isVector() != B.isVector())
+    // to a non-vector or a scalable vector to any non-scalable MVT, it should
+    // return false (to avoid removal).
+    if (std::make_tuple(A.isVector(), A.isScalableVector()) !=
+        std::make_tuple(B.isVector(), B.isScalableVector()))
       return false;
 
-    // Note on the < comparison below:
-    // X86 has patterns like
-    //   (set VR128X:$dst, (v16i8 (X86vtrunc (v4i32 VR128X:$src1)))),
-    // where the truncated vector is given a type v16i8, while the source
-    // vector has type v4i32. They both have the same size in bits.
-    // The minimal type in the result is obviously v16i8, and when we remove
-    // all types from the source that are smaller-or-equal than v8i16, the
-    // only source type would also be removed (since it's equal in size).
-    return A.getScalarSizeInBits() <= B.getScalarSizeInBits() ||
-           A.getSizeInBits() < B.getSizeInBits();
+    return std::make_tuple(A.getScalarSizeInBits(), A.getSizeInBits()) <=
+           std::make_tuple(B.getScalarSizeInBits(), B.getSizeInBits());
   };
 
   for (unsigned M : Modes) {
@@ -527,25 +531,29 @@ bool TypeInfer::EnforceSmallerThan(TypeSetByHwMode &Small,
     // smaller-or-equal than MinS.
     auto MinS = min_if(S.begin(), S.end(), isScalar, LT);
     if (MinS != S.end())
-      Changed |= berase_if(B, std::bind(LE, std::placeholders::_1, *MinS));
+      Changed |= berase_if(B, std::bind(SameKindLE,
+                                        std::placeholders::_1, *MinS));
 
     // MaxS = max scalar in Big, remove all scalars from Small that are
     // larger than MaxS.
     auto MaxS = max_if(B.begin(), B.end(), isScalar, LT);
     if (MaxS != B.end())
-      Changed |= berase_if(S, std::bind(LE, *MaxS, std::placeholders::_1));
+      Changed |= berase_if(S, std::bind(SameKindLE,
+                                        *MaxS, std::placeholders::_1));
 
     // MinV = min vector in Small, remove all vectors from Big that are
     // smaller-or-equal than MinV.
     auto MinV = min_if(S.begin(), S.end(), isVector, LT);
     if (MinV != S.end())
-      Changed |= berase_if(B, std::bind(LE, std::placeholders::_1, *MinV));
+      Changed |= berase_if(B, std::bind(SameKindLE,
+                                        std::placeholders::_1, *MinV));
 
     // MaxV = max vector in Big, remove all vectors from Small that are
     // larger than MaxV.
     auto MaxV = max_if(B.begin(), B.end(), isVector, LT);
     if (MaxV != B.end())
-      Changed |= berase_if(S, std::bind(LE, *MaxV, std::placeholders::_1));
+      Changed |= berase_if(S, std::bind(SameKindLE,
+                                        *MaxV, std::placeholders::_1));
   }
 
   return Changed;
@@ -628,7 +636,7 @@ bool TypeInfer::EnforceVectorSubVectorTypeIs(TypeSetByHwMode &Vec,
   /// Return true if S has no element (vector type) that T is a sub-vector of,
   /// i.e. has the same element type as T and more elements.
   auto NoSubV = [&IsSubVec](const TypeSetByHwMode::SetType &S, MVT T) -> bool {
-    for (const auto &I : S)
+    for (auto I : S)
       if (IsSubVec(T, I))
         return false;
     return true;
@@ -637,7 +645,7 @@ bool TypeInfer::EnforceVectorSubVectorTypeIs(TypeSetByHwMode &Vec,
   /// Return true if S has no element (vector type) that T is a super-vector
   /// of, i.e. has the same element type as T and fewer elements.
   auto NoSupV = [&IsSubVec](const TypeSetByHwMode::SetType &S, MVT T) -> bool {
-    for (const auto &I : S)
+    for (auto I : S)
       if (IsSubVec(I, T))
         return false;
     return true;
@@ -772,7 +780,10 @@ void TypeInfer::expandOverloads(TypeSetByHwMode::SetType &Out,
         for (MVT T : MVT::integer_valuetypes())
           if (Legal.count(T))
             Out.insert(T);
-        for (MVT T : MVT::integer_vector_valuetypes())
+        for (MVT T : MVT::integer_fixedlen_vector_valuetypes())
+          if (Legal.count(T))
+            Out.insert(T);
+        for (MVT T : MVT::integer_scalable_vector_valuetypes())
           if (Legal.count(T))
             Out.insert(T);
         return;
@@ -780,7 +791,10 @@ void TypeInfer::expandOverloads(TypeSetByHwMode::SetType &Out,
         for (MVT T : MVT::fp_valuetypes())
           if (Legal.count(T))
             Out.insert(T);
-        for (MVT T : MVT::fp_vector_valuetypes())
+        for (MVT T : MVT::fp_fixedlen_vector_valuetypes())
+          if (Legal.count(T))
+            Out.insert(T);
+        for (MVT T : MVT::fp_scalable_vector_valuetypes())
           if (Legal.count(T))
             Out.insert(T);
         return;
@@ -886,7 +900,8 @@ std::string TreePredicateFn::getPredCode() const {
   if (isLoad()) {
     if (!isUnindexed() && !isNonExtLoad() && !isAnyExtLoad() &&
         !isSignExtLoad() && !isZeroExtLoad() && getMemoryVT() == nullptr &&
-        getScalarMemoryVT() == nullptr)
+        getScalarMemoryVT() == nullptr && getAddressSpaces() == nullptr &&
+        getMinAlignment() < 1)
       PrintFatalError(getOrigPatFragRecord()->getRecord()->getLoc(),
                       "IsLoad cannot be used by itself");
   } else {
@@ -906,7 +921,8 @@ std::string TreePredicateFn::getPredCode() const {
 
   if (isStore()) {
     if (!isUnindexed() && !isTruncStore() && !isNonTruncStore() &&
-        getMemoryVT() == nullptr && getScalarMemoryVT() == nullptr)
+        getMemoryVT() == nullptr && getScalarMemoryVT() == nullptr &&
+        getAddressSpaces() == nullptr && getMinAlignment() < 1)
       PrintFatalError(getOrigPatFragRecord()->getRecord()->getLoc(),
                       "IsStore cannot be used by itself");
   } else {
@@ -920,6 +936,7 @@ std::string TreePredicateFn::getPredCode() const {
 
   if (isAtomic()) {
     if (getMemoryVT() == nullptr && !isAtomicOrderingMonotonic() &&
+        getAddressSpaces() == nullptr &&
         !isAtomicOrderingAcquire() && !isAtomicOrderingRelease() &&
         !isAtomicOrderingAcquireRelease() &&
         !isAtomicOrderingSequentiallyConsistent() &&
@@ -957,13 +974,40 @@ std::string TreePredicateFn::getPredCode() const {
   }
 
   if (isLoad() || isStore() || isAtomic()) {
-    StringRef SDNodeName =
-        isLoad() ? "LoadSDNode" : isStore() ? "StoreSDNode" : "AtomicSDNode";
+    if (ListInit *AddressSpaces = getAddressSpaces()) {
+      Code += "unsigned AddrSpace = cast<MemSDNode>(N)->getAddressSpace();\n"
+        " if (";
+
+      bool First = true;
+      for (Init *Val : AddressSpaces->getValues()) {
+        if (First)
+          First = false;
+        else
+          Code += " && ";
+
+        IntInit *IntVal = dyn_cast<IntInit>(Val);
+        if (!IntVal) {
+          PrintFatalError(getOrigPatFragRecord()->getRecord()->getLoc(),
+                          "AddressSpaces element must be integer");
+        }
+
+        Code += "AddrSpace != " + utostr(IntVal->getValue());
+      }
+
+      Code += ")\nreturn false;\n";
+    }
+
+    int64_t MinAlign = getMinAlignment();
+    if (MinAlign > 0) {
+      Code += "if (cast<MemSDNode>(N)->getAlignment() < ";
+      Code += utostr(MinAlign);
+      Code += ")\nreturn false;\n";
+    }
 
     Record *MemoryVT = getMemoryVT();
 
     if (MemoryVT)
-      Code += ("if (cast<" + SDNodeName + ">(N)->getMemoryVT() != MVT::" +
+      Code += ("if (cast<MemSDNode>(N)->getMemoryVT() != MVT::" +
                MemoryVT->getName() + ") return false;\n")
                   .str();
   }
@@ -1152,6 +1196,21 @@ Record *TreePredicateFn::getMemoryVT() const {
     return nullptr;
   return R->getValueAsDef("MemoryVT");
 }
+
+ListInit *TreePredicateFn::getAddressSpaces() const {
+  Record *R = getOrigPatFragRecord()->getRecord();
+  if (R->isValueUnset("AddressSpaces"))
+    return nullptr;
+  return R->getValueAsListInit("AddressSpaces");
+}
+
+int64_t TreePredicateFn::getMinAlignment() const {
+  Record *R = getOrigPatFragRecord()->getRecord();
+  if (R->isValueUnset("MinAlignment"))
+    return 0;
+  return R->getValueAsInt("MinAlignment");
+}
+
 Record *TreePredicateFn::getScalarMemoryVT() const {
   Record *R = getOrigPatFragRecord()->getRecord();
   if (R->isValueUnset("ScalarMemoryVT"))
@@ -1256,13 +1315,29 @@ std::string TreePredicateFn::getCodeToRunOnSDNode() const {
 
   // Handle arbitrary node predicates.
   assert(hasPredCode() && "Don't have any predicate code!");
+
+  // If this is using PatFrags, there are multiple trees to search. They should
+  // all have the same class.  FIXME: Is there a way to find a common
+  // superclass?
   StringRef ClassName;
-  if (PatFragRec->getOnlyTree()->isLeaf())
-    ClassName = "SDNode";
-  else {
-    Record *Op = PatFragRec->getOnlyTree()->getOperator();
-    ClassName = PatFragRec->getDAGPatterns().getSDNodeInfo(Op).getSDClassName();
+  for (const auto &Tree : PatFragRec->getTrees()) {
+    StringRef TreeClassName;
+    if (Tree->isLeaf())
+      TreeClassName = "SDNode";
+    else {
+      Record *Op = Tree->getOperator();
+      const SDNodeInfo &Info = PatFragRec->getDAGPatterns().getSDNodeInfo(Op);
+      TreeClassName = Info.getSDClassName();
+    }
+
+    if (ClassName.empty())
+      ClassName = TreeClassName;
+    else if (ClassName != TreeClassName) {
+      PrintFatalError(getOrigPatFragRecord()->getRecord()->getLoc(),
+                      "PatFrags trees do not have consistent class");
+    }
   }
+
   std::string Result;
   if (ClassName == "SDNode")
     Result = "    SDNode *N = Node;\n";
@@ -1275,6 +1350,17 @@ std::string TreePredicateFn::getCodeToRunOnSDNode() const {
 //===----------------------------------------------------------------------===//
 // PatternToMatch implementation
 //
+
+static bool isImmAllOnesAllZerosMatch(const TreePatternNode *P) {
+  if (!P->isLeaf())
+    return false;
+  DefInit *DI = dyn_cast<DefInit>(P->getLeafValue());
+  if (!DI)
+    return false;
+
+  Record *R = DI->getDef();
+  return R->getName() == "immAllOnesV" || R->getName() == "immAllZerosV";
+}
 
 /// getPatternSize - Return the 'size' of this pattern.  We want to match large
 /// patterns before small ones.  This is used to determine the size of a
@@ -1315,6 +1401,8 @@ static unsigned getPatternSize(const TreePatternNode *P,
         Size += 5;  // Matches a ConstantSDNode (+3) and a specific value (+2).
       else if (Child->getComplexPatternInfo(CGP))
         Size += getPatternSize(Child, CGP);
+      else if (isImmAllOnesAllZerosMatch(Child))
+        Size += 4; // Matches a build_vector(+3) and a predicate (+1).
       else if (!Child->getPredicateCalls().empty())
         ++Size;
     }
@@ -1335,9 +1423,11 @@ getPatternComplexity(const CodeGenDAGPatterns &CGP) const {
 ///
 std::string PatternToMatch::getPredicateCheck() const {
   SmallVector<const Predicate*,4> PredList;
-  for (const Predicate &P : Predicates)
-    PredList.push_back(&P);
-  llvm::sort(PredList, deref<llvm::less>());
+  for (const Predicate &P : Predicates) {
+    if (!P.getCondString().empty())
+      PredList.push_back(&P);
+  }
+  llvm::sort(PredList, deref<std::less<>>());
 
   std::string Check;
   for (unsigned i = 0, e = PredList.size(); i != e; ++i) {
@@ -1408,7 +1498,8 @@ SDTypeConstraint::SDTypeConstraint(Record *R, const CodeGenHwModes &CGH) {
     x.SDTCisSameSizeAs_Info.OtherOperandNum =
       R->getValueAsInt("OtherOperandNum");
   } else {
-    PrintFatalError("Unrecognized SDTypeConstraint '" + R->getName() + "'!\n");
+    PrintFatalError(R->getLoc(),
+                    "Unrecognized SDTypeConstraint '" + R->getName() + "'!\n");
   }
 }
 
@@ -2120,7 +2211,8 @@ static TypeSetByHwMode getImplicitType(Record *R, unsigned ResNo,
   }
 
   if (R->getName() == "node" || R->getName() == "srcvalue" ||
-      R->getName() == "zero_reg") {
+      R->getName() == "zero_reg" || R->getName() == "immAllOnesV" ||
+      R->getName() == "immAllZerosV" || R->getName() == "undef_tied_input") {
     // Placeholder.
     return TypeSetByHwMode(); // Unknown.
   }
@@ -2425,18 +2517,32 @@ bool TreePatternNode::ApplyTypeConstraints(TreePattern &TP, bool NotRegisters) {
       }
     }
 
+    // If one or more operands with a default value appear at the end of the
+    // formal operand list for an instruction, we allow them to be overridden
+    // by optional operands provided in the pattern.
+    //
+    // But if an operand B without a default appears at any point after an
+    // operand A with a default, then we don't allow A to be overridden,
+    // because there would be no way to specify whether the next operand in
+    // the pattern was intended to override A or skip it.
+    unsigned NonOverridableOperands = Inst.getNumOperands();
+    while (NonOverridableOperands > 0 &&
+           CDP.operandHasDefault(Inst.getOperand(NonOverridableOperands-1)))
+      --NonOverridableOperands;
+
     unsigned ChildNo = 0;
     for (unsigned i = 0, e = Inst.getNumOperands(); i != e; ++i) {
       Record *OperandNode = Inst.getOperand(i);
 
-      // If the instruction expects a predicate or optional def operand, we
-      // codegen this by setting the operand to it's default value if it has a
-      // non-empty DefaultOps field.
-      if (OperandNode->isSubClassOf("OperandWithDefaultOps") &&
-          !CDP.getDefaultOperand(OperandNode).DefaultOps.empty())
+      // If the operand has a default value, do we use it? We must use the
+      // default if we've run out of children of the pattern DAG to consume,
+      // or if the operand is followed by a non-defaulted one.
+      if (CDP.operandHasDefault(OperandNode) &&
+          (i < NonOverridableOperands || ChildNo >= getNumChildren()))
         continue;
 
-      // Verify that we didn't run out of provided operands.
+      // If we have run out of child nodes and there _isn't_ a default
+      // value we can use for the next operand, give an error.
       if (ChildNo >= getNumChildren()) {
         emitTooFewOperandsError(TP, getOperator()->getName(), getNumChildren());
         return false;
@@ -2718,6 +2824,7 @@ TreePatternNodePtr TreePattern::ParseTreePattern(Init *TheInit,
 
     if (Operator->isSubClassOf("SDNode") &&
         Operator->getName() != "imm" &&
+        Operator->getName() != "timm" &&
         Operator->getName() != "fpimm" &&
         Operator->getName() != "tglobaltlsaddr" &&
         Operator->getName() != "tconstpool" &&
@@ -2753,7 +2860,7 @@ TreePatternNodePtr TreePattern::ParseTreePattern(Init *TheInit,
     // chain.
     if (Int.IS.RetVTs.empty())
       Operator = getDAGPatterns().get_intrinsic_void_sdnode();
-    else if (Int.ModRef != CodeGenIntrinsic::NoMem)
+    else if (Int.ModRef != CodeGenIntrinsic::NoMem || Int.hasSideEffects)
       // Has side-effects, requires chain.
       Operator = getDAGPatterns().get_intrinsic_w_chain_sdnode();
     else // Otherwise, no chain.
@@ -2937,8 +3044,7 @@ CodeGenDAGPatterns::CodeGenDAGPatterns(RecordKeeper &R,
     : Records(R), Target(R), LegalVTS(Target.getLegalValueTypes()),
       PatternRewriter(PatternRewriter) {
 
-  Intrinsics = CodeGenIntrinsicTable(Records, false);
-  TgtIntrinsics = CodeGenIntrinsicTable(Records, true);
+  Intrinsics = CodeGenIntrinsicTable(Records);
   ParseNodeInfo();
   ParseNodeTransforms();
   ParseComplexPatterns();
@@ -3029,7 +3135,7 @@ void CodeGenDAGPatterns::ParsePatternFragments(bool OutFrags) {
 
     ListInit *LI = Frag->getValueAsListInit("Fragments");
     TreePattern *P =
-        (PatternFragments[Frag] = llvm::make_unique<TreePattern>(
+        (PatternFragments[Frag] = std::make_unique<TreePattern>(
              Frag, LI, !Frag->isSubClassOf("OutPatFrag"),
              *this)).get();
 

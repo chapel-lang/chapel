@@ -1,9 +1,8 @@
 //===-- MipsBaseInfo.h - Top level definitions for MIPS MC ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "MipsFixupKinds.h"
 #include "MipsMCTargetDesc.h"
 #include "llvm/MC/MCExpr.h"
+#include "llvm/MC/MCInstrDesc.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/ErrorHandling.h"
 
@@ -124,12 +124,15 @@ namespace MipsII {
     IsCTI = 1 << 4,
     /// HasForbiddenSlot - Instruction has a forbidden slot.
     HasForbiddenSlot = 1 << 5,
-    /// IsPCRelativeLoad - A Load instruction with implicit source register
-    ///                    ($pc) with explicit offset and destination register
-    IsPCRelativeLoad = 1 << 6,
     /// HasFCCRegOperand - Instruction uses an $fcc<x> register.
-    HasFCCRegOperand = 1 << 7
+    HasFCCRegOperand = 1 << 6
 
+  };
+
+  enum OperandType : unsigned {
+    OPERAND_FIRST_MIPS_MEM_IMM = MCOI::OPERAND_FIRST_TARGET,
+    OPERAND_MEM_SIMM9 = OPERAND_FIRST_MIPS_MEM_IMM,
+    OPERAND_LAST_MIPS_MEM_IMM = OPERAND_MEM_SIMM9
   };
 }
 }

@@ -1,9 +1,8 @@
 //===- Win32/Process.cpp - Win32 Process Implementation ------- -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,7 +19,7 @@
 #include <malloc.h>
 
 // The Windows.h header must be after LLVM and standard headers.
-#include "WindowsSupport.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 
 #include <direct.h>
 #include <io.h>
@@ -57,7 +56,7 @@ static unsigned computePageSize() {
   return static_cast<unsigned>(info.dwPageSize);
 }
 
-unsigned Process::getPageSize() {
+Expected<unsigned> Process::getPageSize() {
   static unsigned Ret = computePageSize();
   return Ret;
 }
@@ -438,13 +437,6 @@ const char *Process::ResetColor() {
   if (UseANSI) return "\033[0m";
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), defaultColors());
   return 0;
-}
-
-// Include GetLastError() in a fatal error message.
-static void ReportLastErrorFatal(const char *Msg) {
-  std::string ErrMsg;
-  MakeErrMsg(&ErrMsg, Msg);
-  report_fatal_error(ErrMsg);
 }
 
 unsigned Process::GetRandomNumber() {

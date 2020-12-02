@@ -82,13 +82,10 @@ CHAPEL_MAKE_ARGS += CHPL_GASNET_MORE_CFG_OPTIONS="$(CHPL_GASNET_MORE_CFG_OPTIONS
 # Define CHPL_LAUNCHER for some conduits without our desired defaults.
 # Note that these have not necessarily all been tested.
 chapel_launcher_opt = $(chapel_launcher_$(strip $(CHAPEL_CONDUIT)))
-chapel_launcher_pami = CHPL_LAUNCHER=gasnetrun_pami
 
 # Kludge some launchers that can be constructed as a simple delta from another:
 chapel-launcher: force
-	case $(CHAPEL_CONDUIT) in \
-	pami) $(MAKE) clone-launcher SRC_CONDUIT=mpi DST_CONDUIT=$(CHAPEL_CONDUIT) ;; \
-	esac
+	@true  # currently no special cases to deal with here
 clone-launcher: force
 	src=gasnetrun_$(SRC_CONDUIT); dst=gasnetrun_$(DST_CONDUIT); \
 	cd $(CHAPEL_BLDDIR)/runtime/src/launch && \

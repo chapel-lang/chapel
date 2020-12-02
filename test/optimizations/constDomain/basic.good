@@ -1,0 +1,80 @@
+var domain inited with literal
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain inited with literal
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var domain no init expr minimal type
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr minimal type
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
+var domain no init expr 2 fields
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr 2 fields
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
+var domain no init expr
+Using user-variable: false
+Using instance: false
+Array on domain: 
+
+const domain no init expr
+Using user-variable: true
+Using instance: true
+Array on domain: 
+
+domain of an array defined with range literal
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+domain of an array defined with domain literal
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var distributed domain defined with var space
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+var distributed domain defined with const space
+Using user-variable: false
+Using instance: false
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const distributed domain defined with var space
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const distributed domain defined with const space
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain copy-inited with var domain
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+
+const domain copy-inited with var domain (explicit type)
+Using user-variable: true
+Using instance: true
+Array on domain: 0 0 0 0 0 0 0 0 0 0
+

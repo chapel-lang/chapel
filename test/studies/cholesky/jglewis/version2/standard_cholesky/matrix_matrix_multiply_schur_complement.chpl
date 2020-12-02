@@ -29,7 +29,7 @@ module matrix_matrix_multiply_schur_complement {
 
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
-    const schur_complement_rows = (L.domain.dim (1));
+    const schur_complement_rows = (L.domain.dim (0));
 
     // The low rank modification to Schur Complement must be computed
     // block column by block column because we only want to touch
@@ -50,7 +50,7 @@ module matrix_matrix_multiply_schur_complement {
        // the remainder of a block column is a dense rectangular matrix,
        // for which we can use a general matrix-matrix product
 
-       if AI_offdiag_row_indices.length > 0 then 
+       if AI_offdiag_row_indices.size > 0 then 
 	 symmetric_offdiagonal_low_rank_modification 
 	    ( L,  A (AI_offdiag_row_indices, AI_diag_row_indices) );
       }
@@ -66,7 +66,7 @@ module matrix_matrix_multiply_schur_complement {
     where ( A.domain.rank == 2 && L.domain.rank == 2) {
 
 
-    const schur_complement_rows = (L.domain.dim (1));
+    const schur_complement_rows = (L.domain.dim (0));
 
     // The low rank modification to Schur Complement must be computed
     // block column by block column because we only want to touch
@@ -104,11 +104,11 @@ module matrix_matrix_multiply_schur_complement {
     // are submatrices of a single larger matrix.
     // -----------------------------------------------------------
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) &&
-	     A.domain.dim (1) == L.domain.dim (1) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) &&
+	     A.domain.dim (0) == L.domain.dim (0) );
 
-    const AKK_rc_indices = A.domain.dim (1),
-          LJ_col_indices = L.domain.dim (2);
+    const AKK_rc_indices = A.domain.dim (0),
+          LJ_col_indices = L.domain.dim (1);
 
     forall i in AKK_rc_indices do 
       forall j in AKK_rc_indices (..i) do
@@ -130,9 +130,9 @@ module matrix_matrix_multiply_schur_complement {
     // where L and A are submatrices of a common larger matrix.
     // -------------------------------------------------------------
 
-    const AIK_row_indices = A.domain.dim(1),
-          AIK_col_indices = A.domain.dim(2),
-          LJ_col_indices  = L.domain.dim (2);
+    const AIK_row_indices = A.domain.dim(0),
+          AIK_col_indices = A.domain.dim(1),
+          LJ_col_indices  = L.domain.dim (1);
 
     forall (i,j, k) in { AIK_row_indices, AIK_col_indices, LJ_col_indices } do 
       A (i,j) -= L (i,k) * L (j,k);

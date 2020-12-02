@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,6 +72,10 @@ module ChapelEnv {
 
   /* See :ref:`readme-multilocale` for more information. */
   param CHPL_GASNET_SEGMENT:string  = __primitive("get compiler variable", "CHPL_GASNET_SEGMENT");
+
+  pragma "no doc"
+  /* See :ref:`readme-chplenv.CHPL_LIBFABRIC` for more information. */
+  param CHPL_LIBFABRIC:string       = __primitive("get compiler variable", "CHPL_LIBFABRIC");
 
   /* See :ref:`readme-chplenv.CHPL_TASKS` for more information. */
   param CHPL_TASKS:string           = __primitive("get compiler variable", "CHPL_TASKS");

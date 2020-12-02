@@ -1,9 +1,8 @@
 //===--- PPCallbacks.h - Callbacks for Preprocessor actions -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -58,10 +57,9 @@ public:
   /// \param FilenameTok The file name token in \#include "FileName" directive
   /// or macro expanded file name token from \#include MACRO(PARAMS) directive.
   /// Note that FilenameTok contains corresponding quotes/angles symbols.
-  virtual void FileSkipped(const FileEntry &SkippedFile,
+  virtual void FileSkipped(const FileEntryRef &SkippedFile,
                            const Token &FilenameTok,
-                           SrcMgr::CharacteristicKind FileType) {
-  }
+                           SrcMgr::CharacteristicKind FileType) {}
 
   /// Callback invoked whenever an inclusion directive results in a
   /// file-not-found error.
@@ -132,6 +130,28 @@ public:
                                   const Module *Imported,
                                   SrcMgr::CharacteristicKind FileType) {
   }
+
+  /// Callback invoked whenever a submodule was entered.
+  ///
+  /// \param M The submodule we have entered.
+  ///
+  /// \param ImportLoc The location of import directive token.
+  ///
+  /// \param ForPragma If entering from pragma directive.
+  ///
+  virtual void EnteredSubmodule(Module *M, SourceLocation ImportLoc,
+                                bool ForPragma) { }
+
+  /// Callback invoked whenever a submodule was left.
+  ///
+  /// \param M The submodule we have left.
+  ///
+  /// \param ImportLoc The location of import directive token.
+  ///
+  /// \param ForPragma If entering from pragma directive.
+  ///
+  virtual void LeftSubmodule(Module *M, SourceLocation ImportLoc,
+                             bool ForPragma) { }
 
   /// Callback invoked whenever there was an explicit module-import
   /// syntax.
@@ -240,6 +260,14 @@ public:
   virtual void PragmaWarningPop(SourceLocation Loc) {
   }
 
+  /// Callback invoked when a \#pragma execution_character_set(push) directive
+  /// is read.
+  virtual void PragmaExecCharsetPush(SourceLocation Loc, StringRef Str) {}
+
+  /// Callback invoked when a \#pragma execution_character_set(pop) directive
+  /// is read.
+  virtual void PragmaExecCharsetPop(SourceLocation Loc) {}
+
   /// Callback invoked when a \#pragma clang assume_nonnull begin directive
   /// is read.
   virtual void PragmaAssumeNonNullBegin(SourceLocation Loc) {}
@@ -279,7 +307,7 @@ public:
   /// Hook called when a '__has_include' or '__has_include_next' directive is
   /// read.
   virtual void HasInclude(SourceLocation Loc, StringRef FileName, bool IsAngled,
-                          const FileEntry *File,
+                          Optional<FileEntryRef> File,
                           SrcMgr::CharacteristicKind FileType) {}
 
   /// Hook called when a source range is skipped.
@@ -361,8 +389,7 @@ public:
     Second->FileChanged(Loc, Reason, FileType, PrevFID);
   }
 
-  void FileSkipped(const FileEntry &SkippedFile,
-                   const Token &FilenameTok,
+  void FileSkipped(const FileEntryRef &SkippedFile, const Token &FilenameTok,
                    SrcMgr::CharacteristicKind FileType) override {
     First->FileSkipped(SkippedFile, FilenameTok, FileType);
     Second->FileSkipped(SkippedFile, FilenameTok, FileType);
@@ -386,6 +413,18 @@ public:
     Second->InclusionDirective(HashLoc, IncludeTok, FileName, IsAngled,
                                FilenameRange, File, SearchPath, RelativePath,
                                Imported, FileType);
+  }
+
+  void EnteredSubmodule(Module *M, SourceLocation ImportLoc,
+                        bool ForPragma) override {
+    First->EnteredSubmodule(M, ImportLoc, ForPragma);
+    Second->EnteredSubmodule(M, ImportLoc, ForPragma);
+  }
+
+  void LeftSubmodule(Module *M, SourceLocation ImportLoc,
+                     bool ForPragma) override {
+    First->LeftSubmodule(M, ImportLoc, ForPragma);
+    Second->LeftSubmodule(M, ImportLoc, ForPragma);
   }
 
   void moduleImport(SourceLocation ImportLoc, ModuleIdPath Path,
@@ -450,7 +489,7 @@ public:
   }
 
   void HasInclude(SourceLocation Loc, StringRef FileName, bool IsAngled,
-                  const FileEntry *File,
+                  Optional<FileEntryRef> File,
                   SrcMgr::CharacteristicKind FileType) override {
     First->HasInclude(Loc, FileName, IsAngled, File, FileType);
     Second->HasInclude(Loc, FileName, IsAngled, File, FileType);
@@ -476,6 +515,16 @@ public:
   void PragmaWarningPop(SourceLocation Loc) override {
     First->PragmaWarningPop(Loc);
     Second->PragmaWarningPop(Loc);
+  }
+
+  void PragmaExecCharsetPush(SourceLocation Loc, StringRef Str) override {
+    First->PragmaExecCharsetPush(Loc, Str);
+    Second->PragmaExecCharsetPush(Loc, Str);
+  }
+
+  void PragmaExecCharsetPop(SourceLocation Loc) override {
+    First->PragmaExecCharsetPop(Loc);
+    Second->PragmaExecCharsetPop(Loc);
   }
 
   void PragmaAssumeNonNullBegin(SourceLocation Loc) override {

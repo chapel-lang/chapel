@@ -102,6 +102,18 @@ var branchInfo = [
                   { "release" : "1.20",
                     "releaseDate": "2019-09-19",
                     "branchDate" : "2019-09-11",
+                    "revision" : -1},
+                  { "release" : "1.21",
+                    "releaseDate": "2020-04-09",
+                    "branchDate" : "2020-03-31",
+                    "revision" : -1},
+                  { "release" : "1.22",
+                    "releaseDate": "2020-04-16",
+                    "branchDate" : "2020-04-07",
+                    "revision" : -1},
+                  { "release" : "1.23",
+                    "releaseDate": "2020-10-15",
+                    "branchDate" : "2020-10-08",
                     "revision" : -1}
                   ];
 
@@ -499,6 +511,13 @@ function computeGitHubLinks(text) {
     var url = "https://github.com/chapel-lang/chapel/pull/" + num;
     return "<a target='_blank' href='" + url + "'>" + m + "</a>";
   });
+
+  var ak_re = /\(mhmerrill\/arkouda#([0-9]+)\)/gi;
+  text = text.replace(ak_re, function(m, num) {
+    var url = "https://github.com/mhmerrill/arkouda/pull/" + num;
+    return "<a target='_blank' href='" + url + "'>" + m + "</a>";
+  });
+
   text = text.replace("\n", "\n<hr/>");
 
   return text;

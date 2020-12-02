@@ -10,6 +10,7 @@ FLAGS:
   -b, --blockreport     : report location of blocked threads on SIGINT
   -t, --taskreport      : report list of pending and executing tasks on SIGINT
   --gdb                 : run program in gdb
+  --lldb                : run program in lldb
   -E<envVar>=<val>      : set the value of an environment variable
 
 CONFIG VAR FLAGS:

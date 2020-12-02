@@ -1,9 +1,8 @@
 //===- llvm/LLVMContext.h - Class for managing "global" state ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,7 +17,6 @@
 #include "llvm-c/Types.h"
 #include "llvm/IR/DiagnosticHandler.h"
 #include "llvm/Support/CBindingWrapping.h"
-#include "llvm/Support/Options.h"
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -36,12 +34,8 @@ template <typename T> class SmallVectorImpl;
 class SMDiagnostic;
 class StringRef;
 class Twine;
-
-namespace yaml {
-
-class Output;
-
-} // end namespace yaml
+class RemarkStreamer;
+class raw_ostream;
 
 namespace SyncScope {
 
@@ -77,32 +71,9 @@ public:
   // Pinned metadata names, which always have the same value.  This is a
   // compile-time performance optimization, not a correctness optimization.
   enum : unsigned {
-    MD_dbg = 0,                       // "dbg"
-    MD_tbaa = 1,                      // "tbaa"
-    MD_prof = 2,                      // "prof"
-    MD_fpmath = 3,                    // "fpmath"
-    MD_range = 4,                     // "range"
-    MD_tbaa_struct = 5,               // "tbaa.struct"
-    MD_invariant_load = 6,            // "invariant.load"
-    MD_alias_scope = 7,               // "alias.scope"
-    MD_noalias = 8,                   // "noalias",
-    MD_nontemporal = 9,               // "nontemporal"
-    MD_mem_parallel_loop_access = 10, // "llvm.mem.parallel_loop_access"
-    MD_nonnull = 11,                  // "nonnull"
-    MD_dereferenceable = 12,          // "dereferenceable"
-    MD_dereferenceable_or_null = 13,  // "dereferenceable_or_null"
-    MD_make_implicit = 14,            // "make.implicit"
-    MD_unpredictable = 15,            // "unpredictable"
-    MD_invariant_group = 16,          // "invariant.group"
-    MD_align = 17,                    // "align"
-    MD_loop = 18,                     // "llvm.loop"
-    MD_type = 19,                     // "type"
-    MD_section_prefix = 20,           // "section_prefix"
-    MD_absolute_symbol = 21,          // "absolute_symbol"
-    MD_associated = 22,               // "associated"
-    MD_callees = 23,                  // "callees"
-    MD_irr_loop = 24,                 // "irr_loop"
-    MD_access_group = 25,             // "llvm.access.group"
+#define LLVM_FIXED_MD_KIND(EnumID, Name, Value) EnumID = Value,
+#include "llvm/IR/FixedMetadataKinds.def"
+#undef LLVM_FIXED_MD_KIND
   };
 
   /// Known operand bundle tag IDs, which always have the same value.  All
@@ -113,6 +84,7 @@ public:
     OB_deopt = 0,         // "deopt"
     OB_funclet = 1,       // "funclet"
     OB_gc_transition = 2, // "gc-transition"
+    OB_cfguardtarget = 3, // "cfguardtarget"
   };
 
   /// getMDKindID - Return a unique non-zero ID for the specified metadata kind.
@@ -246,16 +218,23 @@ public:
   /// included in optimization diagnostics.
   void setDiagnosticsHotnessThreshold(uint64_t Threshold);
 
-  /// Return the YAML file used by the backend to save optimization
-  /// diagnostics.  If null, diagnostics are not saved in a file but only
-  /// emitted via the diagnostic handler.
-  yaml::Output *getDiagnosticsOutputFile();
-  /// Set the diagnostics output file used for optimization diagnostics.
+  /// Return the streamer used by the backend to save remark diagnostics. If it
+  /// does not exist, diagnostics are not saved in a file but only emitted via
+  /// the diagnostic handler.
+  RemarkStreamer *getRemarkStreamer();
+  const RemarkStreamer *getRemarkStreamer() const;
+
+  /// Set the diagnostics output used for optimization diagnostics.
+  /// This filename may be embedded in a section for tools to find the
+  /// diagnostics whenever they're needed.
   ///
-  /// By default or if invoked with null, diagnostics are not saved in a file
-  /// but only emitted via the diagnostic handler.  Even if an output file is
-  /// set, the handler is invoked for each diagnostic message.
-  void setDiagnosticsOutputFile(std::unique_ptr<yaml::Output> F);
+  /// If a remark streamer is already set, it will be replaced with
+  /// \p RemarkStreamer.
+  ///
+  /// By default, diagnostics are not saved in a file but only emitted via the
+  /// diagnostic handler.  Even if an output file is set, the handler is invoked
+  /// for each diagnostic message.
+  void setRemarkStreamer(std::unique_ptr<RemarkStreamer> RemarkStreamer);
 
   /// Get the prefix that should be printed in front of a diagnostic of
   ///        the given \p Severity
@@ -307,14 +286,6 @@ public:
   void emitError(unsigned LocCookie, const Twine &ErrorStr);
   void emitError(const Instruction *I, const Twine &ErrorStr);
   void emitError(const Twine &ErrorStr);
-
-  /// Query for a debug option's value.
-  ///
-  /// This function returns typed data populated from command line parsing.
-  template <typename ValT, typename Base, ValT(Base::*Mem)>
-  ValT getOption() const {
-    return OptionRegistry::instance().template get<ValT, Base, Mem>();
-  }
 
   /// Access the object which can disable optional passes and individual
   /// optimizations at compile time.

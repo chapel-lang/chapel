@@ -10,7 +10,14 @@ arrayTypeAlias.doc
 
    use arrayTypeAlias.doc;
 
-.. type:: type t = [1..10] int;
+
+or
+
+.. code-block:: chapel
+
+   import arrayTypeAlias.doc;
+
+.. type:: type t = [1..10] int
 
    This is a type alias for an array type 
 

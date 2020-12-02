@@ -92,7 +92,7 @@ inline proc startsWithThree(data : []) {
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const inFile = openfd(0);
-  const fileLen = inFile.length();
+  const fileLen = inFile.size;
   var myin = inFile.reader(kind=ionative,locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'

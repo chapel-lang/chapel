@@ -1,9 +1,8 @@
 //===--- DependencyGraph.cpp - Generate dependency file -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,7 +61,7 @@ public:
 
 void clang::AttachDependencyGraphGen(Preprocessor &PP, StringRef OutputFile,
                                      StringRef SysRoot) {
-  PP.addPPCallbacks(llvm::make_unique<DependencyGraphCallback>(&PP, OutputFile,
+  PP.addPPCallbacks(std::make_unique<DependencyGraphCallback>(&PP, OutputFile,
                                                                SysRoot));
 }
 
@@ -101,7 +100,7 @@ DependencyGraphCallback::writeNodeReference(raw_ostream &OS,
 
 void DependencyGraphCallback::OutputGraphFile() {
   std::error_code EC;
-  llvm::raw_fd_ostream OS(OutputFile, EC, llvm::sys::fs::F_Text);
+  llvm::raw_fd_ostream OS(OutputFile, EC, llvm::sys::fs::OF_Text);
   if (EC) {
     PP->getDiagnostics().Report(diag::err_fe_error_opening) << OutputFile
                                                             << EC.message();

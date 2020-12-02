@@ -111,7 +111,7 @@ module SSCA2_kernels
       if DEBUG_KERNEL2 then {
 	writeln ();
 	writeln ( "Heaviest weight      : ", heaviest_edge_weight ); 
-	writeln ( "Number of heavy edges:", heavy_edge_list.numIndices );
+	writeln ( "Number of heavy edges:", heavy_edge_list.size );
 	writeln ();
 	writeln ( "Edges with largest weight and other neighbors:" );
 	for (s,t) in heavy_edge_list do {
@@ -299,7 +299,7 @@ module SSCA2_kernels
 	Next_Level.previous   = Active_Level;
 	path_count (s)        = 1;
   
-	while Active_Level.Members.numIndices > 0 do { 
+	while Active_Level.Members.size > 0 do { 
   
 	    // ------------------------------------------------
 	    // expand the neighbor sets for all vertices at the
@@ -403,7 +403,7 @@ module SSCA2_kernels
 
 	var n0            = + reduce [v in G.vertices] (G.n_Neighbors (v)== 0);
 	var n_edges       = + reduce [v in G.vertices] G.n_Neighbors (v);
-	var N_VERTICES    = G.vertices.numIndices;
+	var N_VERTICES    = G.vertices.size;
 	var TEPS          = 7.0 * N_VERTICES * (N_VERTICES - n0) / K4_time;
 	var Adjusted_TEPS = n_edges * (N_VERTICES - n0) / K4_time;
 

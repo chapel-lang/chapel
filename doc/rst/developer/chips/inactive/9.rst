@@ -1,0 +1,555 @@
+Chapel Package Manager
+======================
+
+Status
+  Inactive - Implemented
+
+Authors
+  Kyle Brady,
+  Ben Albrecht,
+  Preston Sahabu
+
+
+Abstract
+--------
+
+This CHIP proposes a package manager for Chapel and provides some
+directions for future improvements. It primarily covers the design of
+the initial Chapel package manager, but also includes some designs and
+ideas for future work.
+
+Credit
+++++++
+
+* Sam Boyer of the Glide package manager for Go. His article on Medium_
+  provided an excellent guide and template for this proposal.
+
+* Rust's cargo_. The long term answer for most questions was to look at what
+  cargo is doing. They have a very well designed package manager, and
+  reinventing the wheel should generally be avoided when dealing with
+  package manager design. 
+
+Rationale
++++++++++
+
+Chapel's current approach of bundling any extra modules in the standard library
+isn't sustainable if we wish to have a healthy ecosystem of libraries. There
+are several problems with the current strategy:
+
+* Modules are in our repository, so:
+
+  * Developers must sign a CLA
+  * Code must be under a compatible license
+  * The core team needs to review each module
+
+* Modules are gated for release alongside the compiler
+
+Mason
++++++
+
+``mason`` will be a command line tool for building Chapel programs, providing
+a consistent way for libraries and applications to be built.
+
+The authors of this proposal support the idea of writing ``mason`` in
+Chapel. It would be good to have a piece of production code that is written in
+Chapel and depended on by users and developers. The largest concern that has been
+brought up with this idea is the lack of proper error handling in Chapel. However,
+this should improve in parallel to the development of ``mason``.
+
+
+Mason Pipeline
+--------------
+
+The package manager pipeline has 4 key states, where each state acts as the
+input to the next state:
+
+* `Project Code`_: ``src/``
+* `Manifest File`_: ``Mason.toml``
+
+  * Markup-style file containing package metadata and dependencies.
+
+* `Lock File`_: ``Mason.lock``
+
+  * Contains the necessary information to guarantee a consistent build on
+    all supported platforms.
+
+* **Dependency Code**: ``~/.mason/src/``
+
+  * Dependencies that have been downloaded into a local directory.
+
+
+Setup
++++++
+
+``mason new [project name] [--vcs OPTION]`` is the command that initializes a
+new project. It also creates a git repository unless ``--vcs none`` is included.
+
+For example, after ``mason new MyPackage`` is run in an empty directory it will
+have the following hierarchy:
+
+::
+
+  MyPackage/
+    Mason.toml
+    src/
+      MyPackage.chpl
+
+mason will enforce that the main file be named after the package to enforce
+namespacing. While it is common practice for package names to be PascalCase
+and chpl files to be lowercase, it is an acceptable tradeoff for reliability,
+and MyPackage will be the first file listed in src/.
+
+To work on an existing project, clone its repository and invoke ``mason build``
+(see `Build System`_). This will fetch all the dependencies and build the project
+for a fully functional copy.
+
+Project Code
+++++++++++++
+
+This is the Chapel source code written by the package author.
+
+For example, ``MyPackage.chpl``:
+
+.. code-block:: chapel
+
+   proc main() {
+       writeln("Hello, world!");
+   }
+
+Project Code -> Manifest File
++++++++++++++++++++++++++++++
+
+mason will provide command line support for adding and removing dependencies
+to the manifest in the form of ``mason add [package] [version]`` and
+``mason rm [package]`` when within the project directory.
+
+The manifest may also be edited manually.
+
+mason will not automatically generate any of the manifest from the project code. 
+
+Manifest File
++++++++++++++
+
+The ``Mason.toml`` manifest file will closely follow the design of
+`Cargo's manifest file <http://doc.crates.io/manifest.html>`_,
+``Cargo.toml``. Some fields will vary, if they are too Rust-specific or could
+benefit from being more Chapel-specific.
+
+For example, ``Mason.toml``:
+
+.. code-block:: ini
+
+   [package]
+   name = "hello_world"
+   version = "0.1.0"
+   authors = ["Bradford Chamberlain <brad@chamberlain.com>"]
+   license = "Apache-2.0"
+
+   [dependencies]
+   Curl = "1.0.0"
+
+Package Registry
+++++++++++++++++
+
+Eventually we will want a service similar to Cargo's crates.io_ to serve as our
+registry. Due to the amount of effort behind such a task, it has been decided
+that this can come at a later stage.
+
+The initial mason registry would be a GitHub repository containing a list of
+versioned manifest files from packages, not unlike that of the OS X Homebrew
+package manager registry.
+
+The registry would follow a hierarchy as follows:
+
+::
+
+  https://github.com/chapel-lang/mason-registry
+
+  registry/
+    Curl/
+        1.0.0.toml
+        2.0.0.toml
+    RecordParser/
+        1.0.0.toml
+        1.1.0.toml
+        1.2.0.toml
+    VisualDebug/
+        2.2.0.toml
+        2.2.1.toml
+
+Each versioned manifest file would be identical to the manifest file in the
+top-level directory of the package repository, with one additional field that
+is not required in the repository manifest, a URL pointing to the repository
+and revision in which the version is located.
+
+Continuing the example from before, the 'registry' ``Mason.toml`` would include
+the additional ``source`` field:
+
+
+.. code-block:: ini
+
+   [package]
+   name = "hello_world"
+   version = "0.1.0"
+   authors = ["Brad Chamberlain <brad@chamberlain.com>"]
+   license = "Apache-2.0"
+   source = { git = "https://github.com/bradcray/hello_world", tag = "0.1.0" }
+
+   [dependencies]
+   Curl = "1.0.0"
+
+
+There are some recognized downsides of using a GitHub repository as a registry:
+
+* It is not be feasible to cache packages centrally, compromising the
+  reliability of the entire package ecosystem.
+
+  * The packages themselves are distributed despite there being a central
+    registry of manifests.
+  * We *cannot* guarantee that a given package version will always remain
+    unchanged or even always exist.
+
+    * Although some form of nightly/weekly testing could help mitigate this
+      issue.
+
+* It is not easy to allow users to submit packages without human intervention
+  (gatekeeper accepting pull requests).
+
+* GitHub's native interface would severely inhibit discoverability of packages.
+
+  * This can circumvented by building a separate website for exploring the
+    package ecosystem.
+
+    * Julia does a great job at this in their Ecosystem-Pulse_.
+
+For these reasons, we would eventually like to pursue a truly central registry
+with cached packages and a first-class interface.
+
+**Namespacing**
+
+All packages will exist in a single common namespace with a first-come, first-served
+policy. Though there are natural concerns about name squatting, these have been
+addressed_ by the Cargo project. It is also easier to go to separate namespaces
+than to roll them back, so this position affords flexibility.
+
+**Semantic Versioning**
+
+To assist version resolution, the registry will enforce the following conventions:
+
+* The format for all versions will be a.b.c.
+
+  * Major versions are denoted by a.
+  * Minor versions are denoted by b.
+  * Bug fixes are denoted by c.
+
+* If the major version is 0, no further conventions will be enforced.
+
+  * However, a package at major version 0 can only be included in a manifest by
+    a specific bug fix.
+
+* The major version must be advanced if and only if the update causes breaking API
+  changes, such as updated data structures or removed methods and procedures. The
+  minor and bug fix versions will be zeroed out. (ex. 1.13.1 -> 2.0.0)
+
+* The minor version must be advanced if and only if the update adds functionality
+  to the API while maintaining backward compatibility with the current major
+  version. The bug fix version will be zeroed out. (ex. 1.13.1 -> 1.14.0)
+
+* The bug fix must be advanced for any update correcting functionality within a
+  minor revision. (ex. 1.13.1 -> 1.13.2)
+
+* The grammar_ used to specify a range of compatible versions will be similar to
+  that of Cargo.
+
+**Package Integrity**
+
+There will be two primary measures taken to ensure that submitted packages are
+valid and not of poor quality:
+
+* Continuous Integration (CI) tools such as Travis CI could run a suite of
+  basic functionality tests to ensure a submitted package is properly
+  setup. Tests might include:
+
+  * Downloading the package.
+  * Building the package.
+  * Running any tests that the package provides.
+
+* A set of core and trusted non-core Chapel community developers will serve
+  as gatekeepers who will allow packages into the repository by merging
+  pull requests that pass all tests.
+
+  * Other non-automated review procedures can be done by the gatekeepers,
+    but it would be ideal to keep this effort minimal if required at all.
+
+  * This is similar to Homebrew's approach to package submission.
+
+**Licensing**
+
+Packages without a license field in their .toml will not be added to the
+registry. The accepted license abbreviations can be found at SPDX_. 
+License fields will propagate throughout their uses for developer convenience.
+
+Manifest File -> Lock File
+++++++++++++++++++++++++++
+
+A lock file ensures repeatable builds on a given system, thus "locking" the
+project's build sequence and configuration into place. It contains a serialized
+directed acyclic graph of the dependencies build options from the manifest.
+
+The lock file is more concrete than the manifest because it specifies Git SHA
+revisions rather than abstract "versions" or "packages". Whether the lock
+file is checked into the repository to ensure identical builds across all
+systems is up to the project.
+
+This step will be fully automated by mason, in which it:
+
+* Parses the manifest file
+* Builds a dependency directed acyclic graph (DAG)
+
+  * If a cycle is formed by the dependencies, mason will print an error.
+
+  * This should only occur if one of the dependencies depends on the
+    current project.
+    
+* Performs the incompatible version resolution strategy
+
+  * If multiple bug fixes of a package are present in the project, mason
+    will use the latest bug fix. (ex. 1.1.0, 1.1.1 --> 1.1.1)
+
+  * If multiple minor versions of a package are present in the project,
+    mason will use the latest minor version within the common major version.
+    (ex. 1.4.3, 1.7.0 --> 1.7) 
+    
+  * If multiple major versions are present, mason will print an error.
+    (ex. 1.13.0, 2.1.0 --> incompatible) 
+
+* Serializes the DAG and outputs it into ``Mason.lock``
+
+If the user has manually edited their manifest file, they may update the
+lock file using ``mason update`` from within the project directory. Otherwise,
+the lock file is updated automatically when using ``mason add`` or ``mason rm``.
+(see `Syncing Commands`_)
+
+The user should never edit a ``Mason.lock`` file manually.
+
+Lock File
++++++++++
+
+The ``Mason.lock`` lock file will follow the design of ``Cargo.lock``. An
+example of a ``Mason.lock`` generated from the previous ``Mason.toml`` example:
+
+.. code-block:: ini
+
+    [root]
+    name = "hello_world"
+    version = "0.1.0"
+    dependencies = [ "curl 1.0.0 (git+https://github.com/tzakian/curl.git#9f35b8e439eeedd60b9414c58f389bdc6a3284f9)",]
+    license = "Apache-2.0"
+
+    [[package]]
+    name = "curl"
+    version = "1.0.0"
+    license = "Apache-2.0"
+    source= git+https://github.com/tzakian/curl.git#9f35b8e439eeedd60b9414c58f389bdc6a3284f9"
+
+
+Lock File -> Dependency Code
+++++++++++++++++++++++++++++
+
+The dependency code will be downloaded into a common pool of packages, under
+the user's home directory by default. This mirrors Cargo's ``~/.cargo/src/``.
+
+::
+
+  ~/.mason/src/
+    (dependencies)
+
+
+Syncing Commands
+++++++++++++++++
+
+When any of ``add``, ``rm``, or ``update`` are invoked, mason will make sure that
+the manifest file, lock file, and dependency code are kept in sync with each other.
+Effectively, this means that when ``update`` is run, dependencies will be downloaded,
+and when ``add`` or ``rm`` are run, ``update`` will be run.
+
+To avoid unnecessary updates, a hash of the manifest will be kept in the lock file.
+We will not hash the lock file because the dependencies across all projects are kept
+in a single namespaced directory -- we can simply check if all the dependency
+directories are present. 
+
+
+Build System
+------------
+
+When invoked, ``mason build`` will do the following:
+
+* Navigate to the root of the project.
+
+* Run ``update`` to make sure any manual manifest edits are reflected in the
+  dependency code.
+
+* Build ``??.chpl`` in the ``/src`` directory, where ?? is the name of the project.
+ 
+  * This file will be the designated main by the ``--main-module`` flag.
+
+  * Library dependencies are included by specifying their main file from the
+    dependency pool. 
+
+  * Binary dependencies are included by specifying their main file from the
+    dependency pool. 
+
+* If the package is an application, build the binary into ``target/``.
+
+
+``mason run`` will, in turn:
+
+* Invoke ``build``.
+  
+* Run the resulting executable out of ``target/``, if it exists.
+
+  * Runtime options may be included in the manifest, or may be passed to
+    ``run`` on the command line. Command line options take precedence. 
+
+
+For example, after ``mason run MyPackage``, the project directory appears as so:
+
+::
+
+  ~/.mason/src/
+
+  MyPackage/
+    Mason.toml
+    Mason.lock
+    src/
+      MyPackage.chpl
+    ( target/ )
+      ( MyPackage )
+
+
+Future Work
+-----------
+
+The first version of the package manager will be very simple with limited
+functionality, but there are several more features that we wish to add
+eventually. This section is dedicated to the subset of those features that have
+been considered or partially designed.
+
+C Dependencies
+++++++++++++++
+
+mason will support managing C dependencies in future versions. Unlike
+Cargo, the management of these C dependencies will *not* be implemented as part
+of the package manager. Instead, mason will interface with a tool specifically
+designed for managing C dependencies. Though we would have to add a dependency
+to our package manager, we avoid reinventing solutions to hard problems.
+
+Presently, Nix_ is a strong candidate for this. However, Nix currently requires
+being installed as root (or at least becomes much more complicated if it is
+not). Nix also only works on linux/osx right now. Cygwin support is not ruled
+out, but not actively worked on.
+
+Another potential candidate that has been suggested is Conan_, but we have not
+thoroughly investigated it yet.
+
+**Example**
+
+Lets go through an example from our package modules with a C dependency and see
+how it would look as a package.
+
+
+The LAPACK package with high level bindings:
+
+::
+
+  lapack/
+    Mason.toml
+    src/
+      LAPACK.chpl
+
+.. code-block:: ini
+
+  # lapack/Mason.toml
+  [package]
+  name = "lapack"
+  version = "0.1.0"
+  authors = ["Ian Bertolacci <ian@example.com>"]
+  license = "Apache-2.0"
+  description = "High level bindings to LAPACK"
+
+  [dependencies]
+  lapack-lib = "0.1.0"
+
+
+The LAPACK package with native bindings:
+
+::
+
+    lapack-lib/
+      Mason.toml
+      src/
+        LAPACK_lib.chpl
+
+.. code-block:: ini
+
+  # lapack-lib/Mason.toml
+  [package]
+  name = "lapack-lib"
+  version = "0.1.0"
+  authors = ["Ian Bertolacci <ian@example.com>"]
+  license = "Apache-2.0"
+  description = "Native bindings to liblapack"
+
+  links = "lapack"
+  includes = "lapacke.h"
+
+  # C dependencies
+  [requires]
+  liblapack = "3.3.0"
+
+
+Things to note:
+
+  * ``requires`` is a list of nix packages to be in the environment when
+    building your program.  It's recommended to provide these, but they may not
+    be used.
+  * ``links`` is the library that is expected to be on your search path and will
+    be added to the compile line.
+  * ``includes`` is the header file that is expected to be on your search path
+    and will be added to the compile line.
+
+``mason build`` will download our lapack dependency, and build the program.
+The dependency will be downloaded and placed in ``~/.mason/src/``. Nix will be
+used to resolve the external dependencies and packages if it is available. Otherwise,
+libraries and headers are expected to be placed on the normal search paths.
+
+
+Other Future Work
++++++++++++++++++
+
+**client:**
+
+* `Developer dependencies`_
+* Interoperability with other source control managers
+* Improved tooling to assist in automating parts of source code -> manifest file
+  * e.g. ``mason new <project-name> --app``
+* Virtual environments with different Chapel, mason configs
+
+**registry:**
+
+* Truly centralized registry with cached packages
+* "Blessed" versus "Open" packages (quality control)
+* Checksumming (security for popular packages)
+* Binary packages
+* User-hosted registries
+
+.. _Medium: https://medium.com/@sdboyer/so-you-want-to-write-a-package-manager-4ae9c17d9527#.id7wa9vae
+.. _crates.io: https://crates.io/
+.. _cargo: http://doc.crates.io/guide.html
+.. _nix: https://nixos.org/nix/
+.. _Ecosystem-Pulse: http://pkg.julialang.org/pulse.html
+.. _addressed: https://internals.rust-lang.org/t/crates-io-package-policies/1041
+.. _grammar: http://doc.crates.io/specifying-dependencies.html
+.. _SPDX: http://spdx.org/licenses/
+.. _Conan: https://www.conan.io/
+.. _Developer dependencies: http://doc.crates.io/specifying-dependencies.html#development-dependencies

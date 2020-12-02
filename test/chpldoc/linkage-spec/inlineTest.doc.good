@@ -11,6 +11,13 @@ inlineTest.doc
 
    use inlineTest.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import inlineTest.doc;
+
 **Submodules**
 
 .. toctree::
@@ -84,6 +91,13 @@ Other
 .. code-block:: chapel
 
    use inlineTest.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import inlineTest.doc.Other;
 
 .. function:: proc inside
 

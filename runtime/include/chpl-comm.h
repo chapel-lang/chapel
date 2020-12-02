@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +41,14 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.
+
+//
+// Helper function for Chapel to get the value of chpl_nodeID
+//
+static inline c_nodeid_t get_chpl_nodeID(void) {
+  return chpl_nodeID;
+}
+
 extern int32_t chpl_numNodes; // number of nodes
 
 size_t chpl_comm_getenvMaxHeapSize(void);
@@ -75,14 +84,10 @@ extern void* const chpl_global_serialize_table[];
 // uses task-layer specific chpl_task_bundleData_t
 
 typedef struct {
-  // Including space for the task_bundle here helps with
-  // running tasks locally, but it doesn't normally need
-  // to be communicated over the network.
+  chpl_arg_bundle_kind_t kind;  // 'kind' indicator must be first in any bundle
+  chpl_comm_bundleData_t comm;  // for comm layer wrappers
   chpl_task_bundle_t task_bundle;
-  // Including space for some comm information here helps
-  // the comm layer communicate some values to a wrapper
-  // function that is run in a task.
-  chpl_comm_bundleData_t comm;
+  uint64_t payload[0];
 } chpl_comm_on_bundle_t;
 
 typedef chpl_comm_on_bundle_t *chpl_comm_on_bundle_p;
@@ -106,8 +111,9 @@ void chpl_comm_taskCallFTable(chpl_fn_int_t fid,      // ftable[] entry to call
                               c_sublocid_t subloc,    // desired sublocale
                               int lineno,             // source line
                               int32_t filename) {     // source filename
+    arg->kind = CHPL_ARG_BUNDLE_KIND_COMM;
     chpl_task_taskCallFTable(fid,
-                             chpl_comm_on_bundle_task_bundle(arg), arg_size,
+                             arg, arg_size,
                              subloc,
                              lineno, filename);
 }
@@ -191,6 +197,15 @@ void chpl_comm_post_mem_init(void);
 int chpl_comm_run_in_gdb(int argc, char* argv[], int gdbArgnum, int* status);
 
 //
+// if possible, run in lldb (because the user threw the --lldb flag)
+// using argc and argv.  lldbArgnum gives the index of the argv[]
+// element containing the --lldb flag.  Return the status of that
+// process in "status" and return 1 if it was possible to run in lldb,
+// 0 otherwise
+//
+int chpl_comm_run_in_lldb(int argc, char* argv[], int lldbArgnum, int* status);
+
+//
 // Allow the communication layer to do any further initialization it
 // needs to, after the tasking layer is initialized.
 //
@@ -239,7 +254,7 @@ void chpl_comm_rollcall(void);
 //   the memory did indeed come from chpl_mem_regMemAlloc(), this frees
 //   it and returns true.  Otherwise it does nothing and returns false.
 //   Given some memory address to be freed it is therefore safe, though
-//   perhaps not performance-optimal, to first try to free it here, and 
+//   perhaps not performance-optimal, to first try to free it here, and
 //   only free it elsewhere if this function returns false.
 //
 #ifndef CHPL_COMM_IMPL_REG_MEM_HEAP_INFO
@@ -273,7 +288,7 @@ size_t chpl_comm_regMemAllocThreshold(void) {
 static inline
 void* chpl_comm_regMemAlloc(size_t size,
                             chpl_mem_descInt_t desc, int ln, int32_t fn) {
-    return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
+  return CHPL_COMM_IMPL_REG_MEM_ALLOC(size, desc, ln, fn);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_POST_ALLOC
@@ -281,7 +296,26 @@ void* chpl_comm_regMemAlloc(size_t size,
 #endif
 static inline
 void chpl_comm_regMemPostAlloc(void* p, size_t size) {
-    CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+  CHPL_COMM_IMPL_REG_MEM_POST_ALLOC(p, size);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn) NULL
+#endif
+static inline
+void* chpl_comm_regMemRealloc(void* p, size_t oldSize, size_t newSize,
+                              chpl_mem_descInt_t desc, int ln, int32_t fn) {
+  return CHPL_COMM_IMPL_REG_MEM_REALLOC(p, oldSize, newSize, desc, ln, fn);
+}
+
+#ifndef CHPL_COMM_IMPL_REG_MEM_POST_REALLOC
+#define CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize) \
+        return
+#endif
+static inline
+void chpl_comm_regMemPostRealloc(void* oldp, size_t oldSize,
+                                 void* newp, size_t newSize) {
+  CHPL_COMM_IMPL_REG_MEM_POST_REALLOC(oldp, oldSize, newp, newSize);
 }
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_FREE
@@ -289,7 +323,7 @@ void chpl_comm_regMemPostAlloc(void* p, size_t size) {
 #endif
 static inline
 chpl_bool chpl_comm_regMemFree(void* p, size_t size) {
-    return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
+  return CHPL_COMM_IMPL_REG_MEM_FREE(p, size);
 }
 
 //
@@ -349,7 +383,7 @@ void chpl_comm_broadcast_private(int id, size_t size);
 // cannot be immediately satisfied, while it waits chpl_comm_barrier()
 // must call chpl_task_yield() in order not to monopolize the execution
 // resources and prevent making progress. This barrier must be available
-// for use in module code, so it cannot be tied up in the runtime 
+// for use in module code, so it cannot be tied up in the runtime
 //
 void chpl_comm_barrier(const char *msg);
 
@@ -407,8 +441,8 @@ void chpl_comm_get(void *addr, c_nodeid_t node, void* raddr,
 //            and strides.
 // When comm=gasnet, this function ends up calling gasnet_puts_bulk().
 //   More info in: http://www.escholarship.org/uc/item/5hg5r5fs?display=all
-//   Proposal for Extending the UPC Memory Copy Library Functions and Supporting 
-//   Extensions to GASNet, Version 2.0. Author: Dan Bonachea 
+//   Proposal for Extending the UPC Memory Copy Library Functions and Supporting
+//   Extensions to GASNet, Version 2.0. Author: Dan Bonachea
 //
 void chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode,
                         void* srcaddr, size_t* srcstrides, size_t* count,
@@ -473,9 +507,41 @@ void chpl_comm_execute_on_fast(c_nodeid_t node, c_sublocid_t subloc,
                                chpl_comm_on_bundle_t *arg, size_t arg_size,
                                int ln, int32_t fn);
 
+//
+// Hook to ensure remote memory consistency after unordered operations.
+//
+#ifndef CHPL_COMM_IMPL_UNORDERED_TASK_FENCE
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
+        return
+#endif
+static inline
+void chpl_comm_unordered_task_fence(void) {
+  CHPL_COMM_IMPL_UNORDERED_TASK_FENCE();
+}
+
+
+// This is a hook that's called when a task is creating a child task.
+#ifndef CHPL_COMM_IMPL_TASK_CREATE
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        return
+#endif
+static inline
+void chpl_comm_task_create(void) {
+  CHPL_COMM_IMPL_TASK_CREATE();
+}
+
+
 // This is a hook that's called when a task is ending. It allows for things
 // like say flushing task private buffers.
-void chpl_comm_task_end(void);
+#ifndef CHPL_COMM_IMPL_TASK_END
+#define CHPL_COMM_IMPL_TASK_END() \
+        return
+#endif
+static inline
+void chpl_comm_task_end(void) {
+  CHPL_COMM_IMPL_TASK_END();
+}
+
 
 void* chpl_get_global_serialize_table(int64_t idx);
 
@@ -495,4 +561,3 @@ void chpl_wait_for_shutdown(void);
 #include "chpl-comm-warning-macros.h"
 
 #endif
-

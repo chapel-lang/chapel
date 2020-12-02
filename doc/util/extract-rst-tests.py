@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # encoding: utf-8
 
 """
@@ -27,6 +27,7 @@ match_output = re.compile(r"\s*.. BLOCK-test-chapeloutput\s*|" +
 match_compopts = re.compile(r"\s*.. BLOCK-test-chapelcompopts\s*")
 match_execopts = re.compile(r"\s*.. BLOCK-test-chapelexecopts\s*")
 match_prediff = re.compile(r"\s*.. BLOCK-test-chapelprediff\s*")
+match_function = re.compile(r"\s*.. function::\s*")
 total_tests = 0
 
 def get_arguments():
@@ -55,7 +56,7 @@ def save_to(outdir, chapter, name, data, isexe=False):
         os.makedirs(os.path.dirname(path))
 
     #print('Writing to: ', path)
-    with open(path, 'w') as handle:
+    with open(path, 'w', encoding='utf-8') as handle:
         handle.write(data)
 
     if isexe:
@@ -109,7 +110,7 @@ def extract_tests(rstfile, outdir):
     print("Processing .rst file: ", rstfile)
 
     lines = ( )
-    with open(rstfile, 'r') as handle:
+    with open(rstfile, 'r', encoding='utf-8') as handle:
         lines = handle.readlines()
 
     chapter = ""
@@ -162,6 +163,14 @@ def extract_tests(rstfile, outdir):
                 #     *Example (enum.chpl)*.
                 if re.match(capture_testname, line):
                     # stop this loop if another example is encountered
+                    #print ("Breaking for Example match on line ", i)
+                    i -= 1
+                    break
+
+                # Find lines like
+                #     *.. function:: proc foo int
+                if re.match(match_function, line):
+                    # stop this loop if a function block is encounterred
                     #print ("Breaking for Example match on line ", i)
                     i -= 1
                     break

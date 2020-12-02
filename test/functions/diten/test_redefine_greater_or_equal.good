@@ -1,4 +1,5 @@
 test_redefine_greater_or_equal.chpl:1: In function '>=':
 test_redefine_greater_or_equal.chpl:1: error: illegal where clause due to infinite instantiation
 test_redefine_greater_or_equal.chpl:1: note: evaluation of '>=' where clause results in instantiation of '>='
-test_redefine_greater_or_equal.chpl:1: Function '>=' instantiated as: >=(param b = 0)
+  test_redefine_greater_or_equal.chpl:1: called as >=(a: uint(64), param b = 0) from function '>='
+  test_redefine_greater_or_equal.chpl:1: called as >=(a: uint(64), param b = 1)

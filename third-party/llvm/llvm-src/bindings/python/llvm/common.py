@@ -1,9 +1,8 @@
 #===- common.py - Python LLVM Bindings -----------------------*- python -*--===#
 #
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License. See LICENSE.TXT for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
 #===------------------------------------------------------------------------===#
 
@@ -14,9 +13,9 @@ from ctypes import cdll
 import ctypes.util
 import platform
 
-# LLVM_VERSION: sync with PACKAGE_VERSION in autoconf/configure.ac and CMakeLists.txt
+# LLVM_VERSION: sync with PACKAGE_VERSION in CMakeLists.txt
 #               but leave out the 'svn' suffix.
-LLVM_VERSION = '3.4'
+LLVM_VERSION = '10.0.0'
 
 __all__ = [
     'c_object_p',

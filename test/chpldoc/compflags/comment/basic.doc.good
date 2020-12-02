@@ -10,6 +10,13 @@ basic.doc
 
    use basic.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import basic.doc;
+
 .. function:: proc commented()
 
    This is one way to make your own comment 

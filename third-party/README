@@ -69,6 +69,31 @@ jemalloc/
   See also: jemalloc/README and jemalloc/jemalloc-src/README
 
 
+libfabric/
+  Summary: Libfabric is a general network communication library that
+           supports a variety of network architectures and interfaces.
+           It is part of the Open Fabrics Interfaces (OFI) framework.
+
+  License: libfabric is released under the 2-clause BSD License (see
+           libfabric/libfabric-src/COPYING)
+
+  Website: https://github.com/ofiwg/libfabric/
+
+  See also: libfabric/README and libfabric/libfabric-src/README
+
+
+libunwind/
+  Summary: libunwind is a portable and efficient C programming
+           interface (API) to determine the call-chain of a program
+
+  License: MIT (see libunwind/libunwind-<version>/COPYING and
+           libunwind/libunwind-<version>/LICENSE)
+
+  Website: https://www.nongnu.org/libunwind/
+
+  See also: libunwind/README and libunwind/libunwind-<version>/README
+
+
 llvm/
   Summary: This directory holds LLVM and Clang.  LLVM is provided as
            an optional back-end target in place of C (see
@@ -121,13 +146,12 @@ utf8-decoder/
   See also: utf8-decoder/README
 
 
-libunwind/
-  Summary: libunwind is a portable and efficient C programming
-           interface (API) to determine the call-chain of a program
+whereami/
+  Summary: whereami is a cross-platform interface for locating
+           the currently executing program in the filesystem
 
-  License: MIT (see libunwind/libunwind-<version>/COPYING and
-           libunwind/libunwind-<version>/LICENSE)
+  License: MIT (see whereami/LICENSE.MIT)
 
-  Website: https://www.nongnu.org/libunwind/
+  Website: https://github.com/gpakosz/whereami
 
-  See also: libunwind/README and libunwind/libunwind-<version>/README
+  See also: whereami/README

@@ -1,9 +1,8 @@
 //=== MSP430MachineFunctionInfo.h - MSP430 machine function info -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,21 +24,21 @@ class MSP430MachineFunctionInfo : public MachineFunctionInfo {
 
   /// CalleeSavedFrameSize - Size of the callee-saved register portion of the
   /// stack frame in bytes.
-  unsigned CalleeSavedFrameSize;
+  unsigned CalleeSavedFrameSize = 0;
 
   /// ReturnAddrIndex - FrameIndex for return slot.
-  int ReturnAddrIndex;
+  int ReturnAddrIndex = 0;
 
   /// VarArgsFrameIndex - FrameIndex for start of varargs area.
-  int VarArgsFrameIndex;
+  int VarArgsFrameIndex = 0;
 
   /// SRetReturnReg - Some subtargets require that sret lowering includes
   /// returning the value of the returned struct in a register. This field
   /// holds the virtual register into which the sret argument is passed.
-  unsigned SRetReturnReg;
+  unsigned SRetReturnReg = 0;
 
 public:
-  MSP430MachineFunctionInfo() : CalleeSavedFrameSize(0) {}
+  MSP430MachineFunctionInfo() = default;
 
   explicit MSP430MachineFunctionInfo(MachineFunction &MF)
     : CalleeSavedFrameSize(0), ReturnAddrIndex(0), SRetReturnReg(0) {}

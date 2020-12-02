@@ -10,6 +10,13 @@ privateClasses
 
    use privateClasses;
 
+
+or
+
+.. code-block:: chapel
+
+   import privateClasses;
+
 .. class: bar
 
    ..attribute:: var showMe: bool

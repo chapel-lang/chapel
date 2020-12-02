@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -30,7 +31,7 @@
 // Don't refer to this directly.  It's only here in public to support
 // reducing overhead by inlining the test for >0.
 //
-int chpl_task_callback_counts[chpl_task_cb_num_event_kinds];
+extern int chpl_task_callback_counts[chpl_task_cb_num_event_kinds];
 
 
 void chpl_task_do_callbacks_internal(chpl_task_cb_event_kind_t,

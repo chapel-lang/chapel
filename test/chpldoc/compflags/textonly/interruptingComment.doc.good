@@ -3,6 +3,10 @@ interruptingComment.doc
 Usage:
    use interruptingComment.doc;
 
+or
+
+   import interruptingComment.doc;
+
    Record: R
       proc write()
       proc otherFunc()

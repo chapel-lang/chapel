@@ -1,9 +1,8 @@
 //===- ArrayRef.h - Array Reference Wrapper ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -98,9 +97,19 @@ namespace llvm {
     /*implicit*/ constexpr ArrayRef(const T (&Arr)[N]) : Data(Arr), Length(N) {}
 
     /// Construct an ArrayRef from a std::initializer_list.
+#if LLVM_GNUC_PREREQ(9, 0, 0)
+// Disable gcc's warning in this constructor as it generates an enormous amount
+// of messages. Anyone using ArrayRef should already be aware of the fact that
+// it does not do lifetime extension.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winit-list-lifetime"
+#endif
     /*implicit*/ ArrayRef(const std::initializer_list<T> &Vec)
     : Data(Vec.begin() == Vec.end() ? (T*)nullptr : Vec.begin()),
       Length(Vec.size()) {}
+#if LLVM_GNUC_PREREQ(9, 0, 0)
+#pragma GCC diagnostic pop
+#endif
 
     /// Construct an ArrayRef<const T*> from ArrayRef<T*>. This uses SFINAE to
     /// ensure that only ArrayRefs of pointers can be converted.
@@ -431,7 +440,7 @@ namespace llvm {
       std::copy(Data.begin(), Data.end(), this->begin());
     }
 
-    OwningArrayRef(OwningArrayRef &&Other) { *this = Other; }
+    OwningArrayRef(OwningArrayRef &&Other) { *this = std::move(Other); }
 
     OwningArrayRef &operator=(OwningArrayRef &&Other) {
       delete[] this->data();
@@ -482,6 +491,12 @@ namespace llvm {
     return Vec;
   }
 
+  /// Construct an ArrayRef from a std::array.
+  template <typename T, std::size_t N>
+  ArrayRef<T> makeArrayRef(const std::array<T, N> &Arr) {
+    return Arr;
+  }
+
   /// Construct an ArrayRef from an ArrayRef (no-op) (const)
   template <typename T> ArrayRef<T> makeArrayRef(const ArrayRef<T> &Vec) {
     return Vec;
@@ -525,12 +540,6 @@ namespace llvm {
   }
 
   /// @}
-
-  // ArrayRefs can be treated like a POD type.
-  template <typename T> struct isPodLike;
-  template <typename T> struct isPodLike<ArrayRef<T>> {
-    static const bool value = true;
-  };
 
   template <typename T> hash_code hash_value(ArrayRef<T> S) {
     return hash_combine_range(S.begin(), S.end());

@@ -10,6 +10,13 @@ typeMethods.doc
 
    use typeMethods.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import typeMethods.doc;
+
 .. class:: Foo
 
    .. method:: proc type biff()

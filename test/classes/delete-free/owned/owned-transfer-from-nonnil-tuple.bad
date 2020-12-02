@@ -1,0 +1,1 @@
+owned-transfer-from-nonnil-tuple.chpl:5: error: halt reached - argument to ! is nil

@@ -8,7 +8,7 @@ writeln(createStringWithNewBuffer(b1CStr), " as ", b1CStr.type:string);
 
 param numBytes = b1.numBytes;
 param size = bAnother1.size;
-param length = b2.length;
+param length = b2.size;
 
 writeln(numBytes);
 writeln(size);
@@ -22,7 +22,7 @@ param myByte = shortBytes.toByte();
 writeln(myByte);
 
 
-writeln(b1.byte(3));
+writeln(b1.byte(2));
 
 {
   param flag = b1==b2;

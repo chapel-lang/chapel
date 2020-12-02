@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include <string>
 #include <vector>
 
+class astlocT;
 class BaseAST;
 class BlockStmt;
 class CallExpr;
@@ -40,6 +42,12 @@ class UnresolvedSymExpr;
 class UseStmt;
 class VisibilityStmt;
 
+enum importUseProgress {
+  IUP_NOT_STARTED, // We haven't started resolving use or import statements
+  IUP_IN_PROGRESS, // We started but haven't completed resolving them
+  IUP_COMPLETED    // We've finished resolving use and import statements
+};
+
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
@@ -53,6 +61,8 @@ public:
   static void           destroyAstMap();
 
 public:
+  importUseProgress progress;
+
                         ResolveScope(ModuleSymbol*       modSym,
                                      const ResolveScope* parent);
 
@@ -73,10 +83,24 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
+  Symbol*               lookupForImport(Expr* expr, bool isUse) const;
+
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 
   Symbol*               lookupNameLocally(const char* name,
                                           bool isUse=false)              const;
+
+  Symbol*               lookupPublicVisStmts(const char* name)           const;
+
+  Symbol*               lookupPublicUnqualAccessSyms(const char* name,
+                                                     BaseAST *context);
+
+  Symbol*
+  lookupPublicUnqualAccessSyms(const char* name,
+                               BaseAST *context,
+                               std::map<Symbol *, astlocT *>& renameLocs,
+                               std::map<Symbol*, VisibilityStmt*>& reexportPts,
+                               bool followUses = false);
 
   // Support for UseStmt with only/except
   // Has the potential to return multiple fields
@@ -85,6 +109,8 @@ public:
                                   std::vector<Symbol*>& symbols)         const;
 
   void                  describe()                                       const;
+
+  bool                  canReexport;
 
 private:
   typedef std::vector<VisibilityStmt*>   UseImportList;
@@ -98,9 +124,6 @@ private:
                         ResolveScope();
 
   void                  addBuiltIns();
-
-  bool                  isAggregateTypeAndConstructor(Symbol* sym0,
-                                                      Symbol* sym1);
 
   bool                  isSymbolAndMethod(Symbol* sym0,
                                           Symbol* sym1);
@@ -133,8 +156,15 @@ private:
                                       UseImportList& current,
                                       UseImportMap&  visited) const;
 
-   bool                 skipUse(UseImportMap&  visited,
-                                const UseStmt* current)                  const;
+  bool                 skipUse(UseImportMap&  visited,
+                               const UseStmt* current)                  const;
+
+  Symbol* followImportUseChains(const char* name) const;
+  Symbol* lookupNameLocallyForImport(const char* name) const;
+  void firstImportedModuleName(Expr* expr,
+                               const char*& name,
+                               CallExpr*& call,
+                               const ResolveScope*& scope) const;
 
   BaseAST*              mAstRef;
   const ResolveScope*   mParent;

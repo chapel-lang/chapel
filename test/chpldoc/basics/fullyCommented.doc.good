@@ -11,6 +11,13 @@ fullyCommented.doc
 
    use fullyCommented.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import fullyCommented.doc;
+
 **Submodules**
 
 .. toctree::
@@ -46,6 +53,13 @@ Other
 .. code-block:: chapel
 
    use fullyCommented.doc.Other;
+
+
+or
+
+.. code-block:: chapel
+
+   import fullyCommented.doc.Other;
 
 .. function:: proc inside
 

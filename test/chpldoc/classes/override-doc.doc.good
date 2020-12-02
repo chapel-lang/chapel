@@ -10,6 +10,13 @@ override-doc.doc
 
    use override-doc.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import override-doc.doc;
+
 .. class:: Parent
 
    .. method:: proc f(arg: int)

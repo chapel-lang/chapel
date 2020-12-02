@@ -10,6 +10,13 @@ domains.doc
 
    use domains.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import domains.doc;
+
 .. class:: fullOfDomains
 
    .. attribute:: var baseCase: domain(1)

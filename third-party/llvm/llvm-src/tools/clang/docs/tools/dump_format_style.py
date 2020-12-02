@@ -77,15 +77,30 @@ class Enum(object):
   def __str__(self):
     return '\n'.join(map(str, self.values))
 
-class EnumValue(object):
-  def __init__(self, name, comment):
+class NestedEnum(object):
+  def __init__(self, name, enumtype, comment, values):
     self.name = name
     self.comment = comment
+    self.values = values
+    self.type = enumtype
+
+  def __str__(self):
+    s = '\n* ``%s %s``\n%s' % (self.type, self.name,
+                                 doxygen2rst(indent(self.comment, 2)))
+    s += indent('\nPossible values:\n\n', 2)
+    s += indent('\n'.join(map(str, self.values)),2)
+    return s;
+
+class EnumValue(object):
+  def __init__(self, name, comment, config):
+    self.name = name
+    self.comment = comment
+    self.config = config
 
   def __str__(self):
     return '* ``%s`` (in configuration: ``%s``)\n%s' % (
         self.name,
-        re.sub('.*_', '', self.name),
+        re.sub('.*_', '', self.config),
         doxygen2rst(indent(self.comment, 2)))
 
 def clean_comment_line(line):
@@ -155,7 +170,12 @@ def read_options(header):
         comment += clean_comment_line(line)
       else:
         state = State.InNestedStruct
-        nested_struct.values.append(NestedField(line.replace(';', ''), comment))
+        field_type, field_name = re.match(r'([<>:\w(,\s)]+)\s+(\w+);',line).groups()
+        if field_type in enums:
+            nested_struct.values.append(NestedEnum(field_name,field_type,comment,enums[field_type].values))
+        else:
+            nested_struct.values.append(NestedField(field_type + " " + field_name, comment))
+
     elif state == State.InEnum:
       if line.startswith('///'):
         state = State.InEnumMemberComment
@@ -170,7 +190,14 @@ def read_options(header):
         comment += clean_comment_line(line)
       else:
         state = State.InEnum
-        enum.values.append(EnumValue(line.replace(',', ''), comment))
+        val = line.replace(',', '')
+        pos = val.find(" // ")
+        if (pos != -1):
+            config = val[pos+4:]
+            val = val[:pos]
+        else:
+            config = val;
+        enum.values.append(EnumValue(val, comment,config))
   if state != State.Finished:
     raise Exception('Not finished by the end of file')
 

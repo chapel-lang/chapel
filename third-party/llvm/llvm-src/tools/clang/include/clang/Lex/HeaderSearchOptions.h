@@ -1,9 +1,8 @@
 //===- HeaderSearchOptions.h ------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,6 +11,7 @@
 
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/CachedHashString.h"
+#include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/StringRef.h"
 #include <cstdint>
@@ -196,6 +196,10 @@ public:
   /// Whether to validate system input files when a module is loaded.
   unsigned ModulesValidateSystemHeaders : 1;
 
+  // Whether the content of input files should be hashed and used to
+  // validate consistency.
+  unsigned ValidateASTInputFilesContent : 1;
+
   /// Whether the module includes debug information (-gmodules).
   unsigned UseDebugInfo : 1;
 
@@ -203,14 +207,23 @@ public:
 
   unsigned ModulesHashContent : 1;
 
+  /// Whether we should include all things that could impact the module in the
+  /// hash.
+  ///
+  /// This includes things like the full header search path, and enabled
+  /// diagnostics.
+  unsigned ModulesStrictContextHash : 1;
+
   HeaderSearchOptions(StringRef _Sysroot = "/")
       : Sysroot(_Sysroot), ModuleFormat("raw"), DisableModuleHash(false),
         ImplicitModuleMaps(false), ModuleMapFileHomeIsCwd(false),
         UseBuiltinIncludes(true), UseStandardSystemIncludes(true),
         UseStandardCXXIncludes(true), UseLibcxx(false), Verbose(false),
         ModulesValidateOncePerBuildSession(false),
-        ModulesValidateSystemHeaders(false), UseDebugInfo(false),
-        ModulesValidateDiagnosticOptions(true), ModulesHashContent(false) {}
+        ModulesValidateSystemHeaders(false),
+        ValidateASTInputFilesContent(false), UseDebugInfo(false),
+        ModulesValidateDiagnosticOptions(true), ModulesHashContent(false),
+        ModulesStrictContextHash(false) {}
 
   /// AddPath - Add the \p Path path to the specified \p Group list.
   void AddPath(StringRef Path, frontend::IncludeDirGroup Group,
@@ -233,6 +246,15 @@ public:
     PrebuiltModulePaths.push_back(Name);
   }
 };
+
+inline llvm::hash_code hash_value(const HeaderSearchOptions::Entry &E) {
+  return llvm::hash_combine(E.Path, E.Group, E.IsFramework, E.IgnoreSysRoot);
+}
+
+inline llvm::hash_code
+hash_value(const HeaderSearchOptions::SystemHeaderPrefix &SHP) {
+  return llvm::hash_combine(SHP.Prefix, SHP.IsSystemHeader);
+}
 
 } // namespace clang
 

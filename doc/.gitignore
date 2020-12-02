@@ -5,6 +5,7 @@ doctrees
 /rst/modules
 /rst/primers
 /rst/examples
+/rst/language/spec/syntax.rst
 
 man.rst
 /rst/tools/chplvis/examples

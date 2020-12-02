@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -36,5 +37,20 @@ size_t chpl_comm_impl_regMemHeapPageSize(void);
 // Network atomic operations.
 //
 #include "chpl-comm-native-atomics.h"
+
+//
+// Remote memory consistency release/acquire hooks.
+//
+#define CHPL_COMM_IMPL_UNORDERED_TASK_FENCE() \
+        chpl_comm_impl_unordered_task_fence()
+void chpl_comm_impl_unordered_task_fence(void);
+
+#define CHPL_COMM_IMPL_TASK_CREATE() \
+        chpl_comm_impl_task_create()
+void chpl_comm_impl_task_create(void);
+
+#define CHPL_COMM_IMPL_TASK_END() \
+        chpl_comm_impl_task_end()
+void chpl_comm_impl_task_end(void);
 
 #endif // _chpl_comm_impl_h_

@@ -9,7 +9,7 @@ var randStr1 = createRandomStream(real, 314159265, algorithm=rtype);
 var randStr2 = createRandomStream(real, 314159265, algorithm=rtype);
 var randStr3 = createRandomStream(real, 314159265, algorithm=rtype);
 
-for i in 1..n {
+for i in 0..n-1 {
   const r1 = randStr1.getNext();
   const r2 = randStr2.getNth(i);
   const r3 = randStr3.getNth(i);

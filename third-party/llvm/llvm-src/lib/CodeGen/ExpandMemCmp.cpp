@@ -1,9 +1,8 @@
 //===--- ExpandMemCmp.cpp - Expand memcmp() to load/stores ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,8 @@
 
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/Analysis/LazyBlockFrequencyInfo.h"
+#include "llvm/Analysis/ProfileSummaryInfo.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Analysis/ValueTracking.h"
@@ -21,6 +22,8 @@
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/Transforms/Utils/SizeOpts.h"
 
 using namespace llvm;
 
@@ -36,6 +39,14 @@ static cl::opt<unsigned> MemCmpEqZeroNumLoadsPerBlock(
     "memcmp-num-loads-per-block", cl::Hidden, cl::init(1),
     cl::desc("The number of loads per basic block for inline expansion of "
              "memcmp that is only being compared against zero."));
+
+static cl::opt<unsigned> MaxLoadsPerMemcmp(
+    "max-loads-per-memcmp", cl::Hidden,
+    cl::desc("Set maximum number of loads used in expanded memcmp"));
+
+static cl::opt<unsigned> MaxLoadsPerMemcmpOptSize(
+    "max-loads-per-memcmp-opt-size", cl::Hidden,
+    cl::desc("Set maximum number of loads used in expanded memcmp for -Os/Oz"));
 
 namespace {
 
@@ -106,8 +117,7 @@ class MemCmpExpansion {
 public:
   MemCmpExpansion(CallInst *CI, uint64_t Size,
                   const TargetTransformInfo::MemCmpExpansionOptions &Options,
-                  unsigned MaxNumLoads, const bool IsUsedForZeroCmp,
-                  unsigned MaxLoadsPerBlockForZeroCmp, const DataLayout &TheDataLayout);
+                  const bool IsUsedForZeroCmp, const DataLayout &TheDataLayout);
 
   unsigned getNumBlocks();
   uint64_t getNumLoads() const { return LoadSequence.size(); }
@@ -196,16 +206,10 @@ MemCmpExpansion::computeOverlappingLoadSequence(uint64_t Size,
 MemCmpExpansion::MemCmpExpansion(
     CallInst *const CI, uint64_t Size,
     const TargetTransformInfo::MemCmpExpansionOptions &Options,
-    const unsigned MaxNumLoads, const bool IsUsedForZeroCmp,
-    const unsigned MaxLoadsPerBlockForZeroCmp, const DataLayout &TheDataLayout)
-    : CI(CI),
-      Size(Size),
-      MaxLoadSize(0),
-      NumLoadsNonOneByte(0),
-      NumLoadsPerBlockForZeroCmp(MaxLoadsPerBlockForZeroCmp),
-      IsUsedForZeroCmp(IsUsedForZeroCmp),
-      DL(TheDataLayout),
-      Builder(CI) {
+    const bool IsUsedForZeroCmp, const DataLayout &TheDataLayout)
+    : CI(CI), Size(Size), MaxLoadSize(0), NumLoadsNonOneByte(0),
+      NumLoadsPerBlockForZeroCmp(Options.NumLoadsPerBlock),
+      IsUsedForZeroCmp(IsUsedForZeroCmp), DL(TheDataLayout), Builder(CI) {
   assert(Size > 0 && "zero blocks");
   // Scale the max size down if the target can load more bytes than we need.
   llvm::ArrayRef<unsigned> LoadSizes(Options.LoadSizes);
@@ -216,17 +220,17 @@ MemCmpExpansion::MemCmpExpansion(
   MaxLoadSize = LoadSizes.front();
   // Compute the decomposition.
   unsigned GreedyNumLoadsNonOneByte = 0;
-  LoadSequence = computeGreedyLoadSequence(Size, LoadSizes, MaxNumLoads,
+  LoadSequence = computeGreedyLoadSequence(Size, LoadSizes, Options.MaxNumLoads,
                                            GreedyNumLoadsNonOneByte);
   NumLoadsNonOneByte = GreedyNumLoadsNonOneByte;
-  assert(LoadSequence.size() <= MaxNumLoads && "broken invariant");
+  assert(LoadSequence.size() <= Options.MaxNumLoads && "broken invariant");
   // If we allow overlapping loads and the load sequence is not already optimal,
   // use overlapping loads.
   if (Options.AllowOverlappingLoads &&
       (LoadSequence.empty() || LoadSequence.size() > 2)) {
     unsigned OverlappingNumLoadsNonOneByte = 0;
     auto OverlappingLoads = computeOverlappingLoadSequence(
-        Size, MaxLoadSize, MaxNumLoads, OverlappingNumLoadsNonOneByte);
+        Size, MaxLoadSize, Options.MaxNumLoads, OverlappingNumLoadsNonOneByte);
     if (!OverlappingLoads.empty() &&
         (LoadSequence.empty() ||
          OverlappingLoads.size() < LoadSequence.size())) {
@@ -234,7 +238,7 @@ MemCmpExpansion::MemCmpExpansion(
       NumLoadsNonOneByte = OverlappingNumLoadsNonOneByte;
     }
   }
-  assert(LoadSequence.size() <= MaxNumLoads && "broken invariant");
+  assert(LoadSequence.size() <= Options.MaxNumLoads && "broken invariant");
 }
 
 unsigned MemCmpExpansion::getNumBlocks() {
@@ -264,9 +268,9 @@ Value *MemCmpExpansion::getPtrToElementAtOffset(Value *Source,
                                                 uint64_t OffsetBytes) {
   if (OffsetBytes > 0) {
     auto *ByteType = Type::getInt8Ty(CI->getContext());
-    Source = Builder.CreateGEP(
+    Source = Builder.CreateConstGEP1_64(
         ByteType, Builder.CreateBitCast(Source, ByteType->getPointerTo()),
-        ConstantInt::get(ByteType, OffsetBytes));
+        OffsetBytes);
   }
   return Builder.CreateBitCast(Source, LoadSizeType->getPointerTo());
 }
@@ -316,7 +320,7 @@ Value *MemCmpExpansion::getCompareLoadPairs(unsigned BlockIndex,
   assert(LoadIndex < getNumLoads() &&
          "getCompareLoadPairs() called with no remaining loads");
   std::vector<Value *> XorList, OrList;
-  Value *Diff;
+  Value *Diff = nullptr;
 
   const unsigned NumLoads =
       std::min(getNumLoads() - LoadIndex, NumLoadsPerBlockForZeroCmp);
@@ -393,6 +397,8 @@ Value *MemCmpExpansion::getCompareLoadPairs(unsigned BlockIndex,
     while (OrList.size() != 1) {
       OrList = pairWiseOr(OrList);
     }
+
+    assert(Diff && "Failed to find comparison diff");
     Cmp = Builder.CreateICmpNE(OrList[0], ConstantInt::get(Diff->getType(), 0));
   }
 
@@ -718,11 +724,12 @@ Value *MemCmpExpansion::getMemCmpExpansion() {
 ///  %phi.res = phi i32 [ %48, %loadbb3 ], [ %11, %res_block ]
 ///  ret i32 %phi.res
 static bool expandMemCmp(CallInst *CI, const TargetTransformInfo *TTI,
-                         const TargetLowering *TLI, const DataLayout *DL) {
+                         const TargetLowering *TLI, const DataLayout *DL,
+                         ProfileSummaryInfo *PSI, BlockFrequencyInfo *BFI) {
   NumMemCmpCalls++;
 
   // Early exit from expansion if -Oz.
-  if (CI->getFunction()->optForMinSize())
+  if (CI->getFunction()->hasMinSize())
     return false;
 
   // Early exit from expansion if size is not a constant.
@@ -739,18 +746,23 @@ static bool expandMemCmp(CallInst *CI, const TargetTransformInfo *TTI,
   // TTI call to check if target would like to expand memcmp. Also, get the
   // available load sizes.
   const bool IsUsedForZeroCmp = isOnlyUsedInZeroEqualityComparison(CI);
-  const auto *const Options = TTI->enableMemCmpExpansion(IsUsedForZeroCmp);
+  bool OptForSize = CI->getFunction()->hasOptSize() ||
+                    llvm::shouldOptimizeForSize(CI->getParent(), PSI, BFI);
+  auto Options = TTI->enableMemCmpExpansion(OptForSize,
+                                            IsUsedForZeroCmp);
   if (!Options) return false;
 
-  const unsigned MaxNumLoads =
-      TLI->getMaxExpandSizeMemcmp(CI->getFunction()->optForSize());
+  if (MemCmpEqZeroNumLoadsPerBlock.getNumOccurrences())
+    Options.NumLoadsPerBlock = MemCmpEqZeroNumLoadsPerBlock;
 
-  unsigned NumLoadsPerBlock = MemCmpEqZeroNumLoadsPerBlock.getNumOccurrences()
-                                  ? MemCmpEqZeroNumLoadsPerBlock
-                                  : TLI->getMemcmpEqZeroLoadsPerBlock();
+  if (OptForSize &&
+      MaxLoadsPerMemcmpOptSize.getNumOccurrences())
+    Options.MaxNumLoads = MaxLoadsPerMemcmpOptSize;
 
-  MemCmpExpansion Expansion(CI, SizeVal, *Options, MaxNumLoads,
-                            IsUsedForZeroCmp, NumLoadsPerBlock, *DL);
+  if (!OptForSize && MaxLoadsPerMemcmp.getNumOccurrences())
+    Options.MaxNumLoads = MaxLoadsPerMemcmp;
+
+  MemCmpExpansion Expansion(CI, SizeVal, Options, IsUsedForZeroCmp, *DL);
 
   // Don't expand if this will require more loads than desired by the target.
   if (Expansion.getNumLoads() == 0) {
@@ -790,10 +802,14 @@ public:
         TPC->getTM<TargetMachine>().getSubtargetImpl(F)->getTargetLowering();
 
     const TargetLibraryInfo *TLI =
-        &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+        &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     const TargetTransformInfo *TTI =
         &getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
-    auto PA = runImpl(F, TLI, TTI, TL);
+    auto *PSI = &getAnalysis<ProfileSummaryInfoWrapperPass>().getPSI();
+    auto *BFI = (PSI && PSI->hasProfileSummary()) ?
+           &getAnalysis<LazyBlockFrequencyInfoPass>().getBFI() :
+           nullptr;
+    auto PA = runImpl(F, TLI, TTI, TL, PSI, BFI);
     return !PA.areAllPreserved();
   }
 
@@ -801,22 +817,26 @@ private:
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<TargetLibraryInfoWrapperPass>();
     AU.addRequired<TargetTransformInfoWrapperPass>();
+    AU.addRequired<ProfileSummaryInfoWrapperPass>();
+    LazyBlockFrequencyInfoPass::getLazyBFIAnalysisUsage(AU);
     FunctionPass::getAnalysisUsage(AU);
   }
 
   PreservedAnalyses runImpl(Function &F, const TargetLibraryInfo *TLI,
                             const TargetTransformInfo *TTI,
-                            const TargetLowering* TL);
+                            const TargetLowering* TL,
+                            ProfileSummaryInfo *PSI, BlockFrequencyInfo *BFI);
   // Returns true if a change was made.
   bool runOnBlock(BasicBlock &BB, const TargetLibraryInfo *TLI,
                   const TargetTransformInfo *TTI, const TargetLowering* TL,
-                  const DataLayout& DL);
+                  const DataLayout& DL, ProfileSummaryInfo *PSI,
+                  BlockFrequencyInfo *BFI);
 };
 
 bool ExpandMemCmpPass::runOnBlock(
     BasicBlock &BB, const TargetLibraryInfo *TLI,
     const TargetTransformInfo *TTI, const TargetLowering* TL,
-    const DataLayout& DL) {
+    const DataLayout& DL, ProfileSummaryInfo *PSI, BlockFrequencyInfo *BFI) {
   for (Instruction& I : BB) {
     CallInst *CI = dyn_cast<CallInst>(&I);
     if (!CI) {
@@ -824,7 +844,8 @@ bool ExpandMemCmpPass::runOnBlock(
     }
     LibFunc Func;
     if (TLI->getLibFunc(ImmutableCallSite(CI), Func) &&
-        Func == LibFunc_memcmp && expandMemCmp(CI, TTI, TL, &DL)) {
+        (Func == LibFunc_memcmp || Func == LibFunc_bcmp) &&
+        expandMemCmp(CI, TTI, TL, &DL, PSI, BFI)) {
       return true;
     }
   }
@@ -834,11 +855,12 @@ bool ExpandMemCmpPass::runOnBlock(
 
 PreservedAnalyses ExpandMemCmpPass::runImpl(
     Function &F, const TargetLibraryInfo *TLI, const TargetTransformInfo *TTI,
-    const TargetLowering* TL) {
+    const TargetLowering* TL, ProfileSummaryInfo *PSI,
+    BlockFrequencyInfo *BFI) {
   const DataLayout& DL = F.getParent()->getDataLayout();
   bool MadeChanges = false;
   for (auto BBIt = F.begin(); BBIt != F.end();) {
-    if (runOnBlock(*BBIt, TLI, TTI, TL, DL)) {
+    if (runOnBlock(*BBIt, TLI, TTI, TL, DL, PSI, BFI)) {
       MadeChanges = true;
       // If changes were made, restart the function from the beginning, since
       // the structure of the function was changed.
@@ -857,6 +879,8 @@ INITIALIZE_PASS_BEGIN(ExpandMemCmpPass, "expandmemcmp",
                       "Expand memcmp() to load/stores", false, false)
 INITIALIZE_PASS_DEPENDENCY(TargetLibraryInfoWrapperPass)
 INITIALIZE_PASS_DEPENDENCY(TargetTransformInfoWrapperPass)
+INITIALIZE_PASS_DEPENDENCY(LazyBlockFrequencyInfoPass)
+INITIALIZE_PASS_DEPENDENCY(ProfileSummaryInfoWrapperPass)
 INITIALIZE_PASS_END(ExpandMemCmpPass, "expandmemcmp",
                     "Expand memcmp() to load/stores", false, false)
 

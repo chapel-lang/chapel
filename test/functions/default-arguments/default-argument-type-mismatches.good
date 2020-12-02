@@ -1,3 +1,5 @@
-default-argument-type-mismatches.chpl:4: error: Default expression not convertible to formal type
-default-argument-type-mismatches.chpl:10: error: Default expression not convertible to formal type
+default-argument-type-mismatches.chpl:8: error: Cannot initialize int(64) from range(int(64),bounded,false)
+default-argument-type-mismatches.chpl:4: note: when calling foo with a default value for x
+default-argument-type-mismatches.chpl:13: error: Cannot initialize int(64) from string
+default-argument-type-mismatches.chpl:10: note: when calling int_string with a default value for x
 default-argument-type-mismatches.chpl:19: error: illegal assignment of type to value

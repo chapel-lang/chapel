@@ -1,9 +1,8 @@
 //===-- BPFTargetMachine.cpp - Define TargetMachine for BPF ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,7 @@
 #include "BPFTargetMachine.h"
 #include "BPF.h"
 #include "MCTargetDesc/BPFMCAsmInfo.h"
+#include "TargetInfo/BPFTargetInfo.h"
 #include "llvm/CodeGen/Passes.h"
 #include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
@@ -27,14 +27,16 @@ static cl::
 opt<bool> DisableMIPeephole("disable-bpf-peephole", cl::Hidden,
                             cl::desc("Disable machine peepholes for BPF"));
 
-extern "C" void LLVMInitializeBPFTarget() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeBPFTarget() {
   // Register the target.
   RegisterTargetMachine<BPFTargetMachine> X(getTheBPFleTarget());
   RegisterTargetMachine<BPFTargetMachine> Y(getTheBPFbeTarget());
   RegisterTargetMachine<BPFTargetMachine> Z(getTheBPFTarget());
 
   PassRegistry &PR = *PassRegistry::getPassRegistry();
+  initializeBPFAbstractMemberAccessPass(PR);
   initializeBPFMIPeepholePass(PR);
+  initializeBPFMIPeepholeTruncElimPass(PR);
 }
 
 // DataLayout: little or big endian
@@ -60,7 +62,7 @@ BPFTargetMachine::BPFTargetMachine(const Target &T, const Triple &TT,
     : LLVMTargetMachine(T, computeDataLayout(TT), TT, CPU, FS, Options,
                         getEffectiveRelocModel(RM),
                         getEffectiveCodeModel(CM, CodeModel::Small), OL),
-      TLOF(make_unique<TargetLoweringObjectFileELF>()),
+      TLOF(std::make_unique<TargetLoweringObjectFileELF>()),
       Subtarget(TT, CPU, FS, *this) {
   initAsmInfo();
 
@@ -68,6 +70,7 @@ BPFTargetMachine::BPFTargetMachine(const Target &T, const Triple &TT,
       static_cast<BPFMCAsmInfo *>(const_cast<MCAsmInfo *>(AsmInfo.get()));
   MAI->setDwarfUsesRelocationsAcrossSections(!Subtarget.getUseDwarfRIS());
 }
+
 namespace {
 // BPF Code Generator Pass Configuration Options.
 class BPFPassConfig : public TargetPassConfig {
@@ -79,6 +82,7 @@ public:
     return getTM<BPFTargetMachine>();
   }
 
+  void addIRPasses() override;
   bool addInstSelector() override;
   void addMachineSSAOptimization() override;
   void addPreEmitPass() override;
@@ -87,6 +91,13 @@ public:
 
 TargetPassConfig *BPFTargetMachine::createPassConfig(PassManagerBase &PM) {
   return new BPFPassConfig(*this, PM);
+}
+
+void BPFPassConfig::addIRPasses() {
+
+  addPass(createBPFAbstractMemberAccess(&getBPFTargetMachine()));
+
+  TargetPassConfig::addIRPasses();
 }
 
 // Install an instruction selector pass using
@@ -98,20 +109,23 @@ bool BPFPassConfig::addInstSelector() {
 }
 
 void BPFPassConfig::addMachineSSAOptimization() {
+  addPass(createBPFMISimplifyPatchablePass());
+
   // The default implementation must be called first as we want eBPF
   // Peephole ran at last.
   TargetPassConfig::addMachineSSAOptimization();
 
   const BPFSubtarget *Subtarget = getBPFTargetMachine().getSubtargetImpl();
-  if (Subtarget->getHasAlu32() && !DisableMIPeephole)
-    addPass(createBPFMIPeepholePass());
+  if (!DisableMIPeephole) {
+    if (Subtarget->getHasAlu32())
+      addPass(createBPFMIPeepholePass());
+    addPass(createBPFMIPeepholeTruncElimPass());
+  }
 }
 
 void BPFPassConfig::addPreEmitPass() {
-  const BPFSubtarget *Subtarget = getBPFTargetMachine().getSubtargetImpl();
-
   addPass(createBPFMIPreEmitCheckingPass());
   if (getOptLevel() != CodeGenOpt::None)
-    if (Subtarget->getHasAlu32() && !DisableMIPeephole)
+    if (!DisableMIPeephole)
       addPass(createBPFMIPreEmitPeepholePass());
 }

@@ -1,1 +1,1 @@
-assignReturns-error2.chpl:9: error: The return value of an assignment operator must be 'void'.
+assignReturns-error2.chpl:13: error: The return value of an assignment operator must be 'void'.

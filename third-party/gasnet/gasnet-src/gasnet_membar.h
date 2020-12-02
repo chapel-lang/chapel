@@ -172,27 +172,7 @@
    #endif
 /* ------------------------------------------------------------------------------------ */
 #elif PLATFORM_ARCH_POWERPC
- #if PLATFORM_COMPILER_XLC && GASNETI_HAVE_XLC_ASM
-   /* VisualAge C compiler (mpcc_r) has no support for inline symbolic assembly
-    * you have to hard-code the opcodes in a pragma that defines an assembly 
-    * function - see /usr/include/sys/atomic_op.h on AIX for examples
-    * opcodes can be aquired by placing the mnemonics in inline.s and running:
-    * as -sinline.lst inline.s
-    */ 
-
-   /* "lwsync" = "sync 1", executed as "sync" on older CPUs */
-   #define GASNETI_PPC_WMB_ASM "7c2004ac"
-
-   static void _gasneti_do_wmb(void);
-   #pragma mc_func _gasneti_do_wmb { GASNETI_PPC_WMB_ASM }
-   #pragma reg_killed_by _gasneti_do_wmb
-   #define gasneti_local_wmb() _gasneti_do_wmb()
-
-   static void _gasneti_do_compilerfence(void);
-   #pragma mc_func _gasneti_do_compilerfence { "" }
-   #pragma reg_killed_by _gasneti_do_compilerfence
-   #define gasneti_compiler_fence() _gasneti_do_compilerfence()
- #elif GASNETI_HAVE_GCC_ASM
+ #if GASNETI_HAVE_GCC_ASM
    /* "lwsync" = "sync 1", executed as "sync" on older CPUs */
    /* XXX: Can't count on older assemblers to recognize "lwsync" mnemonic */
    #define GASNETI_PPC_WMB_ASM ".long 0x7c2004ac"

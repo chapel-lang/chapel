@@ -22,7 +22,7 @@ class Foo {
     this.x = val;
   }
 
-  override proc writeThis(f) {
+  override proc writeThis(f) throws {
     f.write(T:string, " x=", x);
   }
 }

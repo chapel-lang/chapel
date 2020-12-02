@@ -1,9 +1,8 @@
 //===-- MipsSEInstrInfo.h - Mips32/64 Instruction Information ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -44,7 +43,7 @@ public:
                               int &FrameIndex) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator MI,
-                   const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
 
   void storeRegToStack(MachineBasicBlock &MBB,
@@ -78,10 +77,10 @@ public:
 
 protected:
   /// If the specific machine instruction is a instruction that moves/copies
-  /// value from one register to another register return true along with
-  /// @Source machine operand and @Destination machine operand.
-  bool isCopyInstrImpl(const MachineInstr &MI, const MachineOperand *&Source,
-                       const MachineOperand *&Destination) const override;
+  /// value from one register to another register return destination and source
+  /// registers as machine operands.
+  Optional<DestSourcePair>
+  isCopyInstrImpl(const MachineInstr &MI) const override;
 
 private:
   unsigned getAnalyzableBrOpc(unsigned Opc) const override;

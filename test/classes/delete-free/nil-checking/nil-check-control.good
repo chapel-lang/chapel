@@ -1,20 +1,15 @@
 nil-check-control.chpl:13: In function 'badNilBothBranches':
 nil-check-control.chpl:19: error: applying postfix-! to nil
-nil-check-control.chpl:19: note: variable x is nil at this point
-nil-check-control.chpl:18: note: this statement may be relevant
+nil-check-control.chpl:18: note: 'x' is set to nil here
 nil-check-control.chpl:23: In function 'badNilAccessInBranch':
 nil-check-control.chpl:26: error: applying postfix-! to nil
-nil-check-control.chpl:26: note: variable x is nil at this point
-nil-check-control.chpl:24: note: this statement may be relevant
+nil-check-control.chpl:24: note: 'x' is set to nil here
 nil-check-control.chpl:30: In function 'badNilInWhileLoop':
 nil-check-control.chpl:34: error: applying postfix-! to nil
-nil-check-control.chpl:34: note: variable x is nil at this point
-nil-check-control.chpl:33: note: this statement may be relevant
+nil-check-control.chpl:33: note: 'x' is set to nil here
 nil-check-control.chpl:39: In function 'badNilInForLoop':
 nil-check-control.chpl:43: error: applying postfix-! to nil
-nil-check-control.chpl:43: note: variable x is nil at this point
-nil-check-control.chpl:42: note: this statement may be relevant
+nil-check-control.chpl:42: note: 'x' is set to nil here
 nil-check-control.chpl:48: In function 'badNilInCoforallLoop':
 nil-check-control.chpl:51: error: applying postfix-! to nil
-nil-check-control.chpl:51: note: variable x is nil at this point
-nil-check-control.chpl:50: note: this statement may be relevant
+nil-check-control.chpl:50: note: 'x' is set to nil here

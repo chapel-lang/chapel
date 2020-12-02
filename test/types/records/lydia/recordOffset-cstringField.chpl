@@ -1,3 +1,4 @@
+use CPtr;
 // Tests having a string field
 // Note: c_offsetof is intended for use in C interoperability only.
 record Test {

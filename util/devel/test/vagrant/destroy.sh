@@ -4,7 +4,7 @@
 # Removes space occupied by each VM
 # Don't do this if you have work you want to save in the VMs!
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

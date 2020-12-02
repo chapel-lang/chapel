@@ -1,9 +1,8 @@
 //===- ExternalASTSource.h - Abstract External AST Interface ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,9 +66,8 @@ class ExternalASTSource : public RefCountedBase<ExternalASTSource> {
   /// whenever we might have added new redeclarations for existing decls.
   uint32_t CurrentGeneration = 0;
 
-  /// Whether this AST source also provides information for
-  /// semantic analysis.
-  bool SemaSource = false;
+  /// LLVM-style RTTI.
+  static char ID;
 
 public:
   ExternalASTSource() = default;
@@ -325,6 +323,12 @@ public:
   }
 
   virtual void getMemoryBufferSizes(MemoryBufferSizes &sizes) const;
+
+  /// LLVM-style RTTI.
+  /// \{
+  virtual bool isA(const void *ClassID) const { return ClassID == &ID; }
+  static bool classof(const ExternalASTSource *S) { return S->isA(&ID); }
+  /// \}
 
 protected:
   static DeclContextLookupResult

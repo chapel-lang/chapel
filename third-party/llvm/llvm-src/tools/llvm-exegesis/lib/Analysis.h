@@ -1,9 +1,8 @@
 //===-- Analysis.h ----------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -16,6 +15,7 @@
 #define LLVM_TOOLS_LLVM_EXEGESIS_ANALYSIS_H
 
 #include "Clustering.h"
+#include "SchedClassResolution.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCDisassembler/MCDisassembler.h"
 #include "llvm/MC/MCInstPrinter.h"
@@ -36,31 +36,20 @@ namespace exegesis {
 // A helper class to analyze benchmark results for a target.
 class Analysis {
 public:
-  Analysis(const llvm::Target &Target,
-           const InstructionBenchmarkClustering &Clustering);
+  Analysis(const Target &Target, std::unique_ptr<MCInstrInfo> InstrInfo,
+           const InstructionBenchmarkClustering &Clustering,
+           double AnalysisInconsistencyEpsilon,
+           bool AnalysisDisplayUnstableOpcodes);
 
   // Prints a csv of instructions for each cluster.
   struct PrintClusters {};
   // Find potential errors in the scheduling information given measurements.
   struct PrintSchedClassInconsistencies {};
 
-  template <typename Pass> llvm::Error run(llvm::raw_ostream &OS) const;
+  template <typename Pass> Error run(raw_ostream &OS) const;
 
 private:
   using ClusterId = InstructionBenchmarkClustering::ClusterId;
-
-  // An llvm::MCSchedClassDesc augmented with some additional data.
-  struct ResolvedSchedClass {
-    ResolvedSchedClass(const llvm::MCSubtargetInfo &STI,
-                       unsigned ResolvedSchedClassId, bool WasVariant);
-
-    const unsigned SchedClassId;
-    const llvm::MCSchedClassDesc *const SCDesc;
-    const bool WasVariant; // Whether the original class was variant.
-    const llvm::SmallVector<llvm::MCWriteProcResEntry, 8>
-        NonRedundantWriteProcRes;
-    const std::vector<std::pair<uint16_t, float>> IdealizedProcResPressure;
-  };
 
   // Represents the intersection of a sched class and a cluster.
   class SchedClassCluster {
@@ -71,35 +60,39 @@ private:
 
     const std::vector<size_t> &getPointIds() const { return PointIds; }
 
+    void addPoint(size_t PointId,
+                  const InstructionBenchmarkClustering &Clustering);
+
     // Return the cluster centroid.
-    const std::vector<PerInstructionStats> &getRepresentative() const {
-      return Representative;
-    }
+    const SchedClassClusterCentroid &getCentroid() const { return Centroid; }
 
     // Returns true if the cluster representative measurements match that of SC.
     bool
-    measurementsMatch(const llvm::MCSubtargetInfo &STI,
-                      const ResolvedSchedClass &SC,
-                      const InstructionBenchmarkClustering &Clustering) const;
-
-    void addPoint(size_t PointId,
-                  const InstructionBenchmarkClustering &Clustering);
+    measurementsMatch(const MCSubtargetInfo &STI, const ResolvedSchedClass &SC,
+                      const InstructionBenchmarkClustering &Clustering,
+                      const double AnalysisInconsistencyEpsilonSquared_) const;
 
   private:
     InstructionBenchmarkClustering::ClusterId ClusterId;
     std::vector<size_t> PointIds;
     // Measurement stats for the points in the SchedClassCluster.
-    std::vector<PerInstructionStats> Representative;
+    SchedClassClusterCentroid Centroid;
   };
 
-  void printInstructionRowCsv(size_t PointId, llvm::raw_ostream &OS) const;
+  void printInstructionRowCsv(size_t PointId, raw_ostream &OS) const;
+
+  void printClusterRawHtml(const InstructionBenchmarkClustering::ClusterId &Id,
+                           StringRef display_name, llvm::raw_ostream &OS) const;
+
+  void printPointHtml(const InstructionBenchmark &Point,
+                      llvm::raw_ostream &OS) const;
 
   void
   printSchedClassClustersHtml(const std::vector<SchedClassCluster> &Clusters,
                               const ResolvedSchedClass &SC,
-                              llvm::raw_ostream &OS) const;
+                              raw_ostream &OS) const;
   void printSchedClassDescHtml(const ResolvedSchedClass &SC,
-                               llvm::raw_ostream &OS) const;
+                               raw_ostream &OS) const;
 
   // A pair of (Sched Class, indices of points that belong to the sched
   // class).
@@ -114,26 +107,21 @@ private:
   std::vector<ResolvedSchedClassAndPoints> makePointsPerSchedClass() const;
 
   template <typename EscapeTag, EscapeTag Tag>
-  void writeSnippet(llvm::raw_ostream &OS, llvm::ArrayRef<uint8_t> Bytes,
+  void writeSnippet(raw_ostream &OS, ArrayRef<uint8_t> Bytes,
                     const char *Separator) const;
 
   const InstructionBenchmarkClustering &Clustering_;
-  llvm::MCObjectFileInfo ObjectFileInfo_;
-  std::unique_ptr<llvm::MCContext> Context_;
-  std::unique_ptr<llvm::MCSubtargetInfo> SubtargetInfo_;
-  std::unique_ptr<llvm::MCInstrInfo> InstrInfo_;
-  std::unique_ptr<llvm::MCRegisterInfo> RegInfo_;
-  std::unique_ptr<llvm::MCAsmInfo> AsmInfo_;
-  std::unique_ptr<llvm::MCInstPrinter> InstPrinter_;
-  std::unique_ptr<llvm::MCDisassembler> Disasm_;
+  MCObjectFileInfo ObjectFileInfo_;
+  std::unique_ptr<MCContext> Context_;
+  std::unique_ptr<MCSubtargetInfo> SubtargetInfo_;
+  std::unique_ptr<MCInstrInfo> InstrInfo_;
+  std::unique_ptr<MCRegisterInfo> RegInfo_;
+  std::unique_ptr<MCAsmInfo> AsmInfo_;
+  std::unique_ptr<MCInstPrinter> InstPrinter_;
+  std::unique_ptr<MCDisassembler> Disasm_;
+  const double AnalysisInconsistencyEpsilonSquared_;
+  const bool AnalysisDisplayUnstableOpcodes_;
 };
-
-// Computes the idealized ProcRes Unit pressure. This is the expected
-// distribution if the CPU scheduler can distribute the load as evenly as
-// possible.
-std::vector<std::pair<uint16_t, float>> computeIdealizedProcResPressure(
-    const llvm::MCSchedModel &SM,
-    llvm::SmallVector<llvm::MCWriteProcResEntry, 8> WPRS);
 
 } // namespace exegesis
 } // namespace llvm

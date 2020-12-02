@@ -1,9 +1,8 @@
 //====- X86CmovConversion.cpp - Convert Cmov to Branch --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -62,6 +61,7 @@
 #include "llvm/CodeGen/TargetSchedule.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DebugLoc.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/MC/MCSchedule.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
@@ -102,9 +102,7 @@ namespace {
 /// Converts X86 cmov instructions into branches when profitable.
 class X86CmovConverterPass : public MachineFunctionPass {
 public:
-  X86CmovConverterPass() : MachineFunctionPass(ID) {
-    initializeX86CmovConverterPassPass(*PassRegistry::getPassRegistry());
-  }
+  X86CmovConverterPass() : MachineFunctionPass(ID) { }
 
   StringRef getPassName() const override { return "X86 cmov Conversion"; }
   bool runOnMachineFunction(MachineFunction &MF) override;
@@ -114,9 +112,9 @@ public:
   static char ID;
 
 private:
-  MachineRegisterInfo *MRI;
-  const TargetInstrInfo *TII;
-  const TargetRegisterInfo *TRI;
+  MachineRegisterInfo *MRI = nullptr;
+  const TargetInstrInfo *TII = nullptr;
+  const TargetRegisterInfo *TRI = nullptr;
   TargetSchedModel TSchedModel;
 
   /// List of consecutive CMOV instructions.
@@ -281,7 +279,8 @@ bool X86CmovConverterPass::collectCmovCandidates(
     Group.clear();
     // Condition code of first CMOV instruction current processed range and its
     // opposite condition code.
-    X86::CondCode FirstCC, FirstOppCC, MemOpCC;
+    X86::CondCode FirstCC = X86::COND_INVALID, FirstOppCC = X86::COND_INVALID,
+                  MemOpCC = X86::COND_INVALID;
     // Indicator of a non CMOVrr instruction in the current processed range.
     bool FoundNonCMOVInst = false;
     // Indicator for current processed CMOV-group if it should be skipped.
@@ -291,7 +290,7 @@ bool X86CmovConverterPass::collectCmovCandidates(
       // Skip debug instructions.
       if (I.isDebugInstr())
         continue;
-      X86::CondCode CC = X86::getCondFromCMovOpc(I.getOpcode());
+      X86::CondCode CC = X86::getCondFromCMov(I);
       // Check if we found a X86::CMOVrr instruction.
       if (CC != X86::COND_INVALID && (IncludeLoads || !I.mayLoad())) {
         if (Group.empty()) {
@@ -365,12 +364,13 @@ bool X86CmovConverterPass::collectCmovCandidates(
 /// \param TrueOpDepth depth cost of CMOV true value operand.
 /// \param FalseOpDepth depth cost of CMOV false value operand.
 static unsigned getDepthOfOptCmov(unsigned TrueOpDepth, unsigned FalseOpDepth) {
-  //===--------------------------------------------------------------------===//
-  // With no info about branch weight, we assume 50% for each value operand.
-  // Thus, depth of optimized CMOV instruction is the rounded up average of
-  // its True-Operand-Value-Depth and False-Operand-Value-Depth.
-  //===--------------------------------------------------------------------===//
-  return (TrueOpDepth + FalseOpDepth + 1) / 2;
+  // The depth of the result after branch conversion is
+  // TrueOpDepth * TrueOpProbability + FalseOpDepth * FalseOpProbability.
+  // As we have no info about branch weight, we assume 75% for one and 25% for
+  // the other, and pick the result with the largest resulting depth.
+  return std::max(
+      divideCeil(TrueOpDepth * 3 + FalseOpDepth, 4),
+      divideCeil(FalseOpDepth * 3 + TrueOpDepth, 4));
 }
 
 bool X86CmovConverterPass::checkForProfitableCmovCandidates(
@@ -438,8 +438,8 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
           // Checks for "isUse()" as "uses()" returns also implicit definitions.
           if (!MO.isReg() || !MO.isUse())
             continue;
-          unsigned Reg = MO.getReg();
-          auto &RDM = RegDefMaps[TargetRegisterInfo::isVirtualRegister(Reg)];
+          Register Reg = MO.getReg();
+          auto &RDM = RegDefMaps[Register::isVirtualRegister(Reg)];
           if (MachineInstr *DefMI = RDM.lookup(Reg)) {
             OperandToDefMap[&MO] = DefMI;
             DepthInfo Info = DepthMap.lookup(DefMI);
@@ -458,8 +458,8 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
         for (auto &MO : MI.operands()) {
           if (!MO.isReg() || !MO.isDef())
             continue;
-          unsigned Reg = MO.getReg();
-          RegDefMaps[TargetRegisterInfo::isVirtualRegister(Reg)][Reg] = &MI;
+          Register Reg = MO.getReg();
+          RegDefMaps[Register::isVirtualRegister(Reg)][Reg] = &MI;
         }
 
         unsigned Latency = TSchedModel.computeInstrLatency(&MI);
@@ -546,7 +546,7 @@ bool X86CmovConverterPass::checkForProfitableCmovCandidates(
       }
 
       unsigned CondCost =
-          DepthMap[OperandToDefMap.lookup(&MI->getOperand(3))].Depth;
+          DepthMap[OperandToDefMap.lookup(&MI->getOperand(4))].Depth;
       unsigned ValCost = getDepthOfOptCmov(
           DepthMap[OperandToDefMap.lookup(&MI->getOperand(1))].Depth,
           DepthMap[OperandToDefMap.lookup(&MI->getOperand(2))].Depth);
@@ -594,7 +594,7 @@ static bool checkEFLAGSLive(MachineInstr *MI) {
 /// move all debug instructions to after the last CMOV instruction, making the
 /// CMOV group consecutive.
 static void packCmovGroup(MachineInstr *First, MachineInstr *Last) {
-  assert(X86::getCondFromCMovOpc(Last->getOpcode()) != X86::COND_INVALID &&
+  assert(X86::getCondFromCMov(*Last) != X86::COND_INVALID &&
          "Last instruction in a CMOV group must be a CMOV instruction");
 
   SmallVector<MachineInstr *, 2> DBGInstructions;
@@ -652,14 +652,14 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
   MachineInstr *LastCMOV = Group.back();
   DebugLoc DL = MI.getDebugLoc();
 
-  X86::CondCode CC = X86::CondCode(X86::getCondFromCMovOpc(MI.getOpcode()));
+  X86::CondCode CC = X86::CondCode(X86::getCondFromCMov(MI));
   X86::CondCode OppCC = X86::GetOppositeBranchCondition(CC);
   // Potentially swap the condition codes so that any memory operand to a CMOV
   // is in the *false* position instead of the *true* position. We can invert
   // any non-memory operand CMOV instructions to cope with this and we ensure
   // memory operand CMOVs are only included with a single condition code.
   if (llvm::any_of(Group, [&](MachineInstr *I) {
-        return I->mayLoad() && X86::getCondFromCMovOpc(I->getOpcode()) == CC;
+        return I->mayLoad() && X86::getCondFromCMov(*I) == CC;
       }))
     std::swap(CC, OppCC);
 
@@ -690,7 +690,7 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
   MBB->addSuccessor(SinkMBB);
 
   // Create the conditional branch instruction.
-  BuildMI(MBB, DL, TII->get(X86::GetCondBranchFromCond(CC))).addMBB(SinkMBB);
+  BuildMI(MBB, DL, TII->get(X86::JCC_1)).addMBB(SinkMBB).addImm(CC);
 
   // Add the sink block to the false block successors.
   FalseMBB->addSuccessor(SinkMBB);
@@ -712,9 +712,8 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
     // Skip any CMOVs in this group which don't load from memory.
     if (!MI.mayLoad()) {
       // Remember the false-side register input.
-      unsigned FalseReg =
-          MI.getOperand(X86::getCondFromCMovOpc(MI.getOpcode()) == CC ? 1 : 2)
-              .getReg();
+      Register FalseReg =
+          MI.getOperand(X86::getCondFromCMov(MI) == CC ? 1 : 2).getReg();
       // Walk back through any intermediate cmovs referenced.
       while (true) {
         auto FRIt = FalseBBRegRewriteTable.find(FalseReg);
@@ -729,7 +728,7 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
     // The condition must be the *opposite* of the one we've decided to branch
     // on as the branch will go *around* the load and the load should happen
     // when the CMOV condition is false.
-    assert(X86::getCondFromCMovOpc(MI.getOpcode()) == OppCC &&
+    assert(X86::getCondFromCMov(MI) == OppCC &&
            "Can only handle memory-operand cmov instructions with a condition "
            "opposite to the selected branch direction.");
 
@@ -756,7 +755,7 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
 
     // Get a fresh register to use as the destination of the MOV.
     const TargetRegisterClass *RC = MRI->getRegClass(MI.getOperand(0).getReg());
-    unsigned TmpReg = MRI->createVirtualRegister(RC);
+    Register TmpReg = MRI->createVirtualRegister(RC);
 
     SmallVector<MachineInstr *, 4> NewMIs;
     bool Unfolded = TII->unfoldMemoryOperand(*MBB->getParent(), MI, TmpReg,
@@ -768,7 +767,7 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
     // Move the new CMOV to just before the old one and reset any impacted
     // iterator.
     auto *NewCMOV = NewMIs.pop_back_val();
-    assert(X86::getCondFromCMovOpc(NewCMOV->getOpcode()) == OppCC &&
+    assert(X86::getCondFromCMov(*NewCMOV) == OppCC &&
            "Last new instruction isn't the expected CMOV!");
     LLVM_DEBUG(dbgs() << "\tRewritten cmov: "; NewCMOV->dump());
     MBB->insert(MachineBasicBlock::iterator(MI), NewCMOV);
@@ -813,14 +812,14 @@ void X86CmovConverterPass::convertCmovInstsToBranches(
   DenseMap<unsigned, std::pair<unsigned, unsigned>> RegRewriteTable;
 
   for (MachineBasicBlock::iterator MIIt = MIItBegin; MIIt != MIItEnd; ++MIIt) {
-    unsigned DestReg = MIIt->getOperand(0).getReg();
-    unsigned Op1Reg = MIIt->getOperand(1).getReg();
-    unsigned Op2Reg = MIIt->getOperand(2).getReg();
+    Register DestReg = MIIt->getOperand(0).getReg();
+    Register Op1Reg = MIIt->getOperand(1).getReg();
+    Register Op2Reg = MIIt->getOperand(2).getReg();
 
     // If this CMOV we are processing is the opposite condition from the jump we
     // generated, then we have to swap the operands for the PHI that is going to
     // be generated.
-    if (X86::getCondFromCMovOpc(MIIt->getOpcode()) == OppCC)
+    if (X86::getCondFromCMov(*MIIt) == OppCC)
       std::swap(Op1Reg, Op2Reg);
 
     auto Op1Itr = RegRewriteTable.find(Op1Reg);

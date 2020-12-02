@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Run bale index gather with 1 million updates per task. ugni and gasnet-aries
 # are much faster so drop the number of updates for slower configs. 
@@ -13,4 +13,4 @@ N = 10000
 if ugni or gn_aries:
   N = 1000000
 
-print('--N={0} --printStats --useUnorderedCopy=false # bale-ig-opt'.format(N))
+print('--N={0} --printStats --mode=Mode.ordered # bale-ig-opt'.format(N))

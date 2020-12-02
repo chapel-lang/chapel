@@ -1,2 +1,2 @@
 shared-from-borrow.chpl:3: In function 'testShared':
-shared-from-borrow.chpl:5: error: cannot initialize shared from a borrow
+shared-from-borrow.chpl:5: error: cannot create a 'shared' from borrowed MyClass

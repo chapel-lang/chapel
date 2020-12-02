@@ -1,0 +1,2 @@
+# tools/c2chapel/Makefile should match so fakeHeaders download matches
+pycparser==2.17

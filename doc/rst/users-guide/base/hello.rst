@@ -18,7 +18,7 @@ the console:
   :language: chapel
   :lines: 1-1
 
-This guide will cover Chapel program structure in more detail later;
+This guide will cover the Chapel program structure in more detail later;
 for now, it's sufficient to know that a Chapel program can simply be a
 sequence of statements in a file.  Thus, the statement above is a
 complete Chapel program.  If you type or paste it into a text editor

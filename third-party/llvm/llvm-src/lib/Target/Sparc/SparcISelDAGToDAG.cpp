@@ -1,9 +1,8 @@
 //===-- SparcISelDAGToDAG.cpp - A dag to dag inst selector for Sparc ------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,7 +31,7 @@ namespace {
 class SparcDAGToDAGISel : public SelectionDAGISel {
   /// Subtarget - Keep a pointer to the Sparc Subtarget around so that we can
   /// make the right decision when generating code for different targets.
-  const SparcSubtarget *Subtarget;
+  const SparcSubtarget *Subtarget = nullptr;
 public:
   explicit SparcDAGToDAGISel(SparcTargetMachine &tm) : SelectionDAGISel(tm) {}
 
@@ -232,7 +231,7 @@ bool SparcDAGToDAGISel::tryInlineAsm(SDNode *N){
       // Replace the two GPRs with 1 GPRPair and copy values from GPRPair to
       // the original GPRs.
 
-      unsigned GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
+      Register GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
       PairedReg = CurDAG->getRegister(GPVR, MVT::v2i32);
       SDValue Chain = SDValue(N,0);
 
@@ -279,7 +278,7 @@ bool SparcDAGToDAGISel::tryInlineAsm(SDNode *N){
 
       // Copy REG_SEQ into a GPRPair-typed VR and replace the original two
       // i32 VRs of inline asm with it.
-      unsigned GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
+      Register GPVR = MRI.createVirtualRegister(&SP::IntPairRegClass);
       PairedReg = CurDAG->getRegister(GPVR, MVT::v2i32);
       Chain = CurDAG->getCopyToReg(T1, dl, GPVR, Pair, T1.getValue(1));
 
@@ -313,7 +312,7 @@ bool SparcDAGToDAGISel::tryInlineAsm(SDNode *N){
 
   SelectInlineAsmMemoryOperands(AsmNodeOperands, SDLoc(N));
 
-  SDValue New = CurDAG->getNode(ISD::INLINEASM, SDLoc(N),
+  SDValue New = CurDAG->getNode(N->getOpcode(), SDLoc(N),
       CurDAG->getVTList(MVT::Other, MVT::Glue), AsmNodeOperands);
   New->setNodeId(-1);
   ReplaceNode(N, New.getNode());
@@ -329,7 +328,8 @@ void SparcDAGToDAGISel::Select(SDNode *N) {
 
   switch (N->getOpcode()) {
   default: break;
-  case ISD::INLINEASM: {
+  case ISD::INLINEASM:
+  case ISD::INLINEASM_BR: {
     if (tryInlineAsm(N))
       return;
     break;
@@ -380,7 +380,6 @@ SparcDAGToDAGISel::SelectInlineAsmMemoryOperand(const SDValue &Op,
   SDValue Op0, Op1;
   switch (ConstraintID) {
   default: return true;
-  case InlineAsm::Constraint_i:
   case InlineAsm::Constraint_o:
   case InlineAsm::Constraint_m: // memory
    if (!SelectADDRrr(Op, Op0, Op1))

@@ -1,0 +1,1 @@
+sameType.chpl:1: error: use of 'tmp' before encountering its definition, type unknown

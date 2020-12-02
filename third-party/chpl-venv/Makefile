@@ -11,118 +11,99 @@ default: all
 all: test-venv chpldoc-venv
 
 clean: FORCE
+	rm -rf build
 
-cleanall: FORCE
+cleanall: FORCE clean
 
-clobber: FORCE
+clobber: FORCE clean
 	rm -rf install
 
-check-python:
-ifeq ($(wildcard $(PYTHON)),)
-	$(error python and pip are required to install chpldoc \
-	        and start_test dependencies. See https://www.python.org/)
-endif
+OLD_PYTHON_ERROR="python3 version 3.5 or later is required to install chpldoc and start_test dependencies. See https://www.python.org/"
 
-check-exes: check-python
+# Create the virtualenv to use during build.
+#  (to allow for a different path to the system python3 in the future)
+$(CHPL_VENV_VIRTUALENV_DIR_OK):
+	@# First check the python version is OK
+	@case `$(PYTHON) --version` in \
+	  *"Python 3.0"*) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	  *"Python 3.1"*) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	  *"Python 3.2"*) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	  *"Python 3.3"*) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	  *"Python 3.4"*) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	  *"Python 3"*) \
+	    ;; \
+	  *) \
+	    echo $(OLD_PYTHON_ERROR) ; \
+            exit 1 ; \
+	    ;; \
+	esac
 
-$(CHPL_VENV_INSTALL_DIR):
-	mkdir -p $@
-
-# Install pip via get-pip.py to ensure we have an updated version
-$(PIP): $(CHPL_VENV_INSTALL_DIR)
-	@if [ -z "$$CHPL_PIP" ]; then \
-	  echo "Installing local copy of pip with get-pip.py from $(GETPIP)"; \
-	  (cd install && curl -O $(GETPIP) || \
-	  { echo "Failed on command: curl -O $(GETPIP)."; \
-	    echo "Try setting CHPL_PIP to $$(which pip) and trying again"; \
-	    exit 1; } && \
-	  $(GET_PIP_COMMAND) ) \
-	fi
-
-# Install virtualenv program.
-$(CHPL_VENV_VIRTUALENV): check-exes $(PIP)
-	export PYTHONPATH="$$CHPL_PYTHONPATH:$(PIPLIBS):$$PYTHONPATH" && \
-	python $(PIP) install -U --force-reinstall --ignore-installed $(LOCAL_PIP_FLAGS) \
-	 --prefix=$(CHPL_VENV_INSTALL_DIR) $(CHPL_PIP_INSTALL_PARAMS) $(shell cat virtualenv.txt)
-
-# Phony convenience target for installing virtualenv.
-virtualenv: $(CHPL_VENV_VIRTUALENV)
-
-# Create the virtualenv.
-$(CHPL_VENV_VIRTUALENV_DIR): $(CHPL_VENV_VIRTUALENV)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
-	python $(CHPL_VENV_VIRTUALENV) --python=$(PYTHON) $@
+	@# Now create the venv to use to get the dependencies
+	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)
+	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	$(PIP) install \
+	--upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) wheel && \
+	touch $(CHPL_VENV_VIRTUALENV_DIR_OK)
 
 # Phony convenience target for creating virtualenv.
-create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR)
+create-virtualenv: $(CHPL_VENV_VIRTUALENV_DIR_OK)
 
-# Install requirements.txt inside virtualenv. Use sphinx-build executable to
-# indicate success or failure. Call virtualenv --relocatable <virtualenv_dir>
-# after installing, which takes the hardcoded paths out of the installed
-# "python binaries".
-#
-# In order to avoid issues with long hash bangs (#!) in the pip script, call it
-# directly. For example, in some cases the hash bang can be longer than OS
-# supports, so when pip is called the shell fails with an error like:
-#
-#   /bin/sh: .../path/to/bin/pip: <truncated hash bang>: bad interpreter: No such file or directory.
-#
-# By calling `python .../path/to/pip ...`, this issue is circumvented.
-$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
+$(CHPL_VENV_CHPLDEPS_MAIN): $(CHPL_VENV_VIRTUALENV_DIR_OK) $(CHPL_VENV_TEST_REQUIREMENTS_FILE) $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE) $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE) chpldeps-main.py
+	@# Install dependencies to $(CHPL_VENV_CHPLDEPS)
+	@# Rely on pip to create the directory
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r test-requirements.txt && \
-	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
-	touch $(CHPL_VENV_TEST_REQS)
+	$(PIP) install --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  --target $(CHPL_VENV_CHPLDEPS) \
+	  -r $(CHPL_VENV_TEST_REQUIREMENTS_FILE) \
+	  -r $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE) \
+	  -r $(CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE) && \
+	cp chpldeps-main.py $(CHPL_VENV_CHPLDEPS_MAIN)
 
-$(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
+install-chpldeps: $(CHPL_VENV_CHPLDEPS_MAIN)
+
+test-venv: install-chpldeps
+
+chpldoc-venv: install-chpldeps
+
+c2chapel-venv: install-chpldeps
+
+install-requirements: install-chpldeps
+
+$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR_OK) $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chpldoc-requirements.txt && \
-	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR)
-
-$(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR)
-	export PYTHONPATH="$(PIPLIBS):$$PYTHONPATH" && \
-	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
-	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
-	python $(CHPL_VENV_VIRTUALENV_BIN)/pip install \
-	-U --force-reinstall $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) -r chplspell-requirements.txt && \
-	python $(CHPL_VENV_VIRTUALENV) --relocatable $(CHPL_VENV_VIRTUALENV_DIR) && \
+	$(PIP) install \
+	  --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  -r $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE) && \
 	touch $(CHPL_VENV_CHPLSPELL_REQS)
 
-test-venv: $(CHPL_VENV_TEST_REQS)
-
-chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
-
 chplspell-venv: $(CHPL_VENV_CHPLSPELL_REQS)
-
-# Phony convenience target for install python packages.
-install-requirements: rm-test-reqs rm-sphinx-build $(CHPL_VENV_TEST_REQS) $(CHPL_VENV_SPHINX_BUILD) $(CHPL_VENV_CHPLSPELL_REQS)
-
-# Remove chpl-test-reqs, forcing install-requirements to be rebuilt.
-rm-test-reqs: FORCE
-	@rm -f $(CHPL_VENV_TEST_REQS)
-
-# Remove sphinx-build, forcing install-requirements to be rebuilt.
-rm-sphinx-build: FORCE
-	@rm -f $(CHPL_VENV_SPHINX_BUILD)
-
-# Remove chplspell-reqs, forcing install-requirements to be rebuilt.
-rm-chplspell-reqs: FORCE
-	@rm -f $(CHPL_VENV_CHPLSPELL_REQS)
 
 # Fix up the chpl-venv installation in a Cray Chapel module that was built using a non-standard
 # Python installation (ie, the Python used was not installed under "/usr/...").
 # Only applicable when building a Cray Chapel module under certain conditions.
 use-system-python: FORCE
-	@./venv-use-sys-python.py $(CHPL_VENV_INSTALL_DIR)
+	@echo ignoring use-system-python
 
 FORCE:
 
-.PHONY: install-requirements create-virtualenv virtualenv check-exes rm-sphinx-build check-pip check-python
+.PHONY: install-requirements create-virtualenv test-venv chpldoc-venv c2chapel-venv chplspell-venv install-chpldeps
 
 .NOTPARALLEL:

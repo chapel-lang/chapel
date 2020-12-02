@@ -100,7 +100,7 @@ module Rosslyn
 
 
             writeln("Min: ",min reduce results," ",
-                    "Avg: ",(+ reduce results)/results.numElements);
+                    "Avg: ",(+ reduce results)/results.size);
 
         }
 

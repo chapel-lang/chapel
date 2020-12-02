@@ -1,9 +1,8 @@
 //===- MCJITTestBase.h - Common base class for MCJIT Unit tests  ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,13 +21,14 @@
 #include "llvm/InitializePasses.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/TargetRegistry.h"
 
 // Used to skip tests on unsupported architectures and operating systems.
 // To skip a test, add this macro at the top of a test-case in a suite that
 // inherits from MCJITTestBase. See MCJITTest.cpp for examples.
 #define SKIP_UNSUPPORTED_PLATFORM \
   do \
-    if (!ArchSupportsMCJIT() || !OSSupportsMCJIT()) \
+    if (!ArchSupportsMCJIT() || !OSSupportsMCJIT() || !HostCanBeTargeted()) \
       return; \
   while(0)
 
@@ -51,6 +51,11 @@ protected:
     HostTriple += "-elf";
 #endif // _WIN32
     HostTriple = Triple::normalize(HostTriple);
+  }
+
+  bool HostCanBeTargeted() {
+    std::string Error;
+    return TargetRegistry::lookupTarget(HostTriple, Error) != nullptr;
   }
 
   /// Returns true if the host architecture is known to support MCJIT

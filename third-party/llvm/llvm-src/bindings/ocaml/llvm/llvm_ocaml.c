@@ -1,9 +1,9 @@
 /*===-- llvm_ocaml.c - LLVM OCaml Glue --------------------------*- C++ -*-===*\
 |*                                                                            *|
-|*                     The LLVM Compiler Infrastructure                       *|
-|*                                                                            *|
-|* This file is distributed under the University of Illinois Open Source      *|
-|* License. See LICENSE.TXT for details.                                      *|
+|* Part of the LLVM Project, under the Apache License v2.0 with LLVM          *|
+|* Exceptions.                                                                *|
+|* See https://llvm.org/LICENSE.txt for license information.                  *|
+|* SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception                    *|
 |*                                                                            *|
 |*===----------------------------------------------------------------------===*|
 |*                                                                            *|
@@ -1534,7 +1534,7 @@ CAMLprim value llvm_instr_get_opcode(LLVMValueRef Inst) {
   if (!LLVMIsAInstruction(Inst))
       failwith("Not an instruction");
   o = LLVMGetInstructionOpcode(Inst);
-  assert (o <= LLVMCatchSwitch);
+  assert (o <= LLVMCallBr);
   return Val_int(o);
 }
 
@@ -2449,6 +2449,12 @@ CAMLprim LLVMValueRef llvm_build_is_not_null(LLVMValueRef Val, value Name,
 CAMLprim LLVMValueRef llvm_build_ptrdiff(LLVMValueRef LHS, LLVMValueRef RHS,
                                          value Name, value B) {
   return LLVMBuildPtrDiff(Builder_val(B), LHS, RHS, String_val(Name));
+}
+
+/* llvalue -> string -> llbuilder -> llvalue */
+CAMLprim LLVMValueRef llvm_build_freeze(LLVMValueRef X,
+                                        value Name, value B) {
+  return LLVMBuildFreeze(Builder_val(B), X, String_val(Name));
 }
 
 /*===-- Memory buffers ----------------------------------------------------===*/

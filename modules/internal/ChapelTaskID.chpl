@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,8 +30,10 @@ module ChapelTaskID {
   inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
     return __primitive("==", a, b);
 
-  inline proc _cast(type t, x: chpl_taskID_t) where t == int(64)
-                                                    || t == uint(64)
+  inline proc _cast(type t: int(64), x: chpl_taskID_t)
+    return __primitive("cast", t, x);
+
+  inline proc _cast(type t: uint(64), x: chpl_taskID_t)
     return __primitive("cast", t, x);
 
 }

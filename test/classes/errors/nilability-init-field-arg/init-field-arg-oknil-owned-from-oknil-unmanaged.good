@@ -1,3 +1,3 @@
 init-field-arg-oknil-owned-from-oknil-unmanaged.chpl:9: In initializer:
 init-field-arg-oknil-owned-from-oknil-unmanaged.chpl:10: error: cannot create an owned variable from an unmanaged class instance
-init-field-arg-oknil-owned-from-oknil-unmanaged.chpl:14: Initializer instantiated as: init(rhs: unmanaged MyClass?)
+  init-field-arg-oknil-owned-from-oknil-unmanaged.chpl:14: called as MyRecord.init(rhs: unmanaged MyClass?)

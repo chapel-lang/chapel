@@ -1,0 +1,4 @@
+changing-param-field-error3.chpl:7: In method 'init=':
+changing-param-field-error3.chpl:8: error: Cannot replace an instantiated param field with another value
+changing-param-field-error3.chpl:8: note: field 'fixed' has value 'false: bool' but is set to 'true: bool'
+  changing-param-field-error3.chpl:24: called as R(false,false).init=(rhs: R(true,true))

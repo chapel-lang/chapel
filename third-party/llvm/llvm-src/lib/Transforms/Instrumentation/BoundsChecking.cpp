@@ -1,9 +1,8 @@
 //===- BoundsChecking.cpp - Instrumentation for run-time bounds checking --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -25,6 +24,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -143,8 +143,9 @@ static void insertBoundsCheck(Value *Or, BuilderTy IRB, GetTrapBBT GetTrapBB) {
 static bool addBoundsChecking(Function &F, TargetLibraryInfo &TLI,
                               ScalarEvolution &SE) {
   const DataLayout &DL = F.getParent()->getDataLayout();
-  ObjectSizeOffsetEvaluator ObjSizeEval(DL, &TLI, F.getContext(),
-                                           /*RoundToAlign=*/true);
+  ObjectSizeOpts EvalOpts;
+  EvalOpts.RoundToAlign = true;
+  ObjectSizeOffsetEvaluator ObjSizeEval(DL, &TLI, F.getContext(), EvalOpts);
 
   // check HANDLE_MEMORY_INST in include/llvm/Instruction.def for memory
   // touching instructions
@@ -224,7 +225,7 @@ struct BoundsCheckingLegacyPass : public FunctionPass {
   }
 
   bool runOnFunction(Function &F) override {
-    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     auto &SE = getAnalysis<ScalarEvolutionWrapperPass>().getSE();
     return addBoundsChecking(F, TLI, SE);
   }

@@ -56,10 +56,10 @@ codepoint: 62
 find/count
 Should be 2: 2
 Should be 1: 1
-Should be 2: 2
-Should be 4: 4
-Should be 8: 8
-Should be 4: 4
+Should be 1: 1
+Should be 3: 3
+Should be 7: 7
+Should be 3: 3
 
 split
 repr: b"bAb"

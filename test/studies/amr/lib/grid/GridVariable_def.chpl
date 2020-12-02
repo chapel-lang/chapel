@@ -162,9 +162,9 @@ proc GridVariable.writeData (
   //==== Write n_cells ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "                 mx\n";
-      when 2 do linelabel = "                 my\n";
-      when 3 do linelabel = "                 mz\n";
+      when 0 do linelabel = "                 mx\n";
+      when 1 do linelabel = "                 my\n";
+      when 2 do linelabel = "                 mz\n";
       otherwise linelabel = "                 mx(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(ifmt+linelabel, grid.n_cells(d));
@@ -174,9 +174,9 @@ proc GridVariable.writeData (
   //==== Write x_low ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "    xlow\n";
-      when 2 do linelabel = "    ylow\n";
-      when 3 do linelabel = "    zlow\n";
+      when 0 do linelabel = "    xlow\n";
+      when 1 do linelabel = "    ylow\n";
+      when 2 do linelabel = "    zlow\n";
       otherwise linelabel = "    xlow(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(efmt+linelabel, grid.x_low(d));
@@ -186,9 +186,9 @@ proc GridVariable.writeData (
   //==== Write dx ====
   for d in dimensions do {
     select d {
-      when 1 do linelabel = "    dx\n";
-      when 2 do linelabel = "    dy\n";
-      when 3 do linelabel = "    dz\n";
+      when 0 do linelabel = "    dx\n";
+      when 1 do linelabel = "    dy\n";
+      when 2 do linelabel = "    dz\n";
       otherwise linelabel = "    dx(" + "%1i".format(d) + ")\n";
     }
     outfile.writef(efmt+linelabel, grid.dx(d));
@@ -197,7 +197,7 @@ proc GridVariable.writeData (
 
 
   //===> Write array values ===>
-  if dimension == 1 then {
+  if dimension == 0 then {
     for cell in grid.cells do
       outfile.writef(efmt+"\n", value(cell));
   }
@@ -208,7 +208,7 @@ proc GridVariable.writeData (
     //------------------------------------------------------------
     var range_tuple: dimension*range(stridable=true);
     [d in dimensions with (ref range_tuple)] // could also be 'for param d'
-      range_tuple(d) = grid.cells.dim(1 + dimension - d);
+      range_tuple(d) = grid.cells.dim(dimension - (d+1));
 
     var cells_transposed: domain(dimension, stridable=true);
     cells_transposed = {(...range_tuple)};
@@ -219,7 +219,7 @@ proc GridVariable.writeData (
 
       //==== Write value ====
       [d in dimensions with (ref cell)] // could also be 'for param d'
-        cell(d) = cell_transposed(1 + dimension - d);
+        cell(d) = cell_transposed(dimension - (d+1));
       if abs(value(cell)) > 1.0e-99 then
         outfile.writef(efmt+"\n", value(cell));
       else

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """ Do basic validation and checks on the ANNOTATIONS.yaml file
 
 This is a kinda-ugly script that does basic validation of ANNOTATIONS.yaml
@@ -85,13 +85,14 @@ def try_parsing_annotations(ann_data, graph_list):
 def check_graph_names(ann_data, graph_list):
     """Check that graph names in the annotation file are listed in GRAPHFILES"""
     for graph in ann_data:
-        if graph != 'all' and graph not in graph_list:
+        if graph != 'all' and 'arkouda' not in graph and graph not in graph_list:
             warnings.warn('Warning: no .graph file found for "{0}"'.format(graph))
 
 def check_configs(ann_data):
     """Check that all the configs used in the annotation file are 'known'"""
     known_configs = {'shootout', 'chap03', 'chap04', 'bradc-lnx', 'chapcs',
-                     '16 node XC', 'Single node XC', '16-node-cs'}
+                     '16-node-xc', '1-node-xc', '16-node-cs',
+                     'chapcs.comm-counts'}
     for graph in ann_data:
         for _, annotations in ann_data[graph].items():
             for ann in annotations:

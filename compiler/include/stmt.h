@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,7 +65,13 @@ class VisibilityStmt: public Stmt {
   virtual ~VisibilityStmt();
 
   bool isARename() const;
+  bool isARenamedSym(const char* name) const;
   const char* getRename() const;
+  const char* getRenamedSym(const char* name) const;
+
+  virtual bool skipSymbolSearch(const char* name) const = 0;
+
+  virtual BaseAST* getSearchScope() const = 0;
 
   Symbol* checkIfModuleNameMatches(const char* name);
 
@@ -72,11 +79,16 @@ class VisibilityStmt: public Stmt {
   void updateEnclosingBlock(ResolveScope* scope,
                             Symbol* sym);
 
+  void validateRenamed();
+  void noRepeatsInRenamed() const;
+
 public:
-  Expr*                              src;
+  Expr* src;
+  bool isPrivate;
+  std::map<const char*, const char*> renamed;
 
 protected:
-  const char*                        modRename;
+  const char* modRename;
 
 };
 
@@ -158,12 +170,17 @@ public:
   bool                useListRemove(ModuleSymbol* mod);
   void                useListClear();
 
+  void                modRefsAdd(ModuleSymbol* mod);
+  bool                modRefsRemove(ModuleSymbol* mod);
+  void                modRefsClear();
+
   virtual CallExpr*   blockInfoGet()                               const;
   virtual CallExpr*   blockInfoSet(CallExpr* expr);
 
   BlockTag            blockTag;
   AList               body;
   CallExpr*           useList;       // module/enum uses for this block
+  CallExpr*           modRefs;       // modules referenced directly
   const char*         userLabel;
   CallExpr*           byrefVars;     // task intents - task constructs only
 
@@ -221,7 +238,8 @@ enum GotoTag {
   GOTO_ITER_RESUME,
   GOTO_ITER_END,
   GOTO_ERROR_HANDLING,
-  GOTO_BREAK_ERROR_HANDLING
+  GOTO_BREAK_ERROR_HANDLING,
+  GOTO_ERROR_HANDLING_RETURN,
 };
 
 
@@ -332,6 +350,7 @@ extern Map<GotoStmt*, GotoStmt*> copiedIterResumeGotos;
 
 const char*  gotoTagToString(GotoTag gotoTag);
 CondStmt*    isConditionalInCondStmt(Expr* expr);
+Expr*        skip_cond_test(Expr* expr);
 
 // Probably belongs in Expr; doesn't really mean Stmt, but rather
 // statement-level expression.

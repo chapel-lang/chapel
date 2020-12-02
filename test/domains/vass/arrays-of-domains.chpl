@@ -25,10 +25,10 @@ writeln("AA (element) eltType domain ", element);
 
 var rr = {"hi", "there"};
 proc makeDomain(s:string) {
-  return {1..s.length};
+  return {1..s.size};
 }
 proc makeDomain(lowerBound:int, s:string) {
-  return {lowerBound..s.length};
+  return {lowerBound..s.size};
 }
 
 // a forall expression

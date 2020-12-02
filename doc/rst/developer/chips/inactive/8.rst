@@ -1,0 +1,661 @@
+Error Handling in Chapel
+========================
+
+Status:
+  Inactive - Implemented except for Runtime errors
+
+Authors:
+  Greg Titus, Kyle Brady, Michael Ferguson, Preston Sahabu
+
+Abstract
+--------
+
+A proposal for how error handling should work in Chapel.
+
+
+Rationale
++++++++++
+
+Chapel currently lacks a general strategy for errors. The current standard
+library primarily uses two approaches, and each has serious drawbacks:
+
+* ``halt()``
+    
+  * Halting the program is not appropriate in library code.
+
+* optional ``out`` arguments, ex. ``out error: syserr``
+
+  * ``if`` argument provided, assumes user will handle it; ``else halt()``
+  * Only returns error codes.
+  * Doesn't permit users to add new error codes or new types of errors.
+
+A more general strategy is desired, one that supports robust code,
+propagates errors, and provides useful messages when errors are not handled.
+
+
+Model: Swift Error Handling
+---------------------------
+
+This error handling proposal was originally inspired by the Swift_ error
+handling strategy.
+
+Swift's strategy is appealing because it:
+
+* represents a middle ground between exceptions and error codes;
+* is easier to implement than stack-unwinding since it re-uses the existing
+  return mechanisms; and
+* fits well with existing task parallelism.
+
+Syntax
+++++++
+
+* Functions that can throw an error are declared with ``throws``:
+
+::
+
+  func canThrowErrors() throws { … }
+  func cannotThrowErrors() { … }
+
+* Calls that throw must be decorated with ``try`` or ``try!``.
+
+  * ``try`` propagates the error to an enclosing ``do``/``catch`` block or out
+    of a throwing function.
+  * ``try!`` halts if an error occurred.
+
+* Programs can catch errors with ``do``/``catch`` statements:
+
+::
+
+  do {
+    try canThrowErrors()
+    try! canThrowErrors() // will halt on failure
+  } catch {
+    writeln("The first call failed!")
+  }
+
+Decorating statements that throw
+++++++++++++++++++++++++++++++++
+
+The Swift error handling approach includes the use of ``try`` to mark statements
+that can throw. This design addresses the most serious criticism of exceptions
+as a language feature - that they make the control flow possibilities hard to
+reason about. By marking each statement that can throw, the control flow
+possibilities can again be reasoned about with local information only.
+
+
+Feedback Received (7/20)
+------------------------
+
+1. ``try`` is verbose within ``do`` blocks. While it clarifies control flow
+   within the block, it would be tiresome to repeat with throwing functions
+   that are closely related (ex. I/O). 
+
+2. ``try`` is also verbose from an ergonomic perspective. For example, 
+   ``writeln("hello world")`` would have to be prefaced with a ``try``
+   statement if it were strictly enforced.
+
+3. Repeated ``try`` statements may also desensitize users from
+   paying close attention to ``try`` and ``throws``.
+
+4. ``main()`` ought to have some sort of reasonable response to an error
+   being propagated up to it.
+
+Potential solutions
++++++++++++++++++++
+
+1. **Elide** ``try``.
+  
+* Within ``do`` blocks, ``try`` is only a visual aide to track control
+  flow. It is reasonable for developers to track that a procedure throws
+  without this assistance because it's already in a ``do`` block. However,
+  ``try!`` would be permitted inside ``do`` blocks for critical failures.
+
+* Outside of ``do`` blocks, ``try`` or ``try!`` can be elided on throwing
+  procedure calls depending on the calling procedure's signature. If the
+  calling procedure ``throws``, then ``try``, else ``try!``.
+
+* The downside of this is that it would be possible to pass errors of a
+  called procedure through the callee without any visual indication of
+  which call is throwing. This could lead to poorly handled error cases.
+    
+2. **Elide** ``try`` **with a compiler flag.**
+
+* Same as (1), but we would add an option to enforce marking statements
+  with ``try`` for a thoroughly checked version. This addresses the
+  potential downside of only eliding ``try`` without losing the ability
+  to draft code quickly.
+
+3. **Eliminate** ``do``.
+
+* ``do`` is already a keyword in Chapel, so it would take more effort to 
+  determine that the ``do`` is being used in association with a ``catch``.
+
+* In its place, ``try`` could be defined for single and compound statements.
+
+* The downside is that ``try`` could no longer be used in an expression
+  form, so assignments that might throw an error may look more awkward.
+
+::
+
+  var a = try canThrowErrors(); // expression
+  try var a = canThrowErrors(); // statement
+
+4. **Cleaning up after an error.**
+
+* It is often necessary to cleanup state if an error occurs. To capture this,
+  ``do``/``catch`` could be associated with a ``finally`` block that will
+  run when the ``do`` (or ``try``) block is exited.
+
+* Swift's version of this is ``defer``, which runs when the scope it is
+  defined in is exited. This is a more general form of ``finally`` which
+  may better fit Chapel's needs. 
+
+Enacted solution
+++++++++++++++++
+
+This CHIP will move forward with the third solution, eliminate ``do``, which
+moves it away from the Swift approach of marking every statement that can
+throw. This is being done for developer ergonomics and legibility.
+
+The design will also reflect the goals of the second solution, elide ``try``
+with a compiler flag, in the sense that there will be multiple levels of
+strictness when annotating error handling cases.
+
+Finally, the fourth solution will be addressed in the Future Work section.
+
+
+Chapel Error Handling
+---------------------
+
+Syntax
+++++++
+
+* Functions that can throw an error are declared with ``throws``:
+
+::
+
+  proc canThrowErrors() throws { … }
+  proc canAlsoThrowErrors(): A throws where ... { … }
+  proc cannotThrowErrors() { … }
+
+* Errors can be handled with ``catch`` statements.
+
+* Statements that contain calls to functions that throw should be enclosed
+  by ``try`` or ``try!``.
+  
+  * Both will attempt to handle errors with a matching ``catch`` block.
+
+  * If no matching ``catch`` block exists:
+   
+    * ``try`` propagates the error. This can either be to an enclosing ``try``
+      block or out of the enclosing procedure (which must ``throw``).
+
+    * ``try!`` will ``halt()``, even if enclosed by another ``try``.
+  
+
+::
+
+  try {
+    canThrowErrors();      // handled by catch on error
+    try canThrowErrors();  // propagates to outer try, then catch
+    try! canThrowErrors(); // halts on error
+  } catch e {
+    writeln("One of the first two calls failed!")
+  }
+
+Default vs strict mode
+++++++++++++++++++++++
+
+To address the desire for both fast prototyping and enforced error handling,
+the compiler will run checks in one of two modes, based on a flag.
+
+If a call to a throwing procedure is not enclosed by a ``try`` or ``try!``: 
+
+1. **Default.**: 
+
+   a. if the call is contained in a procedure labelled with ``throws``, any
+      error encountered will be propagated.
+
+   b. if the call is contained in a procedure not labelled with ``throws``,
+      the program will ``halt()`` if an error is encountered.
+
+2. **Strict.**: the compiler will raise an error.
+
+A more fine-grained approach will be included in the future, with the
+default/strict policy set per-module or per-function.
+
+Errors
+++++++
+
+The long term plan is to support classes, records, enums, unions, and
+tagged unions as Error types, but the first implementation will be
+restricted to classes.
+
+* Base class ``Error`` will be a defined in the standard library. 
+  
+* ``Error`` may be extended to create custom errors and a hierarchy.
+
+::
+
+  class MyBaseError: Error {}
+  class MySubError: MyBaseError {}
+
+* At runtime, ``catch`` blocks attempt to handle errors from their.
+  matching ``try`` or ``try!`` blocks. 
+
+  * ``catch`` clauses will be evaluated in order, so even if a more
+    exact type is present for an ``Error``, it will not be selected
+    if a matching general type precedes it.
+
+  * If a type is not specified, any ``Error`` will match.
+
+:: 
+
+  try {
+    ...
+  } catch e: MySubError {
+    ...
+  } catch e: MyBaseError {
+    ...
+  } catch e {
+    ...
+  }
+
+Implementation
+++++++++++++++
+
+Given that the compiler will enforce the handling of errors, it is possible
+for them to be implemented with the ``out`` argument method described in
+the introduction.
+
+For example, here is some Chapel code that throws and handles an error:
+
+.. code-block:: chapel
+
+  class IllegalArgumentError: Error {} 
+
+  proc handle(arg) {
+    try! {
+      callee(arg);
+    } catch e: IllegalArgumentError {
+      writeln("illegal arg, exiting caller");
+    }
+  }
+
+  proc passThru(arg) throws {
+    try callee(arg);
+  }
+
+  proc callee(arg) throws : A {
+    if !arg then
+      throw new IllegalArgumentError();
+    return new A(arg);
+  }
+
+The compiler could translate this into the following Chapel code:
+
+.. code-block:: chapel
+
+  class IllegalArgumentError: Error {} 
+
+  proc handle(arg) {
+    var e: Error; 
+
+    callee(arg, e);
+
+    if e: IllegalArgumentError {
+      delete e;
+      writeln("illegal arg, exiting caller"); 
+    } else if e {
+      halt(e.message);
+    }
+  }
+
+  proc passThru(arg, out _e_out: Error) {
+    callee(arg, _e_out);
+  }
+
+  proc callee(arg, out _e_out: Error): A {
+    if !arg {
+      _e_out = new IllegalArgumentError();
+      const _fail: A;
+      return _fail;
+    }
+    return new A(arg);
+  }
+
+In default mode, calling throwing functions without an enclosing
+``try`` or ``try!`` will ``halt()`` on error.
+ 
+.. code-block:: chapel
+
+  proc nohandle(arg): A {
+    return callee(arg);
+  }
+
+  // translated
+  proc nohandle(arg): A {
+    var _e: Error;
+    var value: A = callee(arg, _e);
+    if _e then
+      halt(e.message);
+    return value;
+  }
+
+Examples
+--------
+
+Example 1: Simple errors
+++++++++++++++++++++++++
+
+As an example, this function is currently in our Timer record, which is
+part of the standard modules:
+
+.. code-block:: chapel
+
+    proc start() : void {
+      if !running {
+        running = true;
+        time    = chpl_now_timevalue();
+      } else {
+        halt("start called on a timer that has not been stopped");
+      }
+    }
+
+It calls ``halt()`` when the timer is already running, which is not very
+user friendly. With our proposal this would instead be:
+
+.. code-block:: chapel
+
+    proc start() throws : void {
+      if !running {
+        running = true;
+        time    = chpl_now_timevalue();
+      } else {
+        throw new Error("start called on a timer that has not been stopped");
+      }
+    }
+
+This function can now be used as follows:
+
+.. code-block:: chapel
+
+    var my_timer: Timer;
+    try! my_timer.start();
+    try {
+      my_timer.start();
+    } catch e: Error {
+      writeln(e.message);
+    }
+    try! my_timer.start(); // halts the program!
+
+Here is the implementation of this example:
+
+.. code-block:: chapel
+
+    var my_timer: Timer;
+    var _e: Error;         // compiler generated
+    my_timer.start(_e);
+    if _e then
+      halt(_e.message);
+
+    var e: Error;          // user defined
+    my_timer.start(e);
+    if e then
+      writeln(e.message); 
+
+    my_timer.start(_e);    // can reuse compiler-gen error
+    if _e then
+      halt(_e.message);
+
+
+Example 2: File I/O
++++++++++++++++++++
+
+A common place for errors is interactions with the filesystem, and we
+currently handle these with ``out`` arguments and halting.
+
+.. code-block:: chapel
+
+  var err: syserr;
+  var file = open("my_data.dat", error=err);
+  if !err {
+    var channel = file.writer(err);
+    if !err {
+      channel.write(1, 2, 4, 8, err);
+      if err {
+        halt("Failed to write out data");
+      }
+    } else {
+      halt("Failed to open channel");
+    }
+  } else {
+    halt("Failed to open file");
+  }
+
+.. code-block:: chapel
+
+  try {
+    var file = open("my_data.dat");
+    var channel = file.writer();
+    channel.write(1, 2, 4, 8);
+  } catch e: IOError {
+    halt(e.message);
+  }
+
+  // Equivalent to:
+
+  try! {
+    var file = open("my_data.dat");
+    var channel = file.writer();
+    channel.write(1, 2, 4, 8);
+  }
+
+An implementation of the ``try!`` portion of the example:
+
+.. code-block:: chapel
+
+  var _e: Error;
+
+  var file = open("my_data.dat", _e);
+  if _e then
+    halt(_e.message);
+
+  var channel = file.writer(_e);
+  if _e then
+    halt(_e.message);
+
+  channel.write(1, 2, 4, 8, _e);
+  if _e then
+    halt(_e.message);
+
+
+Example 3: Cobegins
++++++++++++++++++++
+
+``begin`` and ``cobegin`` are parallel constructs that create
+asynchronous tasks which could have errors. The parent task will
+wait for error-throwing child tasks to complete, as with a sync
+statement or at the end of coforall/cobegin. These errors will
+be provided at task join.
+
+.. code-block:: chapel
+
+  proc encounterError() throws { throw new Error(); }
+  proc noError() throws { return; }
+  try {
+    cobegin {
+      encounterError();
+      noError();
+      encounterError();
+    }
+  } catch errors: AsyncErrors {
+    for e in errors {
+      writeln(e); // would print out two lines
+    }
+  }
+
+The implementation requires that the ``cobegin`` statements be
+synchronized before the errors are handled.
+
+.. code-block:: chapel
+
+  proc encounterError(out _e_out: Error) { _e_out = new Error(); }
+  proc noError(out _e_out: Error) { return; }
+
+  var _e1, _e2, _e3: Error;
+  sync cobegin {
+    encounterError(_e1);
+    noError(_e2);
+    encounterError(_e3);
+  }
+  var errors: AsyncErrors = new AsyncErrors(_e1, _e2, _e3);
+  for e in errors {
+    writeln(e);
+  }
+
+Example 4: Iterators
+++++++++++++++++++++
+This is the current ``glob`` iterator in the ``FileSystem`` module:
+
+.. code-block:: chapel
+
+  iter glob(pattern: string = "*"): string {
+    use chpl_glob_c_interface;
+    var glb : glob_t;
+
+    const err = chpl_glob(pattern.localize().c_str(), 0, glb);
+    if (err != 0 && err != GLOB_NOMATCH) then
+      __primitive("chpl_error", c"unhandled error in glob()");
+    const num = chpl_glob_num(glb).safeCast(int);
+    for i in 0..num-1 do
+      yield chpl_glob_index(glb, i.safeCast(size_t)): string;
+
+    globfree(glb);
+  }
+
+The new version would look like:
+
+.. code-block:: chapel
+
+  iter glob(pattern: string = "*") throws : string {
+    ...
+    if (err != 0 && err != GLOB_NOMATCH) then
+      throw new Error("unhandled error in glob()");
+    ...
+  }
+
+Which can then be used like this:
+
+.. code-block:: chapel
+
+    try {
+      for x in glob() do 
+        writeln(x);
+    } catch e {
+      writeln("Error in glob");
+    }
+
+Which would be implemented like this:
+
+.. code-block:: chapel
+
+    iter glob(out _e_out: Error, pattern: string = "*") : string {
+      ...
+      if (err != 0 && err != GLOB_NOMATCH) {
+        _e_out = new Error("unhandled error in glob()");
+        return;
+      }
+      ...
+    } 
+
+    var e: Error;
+    for x in glob(e) do
+      writeln(x);
+    if e then
+      writeln("Error in glob");
+
+Raising an error will halt the execution of the iterator. Errors in follower
+iterations in ``coforall`` and ``forall`` loops may still allow some iteration
+to occur. All errors will be reported at task join, as in Example 3.
+
+
+Future Work
+-----------
+
+Error cleanup
++++++++++++++
+
+Chapel will adopt something similar to Swift's ``defer``. Code enclosed in a
+``defer`` block is run whenever the enclosing scope exits, whether it be by
+error or normal execution. 
+
+.. code-block:: chapel
+    
+    proc caller() throws {
+      try {
+        var a = allocateBigObject();
+        defer {
+          delete a;
+        }
+        canThrowErrors(a);
+      }
+    }
+
+If multiple ``defer`` blocks are contained within a single scope,they are
+executed in reverse order of declaration, like a stack. If a ``defer``
+block is not reached in the execution of a scope, it will not be run on
+the scope's exit.
+
+This has a few advantages when compared to ``finally`` in Java/C#:
+
+  * Cleanup code is local to initializing code
+  * ``defer`` can be used outside of error handling
+
+Runtime errors
+++++++++++++++
+
+Many kinds of runtime operations in Chapel have the potential to fail
+(usually from running out of memory):
+
+  * communication
+  * memory allocation
+  * task creation
+
+.. code-block:: chapel
+
+    try {
+      on Locales[0] {
+        writeln("Hello!");
+      }
+    } catch e: OutOfMemoryError {
+      free_large_object();
+
+      // attempt again, halt execution if it fails
+      try! on Locales[0] {
+        writeln("Hello!");
+      }
+    }
+
+The implementation of runtime error handling will keep the C runtime
+independent of Chapel error handling. The runtime will be modified
+to return error codes instead of halting, and Chapel module code
+will translate these runtime error codes into Chapel ``throws``.
+
+.. code-block:: chapel
+
+    proc chpl_here_alloc(size: int): c_void_ptr throws {
+      extern proc chpl_mem_alloc(size: int) : c_void_ptr; //  runtime function
+      const p = chpl_mem_alloc(size); //  always returns
+      if p == c_nil then              //  runtime says allocation failed
+        throw new OutOfMemoryError();
+      return p;
+    }
+
+Asynchronous error handling
++++++++++++++++++++++++++++
+
+Asynchronous tasks should not have to be synchronized before their errors
+can be handled. No design has yet been proposed to handle this case.
+
+.. _Swift: https://developer.apple.com/library/ios/documentation/Swift/Conceptual/Swift_Programming_Language/ErrorHandling.html

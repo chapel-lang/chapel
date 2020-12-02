@@ -1,3 +1,0 @@
-fieldAccess.chpl:13: In function 'main':
-fieldAccess.chpl:15: error: unresolved call 'owned Foo(6,real(64)).x'
-fieldAccess.chpl:15: note: because no functions named x found in scope

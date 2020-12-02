@@ -1,3 +1,4 @@
+use CPtr;
 record R {
   var dat: c_array(int, 3);
 }

@@ -1,1 +1,2 @@
-../../../common/probSize.chpl -M ../../../../../release/examples/benchmarks/hpcc/ --no-warnings --no-local
+../../../common/probSize.chpl -M ../../../../../release/examples/benchmarks/hpcc/ --no-local --no-warnings
+# --no-warnings ignores warning: atomic statement is ignored (not implemented)

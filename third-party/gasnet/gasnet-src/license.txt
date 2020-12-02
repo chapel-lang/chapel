@@ -10,7 +10,7 @@ for additional licensing terms governing those contributed components.
 
 *** Copyright Notice ***
 
-Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2019,
+Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2020,
 The Regents of the University of California, through Lawrence Berkeley National
 Laboratory (subject to receipt of any required approvals from the U.S. Dept. of
 Energy). All rights reserved.
@@ -27,7 +27,7 @@ perform publicly and display publicly, and to permit other to do so.
 
 *** License Agreement ***
 
-Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2019,
+Global-Address Space Networking for Exascale (GASNet-EX) Copyright (c) 2000-2020,
 The Regents of the University of California, through Lawrence Berkeley National
 Laboratory (subject to receipt of any required approvals from the U.S. Dept. of
 Energy).  All rights reserved.
@@ -83,10 +83,17 @@ the one above.
 
 *** Acknowledgements ***
 
-The authors/contributors of GASNet-EX include:
+The primary authors/maintainers of GASNet-EX:
 
  *  Dan Bonachea <dobonachea@lbl.gov>
  *  Paul H. Hargrove <PHHargrove@lbl.gov>
+
+Contributors to GASNet-EX include:
+
+ * Boris I. Karasev <boriska@mellanox.com>
+ * Artem Y. Polyakov <artemp@mellanox.com>
+ * Sean Treichler <sean@nvidia.com>
+ * Ralph Castain <rhc@open-mpi.org>
 
 The authors/contributors of GASNet-1 (upon which GASNet-EX is based) include:
 

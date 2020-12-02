@@ -1,9 +1,8 @@
 //===- LocalStackSlotAllocation.cpp - Pre-allocate locals to stack slots --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,6 +28,7 @@
 #include "llvm/CodeGen/TargetOpcodes.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -200,19 +200,27 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
   // Make sure that the stack protector comes before the local variables on the
   // stack.
   SmallSet<int, 16> ProtectedObjs;
-  if (MFI.getStackProtectorIndex() >= 0) {
+  if (MFI.hasStackProtectorIndex()) {
+    int StackProtectorFI = MFI.getStackProtectorIndex();
+
+    // We need to make sure we didn't pre-allocate the stack protector when
+    // doing this.
+    // If we already have a stack protector, this will re-assign it to a slot
+    // that is **not** covering the protected objects.
+    assert(!MFI.isObjectPreAllocated(StackProtectorFI) &&
+           "Stack protector pre-allocated in LocalStackSlotAllocation");
+
     StackObjSet LargeArrayObjs;
     StackObjSet SmallArrayObjs;
     StackObjSet AddrOfObjs;
 
-    AdjustStackOffset(MFI, MFI.getStackProtectorIndex(), Offset,
-                      StackGrowsDown, MaxAlign);
+    AdjustStackOffset(MFI, StackProtectorFI, Offset, StackGrowsDown, MaxAlign);
 
     // Assign large stack objects first.
     for (unsigned i = 0, e = MFI.getObjectIndexEnd(); i != e; ++i) {
       if (MFI.isDeadObjectIndex(i))
         continue;
-      if (MFI.getStackProtectorIndex() == (int)i)
+      if (StackProtectorFI == (int)i)
         continue;
 
       switch (MFI.getObjectSSPLayout(i)) {
@@ -254,7 +262,7 @@ void LocalStackSlotPass::calculateFrameObjectOffsets(MachineFunction &Fn) {
 
   // Remember how big this blob of stack space is
   MFI.setLocalFrameSize(Offset);
-  MFI.setLocalFrameMaxAlign(MaxAlign);
+  MFI.setLocalFrameMaxAlign(assumeAligned(MaxAlign));
 }
 
 static inline bool
@@ -343,6 +351,14 @@ bool LocalStackSlotPass::insertFrameReferenceRegisters(MachineFunction &Fn) {
     int FrameIdx = FR.getFrameIndex();
     assert(MFI.isObjectPreAllocated(FrameIdx) &&
            "Only pre-allocated locals expected!");
+
+    // We need to keep the references to the stack protector slot through frame
+    // index operands so that it gets resolved by PEI rather than this pass.
+    // This avoids accesses to the stack protector though virtual base
+    // registers, and forces PEI to address it using fp/sp/bp.
+    if (MFI.hasStackProtectorIndex() &&
+        FrameIdx == MFI.getStackProtectorIndex())
+      continue;
 
     LLVM_DEBUG(dbgs() << "Considering: " << MI);
 

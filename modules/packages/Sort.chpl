@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -150,7 +151,7 @@ interface supports radix sorting for variable length data types, such as
 strings. It accepts two arguments:
 
  * ``a`` is the element being sorted
- * ``i`` is the part number of the key requested, starting from 1
+ * ``i`` is the part number of the key requested, starting from 0
 
 A ``keyPart`` method should return a tuple consisting of *section* and a *part*.
 
@@ -184,7 +185,7 @@ This ``keyPart`` method supports sorting tuples of 2 integers:
 .. code-block:: chapel
 
   proc keyPart(x:2*int, i:int) {
-    if i > 2 then
+    if i > 1 then
       return (-1, 0);
 
     return (0, x(i));
@@ -197,8 +198,8 @@ Here is a ``keyPart`` to support sorting of strings:
 
   proc keyPart(x:string, i:int):(int(8), uint(8)) {
     var len = x.numBytes;
-    var section = if i <= len then 0:int(8) else -1:int(8);
-    var part =    if i <= len then x.byte(i) else  0:uint(8);
+    var section = if i < len then 0:int(8)  else -1:int(8);
+    var part =    if i < len then x.byte(i) else  0:uint(8);
     return (section, part);
   }
 
@@ -253,6 +254,7 @@ module Sort {
 
   private use List;
   private use Reflection;
+  private use CPtr;
 
 /* Module-defined comparators */
 
@@ -273,7 +275,7 @@ const reverseComparator: ReverseComparator(DefaultComparator);
 
 private inline
 proc compareByPart(a:?t, b:t, comparator:?rec) {
-  var curPart = 1;
+  var curPart = 0;
   while true {
     var (aSection, aPart) = comparator.keyPart(a, curPart);
     var (bSection, bPart) = comparator.keyPart(b, curPart);
@@ -325,7 +327,7 @@ inline proc chpl_compare(a:?t, b:t, comparator:?rec) {
   // Use comparator.compare(a, b) if is defined by user
   } else if canResolveMethod(comparator, "compare", a, b) {
     return comparator.compare(a ,b);
-  } else if canResolveMethod(comparator, "keyPart", a, 1) {
+  } else if canResolveMethod(comparator, "keyPart", a, 0) {
     return compareByPart(a, b, comparator);
   } else {
     compilerError("The comparator " + comparator.type:string + " requires a 'key(a)', 'compare(a, b)', or 'keyPart(a, i)' method");
@@ -364,7 +366,7 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if canResolveMethod(comparator, "compare", data, data) {
       compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a compare method");
     }
-    if canResolveMethod(comparator, "keyPart", data, 1) {
+    if canResolveMethod(comparator, "keyPart", data, 0) {
       compilerError(errorDepth=errorDepth, comparator.type:string, " contains both a key method and a keyPart method");
     }
   }
@@ -374,18 +376,18 @@ proc chpl_check_comparator(comparator, type eltType) param {
     if !(isNumericType(comparetype)) then
       compilerError(errorDepth=errorDepth, "The compare method in ", comparator.type:string, " must return a numeric type when used with ", eltType:string, " elements");
   }
-  else if canResolveMethod(comparator, "keyPart", data, 1) {
-    var idx: int = 1;
+  else if canResolveMethod(comparator, "keyPart", data, 0) {
+    var idx: int = 0;
     type partType = comparator.keyPart(data, idx).type;
     if !isTupleType(partType) then
       compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple when used with ", eltType:string, " elements");
     var tmp: partType;
-    var expectInt = tmp(1);
-    var expectIntUint = tmp(2);
+    var expectInt = tmp(0);
+    var expectIntUint = tmp(1);
     if !isInt(expectInt.type) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 1st element int(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 0 of type int(?) when used with ", eltType:string, " elements");
     if !(isInt(expectIntUint) || isUint(expectIntUint)) then
-      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with 2nd element int(?) or uint(?) when used with ", eltType:string, " elements");
+      compilerError(errorDepth=errorDepth, "The keyPart method in ", comparator.type:string, " must return a tuple with element 1 of type  int(?) or uint(?) when used with ", eltType:string, " elements");
   }
   else {
     // If we make it this far, the passed comparator was defined incorrectly
@@ -403,12 +405,12 @@ private
 proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
   if !Dom.stridable {
     var tmp:Data[Dom.alignedLow].type;
-    if canResolveMethod(comparator, "keyPart", tmp, 1) {
+    if canResolveMethod(comparator, "keyPart", tmp, 0) {
       return true;
     } else if canResolveMethod(comparator, "key", tmp) {
       var key:comparator.key(tmp).type;
       // Does the defaultComparator have a keyPart for this?
-      if canResolveMethod(defaultComparator, "keyPart", key, 1) then
+      if canResolveMethod(defaultComparator, "keyPart", key, 0) then
         return true;
     }
   }
@@ -450,8 +452,8 @@ the sorting algorithm.
   data is sorted.
 
  */
-// TODO: This should have a flag `stable` to request a stable sort
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+  // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
@@ -548,6 +550,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
 pragma "no doc"
 module BubbleSort {
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
   /*
    Sort the 1D array `Data` in-place using a sequential bubble sort algorithm.
@@ -585,6 +588,7 @@ module BubbleSort {
 
 pragma "no doc"
 module HeapSort {
+  import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
   /*
 
    Sort the 1D array `Data` in-place using a sequential heap sort algorithm.
@@ -650,7 +654,7 @@ module HeapSort {
 
 pragma "no doc"
 module InsertionSort {
-
+  private use Sort;
   /*
    Sort the 1D array `Data` in-place using a sequential insertion sort
    algorithm.
@@ -689,10 +693,42 @@ module InsertionSort {
       }
     }
   }
+
+  proc insertionSortMoveElts(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator, lo:int=Dom.alignedLow, hi:int=Dom.alignedHigh) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("insertionSort() requires 1-D array");
+    }
+
+    const low = lo,
+          high = hi,
+          stride = abs(Dom.stride);
+
+    for i in low..high by stride {
+      pragma "no auto destroy"
+      var ithVal = ShallowCopy.shallowCopyInit(Data[i]);
+
+      var inserted = false;
+      for j in low..i-stride by -stride {
+        if chpl_compare(ithVal, Data[j], comparator) < 0 {
+          ShallowCopy.shallowCopy(Data[j+stride], Data[j]);
+        } else {
+          ShallowCopy.shallowCopy(Data[j+stride], ithVal);
+          inserted = true;
+          break;
+        }
+      }
+      if (!inserted) {
+        ShallowCopy.shallowCopy(Data[low], ithVal);
+      }
+    }
+  }
 }
 
 pragma "no doc"
 module BinaryInsertionSort {
+  private use Sort;
   /*
     Sort the 1D array `Data` in-place using a sequential, stable binary
     insertion sort algorithm.
@@ -762,6 +798,7 @@ module BinaryInsertionSort {
 
 pragma "no doc"
 module MergeSort {
+  private use Sort;
   /*
     Sort the 1D array `Data` using a parallel merge sort algorithm.
 
@@ -801,6 +838,7 @@ module MergeSort {
    */
   private proc _MergeSort(Data: [?Dom], Scratch: [], lo:int, hi:int, minlen=16, comparator:?rec=defaultComparator, depth: int)
     where Dom.rank == 1 {
+    import Sort.InsertionSort;
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1,
           size = (hi - lo) / stride,
@@ -891,6 +929,8 @@ module MergeSort {
 
 pragma "no doc"
 module QuickSort {
+  private use Sort;
+  use Sort.ShallowCopy;
 
   /*
    Partition the array Data[lo..hi] using the pivot at Data[pivIdx].
@@ -942,7 +982,9 @@ module QuickSort {
         if cmp > 0 then
           break;
         if cmp == 0 {
-          ShallowCopy.shallowSwap(Data[a], Data[b]);
+          if a != b {
+            ShallowCopy.shallowSwap(Data[a], Data[b]);
+          }
           a += 1; // one more equal element (on left)
         }
         b += 1; // one more categorized element
@@ -1070,6 +1112,7 @@ module QuickSort {
                      minlen=16,
                      comparator:?rec=defaultComparator,
                      start:int = Dom.low, end:int = Dom.high) {
+    import Sort.InsertionSort;
 
     // grab obvious indices
     const lo = start,
@@ -1077,9 +1120,9 @@ module QuickSort {
           mid = lo + (hi-lo+1)/2;
     var piv = mid;
 
-    if hi - lo < minlen {
+    if hi - lo < 0 { // minlen {
       // base case -- use insertion sort
-      InsertionSort.insertionSort(Data, comparator=comparator, lo, hi);
+      InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
       return;
     } else if hi <= lo {
       // nothing to sort
@@ -1122,6 +1165,7 @@ module QuickSort {
 
 pragma "no doc"
 module SelectionSort {
+  private use Sort;
   /*
     Sort the 1D array `Data` in-place using a sequential selection sort
     algorithm.
@@ -1156,6 +1200,7 @@ module SelectionSort {
 
 pragma "no doc"
 module ShellSort {
+  private use Sort;
   proc shellSort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
                  start=Dom.alignedLow, end=Dom.alignedHigh)
   {
@@ -1192,6 +1237,9 @@ module ShellSort {
 
 pragma "no doc"
 module SampleSortHelp {
+  private use Sort;
+  private use CPtr;
+
   param maxLogBuckets = 8; // not counting equality buckets.
   param classifyUnrollFactor = 7;
   const equalBucketThreshold = 5;
@@ -1317,6 +1365,7 @@ module SampleSortHelp {
       return bk - (if equalBuckets then 2*numBuckets else numBuckets);
     }
     // yields (index, bucket index) for A[start_n..end_n]
+    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       const paramEqualBuckets = equalBuckets;
       const paramLogBuckets = logBuckets;
@@ -1416,6 +1465,7 @@ module SampleSortHelp {
                                    in numSamples:int,
                                    seed=1) {
     private use Random;
+    import Sort.ShallowCopy;
     var Tmp:[1..1] A.eltType;
     var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
     while numSamples > 0 {
@@ -1437,6 +1487,8 @@ module SampleSortHelp {
 
 pragma "no doc"
 module RadixSortHelp {
+  private use Sort;
+  import Reflection.canResolveMethod;
 
   // This is the number of bits to sort at a time in the radix sorter.
   // The code assumes that all integer types are a multiple of it.
@@ -1462,7 +1514,7 @@ module RadixSortHelp {
   {
     // We have keyPart(element, start):(section:int(8), part:int/uint)
     const testRet: criterion.keyPart(a, 1).type;
-    const testPart = testRet(2);
+    const testPart = testRet(1);
     param bitsPerPart = numBits(testPart.type);
     param bitsPerPartModRadixBits = bitsPerPart % RADIX_BITS;
     if bitsPerPartModRadixBits != 0 then
@@ -1476,7 +1528,7 @@ module RadixSortHelp {
     const whichpart = startbit / bitsPerPart;
     const bitsinpart = startbit % bitsPerPart;
 
-    const (section, part) = criterion.keyPart(a, 1+whichpart);
+    const (section, part) = criterion.keyPart(a, whichpart);
     var ubits = part:uint(bitsPerPart);
     // If the number is signed, invert the top bit, so that
     // the negative numbers sort below the positive numbers
@@ -1501,7 +1553,7 @@ module RadixSortHelp {
   inline
   proc binForRecord(a, criterion, startbit:int)
   {
-    if canResolveMethod(criterion, "keyPart", a, 1) {
+    if canResolveMethod(criterion, "keyPart", a, 0) {
       return binForRecordKeyPart(a, criterion, startbit);
     } else if canResolveMethod(criterion, "key", a) {
       // Try to use the default comparator to get a keyPart.
@@ -1523,7 +1575,7 @@ module RadixSortHelp {
 
     if (isHomogeneousTuple(eltTy)) {
       var tmp:eltTy;
-      return tmp.size * numBits(tmp(1).type);
+      return tmp.size * numBits(tmp(0).type);
     }
 
     return -1;
@@ -1625,6 +1677,7 @@ module RadixSortHelp {
     }
 
     // yields (index, bucket index) for A[start_n..end_n]
+    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {
@@ -1643,8 +1696,8 @@ module RadixSortHelp {
 
 pragma "no doc"
 module ShallowCopy {
-
   private use SysCTypes;
+  private use CPtr;
 
   // The shallowCopy / shallowSwap code needs to be able to copy/swap
   // _array records. But c_ptrTo on an _array will return a pointer to
@@ -1835,7 +1888,7 @@ module SequentialInPlacePartitioning {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -1843,7 +1896,7 @@ module SequentialInPlacePartitioning {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for (idx, bin) in bucketizer.classify(buf, 1, max_buf,
+        for (idx, bin) in bucketizer.classify(buf, 0, max_buf-1,
                                               criterion, startbit) {
           // Swap buf[j] into its appropriate bin.
           // Leave buf[j] with the next unsorted item.
@@ -1854,8 +1907,8 @@ module SequentialInPlacePartitioning {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
-        while used_buf > 0 && j <= used_buf {
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
           const bin = bucketizer.bucketForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -1864,8 +1917,8 @@ module SequentialInPlacePartitioning {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
@@ -1879,7 +1932,9 @@ module SequentialInPlacePartitioning {
 pragma "no doc"
 module TwoArrayPartitioning {
   private use BlockDist;
-  private use MSBRadixSort;
+  private use super.MSBRadixSort;
+  public use List only list;
+  import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
 
   private param debug = false;
   param maxBuckets = 512;
@@ -2184,7 +2239,6 @@ module TwoArrayPartitioning {
           start_n:int, end_n:int, A:[], Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
-
 
     if startbit > state.endbit then
       return;
@@ -2497,7 +2551,7 @@ module TwoArrayPartitioning {
                 total += localCounts[bin];
               }
             }
-            assert(total == localDomain.numIndices);
+            assert(total == localDomain.size);
           }
           // Now store the counts into the global counts array
           for bin in vectorizeOnly(0..#nBuckets) {
@@ -2655,8 +2709,9 @@ module TwoArrayPartitioning {
 
 pragma "no doc"
 module TwoArrayRadixSort {
-  private use TwoArrayPartitioning;
-  private use RadixSortHelp;
+  import Sort.defaultComparator;
+  private use super.TwoArrayPartitioning;
+  private use super.RadixSortHelp;
 
   proc twoArrayRadixSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2685,7 +2740,7 @@ module TwoArrayRadixSort {
     } else {
       var state = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales().numElements,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
@@ -2702,9 +2757,12 @@ module TwoArrayRadixSort {
 
 pragma "no doc"
 module TwoArraySampleSort {
-  private use TwoArrayPartitioning;
-  private use SampleSortHelp;
-  private use RadixSortHelp;
+  import Sort.defaultComparator;
+  private use super.TwoArrayPartitioning;
+  private use super.SampleSortHelp;
+  private use super.RadixSortHelp;
+
+  private use CPtr;
 
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 
@@ -2730,7 +2788,7 @@ module TwoArraySampleSort {
     } else {
       var state = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=SampleBucketizer(Data.eltType),
-        numLocales=Data.targetLocales().numElements,
+        numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
@@ -2750,8 +2808,8 @@ module InPlacePartitioning {
 
 pragma "no doc"
 module MSBRadixSort {
-
-  private use RadixSortHelp;
+  import Sort.{defaultComparator, ShellSort};
+  private use super.RadixSortHelp;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
@@ -2799,7 +2857,7 @@ module MSBRadixSort {
     // 0th bin is for records where we've consumed all the key.
     var offsets:[0..radix] int;
     var end_offsets:[0..radix] int;
-    type ubitsType = binForRecord(A[start_n], criterion, startbit)(2).type;
+    type ubitsType = binForRecord(A[start_n], criterion, startbit)(1).type;
     var min_ubits: ubitsType = max(ubitsType);
     var max_ubits: ubitsType = 0;
     var min_bin = radix+1;
@@ -2895,7 +2953,7 @@ module MSBRadixSort {
 
       // Fill buf with up to max_buf records from the end of this bin.
       while i < end {
-        buf[used_buf+1] <=> A[i];
+        buf[used_buf] <=> A[i];
         used_buf += 1;
         i += 1;
       }
@@ -2903,7 +2961,7 @@ module MSBRadixSort {
       while offsets[curbin] < endfast {
         // Now go through the records in buf
         // putting them in their right home.
-        for param j in 1..max_buf {
+        for param j in 0..max_buf-1 {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // prefetch(A[offsets[bin]]) could be here but doesn't help
 
@@ -2916,8 +2974,8 @@ module MSBRadixSort {
       // Now, handle elements in bufstart...end_offsets[cur_bin]
       while offsets[curbin] < end {
         // Put buf[j] into its right home
-        var j = 1;
-        while used_buf > 0 && j <= used_buf {
+        var j = 0;
+        while used_buf >= 0 && j < used_buf {
           const (bin, _) = binForRecord(buf[j], criterion, startbit);
           // Swap buf[j] into its appropriate bin.
           var offset = offsets[bin];
@@ -2926,8 +2984,8 @@ module MSBRadixSort {
           // Leave buf[j] with the next unsorted item.
           // But offsets[bin] might be in the region we already read.
           if bin == curbin && offset >= bufstart {
-            buf[j] <=> buf[used_buf];
             used_buf -= 1;
+            buf[j] <=> buf[used_buf];
           }
           j += 1;
         }
@@ -3028,7 +3086,7 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: integral, i:int):(int(8), x.type) {
-    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+    var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
     return (section, x);
   }
 
@@ -3046,7 +3104,7 @@ record DefaultComparator {
    */
   inline
   proc keyPart(x: chpl_anyreal, i:int):(int(8), uint(numBits(x.type))) {
-    var section:int(8) = if i > 1 then -1:int(8) else 0:int(8);
+    var section:int(8) = if i > 0 then -1:int(8) else 0:int(8);
 
     param nbits = numBits(x.type);
     // Convert the real bits to a uint
@@ -3085,17 +3143,17 @@ record DefaultComparator {
    :arg i: the part number requested
 
    :returns: For `int` and `uint`, returns
-             ``(0, x(i))`` if ``i <= x.size``, or ``(-1, 0)`` otherwise.
+             ``(0, x(i))`` if ``i < x.size``, or ``(-1, 0)`` otherwise.
              For `real` and `imag`, uses ``keyPart`` to find the `uint`
              to provide the sorting order.
    */
   inline
   proc keyPart(x: _tuple, i:int) where isHomogeneousTuple(x) &&
-                                       (isInt(x(1)) || isUint(x(1)) ||
-                                        isReal(x(1)) || isImag(x(1))) {
+                                       (isInt(x(0)) || isUint(x(0)) ||
+                                        isReal(x(0)) || isImag(x(0))) {
     // Re-use the keyPart for imag, real
     const (_,part) = this.keyPart(x(i), 1);
-    if i > x.size then
+    if i >= x.size then
       return (-1, 0:part.type);
     else
       return (0, part);
@@ -3124,8 +3182,8 @@ record DefaultComparator {
 
     var ptr = x.c_str():c_ptr(uint(8));
     var len = x.numBytes;
-    var section = if i <= len then 0:int(8) else -1:int(8);
-    var part =    if i <= len then ptr[i-1] else  0:uint(8);
+    var section = if i < len then 0:int(8) else -1:int(8);
+    var part =    if i < len then ptr[i] else  0:uint(8);
     return (section, part);
   }
 
@@ -3142,7 +3200,7 @@ record DefaultComparator {
   inline
   proc keyPart(x:c_string, i:int):(int(8), uint(8)) {
     var ptr = x:c_ptr(uint(8));
-    var byte = ptr[i-1];
+    var byte = ptr[i];
     var section = if byte != 0 then 0:int(8) else -1:int(8);
     var part = byte;
     return (section, part);
@@ -3190,7 +3248,7 @@ record ReverseComparator {
   proc typeIsBitReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsBitReversible(tmp(1).type);
+      return typeIsBitReversible(tmp(0).type);
     }
     if isUintType(t) then
       return true;
@@ -3203,7 +3261,7 @@ record ReverseComparator {
   proc typeIsNegateReversible(type t) param {
     if isHomogeneousTupleType(t) {
       var tmp:t;
-      return typeIsNegateReversible(tmp(1).type);
+      return typeIsNegateReversible(tmp(0).type);
     }
     if isIntType(t) || isUintType(t) then
       // You might think that int(8) should have its sort order
@@ -3218,14 +3276,14 @@ record ReverseComparator {
 
   pragma "no doc"
   proc hasKeyPart(a) param {
-    return canResolveMethod(this.comparator, "keyPart", a, 1);
+    return canResolveMethod(this.comparator, "keyPart", a, 0);
   }
   pragma "no doc"
   proc hasKeyPartFromKey(a) param {
     if canResolveMethod(this.comparator, "key", a) {
       var key:comparator.key(a).type;
       // Does the defaultComparator have a keyPart for this?
-      return canResolveMethod(defaultComparator, "keyPart", key, 1);
+      return canResolveMethod(defaultComparator, "keyPart", key, 0);
     }
     return false;
   }

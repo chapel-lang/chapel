@@ -1,3 +1,0 @@
-deinitAndDestruct.chpl:12: error: ambiguous call 'unmanaged C.deinit()'
-deinitAndDestruct.chpl:2: note: candidates are: C.~C()
-deinitAndDestruct.chpl:6: note:                 C.deinit()

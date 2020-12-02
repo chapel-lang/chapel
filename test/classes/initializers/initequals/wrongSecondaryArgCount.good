@@ -1,0 +1,2 @@
+wrongSecondaryArgCount.chpl:4: error: R.init= must have exactly one argument
+wrongSecondaryArgCount.chpl:6: error: R.init= must have exactly one argument

@@ -1,9 +1,8 @@
 //===- StmtPrinter.cpp - Printing implementation for Stmt ASTs ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -37,6 +36,7 @@
 #include "clang/Basic/CharInfo.h"
 #include "clang/Basic/ExpressionTraits.h"
 #include "clang/Basic/IdentifierTable.h"
+#include "clang/Basic/JsonSupport.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/Lambda.h"
 #include "clang/Basic/OpenMPKinds.h"
@@ -414,12 +414,15 @@ void StmtPrinter::VisitGCCAsmStmt(GCCAsmStmt *Node) {
   if (Node->isVolatile())
     OS << "volatile ";
 
+  if (Node->isAsmGoto())
+    OS << "goto ";
+
   OS << "(";
   VisitStringLiteral(Node->getAsmString());
 
   // Outputs
   if (Node->getNumOutputs() != 0 || Node->getNumInputs() != 0 ||
-      Node->getNumClobbers() != 0)
+      Node->getNumClobbers() != 0 || Node->getNumLabels() != 0)
     OS << " : ";
 
   for (unsigned i = 0, e = Node->getNumOutputs(); i != e; ++i) {
@@ -439,7 +442,8 @@ void StmtPrinter::VisitGCCAsmStmt(GCCAsmStmt *Node) {
   }
 
   // Inputs
-  if (Node->getNumInputs() != 0 || Node->getNumClobbers() != 0)
+  if (Node->getNumInputs() != 0 || Node->getNumClobbers() != 0 ||
+      Node->getNumLabels() != 0)
     OS << " : ";
 
   for (unsigned i = 0, e = Node->getNumInputs(); i != e; ++i) {
@@ -459,7 +463,7 @@ void StmtPrinter::VisitGCCAsmStmt(GCCAsmStmt *Node) {
   }
 
   // Clobbers
-  if (Node->getNumClobbers() != 0)
+  if (Node->getNumClobbers() != 0 || Node->getNumLabels())
     OS << " : ";
 
   for (unsigned i = 0, e = Node->getNumClobbers(); i != e; ++i) {
@@ -467,6 +471,16 @@ void StmtPrinter::VisitGCCAsmStmt(GCCAsmStmt *Node) {
       OS << ", ";
 
     VisitStringLiteral(Node->getClobberStringLiteral(i));
+  }
+
+  // Labels
+  if (Node->getNumLabels() != 0)
+    OS << " : ";
+
+  for (unsigned i = 0, e = Node->getNumLabels(); i != e; ++i) {
+    if (i != 0)
+      OS << ", ";
+    OS << Node->getLabelName(i);
   }
 
   OS << ");";
@@ -683,7 +697,7 @@ void StmtPrinter::VisitOMPCriticalDirective(OMPCriticalDirective *Node) {
   Indent() << "#pragma omp critical";
   if (Node->getDirectiveName().getName()) {
     OS << " (";
-    Node->getDirectiveName().printName(OS);
+    Node->getDirectiveName().printName(OS, Policy);
     OS << ")";
   }
   PrintOMPExecutableDirective(Node);
@@ -697,6 +711,12 @@ void StmtPrinter::VisitOMPParallelForDirective(OMPParallelForDirective *Node) {
 void StmtPrinter::VisitOMPParallelForSimdDirective(
     OMPParallelForSimdDirective *Node) {
   Indent() << "#pragma omp parallel for simd";
+  PrintOMPExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitOMPParallelMasterDirective(
+    OMPParallelMasterDirective *Node) {
+  Indent() << "#pragma omp parallel master";
   PrintOMPExecutableDirective(Node);
 }
 
@@ -809,6 +829,30 @@ void StmtPrinter::VisitOMPTaskLoopSimdDirective(
   PrintOMPExecutableDirective(Node);
 }
 
+void StmtPrinter::VisitOMPMasterTaskLoopDirective(
+    OMPMasterTaskLoopDirective *Node) {
+  Indent() << "#pragma omp master taskloop";
+  PrintOMPExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitOMPMasterTaskLoopSimdDirective(
+    OMPMasterTaskLoopSimdDirective *Node) {
+  Indent() << "#pragma omp master taskloop simd";
+  PrintOMPExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitOMPParallelMasterTaskLoopDirective(
+    OMPParallelMasterTaskLoopDirective *Node) {
+  Indent() << "#pragma omp parallel master taskloop";
+  PrintOMPExecutableDirective(Node);
+}
+
+void StmtPrinter::VisitOMPParallelMasterTaskLoopSimdDirective(
+    OMPParallelMasterTaskLoopSimdDirective *Node) {
+  Indent() << "#pragma omp parallel master taskloop simd";
+  PrintOMPExecutableDirective(Node);
+}
+
 void StmtPrinter::VisitOMPDistributeDirective(OMPDistributeDirective *Node) {
   Indent() << "#pragma omp distribute";
   PrintOMPExecutableDirective(Node);
@@ -905,6 +949,10 @@ void StmtPrinter::VisitOMPTargetTeamsDistributeSimdDirective(
 //===----------------------------------------------------------------------===//
 //  Expr printing methods.
 //===----------------------------------------------------------------------===//
+
+void StmtPrinter::VisitSourceLocExpr(SourceLocExpr *Node) {
+  OS << Node->getBuiltinStr() << "()";
+}
 
 void StmtPrinter::VisitConstantExpr(ConstantExpr *Node) {
   PrintExpr(Node->getSubExpr());
@@ -1084,7 +1132,7 @@ void StmtPrinter::VisitIntegerLiteral(IntegerLiteral *Node) {
   OS << Node->getValue().toString(10, isSigned);
 
   // Emit suffixes.  Integer literals are always a builtin integer type.
-  switch (Node->getType()->getAs<BuiltinType>()->getKind()) {
+  switch (Node->getType()->castAs<BuiltinType>()->getKind()) {
   default: llvm_unreachable("Unexpected type for integer literal!");
   case BuiltinType::Char_S:
   case BuiltinType::Char_U:    OS << "i8"; break;
@@ -1105,7 +1153,7 @@ void StmtPrinter::VisitFixedPointLiteral(FixedPointLiteral *Node) {
     return;
   OS << Node->getValueAsString(/*Radix=*/10);
 
-  switch (Node->getType()->getAs<BuiltinType>()->getKind()) {
+  switch (Node->getType()->castAs<BuiltinType>()->getKind()) {
     default: llvm_unreachable("Unexpected type for fixed point literal!");
     case BuiltinType::ShortFract:   OS << "hr"; break;
     case BuiltinType::ShortAccum:   OS << "hk"; break;
@@ -1134,7 +1182,7 @@ static void PrintFloatingLiteral(raw_ostream &OS, FloatingLiteral *Node,
     return;
 
   // Emit suffixes.  Float literals are always a builtin float type.
-  switch (Node->getType()->getAs<BuiltinType>()->getKind()) {
+  switch (Node->getType()->castAs<BuiltinType>()->getKind()) {
   default: llvm_unreachable("Unexpected type for float literal!");
   case BuiltinType::Half:       break; // FIXME: suffix?
   case BuiltinType::Double:     break; // no suffix.
@@ -1262,15 +1310,15 @@ void StmtPrinter::VisitUnaryExprOrTypeTraitExpr(UnaryExprOrTypeTraitExpr *Node){
 void StmtPrinter::VisitGenericSelectionExpr(GenericSelectionExpr *Node) {
   OS << "_Generic(";
   PrintExpr(Node->getControllingExpr());
-  for (unsigned i = 0; i != Node->getNumAssocs(); ++i) {
+  for (const GenericSelectionExpr::Association Assoc : Node->associations()) {
     OS << ", ";
-    QualType T = Node->getAssocType(i);
+    QualType T = Assoc.getType();
     if (T.isNull())
       OS << "default";
     else
       T.print(OS, Policy);
     OS << ": ";
-    PrintExpr(Node->getAssocExpr(i));
+    PrintExpr(Assoc.getAssociationExpr());
   }
   OS << ")";
 }
@@ -1604,21 +1652,14 @@ void StmtPrinter::VisitAtomicExpr(AtomicExpr *Node) {
 
 // C++
 void StmtPrinter::VisitCXXOperatorCallExpr(CXXOperatorCallExpr *Node) {
-  const char *OpStrings[NUM_OVERLOADED_OPERATORS] = {
-    "",
-#define OVERLOADED_OPERATOR(Name,Spelling,Token,Unary,Binary,MemberOnly) \
-    Spelling,
-#include "clang/Basic/OperatorKinds.def"
-  };
-
   OverloadedOperatorKind Kind = Node->getOperator();
   if (Kind == OO_PlusPlus || Kind == OO_MinusMinus) {
     if (Node->getNumArgs() == 1) {
-      OS << OpStrings[Kind] << ' ';
+      OS << getOperatorSpelling(Kind) << ' ';
       PrintExpr(Node->getArg(0));
     } else {
       PrintExpr(Node->getArg(0));
-      OS << ' ' << OpStrings[Kind];
+      OS << ' ' << getOperatorSpelling(Kind);
     }
   } else if (Kind == OO_Arrow) {
     PrintExpr(Node->getArg(0));
@@ -1638,11 +1679,11 @@ void StmtPrinter::VisitCXXOperatorCallExpr(CXXOperatorCallExpr *Node) {
     PrintExpr(Node->getArg(1));
     OS << ']';
   } else if (Node->getNumArgs() == 1) {
-    OS << OpStrings[Kind] << ' ';
+    OS << getOperatorSpelling(Kind) << ' ';
     PrintExpr(Node->getArg(0));
   } else if (Node->getNumArgs() == 2) {
     PrintExpr(Node->getArg(0));
-    OS << ' ' << OpStrings[Kind] << ' ';
+    OS << ' ' << getOperatorSpelling(Kind) << ' ';
     PrintExpr(Node->getArg(1));
   } else {
     llvm_unreachable("unknown overloaded operator");
@@ -1668,6 +1709,15 @@ void StmtPrinter::VisitCUDAKernelCallExpr(CUDAKernelCallExpr *Node) {
   OS << ")";
 }
 
+void StmtPrinter::VisitCXXRewrittenBinaryOperator(
+    CXXRewrittenBinaryOperator *Node) {
+  CXXRewrittenBinaryOperator::DecomposedForm Decomposed =
+      Node->getDecomposedForm();
+  PrintExpr(const_cast<Expr*>(Decomposed.LHS));
+  OS << ' ' << BinaryOperator::getOpcodeStr(Decomposed.Opcode) << ' ';
+  PrintExpr(const_cast<Expr*>(Decomposed.RHS));
+}
+
 void StmtPrinter::VisitCXXNamedCastExpr(CXXNamedCastExpr *Node) {
   OS << Node->getCastName() << '<';
   Node->getTypeAsWritten().print(OS, Policy);
@@ -1690,6 +1740,14 @@ void StmtPrinter::VisitCXXReinterpretCastExpr(CXXReinterpretCastExpr *Node) {
 
 void StmtPrinter::VisitCXXConstCastExpr(CXXConstCastExpr *Node) {
   VisitCXXNamedCastExpr(Node);
+}
+
+void StmtPrinter::VisitBuiltinBitCastExpr(BuiltinBitCastExpr *Node) {
+  OS << "__builtin_bit_cast(";
+  Node->getTypeInfoAsWritten()->getType().print(OS, Policy);
+  OS << ", ";
+  PrintExpr(Node->getSubExpr());
+  OS << ")";
 }
 
 void StmtPrinter::VisitCXXTypeidExpr(CXXTypeidExpr *Node) {
@@ -1896,13 +1954,22 @@ void StmtPrinter::VisitLambdaExpr(LambdaExpr *Node) {
       llvm_unreachable("VLA type in explicit captures.");
     }
 
+    if (C->isPackExpansion())
+      OS << "...";
+
     if (Node->isInitCapture(C))
       PrintExpr(C->getCapturedVar()->getInit());
   }
   OS << ']';
 
+  if (!Node->getExplicitTemplateParameters().empty()) {
+    Node->getTemplateParameterList()->print(
+        OS, Node->getLambdaClass()->getASTContext(),
+        /*OmitTemplateKW*/true);
+  }
+
   if (Node->hasExplicitParameters()) {
-    OS << " (";
+    OS << '(';
     CXXMethodDecl *Method = Node->getCallOperator();
     NeedComma = false;
     for (const auto *P : Method->parameters()) {
@@ -1924,7 +1991,7 @@ void StmtPrinter::VisitLambdaExpr(LambdaExpr *Node) {
     if (Node->isMutable())
       OS << " mutable";
 
-    auto *Proto = Method->getType()->getAs<FunctionProtoType>();
+    auto *Proto = Method->getType()->castAs<FunctionProtoType>();
     Proto->printExceptionSpecification(OS, Policy);
 
     // FIXME: Attributes
@@ -1937,9 +2004,11 @@ void StmtPrinter::VisitLambdaExpr(LambdaExpr *Node) {
   }
 
   // Print the body.
-  CompoundStmt *Body = Node->getBody();
   OS << ' ';
-  PrintStmt(Body);
+  if (Policy.TerseOutput)
+    OS << "{}";
+  else
+    PrintRawCompoundStmt(Node->getBody());
 }
 
 void StmtPrinter::VisitCXXScalarValueInitExpr(CXXScalarValueInitExpr *Node) {
@@ -1969,10 +2038,11 @@ void StmtPrinter::VisitCXXNewExpr(CXXNewExpr *E) {
   if (E->isParenTypeId())
     OS << "(";
   std::string TypeS;
-  if (Expr *Size = E->getArraySize()) {
+  if (Optional<Expr *> Size = E->getArraySize()) {
     llvm::raw_string_ostream s(TypeS);
     s << '[';
-    Size->printPretty(s, Helper, Policy);
+    if (*Size)
+      (*Size)->printPretty(s, Helper, Policy);
     s << ']';
   }
   E->getAllocatedType().print(OS, Policy, TypeS);
@@ -2171,7 +2241,7 @@ void StmtPrinter::VisitFunctionParmPackExpr(FunctionParmPackExpr *E) {
 }
 
 void StmtPrinter::VisitMaterializeTemporaryExpr(MaterializeTemporaryExpr *Node){
-  PrintExpr(Node->GetTemporaryExpr());
+  PrintExpr(Node->getSubExpr());
 }
 
 void StmtPrinter::VisitCXXFoldExpr(CXXFoldExpr *E) {
@@ -2186,6 +2256,71 @@ void StmtPrinter::VisitCXXFoldExpr(CXXFoldExpr *E) {
     PrintExpr(E->getRHS());
   }
   OS << ")";
+}
+
+void StmtPrinter::VisitConceptSpecializationExpr(ConceptSpecializationExpr *E) {
+  NestedNameSpecifierLoc NNS = E->getNestedNameSpecifierLoc();
+  if (NNS)
+    NNS.getNestedNameSpecifier()->print(OS, Policy);
+  if (E->getTemplateKWLoc().isValid())
+    OS << "template ";
+  OS << E->getFoundDecl()->getName();
+  printTemplateArgumentList(OS, E->getTemplateArgsAsWritten()->arguments(),
+                            Policy);
+}
+
+void StmtPrinter::VisitRequiresExpr(RequiresExpr *E) {
+  OS << "requires ";
+  auto LocalParameters = E->getLocalParameters();
+  if (!LocalParameters.empty()) {
+    OS << "(";
+    for (ParmVarDecl *LocalParam : LocalParameters) {
+      PrintRawDecl(LocalParam);
+      if (LocalParam != LocalParameters.back())
+        OS << ", ";
+    }
+
+    OS << ") ";
+  }
+  OS << "{ ";
+  auto Requirements = E->getRequirements();
+  for (concepts::Requirement *Req : Requirements) {
+    if (auto *TypeReq = dyn_cast<concepts::TypeRequirement>(Req)) {
+      if (TypeReq->isSubstitutionFailure())
+        OS << "<<error-type>>";
+      else
+        TypeReq->getType()->getType().print(OS, Policy);
+    } else if (auto *ExprReq = dyn_cast<concepts::ExprRequirement>(Req)) {
+      if (ExprReq->isCompound())
+        OS << "{ ";
+      if (ExprReq->isExprSubstitutionFailure())
+        OS << "<<error-expression>>";
+      else
+        PrintExpr(ExprReq->getExpr());
+      if (ExprReq->isCompound()) {
+        OS << " }";
+        if (ExprReq->getNoexceptLoc().isValid())
+          OS << " noexcept";
+        const auto &RetReq = ExprReq->getReturnTypeRequirement();
+        if (!RetReq.isEmpty()) {
+          OS << " -> ";
+          if (RetReq.isSubstitutionFailure())
+            OS << "<<error-type>>";
+          else if (RetReq.isTypeConstraint())
+            RetReq.getTypeConstraint()->print(OS, Policy);
+        }
+      }
+    } else {
+      auto *NestedReq = cast<concepts::NestedRequirement>(Req);
+      OS << "requires ";
+      if (NestedReq->isSubstitutionFailure())
+        OS << "<<error-expression>>";
+      else
+        PrintExpr(NestedReq->getConstraintExpr());
+    }
+    OS << "; ";
+  }
+  OS << "}";
 }
 
 // C++ Coroutines TS
@@ -2380,12 +2515,21 @@ void Stmt::dumpPretty(const ASTContext &Context) const {
   printPretty(llvm::errs(), nullptr, PrintingPolicy(Context.getLangOpts()));
 }
 
-void Stmt::printPretty(raw_ostream &OS, PrinterHelper *Helper,
+void Stmt::printPretty(raw_ostream &Out, PrinterHelper *Helper,
                        const PrintingPolicy &Policy, unsigned Indentation,
-                       StringRef NL,
-                       const ASTContext *Context) const {
-  StmtPrinter P(OS, Helper, Policy, Indentation, NL, Context);
-  P.Visit(const_cast<Stmt*>(this));
+                       StringRef NL, const ASTContext *Context) const {
+  StmtPrinter P(Out, Helper, Policy, Indentation, NL, Context);
+  P.Visit(const_cast<Stmt *>(this));
+}
+
+void Stmt::printJson(raw_ostream &Out, PrinterHelper *Helper,
+                     const PrintingPolicy &Policy, bool AddQuotes) const {
+  std::string Buf;
+  llvm::raw_string_ostream TempOut(Buf);
+
+  printPretty(TempOut, Helper, Policy);
+
+  Out << JsonFormat(TempOut.str(), AddQuotes);
 }
 
 //===----------------------------------------------------------------------===//

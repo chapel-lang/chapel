@@ -1,9 +1,8 @@
 //===--- Encoding.h - Format C++ code ---------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -68,7 +67,8 @@ inline unsigned columnWidthWithTabs(StringRef Text, unsigned StartColumn,
     if (TabPos == StringRef::npos)
       return TotalWidth + columnWidth(Tail, Encoding);
     TotalWidth += columnWidth(Tail.substr(0, TabPos), Encoding);
-    TotalWidth += TabWidth - (TotalWidth + StartColumn) % TabWidth;
+    if (TabWidth)
+      TotalWidth += TabWidth - (TotalWidth + StartColumn) % TabWidth;
     Tail = Tail.substr(TabPos + 1);
   }
 }

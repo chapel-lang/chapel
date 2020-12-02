@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Iterators:
 
 Iterators
@@ -21,18 +23,18 @@ The syntax to declare an iterator is given by:
 .. code-block:: syntax
 
    iterator-declaration-statement:
-     privacy-specifier[OPT] `iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
+     privacy-specifier[OPT] 'iter' iterator-name argument-list[OPT] yield-intent[OPT] yield-type[OPT] where-clause[OPT]
      iterator-body
 
    iterator-name:
      identifier
 
    yield-intent:
-     `const'
-     `const ref'
-     `ref'
-     `param'
-     `type'
+     'const'
+     'const ref'
+     'ref'
+     'param'
+     'type'
 
    yield-type:
      : type-expression
@@ -76,7 +78,7 @@ yield statement is given by
 .. code-block:: syntax
 
    yield-statement:
-     `yield' expression ;
+     'yield' expression ;
 
 When an iterator is executed and a ``yield`` is encountered, the value
 of the yield expression is returned to the iterator’s callsite. However,
@@ -106,7 +108,7 @@ Iterators are invoked using regular call expressions:
 All details of iterator calls, including argument passing, function
 resolution, the use of parentheses versus brackets to delimit the
 parameter list, and so on, are identical to procedure calls as described
-in Chapter \ `[Functions] <#Functions>`__.
+in the :ref:`Procedures Chapter <Chapter-Procedures>`.
 
 However, the result of an iterator call depends upon its context, as
 described below.
@@ -125,10 +127,24 @@ iteration, the iterator yields a value and the body is executed.
 Iterators as Arrays
 ~~~~~~~~~~~~~~~~~~~
 
-If an iterator function is captured into a new variable declaration or
-assigned to an array, the iterator is iterated over in total and the
-expression evaluates to a one-dimensional arithmetic array that contains
-the values returned by the iterator on each iteration.
+*Capturing an iterator* into a new variable creates a new rectangular
+array storing the same elements that the iterator yielded.
+
+An iterator can be captured by:
+
+ * storing it into a new ``var`` or ``const`` variable declaration
+ * passing it to function formal argument accepting it with ``in`` intent
+
+In both cases, the variable or formal argument needs to be untyped or
+have a compatible rectangular array type.
+
+In other words, an iterator can be implicitly converted into an array
+with matching shape and element type (see also :ref:`Implicit_Conversions`).
+
+When an iterator is assigned to an existing array, the array and the
+iterator will be iterated over with zippered iteration
+(:ref:`Zipper_Iteration`) and the array elements assigned to the yielded
+value.
 
    *Example (as-arrays.chpl)*.
 

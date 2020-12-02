@@ -1,1 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4131: error: Scoped variable r would outlive the value it is set to

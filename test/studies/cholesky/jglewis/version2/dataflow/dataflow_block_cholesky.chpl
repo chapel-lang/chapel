@@ -69,9 +69,9 @@ module dataflow_block_cholesky {
     // This procedure expects as input a square matrix with the same ranges
     // (set of indices) for both rows and columns
 
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const A_rc_indices = A.domain.dim (1);  // row and column indices for A
+    const A_rc_indices = A.domain.dim (0);  // row and column indices for A
     var   pos_def : bool;
 
     // --------------------------------------------------------------------
@@ -148,7 +148,7 @@ module dataflow_block_cholesky {
 
       block_computed$ (I, I) . writeEF (true);
 
-      if pos_def && AJKJK_row_indices.length > 0 then {
+      if pos_def && AJKJK_row_indices.size > 0 then {
         
         // Initiate separate threads to compute each subdiagonal block
         // in this block column of the matrix.  Each block is subjected to

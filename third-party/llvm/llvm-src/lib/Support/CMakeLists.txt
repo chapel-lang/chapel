@@ -44,8 +44,16 @@ if (MSVC)
   set (delayload_flags delayimp -delayload:shell32.dll -delayload:ole32.dll)
 endif()
 
-add_llvm_library(LLVMSupport
+# Link Z3 if the user wants to build it.
+if(LLVM_WITH_Z3)
+  set(Z3_LINK_FILES ${Z3_LIBRARIES})
+else()
+  set(Z3_LINK_FILES "")
+endif()
+
+add_llvm_component_library(LLVMSupport
   AArch64TargetParser.cpp
+  ABIBreak.cpp
   ARMTargetParser.cpp
   AMDGPUMetadata.cpp
   APFloat.cpp
@@ -69,6 +77,7 @@ add_llvm_library(LLVMSupport
   CodeGenCoverage.cpp
   CommandLine.cpp
   Compression.cpp
+  CRC.cpp
   ConvertUTF.cpp
   ConvertUTFWrapper.cpp
   CrashRecoveryContext.cpp
@@ -81,6 +90,7 @@ add_llvm_library(LLVMSupport
   Error.cpp
   ErrorHandling.cpp
   FileCheck.cpp
+  FileCollector.cpp
   FileUtilities.cpp
   FileOutputBuffer.cpp
   FoldingSet.cpp
@@ -93,7 +103,6 @@ add_llvm_library(LLVMSupport
   IntEqClasses.cpp
   IntervalMap.cpp
   ItaniumManglingCanonicalizer.cpp
-  JamCRC.cpp
   JSON.cpp
   KnownBits.cpp
   LEB128.cpp
@@ -106,7 +115,7 @@ add_llvm_library(LLVMSupport
   MemoryBuffer.cpp
   MD5.cpp
   NativeFormatting.cpp
-  Options.cpp
+  Optional.cpp
   Parallel.cpp
   PluginLoader.cpp
   PrettyStackTrace.cpp
@@ -115,6 +124,7 @@ add_llvm_library(LLVMSupport
   ScaledNumber.cpp
   ScopedPrinter.cpp
   SHA1.cpp
+  Signposts.cpp
   SmallPtrSet.cpp
   SmallVector.cpp
   SourceMgr.cpp
@@ -130,6 +140,7 @@ add_llvm_library(LLVMSupport
   TarWriter.cpp
   TargetParser.cpp
   ThreadPool.cpp
+  TimeProfiler.cpp
   Timer.cpp
   ToolOutputFile.cpp
   TrigramIndex.cpp
@@ -150,6 +161,7 @@ add_llvm_library(LLVMSupport
   regfree.c
   regstrlcpy.c
   xxhash.cpp
+  Z3Solver.cpp
 
 # System
   Atomic.cpp
@@ -157,7 +169,6 @@ add_llvm_library(LLVMSupport
   Errno.cpp
   Host.cpp
   Memory.cpp
-  Mutex.cpp
   Path.cpp
   Process.cpp
   Program.cpp
@@ -175,7 +186,14 @@ add_llvm_library(LLVMSupport
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/ADT
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Support
   ${Backtrace_INCLUDE_DIRS}
-  LINK_LIBS ${system_libs} ${delayload_flags}
+  LINK_LIBS ${system_libs} ${delayload_flags} ${Z3_LINK_FILES}
   )
 
 set_property(TARGET LLVMSupport PROPERTY LLVM_SYSTEM_LIBS "${system_libs}")
+
+if(LLVM_WITH_Z3)
+  target_include_directories(LLVMSupport SYSTEM
+    PRIVATE
+    ${Z3_INCLUDE_DIR}
+    )
+endif()

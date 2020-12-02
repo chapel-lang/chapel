@@ -1,9 +1,8 @@
 //===-- RuntimeDyldCOFF.cpp - Run-time dynamic linker for MC-JIT -*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "RuntimeDyldCOFF.h"
+#include "Targets/RuntimeDyldCOFFAArch64.h"
 #include "Targets/RuntimeDyldCOFFI386.h"
 #include "Targets/RuntimeDyldCOFFThumb.h"
 #include "Targets/RuntimeDyldCOFFX86_64.h"
@@ -51,18 +51,20 @@ llvm::RuntimeDyldCOFF::create(Triple::ArchType Arch,
   switch (Arch) {
   default: llvm_unreachable("Unsupported target for RuntimeDyldCOFF.");
   case Triple::x86:
-    return make_unique<RuntimeDyldCOFFI386>(MemMgr, Resolver);
+    return std::make_unique<RuntimeDyldCOFFI386>(MemMgr, Resolver);
   case Triple::thumb:
-    return make_unique<RuntimeDyldCOFFThumb>(MemMgr, Resolver);
+    return std::make_unique<RuntimeDyldCOFFThumb>(MemMgr, Resolver);
   case Triple::x86_64:
-    return make_unique<RuntimeDyldCOFFX86_64>(MemMgr, Resolver);
+    return std::make_unique<RuntimeDyldCOFFX86_64>(MemMgr, Resolver);
+  case Triple::aarch64:
+    return std::make_unique<RuntimeDyldCOFFAArch64>(MemMgr, Resolver);
   }
 }
 
 std::unique_ptr<RuntimeDyld::LoadedObjectInfo>
 RuntimeDyldCOFF::loadObject(const object::ObjectFile &O) {
   if (auto ObjSectionToIDOrErr = loadObjectImpl(O)) {
-    return llvm::make_unique<LoadedCOFFObjectInfo>(*this, *ObjSectionToIDOrErr);
+    return std::make_unique<LoadedCOFFObjectInfo>(*this, *ObjSectionToIDOrErr);
   } else {
     HasError = true;
     raw_string_ostream ErrStream(ErrorStr);

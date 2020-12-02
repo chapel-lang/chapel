@@ -1,4 +1,4 @@
-nestedGenericTypes.chpl:3: error: unresolved call 'Wrapper(unmanaged MyGenericClass).init=(Wrapper(unmanaged MyGenericClass(int(64))))'
+nestedGenericTypes.chpl:3: error: could not find a copy initializer ('init=') for type 'Wrapper(unmanaged MyGenericClass)' from type 'Wrapper(unmanaged MyGenericClass(int(64)))'
 nestedGenericTypes.chpl:2: note: this candidate did not match: Wrapper.init=(other: this.type)
 nestedGenericTypes.chpl:3: note: because call actual argument #1 with type Wrapper(unmanaged MyGenericClass(int(64)))
 nestedGenericTypes.chpl:2: note: is passed to formal 'other: Wrapper(unmanaged MyGenericClass)'

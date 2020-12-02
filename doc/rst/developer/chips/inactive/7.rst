@@ -1,0 +1,106 @@
+Rules for inserting autoCopy
+============================
+
+Status
+  Inactive - Superseded, see CHIP 13
+
+Author
+  Vassily Litvinov, Chapel Team
+
+
+Abstract
+--------
+
+This CHIP defines when calls to autoCopy ("copy constructors" in C++ slang)
+are to be inserted.
+
+This CHIP is here temporarily. Its ideas will be merged
+into Chapel's upcoming Constructor Story.
+
+
+Context
+-------
+
+These rules address the following aspects of a Chapel program:
+
+* variable declarations with initializer expressions
+
+* procedure declarations
+
+* procedure calls
+
+* only variables of record types
+
+* returning only by value
+
+The rules consist of applying the following steps.
+Steps 2a, 2b, 2c are independent of each other and can be applied
+in any order.
+Steps 3 and 4 yield the same result regardless of order of application.
+
+
+Step 1: normalization of procedure calls
+----------------------------------------
+
+Consider a call ``f(actuals...)`` where ``f`` returns a value
+(not by reference and not void).
+
+* If it is the initializer expression of a variable, do not change it.
+
+* Otherwise, add the following declaration:
+
+  ``var tmp = f(actuals...)``
+
+  and replace the original occurrence of ``f(actuals...)`` with ``tmp``.
+
+After such normalization, each call to a function that returns a value
+is the initializer expression of a variable. Likewise, each return statement
+returns either a variable or nothing (void).
+
+
+Step 2a: autoCopy for argument passing
+--------------------------------------
+
+* For each call and each argument passed by ``[const] in`` intent,
+  add ``formal = autoCopy(actual)``.
+
+Step 2b: autoCopy for value returning
+-------------------------------------
+
+* For each call that (a) initializes the variable ``v`` and
+  (b) invokes ``f(...)``, for each return statement within ``f``
+  that returns the variable ``r``, add ``v = autoCopy(r)``
+  along that return path.
+
+Step 2c: autoCopy for variable copying
+--------------------------------------
+
+* For each declaration ``var v2 = v1;``
+  where ``v1`` is a variable (not a function call), possibly resulting
+  from normalization, replace it with ``var v2 = autoCopy(v1);``.
+
+Additional notes
+----------------
+
+* After completing Steps 2a, 2b, 2c, variable declarations store
+  the results of r.h.s. into the l.h.s. by bit copy.
+
+* These rules treat assignments as function calls. The default assignment
+  for a record performs assignments between the respective fields
+  of the l.h.s. and r.h.s.
+
+Step 3: insert autoDestroy
+--------------------------
+
+* Insert ``autoDestroy(v);`` for each variable at the end of that
+  variable's scope. The ``autoCopy`` inserted in Step 2b for value returning
+  is performed before invoking ``autoDestroy`` for the variables
+  leaving the procedure's top scope.
+
+Step 4: remove copies
+---------------------
+
+* For each declaration ``var v2 = autoCopy(v1);`` where ``v1`` is not
+  available and not modified through the end of the scope of ``v2``,
+  remove that declaration (including the call ``autoCopy(v1)``)
+  and replace ``v2`` with ``v1``.

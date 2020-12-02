@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Run bale histo with 2 million updates per task. non-ugni configs have much
 # slower network atomics, so drop to 20,000 updates per task
@@ -11,4 +11,4 @@ N = 20000
 if ugni:
   N = 2000000
 
-print('--N={0} --printStats --useUnorderedAtomics=false # bale-hist-atomic-opt'.format(N))
+print('--N={0} --printStats --mode=Mode.ordered # bale-hist-atomic-opt'.format(N))

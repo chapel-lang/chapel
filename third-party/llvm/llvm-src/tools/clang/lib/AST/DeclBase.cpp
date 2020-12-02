@@ -1,9 +1,8 @@
 //===- DeclBase.cpp - Declaration AST Node Implementation -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,6 +12,7 @@
 
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ASTLambda.h"
 #include "clang/AST/ASTMutationListener.h"
 #include "clang/AST/Attr.h"
 #include "clang/AST/AttrIterator.h"
@@ -100,7 +100,7 @@ void *Decl::operator new(std::size_t Size, const ASTContext &Ctx,
     // Ensure required alignment of the resulting object by adding extra
     // padding at the start if required.
     size_t ExtraAlign =
-        llvm::OffsetToAlignment(sizeof(Module *), alignof(Decl));
+        llvm::offsetToAlignment(sizeof(Module *), llvm::Align(alignof(Decl)));
     auto *Buffer = reinterpret_cast<char *>(
         ::operator new(ExtraAlign + sizeof(Module *) + Size + Extra, Ctx));
     Buffer += ExtraAlign;
@@ -209,8 +209,8 @@ bool Decl::isTemplateParameterPack() const {
 }
 
 bool Decl::isParameterPack() const {
-  if (const auto *Parm = dyn_cast<ParmVarDecl>(this))
-    return Parm->isParameterPack();
+  if (const auto *Var = dyn_cast<VarDecl>(this))
+    return Var->isParameterPack();
 
   return isTemplateParameterPack();
 }
@@ -332,13 +332,16 @@ void Decl::setDeclContextsImpl(DeclContext *SemaDC, DeclContext *LexicalDC,
   }
 }
 
-bool Decl::isLexicallyWithinFunctionOrMethod() const {
+bool Decl::isInLocalScope() const {
   const DeclContext *LDC = getLexicalDeclContext();
   while (true) {
     if (LDC->isFunctionOrMethod())
       return true;
     if (!isa<TagDecl>(LDC))
       return false;
+    if (const auto *CRD = dyn_cast<CXXRecordDecl>(LDC))
+      if (CRD->isLambda())
+        return true;
     LDC = LDC->getLexicalParent();
   }
   return false;
@@ -355,7 +358,8 @@ bool Decl::isInAnonymousNamespace() const {
 }
 
 bool Decl::isInStdNamespace() const {
-  return getDeclContext()->isStdNamespace();
+  const DeclContext *DC = getDeclContext();
+  return DC && DC->isStdNamespace();
 }
 
 TranslationUnitDecl *Decl::getTranslationUnitDecl() {
@@ -428,22 +432,6 @@ bool Decl::isReferenced() const {
     if (I->Referenced)
       return true;
 
-  return false;
-}
-
-bool Decl::isExported() const {
-  if (isModulePrivate())
-    return false;
-  // Namespaces are always exported.
-  if (isa<TranslationUnitDecl>(this) || isa<NamespaceDecl>(this))
-    return true;
-  // Otherwise, this is a strictly lexical check.
-  for (auto *DC = getLexicalDeclContext(); DC; DC = DC->getLexicalParent()) {
-    if (cast<Decl>(DC)->isModulePrivate())
-      return false;
-    if (isa<ExportDecl>(DC))
-      return true;
-  }
   return false;
 }
 
@@ -726,6 +714,7 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case Binding:
     case NonTypeTemplateParm:
     case VarTemplate:
+    case Concept:
       // These (C++-only) declarations are found by redeclaration lookup for
       // tag types, so we include them in the tag namespace.
       return IDNS_Ordinary | IDNS_Tag;
@@ -781,6 +770,9 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case OMPDeclareReduction:
       return IDNS_OMPReduction;
 
+    case OMPDeclareMapper:
+      return IDNS_OMPMapper;
+
     // Never have names.
     case Friend:
     case FriendTemplate:
@@ -810,9 +802,12 @@ unsigned Decl::getIdentifierNamespaceForKind(Kind DeclKind) {
     case ObjCCategoryImpl:
     case Import:
     case OMPThreadPrivate:
+    case OMPAllocate:
     case OMPRequires:
     case OMPCapturedExpr:
     case Empty:
+    case LifetimeExtendedTemporary:
+    case RequiresExprBody:
       // Never looked up by name.
       return 0;
   }
@@ -932,6 +927,7 @@ bool Decl::AccessDeclContextSanity() const {
   if (isa<TranslationUnitDecl>(this) ||
       isa<TemplateTypeParmDecl>(this) ||
       isa<NonTypeTemplateParmDecl>(this) ||
+      !getDeclContext() ||
       !isa<CXXRecordDecl>(getDeclContext()) ||
       isInvalidDecl() ||
       isa<StaticAssertDecl>(this) ||
@@ -968,9 +964,11 @@ const FunctionType *Decl::getFunctionType(bool BlocksToo) const {
     return nullptr;
 
   if (Ty->isFunctionPointerType())
-    Ty = Ty->getAs<PointerType>()->getPointeeType();
+    Ty = Ty->castAs<PointerType>()->getPointeeType();
+  else if (Ty->isFunctionReferenceType())
+    Ty = Ty->castAs<ReferenceType>()->getPointeeType();
   else if (BlocksToo && Ty->isBlockPointerType())
-    Ty = Ty->getAs<BlockPointerType>()->getPointeeType();
+    Ty = Ty->castAs<BlockPointerType>()->getPointeeType();
 
   return Ty->getAs<FunctionType>();
 }
@@ -1051,7 +1049,25 @@ DeclContext *DeclContext::getLookupParent() {
         getLexicalParent()->getRedeclContext()->isRecord())
       return getLexicalParent();
 
+  // A lookup within the call operator of a lambda never looks in the lambda
+  // class; instead, skip to the context in which that closure type is
+  // declared.
+  if (isLambdaCallOperator(this))
+    return getParent()->getParent();
+
   return getParent();
+}
+
+const BlockDecl *DeclContext::getInnermostBlockDecl() const {
+  const DeclContext *Ctx = this;
+
+  do {
+    if (Ctx->isClosure())
+      return cast<BlockDecl>(Ctx);
+    Ctx = Ctx->getParent();
+  } while (Ctx);
+
+  return nullptr;
 }
 
 bool DeclContext::isInlineNamespace() const {
@@ -1164,6 +1180,8 @@ DeclContext *DeclContext::getPrimaryContext() {
   case Decl::Block:
   case Decl::Captured:
   case Decl::OMPDeclareReduction:
+  case Decl::OMPDeclareMapper:
+  case Decl::RequiresExprBody:
     // There is only one DeclContext for these entities.
     return this;
 
@@ -1175,13 +1193,15 @@ DeclContext *DeclContext::getPrimaryContext() {
     return this;
 
   case Decl::ObjCInterface:
-    if (auto *Def = cast<ObjCInterfaceDecl>(this)->getDefinition())
-      return Def;
+    if (auto *OID = dyn_cast<ObjCInterfaceDecl>(this))
+      if (auto *Def = OID->getDefinition())
+        return Def;
     return this;
 
   case Decl::ObjCProtocol:
-    if (auto *Def = cast<ObjCProtocolDecl>(this)->getDefinition())
-      return Def;
+    if (auto *OPD = dyn_cast<ObjCProtocolDecl>(this))
+      if (auto *Def = OPD->getDefinition())
+        return Def;
     return this;
 
   case Decl::ObjCCategory:

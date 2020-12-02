@@ -191,6 +191,9 @@ of such YAML document:
      tracksRegLiveness: true
      liveins:
        - { reg: '$rdi' }
+     callSites:
+       - { bb: 0, offset: 3, fwdArgRegs:
+           - { arg: 0, reg: '$edi' } }
      body: |
        bb.0.entry:
          liveins: $rdi
@@ -198,6 +201,7 @@ of such YAML document:
          $eax = MOV32rm $rdi, 1, _, 0, _
          $eax = INC32r killed $eax, implicit-def dead $eflags
          MOV32mr killed $rdi, 1, _, 0, _, $eax
+         CALL64pcrel32 @foo <regmask...>
          RETQ $eax
      ...
 
@@ -209,6 +213,9 @@ name of a function that this machine function is based on.
 
 The attribute ``body`` is a `YAML block literal string`_. Its value represents
 the function's machine basic blocks and their machine instructions.
+
+The attribute ``callSites`` is a representation of call site information which
+keeps track of call instructions and registers used to transfer call arguments.
 
 Machine Instructions Format Reference
 =====================================
@@ -336,6 +343,10 @@ specified in brackets after the block's definition:
 .. TODO: Describe the way the reference to an unnamed LLVM IR block can be
    preserved.
 
+``Alignment`` is specified in bytes, and must be a power of two.
+
+.. _mir-instructions:
+
 Machine Instructions
 --------------------
 
@@ -397,6 +408,8 @@ The syntax for bundled instructions is the following:
 
 The first instruction is often a bundle header. The instructions between ``{``
 and ``}`` are bundled with the first instruction.
+
+.. _mir-registers:
 
 Registers
 ---------
@@ -607,9 +620,13 @@ following format is used:
         alignment:        <alignment>
         isTargetSpecific: <target-specific>
 
-where ``<index>`` is a 32-bit unsigned integer, ``<value>`` is a `LLVM IR Constant
-<https://www.llvm.org/docs/LangRef.html#constants>`_, alignment is a 32-bit
-unsigned integer, and ``<target-specific>`` is either true or false.
+where:
+  - ``<index>`` is a 32-bit unsigned integer;
+  - ``<value>`` is a `LLVM IR Constant
+    <https://www.llvm.org/docs/LangRef.html#constants>`_;
+  - ``<alignment>`` is a 32-bit unsigned integer specified in bytes, and must be
+    power of two;
+  - ``<target-specific>`` is either true or false.
 
 Example:
 

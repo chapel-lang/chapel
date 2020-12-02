@@ -1,9 +1,8 @@
 //===- ELFObjectFile.cpp - ELF object file implementation -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,6 +35,25 @@
 using namespace llvm;
 using namespace object;
 
+const EnumEntry<unsigned> llvm::object::ElfSymbolTypes[NumElfSymbolTypes] = {
+    {"None", "NOTYPE", ELF::STT_NOTYPE},
+    {"Object", "OBJECT", ELF::STT_OBJECT},
+    {"Function", "FUNC", ELF::STT_FUNC},
+    {"Section", "SECTION", ELF::STT_SECTION},
+    {"File", "FILE", ELF::STT_FILE},
+    {"Common", "COMMON", ELF::STT_COMMON},
+    {"TLS", "TLS", ELF::STT_TLS},
+    {"Unknown", "<unknown>: 7", 7},
+    {"Unknown", "<unknown>: 8", 8},
+    {"Unknown", "<unknown>: 9", 9},
+    {"GNU_IFunc", "IFUNC", ELF::STT_GNU_IFUNC},
+    {"OS Specific", "<OS specific>: 11", 11},
+    {"OS Specific", "<OS specific>: 12", 12},
+    {"Proc Specific", "<processor specific>: 13", 13},
+    {"Proc Specific", "<processor specific>: 14", 14},
+    {"Proc Specific", "<processor specific>: 15", 15}
+};
+
 ELFObjectFileBase::ELFObjectFileBase(unsigned int Type, MemoryBufferRef Source)
     : ObjectFile(Type, Source) {}
 
@@ -45,7 +63,7 @@ createPtr(MemoryBufferRef Object) {
   auto Ret = ELFObjectFile<ELFT>::create(Object);
   if (Error E = Ret.takeError())
     return std::move(E);
-  return make_unique<ELFObjectFile<ELFT>>(std::move(*Ret));
+  return std::make_unique<ELFObjectFile<ELFT>>(std::move(*Ret));
 }
 
 Expected<std::unique_ptr<ObjectFile>>
@@ -139,8 +157,7 @@ SubtargetFeatures ELFObjectFileBase::getMIPSFeatures() const {
 SubtargetFeatures ELFObjectFileBase::getARMFeatures() const {
   SubtargetFeatures Features;
   ARMAttributeParser Attributes;
-  std::error_code EC = getBuildAttributes(Attributes);
-  if (EC)
+  if (Error E = getBuildAttributes(Attributes))
     return SubtargetFeatures();
 
   // both ARMv7-M and R have to support thumb hardware div
@@ -186,9 +203,9 @@ SubtargetFeatures ELFObjectFileBase::getARMFeatures() const {
     default:
       break;
     case ARMBuildAttrs::Not_Allowed:
-      Features.AddFeature("vfp2", false);
-      Features.AddFeature("vfp3", false);
-      Features.AddFeature("vfp4", false);
+      Features.AddFeature("vfp2sp", false);
+      Features.AddFeature("vfp3d16sp", false);
+      Features.AddFeature("vfp4d16sp", false);
       break;
     case ARMBuildAttrs::AllowFPv2:
       Features.AddFeature("vfp2");
@@ -218,6 +235,24 @@ SubtargetFeatures ELFObjectFileBase::getARMFeatures() const {
     case ARMBuildAttrs::AllowNeon2:
       Features.AddFeature("neon");
       Features.AddFeature("fp16");
+      break;
+    }
+  }
+
+  if (Attributes.hasAttribute(ARMBuildAttrs::MVE_arch)) {
+    switch(Attributes.getAttributeValue(ARMBuildAttrs::MVE_arch)) {
+    default:
+      break;
+    case ARMBuildAttrs::Not_Allowed:
+      Features.AddFeature("mve", false);
+      Features.AddFeature("mve.fp", false);
+      break;
+    case ARMBuildAttrs::AllowMVEInteger:
+      Features.AddFeature("mve.fp", false);
+      Features.AddFeature("mve");
+      break;
+    case ARMBuildAttrs::AllowMVEIntegerAndFloat:
+      Features.AddFeature("mve.fp");
       break;
     }
   }
@@ -270,8 +305,7 @@ void ELFObjectFileBase::setARMSubArch(Triple &TheTriple) const {
     return;
 
   ARMAttributeParser Attributes;
-  std::error_code EC = getBuildAttributes(Attributes);
-  if (EC)
+  if (Error E = getBuildAttributes(Attributes))
     return;
 
   std::string Triple;
@@ -322,6 +356,21 @@ void ELFObjectFileBase::setARMSubArch(Triple &TheTriple) const {
     case ARMBuildAttrs::v7E_M:
       Triple += "v7em";
       break;
+    case ARMBuildAttrs::v8_A:
+      Triple += "v8a";
+      break;
+    case ARMBuildAttrs::v8_R:
+      Triple += "v8r";
+      break;
+    case ARMBuildAttrs::v8_M_Base:
+      Triple += "v8m.base";
+      break;
+    case ARMBuildAttrs::v8_M_Main:
+      Triple += "v8m.main";
+      break;
+    case ARMBuildAttrs::v8_1_M_Main:
+      Triple += "v8.1m.main";
+      break;
     }
   }
   if (!isLittleEndian())
@@ -358,9 +407,13 @@ ELFObjectFileBase::getPltAddresses() const {
     return {};
   Optional<SectionRef> Plt = None, RelaPlt = None, GotPlt = None;
   for (const SectionRef &Section : sections()) {
-    StringRef Name;
-    if (Section.getName(Name))
+    Expected<StringRef> NameOrErr = Section.getName();
+    if (!NameOrErr) {
+      consumeError(NameOrErr.takeError());
       continue;
+    }
+    StringRef Name = *NameOrErr;
+
     if (Name == ".plt")
       Plt = Section;
     else if (Name == ".rela.plt" || Name == ".rel.plt")
@@ -370,12 +423,13 @@ ELFObjectFileBase::getPltAddresses() const {
   }
   if (!Plt || !RelaPlt || !GotPlt)
     return {};
-  StringRef PltContents;
-  if (Plt->getContents(PltContents))
+  Expected<StringRef> PltContents = Plt->getContents();
+  if (!PltContents) {
+    consumeError(PltContents.takeError());
     return {};
-  ArrayRef<uint8_t> PltBytes((const uint8_t *)PltContents.data(),
-                             Plt->getSize());
-  auto PltEntries = MIA->findPltEntries(Plt->getAddress(), PltBytes,
+  }
+  auto PltEntries = MIA->findPltEntries(Plt->getAddress(),
+                                        arrayRefFromStringRef(*PltContents),
                                         GotPlt->getAddress(), Triple);
   // Build a map from GOT entry virtual address to PLT entry virtual address.
   DenseMap<uint64_t, uint64_t> GotToPlt;

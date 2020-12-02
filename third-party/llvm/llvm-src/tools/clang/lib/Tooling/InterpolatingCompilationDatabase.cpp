@@ -1,9 +1,8 @@
 //===- InterpolatingCompilationDatabase.cpp ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,9 +42,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "clang/Basic/LangStandard.h"
 #include "clang/Driver/Options.h"
 #include "clang/Driver/Types.h"
-#include "clang/Frontend/LangStandard.h"
 #include "clang/Tooling/CompilationDatabase.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
@@ -150,16 +149,17 @@ struct TransferableCommand {
     // We parse each argument individually so that we can retain the exact
     // spelling of each argument; re-rendering is lossy for aliased flags.
     // E.g. in CL mode, /W4 maps to -Wall.
-    auto OptTable = clang::driver::createDriverOptTable();
-    Cmd.CommandLine.emplace_back(OldArgs.front());
+    auto &OptTable = clang::driver::getDriverOptTable();
+    if (!OldArgs.empty())
+      Cmd.CommandLine.emplace_back(OldArgs.front());
     for (unsigned Pos = 1; Pos < OldArgs.size();) {
       using namespace driver::options;
 
       const unsigned OldPos = Pos;
-      std::unique_ptr<llvm::opt::Arg> Arg(OptTable->ParseOneArg(
+      std::unique_ptr<llvm::opt::Arg> Arg(OptTable.ParseOneArg(
           ArgList, Pos,
-          /* Include */ClangCLMode ? CoreOption | CLOption : 0,
-          /* Exclude */ClangCLMode ? 0 : CLOption));
+          /* Include */ ClangCLMode ? CoreOption | CLOption : 0,
+          /* Exclude */ ClangCLMode ? 0 : CLOption));
 
       if (!Arg)
         continue;
@@ -191,7 +191,8 @@ struct TransferableCommand {
                              OldArgs.data() + OldPos, OldArgs.data() + Pos);
     }
 
-    if (Std != LangStandard::lang_unspecified) // -std take precedence over -x
+    // Make use of -std iff -x was missing.
+    if (Type == types::TY_INVALID && Std != LangStandard::lang_unspecified)
       Type = toType(LangStandard::getLangStandardForKind(Std).getLanguage());
     Type = foldType(*Type);
     // The contract is to store None instead of TY_INVALID.
@@ -206,10 +207,13 @@ struct TransferableCommand {
     bool TypeCertain;
     auto TargetType = guessType(Filename, &TypeCertain);
     // If the filename doesn't determine the language (.h), transfer with -x.
-    if (TargetType != types::TY_INVALID && !TypeCertain && Type) {
-      TargetType = types::onlyPrecompileType(TargetType) // header?
-                       ? types::lookupHeaderTypeForSourceType(*Type)
-                       : *Type;
+    if ((!TargetType || !TypeCertain) && Type) {
+      // Use *Type, or its header variant if the file is a header.
+      // Treat no/invalid extension as header (e.g. C++ standard library).
+      TargetType =
+          (!TargetType || types::onlyPrecompileType(TargetType)) // header?
+              ? types::lookupHeaderTypeForSourceType(*Type)
+              : *Type;
       if (ClangCLMode) {
         const StringRef Flag = toCLFlag(TargetType);
         if (!Flag.empty())
@@ -227,6 +231,7 @@ struct TransferableCommand {
           LangStandard::getLangStandardForKind(Std).getName()).str());
     }
     Result.CommandLine.push_back(Filename);
+    Result.Heuristic = "inferred from " + Cmd.Filename;
     return Result;
   }
 
@@ -240,19 +245,20 @@ private:
     }
 
     // Otherwise just check the clang executable file name.
-    return llvm::sys::path::stem(CmdLine.front()).endswith_lower("cl");
+    return !CmdLine.empty() &&
+           llvm::sys::path::stem(CmdLine.front()).endswith_lower("cl");
   }
 
   // Map the language from the --std flag to that of the -x flag.
-  static types::ID toType(InputKind::Language Lang) {
+  static types::ID toType(Language Lang) {
     switch (Lang) {
-    case InputKind::C:
+    case Language::C:
       return types::TY_C;
-    case InputKind::CXX:
+    case Language::CXX:
       return types::TY_CXX;
-    case InputKind::ObjC:
+    case Language::ObjC:
       return types::TY_ObjC;
-    case InputKind::ObjCXX:
+    case Language::ObjCXX:
       return types::TY_ObjCXX;
     default:
       return types::TY_INVALID;
@@ -292,15 +298,8 @@ private:
   // Try to interpret the argument as '-std='.
   Optional<LangStandard::Kind> tryParseStdArg(const llvm::opt::Arg &Arg) {
     using namespace driver::options;
-    if (Arg.getOption().matches(ClangCLMode ? OPT__SLASH_std : OPT_std_EQ)) {
-      return llvm::StringSwitch<LangStandard::Kind>(Arg.getValue())
-#define LANGSTANDARD(id, name, lang, ...) .Case(name, LangStandard::lang_##id)
-#define LANGSTANDARD_ALIAS(id, alias) .Case(alias, LangStandard::lang_##id)
-#include "clang/Frontend/LangStandards.def"
-#undef LANGSTANDARD_ALIAS
-#undef LANGSTANDARD
-                 .Default(LangStandard::lang_unspecified);
-    }
+    if (Arg.getOption().matches(ClangCLMode ? OPT__SLASH_std : OPT_std_EQ))
+      return LangStandard::getLangKind(Arg.getValue());
     return None;
   }
 };
@@ -473,8 +472,7 @@ private:
                                  ArrayRef<SubstringAndIndex> Idx) const {
     assert(!Idx.empty());
     // Longest substring match will be adjacent to a direct lookup.
-    auto It =
-        std::lower_bound(Idx.begin(), Idx.end(), SubstringAndIndex{Key, 0});
+    auto It = llvm::lower_bound(Idx, SubstringAndIndex{Key, 0});
     if (It == Idx.begin())
       return *It;
     if (It == Idx.end())
@@ -540,7 +538,7 @@ private:
 
 std::unique_ptr<CompilationDatabase>
 inferMissingCompileCommands(std::unique_ptr<CompilationDatabase> Inner) {
-  return llvm::make_unique<InterpolatingCompilationDatabase>(std::move(Inner));
+  return std::make_unique<InterpolatingCompilationDatabase>(std::move(Inner));
 }
 
 } // namespace tooling

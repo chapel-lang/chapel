@@ -1,9 +1,8 @@
 //===- iterator.h - Utilities for using and defining iterators --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -333,6 +332,11 @@ make_pointer_range(RangeT &&Range) {
   return make_range(PointerIteratorT(std::begin(std::forward<RangeT>(Range))),
                     PointerIteratorT(std::end(std::forward<RangeT>(Range))));
 }
+
+template <typename WrappedIteratorT,
+          typename T1 = typename std::remove_reference<decltype(**std::declval<WrappedIteratorT>())>::type,
+          typename T2 = typename std::add_pointer<T1>::type>
+using raw_pointer_iterator = pointer_iterator<pointee_iterator<WrappedIteratorT, T1>, T2>;
 
 // Wrapper iterator over iterator ItType, adding DataRef to the type of ItType,
 // to create NodeRef = std::pair<InnerTypeOfItType, DataRef>.

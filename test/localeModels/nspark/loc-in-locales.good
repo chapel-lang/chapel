@@ -1,7 +1,2 @@
-loc-in-locales.chpl:5: error: unresolved call 'channel.init()'
-$CHPL_HOME/modules/standard/IO.chpl:x: note: this candidate did not match: channel.init(param writing: bool, param kind: iokind, param locking: bool)
-loc-in-locales.chpl:5: note: because call does not supply enough arguments
-$CHPL_HOME/modules/standard/IO.chpl:x: note: it is missing a value for formal 'param writing: bool'
-$CHPL_HOME/modules/standard/IO.chpl:x: note: candidates are: channel.init(x: channel)
-$CHPL_HOME/modules/standard/IO.chpl:x: note:                 channel.init(param writing: bool, param kind: iokind, param locking: bool, home: locale, _channel_internal: qio_channel_ptr_t, _readWriteThisFromLocale: locale?)
-note: and 1 other candidates, use --print-all-candidates to see them
+loc-in-locales.chpl:5: error: Cannot default-initialize a variable with generic type
+loc-in-locales.chpl:5: note: 'c' has generic type 'channel'

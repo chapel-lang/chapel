@@ -1,6 +1,7 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 # This script must be run within c2chapel/test
+
 
 # Only use colors for stdout with a color-supporting terminal
 if test -t 1; then
@@ -13,9 +14,16 @@ if test -t 1; then
   fi
 fi
 
+C2CHAPEL=c2chapel
 if ! type "c2chapel" > /dev/null 2>&1; then
-  printf "${RED}Failure: c2chapel command not found${NORMAL}\n"
-  exit 1;
+  BINDIR="$CHPL_HOME"/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`
+  C2CHAPEL="$BINDIR/c2chapel"
+  if [[ -f "$C2CHAPEL"  && -x "$C2CHAPEL" ]]; then
+    :
+  else
+    printf "${RED}Failure: c2chapel command not found${NORMAL}\n"
+    exit 1;
+  fi
 fi
 
 numFailures=0
@@ -25,14 +33,21 @@ function helper() {
   msg=$1
   args=$2
   good=$3
+  good2=$4
 
   outFile=out.c2chapel.tmp
   diffFile=diff.c2chapel.tmp
 
+  if [ -z "$good2" ]; then
+    # it will just diff against the one good file twice, harmlessly
+    good2=$good
+  fi
 
   printf "%s: " "$msg"
-  c2chapel $args > $outFile 2>&1
+  "$C2CHAPEL" $args > $outFile 2>&1
   if diff $outFile $good > $diffFile 2>&1; then
+    printf "${GREEN}OK${NORMAL}\n"
+  elif diff $outFile $good2 > $diffFile 2>&1; then
     printf "${GREEN}OK${NORMAL}\n"
   else
     printf "${RED}ERROR${NORMAL}\n"
@@ -49,7 +64,7 @@ function helper() {
 
 echo "Testing c2chapel...\n"
 
-helper "No arguments" "" "no-args.good"
+helper "No arguments" "" "no-args.good" "no-args.2.good"
 helper "--help" "--help" "help.good"
 helper "File not found" "notFound.h" "notFound.good"
 

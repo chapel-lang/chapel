@@ -1,12 +1,13 @@
 module OuterModule {
-  // This test and check_symbol_accesses2 test that the variable "a"
-  // can only be accessed by inner modules or by something that has done a
-  // "use outermost;".  check_symbol_accesses2 checks an illegal access.
+  // This test and check_symbol_accesses* test that the variable "a"
+  // can only be accessed by things that "use outermost;".
+  // check_symbol_accesses2 and 3 check an illegal access.
   module outermost {
     var a = 3;
     module middlemost {
       module innermost {
         proc foo() {
+          import OuterModule.outermost.a;
           a = 4;
         }
       }

@@ -27,7 +27,7 @@ proc main() {
         writeln("Evaluating F", i, " on [0, 1]:");
         F.evalNPT(npt);
 
-        if i < fcn.domain.dim(1).high then
+        if i < fcn.domain.dim(0).high then
             writeln("\n======================================================================\n");
         delete F;
     }

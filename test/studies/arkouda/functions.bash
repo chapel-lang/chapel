@@ -3,17 +3,6 @@
 # Helper functions for logging and marking test start/stop. Formats output in
 # the way the testing infrastructure expects.
 
-function log_error() {
-  local msg=$@
-  echo "[Error ${msg}]"
-  exit 0
-}
-
-function log_success() {
-  local msg=$@
-  echo "[Success matching ${msg}]"
-}
-
 function subtest_start() {
   subtest_start_time=$(date +%s)
   echo "[Starting subtest - $(date)]"
@@ -26,13 +15,33 @@ function subtest_end() {
 }
 
 function test_start() {
-  local tname=$1
-  echo "[test: \"$tname\"]"
+  subtest_test_name=$1
+  echo "[test: \"$subtest_test_name\"]"
   SECONDS=0
 }
 
 function test_end() {
-  local tname="$1"
   elapsed=$SECONDS
-  echo "[Elapsed time to compile and execute all versions of \"$tname\" - $elapsed.000 seconds]"
+  echo "[Elapsed time to compile and execute all versions of \"$subtest_test_name\" - $elapsed.000 seconds]"
+  unset subtest_test_name
+}
+
+function log_error() {
+  local msg=$@
+  echo "[Error ${msg}]"
+}
+
+function log_fatal_error() {
+  local msg=$@
+  echo "[Error ${msg}]"
+  if [[ -n $subtest_test_name ]]; then
+    test_end
+  fi
+  subtest_end
+  exit 0
+}
+
+function log_success() {
+  local msg=$@
+  echo "[Success matching ${msg}]"
 }

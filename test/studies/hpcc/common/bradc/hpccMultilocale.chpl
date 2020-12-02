@@ -21,7 +21,7 @@ proc writelnFragArray(startStr, X, endStr) {
     write(startStr);
   }
   waitForTurn();
-  if (here.id != 0 && X.numElements != 0) {
+  if (here.id != 0 && X.size != 0) {
     write(" ");
   }
   write(X);
@@ -33,8 +33,8 @@ proc writelnFragArray(startStr, X, endStr) {
 
 
 proc BlockPartition(D, myBlock, numBlocks) {
-  const lo = D.dim(1).low;
-  const hi = D.dim(1).high;
+  const lo = D.dim(0).low;
+  const hi = D.dim(0).high;
   const numelems = hi - lo + 1;
   const nbAsIndexType = numBlocks:index(D);
   const myBlockAsIndexType:index(D) = myBlock;

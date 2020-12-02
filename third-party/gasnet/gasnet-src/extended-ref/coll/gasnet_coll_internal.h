@@ -862,23 +862,15 @@ GASNETE_COLL_VALIDATE(T,GEX_RANK_INVALID,D,(N)*gasneti_nodes,GEX_RANK_INVALID,S,
 /*---------------------------------------------------------------------------------*/
 /* In-segment checks */
 
-/* Non-fatal check to determine if a given (node,addr,len) is legal as the
-* source of a gasnete_get*() AND the destination of a gasnete_put*().
-* By default this is just the in-segment bounds checks.
-*
-* However, for a purely AM based conduit this might always be true and other
+/*
+* For a purely AM based conduit internal in-segment checks might always be true and other
 * conduits may also override this to allow for regions outside the normal
 * segment.  Note that this override relies on the fact that the gasnete_ calls
 * don't perform bounds checking on their own 
 */
-#ifdef gasnete_coll_in_segment
-/* Keep the conduit-specific override */
-#elif defined(GASNET_SEGMENT_EVERYTHING) || defined(GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
-#define gasnete_coll_in_segment(_node,_addr,_len)	1
+#if defined(GASNET_SEGMENT_EVERYTHING) || defined(GASNETI_SUPPORTS_OUTOFSEGMENT_PUTGET)
 #define GASNETE_COLL_ALWAYS_IN_SEGMENT 1
 #else
-#define gasnete_coll_in_segment(_node,_addr,_len) \
-gasneti_in_fullsegment(NULL/*team*/, _node, _addr, _len)
 #define GASNETE_COLL_ALWAYS_IN_SEGMENT 0
 #endif
 

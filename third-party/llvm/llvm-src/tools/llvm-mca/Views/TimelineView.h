@@ -1,9 +1,8 @@
 //===--------------------- TimelineView.h -----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \brief
@@ -85,6 +84,7 @@
 /// 3.	 2	1.5	0.5	1.0	vaddss  %xmm1, %xmm0, %xmm3
 /// 4.	 2	3.5	0.0	0.0	vaddss  %xmm3, %xmm2, %xmm4
 /// 5.	 2	6.5	0.0	0.0	vaddss  %xmm4, %xmm5, %xmm6
+///      2	2.4	0.6	1.6     <total>
 ///
 /// By comparing column [2] with column [1], we get an idea about how many
 /// cycles were spent in the scheduler's queue due to data dependencies.

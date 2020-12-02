@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -205,11 +206,12 @@ module DistributedDeque {
   pragma "always RVF"
   record DistDeque {
     type eltType;
+
+    // This is unused, and merely for documentation purposes. See '_value'.
     /*
       The implementation of the Deque is forwarded. See :class:`DistributedDequeImpl` for
       documentation.
     */
-    // This is unused, and merely for documentation purposes. See '_value'.
     var _impl : unmanaged DistributedDequeImpl(eltType)?;
 
     // Privatization id
@@ -299,6 +301,8 @@ module DistributedDeque {
       this.targetLocales = targetLocales;
       this.nSlots        = here.maxTaskPar * targetLocales.size;
       this.slotSpace     = {0..#this.nSlots};
+      const dummyLD = new unmanaged LocalDeque(eltType);
+      this.slots = dummyLD;
 
       complete();
 
@@ -310,6 +314,7 @@ module DistributedDeque {
           slots[i] = new unmanaged LocalDeque(eltType);
         }
       }
+      delete dummyLD;
 
       // Distribute the globalHead, globalTail, and queueSize over the first 3 nodes...
       var countersLeftToAlloc = 3;
@@ -594,6 +599,7 @@ module DistributedDeque {
     /*
       Iterate over all elements in the deque in the order specified.
     */
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.NONE {
       for slot in slots {
         slot.lock$ = true;
@@ -605,8 +611,8 @@ module DistributedDeque {
             yield node!.elements[headIdx];
 
             headIdx += 1;
-            if headIdx > distributedDequeBlockSize {
-              headIdx = 1;
+            if headIdx >= distributedDequeBlockSize {
+              headIdx = 0;
             }
           }
           node = node!.next;
@@ -616,6 +622,7 @@ module DistributedDeque {
       }
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.FIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -657,8 +664,8 @@ module DistributedDeque {
         // Update state...
         size -= 1;
         headIdx += 1;
-        if headIdx > distributedDequeBlockSize {
-          headIdx = 1;
+        if headIdx >= distributedDequeBlockSize {
+          headIdx = 0;
         }
 
         // Advance...
@@ -679,6 +686,7 @@ module DistributedDeque {
       for slot in slots do slot.lock$;
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE) : eltType where order == Ordering.LIFO {
       // Fill our slots to visit in FIFO order.
       var head = globalHead!.read();
@@ -713,8 +721,8 @@ module DistributedDeque {
         }
 
         tailIdx -= 1;
-        if tailIdx == 0 {
-          tailIdx = distributedDequeBlockSize;
+        if tailIdx < 0 {
+          tailIdx = distributedDequeBlockSize-1;
         }
         yield node!.elements[tailIdx];
 
@@ -748,6 +756,7 @@ module DistributedDeque {
       coforall slot in slots do on slot do yield slot;
     }
 
+    pragma "not order independent yielding loops"
     iter these(param order : Ordering = Ordering.NONE, param tag : iterKind, followThis) where tag == iterKind.follower {
       if order != Ordering.NONE {
         compilerWarning("Parallel iteration only supports ordering of type: ", Ordering.NONE);
@@ -762,8 +771,8 @@ module DistributedDeque {
           yield node!.elements[headIdx];
 
           headIdx += 1;
-          if headIdx > distributedDequeBlockSize {
-            headIdx = 1;
+          if headIdx >= distributedDequeBlockSize {
+            headIdx = 0;
           }
         }
         node = node!.next;
@@ -788,8 +797,8 @@ module DistributedDeque {
   class LocalDequeNode {
     type eltType;
     var elements : distributedDequeBlockSize * eltType;
-    var headIdx : int = 1;
-    var tailIdx : int = 1;
+    var headIdx : int = 0;
+    var tailIdx : int = 0;
     var size : int;
     var next : unmanaged LocalDequeNode(eltType)?;
     var prev : unmanaged LocalDequeNode(eltType)?;
@@ -806,16 +815,16 @@ module DistributedDeque {
       elements[tailIdx] = elt;
 
       tailIdx += 1;
-      if tailIdx > distributedDequeBlockSize {
-        tailIdx = 1;
+      if tailIdx >= distributedDequeBlockSize {
+        tailIdx = 0;
       }
       size += 1;
     }
 
     inline proc popBack() : eltType {
       tailIdx -= 1;
-      if tailIdx == 0 {
-        tailIdx = distributedDequeBlockSize;
+      if tailIdx < 0 {
+        tailIdx = distributedDequeBlockSize-1;
       }
 
       size -= 1;
@@ -824,8 +833,8 @@ module DistributedDeque {
 
     inline proc pushFront(elt : eltType) {
       headIdx -= 1;
-      if headIdx == 0 {
-        headIdx = distributedDequeBlockSize;
+      if headIdx == -1 {
+        headIdx = distributedDequeBlockSize-1;
       }
 
       elements[headIdx] = elt;
@@ -835,8 +844,8 @@ module DistributedDeque {
     inline proc popFront() : eltType {
       var elt = elements[headIdx];
       headIdx += 1;
-      if headIdx > distributedDequeBlockSize {
-        headIdx = 1;
+      if headIdx >= distributedDequeBlockSize {
+        headIdx = 0;
       }
 
       size -= 1;
@@ -874,8 +883,8 @@ module DistributedDeque {
         cached = nil;
 
         // Clean...
-        tmp.headIdx = 1;
-        tmp.tailIdx = 1;
+        tmp.headIdx = 0;
+        tmp.tailIdx = 0;
         tmp.size = 0;
         tmp.next = nil;
         tmp.prev = nil;

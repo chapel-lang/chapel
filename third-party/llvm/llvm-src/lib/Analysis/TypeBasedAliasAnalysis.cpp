@@ -1,9 +1,8 @@
 //===- TypeBasedAliasAnalysis.cpp - Type-Based Alias Analysis -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -115,6 +114,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -368,26 +368,28 @@ static bool isStructPathTBAA(const MDNode *MD) {
 }
 
 AliasResult TypeBasedAAResult::alias(const MemoryLocation &LocA,
-                                     const MemoryLocation &LocB) {
+                                     const MemoryLocation &LocB,
+                                     AAQueryInfo &AAQI) {
   if (!EnableTBAA)
-    return AAResultBase::alias(LocA, LocB);
+    return AAResultBase::alias(LocA, LocB, AAQI);
 
   // If accesses may alias, chain to the next AliasAnalysis.
   if (Aliases(LocA.AATags.TBAA, LocB.AATags.TBAA))
-    return AAResultBase::alias(LocA, LocB);
+    return AAResultBase::alias(LocA, LocB, AAQI);
 
   // Otherwise return a definitive result.
   return NoAlias;
 }
 
 bool TypeBasedAAResult::pointsToConstantMemory(const MemoryLocation &Loc,
+                                               AAQueryInfo &AAQI,
                                                bool OrLocal) {
   if (!EnableTBAA)
-    return AAResultBase::pointsToConstantMemory(Loc, OrLocal);
+    return AAResultBase::pointsToConstantMemory(Loc, AAQI, OrLocal);
 
   const MDNode *M = Loc.AATags.TBAA;
   if (!M)
-    return AAResultBase::pointsToConstantMemory(Loc, OrLocal);
+    return AAResultBase::pointsToConstantMemory(Loc, AAQI, OrLocal);
 
   // If this is an "immutable" type, we can assume the pointer is pointing
   // to constant memory.
@@ -395,7 +397,7 @@ bool TypeBasedAAResult::pointsToConstantMemory(const MemoryLocation &Loc,
       (isStructPathTBAA(M) && TBAAStructTagNode(M).isTypeImmutable()))
     return true;
 
-  return AAResultBase::pointsToConstantMemory(Loc, OrLocal);
+  return AAResultBase::pointsToConstantMemory(Loc, AAQI, OrLocal);
 }
 
 FunctionModRefBehavior
@@ -421,29 +423,31 @@ FunctionModRefBehavior TypeBasedAAResult::getModRefBehavior(const Function *F) {
 }
 
 ModRefInfo TypeBasedAAResult::getModRefInfo(const CallBase *Call,
-                                            const MemoryLocation &Loc) {
+                                            const MemoryLocation &Loc,
+                                            AAQueryInfo &AAQI) {
   if (!EnableTBAA)
-    return AAResultBase::getModRefInfo(Call, Loc);
+    return AAResultBase::getModRefInfo(Call, Loc, AAQI);
 
   if (const MDNode *L = Loc.AATags.TBAA)
     if (const MDNode *M = Call->getMetadata(LLVMContext::MD_tbaa))
       if (!Aliases(L, M))
         return ModRefInfo::NoModRef;
 
-  return AAResultBase::getModRefInfo(Call, Loc);
+  return AAResultBase::getModRefInfo(Call, Loc, AAQI);
 }
 
 ModRefInfo TypeBasedAAResult::getModRefInfo(const CallBase *Call1,
-                                            const CallBase *Call2) {
+                                            const CallBase *Call2,
+                                            AAQueryInfo &AAQI) {
   if (!EnableTBAA)
-    return AAResultBase::getModRefInfo(Call1, Call2);
+    return AAResultBase::getModRefInfo(Call1, Call2, AAQI);
 
   if (const MDNode *M1 = Call1->getMetadata(LLVMContext::MD_tbaa))
     if (const MDNode *M2 = Call2->getMetadata(LLVMContext::MD_tbaa))
       if (!Aliases(M1, M2))
         return ModRefInfo::NoModRef;
 
-  return AAResultBase::getModRefInfo(Call1, Call2);
+  return AAResultBase::getModRefInfo(Call1, Call2, AAQI);
 }
 
 bool MDNode::isTBAAVtableAccess() const {
@@ -517,23 +521,20 @@ static const MDNode *getLeastCommonType(const MDNode *A, const MDNode *B) {
 }
 
 void Instruction::getAAMetadata(AAMDNodes &N, bool Merge) const {
-  if (Merge)
+  if (Merge) {
     N.TBAA =
         MDNode::getMostGenericTBAA(N.TBAA, getMetadata(LLVMContext::MD_tbaa));
-  else
-    N.TBAA = getMetadata(LLVMContext::MD_tbaa);
-
-  if (Merge)
+    N.TBAAStruct = nullptr;
     N.Scope = MDNode::getMostGenericAliasScope(
         N.Scope, getMetadata(LLVMContext::MD_alias_scope));
-  else
-    N.Scope = getMetadata(LLVMContext::MD_alias_scope);
-
-  if (Merge)
     N.NoAlias =
         MDNode::intersect(N.NoAlias, getMetadata(LLVMContext::MD_noalias));
-  else
+  } else {
+    N.TBAA = getMetadata(LLVMContext::MD_tbaa);
+    N.TBAAStruct = getMetadata(LLVMContext::MD_tbaa_struct);
+    N.Scope = getMetadata(LLVMContext::MD_alias_scope);
     N.NoAlias = getMetadata(LLVMContext::MD_noalias);
+  }
 }
 
 static const MDNode *createAccessTag(const MDNode *AccessType) {

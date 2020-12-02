@@ -10,6 +10,13 @@ lifetimeChecking-generic.doc
 
    use lifetimeChecking-generic.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import lifetimeChecking-generic.doc;
+
 .. class:: MyGeneric
 
    Generic type for use with all the lifetime checking styles 

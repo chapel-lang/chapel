@@ -22,7 +22,9 @@ _chpl ()
     -*)
       # developer options
       local devel_opts="\
+--allow-noinit-array-not-pod \
 --atomics \
+--auto-local-access \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -35,6 +37,7 @@ _chpl ()
 --cast-checks \
 --cc-warnings \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -52,6 +55,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -136,6 +140,8 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-allow-noinit-array-not-pod \
+--no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -153,6 +159,7 @@ _chpl ()
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -218,15 +225,15 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-auto-local-access \
 --no-report-blocking \
---no-report-expiring \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
+--no-use-color-terminal \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -278,10 +285,10 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-auto-local-access \
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
---report-expiring \
 --report-inlined-iterators \
 --report-inlining \
 --report-optimized-forall-unordered-ops \
@@ -308,7 +315,7 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
+--use-color-terminal \
 --vectorize \
 --verify \
 --version \
@@ -331,12 +338,14 @@ _chpl ()
       # non-developer options
       local nodevel_opts="\
 --atomics \
+--auto-local-access \
 --aux-filesys \
 --baseline \
 --bounds-checks \
 --cache-remote \
 --cast-checks \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -349,6 +358,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --explain-call \
 --explain-instantiation \
 --explain-verbose \
@@ -391,6 +401,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -403,6 +414,7 @@ _chpl ()
 --no-debug \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-explain-verbose \
 --no-fast-followers \
 --no-formal-domain-checks \
@@ -442,7 +454,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-warn-unstable \
 --no-warnings \
@@ -485,7 +496,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --version \
 --warn-unstable \

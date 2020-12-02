@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -292,6 +293,7 @@ buildFollowLoop(VarSymbol* iter,
                                        zippered,
                                        /*isLoweredForall*/ false,
                                        forallExpr);
+  followBody->orderIndependentSet(true);
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -484,6 +486,8 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
                                  SymExpr* origSE, FnSymbol* origTarget)
 {
   ParIterFlavor retval = PIF_NONE;
+  IteratorGroup* igroup = origTarget ? origTarget->iteratorGroup : NULL;
+  FnSymbol* noniterFn = NULL;
 
   checkForExplicitTagArgs(iterCall);
 
@@ -494,14 +498,28 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
 
   // try standalone
   if (!pfs->zippered()) {
-    bool gotSA = tryResolveCall(iterCall);
+    bool gotSA = false;
+    if (igroup) {
+      gotSA = igroup->standalone != NULL;
+      if (gotSA) iterCall->baseExpr->replace(new SymExpr(igroup->standalone));
+      else noniterFn = igroup->noniterSA;
+    } else {
+      gotSA = tryResolveCall(iterCall);
+    }
     if (gotSA) retval = PIF_STANDALONE;
   }
 
   // try leader
   if (retval == PIF_NONE) {
     tag->actual->replace(new SymExpr(gLeaderTag));
-    bool gotLeader = tryResolveCall(iterCall);
+    bool gotLeader = false;
+    if (igroup) {
+      gotLeader = igroup->leader != NULL;
+      if (gotLeader) iterCall->baseExpr->replace(new SymExpr(igroup->leader));
+      else if (!noniterFn) noniterFn = igroup->noniterL;
+    } else {
+      gotLeader = tryResolveCall(iterCall);
+    }
     if (gotLeader) retval = PIF_LEADER;
   }
 
@@ -520,13 +538,16 @@ static ParIterFlavor findParIter(ForallStmt* pfs, CallExpr* iterCall,
   }
 
   if (retval == PIF_NONE) {
-    // Cannot USR_FATAL_CONT in general: e.g. if these() is not found,
-    // we do not know the type of the index variable.
-    // Without which we cannot typecheck the loop body.
+   if (noniterFn != NULL) {
+    USR_FATAL_CONT(iterCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", noniterFn->name);
+    USR_PRINT(noniterFn, "The function '%s' is declared here", noniterFn->name);
+    USR_STOP();
+   } else {
     if (iterCall->isNamed("these") && isTypeExpr(iterCall->get(2)))
       USR_FATAL(iterCall, "unable to iterate over type '%s'", toString(iterCall->get(2)->getValType()));
     else
       USR_FATAL(iterCall, "A%s leader iterator is not found for the iterable expression in this forall loop", pfs->zippered() ? "" : " standalone or");
+   }
   }
 
   return retval;
@@ -785,7 +806,7 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   else {
     for_alist_backward(def, indvars)
       userLoopBody->insertAtHead("'move'(%S,%S(%S))", toDefExpr(def)->sym,
-                                 followIdx, new_IntSymbol(idx--));
+                                 followIdx, new_IntSymbol(--idx));
   }
 
   // Move induction variables' DefExprs to the loop body.
@@ -805,19 +826,6 @@ static void addParIdxVarsAndRestruct(ForallStmt* fs, VarSymbol* parIdx) {
   //followIdx->addFlag(FLAG_INSERT_AUTO_DESTROY);
 
   INT_ASSERT(fs->numInductionVars() == 1);
-}
-
-static void checkForNonIterator(IteratorGroup* igroup, ParIterFlavor flavor,
-                                CallExpr* parCall)
-{
-  if ((flavor == PIF_STANDALONE && igroup->noniterSA) ||
-      (flavor == PIF_LEADER     && igroup->noniterL)   )
-  {
-    FnSymbol* dest = parCall->resolvedFunction();
-    USR_FATAL_CONT(parCall, "The iterable-expression resolves to a non-iterator function '%s' when looking for a parallel iterator", dest->name);
-    USR_PRINT(dest, "The function '%s' is declared here", dest->name);
-    USR_STOP();
-  }
 }
 
 static RetTag iteratorTag(FnSymbol* iterFn) {
@@ -963,9 +971,16 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
-      leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                          new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                          new_Expr("'move'(%S, %S)", T2, gFalse)));
+
+      // override the dynamic check if the compiler can prove it's safe
+      if (pfs->optInfo.confirmedFastFollower) {
+        leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
+      }
+      else {
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                            new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
+                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+      }
     }
 
     SymbolMap map;
@@ -1008,7 +1023,7 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
 
   checkWhenOverTupleExpand(pfs);
 
-  FnSymbol* origTarget = NULL; //for assertions
+  FnSymbol* origTarget = NULL;
   CallExpr* iterCall = buildForallParIterCall(pfs, origSE, origTarget);
 
   // So we know where iterCall is.
@@ -1025,21 +1040,6 @@ CallExpr* resolveForallHeader(ForallStmt* pfs, SymExpr* origSE)
   CallExpr* firstIterCall = iterCall;
   FnSymbol* origIterFn = iterCall->resolvedFunction();
   bool gotSA = (flavor != PIF_LEADER); // "got Single iterAtor"
-
-  if (origTarget) {
-    IteratorGroup* igroup = origTarget->iteratorGroup;
-    checkForNonIterator(igroup, flavor, iterCall);
-
-    if (origTarget == origIterFn) {
-      INT_ASSERT(flavor == PIF_SERIAL);
-      INT_ASSERT(pfs->allowSerialIterator());
-      INT_ASSERT(origIterFn == igroup->serial);
-    } else if (gotSA) {
-      INT_ASSERT(origIterFn == igroup->standalone);
-    } else {
-      INT_ASSERT(origIterFn == igroup->leader);
-    }
-  }
 
   if (flavor == PIF_SERIAL && pfs->numIteratedExprs() > 1) {
     // numIteratedExprs() is a good number to check, right?
@@ -1446,6 +1446,24 @@ static SymExpr* normalizeIITR(Expr* ref, Expr* iitr) {
   return new SymExpr(temp);
 }
 
+// If we are reducing things that are iterables,
+// the element type for the reduction op should be an array.
+static SymExpr* elemTypeIfIterableIIT(Expr* ref, SymExpr* iitr,
+                                      SymExpr* dataSE) {
+  Type* IT = iitr->symbol()->type;
+  if (!IT->symbol->hasFlag(FLAG_ITERATOR_RECORD))
+    return iitr;
+
+  CallExpr* ait = new CallExpr("chpl_elemTypeForReducingIterables",
+                               dataSE->copy());
+  ref->insertBefore(ait);
+  Expr* aitR = resolveExpr(ait)->remove();
+  if (SymExpr* aitSE = toSymExpr(aitR))
+    return aitSE;
+  else
+    return normalizeIITR(ref, aitR);
+}
+
 // Given a reduce expression like "op reduce data", return op(inputType).
 // inputType is the type of things being reduced - when iterating over 'data'.
 // This matches the case where inputType is provided by the user.
@@ -1467,6 +1485,7 @@ static Expr* lowerReduceOp(Expr* ref, SymExpr* opSE, SymExpr* dataSE,
   ref->insertBefore(iit);
   Expr* iitR = resolveExpr(iit)->remove();
   if (!isSymExpr(iitR)) iitR = normalizeIITR(ref, iitR);
+  iitR = elemTypeIfIterableIIT(ref, toSymExpr(iitR), dataSE);
 
   return new CallExpr(opSE, iitR);
 }
@@ -1501,6 +1520,9 @@ Expr* lowerPrimReduce(CallExpr* call) {
   SymExpr* dataSE = toSymExpr(call->get(1)->remove());           // 2nd arg
   bool   zippered = toSymExpr(call->get(1))->symbol() == gTrue;  // 3rd arg
   bool  reqSerial = false; // We may need it for #11819, otherwise remove it.
+
+  if (!isTypeSymbol(opSE->symbol()))
+    USR_FATAL(opSE, "'reduce' expressions where the reduction is defined by a value, not a type, are currently not implemented; a workaround is to replace it with a forall loop with a reduce intent");
 
   Expr* opExpr = lowerReduceOp(callStmt, opSE, dataSE, zippered);
 

@@ -101,7 +101,7 @@ proc test_date_computations() {
   var b = new date(1956, 1, 31);
 
   var diff = a - b;
-  assert(diff.days == 46*365 + (1956..2002 by 4).length);
+  assert(diff.days == 46*365 + (1956..2002 by 4).size);
   assert(diff.seconds == 0);
   assert(diff.microseconds == 0);
 
@@ -194,13 +194,13 @@ proc test_date_iso_long_years() {
   for i in 0..#400 {
     var d = new date(2000+i, 12, 31);
     var d1 = new date(1600+i, 12, 31);
-    assert(d.isocalendar()(2) == d1.isocalendar()(2) &&
-           d.isocalendar()(3) == d1.isocalendar()(3));
-    if d.isocalendar()(2) == 53 then
+    assert(d.isocalendar()(1) == d1.isocalendar()(1) &&
+           d.isocalendar()(2) == d1.isocalendar()(2));
+    if d.isocalendar()(1) == 53 then
       L.append(i);
   }
 
-  assert(L.size == ISO_LONG_YEARS_TABLE.numElements);
+  assert(L.size == ISO_LONG_YEARS_TABLE.size);
   for (a, b) in zip(ISO_LONG_YEARS_TABLE, L) {
     assert(a == b);
   }
@@ -300,7 +300,7 @@ proc test_date_replace() {
   var base = new date((...args));
   assert(base == base.replace());
 
-  var i = 1;
+  var i = 0;
   var newargs = args;
   newargs(i) = 2;
   var expected = new date((...newargs));

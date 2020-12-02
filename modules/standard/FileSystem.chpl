@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -30,6 +31,12 @@
    process's file system state, which are performed on a specified locale
    (:ref:`locale-state`).  The module also contains iterators for traversing the
    file system (:ref:`filerator`).
+
+   .. note::
+
+      Functions in this module can use and return :ref:`escaped strings
+      <string.nonunicode>` on systems where UTF-8 file names are not enforced.
+
 
    .. _file-manip:
 
@@ -85,11 +92,13 @@
  */
 module FileSystem {
 
-  use SysError;
-  private use Path;
-  private use HaltWrappers;
-  private use SysCTypes;
+  public use SysError;
+  use Path;
+  use HaltWrappers;
+  use SysCTypes;
   use IO;
+  use SysBasic;
+  use CPtr;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -159,7 +168,7 @@ extern const S_ISVTX: int;
    c_string to pass to extern file system operations.
 */
 private inline proc unescape(str: string) {
-  return str.encode(errors=encodePolicy.unescape);
+  return str.encode(policy=encodePolicy.unescape);
 }
 
 /* Change the current working directory of the locale in question to the
@@ -499,7 +508,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
-   including all contents, permissions, and metadata.  `dst` must not
+   including all contents and permissions. Metadata such as file creation and
+   modification times, uid, and gid will not be preserved.  `dst` must not
    previously exist, this function assumes it can create it and any missing
    parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
@@ -550,7 +560,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=true);
+      try copy(fileSrcName, fileDestName, metadata=false);
     }
   }
 
@@ -605,8 +615,10 @@ proc locale.cwd(): string throws {
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, errors=decodePolicy.escape);
+      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
     }
+    // tmp was qio_malloc'd by chpl_fs_cwd
+    chpl_free_c_string(tmp);
   }
   if err != ENOERR then try ioerror(err, "in cwd");
   return ret;
@@ -688,6 +700,7 @@ proc exists(out error: syserr, name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
@@ -700,6 +713,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -858,13 +872,16 @@ proc getUID(out error: syserr, name: string): int {
 // of casting and error checking.
 //
 private module GlobWrappers {
+  import HaltWrappers;
   extern type glob_t;
+  use SysCTypes;
 
   private extern const GLOB_NOMATCH: c_int;
   private extern const GLOB_NOSPACE: c_int;
 
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
+    import FileSystem.unescape;
     extern proc chpl_glob(pattern: c_string, flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
@@ -892,7 +909,7 @@ private module GlobWrappers {
     try! {
       return createStringWithNewBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(size_t)),
-                                       errors=decodePolicy.escape);
+                                       policy=decodePolicy.escape);
     }
   }
 
@@ -912,6 +929,7 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*"): string {
   use GlobWrappers;
   var glb : glob_t;
@@ -927,6 +945,7 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -968,13 +987,14 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
+pragma "order independent yielding loops"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
   var glb : glob_t;
   if (followThis.size != 1) then
     compilerError("glob() iterator can only be zipped with 1D iterators");
-  var r = followThis(1);
+  var r = followThis(0);
 
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
@@ -1177,6 +1197,7 @@ proc isMount(out error:syserr, name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
+pragma "not order independent yielding loops"
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;
@@ -1201,9 +1222,9 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
       var filename: string;
       try! {
         filename = createStringWithNewBuffer(ent.d_name(),
-                                             errors=decodePolicy.escape);
+                                             policy=decodePolicy.escape);
       }
-      if (hidden || filename[1] != '.') {
+      if (hidden || filename[0] != '.') {
         if (filename != "." && filename != "..") {
           const fullpath = path + "/" + filename;
 

@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Expressions:
 
 Expressions
@@ -11,7 +13,6 @@ Chapel provides the following expressions:
 
    expression:
      literal-expression
-     nil-expression
      variable-expression
      enum-constant-expression
      call-expression
@@ -34,7 +35,8 @@ Chapel provides the following expressions:
      module-access-expression
      tuple-expression
      tuple-expand-expression
-     locale-access-expression
+     locale-query-expression
+     type-query-expression
      mapped-domain-expression
 
 Individual expressions are defined in the remainder of this chapter and
@@ -47,13 +49,13 @@ additionally as follows:
 
 -  tuple and tuple expand :ref:`Chapter-Tuples`
 
--  locale access :ref:`Querying_the_Locale_of_a_Variable`
+-  locale query with ``.locale`` :ref:`Querying_the_Locale_of_an_Expression`
+
+-  type query with ``.type`` :ref:`Querying_the_Type_of_an_Expression`
 
 -  mapped domain :ref:`Chapter-Domain_Maps`
 
 -  initializer calls :ref:`Class_New`
-
--  ``nil`` :ref:`Class_nil_value`
 
 .. _Literal_Expressions:
 
@@ -374,7 +376,9 @@ Precedence and Associativity
 | | ``-``            |                | | subtraction                        |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
-| ``..``             | left           | range initialization                 |
+| | ``..``           | | left         | | range initialization               |
+| | ``..<``          | | left         | | open-interval range initialization |
+|                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | ``<=``           | left           | | less-than-or-equal-to comparison   |
 | | ``>=``           |                | | greater-than-or-equal-to comparison|
@@ -507,12 +511,12 @@ precedence than those listed later.
    will learn of their error at compilation time because the resulting
    expression is not a scalar as expected.
 
+.. _Unary_Expressions:
 .. _Binary_Expressions:
 
 Operator Expressions
 --------------------
 
-[Unary_Expressions]
 
 The application of operators to expressions is itself an expression. The
 syntax of a unary expression is given by: 
@@ -533,7 +537,7 @@ The syntax of a binary expression is given by:
      expression binary-operator expression
 
    binary-operator: one of
-     + - * / % ** & | ^ << >> && || == != <= >= < > `by' #
+     + - * / % ** & | ^ << >> && || == != <= >= < > 'by' #
 
 The operators are defined in subsequent sections.
 
@@ -1072,6 +1076,8 @@ otherwise the new high-order bits are set to zero.
 
 The value of ``b`` must be non-negative.
 
+The value of ``b`` must be less than the number of bits in ``a``.
+
 .. _Logical_Operators:
 
 Logical Operators
@@ -1477,7 +1483,7 @@ by:
 .. code-block:: syntax
 
    let-expression:
-     `let' variable-declaration-list `in' expression
+     'let' variable-declaration-list 'in' expression
 
 The scope of the variables is the let-expression.
 
@@ -1524,8 +1530,8 @@ A conditional expression is given by the following syntax:
 .. code-block:: syntax
 
    if-expression:
-     `if' expression `then' expression `else' expression
-     `if' expression `then' expression
+     'if' expression 'then' expression 'else' expression
+     'if' expression 'then' expression
 
 The conditional expression is evaluated in two steps. First, the
 expression following the ``if`` keyword is evaluated. Then, if the
@@ -1575,8 +1581,8 @@ A for expression is given by the following syntax:
 .. code-block:: syntax
 
    for-expression:
-     `for' index-var-declaration `in' iteratable-expression `do' expression
-     `for' iteratable-expression `do' expression
+     'for' index-var-declaration 'in' iteratable-expression 'do' expression
+     'for' iteratable-expression 'do' expression
 
 A for expression is an iterator that executes a for loop
 (:ref:`The_For_Loop`), evaluates the body expression on each
@@ -1605,7 +1611,7 @@ the for expression. The iterations for which the condition does not hold
 are not reflected in the result of the for expression.
 
 When a for expression with a filtering predicate is captured into a
-variable, the resulting array has a 1-based one-dimensional domain.
+variable, the resulting array has a 0-based one-dimensional domain.
 
    *Example (yieldPredicates.chpl)*.
 
@@ -1620,12 +1626,14 @@ variable, the resulting array has a 1-based one-dimensional domain.
    .. BLOCK-test-chapelpost
 
       writeln(A);
+      writeln(A.domain);
 
    
 
    .. BLOCK-test-chapeloutput
 
       1 2 4 5 7 8 10
+      {0..6}
 
    declares an array A that is initialized to the integers between 1 and
    10 that are not divisible by 3.

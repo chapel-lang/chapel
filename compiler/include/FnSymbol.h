@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,7 +24,9 @@
 #include "library.h"
 #include "symbol.h"
 
-class IteratorGroup;
+class IteratorGroup;     // see iterator.h
+class GenericsCacheInfo; // see caches.h
+void cleanupCacheInfo(FnSymbol* fn);
 
 enum RetTag {
   RET_VALUE,
@@ -60,6 +63,8 @@ public:
   IteratorInfo*              iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.
   IteratorGroup*             iteratorGroup;
+  // Support for genericsCache.
+  GenericsCacheInfo*         cacheInfo;
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;
@@ -172,6 +177,7 @@ public:
   bool                       isMethod()                                  const;
   bool                       isMethodOnClass()                           const;
   bool                       isMethodOnRecord()                          const;
+  bool                       isTypeMethod()                              const;
 
   void                       setMethod(bool value);
 
@@ -189,7 +195,7 @@ public:
   void                       setGeneric(bool generic);
   void                       clearGeneric();
 
-  AggregateType*             getReceiver()                               const;
+  AggregateType*             getReceiverType()                           const;
 
   bool                       isIterator()                                const;
 
@@ -205,7 +211,9 @@ public:
 
   bool                       retExprDefinesNonVoid()                     const;
 
-  const char*                substitutionsToString(const char* sep)      const;
+  std::string                nameAndArgsToString(const char* sep,
+                                                 bool forError,
+                                                 bool& printedUnderline) const;
 
 private:
   virtual std::string        docsDirective();

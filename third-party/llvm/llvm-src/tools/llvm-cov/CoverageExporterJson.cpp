@@ -1,9 +1,8 @@
 //===- CoverageExporterJson.cpp - Code coverage export --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -43,7 +42,15 @@
 
 #include "CoverageExporterJson.h"
 #include "CoverageReport.h"
+#include "llvm/ADT/Optional.h"
+#include "llvm/ADT/StringRef.h"
 #include "llvm/Support/JSON.h"
+#include "llvm/Support/ThreadPool.h"
+#include "llvm/Support/Threading.h"
+#include <algorithm>
+#include <limits>
+#include <mutex>
+#include <utility>
 
 /// The semantic version combined as a string.
 #define LLVM_COVERAGE_EXPORT_JSON_STR "2.0.0"
@@ -55,14 +62,23 @@ using namespace llvm;
 
 namespace {
 
+// The JSON library accepts int64_t, but profiling counts are stored as uint64_t.
+// Therefore we need to explicitly convert from unsigned to signed, since a naive
+// cast is implementation-defined behavior when the unsigned value cannot be
+// represented as a signed value. We choose to clamp the values to preserve the
+// invariant that counts are always >= 0.
+int64_t clamp_uint64_to_int64(uint64_t u) {
+  return std::min(u, static_cast<uint64_t>(std::numeric_limits<int64_t>::max()));
+}
+
 json::Array renderSegment(const coverage::CoverageSegment &Segment) {
-  return json::Array({Segment.Line, Segment.Col, int64_t(Segment.Count),
+  return json::Array({Segment.Line, Segment.Col, clamp_uint64_to_int64(Segment.Count),
                       Segment.HasCount, Segment.IsRegionEntry});
 }
 
 json::Array renderRegion(const coverage::CountedRegion &Region) {
   return json::Array({Region.LineStart, Region.ColumnStart, Region.LineEnd,
-                      Region.ColumnEnd, int64_t(Region.ExecutionCount),
+                      Region.ColumnEnd, clamp_uint64_to_int64(Region.ExecutionCount),
                       Region.FileID, Region.ExpandedFileID,
                       int64_t(Region.Kind)});
 }
@@ -128,13 +144,15 @@ json::Array renderFileSegments(const coverage::CoverageData &FileCoverage,
 json::Object renderFile(const coverage::CoverageMapping &Coverage,
                         const std::string &Filename,
                         const FileCoverageSummary &FileReport,
-                        bool ExportSummaryOnly) {
+                        const CoverageViewOptions &Options) {
   json::Object File({{"filename", Filename}});
-  if (!ExportSummaryOnly) {
+  if (!Options.ExportSummaryOnly) {
     // Calculate and render detailed coverage information for given file.
     auto FileCoverage = Coverage.getCoverageForFile(Filename);
     File["segments"] = renderFileSegments(FileCoverage, FileReport);
-    File["expansions"] = renderFileExpansions(FileCoverage, FileReport);
+    if (!Options.SkipExpansions) {
+      File["expansions"] = renderFileExpansions(FileCoverage, FileReport);
+    }
   }
   File["summary"] = renderSummary(FileReport);
   return File;
@@ -143,11 +161,28 @@ json::Object renderFile(const coverage::CoverageMapping &Coverage,
 json::Array renderFiles(const coverage::CoverageMapping &Coverage,
                         ArrayRef<std::string> SourceFiles,
                         ArrayRef<FileCoverageSummary> FileReports,
-                        bool ExportSummaryOnly) {
+                        const CoverageViewOptions &Options) {
+  auto NumThreads = Options.NumThreads;
+  if (NumThreads == 0) {
+    NumThreads = std::max(1U, std::min(llvm::heavyweight_hardware_concurrency(),
+                                       unsigned(SourceFiles.size())));
+  }
+  ThreadPool Pool(NumThreads);
   json::Array FileArray;
-  for (unsigned I = 0, E = SourceFiles.size(); I < E; ++I)
-    FileArray.push_back(renderFile(Coverage, SourceFiles[I], FileReports[I],
-                                   ExportSummaryOnly));
+  std::mutex FileArrayMutex;
+
+  for (unsigned I = 0, E = SourceFiles.size(); I < E; ++I) {
+    auto &SourceFile = SourceFiles[I];
+    auto &FileReport = FileReports[I];
+    Pool.async([&] {
+      auto File = renderFile(Coverage, SourceFile, FileReport, Options);
+      {
+        std::lock_guard<std::mutex> Lock(FileArrayMutex);
+        FileArray.push_back(std::move(File));
+      }
+    });
+  }
+  Pool.wait();
   return FileArray;
 }
 
@@ -157,7 +192,7 @@ json::Array renderFunctions(
   for (const auto &F : Functions)
     FunctionArray.push_back(
         json::Object({{"name", F.Name},
-                      {"count", int64_t(F.ExecutionCount)},
+                      {"count", clamp_uint64_to_int64(F.ExecutionCount)},
                       {"regions", renderRegions(F.CountedRegions)},
                       {"filenames", json::Array(F.Filenames)}}));
   return FunctionArray;
@@ -178,12 +213,22 @@ void CoverageExporterJson::renderRoot(ArrayRef<std::string> SourceFiles) {
   FileCoverageSummary Totals = FileCoverageSummary("Totals");
   auto FileReports = CoverageReport::prepareFileReports(Coverage, Totals,
                                                         SourceFiles, Options);
-  auto Export =
-      json::Object({{"files", renderFiles(Coverage, SourceFiles, FileReports,
-                                          Options.ExportSummaryOnly)},
-                    {"totals", renderSummary(Totals)}});
-  // Skip functions-level information for summary-only export mode.
-  if (!Options.ExportSummaryOnly)
+  auto Files = renderFiles(Coverage, SourceFiles, FileReports, Options);
+  // Sort files in order of their names.
+  std::sort(Files.begin(), Files.end(),
+    [](const json::Value &A, const json::Value &B) {
+      const json::Object *ObjA = A.getAsObject();
+      const json::Object *ObjB = B.getAsObject();
+      assert(ObjA != nullptr && "Value A was not an Object");
+      assert(ObjB != nullptr && "Value B was not an Object");
+      const StringRef FilenameA = ObjA->getString("filename").getValue();
+      const StringRef FilenameB = ObjB->getString("filename").getValue();
+      return FilenameA.compare(FilenameB) < 0;
+    });
+  auto Export = json::Object(
+      {{"files", std::move(Files)}, {"totals", renderSummary(Totals)}});
+  // Skip functions-level information  if necessary.
+  if (!Options.ExportSummaryOnly && !Options.SkipFunctions)
     Export["functions"] = renderFunctions(Coverage.getCoveredFunctions());
 
   auto ExportArray = json::Array({std::move(Export)});

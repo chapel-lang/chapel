@@ -1,9 +1,8 @@
 //===- VersionTuple.h - Version Number Handling -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -86,6 +85,13 @@ public:
     if (!HasBuild)
       return None;
     return Build;
+  }
+
+  /// Return a version tuple that contains only the first 3 version components.
+  VersionTuple withoutBuild() const {
+    if (HasBuild)
+      return VersionTuple(Major, Minor, Subminor);
+    return *this;
   }
 
   /// Determine if two version numbers are equivalent. If not

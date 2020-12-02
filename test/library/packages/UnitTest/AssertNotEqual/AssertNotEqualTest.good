@@ -18,6 +18,12 @@ AssertionError: assert failed -
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0'
 ================================================================================
+Error Caught in Equal 0-based arrays
+AssertionError: assert failed -
+'1 2 4'
+==
+'1 2 4'
+================================================================================
 Error Caught in Equal Integers
 AssertionError: assert failed -
 '1.0'

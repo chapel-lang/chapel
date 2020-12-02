@@ -1,9 +1,8 @@
 //===- MipsInstrInfo.cpp - Mips Instruction Information -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -276,7 +275,8 @@ MipsInstrInfo::BranchType MipsInstrInfo::analyzeBranch(
   return BT_CondUncond;
 }
 
-bool MipsInstrInfo::isBranchOffsetInRange(unsigned BranchOpc, int64_t BrOffset) const {
+bool MipsInstrInfo::isBranchOffsetInRange(unsigned BranchOpc,
+                                          int64_t BrOffset) const {
   switch (BranchOpc) {
   case Mips::B:
   case Mips::BAL:
@@ -434,7 +434,6 @@ bool MipsInstrInfo::isBranchOffsetInRange(unsigned BranchOpc, int64_t BrOffset) 
   llvm_unreachable("Unknown branch instruction!");
 }
 
-
 /// Return the corresponding compact (no delay slot) form of a branch.
 unsigned MipsInstrInfo::getEquivalentCompactForm(
     const MachineBasicBlock::iterator I) const {
@@ -578,7 +577,8 @@ unsigned MipsInstrInfo::getInstSizeInBytes(const MachineInstr &MI) const {
   switch (MI.getOpcode()) {
   default:
     return MI.getDesc().getSize();
-  case  TargetOpcode::INLINEASM: {       // Inline Asm: Variable size.
+  case  TargetOpcode::INLINEASM:
+  case  TargetOpcode::INLINEASM_BR: {       // Inline Asm: Variable size.
     const MachineFunction *MF = MI.getParent()->getParent();
     const char *AsmStr = MI.getOperand(0).getSymbolName();
     return getInlineAsmLength(AsmStr, *MF->getTarget().getMCAsmInfo());
@@ -677,7 +677,8 @@ MipsInstrInfo::genInstrWithNewOpc(unsigned NewOpc,
   return MIB;
 }
 
-bool MipsInstrInfo::findCommutedOpIndices(MachineInstr &MI, unsigned &SrcOpIdx1,
+bool MipsInstrInfo::findCommutedOpIndices(const MachineInstr &MI,
+                                          unsigned &SrcOpIdx1,
                                           unsigned &SrcOpIdx2) const {
   assert(!MI.isBundle() &&
          "TargetInstrInfo::findCommutedOpIndices() can't handle bundles");

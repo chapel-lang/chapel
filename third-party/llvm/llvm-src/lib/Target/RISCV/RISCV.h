@@ -1,9 +1,8 @@
 //===-- RISCV.h - Top-level interface for RISCV -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,9 +18,12 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
+class RISCVRegisterBankInfo;
+class RISCVSubtarget;
 class RISCVTargetMachine;
 class AsmPrinter;
 class FunctionPass;
+class InstructionSelector;
 class MCInst;
 class MCOperand;
 class MachineInstr;
@@ -40,6 +42,10 @@ void initializeRISCVMergeBaseOffsetOptPass(PassRegistry &);
 
 FunctionPass *createRISCVExpandPseudoPass();
 void initializeRISCVExpandPseudoPass(PassRegistry &);
+
+InstructionSelector *createRISCVInstructionSelector(const RISCVTargetMachine &,
+                                                    RISCVSubtarget &,
+                                                    RISCVRegisterBankInfo &);
 }
 
 #endif

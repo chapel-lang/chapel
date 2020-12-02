@@ -5,7 +5,7 @@ override proc DefaultRectangularArr.getAllocationDomainForDefaultRectangularArra
     return (this:BaseArr).getAllocationDomainForDefaultRectangularArray3();
   } else {
     var p:rank * range(int(64), stridable=true);
-    for i in 1..rank do
+    for i in 0..#rank do
       p(i)=dom.ranges(i);
     return p;
   }

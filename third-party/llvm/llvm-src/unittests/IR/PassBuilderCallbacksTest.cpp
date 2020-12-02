@@ -1,9 +1,8 @@
 //===- unittests/IR/PassBuilderCallbacksTest.cpp - PB Callback Tests --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -415,8 +414,12 @@ protected:
                   "exit:\n"
                   "  ret void\n"
                   "}\n")),
-        CallbacksHandle(), PB(nullptr, None, &CallbacksHandle.Callbacks),
+        CallbacksHandle(),
+        PB(nullptr, PipelineTuningOptions(), None, &CallbacksHandle.Callbacks),
         PM(true), LAM(true), FAM(true), CGAM(true), AM(true) {
+
+    EXPECT_TRUE(&CallbacksHandle.Callbacks ==
+                PB.getPassInstrumentationCallbacks());
 
     /// Register a callback for analysis registration.
     ///
@@ -776,6 +779,7 @@ TEST_F(CGSCCCallbacksTest, InstrumentedPasses) {
   CallbacksHandle.registerPassInstrumentation();
   // Non-mock instrumentation not specifically mentioned below can be ignored.
   CallbacksHandle.ignoreNonMockPassInstrumentation("<string>");
+  CallbacksHandle.ignoreNonMockPassInstrumentation("foo");
   CallbacksHandle.ignoreNonMockPassInstrumentation("(foo)");
 
   EXPECT_CALL(AnalysisHandle, run(HasName("(foo)"), _, _));
@@ -815,6 +819,7 @@ TEST_F(CGSCCCallbacksTest, InstrumentedInvalidatingPasses) {
   CallbacksHandle.registerPassInstrumentation();
   // Non-mock instrumentation not specifically mentioned below can be ignored.
   CallbacksHandle.ignoreNonMockPassInstrumentation("<string>");
+  CallbacksHandle.ignoreNonMockPassInstrumentation("foo");
   CallbacksHandle.ignoreNonMockPassInstrumentation("(foo)");
 
   EXPECT_CALL(AnalysisHandle, run(HasName("(foo)"), _, _));
@@ -858,6 +863,7 @@ TEST_F(CGSCCCallbacksTest, InstrumentedSkippedPasses) {
   CallbacksHandle.registerPassInstrumentation();
   // Non-mock instrumentation run here can safely be ignored.
   CallbacksHandle.ignoreNonMockPassInstrumentation("<string>");
+  CallbacksHandle.ignoreNonMockPassInstrumentation("foo");
   CallbacksHandle.ignoreNonMockPassInstrumentation("(foo)");
 
   // Skip the pass by returning false.

@@ -22,8 +22,15 @@ function ck_chpl_home_bin()
     local chpl_home=$1
     local chpl_platform=$2
 
-    ls >/dev/null "$chpl_home/bin/$chpl_platform/chpl" || {
-        log_error "$thisfunc: CHPL_HOME=$chpl_home has not been built for $chpl_platform (missing chpl)"
+    local bindir=`CHPL_HOST_PLATFORM=$chpl_platform $chpl_home/util/chplenv/chpl_bin_subdir.py`
+
+    if [[ $bindir != "$chpl_platform"* ]]
+    then
+        log_error "$thisfunc: expected the bindir $bindir to begin with $chpl_platform"
+    fi
+
+    ls >/dev/null "$chpl_home/bin/$bindir/chpl" || {
+        log_error "$thisfunc: CHPL_HOME=$chpl_home has not been built for the current configuration (missing chpl)"
         exit 2
     }
 }

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import optparse
 import sys
 
@@ -20,16 +20,6 @@ def get(flag='host'):
     if flag == 'host':
       arch_flag = "CHPL_HOST_ARCH"
       cpu_flag = "CHPL_HOST_CPU"
-
-    cpuarch = chpl_cpu.arch_for_cpu(arch_val, flag)
-    if cpuarch:
-
-        sys.stderr.write('Warning: {0}={1} is deprecated. '
-                         'Please use {2}={3}\n'.format(arch_flag,
-                                                       arch_val,
-                                                       cpu_flag,
-                                                       arch_val))
-        arch_val = cpuarch
 
     if arch_val:
         return arch_val

@@ -1,3 +1,5 @@
+use CPtr;
+
 extern proc mytest(x: c_void_ptr):c_void_ptr;
 
 proc mytest2(x: c_void_ptr):c_void_ptr

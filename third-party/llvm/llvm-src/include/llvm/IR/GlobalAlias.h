@@ -1,9 +1,8 @@
 //===-------- llvm/GlobalAlias.h - GlobalAlias class ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -58,10 +57,6 @@ public:
 
   // Linkage, Type, Parent and AddressSpace taken from the Aliasee.
   static GlobalAlias *create(const Twine &Name, GlobalValue *Aliasee);
-
-  void copyAttributesFrom(const GlobalValue *Src) {
-    GlobalValue::copyAttributesFrom(Src);
-  }
 
   /// removeFromParent - This method unlinks 'this' from the containing module,
   /// but does not delete it.

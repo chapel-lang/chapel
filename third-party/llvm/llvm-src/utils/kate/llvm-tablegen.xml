@@ -5,6 +5,9 @@
     <list name="keywords">
       <item> foreach </item>
       <item> field </item>
+      <item> if </item>
+      <item> then </item>
+      <item> else </item>
     </list>
     <list name="operator-keywords">
       <item> in </item>
@@ -16,6 +19,7 @@
       <item> !tail </item>
       <item> !con </item>
       <item> !add </item>
+      <item> !mul </item>
       <item> !shl </item>
       <item> !sra </item>
       <item> !srl </item>
@@ -27,6 +31,7 @@
       <item> !strconcat </item>
       <item> !cast </item>
       <item> !listconcat </item>
+      <item> !listsplat </item>
       <item> !size </item>
       <item> !foldl </item>
       <item> !isa </item>
@@ -43,6 +48,7 @@
       <item> defm </item>
       <item> defset </item>
       <item> let </item>
+      <item> defvar </item>
       <item> multiclass </item>
     </list>
     <list name="class-like">

@@ -1,0 +1,1 @@
+-M../ -L/usr/local/cuda-10.2/lib64 -lcudart -lcublas

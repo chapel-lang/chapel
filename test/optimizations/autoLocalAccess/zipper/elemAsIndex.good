@@ -1,0 +1,22 @@
+
+Start analyzing forall (elemAsIndex.chpl:19)
+| Found loop domain (elemAsIndex.chpl:15)
+| Will attempt static and dynamic optimizations (elemAsIndex.chpl:19)
+|
+|  Start analyzing call (elemAsIndex.chpl:20)
+|   Can't determine the domain of access base (elemAsIndex.chpl:15)
+|  This call is a dynamic optimization candidate (elemAsIndex.chpl:20)
+|
+End analyzing forall (elemAsIndex.chpl:19)
+
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+1 4 9 16 25 36 49 64 81 100

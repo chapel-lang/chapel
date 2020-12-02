@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,12 +24,14 @@
 class FnSymbol;
 class Type;
 
-void checkLifetimes(void);
+void adjustSignatureForNilChecking(FnSymbol* fn);
+
+void checkNilDereferencesInFn(FnSymbol* fn);
 
 void checkLifetimesInFunction(FnSymbol* fn);
 
-void findNilDereferences(FnSymbol* fn);
-void adjustSignatureForNilChecking(FnSymbol* fn);
 bool isOrContainsBorrowedClass(Type* type);
+
+void checkLifetimesAndNilDereferences();
 
 #endif

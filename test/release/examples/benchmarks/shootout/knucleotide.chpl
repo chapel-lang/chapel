@@ -14,7 +14,7 @@ config param tableSize = 2**16,
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
   const consoleIn = openfd(0),
-        fileLen = consoleIn.length(),
+        fileLen = consoleIn.size,
         stdinNoLock = consoleIn.reader(kind=ionative, locking=false);
 
   // Read line-by-line until we see a line beginning with '>TH'
@@ -67,7 +67,7 @@ proc writeFreqs(data, param nclSize) {
 
 proc writeCount(data, param str) {
   const freqs = calculate(data, str.numBytes),
-        d = hash(str.toBytes(), 1, str.numBytes);
+        d = hash(str.toBytes(), 0, str.numBytes);
 
   writeln(freqs[d], "\t", decode(d, str.numBytes));
 }
@@ -126,8 +126,8 @@ inline proc hash(str, beg, param size) {
 
 
 proc string.toBytes() {
-  var byteArr: [1..this.numBytes] uint(8);
-  for (b, i) in zip(byteArr, 1..) do
+  var byteArr: [0..#this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 0..) do
     b = this.byte(i);
   return byteArr;
 }

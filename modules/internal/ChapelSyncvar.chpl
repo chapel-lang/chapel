@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,11 +40,13 @@ proceed if it is a single variable.
 */
 
 module ChapelSyncvar {
-  private use ChapelStandard;
+  use ChapelStandard;
 
   use AlignedTSupport;
-  private use MemConsistency;
+  use MemConsistency;
   use SyncVarRuntimeSupport;
+
+  use CPtr;
 
   /************************************ | *************************************
   *                                                                           *
@@ -136,13 +139,13 @@ module ChapelSyncvar {
     // ``a`` needs to be a ``valType``, not a sync.
     //
     pragma "dont disable remote value forwarding"
-    proc init(const other : _syncvar) {
+    proc init(const ref other : _syncvar) {
       this.valType = other.valType;
       this.wrapped = other.wrapped;
       this.isOwned = false;
     }
 
-    proc init=(const other : _syncvar) {
+    proc init=(const ref other : _syncvar) {
       // Allow initialization from compatible sync variables, e.g.:
       //   var x : sync int = 5;
       //   var y : sync real = x;
@@ -325,13 +328,15 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ref sv : _syncvar(?t)) {
+  proc chpl__initCopy(ref sv : _syncvar(?t), definedConst: bool) {
     return sv.readFE();
   }
 
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _syncvar) {
+  proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
+    // Does it make sense to have a const sync? If so, can we make use of that
+    // information here?
     return new _syncvar(rhs);
   }
 
@@ -372,9 +377,6 @@ module ChapelSyncvar {
   *                                                                           *
   * Use of a class instance establishes the required identity property.       *
   *                                                                           *
-  * Potential future optimization: Some targets could rely on a class that    *
-  * omits the syncAux variable for sufficiently simple valType.               *
-  *                                                                           *
   ************************************* | ************************************/
 
   pragma "no doc"
@@ -393,7 +395,9 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc deinit() {
-      chpl_sync_destroyAux(syncAux);
+      on this {
+        chpl_sync_destroyAux(syncAux);
+      }
     }
 
     proc readFE() {
@@ -536,7 +540,9 @@ module ChapelSyncvar {
     proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
-      qthread_fill(alignedValue);
+      on this {
+        qthread_fill(alignedValue);
+      }
     }
 
     proc readFE() {
@@ -675,13 +681,13 @@ module ChapelSyncvar {
     // ``a`` needs to be a ``valType``, not a single.
     //
     pragma "dont disable remote value forwarding"
-    proc init(const other : _singlevar) {
+    proc init(const ref other : _singlevar) {
       this.valType = other.valType;
       wrapped = other.wrapped;
       isOwned = false;
     }
 
-    proc init=(const other : _singlevar) {
+    proc init=(const ref other : _singlevar) {
       // Allow initialization from compatible single variables, e.g.:
       //   var x : single int = 5;
       //   var y : single real = x;
@@ -781,13 +787,13 @@ module ChapelSyncvar {
   }
 
   pragma "init copy fn"
-  proc chpl__initCopy(ref sv : _singlevar(?t)) {
+  proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
     return sv.readFF();
   }
 
   pragma "auto copy fn"
   pragma "no doc"
-  proc chpl__autoCopy(const ref rhs : _singlevar) {
+  proc chpl__autoCopy(const ref rhs : _singlevar, definedConst: bool) {
     return new _singlevar(rhs);
   }
 
@@ -807,12 +813,7 @@ module ChapelSyncvar {
   *                                                                           *
   * Use of a class instance establishes the required identity property.       *
   *                                                                           *
-  * Potential future optimization: Some targets could rely on a class that    *
-  * omits the singleAux variable for sufficiently simple valType.             *
-  *                                                                           *
   ************************************* | ************************************/
-
-
 
   pragma "no doc"
   class _singlecls {
@@ -828,7 +829,9 @@ module ChapelSyncvar {
     }
 
     proc deinit() {
-      chpl_single_destroyAux(singleAux);
+      on this {
+        chpl_single_destroyAux(singleAux);
+      }
     }
 
     proc readFF() {
@@ -915,8 +918,9 @@ module ChapelSyncvar {
 
 
 private module SyncVarRuntimeSupport {
-  private use ChapelStandard, SysCTypes;
+  use ChapelStandard, SysCTypes;
   use AlignedTSupport;
+  use CPtr;
 
   //
   // Sync var externs
@@ -970,10 +974,11 @@ private module SyncVarRuntimeSupport {
   // Native qthreads sync var helpers and externs
   //
 
-  // native qthreads aligned_t sync vars only work on 64-bit platforms right
-  // now, and we only support casting between certain types and aligned_t
+  // native qthreads aligned_t sync vars only work on non-ARM 64-bit platform,
+  // and we only support casting between certain types and aligned_t
   proc supportsNativeSyncVar(type t) param {
-    return CHPL_TASKS == "qthreads"    &&
+    return CHPL_TASKS == "qthreads" &&
+           CHPL_TARGET_ARCH != "aarch64" &&
            castableToAlignedT(t) &&
            numBits(c_uintptr) == 64;
   }

@@ -1,9 +1,8 @@
 //===- CallSiteSplitting.cpp ----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -60,13 +59,15 @@
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/PatternMatch.h"
+#include "llvm/InitializePasses.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include "llvm/Transforms/Utils/Cloning.h"
+#include "llvm/Transforms/Utils/Local.h"
 
 using namespace llvm;
 using namespace PatternMatch;
@@ -184,6 +185,9 @@ static SmallVector<BasicBlock *, 2> getTwoPredecessors(BasicBlock *BB) {
 }
 
 static bool canSplitCallSite(CallSite CS, TargetTransformInfo &TTI) {
+  if (CS.isConvergent() || CS.cannotDuplicate())
+    return false;
+
   // FIXME: As of now we handle only CallInst. InvokeInst could be handled
   // without too much effort.
   Instruction *Instr = CS.getInstruction();
@@ -367,7 +371,7 @@ static void splitCallSite(
     assert(Splits.size() == 2 && "Expected exactly 2 splits!");
     for (unsigned i = 0; i < Splits.size(); i++) {
       Splits[i]->getTerminator()->eraseFromParent();
-      DTU.deleteEdge(Splits[i], TailBB);
+      DTU.applyUpdatesPermissive({{DominatorTree::Delete, Splits[i], TailBB}});
     }
 
     // Erase the tail block once done with musttail patching
@@ -560,7 +564,7 @@ struct CallSiteSplittingLegacyPass : public FunctionPass {
     if (skipFunction(F))
       return false;
 
-    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+    auto &TLI = getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     auto &TTI = getAnalysis<TargetTransformInfoWrapperPass>().getTTI(F);
     auto &DT = getAnalysis<DominatorTreeWrapperPass>().getDomTree();
     return doCallSiteSplitting(F, TLI, TTI, DT);

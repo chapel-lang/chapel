@@ -1,0 +1,178 @@
+
+Start analyzing forall (functionArgs.chpl:11)
+| Found loop domain (functionArgs.chpl:10)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:11)
+|
+|  Start analyzing call (functionArgs.chpl:12)
+|   Can optimize: Access base is the iterator's base (functionArgs.chpl:12)
+|  This call is a static optimization candidate (functionArgs.chpl:12)
+|
+|  Start analyzing call (functionArgs.chpl:13)
+|   Found the domain of the access base (functionArgs.chpl:10)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:13)
+|  This call is a static optimization candidate (functionArgs.chpl:13)
+|
+End analyzing forall (functionArgs.chpl:11)
+
+
+Start analyzing forall (functionArgs.chpl:17)
+| Found loop domain (functionArgs.chpl:10)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:17)
+|
+|  Start analyzing call (functionArgs.chpl:18)
+|   Found the domain of the access base (functionArgs.chpl:10)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:18)
+|  This call is a static optimization candidate (functionArgs.chpl:18)
+|
+|  Start analyzing call (functionArgs.chpl:19)
+|   Can optimize: Access base is the iterator's base (functionArgs.chpl:19)
+|  This call is a static optimization candidate (functionArgs.chpl:19)
+|
+End analyzing forall (functionArgs.chpl:17)
+
+
+Start analyzing forall (functionArgs.chpl:23)
+| Found loop domain (functionArgs.chpl:10)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:23)
+|
+|  Start analyzing call (functionArgs.chpl:24)
+|   Found the domain of the access base (functionArgs.chpl:10)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:24)
+|  This call is a static optimization candidate (functionArgs.chpl:24)
+|
+|  Start analyzing call (functionArgs.chpl:25)
+|   Found the domain of the access base (functionArgs.chpl:10)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:25)
+|  This call is a static optimization candidate (functionArgs.chpl:25)
+|
+End analyzing forall (functionArgs.chpl:23)
+
+
+Start analyzing forall (functionArgs.chpl:31)
+| Found loop domain (functionArgs.chpl:5)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:31)
+|
+|  Start analyzing call (functionArgs.chpl:32)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:32)
+|  This call is a static optimization candidate (functionArgs.chpl:32)
+|
+|  Start analyzing call (functionArgs.chpl:33)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:33)
+|  This call is a static optimization candidate (functionArgs.chpl:33)
+|
+End analyzing forall (functionArgs.chpl:31)
+
+
+Start analyzing forall (functionArgs.chpl:37)
+| Found loop domain (functionArgs.chpl:6)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:37)
+|
+|  Start analyzing call (functionArgs.chpl:38)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:38)
+|  This call is a static optimization candidate (functionArgs.chpl:38)
+|
+|  Start analyzing call (functionArgs.chpl:39)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:39)
+|  This call is a static optimization candidate (functionArgs.chpl:39)
+|
+End analyzing forall (functionArgs.chpl:37)
+
+
+Start analyzing forall (functionArgs.chpl:43)
+| Found loop domain (functionArgs.chpl:3)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:43)
+|
+|  Start analyzing call (functionArgs.chpl:44)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:44)
+|  This call is a static optimization candidate (functionArgs.chpl:44)
+|
+|  Start analyzing call (functionArgs.chpl:45)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:45)
+|  This call is a static optimization candidate (functionArgs.chpl:45)
+|
+End analyzing forall (functionArgs.chpl:43)
+
+
+Start analyzing forall (functionArgs.chpl:51)
+| Found loop domain (functionArgs.chpl:5)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:51)
+|
+|  Start analyzing call (functionArgs.chpl:52)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:52)
+|  This call is a static optimization candidate (functionArgs.chpl:52)
+|
+|  Start analyzing call (functionArgs.chpl:53)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:53)
+|  This call is a static optimization candidate (functionArgs.chpl:53)
+|
+End analyzing forall (functionArgs.chpl:51)
+
+
+Start analyzing forall (functionArgs.chpl:57)
+| Found loop domain (functionArgs.chpl:6)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:57)
+|
+|  Start analyzing call (functionArgs.chpl:58)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:58)
+|  This call is a static optimization candidate (functionArgs.chpl:58)
+|
+|  Start analyzing call (functionArgs.chpl:59)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base has the same domain as iterator's base (functionArgs.chpl:59)
+|  This call is a static optimization candidate (functionArgs.chpl:59)
+|
+End analyzing forall (functionArgs.chpl:57)
+
+
+Start analyzing forall (functionArgs.chpl:63)
+| Found loop domain (functionArgs.chpl:3)
+| Will attempt static and dynamic optimizations (functionArgs.chpl:63)
+|
+|  Start analyzing call (functionArgs.chpl:64)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:64)
+|  This call is a static optimization candidate (functionArgs.chpl:64)
+|
+|  Start analyzing call (functionArgs.chpl:65)
+|   Found the domain of the access base (functionArgs.chpl:3)
+|   Can optimize: Access base's domain is the iterator (functionArgs.chpl:65)
+|  This call is a static optimization candidate (functionArgs.chpl:65)
+|
+End analyzing forall (functionArgs.chpl:63)
+
+Static check successful. Using localAccess (functionArgs.chpl:12)
+Static check successful. Using localAccess (functionArgs.chpl:13)
+Static check successful. Using localAccess (functionArgs.chpl:18)
+Static check successful. Using localAccess (functionArgs.chpl:19)
+Static check successful. Using localAccess (functionArgs.chpl:24)
+Static check successful. Using localAccess (functionArgs.chpl:25)
+Static check successful. Using localAccess (functionArgs.chpl:32)
+Static check successful. Using localAccess (functionArgs.chpl:33)
+Static check successful. Using localAccess (functionArgs.chpl:38)
+Static check successful. Using localAccess (functionArgs.chpl:39)
+Static check successful. Using localAccess (functionArgs.chpl:44)
+Static check successful. Using localAccess (functionArgs.chpl:45)
+Static check successful. Using localAccess (functionArgs.chpl:52)
+Static check successful. Using localAccess (functionArgs.chpl:53)
+Static check successful. Using localAccess (functionArgs.chpl:58)
+Static check successful. Using localAccess (functionArgs.chpl:59)
+Static check successful. Using localAccess (functionArgs.chpl:64)
+Static check successful. Using localAccess (functionArgs.chpl:65)
+10 20 30 40 50 60 70 80 90 100
+20 40 60 80 100 120 140 160 180 200
+30 60 90 120 150 180 210 240 270 300
+40 80 120 160 200 240 280 320 360 400
+50 100 150 200 250 300 350 400 450 500
+60 120 180 240 300 360 420 480 540 600
+70 140 210 280 350 420 490 560 630 700
+80 160 240 320 400 480 560 640 720 800
+90 180 270 360 450 540 630 720 810 900

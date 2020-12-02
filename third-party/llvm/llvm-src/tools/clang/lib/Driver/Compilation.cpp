@@ -1,9 +1,8 @@
 //===- Compilation.cpp - Compilation Task Implementation ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -154,30 +153,28 @@ int Compilation::ExecuteCommand(const Command &C,
   if ((getDriver().CCPrintOptions ||
        getArgs().hasArg(options::OPT_v)) && !getDriver().CCGenDiagnostics) {
     raw_ostream *OS = &llvm::errs();
+    std::unique_ptr<llvm::raw_fd_ostream> OwnedStream;
 
     // Follow gcc implementation of CC_PRINT_OPTIONS; we could also cache the
     // output stream.
     if (getDriver().CCPrintOptions && getDriver().CCPrintOptionsFilename) {
       std::error_code EC;
-      OS = new llvm::raw_fd_ostream(getDriver().CCPrintOptionsFilename, EC,
-                                    llvm::sys::fs::F_Append |
-                                        llvm::sys::fs::F_Text);
+      OwnedStream.reset(new llvm::raw_fd_ostream(
+          getDriver().CCPrintOptionsFilename, EC,
+          llvm::sys::fs::OF_Append | llvm::sys::fs::OF_Text));
       if (EC) {
         getDriver().Diag(diag::err_drv_cc_print_options_failure)
             << EC.message();
         FailingCommand = &C;
-        delete OS;
         return 1;
       }
+      OS = OwnedStream.get();
     }
 
     if (getDriver().CCPrintOptions)
-      *OS << "[Logging clang options]";
+      *OS << "[Logging clang options]\n";
 
     C.Print(*OS, "\n", /*Quote=*/getDriver().CCPrintOptions);
-
-    if (OS != &llvm::errs())
-      delete OS;
   }
 
   std::string Error;
@@ -261,13 +258,22 @@ void Compilation::initCompilationForDiagnostics() {
 
   // Remove any user specified output.  Claim any unclaimed arguments, so as
   // to avoid emitting warnings about unused args.
-  OptSpecifier OutputOpts[] = { options::OPT_o, options::OPT_MD,
-                                options::OPT_MMD };
+  OptSpecifier OutputOpts[] = {
+      options::OPT_o,  options::OPT_MD, options::OPT_MMD, options::OPT_M,
+      options::OPT_MM, options::OPT_MF, options::OPT_MG,  options::OPT_MJ,
+      options::OPT_MQ, options::OPT_MT, options::OPT_MV};
   for (unsigned i = 0, e = llvm::array_lengthof(OutputOpts); i != e; ++i) {
     if (TranslatedArgs->hasArg(OutputOpts[i]))
       TranslatedArgs->eraseArg(OutputOpts[i]);
   }
   TranslatedArgs->ClaimAllArgs();
+
+  // Force re-creation of the toolchain Args, otherwise our modifications just
+  // above will have no effect.
+  for (auto Arg : TCArgs)
+    if (Arg.second != TranslatedArgs)
+      delete Arg.second;
+  TCArgs.clear();
 
   // Redirect stdout/stderr to /dev/null.
   Redirects = {None, {""}, {""}};

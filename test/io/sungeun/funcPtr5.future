@@ -1,9 +1,0 @@
-bug: writeln() called with an iterator as an argument leads to unexpected output.
-
-This test currently fails compilation with the following message:
-
-   funcPtr5.chpl:1: In iterator 'blah':
-   funcPtr5.chpl:2: error: Iterators not allowed in first class functions
-
-It should probably be illegal and give the same compile-time error as
-the other funcPtr*.chpl programs.

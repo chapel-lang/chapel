@@ -4,6 +4,6 @@ extern record R {
   var b: int;
 }
 
-export proc printsArg(x: R) {
+export proc printsArg(in x: R) {
   writeln(x.b);
 }

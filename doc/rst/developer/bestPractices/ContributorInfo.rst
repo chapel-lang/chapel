@@ -1,57 +1,168 @@
 Contributor Info
 ================
 
-Repository
-----------
-
-The git repository for the project is hosted on Github at
+The git repository for the project is hosted on GitHub at
 `chapel-lang/chapel`_. Anyone can read the repository. It is open source!
 
 This document contains a mixture of tips for git beginners and specific
 Chapel workflow recommendations.
 
-Below are instructions for setting up a github account, developing a
+Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
-
-Developer Workflow
-------------------
+.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
 
 Overview:
 
-#. `Discuss design changes or big development efforts`_
-#. `Get set up`_
-#. `Create new branch`_
-#. `Develop and test contributions locally`_
+#. `Choosing a task`_
 
-   #. `Add new tests`_
+#. `Design`_
 
-#. `Request feedback on your changes`_
+   #. `When design discussion is needed`_
+   #. `Creating a design issue`_
+   #. `Leading a design discussion`_
+
+#. `Development`_
+
+   #. `Get set up`_
+   #. `Create new branch`_
+   #. `Develop and test contributions locally`_
+
+      #. `Add new tests`_
+
+
+#. `Contributing changes`_
 
    #. `Push your work to your feature branch`_
    #. `Ask for feedback on your branch early (optional)`_
    #. `Submit pull request`_
    #. `Find a reviewer`_
    #. `Work with your reviewers`_
+   #. `Before merging`_
+   #. `After merging`_
 
-#. `Get ready to merge`_
-#. `Watch automatic testing and address issues`_
+#. `Other useful information`_
 
-`HOWTO and Git details`_
+   #. `Chapel git workflow`_
+   #. `Policy details`_
+   #. `Chapel release process`_
 
-`Policy details`_
 
-.. _Discuss design changes or big development efforts:
 
-Discuss design changes or big development efforts
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _Choosing a task:
 
-Before embarking on a big project, please open an issue on the GitHub page
-and/or send an email to chapel-developers_ with a prefix of ``[Design]`` in the
-subject header for discussion with the community and to ensure that you are
-aware of any parallel efforts in that area.  It may also be a good idea to ask
-for input from the user community via the chapel-users_ mailing list.
+Choosing a task
+---------------
+
+If you do not already know what task to work on, the `Contributing`_ page has
+some tips for finding a task.
+
+It is important to communicate with other people before working on a task. This
+will help address design questions before starting implementation and will
+avoid multiple people working on the same task simultaneously.
+
+If an issue exists for the task you are working on, you should always comment
+on that issue to let others know you are working on it. If an issue does not
+exist for the task you have chosen, you should open an issue first. In many
+cases, you will need to discuss the design of the interface or implementation
+before starting development.  See the `Design`_ section for more details on
+this.
+
+
+.. _Contributing: https://chapel-lang.org/contributing.html
+
+.. _Design:
+
+Design
+------
+
+.. _When design discussion is needed:
+
+When design discussion is needed
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Design discussion is necessary when proposing language or standard library
+changes. It is also necessary for any large or architectural changes.
+
+In many cases it is reasonable to start development without a full design
+review, but such efforts should be open to changing once the design is being
+discussed.
+
+If your task does not require a design issue, you may skip ahead to the
+`Development`_ section.
+
+
+.. _Creating a design issue:
+
+Creating a design issue
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The design issue should aim to clearly and concisely present some design
+decisions. Here are some strategies to make a good design issue:
+
+- Summarize issue at the top, preferably include concise code example(s).
+- Try not to make initial issue too long in order to lower the barrier for
+  someone getting involved.
+- Clearly define the problem this proposal aims to solve.
+- It can be useful to consider alternative solutions to the problem and
+  describe the trade-offs among them.
+- A design issue should have two developers not involved in the effort to review.
+- To find reviewers, post an inquiry to the `Chapel Developers`_
+  Discourse forum.
+
+  * Use a prefix of ``[Design]`` in the subject header.
+  * Include a short summary of the topic, potentially including motivation
+    and/or an example.
+      - This should not be a copy/paste of the issue contents.
+  * Include a link to your issue.
+  * Ask for people to volunteer to be involved in design discussions.
+
+    .. code-block:: text
+
+        Subject: [Design] Add feature A to module M
+
+        Hello,
+
+        I would like to add feature A to module M. This feature is motivated by
+        X, Y, and Z. For example, this would enable:
+
+          var result = M.A(args);
+
+        See the issue here: https://github.com/chapel-lang/chapel/issues/<number>
+
+        I need 2 developers to identify themselves as API reviewers for this design
+        issue.
+
+        Thanks,
+        Contributor
+
+.. _Leading a design discussion:
+
+Leading a design discussion
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many design choices require a consensus among community members.
+It can be helpful to reach a consensus on a design decision quicker by making
+an effort to lead that discussion.
+
+Here are some ways to progress the discussion:
+
+- Ask people involved what they need to know to make a decision
+- Summarize the different solutions that were brought up in the discussion and
+  list their pros and cons
+- Compare with other languages, libraries, previous work in the area
+
+It is common for new design questions to emerge during design discussion
+(or less commonly, in code review).
+It can be helpful to spin off new issues for design questions that generate a
+lot of discussion or design questions that are not completely on-topic.
+This will help keep the discussion focused and the goals of the current design
+issue clear.
+
+.. _Development:
+
+Development
+-----------
 
 .. _Get set up:
 
@@ -65,7 +176,7 @@ migrated to an external/community body (the major elements are likely
 to be similar, though the specific people involved are likely to change and
 grow).
 
-#. `Set up a github account`_. The "Free" plan is sufficient for contributing to
+#. `Set up a GitHub account`_. The "Free" plan is sufficient for contributing to
    Chapel.
 
 #. Make sure you have configured your environment to work with git. See
@@ -76,15 +187,21 @@ grow).
    also `Fork the repo`_).  Then `configure your local git`_ and check out your
    fork
 
-#. If you're working on a long-term effort, announce it on the
-   chapel-developers_ mailing list to make sure toes are not being stepped on,
-   work is not being pursued redundantly, etc.  Similarly, fundamental changes
-   to the language or architecture should be circulated to the
-   chapel-developers_ and/or chapel-users_ lists to make sure effort is not
-   wasted.
+#. Make sure you understand how to sign your commits with respect to the DCO.
 
-#. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
-   ID.
+   Chapel enforces the Developer Certificate of Origin (DCO) on all
+   pull requests.  This requires all commits you make to be signed to
+   indicate that they adhere to the DCO policy.  If you're not already
+   familiar with DCOs, read `Getting started with Chapel and the
+   Developer Certificate of Origin`_ to learn more about them and how
+   to sign your commits.
+
+#. If you're working on a long-term effort, announce it in the
+   `Chapel Developers`_ Discourse category to make sure toes are not being stepped on,
+   work is not being pursued redundantly, etc.  Similarly, fundamental changes
+   to the language or architecture should be circulated in the
+   `Chapel Developers`_ and/or `Chapel Users`_ categories to make sure effort is not
+   wasted pursuing an unpopular idea.
 
 * You do not need commit/push access to the main repo in order to
   contribute code.  See
@@ -93,6 +210,9 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
+.. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
+
+   
 .. _Create new branch:
 
 Create new branch
@@ -135,15 +255,15 @@ pass testing for ``start_test -performance``).
 .. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
 
 
-.. _Request feedback on your changes:
+.. _Contributing changes
 
-Request feedback on your changes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Contributing changes
+--------------------
 
 .. _Push your work to your feature branch:
 
 Push your work to your feature branch
-+++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Push your changes to your feature branch on GitHub to enable others to see your
 work (see `How to push`_ for command details).  Note that if you have already
@@ -153,21 +273,21 @@ branch will update the pull request.
 .. _Ask for feedback on your branch early (optional):
 
 Ask for feedback on your branch early (optional)
-++++++++++++++++++++++++++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Not ready to merge your changes, but still want to see if your work is going in
 the right direction?  Feel free to ask for early feedback!  Exposing the code is
 generally done by:
 
-- Pointing someone to your feature branch on Github, or
+- Pointing someone to your feature branch on GitHub, or
 - Creating a `Work-in-progress pull request`_ for your feature branch.  See the
   `Submit pull request`_ section below for how to do this.
 
 Discussion can take place in:
 
 - the `Work-in-progress pull request`_
-- a separate Github issue
-- the chapel-developers_ mailing list
+- a separate GitHub issue
+- the `Chapel Developers`_ Discourse forum
 - a private communication
 - some other strategy agreed upon by all involved parties
 
@@ -175,7 +295,7 @@ Discussion can take place in:
 .. _Submit pull request:
 
 Submit pull request
-+++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~
 
 See `How to open a PR`_ for the sequence of steps necessary.
 
@@ -193,14 +313,14 @@ Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
 .. _Find a reviewer:
 
 Find a reviewer
-+++++++++++++++
+~~~~~~~~~~~~~~~
 
 * Once your PR is ready, you'll need to request a review.  If you know who you'd
   like to review it, @ mention them in a comment on the PR and ask them to have
-  a look.  If you don't know their Github id, you can find them in the chat room
-  or send them an email.  If you don't know who should review the change, send
-  an email to the chapel-developers_ list requesting a review and linking to the
-  PR.  Such an email should have a subject line starting with `[PR]`.
+  a look.  If you don't know their GitHub id, you can find them in the chat room
+  or send them an email.  If you don't know who should review the change, post
+  to the `Chapel Developers`_ Discourse topic requesting a review and linking to the
+  PR.  By convention, such topics often use a `[PR]` prefix in their titles.
 
   Note: Ideally, someone should volunteer to review your pull request within a
   day or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -213,28 +333,29 @@ Find a reviewer
 .. _Work with your reviewers:
 
 Work with your reviewers
-++++++++++++++++++++++++
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 * Iterate with the reviewer until you're both satisfied.  One should generally
   try to do whatever their reviewer asks.  Sometimes, a reviewer will ask for
   something really hard.  Try to make sure they understand the magnitude of the
   request, and try to discuss if it's really necessary to do before merging.  If
-  you can't come to agreement, one of you should bring other developers
-  (individually or via chapel-developers_) into the conversation to get a
+  you can't come to an agreement, one of you should bring other developers
+  (individually or via the `Chapel Developers`_ forum) into the conversation to get a
   broader opinion.  One of the jobs of the reviewer is to serve as a proxy for
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
 
-.. _Get ready to merge:
+.. _Before merging:
 
-Get ready to merge
-~~~~~~~~~~~~~~~~~~
+Before merging
+~~~~~~~~~~~~~~
 
 Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
+- all commits contain the required "Signed-off-by:" line to indicate
+  compliance with the `Developer Certificate of Origin`_ (DCO)
 - the PR has been reviewed
-- the `contributor license agreement`_ (CLA) has been signed
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -258,38 +379,44 @@ After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
 
 
-.. _Watch automatic testing and address issues:
+.. _After merging:
 
-Watch automatic testing and address issues
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+After merging
+~~~~~~~~~~~~~
+
+After merging, a good contributor should watch automatic testing results for
+failures that they may need to address:
 
 * In short order, a smoke-test will be run against the commit to make sure that
-  nothing basic has been broken by it.  Monitor the
-  chapel-test-results-regressions_ mailing list to make sure that nothing
-  breaks.
+  nothing basic has been broken by it.  Your reviewer should alert you to any
+  problems.
 
-* For the day or two after the commit has gone in, check the
-  chapel-test-results-regressions_ mailing list to ensure that there are no new
-  failures caused by your commit.  Use the chapel-developers_ mailing list if
-  you are unsure (a member of the core Chapel team will be tasked with
-  diagnosing any testing failures on any given night, but it's nice when
-  developers notice the issue first themselves to save wasted effort).
+* After the commit has gone in, check with your reviewer to ensure that
+  there are no new failures caused by your commit in our nightly testing.
 
-.. _HOWTO and Git details:
+.. _Other useful information:
 
-HOWTO and Git details
-~~~~~~~~~~~~~~~~~~~~~
+Other useful information
+------------------------
+
+.. _Chapel git workflow:
+
+Chapel git workflow
+~~~~~~~~~~~~~~~~~~~~
+
+The following section walks through some basics of git and GitHub that
+are helpful in contributing to Chapel.
 
 .. _initial git setup:
 
 Initial Git Setup
 +++++++++++++++++
 
-Follow the GitHub directions to setup a new account.
+Follow the GitHub directions to set up a new account.
 
 https://help.github.com/articles/signing-up-for-a-new-github-account/
 
-If you plan to use ssh to push/pull, setup SSH keys.
+If you plan to use ssh to push/pull, set up SSH keys.
 
 https://help.github.com/articles/connecting-to-github-with-ssh/
 
@@ -311,8 +438,8 @@ Configure your local git
     # windows
     git config --global core.autocrlf true
 
-    # If using ssh keys, verify access to github. It should respond with a
-    # message including your github username.
+    # If using ssh keys, verify access to GitHub. It should respond with a
+    # message including your GitHub username.
     ssh git@github.com
 
     # Clone your fork of the chapel repo!
@@ -321,7 +448,7 @@ Configure your local git
     # Or, if using HTTPS instead of SSH.
     git clone https://github.com/<github_username>/chapel.git
 
-    # Set up remotes for github
+    # Set up remotes for GitHub
     cd chapel
     git remote add upstream https://github.com/chapel-lang/chapel.git
     # Make sure it works, get up-to-date without modifying your files
@@ -330,6 +457,7 @@ Configure your local git
     git remote set-url --push upstream no_push
     # Optionally add remotes for commonly viewed branches
     git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
+
 
 .. _New branch command:
 
@@ -412,7 +540,9 @@ Committing staged changes:
 
 .. code-block:: bash
 
-    git commit [-m <message>]
+    # Accept the Developer Certificate of Origin by adding a Signed-off-by line to commit messages:
+
+    git commit -s [-m <message>]
 
     # similar to: svn commit [-m <message>]
 
@@ -581,7 +711,7 @@ How to open a PR:
   `Final merge message`_ for recommendations on what that commit message should
   look like.
 
-  You will have to have signed a `contributor license agreement`_ (CLA).
+  You will have to add "signed-off-by" in your commits to accept `Developer Certificate of Origin`_ (DCO)
 
   Your pull request will be available at a URL like:
 
@@ -589,7 +719,7 @@ How to open a PR:
 
   and you can discuss the patch with your reviewers there.
 
-.. _contributor license agreement: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
+.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
 
 .. _How to merge a PR:
 
@@ -631,7 +761,7 @@ Other git commands
 Update to HEAD:
 
 (If you use this command on a feature branch, you'll just be updating to the
-latest work stored on github. See `Development commands`_ for how to update a
+latest work stored on GitHub. See `Development commands`_ for how to update a
 feature branch with new changes from the main Chapel project)
 
 .. code-block:: bash
@@ -750,7 +880,7 @@ changes reviewed. Developers who have been given write access can merge trivial
 changes (e.g. small bug fixes, documentation changes) without review.
 
 If you will need commit/push access to the main repository,
-`chapel-lang/chapel`_, send a request including your github username to
+`chapel-lang/chapel`_, send a request including your GitHub username to
 chapel_admin _at_ cray.com.
 
 .. _Third-party code:
@@ -760,8 +890,8 @@ Third-party code
 
 If your work will require committing any third-party code that you are not
 developing yourself (or code that you've developed as a standalone package),
-alert the chapel-developers_ mailing list of this as, presently, such code
-packages must be approved by our lawyers before being committed.
+alert the `Chapel Developers`_ Discourse forum of this as, presently, such code
+packages must be approved before being committed.
 
 Here are some guiding questions to determine whether a third-party package you
 rely on should be committed to the chapel repository:
@@ -808,8 +938,8 @@ rely on should be committed to the chapel repository:
   - If so, we will probably want to distribute this package, or at least include
     the modifications and an easy way to install them.
 
-Please include the answers to these questions when you contact the
-chapel-developers_ mailing list, if you believe the code should be included or
+Please include the answers to these questions when you post to the
+`Chapel Developers`_ forum, if you believe the code should be included or
 you remain uncertain.
 
 .. _Testing your patch:
@@ -855,7 +985,7 @@ Work-in-progress pull request
 
 A work-in-progress (WIP) PR is a special kind of pull request that is not yet
 intended to be merged.  Such PRs are created to take advantage of what the
-Github PR interface provides, such as public comment history and quick links
+GitHub PR interface provides, such as public comment history and quick links
 between the WIP PR and other related issues and pull requests.  They allow the
 developer to get early feedback on a change.
 
@@ -953,9 +1083,9 @@ non-meaningful commits:
     git rebase -i upstream/master
 
 Note that this can be particularly cumbersome when there has been significant
-conflicting changes made on upstream master, so is not a hard requirement.
+conflicting changes made on upstream master, so it is not a hard requirement.
 
-An alternative approach is to use the "squash and merge" option on the github
+An alternative approach is to use the "squash and merge" option on the GitHub
 merge button which will reduce all commits to a single commit.
 
 It's not generally possible to completely remove a commit from git by the time
@@ -971,10 +1101,15 @@ Reviewer responsibilities
 +++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
-  team, be sure they have signed the `contributor license agreement`_ (see the
-  `Developer Workflow`_ instructions for this).  If the developer cannot
-  or will not sign the agreement, bring the situation to the attention
-  of the Chapel project leadership.
+  team, be sure their commits are signed via the DCO bot (one of several
+  github action checks that will run on each PR).  If they're not, help
+  the developer understand the requirement.
+
+  Note that using GitHub's "squash and merge" feature will effectively
+  drop all DCO signature lines from the pull request, and so should
+  not be used on external commits (or potentially even for commits
+  from the core team?) in order to preserve the signed nature of the
+  commits.
 
   Care may need to be taken when committing third-party code that
   originates from a different git[hub] repository.  As an example, in
@@ -999,11 +1134,10 @@ Reviewer responsibilities
   decisions may need to be made (or at least understood) at a high
   level.
 
-.. _chapel-developers: chapel-developers@lists.sourceforge.net
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
-.. _chapel-users: chapel-users@lists.sourceforge.net
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
+.. _Chapel Users: https://chapel.discourse.group/c/users
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
-.. _Set up a github account: https://help.github.com/articles/signing-up-for-a-new-github-account
+.. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/
 .. _Submit a pull request: https://help.github.com/articles/using-pull-requests
 .. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
@@ -1011,10 +1145,30 @@ Reviewer responsibilities
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
 
-By signing a Contributor Agreement, you have agreed that code you contribute
+By opening a PR with signed commits, you are agreeing that code you contribute
 will be governed by the license and copyright of the project as a whole.  A
 standard block of license text is required at the top of every compiler,
 runtime, and module code file.  Browse other files of the same type to see the
 required license block.
 
 Additional copyrights may also be applied, as appropriate.
+
+.. _Chapel release process:
+
+Chapel release process
+~~~~~~~~~~~~~~~~~~~~~~
+
+When a Chapel release nears, merging of pull requests is temporarily frozen for
+a few weeks to ensure stability of the release. These freezes come in two
+phases: feature freeze and code/doc freeze.
+
+After feature freeze, only bug fixes and documentation updates will be accepted
+for the upcoming release. After code/doc freeze, no contributions will be
+accepted for the upcoming release, barring critical bug fixes. At some point
+between code/doc freeze and the release, a release branch will be "cut", and
+the master branch will begin accepting all contributions again.
+
+The dates for these freezes will be posted on the `Chapel events page`_
+sometime close to each release.
+
+.. _Chapel events page: https://chapel-lang.org/events.html

@@ -34,25 +34,26 @@ class GenericCollection {
 }
 
 {
-  var a:borrowed GenericCollection(owned MyClass?)?;
   var empty:owned MyClass?;
-  a = new borrowed GenericCollection(empty);
+  var a:borrowed GenericCollection(owned MyClass?)? =
+    new borrowed GenericCollection(empty);
   a!.field = new owned MyClass();
   writeln("a ", a.type:string, " has field ", a!.field.type:string);
 }
 
 {
-  var b:borrowed GenericCollection(owned MyClass?)?;
   var empty:owned MyClass?;
-  b = new borrowed GenericCollection(empty);
+  var b:borrowed GenericCollection(owned MyClass?)? =
+    new borrowed GenericCollection(empty);
   b!.field = new owned MyClass();
   writeln("b ", b.type:string, " has field ", b!.field.type:string);
 }
 
 {
-  var c:borrowed GenericCollection(borrowed MyClass?)?;
   var empty:borrowed MyClass?;
-  c = new borrowed GenericCollection(empty);
-  c!.field = new owned MyClass();
+  var c:borrowed GenericCollection(borrowed MyClass?)? =
+    new borrowed GenericCollection(empty);
+  var other = new owned MyClass();
+  c!.field = other;
   writeln("(borrowed) c ", c.type:string, " has field ", c!.field.type:string);
 }

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,8 +21,8 @@
 // ChapelReduce.chpl
 //
 module ChapelReduce {
-  private use ChapelStandard;
-  private use ChapelLocks;
+  use ChapelStandard;
+  use ChapelLocks;
 
   proc chpl__scanStateResTypesMatch(op) param {
     type resType = op.generate().type;
@@ -210,6 +211,32 @@ module ChapelReduce {
     proc clone() return new unmanaged MinReduceScanOp(eltType=eltType);
   }
 
+  class minmax: ReduceScanOp {
+    type eltType;
+    var value = (max(eltType), min(eltType));
+
+    proc identity return (max(eltType), min(eltType));
+    proc accumulateOntoState(ref state, x: eltType) {
+      state[0] = min(state[0], x);
+      state[1] = max(state[1], x);
+    }
+    proc accumulateOntoState(ref state, other: 2*eltType) {
+      state[0] = min(state[0], other[0]);
+      state[1] = max(state[1], other[1]);
+    }
+    inline proc accumulate(x: eltType) {
+      accumulateOntoState(value, x);
+    }
+    inline proc accumulate(state: 2*eltType) {
+      accumulateOntoState(value, state);
+    }
+    inline proc combine(other: minmax(eltType)) {
+      accumulateOntoState(value, other.value);
+    }
+    proc generate() return value;
+    proc clone() return new unmanaged minmax(eltType=eltType);
+  }
+
   class LogicalAndReduceScanOp: ReduceScanOp {
     type eltType;
     var value = _land_id(eltType);
@@ -300,7 +327,7 @@ module ChapelReduce {
     proc clone() return new unmanaged BitwiseXorReduceScanOp(eltType=eltType);
   }
 
-  proc _maxloc_id(type eltType) return (min(eltType(1)), max(eltType(2)));
+  proc _maxloc_id(type eltType) return (min(eltType(0)), max(eltType(1)));
   proc _minloc_id(type eltType) return max(eltType); // max() on both components
 
   class maxloc: ReduceScanOp {
@@ -310,9 +337,9 @@ module ChapelReduce {
     proc identity return _maxloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) > state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) ||
-        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      if x(0) > state(0) ||
+        ((x(0) == state(0)) && (x(1) < state(1))) ||
+        (gotNaN(x(0)) && ( (! gotNaN(state(0))) || (x(1) < state(1)) ))
       then
         state = x;
     }
@@ -328,9 +355,9 @@ module ChapelReduce {
     proc identity return _minloc_id(eltType);
     proc accumulate(x) { accumulateOntoState(value, x); }
     proc accumulateOntoState(ref state, x) {
-      if x(1) < state(1) ||
-        ((x(1) == state(1)) && (x(2) < state(2))) ||
-        (gotNaN(x(1)) && ( (! gotNaN(state(1))) || (x(2) < state(2)) ))
+      if x(0) < state(0) ||
+        ((x(0) == state(0)) && (x(1) < state(1))) ||
+        (gotNaN(x(0)) && ( (! gotNaN(state(0))) || (x(1) < state(1)) ))
       then
         state = x;
     }

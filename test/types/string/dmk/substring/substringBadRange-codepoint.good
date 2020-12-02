@@ -1,3 +1,3 @@
-str1[12:byteIndex..13:byteIndex] = lm
-str2[12:codepointIndex..13:codepointIndex] = lm
-substringBadRange-codepoint.chpl:8: error: halt reached - range out of bounds of string
+str1[11:byteIndex..12:byteIndex] = lm
+str2[11:codepointIndex..12:codepointIndex] = lm
+substringBadRange-codepoint.chpl:8: error: halt reached - range 11..15 out of bounds for string with length 13

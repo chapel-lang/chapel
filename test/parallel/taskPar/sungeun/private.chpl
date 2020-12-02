@@ -13,7 +13,7 @@ record taskPrivateData {
   var y: [0..#numLocales] real;
 
   // need our version of writeThis so we can print the sync field
-  proc writeThis(f) {
+  proc writeThis(f) throws {
     f.write("(", tid$.readXX(), ": ", x, "  ", y, ")");
   }
 };

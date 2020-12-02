@@ -1,9 +1,8 @@
 //===- LoopVersioningLICM.cpp - LICM Loop Versioning ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -80,6 +79,7 @@
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -112,37 +112,6 @@ static cl::opt<unsigned> LVLoopDepthThreshold(
     cl::desc(
         "LoopVersioningLICM's threshold for maximum allowed loop nest/depth"),
     cl::init(2), cl::Hidden);
-
-/// Create MDNode for input string.
-static MDNode *createStringMetadata(Loop *TheLoop, StringRef Name, unsigned V) {
-  LLVMContext &Context = TheLoop->getHeader()->getContext();
-  Metadata *MDs[] = {
-      MDString::get(Context, Name),
-      ConstantAsMetadata::get(ConstantInt::get(Type::getInt32Ty(Context), V))};
-  return MDNode::get(Context, MDs);
-}
-
-/// Set input string into loop metadata by keeping other values intact.
-void llvm::addStringMetadataToLoop(Loop *TheLoop, const char *MDString,
-                                   unsigned V) {
-  SmallVector<Metadata *, 4> MDs(1);
-  // If the loop already has metadata, retain it.
-  MDNode *LoopID = TheLoop->getLoopID();
-  if (LoopID) {
-    for (unsigned i = 1, ie = LoopID->getNumOperands(); i < ie; ++i) {
-      MDNode *Node = cast<MDNode>(LoopID->getOperand(i));
-      MDs.push_back(Node);
-    }
-  }
-  // Add new metadata.
-  MDs.push_back(createStringMetadata(TheLoop, MDString, V));
-  // Replace current metadata node with new one.
-  LLVMContext &Context = TheLoop->getHeader()->getContext();
-  MDNode *NewLoopID = MDNode::get(Context, MDs);
-  // Set operand 0 to refer to the loop id itself.
-  NewLoopID->replaceOperandWith(0, NewLoopID);
-  TheLoop->setLoopID(NewLoopID);
-}
 
 namespace {
 
@@ -357,14 +326,22 @@ bool LoopVersioningLICM::legalLoopMemoryAccesses() {
 /// 1) Check all load store in loop body are non atomic & non volatile.
 /// 2) Check function call safety, by ensuring its not accessing memory.
 /// 3) Loop body shouldn't have any may throw instruction.
+/// 4) Loop body shouldn't have any convergent or noduplicate instructions.
 bool LoopVersioningLICM::instructionSafeForVersioning(Instruction *I) {
   assert(I != nullptr && "Null instruction found!");
   // Check function call safety
-  if (auto *Call = dyn_cast<CallBase>(I))
+  if (auto *Call = dyn_cast<CallBase>(I)) {
+    if (Call->isConvergent() || Call->cannotDuplicate()) {
+      LLVM_DEBUG(dbgs() << "    Convergent call site found.\n");
+      return false;
+    }
+
     if (!AA->doesNotAccessMemory(Call)) {
       LLVM_DEBUG(dbgs() << "    Unsafe call site found.\n");
       return false;
     }
+  }
+
   // Avoid loops with possiblity of throw
   if (I->mayThrow()) {
     LLVM_DEBUG(dbgs() << "    May throw instruction found in loop body\n");

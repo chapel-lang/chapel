@@ -2,7 +2,7 @@ config const fileName = "mydata.h5",
              dsetName = "dset";
 
 proc main {
-  use BlockDist, HDF5;
+  use BlockDist, HDF5, HDF5.IOusingMPI, SysCTypes;
 
   var A = newBlockArr({1..100, 1..100}, c_int);
 

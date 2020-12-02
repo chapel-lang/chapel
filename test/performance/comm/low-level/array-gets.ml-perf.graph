@@ -9,3 +9,9 @@ files: array-get-1M.dat, array-get-1G.dat, array-get-FR4.dat
 graphkeys: 1M array, 1G array, 1/4 mem array
 graphtitle: Large Array GET Performance
 ylabel: Performance (MB/s)
+
+perfkeys: MB/s: , MB/s: 
+files: array-get-1M.dat, array-misaligned-get-1M.dat
+graphkeys: 1M array, 1M misaligned array
+graphtitle: Misaligned Array GET Performance
+ylabel: Performance (MB/s)

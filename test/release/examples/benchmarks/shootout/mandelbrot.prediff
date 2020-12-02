@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Compare mandelbrot program output.
 
@@ -8,6 +8,7 @@
 
 import os
 import os.path
+import shutil
 import socket
 import sys
 
@@ -38,8 +39,19 @@ else:
     if os.path.isfile(clbg_expect):
       expect = clbg_expect
 
-  if os.path.getsize(testout) != os.path.getsize(expect):
+  outsize = os.path.getsize(testout)
+  expectsize = os.path.getsize(expect)
+  if outsize != expectsize:
     error = "File lengths do not match"
+
+    # If there is extra stuff in the output, emit it
+    # (in case it is e.g. GASNet errors)
+    if outsize > expectsize:
+      with open(testout, "rb") as outF:
+        outF.seek(expectsize)
+        rest = outF.read()
+        rest = str(rest, encoding='utf-8', errors='backslashreplace')
+        error = error + "\n" + rest
 
   else:
 
@@ -63,6 +75,16 @@ else:
            str(diffs) + " bit differences]")
     if diffs > diffs_to_allow:
       error = "There were " + str(diffs) + " bit differences"
+
+# Save a copy of the failed output but only if there was an error
+savefile=testout + ".save"
+if error != "":
+  shutil.copyfile(testout, testout + ".save");
+else:
+  try:
+    os.remove(savefile)
+  except:
+    pass
 
 # Now output error to testout
 with open(testout, "w") as outF:

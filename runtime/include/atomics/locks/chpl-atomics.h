@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +22,7 @@
 #define _chpl_atomics_h_
 
 #include "chpltypes.h"
+#include "chpl-tasks.h"
 #include <pthread.h>
 
 // Locks based atomic implementation. Note that we use pthread mutexes instead
@@ -96,6 +98,8 @@ typedef struct atomic__real64_s {
   _real64 v;
 } atomic__real64;
 
+typedef pthread_spinlock_t atomic_spinlock_t;
+
 typedef enum {
  memory_order_relaxed,
  memory_order_consume,
@@ -164,26 +168,27 @@ static inline basetype atomic_exchange_ ## type(atomic_ ## type * obj, basetype 
   return atomic_exchange_explicit_ ## type(obj, value, memory_order_seq_cst); \
 } \
 static MAYBE_INLINE chpl_bool \
-atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
+atomic_compare_exchange_strong_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
   basetype ret; \
   (void) pthread_mutex_lock(&obj->lock); \
-  if( obj->v == expected ) { \
+  if( obj->v == *expected ) { \
     obj->v = desired; \
     ret = true; \
   } else { \
+    *expected = obj->v; \
     ret = false; \
   } \
   (void) pthread_mutex_unlock(&obj->lock); \
   return ret; \
 } \
-static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_strong_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype expected, basetype desired, memory_order order) { \
-  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, order); \
+static inline chpl_bool atomic_compare_exchange_weak_explicit_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired, memory_order succ, memory_order fail) { \
+  return atomic_compare_exchange_strong_explicit_ ## type(obj, expected, desired, succ, fail); \
 } \
-static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype expected, basetype desired) { \
-  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst); \
+static inline chpl_bool atomic_compare_exchange_weak_ ## type(atomic_ ## type * obj, basetype * expected, basetype desired) { \
+  return atomic_compare_exchange_weak_explicit_ ## type(obj, expected, desired, memory_order_seq_cst, memory_order_seq_cst); \
 }
 
 #define DECLARE_ATOMICS_FETCH_OPS(type) \
@@ -293,20 +298,7 @@ DECLARE_ATOMICS(uint_least16_t);
 DECLARE_ATOMICS(uint_least32_t);
 DECLARE_ATOMICS(uint_least64_t);
 
-// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t. From gbt:
-// The root of the problem is the fact the on netbsd <stdint.h> (indirectly via
-// <sys.stdint.h>) #defines uintptr_t as __uintptr_t.  (__uintptr_t is in turn
-// typedef'd as unsigned long, but that doesn't matter to us.)  The C standard
-// (6.3.10.1(1) for C99) says that the actual arguments in a macro invocation
-// are themselves macro-expanded before being substituted into the replacement
-// text, unless they are preceded by a # or ## token.  In our case, the "type"
-// formal argument of DECLARE_ATOMICS_BASE has a ## before it in the
-// replacement text, so uintptr_t is not macro-expanded and the concatenation
-// produces the expected atomic_uintptr_t typedef name.  But in the case of
-// DECLARE_ATOMICS there is neither a # or ## before "type" in the replacement
-// text, so the uintptr_t actual becomes __uintptr_t via macro expansion before
-// DECLARE_ATOMICS_BASE is invoked, and we get a syntax error on the resulting
-// atomic___uintptr_t because it's not a typedef type.
+// On netbsd the DECLARE_ATOMICS macro doesn't work for uintptr_t.
 DECLARE_ATOMICS_BASE(uintptr_t, uintptr_t);
 DECLARE_ATOMICS_FETCH_OPS(uintptr_t);
 
@@ -317,5 +309,27 @@ DECLARE_REAL_ATOMICS(_real64);
 #undef DECLARE_ATOMICS_FETCH_OPS
 #undef DECLARE_ATOMICS
 #undef MAYBE_INLINE
+
+static inline void atomic_init_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_init(lock, PTHREAD_PROCESS_PRIVATE);
+}
+
+static inline void atomic_destroy_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_destroy(lock);
+}
+
+static inline chpl_bool atomic_try_lock_spinlock_t(atomic_spinlock_t* lock) {
+  return pthread_spin_trylock(lock) == 0;
+}
+
+static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
+  while(!atomic_try_lock_spinlock_t(lock)) {
+    chpl_task_yield();
+  }
+}
+
+static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
+  pthread_spin_unlock(lock);
+}
 
 #endif // _chpl_atomics_h_

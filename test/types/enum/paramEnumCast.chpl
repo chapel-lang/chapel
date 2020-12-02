@@ -3,7 +3,7 @@ enum size {small=1, medium, large};
 enum gender {decline, male=1, female};
 enum mode {read=0b100, write=0b010, rw=0b110};
 
-proc testEnum(type t: enumerated,
+proc testEnum(type t: enum,
               param e: t,
               param expectStr: string,
               param expectVal: int) {

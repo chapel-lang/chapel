@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -71,8 +72,6 @@ void chpl_internal_error_v(const char *restrict format, ...)
     exit(1);                                                                   \
   } while (0)
 
-#define chpl_internal_error(message) chpl_internal_error_v("%s", message)
-
 static inline
 void chpl_internal_error_v(const char *restrict, ...)
     __attribute__((format(printf, 1, 2)));
@@ -89,6 +88,11 @@ void chpl_internal_error_v(const char *restrict format, ...) {
 
   exit(1);
 }
+
+static inline
+void chpl_internal_error(const char*message) {
+  chpl_internal_error_v("%s", message);
+}
 #endif
 
 void chpl_msg(int verbose_level, const char* fmt, ...)
@@ -97,5 +101,8 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
 #ifndef LAUNCHER
 void chpl_error_init(void);
 #endif
+
+char* chpl_stack_unwind_to_string(char sep);
+void chpl_stack_unwind(FILE* out, char sep);
 
 #endif

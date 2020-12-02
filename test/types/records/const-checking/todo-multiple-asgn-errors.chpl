@@ -5,7 +5,8 @@ record RECTYPE {
   const CONSTFIELD: int;
 }
 
-var r1, r2: RECTYPE;
+var r1 = new RECTYPE();
+var r2 = new RECTYPE();
 r1 = r2;  // error
 r2 = r1;  // also error
 
@@ -21,7 +22,8 @@ record OUTERREC {
   const outerconst: RECTYPE;
 }
 
-var r6, r7: OUTERREC;
+var r6 = new OUTERREC();
+var r7 = new OUTERREC();
 r6 = r7;  // error
 r7 = r6;  // also error
 

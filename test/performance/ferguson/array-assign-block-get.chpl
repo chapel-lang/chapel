@@ -18,6 +18,7 @@ start();
 
 on Locales[1] {
   var B: [D] int;
+  B; // avoiding split init as this is a test of =
   B = A;
   saveB1 = B[1];
   saveBn = B[n];
@@ -28,4 +29,4 @@ stop();
 writeln(saveB1);
 writeln(saveBn);
 
-report(maxGets=39, maxPuts=4, maxOns=12);
+report(maxGets=37, maxPuts=4, maxOns=12);

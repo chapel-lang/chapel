@@ -1,9 +1,8 @@
 //===-- ARMSubtarget.cpp - ARM Subtarget Information ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -73,6 +72,9 @@ static cl::opt<bool>
 ForceFastISel("arm-force-fast-isel",
                cl::init(false), cl::Hidden);
 
+static cl::opt<bool> EnableSubRegLiveness("arm-enable-subreg-liveness",
+                                          cl::init(false), cl::Hidden);
+
 /// initializeSubtargetDependencies - Initializes using a CPU and feature string
 /// so that we can use initializer lists for subtarget initialization.
 ARMSubtarget &ARMSubtarget::initializeSubtargetDependencies(StringRef CPU,
@@ -93,10 +95,12 @@ ARMFrameLowering *ARMSubtarget::initializeFrameLowering(StringRef CPU,
 
 ARMSubtarget::ARMSubtarget(const Triple &TT, const std::string &CPU,
                            const std::string &FS,
-                           const ARMBaseTargetMachine &TM, bool IsLittle)
+                           const ARMBaseTargetMachine &TM, bool IsLittle,
+                           bool MinSize)
     : ARMGenSubtargetInfo(TT, CPU, FS), UseMulOps(UseFusedMulOps),
-      CPUString(CPU), IsLittle(IsLittle), TargetTriple(TT), Options(TM.Options),
-      TM(TM), FrameLowering(initializeFrameLowering(CPU, FS)),
+      CPUString(CPU), OptMinSize(MinSize), IsLittle(IsLittle),
+      TargetTriple(TT), Options(TM.Options), TM(TM),
+      FrameLowering(initializeFrameLowering(CPU, FS)),
       // At this point initializeSubtargetDependencies has been called so
       // we can query directly.
       InstrInfo(isThumb1Only()
@@ -124,7 +128,7 @@ const CallLowering *ARMSubtarget::getCallLowering() const {
   return CallLoweringInfo.get();
 }
 
-const InstructionSelector *ARMSubtarget::getInstructionSelector() const {
+InstructionSelector *ARMSubtarget::getInstructionSelector() const {
   return InstSelector.get();
 }
 
@@ -204,9 +208,9 @@ void ARMSubtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
     NoARM = true;
 
   if (isAAPCS_ABI())
-    stackAlignment = 8;
+    stackAlignment = Align(8);
   if (isTargetNaCl() || isAAPCS16_ABI())
-    stackAlignment = 16;
+    stackAlignment = Align(16);
 
   // FIXME: Completely disable sibcall for Thumb1 since ThumbRegisterInfo::
   // emitEpilogue is not ready for them. Thumb tail calls also use t2B, as
@@ -252,6 +256,10 @@ void ARMSubtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
   if (isRWPI())
     ReserveR9 = true;
 
+  // If MVEVectorCostFactor is still 0 (has not been set to anything else), default it to 2
+  if (MVEVectorCostFactor == 0)
+    MVEVectorCostFactor = 2;
+
   // FIXME: Teach TableGen to deal with these instead of doing it manually here.
   switch (ARMProcFamily) {
   case Others:
@@ -283,6 +291,7 @@ void ARMSubtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
   case CortexA72:
   case CortexA73:
   case CortexA75:
+  case CortexA76:
   case CortexR4:
   case CortexR4F:
   case CortexR5:
@@ -294,12 +303,14 @@ void ARMSubtarget::initSubtargetFeatures(StringRef CPU, StringRef FS) {
     LdStMultipleTiming = SingleIssuePlusExtras;
     MaxInterleaveFactor = 4;
     if (!isThumb())
-      PrefLoopAlignment = 3;
+      PrefLoopLogAlignment = 3;
     break;
   case Kryo:
     break;
   case Krait:
     PreISelOperandLatencyAdjustment = 1;
+    break;
+  case NeoverseN1:
     break;
   case Swift:
     MaxInterleaveFactor = 2;
@@ -359,35 +370,54 @@ unsigned ARMSubtarget::getMispredictionPenalty() const {
 }
 
 bool ARMSubtarget::enableMachineScheduler() const {
+  // The MachineScheduler can increase register usage, so we use more high
+  // registers and end up with more T2 instructions that cannot be converted to
+  // T1 instructions. At least until we do better at converting to thumb1
+  // instructions, on cortex-m at Oz where we are size-paranoid, don't use the
+  // Machine scheduler, relying on the DAG register pressure scheduler instead.
+  if (isMClass() && hasMinSize())
+    return false;
   // Enable the MachineScheduler before register allocation for subtargets
   // with the use-misched feature.
   return useMachineScheduler();
 }
 
+bool ARMSubtarget::enableSubRegLiveness() const { return EnableSubRegLiveness; }
+
 // This overrides the PostRAScheduler bit in the SchedModel for any CPU.
 bool ARMSubtarget::enablePostRAScheduler() const {
+  if (enableMachineScheduler())
+    return false;
   if (disablePostRAScheduler())
     return false;
-  // Don't reschedule potential IT blocks.
+  // Thumb1 cores will generally not benefit from post-ra scheduling
+  return !isThumb1Only();
+}
+
+bool ARMSubtarget::enablePostRAMachineScheduler() const {
+  if (!enableMachineScheduler())
+    return false;
+  if (disablePostRAScheduler())
+    return false;
   return !isThumb1Only();
 }
 
 bool ARMSubtarget::enableAtomicExpand() const { return hasAnyDataBarrier(); }
 
-bool ARMSubtarget::useStride4VFPs(const MachineFunction &MF) const {
+bool ARMSubtarget::useStride4VFPs() const {
   // For general targets, the prologue can grow when VFPs are allocated with
   // stride 4 (more vpush instructions). But WatchOS uses a compact unwind
   // format which it's more important to get right.
   return isTargetWatchABI() ||
-         (useWideStrideVFP() && !MF.getFunction().optForMinSize());
+         (useWideStrideVFP() && !OptMinSize);
 }
 
-bool ARMSubtarget::useMovt(const MachineFunction &MF) const {
+bool ARMSubtarget::useMovt() const {
   // NOTE Windows on ARM needs to use mov.w/mov.t pairs to materialise 32-bit
   // immediates as it is inherently position independent, and may be out of
   // range otherwise.
   return !NoMovt && hasV8MBaselineOps() &&
-         (isTargetWindows() || !MF.getFunction().optForMinSize() || genExecuteOnly());
+         (isTargetWindows() || !OptMinSize || genExecuteOnly());
 }
 
 bool ARMSubtarget::useFastISel() const {
@@ -403,4 +433,46 @@ bool ARMSubtarget::useFastISel() const {
   return TM.Options.EnableFastISel &&
          ((isTargetMachO() && !isThumb1Only()) ||
           (isTargetLinux() && !isThumb()) || (isTargetNaCl() && !isThumb()));
+}
+
+unsigned ARMSubtarget::getGPRAllocationOrder(const MachineFunction &MF) const {
+  // The GPR register class has multiple possible allocation orders, with
+  // tradeoffs preferred by different sub-architectures and optimisation goals.
+  // The allocation orders are:
+  // 0: (the default tablegen order, not used)
+  // 1: r14, r0-r13
+  // 2: r0-r7
+  // 3: r0-r7, r12, lr, r8-r11
+  // Note that the register allocator will change this order so that
+  // callee-saved registers are used later, as they require extra work in the
+  // prologue/epilogue (though we sometimes override that).
+
+  // For thumb1-only targets, only the low registers are allocatable.
+  if (isThumb1Only())
+    return 2;
+
+  // Allocate low registers first, so we can select more 16-bit instructions.
+  // We also (in ignoreCSRForAllocationOrder) override  the default behaviour
+  // with regards to callee-saved registers, because pushing extra registers is
+  // much cheaper (in terms of code size) than using high registers. After
+  // that, we allocate r12 (doesn't need to be saved), lr (saving it means we
+  // can return with the pop, don't need an extra "bx lr") and then the rest of
+  // the high registers.
+  if (isThumb2() && MF.getFunction().hasMinSize())
+    return 3;
+
+  // Otherwise, allocate in the default order, using LR first because saving it
+  // allows a shorter epilogue sequence.
+  return 1;
+}
+
+bool ARMSubtarget::ignoreCSRForAllocationOrder(const MachineFunction &MF,
+                                               unsigned PhysReg) const {
+  // To minimize code size in Thumb2, we prefer the usage of low regs (lower
+  // cost per use) so we can  use narrow encoding. By default, caller-saved
+  // registers (e.g. lr, r12) are always  allocated first, regardless of
+  // their cost per use. When optForMinSize, we prefer the low regs even if
+  // they are CSR because usually push/pop can be folded into existing ones.
+  return isThumb2() && MF.getFunction().hasMinSize() &&
+         ARM::GPRRegClass.contains(PhysReg);
 }

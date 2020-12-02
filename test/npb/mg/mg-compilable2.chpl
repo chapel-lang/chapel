@@ -388,9 +388,9 @@ proc interp(R, S) {
   //  const IStn: [(i,j,k) in IDom] domain(3) = {i..0, j..0, k..0};
   var IStn: [IDom] domain(3);
   [i,j,k in IDom] Istn(i,j,k) = {i..0, j..0, k..0};
-  //  const w: [ijk in IDom] real = 1.0 / IStn.numIndices();
+  //  const w: [ijk in IDom] real = 1.0 / IStn.size();
   var w: [IDom] real;
-  [ijk in IDom] w(ijk) = 1.0 / IStn.numIndices();
+  [ijk in IDom] w(ijk) = 1.0 / IStn.size();
 
   const SD = new S.Domain(),
         Rstr = R.stride,

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -28,6 +29,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 
+BlockStmt*                         rootBlock             = NULL;
 ModuleSymbol*                      rootModule            = NULL;
 ModuleSymbol*                      theProgram            = NULL;
 ModuleSymbol*                      baseModule            = NULL;
@@ -382,6 +384,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
 
   *file << name << ";" << std::endl << std::endl;
 
+  if (!fDocsTextOnly) {
+    *file << std::endl;
+  }
+
+  *file  << "or" << std::endl << std::endl;
+   
+  if (fDocsTextOnly == false) {
+    *file << ".. code-block:: chapel" << std::endl << std::endl;
+  }
+
+  this->printTabs(file, tabs + 1);
+
+  *file << "import ";
+
+  if (parentName != "") {
+    *file << parentName << ".";
+  }
+
+  *file << name << ";" << std::endl << std::endl;
+
   // If we had submodules, be sure to link to them
   if (hasTopLevelModule() == true) {
     this->printTableOfContents(file);
@@ -728,12 +750,11 @@ void ModuleSymbol::deadCodeModuleUseRemove(ModuleSymbol* mod) {
 }
 
 void initRootModule() {
-  rootModule           = new ModuleSymbol("_root",
-                                          MOD_INTERNAL,
-                                          new BlockStmt());
+  rootBlock  = new BlockStmt();
+  rootModule = new ModuleSymbol("_root", MOD_INTERNAL, rootBlock);
 
   rootModule->filename = astr("<internal>");
-  rootModule->block->parentSymbol = rootModule;
+  rootBlock->parentSymbol = rootModule;
 }
 
 void initStringLiteralModule() {

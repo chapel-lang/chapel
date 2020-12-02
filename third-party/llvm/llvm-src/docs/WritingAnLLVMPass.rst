@@ -2,6 +2,8 @@
 Writing an LLVM Pass
 ====================
 
+.. program:: opt
+
 .. contents::
     :local:
 
@@ -22,8 +24,7 @@ on how your pass works, you should inherit from the :ref:`ModulePass
 <writing-an-llvm-pass-CallGraphSCCPass>`, :ref:`FunctionPass
 <writing-an-llvm-pass-FunctionPass>` , or :ref:`LoopPass
 <writing-an-llvm-pass-LoopPass>`, or :ref:`RegionPass
-<writing-an-llvm-pass-RegionPass>`, or :ref:`BasicBlockPass
-<writing-an-llvm-pass-BasicBlockPass>` classes, which gives the system more
+<writing-an-llvm-pass-RegionPass>` classes, which gives the system more
 information about what your pass does, and how it can be combined with other
 passes.  One of the main features of the LLVM Pass Framework is that it
 schedules passes to run in an efficient way based on the constraints that your
@@ -77,7 +78,7 @@ This build script specifies that ``Hello.cpp`` file in the current directory
 is to be compiled and linked into a shared object ``$(LEVEL)/lib/LLVMHello.so`` that
 can be dynamically loaded by the :program:`opt` tool via its :option:`-load`
 option. If your operating system uses a suffix other than ``.so`` (such as
-Windows or Mac OS X), the appropriate extension will be used.
+Windows or macOS), the appropriate extension will be used.
 
 Now that we have the build scripts set up, we just need to write the code for
 the pass itself.
@@ -176,6 +177,18 @@ without modifying it then the third argument is set to ``true``; if a pass is
 an analysis pass, for example dominator tree pass, then ``true`` is supplied as
 the fourth argument.
 
+If we want to register the pass as a step of an existing pipeline, some extension
+points are provided, e.g. ``PassManagerBuilder::EP_EarlyAsPossible`` to apply our
+pass before any optimization, or ``PassManagerBuilder::EP_FullLinkTimeOptimizationLast``
+to apply it after Link Time Optimizations.
+
+.. code-block:: c++
+
+    static llvm::RegisterStandardPasses Y(
+        llvm::PassManagerBuilder::EP_EarlyAsPossible,
+        [](const llvm::PassManagerBuilder &Builder,
+           llvm::legacy::PassManagerBase &PM) { PM.add(new Hello()); });
+
 As a whole, the ``.cpp`` file looks like:
 
 .. code-block:: c++
@@ -183,9 +196,12 @@ As a whole, the ``.cpp`` file looks like:
   #include "llvm/Pass.h"
   #include "llvm/IR/Function.h"
   #include "llvm/Support/raw_ostream.h"
-  
+
+  #include "llvm/IR/LegacyPassManager.h"
+  #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+
   using namespace llvm;
-  
+
   namespace {
   struct Hello : public FunctionPass {
     static char ID;
@@ -198,11 +214,16 @@ As a whole, the ``.cpp`` file looks like:
     }
   }; // end of struct Hello
   }  // end of anonymous namespace
-  
+
   char Hello::ID = 0;
   static RegisterPass<Hello> X("hello", "Hello World Pass",
                                false /* Only looks at CFG */,
                                false /* Analysis Pass */);
+
+  static RegisterStandardPasses Y(
+      PassManagerBuilder::EP_EarlyAsPossible,
+      [](const PassManagerBuilder &Builder,
+         legacy::PassManagerBase &PM) { PM.add(new Hello()); });
 
 Now that it's all together, compile the file with a simple "``gmake``" command
 from the top level of your build directory and you should get a new file
@@ -264,7 +285,7 @@ documentation to users of :program:`opt`.  Now that you have a working pass,
 you would go ahead and make it do the cool transformations you want.  Once you
 get it all working and tested, it may become useful to find out how fast your
 pass is.  The :ref:`PassManager <writing-an-llvm-pass-passmanager>` provides a
-nice command line option (:option:`--time-passes`) that allows you to get
+nice command line option (:option:`-time-passes`) that allows you to get
 information about the execution time of your pass along with the other passes
 you queue up.  For example:
 
@@ -373,8 +394,7 @@ before callers).  Deriving from ``CallGraphSCCPass`` provides some mechanics
 for building and traversing the ``CallGraph``, but also allows the system to
 optimize execution of ``CallGraphSCCPass``\ es.  If your pass meets the
 requirements outlined below, and doesn't meet the requirements of a
-:ref:`FunctionPass <writing-an-llvm-pass-FunctionPass>` or :ref:`BasicBlockPass
-<writing-an-llvm-pass-BasicBlockPass>`, you should derive from
+:ref:`FunctionPass <writing-an-llvm-pass-FunctionPass>`, you should derive from
 ``CallGraphSCCPass``.
 
 ``TODO``: explain briefly what SCC, Tarjan's algo, and B-U mean.
@@ -516,9 +536,9 @@ compiled.
 The ``LoopPass`` class
 ----------------------
 
-All ``LoopPass`` execute on each loop in the function independent of all of the
-other loops in the function.  ``LoopPass`` processes loops in loop nest order
-such that outer most loop is processed last.
+All ``LoopPass`` execute on each :ref:`loop <loop-terminology>` in the function
+independent of all of the other loops in the function.  ``LoopPass`` processes
+loops in loop nest order such that outer most loop is processed last.
 
 ``LoopPass`` subclasses are allowed to update loop nest using ``LPPassManager``
 interface.  Implementing a loop pass is usually straightforward.
@@ -626,69 +646,6 @@ when the pass framework has finished calling :ref:`runOnRegion
 <writing-an-llvm-pass-runOnRegion>` for every region in the program being
 compiled.
 
-.. _writing-an-llvm-pass-BasicBlockPass:
-
-The ``BasicBlockPass`` class
-----------------------------
-
-``BasicBlockPass``\ es are just like :ref:`FunctionPass's
-<writing-an-llvm-pass-FunctionPass>` , except that they must limit their scope
-of inspection and modification to a single basic block at a time.  As such,
-they are **not** allowed to do any of the following:
-
-#. Modify or inspect any basic blocks outside of the current one.
-#. Maintain state across invocations of :ref:`runOnBasicBlock
-   <writing-an-llvm-pass-runOnBasicBlock>`.
-#. Modify the control flow graph (by altering terminator instructions)
-#. Any of the things forbidden for :ref:`FunctionPasses
-   <writing-an-llvm-pass-FunctionPass>`.
-
-``BasicBlockPass``\ es are useful for traditional local and "peephole"
-optimizations.  They may override the same :ref:`doInitialization(Module &)
-<writing-an-llvm-pass-doInitialization-mod>` and :ref:`doFinalization(Module &)
-<writing-an-llvm-pass-doFinalization-mod>` methods that :ref:`FunctionPass's
-<writing-an-llvm-pass-FunctionPass>` have, but also have the following virtual
-methods that may also be implemented:
-
-The ``doInitialization(Function &)`` method
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: c++
-
-  virtual bool doInitialization(Function &F);
-
-The ``doInitialization`` method is allowed to do most of the things that
-``BasicBlockPass``\ es are not allowed to do, but that ``FunctionPass``\ es
-can.  The ``doInitialization`` method is designed to do simple initialization
-that does not depend on the ``BasicBlock``\ s being processed.  The
-``doInitialization`` method call is not scheduled to overlap with any other
-pass executions (thus it should be very fast).
-
-.. _writing-an-llvm-pass-runOnBasicBlock:
-
-The ``runOnBasicBlock`` method
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: c++
-
-  virtual bool runOnBasicBlock(BasicBlock &BB) = 0;
-
-Override this function to do the work of the ``BasicBlockPass``.  This function
-is not allowed to inspect or modify basic blocks other than the parameter, and
-are not allowed to modify the CFG.  A ``true`` value must be returned if the
-basic block is modified.
-
-The ``doFinalization(Function &)`` method
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. code-block:: c++
-
-    virtual bool doFinalization(Function &F);
-
-The ``doFinalization`` method is an infrequently used method that is called
-when the pass framework has finished calling :ref:`runOnBasicBlock
-<writing-an-llvm-pass-runOnBasicBlock>` for every ``BasicBlock`` in the program
-being compiled.  This can be used to perform per-function finalization.
 
 The ``MachineFunctionPass`` class
 ---------------------------------
@@ -842,8 +799,7 @@ certain circumstances that are related to ``addPreserved``.  In particular, the
 modify the LLVM program at all (which is true for analyses), and the
 ``setPreservesCFG`` method can be used by transformations that change
 instructions in the program but do not modify the CFG or terminator
-instructions (note that this property is implicitly set for
-:ref:`BasicBlockPass <writing-an-llvm-pass-BasicBlockPass>`\ es).
+instructions.
 
 ``addPreserved`` is particularly useful for transformations like
 ``BreakCriticalEdges``.  This pass knows how to update a small set of loop and
@@ -1218,6 +1174,51 @@ the :ref:`getAnalysis <writing-an-llvm-pass-getAnalysis>` method) you should
 implement ``releaseMemory`` to, well, release the memory allocated to maintain
 this internal state.  This method is called after the ``run*`` method for the
 class, before the next call of ``run*`` in your pass.
+
+Building pass plugins
+=====================
+
+As an alternative to using ``PLUGIN_TOOL``, LLVM provides a mechanism to
+automatically register pass plugins within ``clang``, ``opt`` and ``bugpoint``.
+One first needs to create an independent project and add it to either ``tools/``
+or, using the MonoRepo layout, at the root of the repo alongside other projects.
+This project must contain the following minimal ``CMakeLists.txt``:
+
+.. code-block:: cmake
+
+    add_llvm_pass_plugin(Name source0.cpp)
+
+The pass must provide two entry points for the new pass manager, one for static
+registration and one for dynamically loaded plugins:
+
+- ``llvm::PassPluginLibraryInfo get##Name##PluginInfo();``
+- ``extern "C" ::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() LLVM_ATTRIBUTE_WEAK;``
+
+Pass plugins are compiled and link dynamically by default, but it's
+possible to set the following variables to change this behavior:
+
+- ``LLVM_${NAME}_LINK_INTO_TOOLS``, when set to ``ON``, turns the project into
+  a statically linked extension
+
+
+When building a tool that uses the new pass manager, one can use the following snippet to
+include statically linked pass plugins:
+
+.. code-block:: c++
+
+    // fetch the declaration
+    #define HANDLE_EXTENSION(Ext) llvm::PassPluginLibraryInfo get##Ext##PluginInfo();
+    #include "llvm/Support/Extension.def"
+
+    [...]
+
+    // use them, PB is an llvm::PassBuilder instance
+    #define HANDLE_EXTENSION(Ext) get##Ext##PluginInfo().RegisterPassBuilderCallbacks(PB);
+    #include "llvm/Support/Extension.def"
+
+
+
+
 
 Registering dynamically loaded passes
 =====================================

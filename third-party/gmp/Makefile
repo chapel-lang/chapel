@@ -10,14 +10,14 @@ include $(CHPL_MAKE_HOME)/make/Makefile.base
 HOST_CC=$(shell CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) CHPL_MAKE_HOST_TARGET=--host make -f $(CHPL_MAKE_HOME)/make/Makefile.base printQ-CC)
 
 #
-# Cray X* builds are cross-compilations
+# Cray builds are cross-compilations
 #
 GMP_CROSS_COMPILED=no
-ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_GMP_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
 GMP_CROSS_COMPILED=yes
-else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
+else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_GMP_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 GMP_CROSS_COMPILED=yes
 endif
 
@@ -30,9 +30,7 @@ endif
 # On cross-compiled systems, building the shared libraries causes issues.
 # On Macs, not building the shared libraries causes warnings.
 #
-ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
-else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
+ifneq (, $(filter cray-x% hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
 CHPL_GMP_CFG_OPTIONS += --enable-static --disable-shared
 endif
 

@@ -1,0 +1,4 @@
+multipleDefRenameError.chpl:2: error: symbol y is multiply defined
+note: 'y' was last reexported at multipleDefRenameError.chpl:12
+note: 'x' was renamed to 'y' at multipleDefRenameError.chpl:12
+multipleDefRenameError.chpl:9: note: also defined here

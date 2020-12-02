@@ -1,9 +1,8 @@
 //===--- SanitizerArgs.h - Arguments for sanitizer tools  -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #ifndef LLVM_CLANG_DRIVER_SANITIZERARGS_H
@@ -26,20 +25,24 @@ class SanitizerArgs {
   SanitizerSet RecoverableSanitizers;
   SanitizerSet TrapSanitizers;
 
-  std::vector<std::string> BlacklistFiles;
-  std::vector<std::string> ExtraDeps;
+  std::vector<std::string> UserBlacklistFiles;
+  std::vector<std::string> SystemBlacklistFiles;
   int CoverageFeatures = 0;
   int MsanTrackOrigins = 0;
   bool MsanUseAfterDtor = true;
   bool CfiCrossDso = false;
   bool CfiICallGeneralizePointers = false;
+  bool CfiCanonicalJumpTables = false;
   int AsanFieldPadding = 0;
   bool SharedRuntime = false;
   bool AsanUseAfterScope = true;
   bool AsanPoisonCustomArrayCookie = false;
   bool AsanGlobalsDeadStripping = false;
   bool AsanUseOdrIndicator = false;
+  bool AsanInvalidPointerCmp = false;
+  bool AsanInvalidPointerSub = false;
   std::string HwasanAbi;
+  bool LinkRuntimes = true;
   bool LinkCXXRuntimes = false;
   bool NeedPIE = false;
   bool SafeStackRuntime = false;
@@ -58,7 +61,9 @@ class SanitizerArgs {
   bool needsSharedRt() const { return SharedRuntime; }
 
   bool needsAsanRt() const { return Sanitizers.has(SanitizerKind::Address); }
-  bool needsHwasanRt() const { return Sanitizers.has(SanitizerKind::HWAddress); }
+  bool needsHwasanRt() const {
+    return Sanitizers.has(SanitizerKind::HWAddress);
+  }
   bool needsTsanRt() const { return Sanitizers.has(SanitizerKind::Thread); }
   bool needsMsanRt() const { return Sanitizers.has(SanitizerKind::Memory); }
   bool needsFuzzer() const { return Sanitizers.has(SanitizerKind::Fuzzer); }
@@ -74,14 +79,12 @@ class SanitizerArgs {
   bool needsCfiRt() const;
   bool needsCfiDiagRt() const;
   bool needsStatsRt() const { return Stats; }
-  bool needsEsanRt() const {
-    return Sanitizers.hasOneOf(SanitizerKind::Efficiency);
-  }
   bool needsScudoRt() const { return Sanitizers.has(SanitizerKind::Scudo); }
 
   bool requiresPIE() const;
   bool needsUnwindTables() const;
   bool needsLTO() const;
+  bool linkRuntimes() const { return LinkRuntimes; }
   bool linkCXXRuntimes() const { return LinkCXXRuntimes; }
   bool hasCrossDsoCfi() const { return CfiCrossDso; }
   bool hasAnySanitizer() const { return !Sanitizers.empty(); }

@@ -1,9 +1,8 @@
 //===- HexagonInstrInfo.h - Hexagon Instruction Information -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -130,21 +129,10 @@ public:
                         const DebugLoc &DL,
                         int *BytesAdded = nullptr) const override;
 
-  /// Analyze the loop code, return true if it cannot be understood. Upon
-  /// success, this function returns false and returns information about the
-  /// induction variable and compare instruction used at the end.
-  bool analyzeLoop(MachineLoop &L, MachineInstr *&IndVarInst,
-                   MachineInstr *&CmpInst) const override;
-
-  /// Generate code to reduce the loop iteration by one and check if the loop
-  /// is finished.  Return the value/register of the new loop count.  We need
-  /// this function when peeling off one or more iterations of a loop. This
-  /// function assumes the nth iteration is peeled first.
-  unsigned reduceLoopCount(MachineBasicBlock &MBB,
-                           MachineInstr *IndVar, MachineInstr &Cmp,
-                           SmallVectorImpl<MachineOperand> &Cond,
-                           SmallVectorImpl<MachineInstr *> &PrevInsts,
-                           unsigned Iter, unsigned MaxIter) const override;
+  /// Analyze loop L, which must be a single-basic-block loop, and if the
+  /// conditions can be understood enough produce a PipelinerLoopInfo object.
+  std::unique_ptr<PipelinerLoopInfo>
+  analyzeLoopForPipelining(MachineBasicBlock *LoopBB) const override;
 
   /// Return true if it's profitable to predicate
   /// instructions with accumulated instruction latency of "NumCycles"
@@ -185,7 +173,7 @@ public:
   /// careful implementation when multiple copy instructions are required for
   /// large registers. See for example the ARM target.
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
 
   /// Store the specified register of the given register class to the specified
@@ -216,7 +204,8 @@ public:
   bool expandPostRAPseudo(MachineInstr &MI) const override;
 
   /// Get the base register and byte offset of a load/store instr.
-  bool getMemOperandWithOffset(MachineInstr &LdSt, MachineOperand *&BaseOp,
+  bool getMemOperandWithOffset(const MachineInstr &LdSt,
+                               const MachineOperand *&BaseOp,
                                int64_t &Offset,
                                const TargetRegisterInfo *TRI) const override;
 
@@ -264,8 +253,10 @@ public:
 
   /// Measure the specified inline asm to determine an approximation of its
   /// length.
-  unsigned getInlineAsmLength(const char *Str,
-                              const MCAsmInfo &MAI) const override;
+  unsigned getInlineAsmLength(
+    const char *Str,
+    const MCAsmInfo &MAI,
+    const TargetSubtargetInfo *STI = nullptr) const override;
 
   /// Allocate and return a hazard recognizer to use for this target when
   /// scheduling the machine instructions after register allocation.
@@ -296,8 +287,8 @@ public:
   // memory addresses. This function returns true if two MIs access different
   // memory addresses and false otherwise.
   bool
-  areMemAccessesTriviallyDisjoint(MachineInstr &MIa, MachineInstr &MIb,
-                                  AliasAnalysis *AA = nullptr) const override;
+  areMemAccessesTriviallyDisjoint(const MachineInstr &MIa,
+                                  const MachineInstr &MIb) const override;
 
   /// For instructions with a base and offset, return the position of the
   /// base register and offset operands.

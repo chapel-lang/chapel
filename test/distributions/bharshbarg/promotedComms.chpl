@@ -4,7 +4,7 @@ use CommDiagnostics;
 proc main() {
   var Dom = {1..100};
   var Space = Dom dmapped Block(Dom);
-  var A, B, C : [Space] real;
+  var A, B, C : [Space] real = 0;
 
   startCommDiagnostics();
   A = B + C;

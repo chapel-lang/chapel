@@ -5,6 +5,7 @@ require "enum.h";
 
 // Note: Generated with fake std headers
 
+use CPtr;
 // Enum: anonymous
 extern const TEST_STATUS_PASSED :c_int;
 extern const TEST_STATUS_FAILED :c_int;

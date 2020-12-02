@@ -1,0 +1,5 @@
+./SetTest.chpl:19: In function 'testSet':
+./SetTest.chpl:27: error: Illegal use of dead value
+./SetTest.chpl:24: note: 'x' is dead due to ownership transfer here
+./SetTest.chpl:27: error: mention of non-nilable variable after ownership is transferred out of it
+./SetTest.chpl:24: note: ownership transfer occurred here

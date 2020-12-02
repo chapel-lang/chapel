@@ -14,7 +14,7 @@ proc main(args: [] string) {
   const consoleIn = openfd(0),
         stdinNoLock = consoleIn.reader(locking=false);
 
-  var data: [1..consoleIn.length()] uint(8),
+  var data: [1..consoleIn.size] uint(8),
       idx = 1,
       start = 0;
 
@@ -69,7 +69,7 @@ proc process(data, start, end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

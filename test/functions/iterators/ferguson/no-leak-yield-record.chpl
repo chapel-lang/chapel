@@ -10,7 +10,7 @@ record R {
 }
 
 pragma "init copy fn"
-proc chpl__initCopy(other : R) {
+proc chpl__initCopy(other : R, definedConst: bool) {
   pragma "no auto destroy"
   var ret : R;
   writeln("copy/assign ", other.c);

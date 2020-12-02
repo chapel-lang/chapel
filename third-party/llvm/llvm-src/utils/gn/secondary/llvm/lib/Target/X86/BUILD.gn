@@ -57,7 +57,6 @@ static_library("LLVMX86CodeGen") {
     ":X86GenFastISel",
     ":X86GenGlobalISel",
     ":X86GenRegisterBank",
-    "InstPrinter",
     "MCTargetDesc",
     "TargetInfo",
     "Utils",
@@ -71,14 +70,15 @@ static_library("LLVMX86CodeGen") {
     "//llvm/lib/MC",
     "//llvm/lib/Support",
     "//llvm/lib/Target",
+    "//llvm/lib/Transforms/CFGuard",
   ]
   if (x86_gen_fold_tables) {
     deps += [ ":X86GenFoldTables" ]
   }
   sources = [
-    "ShadowCallStack.cpp",
     "X86AsmPrinter.cpp",
     "X86AvoidStoreForwardingBlocks.cpp",
+    "X86AvoidTrailingCall.cpp",
     "X86CallFrameOptimization.cpp",
     "X86CallLowering.cpp",
     "X86CallingConv.cpp",
@@ -137,7 +137,6 @@ group("X86") {
     ":LLVMX86CodeGen",
     "AsmParser",
     "Disassembler",
-    "InstPrinter",
     "MCTargetDesc",
     "TargetInfo",
     "Utils",

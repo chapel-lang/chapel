@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -494,6 +495,17 @@ void AstDumpToHtml::visitImportStmt(ImportStmt* node) {
 
   node->src->accept(this);
 
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+    bool first = outputVector(mFP, node->unqualified);
+    outputRenames(mFP, node->renamed, first);
+    fprintf(mFP, "}");
+  }
+
   fprintf(mFP, ")");
 
   if (isBlockStmt(node->parentExpr)) {
@@ -706,7 +718,9 @@ bool AstDumpToHtml::enterGotoStmt(GotoStmt* node) {
     case GOTO_BREAK_ERROR_HANDLING:
       fprintf(mFP, "<B>gotoBreakErrorHandling</B> ");
       break;
-
+    case GOTO_ERROR_HANDLING_RETURN:
+      fprintf(mFP, "<B>gotoErrorHandlingReturn</B> ");
+      break;
   }
 
   if (SymExpr* label = toSymExpr(node->label))

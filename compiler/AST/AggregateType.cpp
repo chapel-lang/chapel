@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -271,6 +272,21 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
       return true;
   }
 
+  // Partial generic expressions with '?'
+  if (CallExpr* call = toCallExpr(typeExpr)) {
+    if (SymExpr* se = toSymExpr(call->baseExpr)) {
+      if (se->symbol()->type->symbol->hasFlag(FLAG_GENERIC)) {
+        for_actuals(actual, call) {
+          if (SymExpr* act = toSymExpr(actual)) {
+            if (act->symbol() == gUninstantiated) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+  }
+
   if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(typeExpr)) {
     sym = lookup(urse->unresolved, urse);
   } else if (SymExpr* se = toSymExpr(typeExpr)) {
@@ -324,9 +340,7 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
         INT_ASSERT(!var->type->symbol->hasFlag(FLAG_GENERIC));
 
         retval = true;
-      } else if (def->init == NULL && def->exprType != NULL &&
-                 !mIsGenericWithDefaults) {
-
+      } else if (def->exprType != NULL) {
         // Temporarily mark the aggregate type as generic with defaults
         // in order to avoid infinite recursion.
         bool wasGenericWithDefaults = mIsGenericWithDefaults;
@@ -652,22 +666,7 @@ bool AggregateType::hasInitializers() const {
 }
 
 bool AggregateType::hasPostInitializer() const {
-  bool retval = false;
-
-  // If there is postinit() it is defined on the defining type
-  if (instantiatedFrom == NULL) {
-    int size = methods.n;
-
-    for (int i = 0; i < size && retval == false; i++) {
-      if (methods.v[i] != NULL)
-        retval = methods.v[i]->isPostInitializer();
-    }
-
-  } else {
-    retval = instantiatedFrom->hasPostInitializer();
-  }
-
-  return retval;
+  return symbol->hasFlag(FLAG_HAS_POSTINIT);
 }
 
 bool AggregateType::hasUserDefinedInitEquals() const {
@@ -822,7 +821,7 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
     USR_PRINT(call, "type specifier did not match: %s", typeSignature);
     USR_PRINT(call, "type was specified with %d arguments", numArgs);
     const char* plural = genericFields.size() > 1 ? "fields" : "field";
-    USR_PRINT(at, "but type '%s' only has %d generic %s", symbol->name, genericFields.size(), plural);
+    USR_PRINT(at, "but type '%s' only has %zu generic %s", symbol->name, genericFields.size(), plural);
     USR_STOP();
   }
 }
@@ -1239,30 +1238,33 @@ AggregateType* AggregateType::generateType(SymbolMap& subs, CallExpr* call, cons
           if (Symbol* sym = resolveFieldDefault(field, call, callString)) {
             retval = retval->getInstantiation(sym, index, insnPoint);
           }
-        } else if (field->hasFlag(FLAG_PARAM) && field->defPoint->init != NULL) {
+        } else if (field->defPoint->init != NULL) {
           Type* expected = resolveFieldTypeExpr(field, call, callString);
           Symbol* value = resolveFieldDefault(field, call, callString);
 
           if (expected != NULL && value != NULL) {
             if (getInstantiationType(value->type, NULL,
                                      expected, NULL, call) == NULL) {
-              // TODO: pretty-print resolved value
-              USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
-              USR_PRINT(call, "param field '%s' has type '%s' but default value is of incompatible type '%s'",
-                        field->name, expected->symbol->name, value->type->symbol->name);
-              USR_STOP();
+                USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
+                USR_PRINT(call, "field '%s' has type '%s' but default value "
+                                "is of incompatible type '%s'",
+                                 field->name, expected->symbol->name,
+                                 value->type->symbol->name);
+                USR_STOP();
             }
-            retval = retval->getInstantiation(value, index, insnPoint);
-          } else if (expected == NULL && value != NULL) {
-            retval = retval->getInstantiation(value, index, insnPoint);
           }
+          if (value == NULL) {
+            USR_FATAL_CONT(call, "unable to resolve type '%s'", callString);
+            USR_PRINT(call, "could not resolve default value for field '%s'",
+                             field->name);
+            USR_STOP();
+          }
+
+          retval = retval->getInstantiation(value, index, insnPoint);
         }
       }
     }
   }
-
-  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
-    markManagedPointerIfNonNilable(retval, retval->symbol);
 
   return retval;
 }
@@ -1275,9 +1277,9 @@ void AggregateType::resolveConcreteType() {
 
   this->resolveStatus = RESOLVING;
   this->symbol->instantiationPoint = getInstantiationPoint(this->symbol->defPoint);
-  if (this->symbol->instantiationPoint)
-    this->symbol->userInstantiationPointLoc =
-      getUserInstantiationPoint(this->symbol);
+  //if (this->symbol->instantiationPoint)
+  //  this->symbol->userInstantiationPointLoc =
+  //    getUserInstantiationPoint(this->symbol);
 
   if (isClass() == true && symbol->hasFlag(FLAG_NO_OBJECT) == false) {
     AggregateType* parent = dispatchParents.v[0];
@@ -1351,9 +1353,9 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
 
     if (retval->symbol->instantiationPoint == NULL) {
       retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
-      if (retval->symbol->instantiationPoint)
-        retval->symbol->userInstantiationPointLoc =
-          getUserInstantiationPoint(retval->symbol);
+      //if (retval->symbol->instantiationPoint)
+      //  retval->symbol->userInstantiationPointLoc =
+      //    getUserInstantiationPoint(retval->symbol);
     }
 
     // Update the type of the 'super' field
@@ -1629,6 +1631,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
     retval = getNewInstantiation(sym, symType, insnPoint);
   }
 
+  if (retval->symbol->hasFlag(FLAG_MANAGED_POINTER))
+    markManagedPointerIfNonNilable(retval, retval->symbol);
+
   return retval;
 }
 
@@ -1708,9 +1713,9 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
   retval->instantiatedFrom = this;
   if (retval->symbol->instantiationPoint == NULL) {
     retval->symbol->instantiationPoint = toBlockStmt(insnPoint);
-    if (retval->symbol->instantiationPoint != NULL)
-      retval->symbol->userInstantiationPointLoc =
-        getUserInstantiationPoint(retval->symbol);
+    //if (retval->symbol->instantiationPoint != NULL)
+    //  retval->symbol->userInstantiationPointLoc =
+    //    getUserInstantiationPoint(retval->symbol);
   }
 
   retval->symbol->copyFlags(symbol);
@@ -1762,14 +1767,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
     }
 
   } else {
-    Type* fieldType = field->defPoint->exprType->typeInfo();
-    if (fieldType->symbol->hasFlag(FLAG_GENERIC)) {
-      field->type = symType;
-    } else if (fieldType == symType) {
-      field->type = symType;
-    } else {
-      INT_FATAL("unexpected type for field instantiation");
-    }
+    field->type = symType;
   }
 
   forv_Vec(AggregateType, at, dispatchParents) {
@@ -2002,7 +2000,7 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    name = astr("x1"); // get the 1st field's type, since they're all the same
+    name = astr("x0"); // get the initial field's type; they're all the same
   }
 
   Symbol* fs = NULL;
@@ -2227,42 +2225,51 @@ void AggregateType::buildDefaultInitializer() {
     fn->insertFormalAtTail(_mt);
     fn->insertFormalAtTail(_this);
 
-    std::set<const char*> names;
-    SymbolMap fieldArgMap;
+    if (this->isUnion() == false) {
+      std::set<const char*> names;
+      SymbolMap fieldArgMap;
 
-    if (addSuperArgs(fn, names, fieldArgMap) == true) {
-      // Parent fields before child fields
-      fieldToArg(fn, names, fieldArgMap);
+      if (addSuperArgs(fn, names, fieldArgMap) == true) {
+        // Parent fields before child fields
+        fieldToArg(fn, names, fieldArgMap);
 
-      // Replaces field references with argument references
-      // NOTE: doesn't handle inherited fields yet!
-      update_symbols(fn, &fieldArgMap);
+        // Replaces field references with argument references
+        // NOTE: doesn't handle inherited fields yet!
+        update_symbols(fn, &fieldArgMap);
 
+        DefExpr* def = new DefExpr(fn);
+        symbol->defPoint->insertBefore(def);
+
+        fn->setMethod(true);
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+
+        preNormalizeInitMethod(fn);
+
+        normalize(fn);
+
+        // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did
+        // that we would emit two use-before-def errors for classes because of
+        // the generated _new function.
+        checkUseBeforeDefs(fn);
+
+        methods.add(fn);
+      } else {
+        USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
+      }
+    } else {
       DefExpr* def = new DefExpr(fn);
-
       symbol->defPoint->insertBefore(def);
 
       fn->setMethod(true);
       fn->addFlag(FLAG_METHOD_PRIMARY);
 
-      preNormalizeInitMethod(fn);
-
-      if (this->isUnion()) {
-        fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
-                                      fn->_this,
-                                      new_IntSymbol(0)));
-      }
+      fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
+                                    fn->_this,
+                                    new_IntSymbol(0)));
 
       normalize(fn);
 
-      // BHARSH INIT TODO: Should this be part of normalize(fn)? If we did that
-      // we would emit two use-before-def errors for classes because of the
-      // generated _new function.
-      checkUseBeforeDefs(fn);
-
       methods.add(fn);
-    } else {
-      USR_FATAL(this, "Unable to generate initializer for type '%s'", this->symbol->name);
     }
 
     builtDefaultInit = true;
@@ -2297,11 +2304,20 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
           arg->addFlag(FLAG_TYPE_VARIABLE);
         }
 
+        if (field->hasFlag(FLAG_UNSAFE))
+          arg->addFlag(FLAG_UNSAFE);
+
         if (LoopExpr* fe = toLoopExpr(defPoint->init)) {
           if (field->isType() == false) {
-            CallExpr* copy = new CallExpr("chpl__initCopy");
-            defPoint->init->replace(copy);
-            copy->insertAtTail(fe);
+            if (defPoint->exprType == NULL) {
+              CallExpr* copy = new CallExpr(astr_initCopy);
+              defPoint->init->replace(copy);
+
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ? 
+                                     gTrue : gFalse;
+              copy->insertAtTail(fe);
+              copy->insertAtTail(definedConst);
+            }
           }
         }
 
@@ -2353,19 +2369,13 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
             fieldToArgType(defPoint, arg);
 
             arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
 
           } else {
             fieldToArgType(defPoint, arg);
 
-            CallExpr* def    = new CallExpr(PRIM_DEFAULT_INIT_FIELD,
-                    // It would be easiest to just put 'field' here, however
-                    // it is replaced with 'arg' in buildDefaultInitializer().
-                    new_StringSymbol(field->defPoint->parentSymbol->name),
-                                            new_StringSymbol(field->name),
-                                            defPoint->exprType->copy(),
-                                            defPoint->init->copy());
-
-            arg->defaultExpr = new BlockStmt(def);
+            arg->defaultExpr = new BlockStmt(defPoint->init->copy());
+            arg->typeExpr = new BlockStmt(defPoint->exprType->copy());
           }
         }
 
@@ -2530,38 +2540,33 @@ void AggregateType::buildCopyInitializer() {
       fn->insertAtHead(new CallExpr(PRIM_ASSIGN, fn->_this, other));
 
     } else if (aggregateTag == AGGREGATE_UNION) {
-      // Copy the set field ID, then copy only the field that is set
+      // set field ID to 0 and then rely on field accessor
+      // call below to set it to the right value (and default init)
       fn->insertAtTail(new CallExpr(PRIM_SET_UNION_ID,
                                     fn->_this,
-                                    new CallExpr(PRIM_GET_UNION_ID, other)));
+                                    new_IntSymbol(0)));
 
       for_fields(fieldDefExpr, this) {
         if (VarSymbol* field = toVarSymbol(fieldDefExpr)) {
-          const char* name       = field->name;
+          Symbol* fieldNameSymbol = new_CStringSymbol(field->name);
 
           CallExpr* thisField  = new CallExpr(".",
                                               fn->_this,
-                                              new_CStringSymbol(name));
+                                              fieldNameSymbol);
 
           CallExpr* otherField = new CallExpr(".",
                                               other,
-                                              new_CStringSymbol(name));
+                                              fieldNameSymbol);
 
           CallExpr* setField = new CallExpr("=", thisField, otherField);
 
-          CallExpr* thisField2  = new CallExpr(".",
-                                               fn->_this,
-                                               new_CStringSymbol(name));
-
-          CallExpr* noSetField = new CallExpr("=", thisField2, gNoInit);
-
           CallExpr* isField =
-            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, fn->_this),
+            new CallExpr("==", new CallExpr(PRIM_GET_UNION_ID, other),
                                new CallExpr(PRIM_FIELD_NAME_TO_NUM,
                                             this->symbol,
-                                            new_CStringSymbol(name)));
+                                            fieldNameSymbol));
 
-          fn->insertAtTail(new CondStmt(isField, setField, noSetField));
+          fn->insertAtTail(new CondStmt(isField, setField));
         }
       }
 
@@ -2796,21 +2801,12 @@ void AggregateType::setCreationStyle(TypeSymbol* t, FnSymbol* fn) {
     AggregateType* ct = toAggregateType(t->type);
 
     if (ct == NULL) {
-      INT_FATAL(fn, "initializer on non-class type");
+      USR_FATAL_CONT(fn, "initializers may currently only be defined on class, record, or union types");
+      return;
     }
 
     if (fn->hasFlag(FLAG_NO_PARENS)) {
       USR_FATAL(fn, "an initializer cannot be declared without parentheses");
-    }
-
-    if (fn->hasFlag(FLAG_METHOD_PRIMARY) == false &&
-        fn->getModule() != t->getModule()) {
-      // We are looking at a secondary initializer defined in a module
-      // other than the module defining the type.
-      USR_WARN(fn, "initializers defined outside the module where the "
-               "type was originally defined may cause issues");
-      USR_PRINT(fn, "This will no longer be a problem when constructors "
-                "are deprecated");
     }
 
     if (ct->hasUserDefinedInit == false) {

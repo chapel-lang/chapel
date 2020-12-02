@@ -1,9 +1,8 @@
 //== CStringSyntaxChecker.cpp - CoreFoundation containers API *- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -154,19 +153,24 @@ bool WalkAST::containsBadStrncatPattern(const CallExpr *CE) {
 bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
   if (CE->getNumArgs() != 3)
     return false;
-  const FunctionDecl *FD = CE->getDirectCallee();
-  bool Append = CheckerContext::isCLibraryFunction(FD, "strlcat");
   const Expr *DstArg = CE->getArg(0);
   const Expr *LenArg = CE->getArg(2);
 
-  const auto *DstArgDecl = dyn_cast<DeclRefExpr>(DstArg->IgnoreParenImpCasts());
-  const auto *LenArgDecl = dyn_cast<DeclRefExpr>(LenArg->IgnoreParenLValueCasts());
+  const auto *DstArgDRE = dyn_cast<DeclRefExpr>(DstArg->IgnoreParenImpCasts());
+  const auto *LenArgDRE =
+      dyn_cast<DeclRefExpr>(LenArg->IgnoreParenLValueCasts());
   uint64_t DstOff = 0;
   if (isSizeof(LenArg, DstArg))
     return false;
+
   // - size_t dstlen = sizeof(dst)
-  if (LenArgDecl) {
-    const auto *LenArgVal = dyn_cast<VarDecl>(LenArgDecl->getDecl());
+  if (LenArgDRE) {
+    const auto *LenArgVal = dyn_cast<VarDecl>(LenArgDRE->getDecl());
+    // If it's an EnumConstantDecl instead, then we're missing out on something.
+    if (!LenArgVal) {
+      assert(isa<EnumConstantDecl>(LenArgDRE->getDecl()));
+      return false;
+    }
     if (LenArgVal->getInit())
       LenArg = LenArgVal->getInit();
   }
@@ -180,9 +184,10 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
     // Case when there is pointer arithmetic on the destination buffer
     // especially when we offset from the base decreasing the
     // buffer length accordingly.
-    if (!DstArgDecl) {
-      if (const auto *BE = dyn_cast<BinaryOperator>(DstArg->IgnoreParenImpCasts())) {
-        DstArgDecl = dyn_cast<DeclRefExpr>(BE->getLHS()->IgnoreParenImpCasts());
+    if (!DstArgDRE) {
+      if (const auto *BE =
+              dyn_cast<BinaryOperator>(DstArg->IgnoreParenImpCasts())) {
+        DstArgDRE = dyn_cast<DeclRefExpr>(BE->getLHS()->IgnoreParenImpCasts());
         if (BE->getOpcode() == BO_Add) {
           if ((IL = dyn_cast<IntegerLiteral>(BE->getRHS()->IgnoreParenImpCasts()))) {
             DstOff = IL->getValue().getZExtValue();
@@ -190,18 +195,14 @@ bool WalkAST::containsBadStrlcpyStrlcatPattern(const CallExpr *CE) {
         }
       }
     }
-    if (DstArgDecl) {
-      if (const auto *Buffer = dyn_cast<ConstantArrayType>(DstArgDecl->getType())) {
+    if (DstArgDRE) {
+      if (const auto *Buffer =
+              dyn_cast<ConstantArrayType>(DstArgDRE->getType())) {
         ASTContext &C = BR.getContext();
         uint64_t BufferLen = C.getTypeSize(Buffer) / 8;
         auto RemainingBufferLen = BufferLen - DstOff;
-        if (Append) {
-          if (RemainingBufferLen <= ILRawVal)
-            return true;
-        } else {
-          if (RemainingBufferLen < ILRawVal)
-            return true;
-        }
+        if (RemainingBufferLen < ILRawVal)
+          return true;
       }
     }
   }
@@ -290,3 +291,6 @@ void ento::registerCStringSyntaxChecker(CheckerManager &mgr) {
   mgr.registerChecker<CStringSyntaxChecker>();
 }
 
+bool ento::shouldRegisterCStringSyntaxChecker(const LangOptions &LO) {
+  return true;
+}

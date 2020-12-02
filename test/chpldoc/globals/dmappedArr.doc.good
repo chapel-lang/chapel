@@ -10,6 +10,13 @@ dmappedArr.doc
 
    use dmappedArr.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import dmappedArr.doc;
+
 .. data:: var domBase = {1..10}
 
 .. data:: var domMap = new Block(domBase)

@@ -47,7 +47,7 @@ AssertionError: assert failed - Ranges are not of same length
 Error Caught in tuple other
 AssertionError: First tuple(3*int(64)) < Second tuple(3*int(64)) :
 '(1, 2, 3)'<'(1, 2, 5)'
-First larger element in second tuple(3*int(64)) is at index 3:
+First larger element in second tuple(3*int(64)) is at index 2:
 '3'
 '5'
 
@@ -61,7 +61,7 @@ AssertionError: assert failed - Strings are not of same length
 Error Caught in Equal Strings
 AssertionError: First String < Second String :
 'unequalString'<'unequalstring'
-First larger element in second String is at index 8:
+First larger element in second String is at index 7:
 'S'
 's'
 

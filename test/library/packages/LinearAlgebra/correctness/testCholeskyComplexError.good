@@ -1,0 +1,1 @@
+testCholeskyComplexError.chpl:7: error: halt reached - Matrix passed must be hermitian positive definite 

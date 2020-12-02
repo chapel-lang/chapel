@@ -1,10 +1,3 @@
-Expiring values for function test1 (mention-in-defer.chpl:8)
-  rec (mention-in-defer.chpl:10) expires at end of block
-Expiring values for function test2 (mention-in-defer.chpl:17)
-  rec (mention-in-defer.chpl:19) expires after last mention
-Expiring values for function test3 (mention-in-defer.chpl:26)
-  a (mention-in-defer.chpl:28) expires at end of block
-  b (mention-in-defer.chpl:30) expires after last mention
 test1
 init 1
 created rec (x = 1)
@@ -14,14 +7,14 @@ deinit 0
 test2
 init 1
 created rec (x = 1)
-deinit 1
 end
 unrelated defer
+deinit 1
 test3
 init 1
 init 2
 created recs (x = 1) (x = 2)
-deinit 2
 end
+deinit 2
 defer setting 0
 deinit 0

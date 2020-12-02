@@ -1,0 +1,5 @@
+test1
+in makeDomain, D.definedConst=true
+in test, D.definedConst=false
+D. is {1..2}
+D is now {2..2}

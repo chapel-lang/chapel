@@ -3,13 +3,15 @@ use BlockDist;
 use StencilDist;
 use CyclicDist;
 
+config param zipRange = true;
+
 proc test(Orig : domain) {
   var Copy = Orig;
   test(Orig, Copy);
 }
 
-proc makeArray(D : domain) {
-  var ret : [D] int;
+proc makeArray(D : domain, type eltType = int) {
+  var ret : [D] eltType;
   var cur = 0;
   for i in D {
     ret[i] = cur;
@@ -21,21 +23,35 @@ proc makeArray(D : domain) {
 proc test(DA : domain, DB : domain) {
   var A = makeArray(DA);
   var B = makeArray(DB);
+  test(A,B);
+}
 
-  writeln("--- ", DA.type:string, " vs. ", DB.type:string, " ---");
+proc test(A : [?DA], B : [?DB]) {
+  writeln("--- ", A.type:string, " vs. ", B.type:string, " ---");
   DA.dist.displayRepresentation();
   writeln();
   DB.dist.displayRepresentation();
   writeln();
 
-  forall (a,b) in zip(A,B) do
-    a += b;
+  if !zipRange {
+    forall (a,b) in zip(A,B) do
+      a += b;
+  }
+  else {
+    forall (a,b,i) in zip(A,B, 0..) do
+      a += b+i;
+  }
   writeln("----------");
   writeln();
 
   var cur = 0;
   for i in DA {
-    assert(A[i] == cur * 2);
+    if !zipRange {
+      assert(A[i] == cur * 2);
+    }
+    else {
+      assert(A[i] == cur * 3);
+    }
     cur += 1;
   }
 }
@@ -85,4 +101,9 @@ proc main() {
 
   // - different startIdx
   test(make(cyclic,one),make(cyclic,one,startIdx=(2,)));
+
+  // - different eltTypes
+  test(makeArray(make(block,one), real), makeArray(make(block,one), int));
+  test(makeArray(make(cyclic,one), real), makeArray(make(cyclic,one), int));
+  test(makeArray(make(stencil,one), real), makeArray(make(stencil,one), int));
 }

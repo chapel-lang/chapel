@@ -18,10 +18,8 @@ description:
   CHANGES.md
   CONTRIBUTORS.md
   COPYRIGHT
-  GOALS.md
   LICENSE
   LICENSE.chapel
-  PERFORMANCE.md
   QUICKSTART.rst
   README.files
   README.rst
@@ -61,5 +59,4 @@ the git tree, but not exactly the same:
 The following files/directories are for developers only:
 
   README.devel     : this file
-  spec/            : the LaTeX sources for the language specification
   test/            : the Chapel testing system in all its glory

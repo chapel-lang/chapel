@@ -1,9 +1,8 @@
 //===---------------------------- Context.h ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -21,7 +20,6 @@
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MCA/HardwareUnits/HardwareUnit.h"
-#include "llvm/MCA/InstrBuilder.h"
 #include "llvm/MCA/Pipeline.h"
 #include "llvm/MCA/SourceMgr.h"
 #include <memory>
@@ -32,15 +30,21 @@ namespace mca {
 /// This is a convenience struct to hold the parameters necessary for creating
 /// the pre-built "default" out-of-order pipeline.
 struct PipelineOptions {
-  PipelineOptions(unsigned DW, unsigned RFS, unsigned LQS, unsigned SQS,
-                  bool NoAlias)
-      : DispatchWidth(DW), RegisterFileSize(RFS), LoadQueueSize(LQS),
-        StoreQueueSize(SQS), AssumeNoAlias(NoAlias) {}
+  PipelineOptions(unsigned UOPQSize, unsigned DecThr, unsigned DW, unsigned RFS,
+                  unsigned LQS, unsigned SQS, bool NoAlias,
+                  bool ShouldEnableBottleneckAnalysis = false)
+      : MicroOpQueueSize(UOPQSize), DecodersThroughput(DecThr),
+        DispatchWidth(DW), RegisterFileSize(RFS), LoadQueueSize(LQS),
+        StoreQueueSize(SQS), AssumeNoAlias(NoAlias),
+        EnableBottleneckAnalysis(ShouldEnableBottleneckAnalysis) {}
+  unsigned MicroOpQueueSize;
+  unsigned DecodersThroughput; // Instructions per cycle.
   unsigned DispatchWidth;
   unsigned RegisterFileSize;
   unsigned LoadQueueSize;
   unsigned StoreQueueSize;
   bool AssumeNoAlias;
+  bool EnableBottleneckAnalysis;
 };
 
 class Context {
@@ -53,6 +57,9 @@ public:
   Context(const Context &C) = delete;
   Context &operator=(const Context &C) = delete;
 
+  const MCRegisterInfo &getMCRegisterInfo() const { return MRI; }
+  const MCSubtargetInfo &getMCSubtargetInfo() const { return STI; }
+
   void addHardwareUnit(std::unique_ptr<HardwareUnit> H) {
     Hardware.push_back(std::move(H));
   }
@@ -60,7 +67,6 @@ public:
   /// Construct a basic pipeline for simulating an out-of-order pipeline.
   /// This pipeline consists of Fetch, Dispatch, Execute, and Retire stages.
   std::unique_ptr<Pipeline> createDefaultPipeline(const PipelineOptions &Opts,
-                                                  InstrBuilder &IB,
                                                   SourceMgr &SrcMgr);
 };
 

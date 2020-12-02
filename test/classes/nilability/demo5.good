@@ -1,3 +1,2 @@
 demo5.chpl:14: error: applying postfix-! to nil
-demo5.chpl:14: note: variable x is nil at this point
-demo5.chpl:12: note: this statement may be relevant
+demo5.chpl:12: note: 'x' is set to nil here

@@ -1,9 +1,8 @@
 //===-- X86TargetMachine.h - Define TargetMachine for the X86 ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,7 +16,6 @@
 #include "X86Subtarget.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringMap.h"
-#include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Target/TargetMachine.h"
 #include <memory>
@@ -27,10 +25,13 @@ namespace llvm {
 class StringRef;
 class X86Subtarget;
 class X86RegisterBankInfo;
+class TargetTransformInfo;
 
 class X86TargetMachine final : public LLVMTargetMachine {
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
   mutable StringMap<std::unique_ptr<X86Subtarget>> SubtargetMap;
+  // True if this is used in JIT.
+  bool IsJIT;
 
 public:
   X86TargetMachine(const Target &T, const Triple &TT, StringRef CPU,
@@ -53,6 +54,8 @@ public:
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();
   }
+
+  bool isJIT() const { return IsJIT; }
 };
 
 } // end namespace llvm

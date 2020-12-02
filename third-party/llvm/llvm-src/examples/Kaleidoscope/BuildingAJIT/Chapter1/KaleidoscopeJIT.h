@@ -1,9 +1,8 @@
 //===- KaleidoscopeJIT.h - A simple JIT for Kaleidoscope --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -40,15 +39,20 @@ private:
   MangleAndInterner Mangle;
   ThreadSafeContext Ctx;
 
+  JITDylib &MainJD;
+
 public:
   KaleidoscopeJIT(JITTargetMachineBuilder JTMB, DataLayout DL)
       : ObjectLayer(ES,
-                    []() { return llvm::make_unique<SectionMemoryManager>(); }),
-        CompileLayer(ES, ObjectLayer, ConcurrentIRCompiler(std::move(JTMB))),
+                    []() { return std::make_unique<SectionMemoryManager>(); }),
+        CompileLayer(ES, ObjectLayer,
+                     std::make_unique<ConcurrentIRCompiler>(std::move(JTMB))),
         DL(std::move(DL)), Mangle(ES, this->DL),
-        Ctx(llvm::make_unique<LLVMContext>()) {
-    ES.getMainJITDylib().setGenerator(
-        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(DL)));
+        Ctx(std::make_unique<LLVMContext>()),
+        MainJD(ES.createJITDylib("<main>")) {
+    MainJD.addGenerator(
+        cantFail(DynamicLibrarySearchGenerator::GetForCurrentProcess(
+            DL.getGlobalPrefix())));
   }
 
   static Expected<std::unique_ptr<KaleidoscopeJIT>> Create() {
@@ -61,7 +65,7 @@ public:
     if (!DL)
       return DL.takeError();
 
-    return llvm::make_unique<KaleidoscopeJIT>(std::move(*JTMB), std::move(*DL));
+    return std::make_unique<KaleidoscopeJIT>(std::move(*JTMB), std::move(*DL));
   }
 
   const DataLayout &getDataLayout() const { return DL; }
@@ -69,12 +73,11 @@ public:
   LLVMContext &getContext() { return *Ctx.getContext(); }
 
   Error addModule(std::unique_ptr<Module> M) {
-    return CompileLayer.add(ES.getMainJITDylib(),
-                            ThreadSafeModule(std::move(M), Ctx));
+    return CompileLayer.add(MainJD, ThreadSafeModule(std::move(M), Ctx));
   }
 
   Expected<JITEvaluatedSymbol> lookup(StringRef Name) {
-    return ES.lookup({&ES.getMainJITDylib()}, Mangle(Name.str()));
+    return ES.lookup({&MainJD}, Mangle(Name.str()));
   }
 };
 

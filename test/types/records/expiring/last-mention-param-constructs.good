@@ -1,42 +1,32 @@
-Expiring values for function test1 (last-mention-param-constructs.chpl:27)
-  r (last-mention-param-constructs.chpl:29) expires after last mention
-Expiring values for function test2 (last-mention-param-constructs.chpl:47)
-  r (last-mention-param-constructs.chpl:49) expires after last mention
-Expiring values for function test3 (last-mention-param-constructs.chpl:67)
-  r (last-mention-param-constructs.chpl:69) expires after last mention
-Expiring values for function test4 (last-mention-param-constructs.chpl:89)
-  r (last-mention-param-constructs.chpl:91) expires after last mention
-Expiring values for function test5 (last-mention-param-constructs.chpl:107)
-  r (last-mention-param-constructs.chpl:109) expires after last mention
 test1
 init 1
 (x = 1, ptr = {})
 before param conditional
-deinit 1
 after param conditional
+deinit 1
 test2
 init 1
 (x = 1, ptr = {})
 before param loop
 (x = 1, ptr = {})
 (x = 1, ptr = {})
-deinit 1
 after param loop
+deinit 1
 test3
 init 1
 (x = 1, ptr = {})
 before param loop
-deinit 1
 after param loop
+deinit 1
 test4
 init 1
 (x = 1, ptr = {})
 before inlined empty call
-deinit 1
 after inlined empty call
+deinit 1
 test5
 init 1
 (x = 1, ptr = {})
 before folded if-expr in call
-deinit 1
 after folded if-expr in call
+deinit 1

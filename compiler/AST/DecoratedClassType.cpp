@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -391,6 +392,8 @@ ClassTypeDecorator classTypeDecorator(Type* t) {
 
   if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
+      t == dtStringC ||
+      t == dtCFnPtr ||
       t == dtCVoidPtr) {
     return CLASS_TYPE_UNMANAGED_NILABLE;
   }

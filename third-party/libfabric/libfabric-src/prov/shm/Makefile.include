@@ -1,0 +1,34 @@
+if HAVE_SHM
+_shm_files = \
+	prov/shm/src/smr_attr.c		\
+	prov/shm/src/smr_cq.c		\
+	prov/shm/src/smr_domain.c	\
+	prov/shm/src/smr_progress.c	\
+	prov/shm/src/smr_comp.c		\
+	prov/shm/src/smr_cntr.c		\
+	prov/shm/src/smr_msg.c		\
+	prov/shm/src/smr_rma.c		\
+	prov/shm/src/smr_atomic.c	\
+	prov/shm/src/smr_ep.c		\
+	prov/shm/src/smr_fabric.c	\
+	prov/shm/src/smr_init.c		\
+	prov/shm/src/smr_av.c		\
+	prov/shm/src/smr_signal.h	\
+	prov/shm/src/smr.h
+
+if HAVE_SHM_DL
+pkglib_LTLIBRARIES += libshm-fi.la
+libshm_fi_la_SOURCES = $(_shm_files) $(common_srcs)
+libshm_fi_la_LIBADD = $(linkback) $(shm_lib_LIBS)
+libshm_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+libshm_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_SHM_DL
+src_libfabric_la_SOURCES += $(_shm_files)
+src_libfabric_la_LIBADD += $(shm_lib_LIBS)
+endif !HAVE_SHM_DL
+
+prov_install_man_pages += man/man7/fi_shm.7
+
+endif HAVE_SHM
+
+prov_dist_man_pages += man/man7/fi_shm.7

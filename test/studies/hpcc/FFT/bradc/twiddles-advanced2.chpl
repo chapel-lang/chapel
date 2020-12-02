@@ -9,7 +9,7 @@ twiddles(A);
 
 
 proc twiddles(W: [0..] complex) {
-  const n = W.domain(1).length;
+  const n = W.domain(1).size;
   const delta = 2.0 * atan(1.0) / n;
 
   W(0) = 1.0;

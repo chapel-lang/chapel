@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -686,6 +687,8 @@ UnresolvedSymExpr::verify() {
   Expr::verify(E_UnresolvedSymExpr);
   if (!unresolved)
     INT_FATAL(this, "UnresolvedSymExpr::unresolved is NULL");
+  if (unresolved != astr(unresolved))
+    INT_FATAL("unresolved is not an astr");
 }
 
 
@@ -1072,6 +1075,23 @@ void NamedExpr::accept(AstVisitor* visitor) {
 *                                                                           *
 *                                                                           *
 ************************************* | ************************************/
+
+bool
+get_bool(Expr* e, uint64_t* i) {
+  Immediate* imm = NULL;
+  if (e) {
+    if (SymExpr* l = toSymExpr(e)) {
+      imm = getSymbolImmediate(l->symbol());
+    }
+  }
+
+  if (imm && imm->const_kind == NUM_KIND_BOOL) {
+    *i = imm->bool_value();
+    return true;
+  }
+
+  return false;
+}
 
 bool
 get_int(Expr *e, int64_t *i) {

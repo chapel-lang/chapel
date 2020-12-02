@@ -12,7 +12,7 @@ scale(x, y, alpha);
 writeln(x);
 
 proc scale(x, y, alpha: real) {
-  if (x.numElements != y.numElements) {
+  if (x.size != y.size) {
     writeln("Error:  Input vectors are not the same length.");
     return;
   }

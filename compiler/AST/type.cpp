@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -202,6 +203,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
+    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
+      retval = "c_void_ptr";
     }
 
     if (retval == NULL)
@@ -561,6 +564,7 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 #define CREATE_DEFAULT_SYMBOL(primType, gSym, name)     \
   gSym = new VarSymbol (name, primType);                \
   gSym->addFlag(FLAG_CONST);                            \
+  gSym->addFlag(FLAG_GLOBAL_VAR_BUILTIN);               \
   rootModule->block->insertAtTail(new DefExpr(gSym));   \
   primType->defaultValue = gSym
 
@@ -645,10 +649,8 @@ void initPrimitiveTypes() {
   dtAnyRecord = createInternalType("record", "_anyRecord");
   dtAnyRecord->symbol->addFlag(FLAG_GENERIC);
 
-  gIteratorBreakToken = new VarSymbol("_iteratorBreakToken", dtBool);
-  gIteratorBreakToken->addFlag(FLAG_CONST);
+  gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
-  rootModule->block->insertAtTail(new DefExpr(gIteratorBreakToken));
 
   INIT_PRIM_BOOL("bool(8)", 8);
   INIT_PRIM_BOOL("bool(16)", 16);
@@ -691,7 +693,7 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
@@ -705,7 +707,7 @@ void initPrimitiveTypes() {
   dtOpaque = createPrimitiveType("opaque", "chpl_opaque");
 
   CREATE_DEFAULT_SYMBOL(dtOpaque, gOpaque, "_nullOpaque");
-  gOpaque->cname = "NULL";
+  gOpaque->cname = astr("NULL");
   gOpaque->addFlag(FLAG_EXTERN);
 
   dtTaskID = createPrimitiveType("chpl_taskID_t", "chpl_taskID_t");
@@ -716,12 +718,12 @@ void initPrimitiveTypes() {
   dtSyncVarAuxFields = createPrimitiveType( "_sync_aux_t", "chpl_sync_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSyncVarAuxFields, gSyncVarAuxFields, "_nullSyncVarAuxFields");
-  gSyncVarAuxFields->cname = "NULL";
+  gSyncVarAuxFields->cname = astr("NULL");
 
   dtSingleVarAuxFields = createPrimitiveType( "_single_aux_t", "chpl_single_aux_t");
 
   CREATE_DEFAULT_SYMBOL (dtSingleVarAuxFields, gSingleVarAuxFields, "_nullSingleVarAuxFields");
-  gSingleVarAuxFields->cname = "NULL";
+  gSingleVarAuxFields->cname = astr("NULL");
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
@@ -733,8 +735,7 @@ void initPrimitiveTypes() {
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
 
   // parses from enum
-  // TODO: remove enumerated and replace it with enum
-  dtAnyEnumerated = createInternalType ("enumerated", "enumerated");
+  dtAnyEnumerated = createInternalType ("enum", "enum");
   dtAnyEnumerated->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyImag = createInternalType("chpl_anyimag", "imag");
@@ -823,7 +824,7 @@ createType(const char* name, const char* cname, bool internalType) {
   PrimitiveType* pt = new PrimitiveType(NULL, internalType);
   TypeSymbol*    ts = new TypeSymbol(name, pt);
 
-  ts->cname = cname;
+  ts->cname = astr(cname);
 
   // This prevents cleanAST() from sweeping these
   ts->addFlag(FLAG_GLOBAL_TYPE_SYMBOL);
@@ -837,6 +838,7 @@ static VarSymbol* createSymbol(PrimitiveType* primType, const char* name) {
   VarSymbol* retval = new VarSymbol(name, primType);
 
   retval->addFlag(FLAG_CONST);
+  retval->addFlag(FLAG_GLOBAL_VAR_BUILTIN);
 
   rootModule->block->insertAtTail(new DefExpr(retval));
 
@@ -879,7 +881,7 @@ static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
 void initCompilerGlobals() {
 
   gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_CONST);
+  gBoundsChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
 
   gCastChecking = new VarSymbol("castChecking", dtBool);
@@ -1069,6 +1071,21 @@ bool isClass(Type* t) {
   return false;
 }
 
+bool isHeapAllocatedType(Type* t) {
+  if (AggregateType* ct = toAggregateType(t)) {
+    TypeSymbol* ts = ct->symbol;
+    if (ts->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF))
+      return false;
+    if (ts->hasFlag(FLAG_C_ARRAY))
+      return false;
+
+    return (ts->hasFlag(FLAG_DATA_CLASS) ||
+            ts->hasFlag(FLAG_WIDE_CLASS) ||
+            ct->isClass());
+  }
+  return false;
+}
+
 bool isClassOrNil(Type* t) {
   if (t == dtNil) return true;
   return isClass(t);
@@ -1219,6 +1236,24 @@ bool isArrayImplType(Type* type)
 bool isDistImplType(Type* type)
 {
   return isDerivedType(type, FLAG_BASE_DIST);
+}
+
+bool isAliasingArrayImplType(Type* t) {
+  return t->symbol->hasFlag(FLAG_ALIASING_ARRAY);
+}
+
+bool isAliasingArrayType(Type* t) {
+  if (t->symbol->hasFlag(FLAG_ARRAY)) {
+    AggregateType* at = toAggregateType(t);
+    INT_ASSERT(at);
+
+    Symbol* instanceField = at->getField("_instance", false);
+    if (instanceField) {
+      return isAliasingArrayImplType(instanceField->type);
+    }
+  }
+
+  return false;
 }
 
 static bool isDerivedType(Type* type, Flag flag)
@@ -1401,8 +1436,9 @@ bool typeNeedsCopyInitDeinit(Type* type) {
         aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;
 
-    // Not a RUNTIME_type
-    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == true) {
+    // Not a RUNTIME_type or an extern type
+    } else if (sym->hasFlag(FLAG_RUNTIME_TYPE_VALUE) ||
+               sym->hasFlag(FLAG_EXTERN)) {
       retval = false;
 
     } else {
@@ -1411,16 +1447,6 @@ bool typeNeedsCopyInitDeinit(Type* type) {
   }
 
   return retval;
-}
-
-Type* getNamedType(std::string name) {
-  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if(name == ts->name || name == ts->cname) {
-      return ts->type;
-    }
-  }
-
-  return NULL;
 }
 
 // Do variables of the type 't' need capture for tasks?

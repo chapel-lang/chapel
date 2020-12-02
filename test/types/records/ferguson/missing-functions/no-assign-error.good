@@ -1,2 +1,2 @@
-no-assign-error.chpl:10: In function 'main':
-no-assign-error.chpl:15: error: You can't assign an R
+no-assign-error.chpl:12: In function 'main':
+no-assign-error.chpl:17: error: You can't assign an R

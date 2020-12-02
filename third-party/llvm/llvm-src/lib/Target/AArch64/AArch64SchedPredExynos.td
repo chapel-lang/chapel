@@ -1,9 +1,8 @@
 //===- AArch64SchedPredExynos.td - AArch64 Sched Preds -----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -51,6 +50,9 @@ def ExynosArithFn   : TIIPredicate<
                              MCReturnStatement<ExynosCheckShift>>,
                            MCOpcodeSwitchCase<
                              IsArithUnshiftOp.ValidOpcodes,
+                             MCReturnStatement<TruePred>>,
+                           MCOpcodeSwitchCase<
+                             IsArithImmOp.ValidOpcodes,
                              MCReturnStatement<TruePred>>],
                           MCReturnStatement<FalsePred>>>;
 def ExynosArithPred : MCSchedPredicate<ExynosArithFn>;
@@ -64,6 +66,9 @@ def ExynosLogicFn   : TIIPredicate<
                              MCReturnStatement<ExynosCheckShift>>,
                            MCOpcodeSwitchCase<
                              IsLogicUnshiftOp.ValidOpcodes,
+                             MCReturnStatement<TruePred>>,
+                           MCOpcodeSwitchCase<
+                             IsLogicImmOp.ValidOpcodes,
                              MCReturnStatement<TruePred>>],
                           MCReturnStatement<FalsePred>>>;
 def ExynosLogicPred : MCSchedPredicate<ExynosLogicFn>;
@@ -82,6 +87,9 @@ def ExynosLogicExFn   : TIIPredicate<
                                       CheckShiftBy8]>]>>>,
                              MCOpcodeSwitchCase<
                                IsLogicUnshiftOp.ValidOpcodes,
+                               MCReturnStatement<TruePred>>,
+                             MCOpcodeSwitchCase<
+                               IsLogicImmOp.ValidOpcodes,
                                MCReturnStatement<TruePred>>],
                             MCReturnStatement<FalsePred>>>;
 def ExynosLogicExPred : MCSchedPredicate<ExynosLogicExFn>;
@@ -101,18 +109,10 @@ def ExynosScaledIdxFn   : TIIPredicate<"isExynosScaledAddr",
 def ExynosScaledIdxPred : MCSchedPredicate<ExynosScaledIdxFn>;
 
 // Identify FP instructions.
-def ExynosFPPred : MCSchedPredicate<CheckAny<[CheckDForm, CheckQForm]>>;
-
-// Identify whether an instruction whose result is a long vector
-// operates on the upper half of the input registers.
-def ExynosLongVectorUpperFn   : TIIPredicate<
-                                  "isExynosLongVectorUpper",
-                                  MCOpcodeSwitchStatement<
-                                  [MCOpcodeSwitchCase<
-                                    IsLongVectorUpperOp.ValidOpcodes,
-                                    MCReturnStatement<TruePred>>],
-                                  MCReturnStatement<FalsePred>>>;
-def ExynosLongVectorUpperPred : MCSchedPredicate<ExynosLongVectorUpperFn>;
+def ExynosFPPred : MCSchedPredicate<CheckAny<[CheckHForm,
+                                              CheckSForm,
+                                              CheckDForm,
+                                              CheckQForm]>>;
 
 // Identify 128-bit NEON instructions.
 def ExynosQFormPred : MCSchedPredicate<CheckQForm>;

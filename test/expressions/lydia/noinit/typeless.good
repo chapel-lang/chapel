@@ -1,1 +1,0 @@
-typeless.chpl:1: error: Variable 'foo' is not initialized and has no type

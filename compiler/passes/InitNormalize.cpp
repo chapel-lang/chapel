@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -347,7 +348,7 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -400,6 +401,7 @@ Expr* InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
                                                    DefExpr* field,
                                                    Expr*    initExpr) const {
+  bool isConst   = field->sym->hasFlag(FLAG_CONST);
   bool isParam   = field->sym->hasFlag(FLAG_PARAM);
   bool isTypeVar = field->sym->hasFlag(FLAG_TYPE_VARIABLE);
 
@@ -417,7 +419,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       insertBefore->insertBefore(fieldSet);
 
     } else {
-      VarSymbol* tmp      = newTemp("tmp");
+      VarSymbol* tmp      = newTemp(field->sym->name);
       DefExpr*   tmpDefn  = new DefExpr(tmp);
       PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
       CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -426,7 +428,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       Symbol*    name     = new_CStringSymbol(field->sym->name);
       CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-      if (isParam) {
+      if (isConst) {
+        tmp->addFlag(FLAG_CONST);
+      } else if (isParam) {
         tmp->addFlag(FLAG_PARAM);
       } else if (isTypeVar) {
         tmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -459,7 +463,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       }
     }
 
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
     CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -468,7 +472,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-    if (isParam) {
+    if (isConst) {
+      tmp->addFlag(FLAG_CONST);
+    } else if (isParam) {
       tmp->addFlag(FLAG_PARAM);
     } else if (isTypeVar) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -492,11 +498,14 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
 
+  if (field->sym->hasFlag(FLAG_NO_INIT))
+    return NULL;
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -537,9 +546,14 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
   } else {
     // Do not set type of 'tmp' so that resolution will infer it later
-    VarSymbol* tmp       = newTemp("tmp");
+    VarSymbol* tmp       = newTemp(field->sym->name);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
     Expr*      checkType = NULL;
+
+    bool noinit = false;
+    if (SymExpr* se = toSymExpr(initExpr))
+      if (se->symbol() == gNoInit)
+        noinit = true;
 
     if (field->exprType == NULL) {
       checkType = new SymExpr(type->symbol);
@@ -548,8 +562,12 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
     // Set the value for TMP
-    CallExpr*  tmpInit = new CallExpr(PRIM_INIT_VAR,
-                                      tmp,  initExpr, checkType);
+    CallExpr*  tmpInit = NULL;
+    if (noinit) {
+      tmpInit = new CallExpr(PRIM_NOINIT_INIT_VAR, tmp, checkType);
+    } else {
+      tmpInit = new CallExpr(PRIM_INIT_VAR, tmp,  initExpr, checkType);
+    }
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
@@ -585,7 +603,7 @@ Expr* InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(fieldSet);
 
   } else {
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
 

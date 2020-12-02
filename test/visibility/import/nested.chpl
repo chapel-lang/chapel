@@ -9,12 +9,10 @@ module A {
 }
 
 module C {
-  import A.B; // Not supported yet
+  import A.B;
 
   proc main() {
-    //writeln(A.B.x);
-    //writeln(B.x);
-    //A.B.foo();
-    //B.foo();
+    writeln(B.x);
+    B.foo();
   }
 }

@@ -1,7 +1,3 @@
-Expiring values for function throwsAndReturns (bug-from-14814.chpl:16)
-  ret (bug-from-14814.chpl:20) expires after last mention
-Expiring values for function main (bug-from-14814.chpl:24)
-  temp (bug-from-14814.chpl:26) expires after last mention
 uncaught Error: 
   bug-from-14814.chpl:18: thrown here
   bug-from-14814.chpl:26: uncaught here

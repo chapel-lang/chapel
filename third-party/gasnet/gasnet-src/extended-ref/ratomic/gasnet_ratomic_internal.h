@@ -87,6 +87,21 @@ void gasneti_free_ad(gasneti_AD_t ad);
     #define GASNETI_AD_CREATE_HOOK gasnete_amratomic_create_hook
   #endif
 
+  // Force use of default "no" if tools are not suited to mixing
+  // with RMA Put and Get.
+  // TODO-EX: SIGNALSAFE is not the precise property we are looking for,
+  // though it is accurate for the current tools implementations.
+  #if GASNETI_ATOMIC32_NOT_SIGNALSAFE
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_I32
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_U32
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_FLT
+  #endif
+  #if GASNETI_ATOMIC64_NOT_SIGNALSAFE
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_I64
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_U64
+    #undef GASNETE_AMRATOMIC_USE_RMA_gex_dt_DBL
+  #endif
+
   // Default (subject to conduit override) to SET and GET via AM.
   // Each token GASNETE_AMRATOMIC_USE_RMA##dtcode should be 0 or 1:
   //   0: Implement SET and GET atomics via AMs

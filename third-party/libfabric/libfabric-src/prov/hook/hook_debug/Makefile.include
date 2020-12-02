@@ -1,0 +1,13 @@
+if HAVE_HOOK_DEBUG
+_hook_debug_files = \
+	prov/hook/hook_debug/src/hook_debug.c
+
+_hook_debug_headers = \
+	prov/hook/hook_debug/include/hook_debug.h
+
+
+src_libfabric_la_SOURCES  +=	$(_hook_debug_files) \
+				$(_hook_debug_headers)
+src_libfabric_la_CPPFLAGS +=	-I$(top_srcdir)/prov/hook/hook_debug/include
+src_libfabric_la_LIBADD	  +=	$(hook_debug_shm_LIBS)
+endif HAVE_HOOK_DEBUG

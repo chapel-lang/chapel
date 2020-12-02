@@ -47,9 +47,9 @@ module block_2D_inner_product_cholesky  {
 
     where ( A.domain.rank == 2 ) 
     {
-    assert ( A.domain.dim (1) == A.domain.dim (2) );
+    assert ( A.domain.dim (0) == A.domain.dim (1) );
 
-    const col_indices = A.domain.dim (1);  // indices of either row or column
+    const col_indices = A.domain.dim (0);  // indices of either row or column
     var   pos_def : bool;
 
     // compute L from A
@@ -60,7 +60,7 @@ module block_2D_inner_product_cholesky  {
       // modify the active block column of A with the combined effects of the
       // elimination steps on all previous block columns
 
-      if prev_cols.length > 0 then
+      if prev_cols.size > 0 then
 	block_2D_inner_product ( A ( reduced_mtx_cols, prev_cols), 
 				 A ( reduced_mtx_cols, leading_cols ) );
 
@@ -69,7 +69,7 @@ module block_2D_inner_product_cholesky  {
       pos_def = scalar_inner_product_cholesky ( A (leading_cols, leading_cols) );
 
 
-      if pos_def && trailing_cols.length > 0 then {
+      if pos_def && trailing_cols.size > 0 then {
 
 	// compute the remainder of the active block column of L by a
 	// block triangular solve realizing the equation

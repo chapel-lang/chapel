@@ -1,1 +1,1 @@
-badType.chpl:1: error: Associative domain element 3 expected to be of type string but is of type domain(1,int(64),false)
+badType.chpl:1: error: Associative domain element 2 expected to be of type string but is of type domain(1,int(64),false)

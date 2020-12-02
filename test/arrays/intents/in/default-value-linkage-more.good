@@ -1,0 +1,42 @@
+defaultsValue(D, Linked)
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..4}
+Modifying DD
+A.domain is now {1..6}
+
+defaultsValue(D, Unlinked)
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..4}
+Modifying DD
+A.domain is now {1..4}
+
+defaultsValue(A=Linked)
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..4}
+Modifying DD
+A.domain is now {1..6}
+
+defaultsValue(A=Unlinked)
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..4}
+Modifying DD
+A.domain is now {1..4}
+
+defaultFromArg(D, Linked, Unlinked)
+  checking A
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..5}
+Modifying DD
+A.domain is now {1..4}
+  checking B
+A.domain is {1..4}
+Modifying D
+A.domain is now {1..4}
+Modifying DD
+A.domain is now {1..4}
+

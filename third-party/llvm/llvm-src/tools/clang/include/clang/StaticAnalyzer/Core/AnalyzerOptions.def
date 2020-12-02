@@ -1,9 +1,8 @@
 //===-- AnalyzerOptions.def - Metadata about Static Analyses ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -113,6 +112,12 @@ ANALYZER_OPTION(
     bool, ShouldIncludeScopesInCFG, "cfg-scopes",
     "Whether or not scope information should be included in the CFG.", false)
 
+ANALYZER_OPTION(bool, ShouldIncludeDefaultInitForAggregates,
+                "cfg-expand-default-aggr-inits",
+                "Whether or not inline CXXDefaultInitializers for aggregate "
+                "initialization in the CFG.",
+                false)
+
 ANALYZER_OPTION(
     bool, MayInlineTemplateFunctions, "c++-template-inlining",
     "Whether or not templated functions may be considered for inlining.", true)
@@ -205,6 +210,10 @@ ANALYZER_OPTION(bool, ShouldPrunePaths, "prune-paths",
                 "be pruned out of the final output.",
                 true)
 
+ANALYZER_OPTION(bool, ShouldAddPopUpNotes, "add-pop-up-notes",
+                "Whether pop-up notes should be added to the final output.",
+                true)
+
 ANALYZER_OPTION(
     bool, ShouldConditionalizeStaticInitializers,
     "cfg-conditional-static-initializers",
@@ -288,9 +297,30 @@ ANALYZER_OPTION(bool, DisplayCTUProgress, "display-ctu-progress",
                 "the analyzer's progress related to ctu.",
                 false)
 
+ANALYZER_OPTION(bool, ShouldTrackConditions, "track-conditions",
+                "Whether to track conditions that are a control dependency of "
+                "an already tracked variable.",
+                true)
+
+ANALYZER_OPTION(bool, ShouldTrackConditionsDebug, "track-conditions-debug",
+                "Whether to place an event at each tracked condition.",
+                false)
+
+ANALYZER_OPTION(bool, ShouldEmitFixItHintsAsRemarks, "fixits-as-remarks",
+                "Emit fix-it hints as remarks for testing purposes",
+                false)
+
 //===----------------------------------------------------------------------===//
-// Unsinged analyzer options.
+// Unsigned analyzer options.
 //===----------------------------------------------------------------------===//
+
+ANALYZER_OPTION(unsigned, CTUImportThreshold, "ctu-import-threshold",
+                "The maximal amount of translation units that is considered "
+                "for import when inlining functions during CTU analysis. "
+                "Lowering this threshold can alleviate the memory burder of "
+                "analysis with many interdependent definitions located in "
+                "various translation units.",
+                100u)
 
 ANALYZER_OPTION(
     unsigned, AlwaysInlineSize, "ipa-always-inline-size",
@@ -360,18 +390,24 @@ ANALYZER_OPTION(
     "Value: \"constructors\", \"destructors\", \"methods\".",
     "destructors")
 
-ANALYZER_OPTION_DEPENDS_ON_USER_MODE(
-    StringRef, IPAMode, "ipa",
-    "Controls the mode of inter-procedural analysis. Value: \"none\", "
-    "\"basic-inlining\", \"inlining\", \"dynamic\", \"dynamic-bifurcate\".",
-    /* SHALLOW_VAL */ "inlining", /* DEEP_VAL */ "dynamic-bifurcate")
-
 ANALYZER_OPTION(
     StringRef, ExplorationStrategy, "exploration_strategy",
     "Value: \"dfs\", \"bfs\", \"unexplored_first\", "
     "\"unexplored_first_queue\", \"unexplored_first_location_queue\", "
     "\"bfs_block_dfs_contents\".",
     "unexplored_first_queue")
+
+ANALYZER_OPTION(
+    StringRef, RawSilencedCheckersAndPackages, "silence-checkers",
+    "A semicolon separated list of checker and package names to silence. "
+    "Silenced checkers will not emit reports, but the modeling remain enabled.",
+    "")
+
+ANALYZER_OPTION_DEPENDS_ON_USER_MODE(
+    StringRef, IPAMode, "ipa",
+    "Controls the mode of inter-procedural analysis. Value: \"none\", "
+    "\"basic-inlining\", \"inlining\", \"dynamic\", \"dynamic-bifurcate\".",
+    /* SHALLOW_VAL */ "inlining", /* DEEP_VAL */ "dynamic-bifurcate")
 
 #undef ANALYZER_OPTION_DEPENDS_ON_USER_MODE
 #undef ANALYZER_OPTION

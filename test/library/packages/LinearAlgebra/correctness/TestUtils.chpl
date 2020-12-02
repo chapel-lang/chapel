@@ -96,13 +96,17 @@ proc assertFalse(x: bool, msg) {
   }
 }
 
-proc assertAlmostEqual(X: [], Y: [], msg) {
+proc assertAlmostEqual(x , y, msg: string) {
   if !correctness then writeln(msg);
-  if X.shape != Y.shape {
-    writeFailure(X, Y, msg);
-    return;
-  } else if !almostEquals(X, Y) {
-    writeFailure(X, Y, msg);
+  if isArray(x) {
+    if x.shape != y.shape {
+      writeFailure(x, y, msg);
+      return;
+    }
+  }
+
+  if !almostEquals(x, y) {
+    writeFailure(x, y, msg);
     return;
   }
 }
@@ -121,14 +125,14 @@ proc almostEquals(A: [], B: []): bool {
   if A.rank != B.rank then
     return false;
 
-  if A.numElements != B.numElements then
+  if A.size != B.size then
     return false;
 
   //
   // check B size/shape are the same to permit legal zippering
   //
   if isRectangularDom(A.domain) && isRectangularDom(B.domain) {
-    for d in 1..A.rank do
+    for d in 0..#A.rank do
       if A.domain.dim(d).size != B.domain.dim(d).size then
         return false;
   }

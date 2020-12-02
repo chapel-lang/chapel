@@ -20,8 +20,8 @@ class GridInvalidRegion {
   //| >    fields    | >
   //|/...............|/
   
-  const fine_neighbors: domain(unmanaged Grid);
-  const domains:        [fine_neighbors] domain(dimension,stridable=true);
+  var fine_neighbors: domain(unmanaged Grid);
+  var domains:        [fine_neighbors] domain(dimension,stridable=true);
   
   // /|'''''''''''''''/|
   //< |    fields    < |
@@ -47,7 +47,7 @@ class GridInvalidRegion {
     {
       var coarse_intersection = grid.cells( coarsen(fine_grid.cells, ref_ratio) );
       
-      if coarse_intersection.numIndices>0 {
+      if coarse_intersection.size>0 {
         fine_neighbors.add(fine_grid);
         domains(fine_grid) = coarse_intersection;
       }

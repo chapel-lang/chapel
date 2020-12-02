@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -21,7 +22,9 @@
  *  Prefetch
  */
 module Prefetch {
-  private use Prefetch_internal only ;
+  private use CPtr;
+
+  import Prefetch_internal;
   inline proc prefetch(addr:c_ptr) {
     Prefetch_internal.chpl_prefetch(addr:c_void_ptr);
   }
@@ -32,5 +35,6 @@ module Prefetch {
 }
 
 module Prefetch_internal {
+  use CPtr;
   extern proc chpl_prefetch(addr: c_void_ptr);
 }

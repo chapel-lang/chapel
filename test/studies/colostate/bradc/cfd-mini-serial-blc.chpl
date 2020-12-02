@@ -120,9 +120,9 @@ module CFD_mini {
 
  proc computeFlux(FluxCache, old_data_b, FluxDomain, dim, dim2) {
    var offn2, offn1, offp1 = (0,0,0);
-   offn2(dim+1) = -2;
-   offn1(dim+1) = -1;
-   offp1(dim+1) =  1;
+   offn2(dim) = -2;
+   offn1(dim) = -1;
+   offp1(dim) =  1;
 
    inline proc stencil(old_data, zyx) {
      return factor1 *  (old_data[zyx+offn2] + 
@@ -149,7 +149,7 @@ module CFD_mini {
 
  proc accumulate(dir, FluxCache, new_data_b) {
    var off = (0,0,0);
-   off(dir+1) = 1;
+   off(dir) = 1;
    
    for c in compRange{
      ref FluxCache_c = FluxCache[c];

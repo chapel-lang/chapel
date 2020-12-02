@@ -3,7 +3,7 @@ All files in this directory and all sub-directories (except where otherwise note
 are subject to the following licensing terms: 
 
 ---------------------------------------------------------------------------
-Copyright (c) 2000-2016 The Regents of the University of California.
+Copyright (c) 2000-2020 The Regents of the University of California.
 All rights reserved.
 
 Permission to use, copy, modify, and distribute this software and its

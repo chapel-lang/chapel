@@ -27,7 +27,7 @@ proc BFS ( root : vertex_id, ParentTree, G )
   Active_Level.previous = nil;
   Next_Level.previous = Active_Level;
 
-  while Active_Level.Members.numIndices > 0 do
+  while Active_Level.Members.size > 0 do
   {
 
     forall u in Active_Level.Members do {

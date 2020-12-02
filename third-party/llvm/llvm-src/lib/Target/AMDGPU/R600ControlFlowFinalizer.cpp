@@ -1,9 +1,8 @@
 //===- R600ControlFlowFinalizer.cpp - Finalize Control Flow Inst ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -304,7 +303,7 @@ private:
       if (!MO.isReg())
         continue;
       if (MO.isDef()) {
-        unsigned Reg = MO.getReg();
+        Register Reg = MO.getReg();
         if (R600::R600_Reg128RegClass.contains(Reg))
           DstMI = Reg;
         else
@@ -313,7 +312,7 @@ private:
               &R600::R600_Reg128RegClass);
       }
       if (MO.isUse()) {
-        unsigned Reg = MO.getReg();
+        Register Reg = MO.getReg();
         if (R600::R600_Reg128RegClass.contains(Reg))
           SrcMI = Reg;
         else

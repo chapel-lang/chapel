@@ -1,9 +1,8 @@
 //===- CheckerManager.cpp - Static Analyzer Checker Manager ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,7 +14,9 @@
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/Stmt.h"
 #include "clang/Analysis/ProgramPoint.h"
+#include "clang/Basic/JsonSupport.h"
 #include "clang/Basic/LLVM.h"
+#include "clang/Driver/DriverDiagnostic.h"
 #include "clang/StaticAnalyzer/Core/Checker.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CallEvent.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
@@ -59,6 +60,15 @@ void CheckerManager::finishedCheckerRegistration() {
 #endif
 }
 
+void CheckerManager::reportInvalidCheckerOptionValue(
+    const CheckerBase *C, StringRef OptionName, StringRef ExpectedValueDesc) {
+
+  Context.getDiagnostics()
+      .Report(diag::err_analyzer_checker_option_invalid_input)
+          << (llvm::Twine() + C->getTagDescription() + ":" + OptionName).str()
+          << ExpectedValueDesc;
+}
+
 //===----------------------------------------------------------------------===//
 // Functions for running checkers for AST traversing..
 //===----------------------------------------------------------------------===//
@@ -81,7 +91,7 @@ void CheckerManager::runCheckersOnASTDecl(const Decl *D, AnalysisManager& mgr,
   }
 
   assert(checkers);
-  for (const auto checker : *checkers)
+  for (const auto &checker : *checkers)
     checker(D, mgr, BR);
 }
 
@@ -89,7 +99,7 @@ void CheckerManager::runCheckersOnASTBody(const Decl *D, AnalysisManager& mgr,
                                           BugReporter &BR) {
   assert(D && D->hasBody());
 
-  for (const auto BodyChecker : BodyCheckers)
+  for (const auto &BodyChecker : BodyCheckers)
     BodyChecker(D, mgr, BR);
 }
 
@@ -392,7 +402,7 @@ void CheckerManager::runCheckersForBind(ExplodedNodeSet &Dst,
 void CheckerManager::runCheckersForEndAnalysis(ExplodedGraph &G,
                                                BugReporter &BR,
                                                ExprEngine &Eng) {
-  for (const auto EndAnalysisChecker : EndAnalysisCheckers)
+  for (const auto &EndAnalysisChecker : EndAnalysisCheckers)
     EndAnalysisChecker(G, BR, Eng);
 }
 
@@ -445,7 +455,7 @@ void CheckerManager::runCheckersForEndFunction(NodeBuilderContext &BC,
   // creates a successor for Pred, we do not need to generate an
   // autotransition for it.
   NodeBuilder Bldr(Pred, Dst, BC);
-  for (const auto checkFn : EndFunctionCheckers) {
+  for (const auto &checkFn : EndFunctionCheckers) {
     const ProgramPoint &L =
         FunctionExitPoint(RS, Pred->getLocationContext(), checkFn.Checker);
     CheckerContext C(Bldr, Eng, Pred, L);
@@ -532,7 +542,7 @@ void CheckerManager::runCheckersForNewAllocator(
 /// Run checkers for live symbols.
 void CheckerManager::runCheckersForLiveSymbols(ProgramStateRef state,
                                                SymbolReaper &SymReaper) {
-  for (const auto LiveSymbolsChecker : LiveSymbolsCheckers)
+  for (const auto &LiveSymbolsChecker : LiveSymbolsCheckers)
     LiveSymbolsChecker(state, SymReaper);
 }
 
@@ -589,7 +599,7 @@ CheckerManager::runCheckersForRegionChanges(ProgramStateRef state,
                                             ArrayRef<const MemRegion *> Regions,
                                             const LocationContext *LCtx,
                                             const CallEvent *Call) {
-  for (const auto RegionChangesChecker : RegionChangesCheckers) {
+  for (const auto &RegionChangesChecker : RegionChangesCheckers) {
     // If any checker declares the state infeasible (or if it starts that way),
     // bail out.
     if (!state)
@@ -611,7 +621,7 @@ CheckerManager::runCheckersForPointerEscape(ProgramStateRef State,
           (Kind != PSK_DirectEscapeOnCall &&
            Kind != PSK_IndirectEscapeOnCall)) &&
          "Call must not be NULL when escaping on call");
-  for (const auto PointerEscapeChecker : PointerEscapeCheckers) {
+  for (const auto &PointerEscapeChecker : PointerEscapeCheckers) {
     // If any checker declares the state infeasible (or if it starts that
     //  way), bail out.
     if (!State)
@@ -625,7 +635,7 @@ CheckerManager::runCheckersForPointerEscape(ProgramStateRef State,
 ProgramStateRef
 CheckerManager::runCheckersForEvalAssume(ProgramStateRef state,
                                          SVal Cond, bool Assumption) {
-  for (const auto EvalAssumeChecker : EvalAssumeCheckers) {
+  for (const auto &EvalAssumeChecker : EvalAssumeCheckers) {
     // If any checker declares the state infeasible (or if it starts that way),
     // bail out.
     if (!state)
@@ -641,7 +651,6 @@ void CheckerManager::runCheckersForEvalCall(ExplodedNodeSet &Dst,
                                             const ExplodedNodeSet &Src,
                                             const CallEvent &Call,
                                             ExprEngine &Eng) {
-  const CallExpr *CE = cast<CallExpr>(Call.getOriginExpr());
   for (const auto Pred : Src) {
     bool anyEvaluated = false;
 
@@ -649,17 +658,20 @@ void CheckerManager::runCheckersForEvalCall(ExplodedNodeSet &Dst,
     NodeBuilder B(Pred, checkDst, Eng.getBuilderContext());
 
     // Check if any of the EvalCall callbacks can evaluate the call.
-    for (const auto EvalCallChecker : EvalCallCheckers) {
-      ProgramPoint::Kind K = ProgramPoint::PostStmtKind;
-      const ProgramPoint &L =
-          ProgramPoint::getProgramPoint(CE, K, Pred->getLocationContext(),
-                                        EvalCallChecker.Checker);
+    for (const auto &EvalCallChecker : EvalCallCheckers) {
+      // TODO: Support the situation when the call doesn't correspond
+      // to any Expr.
+      ProgramPoint L = ProgramPoint::getProgramPoint(
+          cast<CallExpr>(Call.getOriginExpr()),
+          ProgramPoint::PostStmtKind,
+          Pred->getLocationContext(),
+          EvalCallChecker.Checker);
       bool evaluated = false;
       { // CheckerContext generates transitions(populates checkDest) on
         // destruction, so introduce the scope to make sure it gets properly
         // populated.
         CheckerContext C(B, Eng, Pred, L);
-        evaluated = EvalCallChecker(CE, C);
+        evaluated = EvalCallChecker(Call, C);
       }
       assert(!(evaluated && anyEvaluated)
              && "There are more than one checkers evaluating the call");
@@ -685,15 +697,77 @@ void CheckerManager::runCheckersOnEndOfTranslationUnit(
                                                   const TranslationUnitDecl *TU,
                                                   AnalysisManager &mgr,
                                                   BugReporter &BR) {
-  for (const auto EndOfTranslationUnitChecker : EndOfTranslationUnitCheckers)
+  for (const auto &EndOfTranslationUnitChecker : EndOfTranslationUnitCheckers)
     EndOfTranslationUnitChecker(TU, mgr, BR);
 }
 
-void CheckerManager::runCheckersForPrintState(raw_ostream &Out,
-                                              ProgramStateRef State,
-                                              const char *NL, const char *Sep) {
-  for (const auto &CheckerTag : CheckerTags)
-    CheckerTag.second->printState(Out, State, NL, Sep);
+void CheckerManager::runCheckersForPrintStateJson(raw_ostream &Out,
+                                                  ProgramStateRef State,
+                                                  const char *NL,
+                                                  unsigned int Space,
+                                                  bool IsDot) const {
+  Indent(Out, Space, IsDot) << "\"checker_messages\": ";
+
+  // Create a temporary stream to see whether we have any message.
+  SmallString<1024> TempBuf;
+  llvm::raw_svector_ostream TempOut(TempBuf);
+  unsigned int InnerSpace = Space + 2;
+
+  // Create the new-line in JSON with enough space.
+  SmallString<128> NewLine;
+  llvm::raw_svector_ostream NLOut(NewLine);
+  NLOut << "\", " << NL;                     // Inject the ending and a new line
+  Indent(NLOut, InnerSpace, IsDot) << "\"";  // then begin the next message.
+
+  ++Space;
+  bool HasMessage = false;
+
+  // Store the last CheckerTag.
+  const void *LastCT = nullptr;
+  for (const auto &CT : CheckerTags) {
+    // See whether the current checker has a message.
+    CT.second->printState(TempOut, State, /*NL=*/NewLine.c_str(), /*Sep=*/"");
+
+    if (TempBuf.empty())
+      continue;
+
+    if (!HasMessage) {
+      Out << '[' << NL;
+      HasMessage = true;
+    }
+
+    LastCT = &CT;
+    TempBuf.clear();
+  }
+
+  for (const auto &CT : CheckerTags) {
+    // See whether the current checker has a message.
+    CT.second->printState(TempOut, State, /*NL=*/NewLine.c_str(), /*Sep=*/"");
+
+    if (TempBuf.empty())
+      continue;
+
+    Indent(Out, Space, IsDot)
+        << "{ \"checker\": \"" << CT.second->getCheckerName().getName()
+        << "\", \"messages\": [" << NL;
+    Indent(Out, InnerSpace, IsDot)
+        << '\"' << TempBuf.str().trim() << '\"' << NL;
+    Indent(Out, Space, IsDot) << "]}";
+
+    if (&CT != LastCT)
+      Out << ',';
+    Out << NL;
+
+    TempBuf.clear();
+  }
+
+  // It is the last element of the 'program_state' so do not add a comma.
+  if (HasMessage)
+    Indent(Out, --Space, IsDot) << "]";
+  else
+    Out << "null";
+
+  Out << NL;
 }
 
 //===----------------------------------------------------------------------===//
@@ -830,6 +904,6 @@ CheckerManager::getCachedStmtCheckersFor(const Stmt *S, bool isPreVisit) {
 }
 
 CheckerManager::~CheckerManager() {
-  for (const auto CheckerDtor : CheckerDtors)
+  for (const auto &CheckerDtor : CheckerDtors)
     CheckerDtor();
 }

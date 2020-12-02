@@ -1,9 +1,8 @@
 //===- dibuilder.go - Bindings for DIBuilder ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -45,7 +44,7 @@ const (
 	FlagProtected
 	FlagFwdDecl
 	FlagAppleBlock
-	FlagBlockByrefStruct
+	FlagReserved
 	FlagVirtual
 	FlagArtificial
 	FlagExplicit
@@ -306,11 +305,11 @@ func (d *DIBuilder) CreateBasicType(t DIBasicType) Metadata {
 
 // DIPointerType holds the values for creating pointer type debug metadata.
 type DIPointerType struct {
-	Pointee     Metadata
-	SizeInBits  uint64
-	AlignInBits uint32 // optional
+	Pointee      Metadata
+	SizeInBits   uint64
+	AlignInBits  uint32 // optional
 	AddressSpace uint32
-	Name        string // optional
+	Name         string // optional
 }
 
 // CreatePointerType creates a type that represents a pointer to another type.
@@ -356,14 +355,14 @@ func (d *DIBuilder) CreateSubroutineType(t DISubroutineType) Metadata {
 
 // DIStructType holds the values for creating struct type debug metadata.
 type DIStructType struct {
-	Name        string
-	File        Metadata
-	Line        int
-	SizeInBits  uint64
-	AlignInBits uint32
-	Flags       int
-	DerivedFrom Metadata
-	Elements    []Metadata
+	Name         string
+	File         Metadata
+	Line         int
+	SizeInBits   uint64
+	AlignInBits  uint32
+	Flags        int
+	DerivedFrom  Metadata
+	Elements     []Metadata
 	VTableHolder Metadata // optional
 	UniqueID     string
 }
@@ -505,6 +504,7 @@ type DITypedef struct {
 	File    Metadata
 	Line    int
 	Context Metadata
+  AlignInBits uint32
 }
 
 // CreateTypedef creates typedef type debug metadata.
@@ -519,6 +519,7 @@ func (d *DIBuilder) CreateTypedef(t DITypedef) Metadata {
 		t.File.C,
 		C.unsigned(t.Line),
 		t.Context.C,
+    C.uint32_t(t.AlignInBits),
 	)
 	return Metadata{C: result}
 }
@@ -582,7 +583,12 @@ func (d *DIBuilder) InsertValueAtEnd(v Value, diVarInfo, expr Metadata, l DebugL
 }
 
 func (v Value) SetSubprogram(sp Metadata) {
-  C.LLVMSetSubprogram(v.C, sp.C)
+	C.LLVMSetSubprogram(v.C, sp.C)
+}
+
+func (v Value) Subprogram() (md Metadata) {
+	md.C = C.LLVMGetSubprogram(v.C)
+	return
 }
 
 func boolToCInt(v bool) C.int {
@@ -604,4 +610,94 @@ func (c Context) TemporaryMDNode(mds []Metadata) (md Metadata) {
 
 func (md Metadata) ReplaceAllUsesWith(new Metadata) {
 	C.LLVMMetadataReplaceAllUsesWith(md.C, new.C)
+}
+
+type MetadataKind C.LLVMMetadataKind
+
+const (
+	MDStringMetadataKind                     = C.LLVMMDStringMetadataKind
+	ConstantAsMetadataMetadataKind           = C.LLVMConstantAsMetadataMetadataKind
+	LocalAsMetadataMetadataKind              = C.LLVMLocalAsMetadataMetadataKind
+	DistinctMDOperandPlaceholderMetadataKind = C.LLVMDistinctMDOperandPlaceholderMetadataKind
+	MDTupleMetadataKind                      = C.LLVMMDTupleMetadataKind
+	DILocationMetadataKind                   = C.LLVMDILocationMetadataKind
+	DIExpressionMetadataKind                 = C.LLVMDIExpressionMetadataKind
+	DIGlobalVariableExpressionMetadataKind   = C.LLVMDIGlobalVariableExpressionMetadataKind
+	GenericDINodeMetadataKind                = C.LLVMGenericDINodeMetadataKind
+	DISubrangeMetadataKind                   = C.LLVMDISubrangeMetadataKind
+	DIEnumeratorMetadataKind                 = C.LLVMDIEnumeratorMetadataKind
+	DIBasicTypeMetadataKind                  = C.LLVMDIBasicTypeMetadataKind
+	DIDerivedTypeMetadataKind                = C.LLVMDIDerivedTypeMetadataKind
+	DICompositeTypeMetadataKind              = C.LLVMDICompositeTypeMetadataKind
+	DISubroutineTypeMetadataKind             = C.LLVMDISubroutineTypeMetadataKind
+	DIFileMetadataKind                       = C.LLVMDIFileMetadataKind
+	DICompileUnitMetadataKind                = C.LLVMDICompileUnitMetadataKind
+	DISubprogramMetadataKind                 = C.LLVMDISubprogramMetadataKind
+	DILexicalBlockMetadataKind               = C.LLVMDILexicalBlockMetadataKind
+	DILexicalBlockFileMetadataKind           = C.LLVMDILexicalBlockFileMetadataKind
+	DINamespaceMetadataKind                  = C.LLVMDINamespaceMetadataKind
+	DIModuleMetadataKind                     = C.LLVMDIModuleMetadataKind
+	DITemplateTypeParameterMetadataKind      = C.LLVMDITemplateTypeParameterMetadataKind
+	DITemplateValueParameterMetadataKind     = C.LLVMDITemplateValueParameterMetadataKind
+	DIGlobalVariableMetadataKind             = C.LLVMDIGlobalVariableMetadataKind
+	DILocalVariableMetadataKind              = C.LLVMDILocalVariableMetadataKind
+	DILabelMetadataKind                      = C.LLVMDILabelMetadataKind
+	DIObjCPropertyMetadataKind               = C.LLVMDIObjCPropertyMetadataKind
+	DIImportedEntityMetadataKind             = C.LLVMDIImportedEntityMetadataKind
+	DIMacroMetadataKind                      = C.LLVMDIMacroMetadataKind
+	DIMacroFileMetadataKind                  = C.LLVMDIMacroFileMetadataKind
+	DICommonBlockMetadataKind                = C.LLVMDICommonBlockMetadataKind
+)
+
+// Kind returns the metadata kind.
+func (md Metadata) Kind() MetadataKind {
+	return MetadataKind(C.LLVMGetMetadataKind(md.C))
+}
+
+// FileDirectory returns the directory of a DIFile metadata node.
+func (md Metadata) FileDirectory() string {
+	var length C.unsigned
+	ptr := C.LLVMDIFileGetDirectory(md.C, &length)
+	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+}
+
+// FileFilename returns the filename of a DIFile metadata node.
+func (md Metadata) FileFilename() string {
+	var length C.unsigned
+	ptr := C.LLVMDIFileGetFilename(md.C, &length)
+	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+}
+
+// FileSource returns the source of a DIFile metadata node.
+func (md Metadata) FileSource() string {
+	var length C.unsigned
+	ptr := C.LLVMDIFileGetSource(md.C, &length)
+	return string(((*[1 << 20]byte)(unsafe.Pointer(ptr)))[:length:length])
+}
+
+// LocationLine returns the line number of a DILocation.
+func (md Metadata) LocationLine() uint {
+	return uint(C.LLVMDILocationGetLine(md.C))
+}
+
+// LocationColumn returns the column (offset from the start of the line) of a
+// DILocation.
+func (md Metadata) LocationColumn() uint {
+	return uint(C.LLVMDILocationGetColumn(md.C))
+}
+
+// LocationScope returns the local scope associated with this debug location.
+func (md Metadata) LocationScope() Metadata {
+	return Metadata{C.LLVMDILocationGetScope(md.C)}
+}
+
+// LocationInlinedAt return the "inline at" location associated with this debug
+// location.
+func (md Metadata) LocationInlinedAt() Metadata {
+	return Metadata{C.LLVMDILocationGetInlinedAt(md.C)}
+}
+
+// ScopeFile returns the file (DIFile) of a given scope.
+func (md Metadata) ScopeFile() Metadata {
+	return Metadata{C.LLVMDIScopeGetFile(md.C)}
 }

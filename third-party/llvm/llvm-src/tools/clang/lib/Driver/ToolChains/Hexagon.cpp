@@ -1,9 +1,8 @@
 //===--- Hexagon.cpp - Hexagon ToolChain Implementations --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -131,11 +130,11 @@ void hexagon::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   const Driver &D = HTC.getDriver();
   ArgStringList CmdArgs;
 
-  CmdArgs.push_back("-march=hexagon");
+  CmdArgs.push_back("--arch=hexagon");
 
   RenderExtraToolArgs(JA, CmdArgs);
 
-  const char *AsName = "hexagon-llvm-mc";
+  const char *AsName = "llvm-mc";
   CmdArgs.push_back("-filetype=obj");
   CmdArgs.push_back(Args.MakeArgString(
       "-mcpu=hexagon" +
@@ -184,7 +183,7 @@ void hexagon::Assembler::ConstructJob(Compilation &C, const JobAction &JA,
   }
 
   auto *Exec = Args.MakeArgString(HTC.GetProgramPath(AsName));
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 
 void hexagon::Linker::RenderExtraToolArgs(const JobAction &JA,
@@ -210,7 +209,11 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
   bool IncStartFiles = !Args.hasArg(options::OPT_nostartfiles);
   bool IncDefLibs = !Args.hasArg(options::OPT_nodefaultlibs);
   bool UseG0 = false;
+  const char *Exec = Args.MakeArgString(HTC.GetLinkerPath());
+  bool UseLLD = (llvm::sys::path::filename(Exec).equals_lower("ld.lld") ||
+                 llvm::sys::path::stem(Exec).equals_lower("ld.lld"));
   bool UseShared = IsShared && !IsStatic;
+  StringRef CpuVer = toolchains::HexagonToolChain::GetTargetCPUVersion(Args);
 
   //----------------------------------------------------------------------------
   // Silence warnings for various options
@@ -233,9 +236,10 @@ constructHexagonLinkArgs(Compilation &C, const JobAction &JA,
   for (const auto &Opt : HTC.ExtraOpts)
     CmdArgs.push_back(Opt.c_str());
 
-  CmdArgs.push_back("-march=hexagon");
-  StringRef CpuVer = toolchains::HexagonToolChain::GetTargetCPUVersion(Args);
-  CmdArgs.push_back(Args.MakeArgString("-mcpu=hexagon" + CpuVer));
+  if (!UseLLD) {
+    CmdArgs.push_back("-march=hexagon");
+    CmdArgs.push_back(Args.MakeArgString("-mcpu=hexagon" + CpuVer));
+  }
 
   if (IsShared) {
     CmdArgs.push_back("-shared");
@@ -371,7 +375,7 @@ void hexagon::Linker::ConstructJob(Compilation &C, const JobAction &JA,
                            LinkingOutput);
 
   const char *Exec = Args.MakeArgString(HTC.GetLinkerPath());
-  C.addCommand(llvm::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, Exec, CmdArgs, Inputs));
 }
 // Hexagon tools end.
 
@@ -431,7 +435,7 @@ void HexagonToolChain::getHexagonLibraryPaths(const ArgList &Args,
 
   std::string TargetDir = getHexagonTargetDir(D.getInstalledDir(),
                                               D.PrefixDirs);
-  if (std::find(RootDirs.begin(), RootDirs.end(), TargetDir) == RootDirs.end())
+  if (llvm::find(RootDirs, TargetDir) == RootDirs.end())
     RootDirs.push_back(TargetDir);
 
   bool HasPIC = Args.hasArg(options::OPT_fpic, options::OPT_fPIC);
@@ -575,7 +579,7 @@ const StringRef HexagonToolChain::GetDefaultCPU() {
 
 const StringRef HexagonToolChain::GetTargetCPUVersion(const ArgList &Args) {
   Arg *CpuArg = nullptr;
-  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ, options::OPT_march_EQ))
+  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ))
     CpuArg = A;
 
   StringRef CPU = CpuArg ? CpuArg->getValue() : GetDefaultCPU();

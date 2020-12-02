@@ -1,9 +1,8 @@
 //===-- FuzzerCLI.cpp -----------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -172,7 +171,7 @@ std::unique_ptr<Module> llvm::parseModule(
 
   if (Size <= 1)
     // We get bogus data given an empty corpus - just create a new module.
-    return llvm::make_unique<Module>("M", Context);
+    return std::make_unique<Module>("M", Context);
 
   auto Buffer = MemoryBuffer::getMemBuffer(
       StringRef(reinterpret_cast<const char *>(Data), Size), "Fuzzer input",

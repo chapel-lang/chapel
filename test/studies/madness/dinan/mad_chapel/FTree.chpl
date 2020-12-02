@@ -21,7 +21,7 @@ var None: [0..-1] real;
 
 // Check if we have None.
 proc isNone(x) {
-    return x.numElements == 0;
+    return x.size == 0;
 }
 
 class FTree {
@@ -100,7 +100,7 @@ class FTree {
      */ 
     iter lvl_iter(lvl: int) {
         for i in indices do
-            if i(1) == lvl && indices.contains(i) then yield nodes[i].data;
+            if i(0) == lvl && indices.contains(i) then yield nodes[i].data;
     }
         
 

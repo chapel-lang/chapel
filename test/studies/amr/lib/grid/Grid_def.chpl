@@ -40,11 +40,11 @@ class Grid {
 
   const dx: dimension*real;
           
-  const cells:          domain(dimension, stridable=true);
-  const extended_cells: domain(dimension, stridable=true);
+  var cells:          domain(dimension, stridable=true);
+  var extended_cells: domain(dimension, stridable=true);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  const ghost_domains: unmanaged List( domain(dimension, stridable=true) );
+  var ghost_domains: unmanaged List( domain(dimension, stridable=true) );
 
 
 
@@ -256,7 +256,7 @@ proc Grid.xValue (point_index: dimension*int) {
   var coord: dimension*real;
 
   if dimension == 1 then {
-    coord(1) = x_low(1) + (point_index(1) - i_low(1)) * dx(1)/2.0;
+    coord(0) = x_low(0) + (point_index(0) - i_low(0)) * dx(0)/2.0;
   }
   else {
     for d in dimensions do

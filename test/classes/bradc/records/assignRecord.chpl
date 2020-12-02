@@ -11,11 +11,14 @@ proc main() {
   var x: myrecord;
   var y: myrecord;
 
-  x.c    = new borrowed myclass();
+  var class1 = new myclass();
+  var class2 = new myclass();
+
+  x.c    = class1.borrow();
   x.c!.a = 1;
   x.c!.b = 2.3;
 
-  y.c    = new borrowed myclass();
+  y.c    = class2.borrow();
   y.c!.a = 4;
   y.c!.b = 5.6;
 

@@ -147,7 +147,6 @@ GASNETI_BEGIN_NOWARN
 #define GASNETT_BEGIN_EXTERNC           GASNETI_BEGIN_EXTERNC
 #define GASNETT_END_EXTERNC             GASNETI_END_EXTERNC
 #define GASNETT_EXTERNC                 GASNETI_EXTERNC
-#define GASNETT_TENTATIVE_EXTERN        GASNETI_TENTATIVE_EXTERN
 
 #define gasnett_constant_p              gasneti_constant_p
 
@@ -372,6 +371,12 @@ GASNETI_BEGIN_NOWARN
 /* return a (possibly empty) string of any configuration options that might negtively impact performance */
 extern const char *gasnett_performance_warning_str(void);
 
+/* return a string representation of the compiled library's package version */
+extern const char *gasnett_release_version_str(void);
+
+/* return an monotonically advancing integral representation of the compiled library's package version */
+extern uint64_t gasnett_release_version(void);
+
 #define gasnett_sched_yield     gasneti_sched_yield 
 #define gasnett_cpu_count       gasneti_cpu_count
 #define gasnett_flush_streams   gasneti_flush_streams
@@ -446,7 +451,7 @@ typedef struct {
   int threadsupport; /* does backtrace function handle threads correctly? 
                               -ie backtrace the calling thread and optionally others as well */
 } gasnett_backtrace_type_t;
-GASNETT_TENTATIVE_EXTERN
+GASNETI_TENTATIVE_LIBRARY
 gasnett_backtrace_type_t gasnett_backtrace_user;
 
 /* ------------------------------------------------------------------------------------ */
@@ -474,11 +479,11 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
   #endif
   return; 
 }
-#ifdef GASNET_TRACE
+#if defined(GASNET_TRACE) && !GASNETI_BUILDING_TOOLS && !defined(__cplusplus)
   GASNETT_FORMAT_PRINTF_FUNCPTR(_gasnett_trace_printf,1,2,
-  GASNETT_TENTATIVE_EXTERN void (*_gasnett_trace_printf)(const char *_format, ...));
+  GASNETI_TENTATIVE_CLIENT void (*_gasnett_trace_printf)(const char *_format, ...));
   GASNETT_FORMAT_PRINTF_FUNCPTR(_gasnett_trace_printf_force,1,2,
-  GASNETT_TENTATIVE_EXTERN void (*_gasnett_trace_printf_force)(const char *_format, ...));
+  GASNETI_TENTATIVE_CLIENT void (*_gasnett_trace_printf_force)(const char *_format, ...));
   #if PLATFORM_COMPILER_PGI /* bug 1703 - workaround a PGI bug using Gnu-style variadic macros which PGI supports */
     #define GASNETT_TRACE_PRINTF(args...) \
             (_gasnett_trace_printf ? _gasnett_trace_printf(args) : _gasnett_trace_printf_noop(args))
@@ -498,7 +503,7 @@ static void _gasnett_trace_printf_noop(const char *_format, ...)) {
     #define GASNETT_TRACE_GET_TRACELOCAL()        GASNETI_TRACE_GET_TRACELOCAL()
     #define GASNETT_TRACE_SET_TRACELOCAL(newval)  GASNETI_TRACE_SET_TRACELOCAL(newval)
   #else
-    GASNETT_TENTATIVE_EXTERN int (*_gasnett_trace_enabled)(char _tracecat);
+    GASNETI_TENTATIVE_CLIENT int (*_gasnett_trace_enabled)(char _tracecat);
     #define GASNETT_TRACE_ENABLED       (_gasnett_trace_enabled?_gasnett_trace_enabled('H'):0)
     #define GASNETT_TRACE_GETMASK()               ""
     #define GASNETT_TRACE_SETMASK(mask)           ((void)0)

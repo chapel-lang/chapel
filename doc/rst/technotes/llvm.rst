@@ -29,7 +29,7 @@ generation, and support for ``--llvm-wide-opt``:
 .. code-block:: sh
 
   source ./util/setchplenv.bash
-  export CHPL_LLVM=llvm
+  export CHPL_LLVM=bundled
   # or, if you have already installed compatible LLVM libraries
   # export CHPL_LLVM=system
 
@@ -38,7 +38,7 @@ generation, and support for ``--llvm-wide-opt``:
 Note:
 
 * If you have a built llvm in ``third-party/llvm/install``, even if you forget
-  to ``export CHPL_LLVM=llvm``, the default will be to use the built llvm.  You
+  to ``export CHPL_LLVM=bundled``, the default will be to use the built llvm.  You
   can override this default by setting ``CHPL_LLVM=none``.
 
 * the Makefile in third-party/llvm will unpack LLVM and Clang source releases
@@ -50,11 +50,6 @@ Note:
 
 * You can set the environment variable ``CHPL_LLVM_DEVELOPER``
   to request a debug build of LLVM.
-
-* The pre-built LLVM that Apple distributes for Macs does not include
-  the header files needed for Chapel to use CHPL_LLVM=system.
-  However, you can install a Mac Homebrew version of LLVM with, for
-  example, ``brew install llvm@7`` and then set CHPL_LLVM=system.
 
 ---------------------------
 Activating the LLVM support

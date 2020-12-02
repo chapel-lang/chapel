@@ -1,9 +1,8 @@
 //===- LazyEmittingLayer.h - Lazily emit IR to lower JIT layers -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,8 +34,8 @@ namespace orc {
 
 /// Lazy-emitting IR layer.
 ///
-///   This layer accepts LLVM IR Modules (via addModule), but does not
-/// immediately emit them the layer below. Instead, emissing to the base layer
+///   This layer accepts LLVM IR Modules (via addModule) but does not
+/// immediately emit them the layer below. Instead, emission to the base layer
 /// is deferred until the first time the client requests the address (via
 /// JITSymbol::getAddress) for a symbol contained in this layer.
 template <typename BaseLayerT> class LazyEmittingLayer {
@@ -50,28 +49,24 @@ private:
       switch (EmitState) {
       case NotEmitted:
         if (auto GV = searchGVs(Name, ExportedSymbolsOnly)) {
-          // Create a std::string version of Name to capture here - the argument
-          // (a StringRef) may go away before the lambda is executed.
-          // FIXME: Use capture-init when we move to C++14.
-          std::string PName = Name;
           JITSymbolFlags Flags = JITSymbolFlags::fromGlobalValue(*GV);
-          auto GetAddress =
-            [this, ExportedSymbolsOnly, PName, &B]() -> Expected<JITTargetAddress> {
-              if (this->EmitState == Emitting)
-                return 0;
-              else if (this->EmitState == NotEmitted) {
-                this->EmitState = Emitting;
-                if (auto Err = this->emitToBaseLayer(B))
-                  return std::move(Err);
-                this->EmitState = Emitted;
-              }
-              if (auto Sym = B.findSymbolIn(K, PName, ExportedSymbolsOnly))
-                return Sym.getAddress();
-              else if (auto Err = Sym.takeError())
+          auto GetAddress = [this, ExportedSymbolsOnly, Name = Name.str(),
+                             &B]() -> Expected<JITTargetAddress> {
+            if (this->EmitState == Emitting)
+              return 0;
+            else if (this->EmitState == NotEmitted) {
+              this->EmitState = Emitting;
+              if (auto Err = this->emitToBaseLayer(B))
                 return std::move(Err);
-              else
-                llvm_unreachable("Successful symbol lookup should return "
-                                 "definition address here");
+              this->EmitState = Emitted;
+            }
+            if (auto Sym = B.findSymbolIn(K, Name, ExportedSymbolsOnly))
+              return Sym.getAddress();
+            else if (auto Err = Sym.takeError())
+              return std::move(Err);
+            else
+              llvm_unreachable("Successful symbol lookup should return "
+                               "definition address here");
           };
           return JITSymbol(std::move(GetAddress), Flags);
         } else
@@ -172,7 +167,7 @@ private:
                                            bool ExportedSymbolsOnly) const {
       assert(!MangledSymbols && "Mangled symbols map already exists?");
 
-      auto Symbols = llvm::make_unique<StringMap<const GlobalValue*>>();
+      auto Symbols = std::make_unique<StringMap<const GlobalValue*>>();
 
       Mangler Mang;
 
@@ -197,13 +192,20 @@ private:
 public:
 
   /// Construct a lazy emitting layer.
-  LazyEmittingLayer(BaseLayerT &BaseLayer) : BaseLayer(BaseLayer) {}
+  LLVM_ATTRIBUTE_DEPRECATED(
+      LazyEmittingLayer(BaseLayerT &BaseLayer),
+      "ORCv1 layers (including LazyEmittingLayer) are deprecated. Please use "
+      "ORCv2, where lazy emission is the default");
+
+  /// Construct a lazy emitting layer.
+  LazyEmittingLayer(ORCv1DeprecationAcknowledgement, BaseLayerT &BaseLayer)
+      : BaseLayer(BaseLayer) {}
 
   /// Add the given module to the lazy emitting layer.
   Error addModule(VModuleKey K, std::unique_ptr<Module> M) {
     assert(!ModuleMap.count(K) && "VModuleKey K already in use");
     ModuleMap[K] =
-        llvm::make_unique<EmissionDeferredModule>(std::move(K), std::move(M));
+        std::make_unique<EmissionDeferredModule>(std::move(K), std::move(M));
     return Error::success();
   }
 
@@ -254,6 +256,10 @@ public:
     return ModuleMap[K]->emitAndFinalize(BaseLayer);
   }
 };
+
+template <typename BaseLayerT>
+LazyEmittingLayer<BaseLayerT>::LazyEmittingLayer(BaseLayerT &BaseLayer)
+    : BaseLayer(BaseLayer) {}
 
 } // end namespace orc
 } // end namespace llvm

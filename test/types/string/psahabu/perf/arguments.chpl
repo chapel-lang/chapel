@@ -1,9 +1,16 @@
 use Time;
 
+enum types { asciiString, utf8String, byteString }
+
+config param testType = types.asciiString;
+
+type dataType = if testType == types.byteString then bytes else string;
+
 config const n = 100000000;
 config const timing = true;
 
-var pass = "passing a string";
+var pass = if testType == types.utf8String then "passer une chaîne"
+                                           else "passing  a  string":dataType;
 var acc = 0;
 
 test();
@@ -26,7 +33,7 @@ proc testReturning():Timer {
   var keepAlive: int;
   for i in 1..n {
     var s = send(i);
-    keepAlive += s.len;
+    keepAlive += s.buffLen;
   }
   tReturning.stop();
   return tReturning;
@@ -37,7 +44,7 @@ proc testReturningItoa():Timer {
   var keepAlive: int;
   for i in 1..(n/10) {
     var s = send_itoa(i);
-    keepAlive += s.len;
+    keepAlive += s.buffLen;
   }
   tReturning.stop();
   return tReturning;
@@ -56,23 +63,43 @@ proc test() {
   }
 
   // acc set in testPassing
-  if acc == n * pass.len then
+  if acc == n * pass.buffLen then
     writeln("SUCCESS");
 }
 
 
-proc receive(test: string) {
-  return test.len;
+proc receive(test: dataType) {
+  return test.buffLen;
 }
 
-proc send(l: int): string {
+proc send(l: int): dataType {
   var m = l % 3;
-  if m == 0 {
-    return "returning";
-  } else if m == 1 {
-    return "a";
-  } else {
-    return "string";
+  if testType == types.asciiString {
+    if m == 0 {
+      return "returning";
+    } else if m == 1 {
+      return "a";
+    } else {
+      return "string";
+    }
+  }
+  else if testType == types.utf8String {
+    if m == 0 {
+      return "dönüyor";
+    } else if m == 1 {
+      return "bir";
+    } else {
+      return "yazı";
+    }
+  }
+  else {
+    if m == 0 {
+      return b"returning";
+    } else if m == 1 {
+      return b"a";
+    } else {
+      return b"string";
+    }
   }
 }
 

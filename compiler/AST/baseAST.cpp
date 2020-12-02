@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -261,6 +262,18 @@ void cleanAst() {
             at->dispatchChildren.v[i] = NULL;
           }
         }
+      }
+
+      //
+      // If an internal aggregate type is being deleted, set its global
+      // handle to NULL. See #15169.
+      //
+      if (!isAlive(at)) {
+        if (at == dtBytes) dtBytes = NULL;
+        if (at == dtString) dtString = NULL;
+        if (at == dtLocale) dtLocale = NULL;
+        if (at == dtOwned) dtOwned = NULL;
+        if (at == dtShared) dtShared = NULL;
       }
     }
   }

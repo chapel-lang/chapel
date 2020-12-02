@@ -1,0 +1,8 @@
+
+ test0
+(x = 1, ptr = {xx = 1})
+a init (default)
+b init 1 1
+d lhs(0 0) = rhs(1 1)
+z deinit 1 1
+z deinit 1 1

@@ -2,7 +2,4 @@
 
 make envOverrides >> $2 2>&1
 sed '/envOverrides.c:/d' $2 > $2.tmp
-grep < $2.tmp > $2 -v \
-     -e '^g*make\(\[[0-9]*\]\)*: Warning: File .* has modification time .* in the future *$' \
-     -e '^g*make\(\[[0-9]*\]\)*: warning:  Clock skew detected\.  Your build may be incomplete\. *$'
-rm $2.tmp
+mv $2.tmp $2

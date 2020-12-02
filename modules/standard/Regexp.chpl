@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,7 +63,7 @@ Now you can use these methods on regular expressions: :proc:`regexp.search`,
 
 You can also use the string versions of these methods: :proc:`string.search`,
 :proc:`string.match`, :proc:`string.split`, or :proc:`string.matches`. Methods
-with same prototypes exist for :record:`~Bytes.bytes` type, as well.
+with same prototypes exist for :mod:`Bytes` type, as well.
 
 Lastly, you can include regular expressions in the format string for
 :proc:`~FormattedIO.readf` for searching on QIO channels using the ``%/<regexp>/``
@@ -339,7 +340,7 @@ Regular Expression Types and Methods
 
  */
 module Regexp {
-  private use SysBasic, SysError, SysCTypes;
+  private use SysBasic, SysError, SysCTypes, CPtr;
 
 pragma "no doc"
 extern type qio_regexp_t;
@@ -488,22 +489,6 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   return ret;
 }
 
-pragma "no doc"
-pragma "last resort"  // otherwise compile("some regex") resolves calling this
-proc compile(pattern: string, utf8=true, posix=false, literal=false,
-             nocapture=false, /*i*/ ignorecase=false, /*m*/ multiline=false,
-             /*s*/ dotnl=false, /*U*/ nongreedy=false): regexp(string) throws {
-  compilerWarning("Regexp.compile with 'utf8' argument is deprecated. Use generic Regexp.compile, instead");
-
-  if utf8 == false then
-    throw new owned IllegalArgumentError("utf8 argument cannot be false");
-  else
-    return compile(pattern, posix, literal, noCapture=nocapture,
-                   ignoreCase=ignorecase, multiLine=multiline, dotnl,
-                   nonGreedy=nongreedy);
-}
-
-
 /*  The reMatch record records a regular expression search match
     or a capture group.
 
@@ -525,7 +510,7 @@ record reMatch {
   /* 0-based offset into the string or channel that matched; -1 if matched=false */
   var offset:byteIndex; // 0-based, -1 if matched==false
   /* the length of the match. 0 if matched==false */
-  var length:int; // 0 if matched==false
+  var size:int; // 0 if matched==false
 }
 
 pragma "no doc"
@@ -552,7 +537,7 @@ inline proc _cond_test(m: reMatch) return m.matched;
     :returns: the portion of ``this`` referred to by the match
  */
 proc string.this(m:reMatch) {
-  if m.matched then return this[m.offset+1..#m.length];
+  if m.matched then return this[m.offset..#m.size];
   else return "";
 }
 
@@ -565,7 +550,7 @@ proc string.this(m:reMatch) {
     :returns: the portion of ``this`` referred to by the match
  */
 proc bytes.this(m:reMatch) {
-  if m.matched then return this[(m.offset+1):int..#m.length];
+  if m.matched then return this[m.offset:int..#m.size];
   else return b"";
 }
 
@@ -627,8 +612,8 @@ record regexp {
   proc _handle_captures(text: exprType, matches:_ddata(qio_regexp_string_piece_t),
                         nmatches:int, ref captures) {
     assert(nmatches >= captures.size);
-    for param i in 1..captures.size {
-      var m = _to_reMatch(matches[i]);
+    for param i in 0..captures.size-1 {
+      var m = _to_reMatch(matches[i+1]);
       if captures[i].type == reMatch {
         captures[i] = m;
       } else {
@@ -810,6 +795,7 @@ record regexp {
      :arg maxsplit: if nonzero, the maximum number of splits to do
      :yields: each split portion, one at a time
    */
+  pragma "not order independent yielding loops"
   iter split(text: exprType, maxsplit: int = 0)
   {
     var matches:_ddata(qio_regexp_string_piece_t);
@@ -848,10 +834,7 @@ record regexp {
 
       if pos < splitstart {
         // Yield splitted value
-        if exprType == string then
-          yield text[pos+1..splitstart];
-        else 
-          yield text[(pos+1):int..splitstart:int];
+        yield text[pos..splitstart-1];
       } else {
         yield "":exprType;
       }
@@ -884,6 +867,7 @@ record regexp {
      :yields: tuples of :record:`reMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
+  pragma "not order independent yielding loops"
   iter matches(text: exprType, param captures=0, maxmatches: int = max(int))
   {
     var matches:_ddata(qio_regexp_string_piece_t);
@@ -910,7 +894,7 @@ record regexp {
       param nret = captures+1;
       var ret:nret*reMatch;
       for i in 0..captures {
-        ret[i+1] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
+        ret[i] = new reMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
       cur = matches[0].offset + matches[0].len;
@@ -929,9 +913,9 @@ record regexp {
      :arg global: if true, replace multiple matches
      :returns: a tuple containing (new text, number of substitutions made)
    */
-  // TODO -- move subn after sub for documentation clarity
   proc subn(repl: exprType, text: exprType, global = true ):(exprType, int)
   {
+    // TODO -- move subn after sub for documentation clarity
     var pos:byteIndex;
     var endpos:byteIndex;
 
@@ -1002,20 +986,17 @@ record regexp {
     var litOne = new ioLiteral("new regexp(\"");
     var litTwo = new ioLiteral("\")");
 
-    try {
-      if (f.read(litOne, pattern, litTwo)) {
-        on this.home {
-          var localPattern = pattern.localize();
-          var opts:qio_regexp_options_t;
-          qio_regexp_init_default_options(opts);
-          qio_regexp_create_compile(localPattern.c_str(), localPattern.numBytes, opts, this._regexp);
-        }
+    if (f.read(litOne, pattern, litTwo)) then
+      on this.home {
+        var localPattern = pattern.localize();
+        var opts: qio_regexp_options_t;
+
+        qio_regexp_init_default_options(opts);
+        qio_regexp_create_compile(localPattern.c_str(),
+                                  localPattern.numBytes,
+                                  opts,
+                                  this._regexp);
       }
-    } catch e: SystemError {
-      f.setError(e.err);
-    } catch {
-      f.setError(EINVAL:syserr);
-    }
   }
 }
 
@@ -1041,7 +1022,7 @@ proc =(ref ret:regexp(?t), x:regexp(t))
       qio_regexp_get_options(x._regexp, options);
     }
 
-    qio_regexp_create_compile(pattern, pattern.length, options, ret._regexp);
+    qio_regexp_create_compile(pattern, pattern.size, options, ret._regexp);
   }
 }
 

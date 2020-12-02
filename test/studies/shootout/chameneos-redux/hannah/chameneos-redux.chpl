@@ -123,18 +123,10 @@ proc populate (size : int) {
   const colorsDefault10  = (Color.blue, Color.red, Color.yellow, Color.red,
                             Color.yellow, Color.blue, Color.red, Color.yellow,
                             Color.red, Color.blue);
-  const D : domain(1) = {1..size};
-  var population : [D] unmanaged Chameneos;
 
-  if (size == 10) {
-    for i in D {
-      population(i) = new unmanaged Chameneos(i, colorsDefault10(i));
-    }
-  } else {
-    for i in D {
-      population(i) = new unmanaged Chameneos(i, ((i-1) % 3):Color);
-    }
-  }
+  var population = [i in 0..size-1]
+    new unmanaged Chameneos(i, if size == 10 then colorsDefault10(i)
+                                             else (i % 3):Color     );
   return population;
 }
 
@@ -196,7 +188,7 @@ proc printInfoQuiet(totalMeetings : int, totalMeetingsWithSelf : int) {
 /* spellInt takes an integer, and spells each of its digits out in English */
 proc spellInt(n : int) {
   var s : string = n:string;
-  for i in 1..s.length {
+  for i in 1..s.size {
     write(" ", (s[i]:int):Digit);
   }
   writeln();

@@ -1,0 +1,1 @@
+paramForLoopWrongTypeLow.chpl:1: error: Range bounds and counts must be integers of compatible types in param for-loops

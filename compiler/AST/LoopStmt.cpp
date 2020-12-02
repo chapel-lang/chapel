@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -26,6 +27,7 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mContinueLabel    = 0;
   mOrderIndependent = false;
   mVectorizationHazard = false;
+  mParallelAccessVectorizationHazard = false;
 }
 
 LoopStmt::~LoopStmt()
@@ -78,9 +80,28 @@ void LoopStmt::setHasVectorizationHazard(bool v)
   mVectorizationHazard = v;
 }
 
+bool LoopStmt::hasParallelAccessVectorizationHazard() const
+{
+  return mParallelAccessVectorizationHazard;
+}
+
+void LoopStmt::setHasParallelAccessVectorizationHazard(bool v)
+{
+  mParallelAccessVectorizationHazard = v;
+}
+
+
 bool LoopStmt::isVectorizable() const
 {
-  return mOrderIndependent && !mVectorizationHazard;
+  return mOrderIndependent &&
+         !mVectorizationHazard;
+}
+
+bool LoopStmt::isParallelAccessVectorizable() const
+{
+  return mOrderIndependent &&
+         !mVectorizationHazard &&
+         !mParallelAccessVectorizationHazard;
 }
 
 // what if the nearest enclosing loop is a forall?

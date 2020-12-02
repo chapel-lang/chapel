@@ -1,9 +1,9 @@
--suseUnorderedCopy=false --no-optimize-forall-unordered-ops -scopyType=int                      # ordered-many-to-many
--suseUnorderedCopy=false --no-optimize-forall-unordered-ops -scopyType=int -soversubscription=4 # ordered-oversub-many-to-many
--suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -scopyType=int                      # unordered-many-to-many
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops -snumComponents=1  -scomponentType=int                      # ordered-many-to-many
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops -snumComponents=1  -scomponentType=int -soversubscription=4 # ordered-oversub-many-to-many
+-suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -snumComponents=1  -scomponentType=int                      # unordered-many-to-many
 
--suseUnorderedCopy=false --no-optimize-forall-unordered-ops -scopyType=2*int                    # ordered-many-to-many-2-tup
--suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -scopyType=2*int                    # unordered-many-to-many-2-tup
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops -snumComponents=2  -scomponentType=int                      # ordered-many-to-many-2-tup
+-suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -snumComponents=2  -scomponentType=int                      # unordered-many-to-many-2-tup
 
--suseUnorderedCopy=false --no-optimize-forall-unordered-ops -scopyType=16*int                   # ordered-many-to-many-16-tup
--suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -scopyType=16*int                   # unordered-many-to-many-16-tup
+-suseUnorderedCopy=false --no-optimize-forall-unordered-ops -snumComponents=16 -scomponentType=int                      # ordered-many-to-many-16-tup
+-suseUnorderedCopy=true  --no-optimize-forall-unordered-ops -snumComponents=16 -scomponentType=int                      # unordered-many-to-many-16-tup

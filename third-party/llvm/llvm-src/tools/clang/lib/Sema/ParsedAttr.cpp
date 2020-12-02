@@ -1,9 +1,8 @@
 //======- ParsedAttr.cpp --------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -99,71 +98,6 @@ void AttributeFactory::reclaimPool(AttributePool &cur) {
 void AttributePool::takePool(AttributePool &pool) {
   Attrs.insert(Attrs.end(), pool.Attrs.begin(), pool.Attrs.end());
   pool.Attrs.clear();
-}
-
-#include "clang/Sema/AttrParsedAttrKinds.inc"
-
-static StringRef normalizeAttrScopeName(StringRef ScopeName,
-                                        ParsedAttr::Syntax SyntaxUsed) {
-  // Normalize the "__gnu__" scope name to be "gnu" and the "_Clang" scope name
-  // to be "clang".
-  if (SyntaxUsed == ParsedAttr::AS_CXX11 ||
-    SyntaxUsed == ParsedAttr::AS_C2x) {
-    if (ScopeName == "__gnu__")
-      ScopeName = "gnu";
-    else if (ScopeName == "_Clang")
-      ScopeName = "clang";
-  }
-  return ScopeName;
-}
-
-static StringRef normalizeAttrName(StringRef AttrName,
-                                   StringRef NormalizedScopeName,
-                                   ParsedAttr::Syntax SyntaxUsed) {
-  // Normalize the attribute name, __foo__ becomes foo. This is only allowable
-  // for GNU attributes, and attributes using the double square bracket syntax.
-  bool ShouldNormalize =
-      SyntaxUsed == ParsedAttr::AS_GNU ||
-      ((SyntaxUsed == ParsedAttr::AS_CXX11 ||
-        SyntaxUsed == ParsedAttr::AS_C2x) &&
-       (NormalizedScopeName == "gnu" || NormalizedScopeName == "clang"));
-  if (ShouldNormalize && AttrName.size() >= 4 && AttrName.startswith("__") &&
-      AttrName.endswith("__"))
-    AttrName = AttrName.slice(2, AttrName.size() - 2);
-
-  return AttrName;
-}
-
-ParsedAttr::Kind ParsedAttr::getKind(const IdentifierInfo *Name,
-                                     const IdentifierInfo *ScopeName,
-                                     Syntax SyntaxUsed) {
-  StringRef AttrName = Name->getName();
-
-  SmallString<64> FullName;
-  if (ScopeName)
-    FullName += normalizeAttrScopeName(ScopeName->getName(), SyntaxUsed);
-
-  AttrName = normalizeAttrName(AttrName, FullName, SyntaxUsed);
-
-  // Ensure that in the case of C++11 attributes, we look for '::foo' if it is
-  // unscoped.
-  if (ScopeName || SyntaxUsed == AS_CXX11 || SyntaxUsed == AS_C2x)
-    FullName += "::";
-  FullName += AttrName;
-
-  return ::getAttrKind(FullName, SyntaxUsed);
-}
-
-unsigned ParsedAttr::getAttributeSpellingListIndex() const {
-  // Both variables will be used in tablegen generated
-  // attribute spell list index matching code.
-  auto Syntax = static_cast<ParsedAttr::Syntax>(SyntaxUsed);
-  StringRef Scope =
-      ScopeName ? normalizeAttrScopeName(ScopeName->getName(), Syntax) : "";
-  StringRef Name = normalizeAttrName(AttrName->getName(), Scope, Syntax);
-
-#include "clang/Sema/AttrSpellingListIndex.inc"
-
 }
 
 struct ParsedAttrInfo {

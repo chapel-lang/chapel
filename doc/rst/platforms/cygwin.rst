@@ -8,6 +8,14 @@ Chapel can be used on both 32-bit and 64-bit installations of Cygwin.
 Chapel can be sensitive to directories with spaces, but otherwise it
 will work on Cygwin just like any other platform.
 
+   .. note::
+
+     Please note that running Chapel on Cygwin is supported only as a
+     portability option and should not be expected to result in good
+     performance.  For users wanting to run Chapel on Windows systems,
+     the preferred approach is to use the Windows Subsystem for Linux
+     / Linux Bash Shell.
+
 
 Unpacking Chapel
 ----------------
@@ -28,7 +36,7 @@ hard-drive (``/cygdrive/c/``) to create ``/cygdrive/c/chapel`` tends to
 work well. Currently, our compiler-generated Makefiles break when the
 compiler or runtime use an absolute path that contains spaces. If any
 Cygwin experts have tips on addressing this issue in a portable way,
-please let us know at :disguise:`chapel_info@cray.com`.
+please let us know.
 
 
 Required Packages

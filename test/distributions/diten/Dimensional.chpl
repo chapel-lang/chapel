@@ -12,12 +12,12 @@ class Cyclic: DimensionDistributor {
   }
 
   override proc indToDimInd(ind: int, localeDomain) {
-    return mod(ind, localeDomain.dim(myDimension).length);
+    return mod(ind, localeDomain.dim(myDimension).size);
   }
 
   override proc localPart(localeDomain, loc, type idxType) {
     var lows:[localeDomain.dim(myDimension)] idxType;
-    var length = localeDomain.dim(myDimension).length;
+    var length = localeDomain.dim(myDimension).size;
     for i in min(idxType)..#length {
       lows(mod(i, length)) = i;
     }
@@ -41,7 +41,7 @@ class Dimensional {
   // using the dimensionDistributer for each dimension
   proc indexToLocIndex(ind: idxType ...nDims) {
     var localeArrayInd: nDims*int;
-    for i in 1..#nDims {
+    for i in 0..#nDims {
        localeArrayInd(i) = dimensionDistributors(i).indToDimInd(ind(i), localeDomain);
     }
     return localeArrayInd;
@@ -61,7 +61,7 @@ class Dimensional {
   // min(idxType)..max(idxType)
   proc getLocRanges(loc: nDims*int) {
     var ranges: nDims*range(stridable=true);
-    for param dim in 1..nDims {
+    for param dim in 0..nDims-1 {
       ranges(dim) = dimensionDistributors(dim).localPart(localeDomain, loc, idxType);
     }
     return ranges;
@@ -75,7 +75,7 @@ class DimensionalDomain {
   type idxType;
   var whole: domain(nDims, idxType);
   var dist:unmanaged Dimensional(nDims, idxType);
-  var locDoms: [dist.localeDomain] unmanaged LocDimensionalDomain(nDims, idxType);
+  var locDoms: [dist.localeDomain] unmanaged LocDimensionalDomain(nDims, idxType)?;
 
   proc postinit() {
     for loc in dist.localeDomain {
@@ -103,7 +103,7 @@ class DimensionalDomain {
   iter newThese(param iteratorType:IteratorType)
     where iteratorType == IteratorType.leader {
     for locDom in locDoms {
-      yield locDom.myElems; // - whole.low;
+      yield locDom!.myElems; // - whole.low;
     }
   }
   iter newThese(param iteratorType:IteratorType, followThis)
@@ -131,12 +131,12 @@ class DimensionalArray {
   type idxType;
   type eltType;
   var dom: unmanaged DimensionalDomain(nDims, idxType);
-  var locArrs: [dom.dist.localeDomain] unmanaged LocDimensionalArray(nDims, idxType, eltType);
+  var locArrs: [dom.dist.localeDomain] unmanaged LocDimensionalArray(nDims, idxType, eltType)?;
 
   proc postinit() {
     for loc in dom.dist.localeDomain {
       on loc {
-        locArrs(loc) = new unmanaged LocDimensionalArray(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(loc));
+        locArrs(loc) = new unmanaged LocDimensionalArray(nDims, idxType, eltType, _to_unmanaged(this), dom.locDoms(loc)!);
       }
     }
   }
@@ -150,7 +150,7 @@ class DimensionalArray {
   }
 
   proc this(ind: nDims*idxType) ref {
-    return locArrs(dom.dist.indexToLocIndex(ind)).locArr(ind);
+    return locArrs(dom.dist.indexToLocIndex(ind))!.locArr(ind);
   }
 
   iter newThese(param iteratorType:IteratorType)
@@ -182,12 +182,10 @@ proc main {
   param nLocRows = 2;
   param nLocCols = 3;
   var localeDom: domain(nDims) = {0..#nLocRows, 0..#nLocCols};
-  var locales: [localeDom] locale;
+  var locales: [localeDom] locale =
+    for (i,j) in localeDom do Locales((i*nLocCols + j)%numLocales);
 
-  for (i,j) in localeDom do
-    locales(i,j) = Locales((i*nLocCols + j)%numLocales);
-
-  var dims: nDims*unmanaged DimensionDistributor = (new unmanaged Cyclic(1), new unmanaged Cyclic(2));
+  var dims: nDims*unmanaged DimensionDistributor = (new unmanaged Cyclic(0), new unmanaged Cyclic(1));
   var dist = new unmanaged Dimensional(2, int, dims, localeDom, locales);
   var dom = dist.newDomain({0..3,0..5});
 
@@ -213,6 +211,6 @@ proc main {
   delete arr;
   delete dom;
   delete dist;
+  delete dims(0);
   delete dims(1);
-  delete dims(2);
 }

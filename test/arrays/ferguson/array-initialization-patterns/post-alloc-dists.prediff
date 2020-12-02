@@ -1,0 +1,6 @@
+#!/bin/bash
+# show only lines containing "alloc int"
+# show only lines after "alloc test begins"
+# show only lines before "alloc test begins"
+cat $2 | grep "alloc int" | grep -A 1000 "alloc int test begins" | grep -B 1000 "alloc int test ends" > $2.tmp
+mv $2.tmp $2

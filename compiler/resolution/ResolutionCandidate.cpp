@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -38,7 +39,7 @@ static Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx);
 static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal);
 static bool shouldAllowCoercionsType(Type* actualType, Type* formalType);
 
-std::map<Type*,std::map<Type*,bool>*> actualFormalCoercible;
+std::map<Type*,std::map<Type*,bool> > actualFormalCoercible;
 
 /************************************* | **************************************
 *                                                                             *
@@ -58,7 +59,8 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::isApplicable(CallInfo& info) {
+bool ResolutionCandidate::isApplicable(CallInfo& info,
+                                       VisibilityInfo* visInfo) {
   bool retval = false;
 
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
@@ -66,9 +68,9 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
     return false;
 
   if (! fn->isGeneric()) {
-    retval = isApplicableConcrete(info);
+    retval = isApplicableConcrete(info, visInfo);
   } else {
-    retval = isApplicableGeneric (info);
+    retval = isApplicableGeneric(info, visInfo);
   }
 
   // Note: for generic instantiations, this code will be executed twice.
@@ -83,7 +85,8 @@ bool ResolutionCandidate::isApplicable(CallInfo& info) {
   return retval;
 }
 
-bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
+bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
+                                               VisibilityInfo* visInfo) {
 
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
@@ -96,10 +99,11 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info) {
   if (computeAlignment(info) == false)
     return false;
 
-  return checkResolveFormalsWhereClauses(info);
+  return checkResolveFormalsWhereClauses(info, visInfo);
 }
 
-bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
+bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
+                                              VisibilityInfo* visInfo) {
 
   FnSymbol* oldFn = fn;
 
@@ -125,7 +129,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
    * Instantiate enough of the generic to get through the rest of the
    * filtering and disambiguation processes.
    */
-  fn = instantiateSignature(fn, substitutions, info.call);
+  fn = instantiateSignature(fn, substitutions, visInfo);
 
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -137,7 +141,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info) {
   if (fn == oldFn)
     return true;
 
-  return isApplicable(info);
+  return isApplicable(info, visInfo);
 }
 
 /************************************* | **************************************
@@ -165,7 +169,12 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       bool match = false;
       int  j    = 0;
       for_formals(formal, fn) {
-        if (strcmp(info.actualNames.v[i], formal->name) == 0) {
+        if (info.actualNames.v[i] == formal->name) {
+
+          if (formalIdxToActual[j] != NULL)
+            USR_FATAL(info.call, "named argument '%s' provided twice",
+                      formal->name);
+
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -198,7 +207,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           return fn->isGeneric();
         }
 
-        if (formalIdxToActual[j] == NULL) {
+        if (formalIdxToActual[j] == NULL &&
+            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -230,7 +240,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
+        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
       failingArgument = formal;
       reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
       return false;
@@ -395,12 +406,14 @@ void ResolutionCandidate::computeSubstitutionForDefaultExpr(ArgSymbol* formal,
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       Type* defaultType = tail->typeInfo();
 
+      bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
       if (defaultType == dtTypeDefaultToken) {
         substitutions.put(formal, dtTypeDefaultToken->symbol);
 
       } else if (Type* type = getInstantiationType(defaultType, NULL,
                                                    formal->type, NULL, ctx,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOutCopy)) {
         substitutions.put(formal, type->symbol);
       }
     }
@@ -417,19 +430,12 @@ static bool shouldAllowCoercions(Symbol* actual, ArgSymbol* formal) {
     // ... however, make an exception for class subtyping.
     Type* actualType = actual->getValType();
     Type* formalType = formal->getValType();
-    std::map<Type*,bool> *formalCoercible = actualFormalCoercible[actualType];
-    if (formalCoercible != NULL) {
-      if (formalCoercible->count(formalType) > 0) {
-        allowCoercions = (*formalCoercible)[formalType];
-      } else {
-        allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-        (*formalCoercible)[formalType] = allowCoercions;
-      }
+    std::map<Type*,bool>& formalCoercible = actualFormalCoercible[actualType];
+    if (formalCoercible.count(formalType) > 0) {
+      allowCoercions = formalCoercible[formalType];
     } else {
-      std::map<Type*,bool> *formalCoercible = new std::map<Type*,bool>();
       allowCoercions = shouldAllowCoercionsType(actualType, formalType);
-      (*formalCoercible)[formalType] = allowCoercions;
-      actualFormalCoercible[actualType] = formalCoercible;
+      formalCoercible[formalType] = allowCoercions;
     }
   }
 
@@ -460,15 +466,11 @@ static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
 }
 
 void clearCoercibleCache() {
-  std::map<Type*,std::map<Type*,bool>*>::iterator it;
-  for (it = actualFormalCoercible.begin(); it != actualFormalCoercible.end();
-       ++it) {
-    delete it->second;
-  }
+  actualFormalCoercible.clear();
 }
 
-// Uses formalSym and actualSym to compute allowCoercion and implicitBang
-// in a way that is appropriate for uses when resolving arguments
+// Uses formalSym and actualSym to compute allowCoercion, implicitBang, and
+// inOutCopy in a way that is appropriate for uses when resolving arguments
 static
 Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool allowCoercions = shouldAllowCoercions(actual, formal);
@@ -476,15 +478,26 @@ Type* getInstantiationType(Symbol* actual, ArgSymbol* formal, Expr* ctx) {
   bool implicitBang = allowImplicitNilabilityRemoval(actual->type, actual,
                                                      formal->type, formal);
 
+  bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
+
   return getInstantiationType(actual->type, actual, formal->type, formal, ctx,
-                              allowCoercions, implicitBang);
+                              allowCoercions, implicitBang, inOutCopy);
 }
 
 
 Type* getInstantiationType(Type* actualType, Symbol* actualSym,
                            Type* formalType, Symbol* formalSym,
                            Expr* ctx,
-                           bool allowCoercion, bool implicitBang) {
+                           bool allowCoercion, bool implicitBang,
+                           bool inOrOtherValue) {
+
+  // memoize unaliasing for in/inout/out/value return
+  if (inOrOtherValue) {
+    if (Type* copyType = getCopyTypeDuringResolution(actualType)) {
+      actualType = copyType;
+    }
+  }
+
   Type* ret = getBasicInstantiationType(actualType, actualSym,
                                         formalType, formalSym, ctx,
                                         allowCoercion, implicitBang);
@@ -509,6 +522,30 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
   }
 
   return ret;
+}
+
+bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
+  // Rule out type/param variables
+  if (formal->hasFlag(FLAG_TYPE_VARIABLE) ||
+      formal->hasFlag(FLAG_PARAM) ||
+      formal->intent == INTENT_TYPE ||
+      formal->originalIntent == INTENT_TYPE ||
+      formal->intent == INTENT_PARAM ||
+      formal->originalIntent == INTENT_PARAM)
+    return false;
+
+  FnSymbol* inFn = formal->defPoint->getFunction();
+  INT_ASSERT(inFn);
+
+  // Don't consider 'in' in chpl__coerceMove for this purpose.
+  if (inFn->name == astr_coerceMove || inFn->name == astr_coerceCopy ||
+      inFn->name == astr_initCopy || inFn->name == astr_autoCopy)
+    return false;
+
+  return (formal->originalIntent == INTENT_IN ||
+          formal->originalIntent == INTENT_CONST_IN ||
+          formal->originalIntent == INTENT_OUT ||
+          formal->originalIntent == INTENT_INOUT);
 }
 
 static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
@@ -704,7 +741,8 @@ static bool looksLikeCopyInit(ResolutionCandidate* rc) {
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
+bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
+                                                    VisibilityInfo* visInfo) {
   int coindex = -1;
 
   /*
@@ -751,6 +789,10 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info) {
                                       formal->getValType());
         return false;
 
+
+      // MPF TODO: one day, this should use actual/formal getValType,
+      // and canCoerce should be adjusted to consider intents,
+      // rather than depending on ref types at this stage in compilation.
       } else if (canDispatch(actual->type,
                              actual,
                              formal->type,
@@ -808,24 +850,28 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
   int coindex = 0;
 
   for_formals(formal, fn) {
-    if (formal->type != dtUnknown) {
-      if (Symbol* actual = formalIdxToActual[coindex]) {
-        bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
-        bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
+    if (Symbol* actual = formalIdxToActual[coindex]) {
+      bool actualIsTypeAlias = actual->hasFlag(FLAG_TYPE_VARIABLE);
+      bool formalIsTypeAlias = formal->hasFlag(FLAG_TYPE_VARIABLE);
 
-        bool formalIsParam = formal->intent == INTENT_PARAM;
+      bool formalIsParam = formal->intent == INTENT_PARAM;
 
-        if (actualIsTypeAlias != formalIsTypeAlias) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_NOT_TYPE;
-          return false;
+      // type independent checks
+      if (actualIsTypeAlias != formalIsTypeAlias) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_NOT_TYPE;
+        return false;
 
-        } else if (formalIsParam && !actual->isParameter()) {
-          failingArgument = actual;
-          reason = RESOLUTION_CANDIDATE_NOT_PARAM;
-          return false;
+      }
+      if (formalIsParam && !actual->isParameter()) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_NOT_PARAM;
+        return false;
+      }
 
-        } else if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
+      // type dependent checks
+      if (formal->type != dtUnknown) {
+        if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {
             failingArgument = actual;
@@ -837,6 +883,9 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
 
+          // MPF TODO: one day, this should use actual/formal getValType,
+          // and canCoerce should be adjusted to consider intents,
+          // rather than depending on ref types at this stage in compilation.
           if (canDispatch(actual->type,
                           actual,
                           formal->type,
@@ -913,7 +962,7 @@ classifyTypeMismatch(Type* actualType, Type* formalType) {
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   ResolutionCandidate c(fn);
 
-  c.isApplicable(info);
+  c.isApplicable(info, NULL);
 
   USR_PRINT(fn, "this candidate did not match: %s", toString(fn));
 
@@ -958,6 +1007,9 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // This only happens when no actual exists for this formal,
       // so no point in trying to find one.
     }
+
+    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
+      continue;
 
     if (formal->type == dtMethodToken)
       fnIsMethod = true;

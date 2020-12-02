@@ -1,0 +1,5 @@
+error-stack-trace-task-fn3.chpl:3: In function 'baz':
+error-stack-trace-task-fn3.chpl:4: error: Cannot assign to string from int(64)
+  error-stack-trace-task-fn3.chpl:9: called as baz(arg: string) from function 'bar'
+  error-stack-trace-task-fn3.chpl:14: called as bar(arg: string) from function 'foo'
+  error-stack-trace-task-fn3.chpl:17: called as foo(arg: string)

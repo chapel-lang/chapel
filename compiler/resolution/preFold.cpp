@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,11 +23,14 @@
 #include "astutil.h"
 #include "buildDefaultFunctions.h"
 #include "DecoratedClassType.h"
+#include "DeferStmt.h"
 #include "driver.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
+#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -35,6 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
+#include "../main/version_num.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -250,21 +255,6 @@ static bool recordContainsOwned(Type* t) {
 
   return false;
 }
-static bool recordContainsNonNilable(Type* t) {
-  if (isNonNilableClassType(t))
-    return true;
-
-  if (isRecord(t)) {
-    AggregateType* at = toAggregateType(t);
-
-    for_fields(field, at) {
-      if (recordContainsNonNilable(field->getValType()))
-        return true;
-    }
-  }
-
-  return false;
-}
 
 static bool isNonNilableOwned(Type* t) {
   return isManagedPtrType(t) &&
@@ -280,6 +270,20 @@ static void setRecordCopyableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordCopyableFlags(eltTypeAt);
+        if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test init= to set the flags
       const char* err = NULL;
@@ -318,6 +322,22 @@ static void setRecordAssignableFlags(AggregateType* at) {
 
     if (isNonNilableOwned(at)) {
       ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+
+    } else if (Type* eltType = arrayElementType(at)) {
+
+      if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
+        setRecordAssignableFlags(eltTypeAt);
+
+        if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
+          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
+      } else {
+        at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      }
+
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
@@ -347,6 +367,26 @@ static void setRecordAssignableFlags(AggregateType* at) {
   }
 }
 
+static void setRecordDefaultValueFlags(AggregateType* at);
+
+bool isDefaultInitializable(Type* t) {
+  bool val = true;
+  if (isRecord(t)) {
+    AggregateType* at = toAggregateType(t);
+    TypeSymbol* ts = at->symbol;
+
+    setRecordDefaultValueFlags(at);
+
+    val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+  } else {
+    // non-nilable class types have no default value
+    val = !isNonNilableClassType(t);
+  }
+
+  return val;
+}
+
 static void setRecordDefaultValueFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
 
@@ -357,22 +397,60 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
       ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
     } else if (isNilableClassType(at)) {
       ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+    } else if (Type* eltType = arrayElementType(at)) {
+      if (isDefaultInitializable(eltType)) {
+        ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+      } else {
+        ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+      }
+
+    } else if (isRecordWrappedType(at)) {
+      // domain or distribution
+      // these have default values today
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
+
+    } else if (at->symbol->hasFlag(FLAG_EXTERN)) {
+      // Currently extern records aren't initialized at all by default.
+      // But it's not necessarily reasonable to expect them to have
+      // initializers. See issue #7992.
+      ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
     } else {
+
+      if (at->hasUserDefinedInit == false ||
+          at->symbol->hasFlag(FLAG_TUPLE)) {
+        // For records with compiler-generated default init,
+        // or for tuples, first consider the fields.
+        // If any of the fields prohibit
+        // default initialization, return before trying
+        // to resolve the init() function.
+        bool failsDefaultInit = false;
+        for_fields(field, at) {
+          Type* fieldType = field->getValType(); // val type for tuples
+          if (isDefaultInitializable(fieldType) == false) {
+            // check for default value
+            if (field->defPoint->init == NULL) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+        if (failsDefaultInit) {
+          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
+          return;
+        }
+      }
+
       // Try resolving a test init() to set the flags
       FnSymbol* initZero = findZeroArgInitFn(at);
       if (initZero == NULL) {
         ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-      } else if (initZero->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilable(at))
-          ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
-        else
-          ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
       } else {
         ts->addFlag(FLAG_TYPE_DEFAULT_VALUE);
       }
     }
   }
 }
+
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
@@ -457,7 +535,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     int64_t n = testCaptureVector.size();
     if (index <= 0 || index > n) {
-      USR_FATAL(call, "index '%i' out of bounds, expected to be between '1' and '%i'",
+      USR_FATAL(call, "index '%" PRId64 "' out of bounds, expected to be between '1' and '%" PRId64 "'",
                 index, n);
     }
 
@@ -491,6 +569,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       USR_FATAL(call, "No test function with name '%s'",name);
     }
   }
+
+  case PRIM_MAYBE_LOCAL_THIS:
+    retval = preFoldMaybeLocalThis(call);
+    call->replace(retval);
+    break;
 
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
@@ -622,7 +705,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     if (name == NULL) {
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -694,7 +777,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       // specified.  This is the user's error.
       USR_FATAL(call,
                 "'%d' is not a valid field number for %s",
-                fieldNum,
+                fieldNum-1,
                 toString(classType));
     }
 
@@ -1038,22 +1121,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_HAS_DEFAULT_VALUE: {
     Type* t = call->get(1)->typeInfo();
 
-    bool val = true;
-    if (isRecord(t)) {
-      AggregateType* at = toAggregateType(t);
-      TypeSymbol* ts = at->symbol;
-
-      setRecordDefaultValueFlags(at);
-
-      if (call->isPrimitive(PRIM_HAS_DEFAULT_VALUE))
-        val = ts->hasFlag(FLAG_TYPE_DEFAULT_VALUE);
-      else
-        INT_FATAL("not handled");
-
-    } else {
-      // non-nilable class types have no default value
-      val = !isNonNilableClassType(t);
-    }
+    bool val = isDefaultInitializable(t);
 
     if (val)
       retval = new SymExpr(gTrue);
@@ -1527,17 +1595,6 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_DEFAULT_INIT_FIELD: {
-    SymExpr* initVal = toSymExpr(call->get(4)->remove());
-    SymExpr* toType = toSymExpr(call->get(3)->remove());
-    checkMoveIntoClass(call, toType->getValType(), initVal->getValType());
-
-    retval = new CallExpr("_createFieldDefault", toType, initVal);
-    call->replace(retval);
-
-    break;
-  }
-
   case PRIM_REDUCE_ASSIGN: {
     // Convert this 'call' into a call to accumulateOntoState().
     INT_ASSERT(call->numActuals() == 2);
@@ -1568,7 +1625,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     SymExpr* se = toSymExpr(call->get(1));
 
     if (se->symbol()->hasFlag(FLAG_EXPR_TEMP) &&
-        !(isClassLikeOrPtr(type) || isReferenceType(type))) {
+        !(type == dtLocale || isClassLikeOrPtr(type) || isReferenceType(type))) {
       USR_WARN(se, "accessing the locale of a local expression");
     }
 
@@ -1577,7 +1634,8 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     // or distribution wrapper type, apply .locale to the _value
     // field of the wrapper
     //
-    if (isRecordWrappedType(type)) {
+    if (isRecordWrappedType(type) ||
+        type == dtLocale) {
       VarSymbol* tmp = newTemp("_locale_tmp_");
 
       call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1635,6 +1693,59 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   case PRIM_REDUCE: {
     // Need to do this ahead of resolveCall().
     retval = lowerPrimReduce(call);
+    break;
+  }
+
+  case PRIM_STEAL: {
+    SymExpr* se = toSymExpr(call->get(1));
+    if (Symbol* sym = se->symbol())
+      if (!sym->isRef())
+        sym->addFlag(FLAG_NO_AUTO_DESTROY);
+
+    retval = se->remove();
+    call->replace(retval);
+
+    break;
+  }
+
+  case PRIM_VERSION_MAJOR: {
+    retval = new SymExpr(new_IntSymbol(MAJOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_MINOR: {
+    retval = new SymExpr(new_IntSymbol(MINOR_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_UPDATE: {
+    retval = new SymExpr(new_IntSymbol(UPDATE_VERSION));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_VERSION_SHA: {
+    retval = (officialRelease ?
+              new SymExpr(new_StringSymbol("")) :
+              new SymExpr(new_StringSymbol(BUILD_VERSION)));
+    call->replace(retval);
+    break;
+  }
+
+  case PRIM_SET_ALIASING_ARRAY_ON_TYPE: {
+    Expr* typeArg = call->get(1);
+    SymExpr* valArg = toSymExpr(call->get(2));
+
+    Type* t = canonicalClassType(typeArg->getValType());
+    if (valArg->symbol() == gTrue)
+      t->symbol->addFlag(FLAG_ALIASING_ARRAY);
+    else if (valArg->symbol() == gFalse)
+      t->symbol->removeFlag(FLAG_ALIASING_ARRAY);
+
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
     break;
   }
 
@@ -1723,6 +1834,136 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
 }
 
 
+static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
+  // Find the getIterator's statement and check that the structure is
+  // as expected; if not, return NULL (change nothing)
+  //
+  Expr* parentStmt = call->getStmtExpr();
+  CallExpr* parentAsCallExpr = toCallExpr(parentStmt);
+  if (parentAsCallExpr == NULL) return NULL;
+  SymExpr* lhs = toSymExpr(parentAsCallExpr->get(1));
+  if (lhs == NULL) return NULL;
+  Symbol* iteratorSym = lhs->symbol();  // grab this for later
+
+  // Insert a no-op after it
+  // in order to create a place to insert new statements.
+  //
+  CallExpr* noop = new CallExpr(PRIM_NOOP);
+  parentStmt->insertAfter(noop);
+
+  // Look for the associated ForLoop statement, removing all
+  // statements leading up to it (since they're unnecessary once
+  // we unroll).  This is very sensitive to the current IR format
+  // such that if it changes, we'll likely bail out of this
+  // prefold and fall into the "Heterogeneous tuples don't support
+  // this style of loop yet" error message in ChapelTuple.chpl.
+  //
+  ForLoop* theloop = NULL;
+  Expr* nextStmt = noop->next;
+  if (DeferStmt* defer = toDeferStmt(nextStmt)) {
+    nextStmt = nextStmt->next;
+    defer->remove();
+    if (BlockStmt* block = toBlockStmt(nextStmt)) {
+      nextStmt = nextStmt->next;
+      block->remove();
+      if (ForLoop* loop = toForLoop(nextStmt)) {
+        theloop = loop;
+      }
+    }
+  }
+
+  // assume the IR isn't well-formed until we find the loop index var
+  //
+  bool wellformed = false;
+
+  if (theloop != NULL) {
+
+    // Mark the loop's index variable as being 'const ref'.
+    // Ultimately, this should likely be 'ref' in some cases, but
+    // for now I'm erring on the side of avoiding any
+    // modifications to tuples rather than allowing modifications
+    // to tuple elements that shouldn't be modified.
+    //
+    Expr* firstStmt = theloop->body.first();
+    if (DefExpr* defexp = toDefExpr(firstStmt)) {
+      if (VarSymbol* loopVar = toVarSymbol(defexp->sym)) {
+        wellformed = true;
+        loopVar->addFlag(FLAG_REF_VAR);
+        loopVar->addFlag(FLAG_CONST);
+      }
+    }
+  }
+
+  // if something wasn't as we expected, bail out; we won't unroll
+  // the loop and will generate an error when we try to resolve
+  // the iterator on the heterogeneous tuple.
+  //
+  if (!wellformed) {
+    return NULL;
+  }
+
+  // grab the tuple's type
+  //
+  AggregateType* tupType = toAggregateType(iterType);
+
+  // stamp out copies of the loop body for each element of the tuple;
+  // this loop starts from 2 to skip over the size field (which is 1).
+  //
+  Symbol* idxSym = theloop->indexGet()->symbol();
+  Symbol* continueSym = theloop->continueLabelGet();
+  for (int i=2; i<=tupType->fields.length; i++) {
+    SymbolMap map;
+
+    // create a temp to refer to the tuple field
+    //
+    VarSymbol* tmp = newTemp(astr("tupleTemp"));
+    tmp->addFlag(FLAG_REF_VAR);
+
+    // create the AST for 'tupleTemp = tuple.field'
+    //
+    VarSymbol* field = new_CStringSymbol(tupType->getField(i)->name);
+    noop->insertBefore(new DefExpr(tmp));
+    noop->insertBefore(new CallExpr(PRIM_MOVE, tmp,
+                                    new CallExpr(PRIM_GET_MEMBER,
+                                                 tupExpr->copy(),
+                                                 field)));
+
+    // clone the body; subtract 2 from i to number unrollings from 0
+    //
+    map.put(idxSym, tmp);
+    theloop->copyBodyHelper(noop, i-2, &map, continueSym);
+  }
+
+  // remove the loop itself
+  //
+  theloop->remove();
+
+  // remove the no-op, replace the parent statement with it, and
+  // return it so that everything we just inserted will be
+  // resolved next
+  //
+  noop->remove();
+  parentStmt->replace(noop);
+
+  // remove some now-dead code preceding our unrolled loop; it's nice
+  // to do so, and failing to do so causes problems with --baseline
+  //
+  Expr* prevStmt = noop->prev;
+  while (prevStmt != NULL) {
+    Expr* deadStmt = prevStmt;
+    prevStmt = prevStmt->prev;
+    if (DefExpr* defexpr = toDefExpr(deadStmt)) {
+      if (defexpr->sym == iteratorSym ||  // '_iterator'
+          defexpr->sym == idxSym) {       // '_indexOfInterest'
+        defexpr->remove();
+      }
+    }
+  }
+
+  return noop;
+}
+
+
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -1762,8 +2003,8 @@ static Expr* preFoldNamed(CallExpr* call) {
         USR_FATAL(call, "illegal type index expression");
       }
 
-      if (index <= 0 || index > at->fields.length-1) {
-        USR_FATAL(call, "type index expression '%i' out of bounds", index);
+      if (index < 0 || index > at->fields.length-2) {
+        USR_FATAL(call, "type index expression '%" PRId64 "' out of bounds (0..%d)", index, at->fields.length-2);
       }
 
       sprintf(field, "x%" PRId64, index);
@@ -1784,9 +2025,9 @@ static Expr* preFoldNamed(CallExpr* call) {
       }
     }
 
-  } else if (call->isNamed("chpl__initCopy") ||
-             call->isNamed("chpl__autoCopy")) {
-    if (call->numActuals() == 1) {
+  } else if (call->isNamedAstr(astr_initCopy) ||
+             call->isNamedAstr(astr_autoCopy)) {
+    if (call->numActuals() == 2) {  // 2nd arg is `definedConst`
       if (SymExpr* symExpr = toSymExpr(call->get(1))) {
         if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
           if (var->immediate != NULL) {
@@ -1859,6 +2100,14 @@ static Expr* preFoldNamed(CallExpr* call) {
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
             Immediate coerce = getDefaultImmediate(newType);
+
+            if (fWarnUnstable && fromEnum && !toIntUint) {
+              if (is_bool_type(newType)) {
+                USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
+              } else {
+                USR_WARN(call, "enum-to-float casts are likely to be deprecated in the future");
+              }
+            }
 
             coerce_immediate(imm, &coerce);
 
@@ -1990,6 +2239,59 @@ static Expr* preFoldNamed(CallExpr* call) {
              call->isNamed("chpl__dynamicFastFollowCheck")  ) {
     if (! call->isResolved())
       buildFastFollowerChecksIfNeeded(call);
+
+  } else if (call->isNamed("_getIterator")) {
+
+    // Unroll loops over heterogeneous tuples by looking for the pattern:
+    //   _getIterator(<heterogeneousTuple>)
+    //
+
+    Expr* tupExpr = call->get(1);
+    Type* iterType = tupExpr->getValType();
+    if (iterType->symbol->hasFlag(FLAG_TUPLE) &&
+        !iterType->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+
+      retval = unrollHetTupleLoop(call, tupExpr, iterType);
+    }
+
+  } else if (call->numActuals() == 1) {
+    // Implement the common case of a boolean argument here,
+    // to avoid full-blown call resolution.
+    if (SymExpr* argSE = toSymExpr(call->get(1))) {
+      Symbol* argSym = argSE->symbol();
+      Type* argType = argSym->type;
+
+      if (call->isNamed("_cond_test") || call->isNamed("isTrue")) {
+        if (argType == dtBool) {
+          // use the argument directly
+          retval = argSE->remove();
+
+        } else if (argType == dtBool->refType) {
+          // dereference it so later passes get a value
+          Expr* stmt = call->getStmtExpr();
+          VarSymbol* repl = newTempConst(dtBool);
+          stmt->insertBefore(new DefExpr(repl));
+          stmt->insertBefore("'move'(%S,'deref'(%E))", repl, argSE->remove());
+          retval = new SymExpr(repl);
+
+        } // otherwise resolve the call normally
+
+      } else if (call->isNamed("_cond_invalid")) {
+        if (argType == dtBool || argType == dtBool->refType)
+          retval = new SymExpr(gFalse);
+
+      } else if (call->isNamed("chpl_statementLevelSymbol")) {
+        // Would be nice to eliminate other chpl_statementLevelSymbol calls.
+        // However, they are used in the code to avoid split-init.
+        if (givesType(argSym) || argSym->isImmediate()) {
+          // replace with the argument
+          retval = argSE->remove();
+        }
+      }
+
+      if (retval != NULL)
+        call->replace(retval);
+    }
   }
 
   return retval;
@@ -2009,7 +2311,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   Type* indexType = call->get(3)->getValType();
 
-  if (!is_int_type(indexType) && !is_uint_type(indexType))
+  if (!is_int_type(indexType) && !is_uint_type(indexType) && !is_bool_type(indexType))
     USR_FATAL(call, "tuple indexing expression is not of integral type");
 
   AggregateType* baseType = toAggregateType(baseVar->getValType());
@@ -2021,16 +2323,21 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (get_int(call->get(3), &index)) {
     sprintf(field, "x%" PRId64, index);
-    if (index <= 0 || index >= baseType->fields.length) {
-      USR_FATAL_CONT(call, "tuple index %ld is out of bounds", index);
-      if (index == 0) zero_error = true;
+    if (index < 0 || index >= baseType->fields.length-1) {
+      USR_FATAL_CONT(call, "tuple index %" PRId64 " is out of bounds", index);
+      if (index < 0) zero_error = true;
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
     sprintf(field, "x%" PRIu64, uindex);
-    if (uindex <= 0 || uindex >= (unsigned long)baseType->fields.length) {
-      USR_FATAL_CONT(call, "tuple index %lu is out of bounds", uindex);
-      if (uindex == 0) zero_error = true;
+    if (uindex >= (unsigned long)baseType->fields.length-1) {
+      USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
+      error = true;
+    }
+  } else if (get_bool(call->get(3), &uindex)) {
+    sprintf(field, "x%" PRIu64, uindex);
+    if (uindex >= (unsigned long)baseType->fields.length-1) {
+      USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
       error = true;
     }
   } else {
@@ -2039,10 +2346,10 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   if (error) {
     if (zero_error)
-      USR_PRINT(call, "tuple elements start at index 1");
+      USR_PRINT(call, "tuple elements start at index 0");
     else
       USR_PRINT(call, "this tuple contains elements %i..%i (inclusive)",
-                1, baseType->fields.length-1);
+                0, baseType->fields.length-2);
     USR_STOP();
   }
 
@@ -2272,7 +2579,9 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   //
   // Otherwise, we need to create a Chapel first-class function (fcf)...
   //
-
+  if (fWarnUnstable) {
+    USR_WARN(call, "First class functions are unstable.");
+  }
   AggregateType* parent;
   FnSymbol*      thisParentMethod;
 

@@ -1,0 +1,20 @@
+
+Start analyzing forall (commaDecl.chpl:9)
+| Found loop domain (commaDecl.chpl:3)
+| Will attempt static and dynamic optimizations (commaDecl.chpl:9)
+|
+|  Start analyzing call (commaDecl.chpl:10)
+|   Found the domain of the access base (commaDecl.chpl:3)
+|   Can optimize: Access base's domain is the iterator (commaDecl.chpl:10)
+|  This call is a static optimization candidate (commaDecl.chpl:10)
+|
+|  Start analyzing call (commaDecl.chpl:10)
+|   Found the domain of the access base (commaDecl.chpl:3)
+|   Can optimize: Access base's domain is the iterator (commaDecl.chpl:10)
+|  This call is a static optimization candidate (commaDecl.chpl:10)
+|
+End analyzing forall (commaDecl.chpl:9)
+
+Static check successful. Using localAccess (commaDecl.chpl:10)
+Static check successful. Using localAccess (commaDecl.chpl:10)
+10 20 30 40 50 60 70 80 90 100

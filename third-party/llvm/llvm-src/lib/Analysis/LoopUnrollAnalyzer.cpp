@@ -1,9 +1,8 @@
 //===- LoopUnrollAnalyzer.cpp - Unrolling Effect Estimation -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -79,7 +78,7 @@ bool UnrolledInstAnalyzer::visitBinaryOperator(BinaryOperator &I) {
   const DataLayout &DL = I.getModule()->getDataLayout();
   if (auto FI = dyn_cast<FPMathOperator>(&I))
     SimpleV =
-        SimplifyFPBinOp(I.getOpcode(), LHS, RHS, FI->getFastMathFlags(), DL);
+        SimplifyBinOp(I.getOpcode(), LHS, RHS, FI->getFastMathFlags(), DL);
   else
     SimpleV = SimplifyBinOp(I.getOpcode(), LHS, RHS, DL);
 

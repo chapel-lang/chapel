@@ -1,9 +1,8 @@
 //===- llvm/MC/MCSubtargetInfo.h - Subtarget Information --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,6 +29,45 @@ namespace llvm {
 class MCInst;
 
 //===----------------------------------------------------------------------===//
+
+/// Used to provide key value pairs for feature and CPU bit flags.
+struct SubtargetFeatureKV {
+  const char *Key;                      ///< K-V key string
+  const char *Desc;                     ///< Help descriptor
+  unsigned Value;                       ///< K-V integer value
+  FeatureBitArray Implies;              ///< K-V bit mask
+
+  /// Compare routine for std::lower_bound
+  bool operator<(StringRef S) const {
+    return StringRef(Key) < S;
+  }
+
+  /// Compare routine for std::is_sorted.
+  bool operator<(const SubtargetFeatureKV &Other) const {
+    return StringRef(Key) < StringRef(Other.Key);
+  }
+};
+
+//===----------------------------------------------------------------------===//
+
+/// Used to provide key value pairs for feature and CPU bit flags.
+struct SubtargetSubTypeKV {
+  const char *Key;                      ///< K-V key string
+  FeatureBitArray Implies;              ///< K-V bit mask
+  const MCSchedModel *SchedModel;
+
+  /// Compare routine for std::lower_bound
+  bool operator<(StringRef S) const {
+    return StringRef(Key) < S;
+  }
+
+  /// Compare routine for std::is_sorted.
+  bool operator<(const SubtargetSubTypeKV &Other) const {
+    return StringRef(Key) < StringRef(Other.Key);
+  }
+};
+
+//===----------------------------------------------------------------------===//
 ///
 /// Generic base class for all target subtargets.
 ///
@@ -37,10 +75,9 @@ class MCSubtargetInfo {
   Triple TargetTriple;
   std::string CPU; // CPU being targeted.
   ArrayRef<SubtargetFeatureKV> ProcFeatures;  // Processor feature list
-  ArrayRef<SubtargetFeatureKV> ProcDesc;  // Processor descriptions
+  ArrayRef<SubtargetSubTypeKV> ProcDesc;  // Processor descriptions
 
   // Scheduler machine model
-  const SubtargetInfoKV *ProcSchedModels;
   const MCWriteProcResEntry *WriteProcResTable;
   const MCWriteLatencyEntry *WriteLatencyTable;
   const MCReadAdvanceEntry *ReadAdvanceTable;
@@ -55,8 +92,7 @@ public:
   MCSubtargetInfo(const MCSubtargetInfo &) = default;
   MCSubtargetInfo(const Triple &TT, StringRef CPU, StringRef FS,
                   ArrayRef<SubtargetFeatureKV> PF,
-                  ArrayRef<SubtargetFeatureKV> PD,
-                  const SubtargetInfoKV *ProcSched,
+                  ArrayRef<SubtargetSubTypeKV> PD,
                   const MCWriteProcResEntry *WPR, const MCWriteLatencyEntry *WL,
                   const MCReadAdvanceEntry *RA, const InstrStage *IS,
                   const unsigned *OC, const unsigned *FP);
@@ -104,6 +140,10 @@ public:
   /// Apply a feature flag and return the re-computed feature bits, including
   /// all feature bits implied by the flag.
   FeatureBitset ApplyFeatureFlag(StringRef FS);
+
+  /// Set/clear additional feature bits, including all other bits they imply.
+  FeatureBitset SetFeatureBitsTransitively(const FeatureBitset& FB);
+  FeatureBitset ClearFeatureBitsTransitively(const FeatureBitset &FB);
 
   /// Check whether the subtarget features are enabled/disabled as per
   /// the provided string, ignoring all other features.
@@ -153,6 +193,16 @@ public:
     return 0;
   }
 
+  /// Return the set of ReadAdvance entries declared by the scheduling class
+  /// descriptor in input.
+  ArrayRef<MCReadAdvanceEntry>
+  getReadAdvanceEntries(const MCSchedClassDesc &SC) const {
+    if (!SC.NumReadAdvanceEntries)
+      return ArrayRef<MCReadAdvanceEntry>();
+    return ArrayRef<MCReadAdvanceEntry>(&ReadAdvanceTable[SC.ReadAdvanceIdx],
+                                        SC.NumReadAdvanceEntries);
+  }
+
   /// Get scheduling itinerary of a CPU.
   InstrItineraryData getInstrItineraryForCPU(StringRef CPU) const;
 
@@ -172,10 +222,51 @@ public:
     return Found != ProcDesc.end() && StringRef(Found->Key) == CPU;
   }
 
-  /// Returns string representation of scheduler comment
-  virtual std::string getSchedInfoStr(MCInst const &MCI) const {
-    return {};
+  virtual unsigned getHwMode() const { return 0; }
+
+  /// Return the cache size in bytes for the given level of cache.
+  /// Level is zero-based, so a value of zero means the first level of
+  /// cache.
+  ///
+  virtual Optional<unsigned> getCacheSize(unsigned Level) const;
+
+  /// Return the cache associatvity for the given level of cache.
+  /// Level is zero-based, so a value of zero means the first level of
+  /// cache.
+  ///
+  virtual Optional<unsigned> getCacheAssociativity(unsigned Level) const;
+
+  /// Return the target cache line size in bytes at a given level.
+  ///
+  virtual Optional<unsigned> getCacheLineSize(unsigned Level) const;
+
+  /// Return the target cache line size in bytes.  By default, return
+  /// the line size for the bottom-most level of cache.  This provides
+  /// a more convenient interface for the common case where all cache
+  /// levels have the same line size.  Return zero if there is no
+  /// cache model.
+  ///
+  virtual unsigned getCacheLineSize() const {
+    Optional<unsigned> Size = getCacheLineSize(0);
+    if (Size)
+      return *Size;
+
+    return 0;
   }
+
+  /// Return the preferred prefetch distance in terms of instructions.
+  ///
+  virtual unsigned getPrefetchDistance() const;
+
+  /// Return the maximum prefetch distance in terms of loop
+  /// iterations.
+  ///
+  virtual unsigned getMaxPrefetchIterationsAhead() const;
+
+  /// Return the minimum stride necessary to trigger software
+  /// prefetching.
+  ///
+  virtual unsigned getMinPrefetchStride() const;
 };
 
 } // end namespace llvm

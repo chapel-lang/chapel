@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -59,7 +60,7 @@ public:
   FnSymbol* follower;
 
   // Search for a standalone/leader gave a non-iterator/forwarder.
-  bool noniterSA, noniterL;
+  FnSymbol *noniterSA, *noniterL;
 
   IteratorGroup();
 };

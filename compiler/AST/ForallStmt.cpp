@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +24,18 @@
 #include "ForLoop.h"
 #include "passes.h"
 #include "stringutil.h"
+
+ForallOptimizationInfo::ForallOptimizationInfo():
+  iterSym(NULL),
+  dotDomIterExpr(NULL),
+  dotDomIterSym(NULL),
+  dotDomIterSymDom(NULL),
+  iterCall(NULL),
+  iterCallTmp(NULL),
+  autoLocalAccessChecked(false),
+  confirmedFastFollower(false)
+{
+}
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -52,6 +65,10 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fIterExprs.parent = this;
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
+
+
+  optInfo.autoLocalAccessChecked = false;
+  optInfo.confirmedFastFollower = false;
 
   gForallStmts.add(this);
 }
@@ -153,7 +170,6 @@ void ForallStmt::verify() {
   INT_ASSERT(fLoopBody->blockTag == BLOCK_NORMAL);
   INT_ASSERT(!fLoopBody->blockInfoGet());
   INT_ASSERT(!fLoopBody->isLoopStmt());
-  INT_ASSERT(!fLoopBody->useList);
   INT_ASSERT(!fLoopBody->userLabel);
   INT_ASSERT(!fLoopBody->byrefVars);
 
@@ -284,6 +300,14 @@ ForallStmt* isForallIterExpr(Expr* expr) {
 // Return a ForallStmt* if 'expr' is its loopBody.
 ForallStmt* isForallLoopBody(Expr* expr) {
   if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr == pfs->loopBody())
+      return pfs;
+  return NULL;
+}
+
+// Return a const ForallStmt* if 'expr' is its loopBody.
+const ForallStmt* isConstForallLoopBody(const Expr* expr) {
+  if (const ForallStmt* pfs = toConstForallStmt(expr->parentExpr))
     if (expr == pfs->loopBody())
       return pfs;
   return NULL;

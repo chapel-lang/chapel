@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -27,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h> // for ptrdiff_t
+#include <string.h>
 #include <sys/time.h> // for struct timeval
 #ifndef __cplusplus
 #include <complex.h>
@@ -119,7 +121,7 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
 
-#define nil 0 
+#define nil 0
 typedef void* _nilType;
 typedef void* _nilRefType;
 typedef void* _chpl_object;
@@ -204,8 +206,17 @@ typedef int64_t             _symbol;
 #define MAX_FLOAT32         FLT_MAX
 #define MAX_FLOAT64         DBL_MAX
 
-int64_t real2int( _real64 f);       // return the raw bytes of the float
-int64_t object2int( _chpl_object o);  // return the ptr
+// return the raw bytes of the float
+static inline int64_t real2int(_real64 f) {
+  int64_t ret;
+  memcpy(&ret, &f, sizeof(ret));
+  return ret;
+}
+
+// return the raw bytes of the pointer
+static inline int64_t object2int(_chpl_object o) {
+  return (intptr_t) o;
+}
 
 typedef int32_t chpl__class_id;
 
@@ -272,8 +283,29 @@ static inline _complex64 complexUnaryMinus64(_complex64 c1) {
 #endif
 
 /* This should be moved somewhere else, but where is the question */
-const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i);
+static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
+{
+  if (i < 0 || i >= args->argc) return NULL;
+  return args->argv[i];
+}
 
 #include "chpl-string-support.h"
+
+//
+// The first member of both the task and on-stmt body function argument
+// bundle header structs is a 'kind' indicator of this type.  This lets
+// us distinguish which kind of header is on the front of the bundle.
+//
+// By convention, arg bundle kind == 0 indicates that the bundle starts
+// with a chpl_task_bundle_t struct, kind == 1 indicates that it starts
+// with a chpl_comm_on_bundle_t struct, and kind > 1 indicates that it
+// is a comm layer defined (implementation-private) bundle.  This also
+// leaves values < 0 for tasking layer (implementation-defined) bundle
+// types, though we don't yet have any of those.
+//
+typedef int8_t chpl_arg_bundle_kind_t;
+
+#define CHPL_ARG_BUNDLE_KIND_TASK 0
+#define CHPL_ARG_BUNDLE_KIND_COMM 1
 
 #endif

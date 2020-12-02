@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -36,12 +37,14 @@
   ``memLeaks``: `bool`:
     Enable memory tracking and produce detailed information about
     leaked memory by invoking :proc:`printMemAllocs` implicitly when
-    the program terminates normally.
+    the program terminates normally. If there are no leaks, nothing is
+    printed.
 
   ``memLeaksByType``: `bool`:
     Enable memory tracking and produce summary information about
     leaked memory by invoking :proc:`printMemAllocsByType` implicitly
-    when the program terminates normally.
+    when the program terminates normally. If there are no leaks,
+    nothing is printed.
 
   ``memLeaksLog``: `string`:
     Enable memory tracking and append a report to the named file when

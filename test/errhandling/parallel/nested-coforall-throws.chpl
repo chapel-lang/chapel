@@ -10,7 +10,7 @@ proc printErrors(errors: borrowed TaskErrors, depth:int)
       writeln(" "*depth, "TaskErrors");
       printErrors(g!, depth + 1);
     } else
-      writeln(" "*depth, "err:", e.message());
+      writeln(" "*depth, "err:", e!.message());
   }
 }
 

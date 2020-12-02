@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -350,7 +351,7 @@ static Symbol* getTupleField(CallExpr* call) {
 
   // Probably a star tuple
   if (field == NULL) {
-    field = call->get(1)->getValType()->getField("x1");
+    field = call->get(1)->getValType()->getField("x0");
   }
 
   return field;
@@ -953,7 +954,7 @@ static void addKnownWides() {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
 
       if (CallExpr* rhs = toCallExpr(call->get(2))) {
-        if (rhs->isPrimitive(PRIM_ARRAY_GET) || rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
+        if (rhs->isPrimitive(PRIM_ARRAY_GET)) {
           SymExpr* cause = toSymExpr(rhs->get(1));
           if (getElementType(cause)->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             if (lhs->isRefOrWideRef()) {
@@ -1045,7 +1046,6 @@ static void propagateVar(Symbol* sym) {
               case PRIM_ARRAY_GET:
               case PRIM_GET_MEMBER: // ??
               case PRIM_GET_MEMBER_VALUE:
-              case PRIM_ARRAY_GET_VALUE:
               case PRIM_STRING_COPY:
               case PRIM_CAST:
               case PRIM_DYNAMIC_CAST:
@@ -1423,7 +1423,7 @@ static void insertStringLiteralTemps()
               }
               if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
                 Type* valueType = call->get(1)->getValType();
-                Type* componentType = valueType->getField("x1")->type;
+                Type* componentType = valueType->getField("x0")->type;
                 if (componentType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
                   VarSymbol* tmp = newTemp(componentType);
                   call->getStmtExpr()->insertBefore(new DefExpr(tmp));
@@ -1562,7 +1562,7 @@ static void insertWideClassTempsForNil()
         }
       } else if (call->isPrimitive(PRIM_SET_SVEC_MEMBER)) {
         Type* valueType = call->get(1)->getValType();
-        Type* componentType = valueType->getField("x1")->type;
+        Type* componentType = valueType->getField("x0")->type;
         if (isFullyWide(componentType)) {
           VarSymbol* tmp = newTemp(componentType);
           call->insertBefore(new DefExpr(tmp));
@@ -1692,8 +1692,7 @@ static void localizeCall(CallExpr* call) {
           }
           // TODO: insert a local temp for the lhs of this move
           break;
-        } else if (rhs->isPrimitive(PRIM_ARRAY_GET) ||
-                   rhs->isPrimitive(PRIM_ARRAY_GET_VALUE)) {
+        } else if (rhs->isPrimitive(PRIM_ARRAY_GET)) {
           if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
             SymExpr* lhs = toSymExpr(call->get(1));
             Expr* stmt = call->getStmtExpr();

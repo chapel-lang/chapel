@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.14
+GASNet tools specification version: 1.15
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -1101,6 +1101,23 @@ int gasnett_isLittleEndian();
 
   Return true iff this architecture stores multi-word integral types in memory with
   the least-significant-byte in the lowest-numbered byte address.
+
+const char *gasnett_performance_warning_str(void);
+
+  Returns a string containing a human-readable warning summarizing attributes of the
+  current configuration that may negatively affect performance (e.g. as a result
+  of settings determined at configure time). If there are no such warnings, the
+  resulting string is empty.
+
+const char *gasnett_release_version_str(void);
+
+  Returns a human-readable string containing the package release version number.
+  Also see GASNETT_RELEASE_VERSION_* below.
+
+uint64_t gasnett_release_version(void);
+
+  Return an monotonically advancing integral representation of the compiled library's package version.
+  Also see GASNETT_RELEASE_VERSION_* below.
 
 -------------------
 Miscellaneous tools

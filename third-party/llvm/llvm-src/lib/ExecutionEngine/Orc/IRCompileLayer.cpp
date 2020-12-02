@@ -1,9 +1,8 @@
 //===--------------- IRCompileLayer.cpp - IR Compiling Layer --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,9 +11,14 @@
 namespace llvm {
 namespace orc {
 
+IRCompileLayer::IRCompiler::~IRCompiler() {}
+
 IRCompileLayer::IRCompileLayer(ExecutionSession &ES, ObjectLayer &BaseLayer,
-                                 CompileFunction Compile)
-    : IRLayer(ES), BaseLayer(BaseLayer), Compile(std::move(Compile)) {}
+                               std::unique_ptr<IRCompiler> Compile)
+    : IRLayer(ES, ManglingOpts), BaseLayer(BaseLayer),
+      Compile(std::move(Compile)) {
+  ManglingOpts = &this->Compile->getManglingOptions();
+}
 
 void IRCompileLayer::setNotifyCompiled(NotifyCompiledFunction NotifyCompiled) {
   std::lock_guard<std::mutex> Lock(IRLayerMutex);
@@ -23,9 +27,9 @@ void IRCompileLayer::setNotifyCompiled(NotifyCompiledFunction NotifyCompiled) {
 
 void IRCompileLayer::emit(MaterializationResponsibility R,
                           ThreadSafeModule TSM) {
-  assert(TSM.getModule() && "Module must not be null");
+  assert(TSM && "Module must not be null");
 
-  if (auto Obj = Compile(*TSM.getModule())) {
+  if (auto Obj = TSM.withModuleDo(*Compile)) {
     {
       std::lock_guard<std::mutex> Lock(IRLayerMutex);
       if (NotifyCompiled)

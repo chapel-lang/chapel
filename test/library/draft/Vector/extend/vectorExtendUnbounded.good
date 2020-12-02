@@ -1,0 +1,1 @@
+vectorExtendUnbounded.chpl:3: error: Cannot extend vector(int(64),false) with unbounded range(int(64),boundedLow,false)

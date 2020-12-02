@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,9 +63,12 @@ astlocMarker::~astlocMarker() {
 
 
 // find an AST location that is:
-//   not in an inlined function or a task function in an inlined function
+//   not in an inlined/"find user line" function or a
+//   task function in an inlined function
 //     in non-user modules
-//     (assuming preserveInlinedLineNumbers==false)
+//     (unless preserveInlinedLineNumbers==true)
+//   not in a function in beginning with chpl__
+//     (unless developer==true or preserveInlinedLineNumbers==true)
 // to use for line number reporting.
 Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
@@ -82,20 +86,34 @@ Expr* findLocationIgnoringInternalInlining(Expr* cur) {
     if (curFn->getModule()->modTag == MOD_USER)
       return cur;
 
-    bool inlined = curFn->hasFlag(FLAG_INLINED_FN);
-
-    if (inlined == false || preserveInlinedLineNumbers)
+    bool startsWithChpl = developer==false &&
+                          startsWith(curFn->name, "chpl__");
+    bool inlined = curFn->hasFlag(FLAG_FIND_USER_LINE) ||
+                   curFn->hasFlag(FLAG_INLINED_FN);
+    if (preserveInlinedLineNumbers ||
+        (startsWithChpl==false && inlined==false))
       return cur;
 
     // Look for a call to that function
+    CallExpr* anyCall = NULL;
+    CallExpr* userCall = NULL;
     for_SymbolSymExprs(se, curFn) {
       CallExpr* call = toCallExpr(se->parentExpr);
       if (se == call->baseExpr) {
-        // Switch to considering that call point
-        cur = call;
+        if (anyCall == NULL)
+          anyCall = call;
+        if (call->getModule()->modTag == MOD_USER && userCall == NULL)
+          userCall = call;
         break;
       }
     }
+
+    if (userCall != NULL)
+      cur = userCall;
+    else if (anyCall != NULL)
+      cur = anyCall;
+    else
+      return cur; // Stop if we didn't find any calls.
   }
 
   return cur; // never reached
@@ -163,7 +181,7 @@ astlocT getUserInstantiationPoint(const BaseAST* ast) {
           cur = instantiationPoint;
       }
     } else if (TypeSymbol* ts = toTypeSymbol(cur)) {
-      // Find the first use of the TypeSymbol at the type's instantation point
+      // Find the first use of the TypeSymbol at the type's instantiation point
       // so we can have a better error message line number.
       BlockStmt* instantiationPoint = ts->instantiationPoint;
 

@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -304,7 +305,9 @@ static void preNormalizeInitRecordUnion(FnSymbol* fn) {
   // The body contains at least one instance of this.init() or super.init()
   if (state.isPhase0() == true || state.isPhase1() == true) {
     InitNormalize finalState = preNormalize(at, fn->body, state);
-    finalState.initializeFieldsAtTail(fn->body);
+
+    if (at->isUnion() == false)
+      finalState.initializeFieldsAtTail(fn->body);
 
   } else {
     INT_ASSERT(false);
@@ -553,8 +556,13 @@ static InitNormalize preNormalize(AggregateType* at,
             stmt = stmt->next;
           }
         } else if (state.isFieldInitialized(field) == false) {
-          checkLocalPhaseOneErrors(state, field, callExpr);
-          stmt = state.fieldInitFromInitStmt(field, callExpr);
+          if (at->isUnion()) {
+            // Don't try to initialize union fields if not initialized
+            stmt = stmt->next;
+          } else {
+            checkLocalPhaseOneErrors(state, field, callExpr);
+            stmt = state.fieldInitFromInitStmt(field, callExpr);
+          }
         } else if (state.isFieldImplicitlyInitialized(field) == true) {
           USR_FATAL_CONT(stmt,
                          "Field \"%s\" initialized out of order",
@@ -1127,6 +1135,30 @@ static bool isSymbolThis(Expr* expr) {
   return retval;
 }
 
+// returns true if there is a postinit defined on the type
+// and in that event adds FLAG_HAS_POSTINIT to the type symbol
+static bool findPostinitAndMark(AggregateType* at) {
+  bool retval = false;
+
+  // If there is postinit() it is defined on the defining type
+  if (at->instantiatedFrom == NULL) {
+    int size = at->methods.n;
+
+    for (int i = 0; i < size && retval == false; i++) {
+      if (at->methods.v[i] != NULL)
+        retval = at->methods.v[i]->isPostInitializer();
+    }
+
+  } else {
+    retval = findPostinitAndMark(at->instantiatedFrom);
+  }
+
+  if (retval)
+    at->symbol->addFlag(FLAG_HAS_POSTINIT);
+
+  return retval;
+}
+
 //
 // Builds the list of AggregateTypes in the hierarchy of `at` that have or
 // require a postinit.
@@ -1148,14 +1180,14 @@ static bool buildPostInitChain(AggregateType* at,
   if (at == dtObject) {
     ret = false;
   } else if (at->isRecord()) {
-    if (at->hasPostInitializer()) {
+    if (findPostinitAndMark(at)) {
       chain.push_back(at);
       ret = true;
     }
   } else if (parent != NULL && buildPostInitChain(parent, chain) == true) {
     ret = true;
     chain.push_back(at);
-  } else if (at->hasPostInitializer()) {
+  } else if (findPostinitAndMark(at)) {
     ret = true;
     chain.push_back(at);
   }
@@ -1406,6 +1438,8 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   if (found == false) {
     buildPostInit(at);
   }
+
+  at->symbol->addFlag(FLAG_HAS_POSTINIT);
 
   return ret;
 }

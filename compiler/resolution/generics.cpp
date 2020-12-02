@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -60,6 +61,11 @@ static bool            fixupDefaultInitCopy(FnSymbol* fn,
                                             FnSymbol* newFn,
                                             CallExpr* call);
 
+static void            fixupUntypedOutArgRTTs(FnSymbol* fn,
+                                              FnSymbol* newFn,
+                                              CallExpr* call);
+
+
 static void
 explainInstantiation(FnSymbol* fn) {
   if (strcmp(fn->name, fExplainInstantiation) != 0)
@@ -102,9 +108,9 @@ explainInstantiation(FnSymbol* fn) {
   }
   sprintf(msg+len, ")");
   if (callStack.n) {
-    USR_PRINT(callStack.v[callStack.n-1], msg);
+    USR_PRINT(callStack.v[callStack.n-1], "%s", msg);
   } else {
-    USR_PRINT(fn, msg);
+    USR_PRINT(fn, "%s", msg);
   }
 }
 
@@ -307,7 +313,7 @@ void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var)
  * \param subs Type substitutions to be made during instantiation
  * \param call Call that is being resolved
  */
-FnSymbol* instantiate(FnSymbol* fn, SymbolMap& subs) {
+FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs) {
   FnSymbol* newFn = instantiateSignature(fn, subs, NULL);
 
   if (newFn != NULL) {
@@ -339,7 +345,9 @@ void instantiateBody(FnSymbol* fn) {
  */
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
-                               CallExpr*  call) {
+                               VisibilityInfo* visInfo) {
+  CallExpr* call = visInfo ? visInfo->call : NULL;
+
   //
   // Handle tuples explicitly
   // (_build_tuple, tuple type constructor, tuple default constructor)
@@ -373,7 +381,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
     determineAllSubs(fn, root, subs, allSubs);
 
     // use cached instantiation if possible
-    if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+    if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
       if (cached != (FnSymbol*) gVoid) {
         checkInfiniteWhereInstantiation(cached);
 
@@ -401,7 +409,7 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
         // If we computed some substitutions based upon generic
         // arguments with defaults, also check the cache entry
         // with the complete list of substitutions.
-        if (FnSymbol* cached = checkCache(genericsCache, root, &allSubs)) {
+        if (FnSymbol* cached = checkCache(genericsCache, root, visInfo, &allSubs)) {
           if (cached != (FnSymbol*) gVoid) {
             checkInfiniteWhereInstantiation(cached);
 
@@ -449,6 +457,9 @@ FnSymbol* instantiateSignature(FnSymbol*  fn,
       // Resolve formal type-exprs before checking if formals are generic
       resolveSignature(newFn);
       newFn->tagIfGeneric(&subs);
+
+      // Fix up out intent arguments
+      fixupUntypedOutArgRTTs(fn, newFn, call);
 
       explainAndCheckInstantiation(newFn, fn);
 
@@ -553,6 +564,30 @@ static bool fixupDefaultInitCopy(FnSymbol* fn,
   return retval;
 }
 
+static void fixupUntypedOutArgRTTs(FnSymbol* fn,
+                                   FnSymbol* newFn,
+                                   CallExpr* call) {
+  // Add an associated argument for out arguments that are
+  // untyped for types with runtime types
+
+  // This argument passes the runtime type from the call site
+  // to the function for use when constructing the out value.
+  for_formals(formal, newFn) {
+    if (formal->typeExpr == NULL &&
+        (formal->intent == INTENT_OUT ||
+         formal->originalIntent == INTENT_OUT)) {
+      Type* formalType = formal->type->getValType();
+      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        ArgSymbol* newFormal = new ArgSymbol(INTENT_BLANK,
+                                             astr("chpl_type_", formal->name),
+                                             formalType);
+        newFormal->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
+        newFormal->addFlag(FLAG_TYPE_VARIABLE);
+        formal->defPoint->insertBefore(new DefExpr(newFormal));
+      }
+    }
+  }
+}
 
 //
 // determine root function in the case of partial instantiation
@@ -656,12 +691,14 @@ FnSymbol* instantiateFunction(FnSymbol*  fn,
       } else {
         Type* defType = tail->typeInfo();
 
+        bool inOutCopy = inOrOutFormalNeedingCopyType(formal);
         if (defType == dtTypeDefaultToken)
           val = dtTypeDefaultToken->symbol;
         else if (Type* type = getInstantiationType(defType, NULL,
                                                    newFormal->type, NULL,
                                                    call,
-                                                   true, false)) {
+                                                   true, false,
+                                                   inOutCopy)) {
           val = type->symbol;
         }
       }

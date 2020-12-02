@@ -1,9 +1,8 @@
 //===- unittests/Basic/SourceManagerTest.cpp ------ SourceManager tests ---===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,7 +11,6 @@
 #include "clang/Basic/DiagnosticOptions.h"
 #include "clang/Basic/FileManager.h"
 #include "clang/Basic/LangOptions.h"
-#include "clang/Basic/MemoryBufferCache.h"
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
 #include "clang/Lex/HeaderSearch.h"
@@ -22,7 +20,9 @@
 #include "clang/Lex/PreprocessorOptions.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Config/llvm-config.h"
+#include "llvm/Support/Process.h"
 #include "gtest/gtest.h"
+#include <cstddef>
 
 using namespace clang;
 
@@ -61,11 +61,10 @@ TEST_F(SourceManagerTest, isBeforeInTranslationUnit) {
   SourceMgr.setMainFileID(mainFileID);
 
   TrivialModuleLoader ModLoader;
-  MemoryBufferCache PCMCache;
   HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
                           Diags, LangOpts, &*Target);
   Preprocessor PP(std::make_shared<PreprocessorOptions>(), Diags, LangOpts,
-                  SourceMgr, PCMCache, HeaderInfo, ModLoader,
+                  SourceMgr, HeaderInfo, ModLoader,
                   /*IILookup =*/nullptr,
                   /*OwnsHeaderSearch =*/false);
   PP.Initialize(*Target);
@@ -203,6 +202,69 @@ TEST_F(SourceManagerTest, locationPrintTest) {
             "</mainFile.cpp:1:1, /test-header.h:1:1>");
 }
 
+TEST_F(SourceManagerTest, getInvalidBOM) {
+  ASSERT_EQ(SrcMgr::ContentCache::getInvalidBOM(""), nullptr);
+  ASSERT_EQ(SrcMgr::ContentCache::getInvalidBOM("\x00\x00\x00"), nullptr);
+  ASSERT_EQ(SrcMgr::ContentCache::getInvalidBOM("\xFF\xFF\xFF"), nullptr);
+  ASSERT_EQ(SrcMgr::ContentCache::getInvalidBOM("#include <iostream>"),
+            nullptr);
+
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\xFE\xFF#include <iostream>")),
+            "UTF-16 (BE)");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\xFF\xFE#include <iostream>")),
+            "UTF-16 (LE)");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\x2B\x2F\x76#include <iostream>")),
+            "UTF-7");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\xF7\x64\x4C#include <iostream>")),
+            "UTF-1");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\xDD\x73\x66\x73#include <iostream>")),
+            "UTF-EBCDIC");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\x0E\xFE\xFF#include <iostream>")),
+            "SCSU");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\xFB\xEE\x28#include <iostream>")),
+            "BOCU-1");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                "\x84\x31\x95\x33#include <iostream>")),
+            "GB-18030");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                llvm::StringLiteral::withInnerNUL(
+                    "\x00\x00\xFE\xFF#include <iostream>"))),
+            "UTF-32 (BE)");
+  ASSERT_EQ(StringRef(SrcMgr::ContentCache::getInvalidBOM(
+                llvm::StringLiteral::withInnerNUL(
+                    "\xFF\xFE\x00\x00#include <iostream>"))),
+            "UTF-32 (LE)");
+}
+
+// Regression test - there was an out of bound access for buffers not terminated by zero.
+TEST_F(SourceManagerTest, getLineNumber) {
+  const unsigned pageSize = llvm::sys::Process::getPageSizeEstimate();
+  std::unique_ptr<char[]> source(new char[pageSize]);
+  for(unsigned i = 0; i < pageSize; ++i) {
+    source[i] = 'a';
+  }
+
+  std::unique_ptr<llvm::MemoryBuffer> Buf =
+      llvm::MemoryBuffer::getMemBuffer(
+        llvm::MemoryBufferRef(
+          llvm::StringRef(source.get(), 3), "whatever"
+        ),
+        false
+      );
+
+  FileID mainFileID = SourceMgr.createFileID(std::move(Buf));
+  SourceMgr.setMainFileID(mainFileID);
+
+  ASSERT_NO_FATAL_FAILURE(SourceMgr.getLineNumber(mainFileID, 1, nullptr));
+}
+
 #if defined(LLVM_ON_UNIX)
 
 TEST_F(SourceManagerTest, getMacroArgExpandedLocation) {
@@ -230,11 +292,10 @@ TEST_F(SourceManagerTest, getMacroArgExpandedLocation) {
   SourceMgr.overrideFileContents(headerFile, std::move(HeaderBuf));
 
   TrivialModuleLoader ModLoader;
-  MemoryBufferCache PCMCache;
   HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
                           Diags, LangOpts, &*Target);
   Preprocessor PP(std::make_shared<PreprocessorOptions>(), Diags, LangOpts,
-                  SourceMgr, PCMCache, HeaderInfo, ModLoader,
+                  SourceMgr, HeaderInfo, ModLoader,
                   /*IILookup =*/nullptr,
                   /*OwnsHeaderSearch =*/false);
   PP.Initialize(*Target);
@@ -349,17 +410,16 @@ TEST_F(SourceManagerTest, isBeforeInTranslationUnitWithMacroInInclude) {
   SourceMgr.overrideFileContents(headerFile, std::move(HeaderBuf));
 
   TrivialModuleLoader ModLoader;
-  MemoryBufferCache PCMCache;
   HeaderSearch HeaderInfo(std::make_shared<HeaderSearchOptions>(), SourceMgr,
                           Diags, LangOpts, &*Target);
   Preprocessor PP(std::make_shared<PreprocessorOptions>(), Diags, LangOpts,
-                  SourceMgr, PCMCache, HeaderInfo, ModLoader,
+                  SourceMgr, HeaderInfo, ModLoader,
                   /*IILookup =*/nullptr,
                   /*OwnsHeaderSearch =*/false);
   PP.Initialize(*Target);
 
   std::vector<MacroAction> Macros;
-  PP.addPPCallbacks(llvm::make_unique<MacroTracker>(Macros));
+  PP.addPPCallbacks(std::make_unique<MacroTracker>(Macros));
 
   PP.EnterMainSourceFile();
 

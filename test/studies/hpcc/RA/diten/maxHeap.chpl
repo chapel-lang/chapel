@@ -2,7 +2,7 @@ class MaxHeap {
 
   const maxSize: int;
   var size: int = 0;
-  var heap: [0..#maxSize] unmanaged HeapNode;
+  var heap: [0..#maxSize] unmanaged HeapNode?;
   var IndexToHeapNode: [0..#maxSize] int;
 
   class HeapNode {
@@ -39,12 +39,12 @@ class MaxHeap {
     child = node;
     while (!done && child > 0) {
       par = parent(child);
-      if par >= 0 && heap(par).key < heap(child).key {
+      if par >= 0 && heap(par)!.key < heap(child)!.key {
         var tmp = heap(child);
         heap(child) = heap(par);
-        IndexToHeapNode(heap(child).ind) = child;
+        IndexToHeapNode(heap(child)!.ind) = child;
         heap(par) = tmp;
-        IndexToHeapNode(heap(par).ind) = par;
+        IndexToHeapNode(heap(par)!.ind) = par;
         child = par;
       } else {
         done = true;
@@ -53,32 +53,32 @@ class MaxHeap {
   }
 
   proc extractMax() {
-    var node = heap(0);
+    var node = heap(0)!;
     var parent, child, ind, key: int;
     ind = node.ind;
     key = node.key;
     size -= 1;
-    node = heap(size);
+    node = heap(size)!;
     parent = 0;
     child = left(parent);
     while child <= size {
-      if child < size && heap(child).key < heap(child+1).key then
+      if child < size && heap(child)!.key < heap(child+1)!.key then
         child += 1;
-      if node.key >= heap(child).key then
+      if node.key >= heap(child)!.key then
         break;
       heap(parent) = heap(child);
-      IndexToHeapNode(heap(parent).ind) = parent;
+      IndexToHeapNode(heap(parent)!.ind) = parent;
       parent = child;
       child = left(child);
     }
-    heap(parent) = node!;
-    IndexToHeapNode(heap(parent).ind) = parent;
+    heap(parent) = node;
+    IndexToHeapNode(heap(parent)!.ind) = parent;
     return (ind, key);
   }
 
   proc increaseKey(ind:int) {
     var node = IndexToHeapNode(ind);
-    heap(node).key += 1;
+    heap(node)!.key += 1;
     heapify(node);
   }
 
@@ -87,9 +87,9 @@ class MaxHeap {
     var par: int = parent(node);
     var newNode = new unmanaged HeapNode(ind, key);
     size += 1;
-    while node != 0 && key > heap(par).key {
+    while node != 0 && key > heap(par)!.key {
       heap(node) = heap(par);
-      IndexToHeapNode(heap(node).ind) = node;
+      IndexToHeapNode(heap(node)!.ind) = node;
       node = par;
       par = parent(node);
     }

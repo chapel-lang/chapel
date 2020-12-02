@@ -198,7 +198,7 @@ To bootstrap clang/LLVM with ThinLTO, follow these steps:
 
 1. The host compiler_ must be a version of clang that supports ThinLTO.
 #. The host linker_ must support ThinLTO (and in the case of gold, must be
-   `configured with plugins enabled <https://llvm.org/docs/GoldPlugin.html>`_.
+   `configured with plugins enabled <https://llvm.org/docs/GoldPlugin.html>`_).
 #. Use the following additional `CMake variables
    <https://llvm.org/docs/CMake.html#options-and-variables>`_
    when configuring the bootstrap compiler build:
@@ -224,6 +224,10 @@ To bootstrap clang/LLVM with ThinLTO, follow these steps:
    build directory. Specify any additional linker options after
    ``CMAKE_EXE_LINKER_FLAGS:STRING=``. Note the configure may fail if
    linker plugin options are instead specified directly in the previous step.
+
+The `BOOTSTRAP_LLVM_ENABLE_LTO=Thin`` will enable ThinLTO for stage 2 and
+stage 3 in case the compiler used for stage 1 does not support the ThinLTO
+option.
 
 More Information
 ================

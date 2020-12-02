@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import optparse
 import sys
 
@@ -53,7 +53,7 @@ def get(flag='target'):
             elif compiler_val == 'intel' or compiler_val == 'cray-prgenv-intel':
                 atomics_val = 'intrinsics'
             elif compiler_val == 'cray-prgenv-cray':
-                atomics_val = 'intrinsics'
+                atomics_val = 'cstdlib'
             elif compiler_val in ['allinea', 'cray-prgenv-allinea']:
                 atomics_val = 'cstdlib'
             elif compiler_val == 'clang':

@@ -1,12 +1,12 @@
 private use IO;
 
 proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
-  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().numElements});
+  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().size});
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
   forall idx in targetLocs.domain {
-    offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).numIndices;
+    offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).size;
   }
 
   var cumulativeOffsets = + scan offsetArr;
@@ -27,12 +27,12 @@ proc readArrayCheckpoint(filename: string, A:[] ?t, nTasks: int = dataParTasksPe
 
 proc checkpointArray(filename: string, A:[] ?t, nTasks: int = dataParTasksPerLocale) {
   var f = open(filename, iomode.cw); // create/clear the file
-  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().numElements});
+  var targetLocs = reshape(A.targetLocales(), {1..A.targetLocales().size});
   var offsetDom = targetLocs.domain;
   var offsetArr: [offsetDom] int;
 
   forall idx in targetLocs.domain {
-    offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).numIndices;
+    offsetArr[idx] = + reduce A.localSubdomains(targetLocs(idx)).size;
   }
 
   var cumulativeOffsets = + scan offsetArr;

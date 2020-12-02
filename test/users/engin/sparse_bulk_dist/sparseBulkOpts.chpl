@@ -73,8 +73,8 @@ writeln("After bulkAdd( , false, false, false)");
 print();
 
 proc print() {
-  for i in ParentDom.dim(1) {
-    for j in ParentDom.dim(2) {
+  for i in ParentDom.dim(0) {
+    for j in ParentDom.dim(1) {
       write(SparseMat[i,j], " ");
     }
     writeln();

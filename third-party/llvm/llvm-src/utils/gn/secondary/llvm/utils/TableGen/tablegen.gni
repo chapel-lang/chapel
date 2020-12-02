@@ -9,7 +9,7 @@
 #       Basename of the generated output file.
 #       Defaults to target name with ".inc" appended.
 #
-#   td_file (roptional)
+#   td_file (optional)
 #       The .td file to pass to llvm-tblgen.
 #       Defaults to target name with ".td" appended.
 #
@@ -66,6 +66,8 @@ template("tablegen") {
 
     args = [
              rebase_path(tblgen_executable, root_build_dir),
+             "--write-if-changed",
+
              "-I",
              rebase_path("//llvm/include", root_build_dir),
 

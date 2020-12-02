@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,10 +38,13 @@ class Expr;
 
 // return vec of CallExprs of FnSymbols (no primitives)
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
-// specialized helper for IBBs
+// same as above but also allows for virtual function calls
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls);
+// specialized helpers
 void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
                                                  std::vector<GotoStmt*>& GOTOs,
                                                  std::vector<CondStmt*>& IBBs);
+void computeHasToplevelYields(BaseAST* ast, bool& result);
 
 // collect Stmts and Exprs in the AST and return them in vectors
 void collect_asts(BaseAST* ast, std::vector<BaseAST*>& asts);
@@ -62,8 +66,9 @@ void collectSymExprsFor(BaseAST* ast, const Symbol* sym1, const Symbol* sym2,
 void collectLcnSymExprs(BaseAST* ast, std::vector<SymExpr*>& symExprs);
 void collectSymbols(BaseAST* ast, std::vector<Symbol*>& symbols);
 
-// returns true if the AST contains a SymExpr pointing to sym
-bool containsSymExprFor(BaseAST* ast, Symbol* sym);
+// If ast contains a SymExpr pointing to sym, return that SymExpr
+// Otherwise, return NULL
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym);
 
 // utility routines for clearing and resetting lineno and filename
 void reset_ast_loc(BaseAST* destNode, astlocT astloc);

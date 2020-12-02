@@ -1,0 +1,6 @@
+--set debugDefaultDist=true -sdistType=DistType.default # post-alloc-dists.default.good
+--set debugDefaultDist=true -sdistType=DistType.block   # post-alloc-dists.block.good
+--set debugDefaultDist=true -sdistType=DistType.cyclic  # post-alloc-dists.cyclic.good
+--set debugDefaultDist=true -sdistType=DistType.blockcyclic # post-alloc-dists.blockcyclic.good
+--set debugDefaultDist=true -sdistType=DistType.replicated # post-alloc-dists.replicated.good
+--set debugDefaultDist=true -sdistType=DistType.stencil # post-alloc-dists.stencil.good

@@ -1,0 +1,15 @@
+
+Start analyzing forall (nonDomainIter.chpl:27)
+| Found loop domain (nonDomainIter.chpl:25)
+| Will attempt static and dynamic optimizations (nonDomainIter.chpl:27)
+|
+|  Start analyzing call (nonDomainIter.chpl:28)
+|   Can't determine the domain of access base (nonDomainIter.chpl:22)
+|  This call is a dynamic optimization candidate (nonDomainIter.chpl:28)
+|
+|  Start analyzing call (nonDomainIter.chpl:28)
+|   Can't determine the domain of access base (nonDomainIter.chpl:23)
+|  This call is a dynamic optimization candidate (nonDomainIter.chpl:28)
+|
+End analyzing forall (nonDomainIter.chpl:27)
+

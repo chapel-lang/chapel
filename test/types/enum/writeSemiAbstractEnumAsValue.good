@@ -1,4 +1,6 @@
 F1
 F1
 F1
-writeSemiAbstractEnumAsValue.chpl:6: error: halt reached - illegal cast: G.F1 has no integer value
+uncaught IllegalArgumentError: bad cast: enum 'G.F1' has no integer value
+  writeSemiAbstractEnumAsValue.chpl:6: thrown here
+  writeSemiAbstractEnumAsValue.chpl:6: uncaught here

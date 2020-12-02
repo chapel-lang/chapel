@@ -26,7 +26,7 @@ proc createRandomArrayParallel(nTasks:int, minimum:int, maximum:int) {
     var rng = createRandomStream(eltType=int, seed=seed);
     // Each task generates the same random values as in a serial program
     // (skipping ahead / advancing the RNG past values it would have made)
-    rng.skipToNth(1+start);
+    rng.skipToNth(start);
     for i in start..end {
       A[i] = rng.getNext(min=minimum, max=maximum);
     }

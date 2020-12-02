@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1584,16 +1585,16 @@ class Matrix {
          n = 1;
       }
       else {
-        m = aDom.high(1);
-        n = aDom.high(2);
+        m = aDom.high(0);
+        n = aDom.high(1);
       }
 
       this.aDom = {1..m, 1..n};
       this.complete();
 
       for i in 1..m {
-         if (this.aDom.high(2) != n) {
-            assert((this.aDom.high(2) != n), "All rows must have the same length.");
+         if (this.aDom.high(1) != n) {
+            assert((this.aDom.high(1) != n), "All rows must have the same length.");
          }
       }
 
@@ -1632,7 +1633,7 @@ class Matrix {
          assert(m*n != vals.domain.high, "Array length must be a multiple of m.");
       }
       var revDom = {1..n, 1..m};
-      for (ij, val) in zip(revDom, vals) { A(ij(2), ij(1)) = val; }
+      for (ij, val) in zip(revDom, vals) { A(ij(1), ij(0)) = val; }
    }
 
    /* Construct a matrix from a copy of a 2-D array.
@@ -1640,8 +1641,8 @@ class Matrix {
    */
 
    proc constructWithCopy(A : [?aDom] real) where aDom.rank == 2 {
-      var m = aDom.high(1);
-      var n = aDom.high(2);
+      var m = aDom.high(0);
+      var n = aDom.high(1);
       var X = new unmanaged Matrix(m,n);
       var C = X.getArray();
 
@@ -1763,7 +1764,7 @@ class Matrix {
    */
 
    proc getMatrix (r:[?rDom] int, c:[?cDom] int) {
-      var X = new unmanaged Matrix(r.length,c.length);
+      var X = new unmanaged Matrix(r.size,c.size);
       var B = X.getArray();
          for (i,j) in {1..rDom.high, 1..cDom.high} {
                B[i,j] = A[r[i],c[j]];
@@ -1779,7 +1780,7 @@ class Matrix {
    */
 
    proc getMatrix (i0:int, i1:int, c:[?cDom] int) {
-      var X = new unmanaged Matrix(i1-i0+1,c.length);
+      var X = new unmanaged Matrix(i1-i0+1,c.size);
       var B = X.getArray();
         for (i,j) in {i0..i1, 1..cDom.high} {
                B[i-i0,j] = A[i,c[j]];

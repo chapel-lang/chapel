@@ -1,6 +1,6 @@
 require 'cast-cstring-to-cvoidptr.h', 'cast-cstring-to-cvoidptr.c';
 
-use SysCTypes;
+use SysCTypes, CPtr;
 
 extern proc strlen(const s: c_string): size_t;
 extern proc strlen_voidptr(const s: c_void_ptr): size_t;

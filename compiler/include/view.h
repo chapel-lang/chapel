@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
  * The entirety of this work is licensed under the Apache License,
@@ -25,6 +26,7 @@
 #include <vector>
 
 class GenRet;
+class ResolutionCandidate;
 
 BaseAST* aid(int id);
 BaseAST* aid09(int id);
@@ -34,7 +36,7 @@ Expr*    aidExpr(int id);
 BaseAST* aid(BaseAST* ast);
 Expr*    aidExpr(BaseAST* ast);
 
-void        list_view_noline(BaseAST* ast);
+void        list_view_noline(const BaseAST* ast);
 void        nprint_view(BaseAST* ast);
 
 // defined in codegen/codegen.cpp
@@ -64,7 +66,7 @@ void        nprint_view_noline(BaseAST* ast);
 void        mark_view(BaseAST* ast, int id);
 
 void        list_view(int id);
-void        list_view(BaseAST* ast);
+void        list_view(const BaseAST* ast);
 
 void        astDump_view(int id);
 void        astDump_view(BaseAST* ast);
@@ -76,15 +78,23 @@ void        viewFlags(int id);
 void        map_view(SymbolMap* map);
 void        map_view(SymbolMap& map);
 
+void        set_view(std::set<BlockStmt*>* bss);
+void        set_view(std::set<BlockStmt*>& bss);
+
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
 void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
+void        vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v);
+void        vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>& v);
+void        vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v);
+void        vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v);
 void        vec_view(std::vector<Symbol*>* syms);
 void        vec_view(std::vector<Symbol*>& syms);
 void        vec_view(std::vector<FnSymbol*>* syms);
 void        vec_view(std::vector<FnSymbol*>& syms);
-
+void        vec_view(std::vector<BlockStmt*>* v);
+void        vec_view(std::vector<BlockStmt*>& v);
 
 void        fnsWithName(const char* name);
 void        fnsWithName(const char* name, Vec<FnSymbol*>& fnVec);
@@ -111,9 +121,13 @@ int debugID(int id);
 int debugID(BaseAST* ast);
 void debugSummary(int id);
 void debugSummary(BaseAST* ast);
+void debugSummary(const char* str);
 Symbol* debugParentSym(int id);
 Symbol* debugParentSym(BaseAST* ast);
 Expr* debugParentExpr(int id);
 Expr* debugParentExpr(BaseAST* ast);
+void blockSummary(int id);
+void blockSummary(BaseAST* ast);
+void blockSummary(BlockStmt* block, Symbol* sym);
 
 #endif

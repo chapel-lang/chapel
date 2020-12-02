@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -195,7 +196,7 @@ static void create_arg_bundle_class(FnSymbol* fn, CallExpr* fcall, ModuleSymbol*
     if (isRecordWrappedType(var->getValType()))
       field->qual = QUAL_VAL;
     // If it's an new 'in' intent to task fn, it should be stored by value
-    else if (shouldAddFormalTempAtCallSite(formal, fn))
+    else if (shouldAddInFormalTempAtCallSite(formal, fn))
       field->qual = QUAL_VAL;
     // If we needed to auto-copy it, it should be stored by value
     else if (autoCopy)
@@ -270,7 +271,7 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   Type*    baseType = arg->getValType();
 
   // new-style in intents are handled elsewhere
-  if (shouldAddFormalTempAtCallSite(formal, fn))
+  if (shouldAddInFormalTempAtCallSite(formal, fn))
     return false;
 
   if (!formal->isRef() && isRecord(baseType))
@@ -314,16 +315,12 @@ static bool needsAutoCopyAutoDestroyForArg(ArgSymbol* formal, Expr* arg,
   // coforall - since each task needs its own copy.
   // MPF - should this logic also apply to arguments to coforall fns
   // that had the 'in' task intent?
-  if (fn->hasFlag(FLAG_BEGIN) ||
-      isString(baseType))
+  if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
+      (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
   {
-    if ((isRecord(baseType) && fn->hasFlag(FLAG_BEGIN)) ||
-        (isRecord(baseType) && var->hasFlag(FLAG_COFORALL_INDEX_VAR)))
+    if (!formal->isRef())
     {
-      if (!formal->isRef())
-      {
-        return true;
-      }
+      return true;
     }
   }
 
@@ -352,7 +349,8 @@ static Symbol* insertAutoCopyForTaskArg
     // Insert a call to the autoCopy function ahead of the call.
     VarSymbol* valTmp = newTemp(baseType);
     fcall->insertBefore(new DefExpr(valTmp));
-    CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var);
+    Symbol *definedConst = var->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
+    CallExpr* autoCopyCall = new CallExpr(autoCopyFn, var, definedConst);
     fcall->insertBefore(new CallExpr(PRIM_MOVE, valTmp, autoCopyCall));
     var = valTmp;
   }
@@ -435,7 +433,7 @@ bundleArgs(CallExpr* fcall, BundleArgsFnData &baData) {
     // New "in" intent handling includes destruction in called
     // function (i.e. in the task function not in the wrapper)
     if (autoDestroy)
-      autoDestroy = !shouldAddFormalTempAtCallSite(formal, fn);
+      autoDestroy = !shouldAddInFormalTempAtCallSite(formal, fn);
 
     baData.needsDestroy.push_back(autoDestroy);
 
@@ -1250,12 +1248,16 @@ static void fixLHS(CallExpr* move, std::vector<Symbol*>& todo) {
 // become a QUAL_VAL.
 //
 static void replaceRecordWrappedRefs() {
+
   std::vector<Symbol*> todo;
 
   // Changes reference fields with a record-wrapped type into value fields.
   // Note that this will modify arg bundle classes.
   forv_Vec(AggregateType, aggType, gAggregateTypes) {
-    if (!aggType->symbol->hasFlag(FLAG_REF)) {
+
+    if (aggType->symbol->hasFlag(FLAG_REF)) {
+      // ignore the reference type itself
+    } else {
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {
           field->type = field->getValType();

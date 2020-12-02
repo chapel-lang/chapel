@@ -1,9 +1,8 @@
 //===-- MachOUtils.cpp - Mach-o specific helpers for dsymutil  ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -11,7 +10,7 @@
 #include "BinaryHolder.h"
 #include "DebugMap.h"
 #include "LinkUtils.h"
-#include "NonRelocatableStringpool.h"
+#include "llvm/CodeGen/NonRelocatableStringpool.h"
 #include "llvm/MC/MCAsmLayout.h"
 #include "llvm/MC/MCMachObjectWriter.h"
 #include "llvm/MC/MCObjectStreamer.h"
@@ -36,7 +35,7 @@ llvm::Error ArchAndFile::createTempFile() {
   if (!T)
     return T.takeError();
 
-  File = llvm::Optional<sys::fs::TempFile>(std::move(*T));
+  File = std::make_unique<sys::fs::TempFile>(std::move(*T));
   return Error::success();
 }
 
@@ -443,7 +442,12 @@ bool generateDsymCompanion(const DebugMap &DM, SymbolMapTranslator &Translator,
   }
 
   SmallString<0> NewSymtab;
-  NonRelocatableStringpool NewStrings(Translator);
+  std::function<StringRef(StringRef)> TranslationLambda =
+      Translator ? [&](StringRef Input) { return Translator(Input); }
+                 : static_cast<std::function<StringRef(StringRef)>>(nullptr);
+  // Legacy dsymutil puts an empty string at the start of the line table.
+  // thus we set NonRelocatableStringpool(,PutEmptyString=true)
+  NonRelocatableStringpool NewStrings(TranslationLambda, true);
   unsigned NListSize = Is64Bit ? sizeof(MachO::nlist_64) : sizeof(MachO::nlist);
   unsigned NumSyms = 0;
   uint64_t NewStringsSize = 0;

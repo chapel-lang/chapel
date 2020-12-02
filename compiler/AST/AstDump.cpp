@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -182,6 +183,13 @@ bool AstDump::enterDefExpr(DefExpr* node) {
   bool    retval = true;
 
   if (isModuleSymbol(sym)) {
+    newline();
+    write("def");
+    write("module");
+    write(sym->name);
+    if (fLogIds)
+      fprintf(mFP, "[%d]", sym->id);
+    write(" ");
     retval = false;
 
   } else {
@@ -416,6 +424,17 @@ void AstDump::visitImportStmt(ImportStmt* node) {
   mNeedSpace = true;
 
   node->src->accept(this);
+
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+    bool first = outputVector(mFP, node->unqualified);
+    outputRenames(mFP, node->renamed, first);
+    fprintf(mFP, "}");
+  }
 
   write(false, ")", true);
 }
@@ -700,6 +719,7 @@ bool AstDump::enterGotoStmt(GotoStmt* node) {
     case GOTO_ITER_END:       write("gotoIterEnd");       break;
     case GOTO_ERROR_HANDLING: write("gotoErrorHandling"); break;
     case GOTO_BREAK_ERROR_HANDLING: write("gotoBreakErrorHandling"); break;
+    case GOTO_ERROR_HANDLING_RETURN: write("gotoErrorHandlingReturn"); break;
   }
 
   if (SymExpr* label = toSymExpr(node->label)) {

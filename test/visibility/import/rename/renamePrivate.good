@@ -1,0 +1,1 @@
+renamePrivate.chpl:5: error: Bad identifier in rename, 'bar' is private

@@ -1,49 +1,49 @@
-with-runtime-fields-ok.chpl:27: warning: ==== owned CC("default",int(64),[domain(1,int(64),false)] borrowed locale)
+with-runtime-fields-ok.chpl:27: warning: ==== owned CC("default",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:27: warning: default
 with-runtime-fields-ok.chpl:27: warning: default
 with-runtime-fields-ok.chpl:27: warning: int(64)
 with-runtime-fields-ok.chpl:27: warning: int(64)
-with-runtime-fields-ok.chpl:28: warning: ==== owned CC("default?",int(64),[domain(1,int(64),false)] borrowed locale)?
+with-runtime-fields-ok.chpl:28: warning: ==== owned CC("default?",int(64),[domain(1,int(64),false)] int(64))?
 with-runtime-fields-ok.chpl:28: warning: default?
 with-runtime-fields-ok.chpl:28: warning: default?
 with-runtime-fields-ok.chpl:28: warning: int(64)
 with-runtime-fields-ok.chpl:28: warning: int(64)
-with-runtime-fields-ok.chpl:29: warning: ==== owned CC("owned",int(64),[domain(1,int(64),false)] borrowed locale)
+with-runtime-fields-ok.chpl:29: warning: ==== owned CC("owned",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:29: warning: owned
 with-runtime-fields-ok.chpl:29: warning: owned
 with-runtime-fields-ok.chpl:29: warning: int(64)
 with-runtime-fields-ok.chpl:29: warning: int(64)
-with-runtime-fields-ok.chpl:30: warning: ==== owned CC("owned?",int(64),[domain(1,int(64),false)] borrowed locale)?
+with-runtime-fields-ok.chpl:30: warning: ==== owned CC("owned?",int(64),[domain(1,int(64),false)] int(64))?
 with-runtime-fields-ok.chpl:30: warning: owned?
 with-runtime-fields-ok.chpl:30: warning: owned?
 with-runtime-fields-ok.chpl:30: warning: int(64)
 with-runtime-fields-ok.chpl:30: warning: int(64)
-with-runtime-fields-ok.chpl:31: warning: ==== shared CC("shared",int(64),[domain(1,int(64),false)] borrowed locale)
+with-runtime-fields-ok.chpl:31: warning: ==== shared CC("shared",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:31: warning: shared
 with-runtime-fields-ok.chpl:31: warning: shared
 with-runtime-fields-ok.chpl:31: warning: int(64)
 with-runtime-fields-ok.chpl:31: warning: int(64)
-with-runtime-fields-ok.chpl:32: warning: ==== shared CC("shared?",int(64),[domain(1,int(64),false)] borrowed locale)?
+with-runtime-fields-ok.chpl:32: warning: ==== shared CC("shared?",int(64),[domain(1,int(64),false)] int(64))?
 with-runtime-fields-ok.chpl:32: warning: shared?
 with-runtime-fields-ok.chpl:32: warning: shared?
 with-runtime-fields-ok.chpl:32: warning: int(64)
 with-runtime-fields-ok.chpl:32: warning: int(64)
-with-runtime-fields-ok.chpl:33: warning: ==== borrowed CC("borrowed",int(64),[domain(1,int(64),false)] borrowed locale)
+with-runtime-fields-ok.chpl:33: warning: ==== borrowed CC("borrowed",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:33: warning: borrowed
 with-runtime-fields-ok.chpl:33: warning: borrowed
 with-runtime-fields-ok.chpl:33: warning: int(64)
 with-runtime-fields-ok.chpl:33: warning: int(64)
-with-runtime-fields-ok.chpl:34: warning: ==== borrowed CC("borrowed?",int(64),[domain(1,int(64),false)] borrowed locale)?
+with-runtime-fields-ok.chpl:34: warning: ==== borrowed CC("borrowed?",int(64),[domain(1,int(64),false)] int(64))?
 with-runtime-fields-ok.chpl:34: warning: borrowed?
 with-runtime-fields-ok.chpl:34: warning: borrowed?
 with-runtime-fields-ok.chpl:34: warning: int(64)
 with-runtime-fields-ok.chpl:34: warning: int(64)
-with-runtime-fields-ok.chpl:35: warning: ==== unmanaged CC("unmanaged",int(64),[domain(1,int(64),false)] borrowed locale)
+with-runtime-fields-ok.chpl:35: warning: ==== unmanaged CC("unmanaged",int(64),[domain(1,int(64),false)] int(64))
 with-runtime-fields-ok.chpl:35: warning: unmanaged
 with-runtime-fields-ok.chpl:35: warning: unmanaged
 with-runtime-fields-ok.chpl:35: warning: int(64)
 with-runtime-fields-ok.chpl:35: warning: int(64)
-with-runtime-fields-ok.chpl:36: warning: ==== unmanaged CC("unmanaged?",int(64),[domain(1,int(64),false)] borrowed locale)?
+with-runtime-fields-ok.chpl:36: warning: ==== unmanaged CC("unmanaged?",int(64),[domain(1,int(64),false)] int(64))?
 with-runtime-fields-ok.chpl:36: warning: unmanaged?
 with-runtime-fields-ok.chpl:36: warning: unmanaged?
 with-runtime-fields-ok.chpl:36: warning: int(64)

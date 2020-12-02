@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Simple script that effectively "greps" for function calls. By default it
 looks for calls to the system allocator. For projects that provide their own

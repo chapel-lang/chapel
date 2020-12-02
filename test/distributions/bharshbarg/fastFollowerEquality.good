@@ -1,4 +1,4 @@
---- BlockDom(1,int(64),false,unmanaged DefaultDist) vs. BlockDom(1,int(64),false,unmanaged DefaultDist) ---
+--- [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) vs. [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -39,7 +39,7 @@ fast follower invoked for Block array
 fast follower invoked for Block array
 ----------
 
---- StencilDom(1,int(64),false,false) vs. StencilDom(1,int(64),false,false) ---
+--- [StencilDom(1,int(64),false,false)] int(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -80,7 +80,7 @@ fast follower invoked for Stencil array
 fast follower invoked for Stencil array
 ----------
 
---- CyclicDom(1,int(64),false) vs. CyclicDom(1,int(64),false) ---
+--- [CyclicDom(1,int(64),false)] int(64) vs. [CyclicDom(1,int(64),false)] int(64) ---
 startIdx = (1)
 targetLocDom = {0..3}
 targetLocs = 0 1 2 3
@@ -121,7 +121,7 @@ fast follower invoked for Cyclic array
 fast follower invoked for Cyclic array
 ----------
 
---- BlockDom(1,int(64),false,unmanaged DefaultDist) vs. BlockDom(1,int(64),false,unmanaged DefaultDist) ---
+--- [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) vs. [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..1}
 targetLocales = 0 1
@@ -150,7 +150,7 @@ regular follower invoked for Block array
 regular follower invoked for Block array
 ----------
 
---- StencilDom(1,int(64),false,false) vs. StencilDom(1,int(64),false,false) ---
+--- [StencilDom(1,int(64),false,false)] int(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..1}
 targetLocales = 0 1
@@ -179,7 +179,7 @@ regular follower invoked for Stencil array
 regular follower invoked for Stencil array
 ----------
 
---- CyclicDom(1,int(64),false) vs. CyclicDom(1,int(64),false) ---
+--- [CyclicDom(1,int(64),false)] int(64) vs. [CyclicDom(1,int(64),false)] int(64) ---
 startIdx = (1)
 targetLocDom = {0..1}
 targetLocs = 0 1
@@ -208,7 +208,7 @@ regular follower invoked for Cyclic array
 regular follower invoked for Cyclic array
 ----------
 
---- BlockDom(1,int(64),false,unmanaged DefaultDist) vs. BlockDom(1,int(64),false,unmanaged DefaultDist) ---
+--- [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) vs. [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -249,7 +249,7 @@ regular follower invoked for Block array
 regular follower invoked for Block array
 ----------
 
---- StencilDom(1,int(64),false,false) vs. StencilDom(1,int(64),false,false) ---
+--- [StencilDom(1,int(64),false,false)] int(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
 boundingBox = {1..10}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -290,7 +290,7 @@ regular follower invoked for Stencil array
 regular follower invoked for Stencil array
 ----------
 
---- CyclicDom(1,int(64),false) vs. CyclicDom(1,int(64),false) ---
+--- [CyclicDom(1,int(64),false)] int(64) vs. [CyclicDom(1,int(64),false)] int(64) ---
 startIdx = (1)
 targetLocDom = {0..3}
 targetLocs = 0 1 2 3
@@ -331,7 +331,7 @@ regular follower invoked for Cyclic array
 regular follower invoked for Cyclic array
 ----------
 
---- BlockDom(1,int(64),false,unmanaged DefaultDist) vs. BlockDom(1,int(64),false,unmanaged DefaultDist) ---
+--- [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) vs. [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) ---
 boundingBox = {0..99}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -360,7 +360,7 @@ regular follower invoked for Block array
 regular follower invoked for Block array
 ----------
 
---- StencilDom(1,int(64),false,false) vs. StencilDom(1,int(64),false,false) ---
+--- [StencilDom(1,int(64),false,false)] int(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
 boundingBox = {0..99}
 targetLocDom = {0..3}
 targetLocales = 0 1 2 3
@@ -389,7 +389,7 @@ regular follower invoked for Stencil array
 regular follower invoked for Stencil array
 ----------
 
---- CyclicDom(1,int(64),false) vs. CyclicDom(1,int(64),false) ---
+--- [CyclicDom(1,int(64),false)] int(64) vs. [CyclicDom(1,int(64),false)] int(64) ---
 startIdx = (1)
 targetLocDom = {0..3}
 targetLocs = 0 1 2 3
@@ -428,5 +428,128 @@ regular follower invoked for Cyclic array
 regular follower invoked for Cyclic array
 regular follower invoked for Cyclic array
 regular follower invoked for Cyclic array
+----------
+
+--- [BlockDom(1,int(64),false,unmanaged DefaultDist)] real(64) vs. [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64) ---
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+fast follower invoked for Block array
+----------
+
+--- [CyclicDom(1,int(64),false)] real(64) vs. [CyclicDom(1,int(64),false)] int(64) ---
+startIdx = (1)
+targetLocDom = {0..3}
+targetLocs = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775807..9223372036854775805 by 4}
+locDist[1].myChunk = {-9223372036854775806..9223372036854775806 by 4}
+locDist[2].myChunk = {-9223372036854775805..9223372036854775807 by 4}
+locDist[3].myChunk = {-9223372036854775808..9223372036854775804 by 4}
+
+startIdx = (1)
+targetLocDom = {0..3}
+targetLocs = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775807..9223372036854775805 by 4}
+locDist[1].myChunk = {-9223372036854775806..9223372036854775806 by 4}
+locDist[2].myChunk = {-9223372036854775805..9223372036854775807 by 4}
+locDist[3].myChunk = {-9223372036854775808..9223372036854775804 by 4}
+
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+fast follower invoked for Cyclic array
+----------
+
+--- [StencilDom(1,int(64),false,false)] real(64) vs. [StencilDom(1,int(64),false,false)] int(64) ---
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+boundingBox = {1..10}
+targetLocDom = {0..3}
+targetLocales = 0 1 2 3
+dataParTasksPerLocale = 2
+dataParIgnoreRunningTasks = false
+dataParMinGranularity = 1
+locDist[0].myChunk = {-9223372036854775808..3}
+locDist[1].myChunk = {4..5}
+locDist[2].myChunk = {6..8}
+locDist[3].myChunk = {9..9223372036854775807}
+
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
+fast follower invoked for Stencil array
 ----------
 

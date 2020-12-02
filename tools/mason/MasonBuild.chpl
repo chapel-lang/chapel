@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,33 +30,22 @@ use MasonHelp;
 use MasonEnv;
 use MasonUpdate;
 use MasonSystem;
+use MasonExternal;
 use MasonExample;
 
-proc masonBuild(args) throws {
+proc masonBuild(args: [] string) throws {
   var show = false;
   var release = false;
   var force = false;
   var compopts: list(string);
   var opt = false;
   var example = false;
-  var update = false;
+  var skipUpdate = MASON_OFFLINE;
 
   if args.size > 2 {
 
-    //
-    // This function is generic and may be instantiated with either a list
-    // or an array as the type for "args". In the case of list, the
-    // start index is 1, however in the case of an array, the `low` element
-    // is 0. The below code is a stopgap.
-    //
-    var start = 3;
-    var end = args.size; 
-    if isArray(args) && args.eltType == string {
-      start = args.domain.low + 2;
-      end = args.domain.high;
-    }
-
-    for i in start..end {
+    // strip off the first two indices
+    for i in args.indices#-(args.size-2) {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
@@ -78,15 +68,18 @@ proc masonBuild(args) throws {
       else if arg == '--show' {
         show = true;
       }
+      else if arg.startsWith('--example=') {
+        example = true;
+        compopts.append(arg);
+      }
       else if arg == '--example' {
         example = true;
       }
       else if arg == '--update' {
-        update = true;
+        skipUpdate = false;
       }
-      // passed to UpdateLock
       else if arg == '--no-update' {
-        continue;
+        skipUpdate = true;
       }
       else {
         compopts.append(arg);
@@ -96,19 +89,19 @@ proc masonBuild(args) throws {
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
-    if update then compopts.append('--update');
-    if hasOptions(args, '--no-update') then compopts.append('--no-update');
+    if skipUpdate then compopts.append('--no-update');
+                  else compopts.append('--update');
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
-    masonExample(compopts);
+    masonExample(compopts.toArray());
   }
   else {
     var argsList = new list(string);
     for x in args do argsList.append(x);
-    const configNames = UpdateLock(argsList);
-    const tomlName = configNames[1];
-    const lockName = configNames[2];
+    const configNames = updateLock(skipUpdate);
+    const tomlName = configNames[0];
+    const lockName = configNames[1];
     buildProgram(release, show, force, compopts, tomlName, lockName);
   }
 }
@@ -129,12 +122,12 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
   try! {
 
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tomlName);
     const toParse = open(projectHome + "/" + lockName, iomode.r);
-    var lockFile = new owned(parseToml(toParse));
+    var lockFile = owned.create(parseToml(toParse));
     const projectName = lockFile["root"]!["name"]!.s;
-    
+
     // --fast
     var binLoc = 'debug';
     if release then
@@ -156,6 +149,10 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
         // generate list of dependencies and get src code
         var sourceList = genSourceList(lockFile);
+
+        if lockFile.pathExists('external') {
+          spackInstalled();
+        }
         //
         // TODO: Temporarily use `toArray` here because `list` does not yet
         // support parallel iteration, which the `getSrcCode` method _must_
@@ -165,7 +162,6 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
 
         // get compilation options including external dependencies
         const compopts = getTomlCompopts(lockFile, cmdLineCompopts);
-
         // Compile Program
         if compileSrc(lockFile, binLoc, show, release, compopts, projectHome) {
           writeln("Build Successful\n");
@@ -186,7 +182,7 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
   }
   catch e: MasonError {
     stderr.writeln(e.message());
-    exit(1);  
+    exit(1);
   }
 }
 
@@ -307,14 +303,14 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
     const cmpFlags = lock["root"]!["compopts"]!.s;
     compopts.append(cmpFlags);
   }
-  
+
   if lock.pathExists('external') {
     const exDeps = lock['external']!;
     for (name, depInfo) in exDeps.A.items() {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + val.s); 
+            when "libs" do compopts.append("-L" + val.s);
             when "include" do compopts.append("-I" + val.s);
             when "other" do compopts.append("-I" + val.s);
             otherwise continue;

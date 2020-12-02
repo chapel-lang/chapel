@@ -1,7 +1,7 @@
 param n : int = 2;
 
 proc foo(ys : string ...n) {
-  for i in 1..n do
+  for i in 0..#n do
     writeln(ys(i));
 }
 

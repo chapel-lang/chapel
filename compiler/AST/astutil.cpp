@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,6 +34,7 @@
 #include "LoopExpr.h"
 #include "passes.h"
 #include "ParamForLoop.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -60,6 +62,14 @@ void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
     if (call->isResolved())
       calls.push_back(call);
 }
+
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->resolvedOrVirtualFunction() != NULL)
+      calls.push_back(call);
+}
+
 
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
   AST_CHILDREN_CALL(ast, collectExprs, exprs);
@@ -108,6 +118,7 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
     gotoStmts.push_back(gotoStmt);
 }
 
+
 // This is a specialized helper for lowerIterators.
 // Collects the gotos whose target is inTree() into 'GOTOs' and
 // the iterator break blocks into 'IBBs'.
@@ -128,6 +139,29 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+//
+// This is a specialized helper for lowerForalls.
+// Traverse the body of the iterator looking for "top-level" yields.
+// Do not descend into calls as they should not contain inner yields.
+// Do not descend into a forall loop because any yields in it will be
+// handled when lowering the forall and inlining **its** iterator.
+// Yields in a parallel construct will not come up upon this traversal
+// because parallel constructs are represented with calls to task functions.
+// While task functions have been outlined by now, lowerForalls places
+// a clone of a task function right next to a call to it, and this
+// traversal does not descend into symbols.
+//
+void computeHasToplevelYields(BaseAST* ast, bool& result) {
+  if (result)
+    return;
+  else if (CallExpr* call = toCallExpr(ast))
+    result = call->isPrimitive(PRIM_YIELD); // do not dig further
+  else if (isSymbol(ast) || isForallStmt(ast))
+    ; // do not descend into these
+  else
+    AST_CHILDREN_CALL(ast, computeHasToplevelYields, result);
 }
 
 
@@ -204,18 +238,18 @@ void collect_top_asts(BaseAST* ast, std::vector<BaseAST*>& asts) {
   asts.push_back(ast);
 }
 
-static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, bool* found) {
+static void do_containsSymExprFor(BaseAST* ast, Symbol* sym, SymExpr** found) {
   AST_CHILDREN_CALL(ast, do_containsSymExprFor, sym, found);
   if (SymExpr* symExpr = toSymExpr(ast))
     if (symExpr->symbol() == sym)
-      *found = true;
+      *found = symExpr;
 }
 
 // returns true if the AST contains a SymExpr pointing to sym
-bool containsSymExprFor(BaseAST* ast, Symbol* sym) {
-  bool found = false;
-  do_containsSymExprFor(ast, sym, &found);
-  return found;
+SymExpr* findSymExprFor(BaseAST* ast, Symbol* sym) {
+  SymExpr* ret = NULL;
+  do_containsSymExprFor(ast, sym, &ret);
+  return ret;
 }
 
 void reset_ast_loc(BaseAST* destNode, BaseAST* sourceNode) {
@@ -249,7 +283,7 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          INT_FATAL(call, "unexpected case calling %d", fn->name);
+          INT_FATAL(call, "unexpected case calling %s", fn->name);
         }
       }
     }
@@ -789,6 +823,11 @@ bool isTypeExpr(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      bool isType = false;
+      getPrimGetRuntimeTypeFieldReturnType(call, isType);
+      retval = isType;
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
@@ -1063,9 +1102,9 @@ void prune2() { prune(); } // Synonym for prune.
 
 /*
  * Takes a call that is a PRIM_SVEC_GET_MEMBER* and returns the symbol of the
- * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 1)
+ * field. Normally the call is something of the form PRIM_SVEC_GET_MEMBER(p, 0)
  * and what this function gets out is the symbol that is the first field
- * instead of just the number 1.
+ * instead of just the number 0.
  */
 Symbol* getSvecSymbol(CallExpr* call) {
   INT_ASSERT(call->isPrimitive(PRIM_GET_SVEC_MEMBER)       ||
@@ -1078,8 +1117,8 @@ Symbol* getSvecSymbol(CallExpr* call) {
   if (fieldSym) {
     int immediateVal = fieldSym->immediate->int_value();
 
-    INT_ASSERT(immediateVal >= 1 && immediateVal <= tuple->fields.length);
-    return tuple->getField(immediateVal);
+    INT_ASSERT(immediateVal >= 0 && immediateVal < tuple->fields.length);
+    return tuple->getField(immediateVal+1);
   } else {
     // GET_SVEC_MEMBER(p, i), where p is a star tuple
     return NULL;

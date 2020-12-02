@@ -1,9 +1,8 @@
 //===- STLExtrasTest.cpp - Unit tests for STL extras ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -381,6 +380,19 @@ TEST(STLExtrasTest, EmptyTest) {
   EXPECT_FALSE(llvm::empty(R1));
 }
 
+TEST(STLExtrasTest, DropBeginTest) {
+  SmallVector<int, 5> vec{0, 1, 2, 3, 4};
+
+  for (int n = 0; n < 5; ++n) {
+    int i = n;
+    for (auto &v : drop_begin(vec, n)) {
+      EXPECT_EQ(v, i);
+      i += 1;
+    }
+    EXPECT_EQ(i, 5);
+  }
+}
+
 TEST(STLExtrasTest, EarlyIncrementTest) {
   std::list<int> L = {1, 2, 3, 4};
 
@@ -445,6 +457,39 @@ TEST(STLExtrasTest, splat) {
 
   V.push_back(2);
   EXPECT_FALSE(is_splat(V));
+}
+
+TEST(STLExtrasTest, to_address) {
+  int *V1 = new int;
+  EXPECT_EQ(V1, to_address(V1));
+
+  // Check fancy pointer overload for unique_ptr
+  std::unique_ptr<int> V2 = std::make_unique<int>(0);
+  EXPECT_EQ(V2.get(), to_address(V2));
+
+  V2.reset(V1);
+  EXPECT_EQ(V1, to_address(V2));
+  V2.release();
+
+  // Check fancy pointer overload for shared_ptr
+  std::shared_ptr<int> V3 = std::make_shared<int>(0);
+  std::shared_ptr<int> V4 = V3;
+  EXPECT_EQ(V3.get(), V4.get());
+  EXPECT_EQ(V3.get(), to_address(V3));
+  EXPECT_EQ(V4.get(), to_address(V4));
+
+  V3.reset(V1);
+  EXPECT_EQ(V1, to_address(V3));
+}
+
+TEST(STLExtrasTest, partition_point) {
+  std::vector<int> V = {1, 3, 5, 7, 9};
+
+  // Range version.
+  EXPECT_EQ(V.begin() + 3,
+            partition_point(V, [](unsigned X) { return X < 7; }));
+  EXPECT_EQ(V.begin(), partition_point(V, [](unsigned X) { return X < 1; }));
+  EXPECT_EQ(V.end(), partition_point(V, [](unsigned X) { return X < 50; }));
 }
 
 } // namespace

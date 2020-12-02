@@ -1,0 +1,4 @@
+inout-intent-error-array1.chpl:10: In function 'inoutPartialArray1':
+inout-intent-error-array1.chpl:10: error: 'inout' array formals specifying a domain currently require an array element type
+inout-intent-error-array1.chpl:19: In function 'inoutPartialArray2':
+inout-intent-error-array1.chpl:19: error: 'inout' array formals specifying a domain currently require an array element type

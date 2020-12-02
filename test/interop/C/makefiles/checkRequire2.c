@@ -10,7 +10,7 @@ int main(int argc, char* argv[]) {
 
   R foo;
   foo.b = 5;
-  printsArg(&foo);
+  printsArg(foo);
 
   chpl_library_finalize();
   return 0;

@@ -5,12 +5,12 @@
 # ----------------------------------------------------------------------
 # Directory-based options
 
-GASNET_INCLUDES = @SYS_HEADER_INST@ -I###INSTALL_INCLUDE### -I###INSTALL_INCLUDE###/#conduit_name#-conduit $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#)
+GASNET_INCLUDES = -I###INSTALL_INCLUDE### -I###INSTALL_INCLUDE###/#conduit_name#-conduit $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#)
 GASNET_LIBDIRS = -L###INSTALL_LIB###
 
 # Textual lines containing the string "###NOINSTALL###" are removed by the install process
 # (must be one continuous line) ###NOINSTALL###
-GASNET_INCLUDES = @SYS_HEADER_BLD@ -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/#conduit_name#-conduit -I@TOP_SRCDIR@/other $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#) -I@TOP_SRCDIR@/extended-ref/vis -I@TOP_SRCDIR@/extended-ref/coll -I@TOP_SRCDIR@/extended-ref/ratomic -I@TOP_SRCDIR@/extended-ref -I@TOP_BUILDDIR@  ###NOINSTALL###
+GASNET_INCLUDES = -I@TOP_SRCDIR@ -I@TOP_SRCDIR@/#conduit_name#-conduit -I@TOP_SRCDIR@/other $(CONDUIT_INCLUDES) $(CONDUIT_INCLUDES_#THREAD_MODEL#) -I@TOP_SRCDIR@/extended-ref/vis -I@TOP_SRCDIR@/extended-ref/coll -I@TOP_SRCDIR@/extended-ref/ratomic -I@TOP_SRCDIR@/extended-ref -I@TOP_BUILDDIR@  ###NOINSTALL###
 GASNET_LIBDIRS = -L@TOP_BUILDDIR@/#conduit_name#-conduit ###NOINSTALL###
 
 # ----------------------------------------------------------------------

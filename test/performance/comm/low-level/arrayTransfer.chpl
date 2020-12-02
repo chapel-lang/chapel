@@ -2,14 +2,16 @@ use Memory, Time, SysCTypes;
 
 enum op_t {
   opGet,
-  opPut
+  opPut,
+  opMisalignedGet,
+  opMisalignedPut
 };
 
 use op_t;
 
 config const op = opGet;
 
-type elemType = int;
+config type elemType = int(8);
 
 config const memFraction = 10;
 config const maxMem = here.physicalMemory(unit = MemUnits.Bytes) / memFraction;
@@ -76,6 +78,10 @@ proc main() {
         B = A;
       } else if op == opPut {
         A = B;
+      } else if op == opMisalignedGet {
+        B[2..n-1] = A[2..n-1];
+      } else if op == opMisalignedPut {
+        A[2..n-1] = B[2..n-1];
       }
 
       nops += 1;

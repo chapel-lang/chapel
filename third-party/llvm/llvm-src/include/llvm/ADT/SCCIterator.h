@@ -1,9 +1,8 @@
 //===- ADT/SCCIterator.h - Strongly Connected Comp. Iter. -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -135,7 +134,10 @@ public:
   /// has been deleted, and \c New is to be used in its place.
   void ReplaceNode(NodeRef Old, NodeRef New) {
     assert(nodeVisitNumbers.count(Old) && "Old not in scc_iterator?");
-    nodeVisitNumbers[New] = nodeVisitNumbers[Old];
+    // Do the assignment in two steps, in case 'New' is not yet in the map, and
+    // inserting it causes the map to grow.
+    auto tempVal = nodeVisitNumbers[Old];
+    nodeVisitNumbers[New] = tempVal;
     nodeVisitNumbers.erase(Old);
   }
 };

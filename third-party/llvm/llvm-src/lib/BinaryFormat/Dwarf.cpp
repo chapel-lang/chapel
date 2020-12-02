@@ -1,9 +1,8 @@
 //===-- llvm/BinaryFormat/Dwarf.cpp - Dwarf Framework ------------*- C++-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,7 +22,7 @@ StringRef llvm::dwarf::TagString(unsigned Tag) {
   switch (Tag) {
   default:
     return StringRef();
-#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR)                               \
+#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR, KIND)                         \
   case DW_TAG_##NAME:                                                          \
     return "DW_TAG_" #NAME;
 #include "llvm/BinaryFormat/Dwarf.def"
@@ -32,7 +31,7 @@ StringRef llvm::dwarf::TagString(unsigned Tag) {
 
 unsigned llvm::dwarf::getTag(StringRef TagString) {
   return StringSwitch<unsigned>(TagString)
-#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR)                               \
+#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR, KIND)                         \
   .Case("DW_TAG_" #NAME, DW_TAG_##NAME)
 #include "llvm/BinaryFormat/Dwarf.def"
       .Default(DW_TAG_invalid);
@@ -42,7 +41,7 @@ unsigned llvm::dwarf::TagVersion(dwarf::Tag Tag) {
   switch (Tag) {
   default:
     return 0;
-#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR)                               \
+#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR, KIND)                         \
   case DW_TAG_##NAME:                                                          \
     return VERSION;
 #include "llvm/BinaryFormat/Dwarf.def"
@@ -53,7 +52,7 @@ unsigned llvm::dwarf::TagVendor(dwarf::Tag Tag) {
   switch (Tag) {
   default:
     return 0;
-#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR)                               \
+#define HANDLE_DW_TAG(ID, NAME, VERSION, VENDOR, KIND)                         \
   case DW_TAG_##NAME:                                                          \
     return DWARF_VENDOR_##VENDOR;
 #include "llvm/BinaryFormat/Dwarf.def"
@@ -144,8 +143,14 @@ StringRef llvm::dwarf::OperationEncodingString(unsigned Encoding) {
   case DW_OP_##NAME:                                                           \
     return "DW_OP_" #NAME;
 #include "llvm/BinaryFormat/Dwarf.def"
+  case DW_OP_LLVM_convert:
+    return "DW_OP_LLVM_convert";
   case DW_OP_LLVM_fragment:
     return "DW_OP_LLVM_fragment";
+  case DW_OP_LLVM_tag_offset:
+    return "DW_OP_LLVM_tag_offset";
+  case DW_OP_LLVM_entry_value:
+    return "DW_OP_LLVM_entry_value";
   }
 }
 
@@ -154,7 +159,10 @@ unsigned llvm::dwarf::getOperationEncoding(StringRef OperationEncodingString) {
 #define HANDLE_DW_OP(ID, NAME, VERSION, VENDOR)                                \
   .Case("DW_OP_" #NAME, DW_OP_##NAME)
 #include "llvm/BinaryFormat/Dwarf.def"
+      .Case("DW_OP_LLVM_convert", DW_OP_LLVM_convert)
       .Case("DW_OP_LLVM_fragment", DW_OP_LLVM_fragment)
+      .Case("DW_OP_LLVM_tag_offset", DW_OP_LLVM_tag_offset)
+      .Case("DW_OP_LLVM_entry_value", DW_OP_LLVM_entry_value)
       .Default(0);
 }
 
@@ -262,6 +270,19 @@ StringRef llvm::dwarf::AccessibilityString(unsigned Access) {
     return "DW_ACCESS_protected";
   case DW_ACCESS_private:
     return "DW_ACCESS_private";
+  }
+  return StringRef();
+}
+
+StringRef llvm::dwarf::DefaultedMemberString(unsigned DefaultedEncodings) {
+  switch (DefaultedEncodings) {
+  // Defaulted Member Encodings codes
+  case DW_DEFAULTED_no:
+    return "DW_DEFAULTED_no";
+  case DW_DEFAULTED_in_class:
+    return "DW_DEFAULTED_in_class";
+  case DW_DEFAULTED_out_of_class:
+    return "DW_DEFAULTED_out_of_class";
   }
   return StringRef();
 }
@@ -467,6 +488,17 @@ StringRef llvm::dwarf::RangeListEncodingString(unsigned Encoding) {
   }
 }
 
+StringRef llvm::dwarf::LocListEncodingString(unsigned Encoding) {
+  switch (Encoding) {
+  default:
+    return StringRef();
+#define HANDLE_DW_LLE(ID, NAME)                                                \
+  case DW_LLE_##NAME:                                                          \
+    return "DW_LLE_" #NAME;
+#include "llvm/BinaryFormat/Dwarf.def"
+  }
+}
+
 StringRef llvm::dwarf::CallFrameString(unsigned Encoding,
     Triple::ArchType Arch) {
   assert(Arch != llvm::Triple::ArchType::UnknownArch);
@@ -596,6 +628,8 @@ StringRef llvm::dwarf::AttributeValueString(uint16_t Attr, unsigned Val) {
     return ArrayOrderString(Val);
   case DW_AT_APPLE_runtime_class:
     return LanguageString(Val);
+  case DW_AT_defaulted:
+    return DefaultedMemberString(Val);
   }
 
   return StringRef();

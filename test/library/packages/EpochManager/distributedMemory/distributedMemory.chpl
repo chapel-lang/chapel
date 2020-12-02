@@ -15,7 +15,7 @@ proc main() {
   var manager = new EpochManager();
   const numObjects = 16;
   var objsDom = {0..#numObjects} dmapped Cyclic(startIdx=0);
-  var objs : [objsDom] unmanaged C();
+  var objs : [objsDom] unmanaged C()?;
 
   // Scattering objects around the locales
   forall obj in objs with (var rng = new RandomStream(int)) {

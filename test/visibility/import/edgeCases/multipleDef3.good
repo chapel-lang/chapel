@@ -1,0 +1,4 @@
+multipleDef3.chpl:2: error: symbol x is multiply defined
+note: 'x' was last reexported at multipleDef3.chpl:8
+multipleDef3.chpl:5: note: symbol 'x', defined here, was last reexported at multipleDef3.chpl:9
+multipleDef3.chpl:5: note: also defined here

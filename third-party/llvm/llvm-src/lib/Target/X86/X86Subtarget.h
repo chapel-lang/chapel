@@ -1,9 +1,8 @@
 //===-- X86Subtarget.h - Define Subtarget for the X86 ----------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -41,7 +40,7 @@ class GlobalValue;
 ///
 namespace PICStyles {
 
-enum Style {
+enum class Style {
   StubPIC,          // Used on i386-darwin in pic mode.
   GOT,              // Used on 32 bit elf on when in pic mode.
   RIPRel,           // Used on X86-64 when in pic mode.
@@ -57,10 +56,7 @@ public:
   enum X86ProcFamilyEnum {
     Others,
     IntelAtom,
-    IntelSLM,
-    IntelGLM,
-    IntelGLP,
-    IntelTRM
+    IntelSLM
   };
 
 protected:
@@ -88,6 +84,9 @@ protected:
 
   /// True if the processor supports X87 instructions.
   bool HasX87 = false;
+
+  /// True if the processor supports CMPXCHG8B.
+  bool HasCmpxchg8b = false;
 
   /// True if this processor has NOPL instruction
   /// (generally pentium pro+).
@@ -254,9 +253,9 @@ protected:
   /// mask over multiple fixed shuffles.
   bool HasFastVariableShuffle = false;
 
-  /// True if there is no performance penalty to writing only the lower parts
-  /// of a YMM or ZMM register without clearing the upper part.
-  bool HasFastPartialYMMorZMMWrite = false;
+  /// True if vzeroupper instructions should be inserted after code that uses
+  /// ymm or zmm registers.
+  bool InsertVZEROUPPER = false;
 
   /// True if there is no performance penalty for writing NOPs with up to
   /// 11 bytes.
@@ -294,6 +293,9 @@ protected:
 
   /// True if the processor supports macrofusion.
   bool HasMacroFusion = false;
+
+  /// True if the processor supports branch fusion.
+  bool HasBranchFusion = false;
 
   /// True if the processor has enhanced REP MOVSB/STOSB.
   bool HasERMSB = false;
@@ -348,11 +350,20 @@ protected:
   /// Processor has AVX-512 Vector Neural Network Instructions
   bool HasVNNI = false;
 
+  /// Processor has AVX-512 bfloat16 floating-point extensions
+  bool HasBF16 = false;
+
+  /// Processor supports ENQCMD instructions
+  bool HasENQCMD = false;
+
   /// Processor has AVX-512 Bit Algorithms instructions
   bool HasBITALG = false;
 
-  /// Processor supports MPX - Memory Protection Extensions
-  bool HasMPX = false;
+  /// Processor has AVX-512 vp2intersect instructions
+  bool HasVP2INTERSECT = false;
+
+  /// Deprecated flag for MPX instructions.
+  bool DeprecatedHasMPX = false;
 
   /// Processor supports CET SHSTK - Control-Flow Enforcement Technology
   /// using Shadow Stack
@@ -388,6 +399,12 @@ protected:
   /// Try harder to combine to horizontal vector ops if they are fast.
   bool HasFastHorizontalOps = false;
 
+  /// Prefer a left/right scalar logical shifts pair over a shift+and pair.
+  bool HasFastScalarShiftMasks = false;
+
+  /// Prefer a left/right vector logical shifts pair over a shift+and pair.
+  bool HasFastVectorShiftMasks = false;
+
   /// Use a retpoline thunk rather than indirect calls to block speculative
   /// execution.
   bool UseRetpolineIndirectCalls = false;
@@ -404,23 +421,45 @@ protected:
   /// than emitting one inside the compiler.
   bool UseRetpolineExternalThunk = false;
 
+  /// Prevent generation of indirect call/branch instructions from memory,
+  /// and force all indirect call/branch instructions from a register to be
+  /// preceded by an LFENCE. Also decompose RET instructions into a
+  /// POP+LFENCE+JMP sequence.
+  bool UseLVIControlFlowIntegrity = false;
+
+  /// Insert LFENCE instructions to prevent data speculatively injected into
+  /// loads from being used maliciously.
+  bool UseLVILoadHardening = false;
+
   /// Use software floating point for code generation.
   bool UseSoftFloat = false;
 
+  /// Use alias analysis during code generation.
+  bool UseAA = false;
+
   /// The minimum alignment known to hold of the stack frame on
   /// entry to the function and which must be maintained by every function.
-  unsigned stackAlignment = 4;
+  Align stackAlignment = Align(4);
 
   /// Max. memset / memcpy size that is turned into rep/movs, rep/stos ops.
   ///
   // FIXME: this is a known good value for Yonah. How about others?
   unsigned MaxInlineSizeThreshold = 128;
 
+  /// Indicates target prefers 128 bit instructions.
+  bool Prefer128Bit = false;
+
   /// Indicates target prefers 256 bit instructions.
   bool Prefer256Bit = false;
 
+  /// Indicates target prefers AVX512 mask registers.
+  bool PreferMaskRegisters = false;
+
   /// Threeway branch is profitable in this subtarget.
   bool ThreewayBranchProfitable = false;
+
+  /// Use Goldmont specific floating point div/sqrt costs.
+  bool UseGLMDivSqrtCosts = false;
 
   /// What processor and OS we're targeting.
   Triple TargetTriple;
@@ -433,7 +472,7 @@ protected:
 
 private:
   /// Override the stack alignment.
-  unsigned StackAlignOverride;
+  MaybeAlign StackAlignOverride;
 
   /// Preferred vector width from function attribute.
   unsigned PreferVectorWidthOverride;
@@ -470,7 +509,7 @@ public:
   /// of the specified triple.
   ///
   X86Subtarget(const Triple &TT, StringRef CPU, StringRef FS,
-               const X86TargetMachine &TM, unsigned StackAlignOverride,
+               const X86TargetMachine &TM, MaybeAlign StackAlignOverride,
                unsigned PreferVectorWidthOverride,
                unsigned RequiredVectorWidth);
 
@@ -495,7 +534,7 @@ public:
   /// Returns the minimum alignment known to hold of the
   /// stack frame on entry to the function and which must be maintained by every
   /// function for this subtarget.
-  unsigned getStackAlignment() const { return stackAlignment; }
+  Align getStackAlignment() const { return stackAlignment; }
 
   /// Returns the maximum memset / memcpy size
   /// that still makes it profitable to inline the call.
@@ -507,7 +546,7 @@ public:
 
   /// Methods used by Global ISel
   const CallLowering *getCallLowering() const override;
-  const InstructionSelector *getInstructionSelector() const override;
+  InstructionSelector *getInstructionSelector() const override;
   const LegalizerInfo *getLegalizerInfo() const override;
   const RegisterBankInfo *getRegBankInfo() const override;
 
@@ -547,6 +586,7 @@ public:
   void setPICStyle(PICStyles::Style Style)  { PICStyle = Style; }
 
   bool hasX87() const { return HasX87; }
+  bool hasCmpxchg8b() const { return HasCmpxchg8b; }
   bool hasNOPL() const { return HasNOPL; }
   // SSE codegen depends on cmovs, and all SSE1+ processors support them.
   // All 64-bit processors support cmov.
@@ -621,16 +661,14 @@ public:
   int getGatherOverhead() const { return GatherOverhead; }
   int getScatterOverhead() const { return ScatterOverhead; }
   bool hasSSEUnalignedMem() const { return HasSSEUnalignedMem; }
-  bool hasCmpxchg16b() const { return HasCmpxchg16b; }
+  bool hasCmpxchg16b() const { return HasCmpxchg16b && is64Bit(); }
   bool useLeaForSP() const { return UseLeaForSP; }
   bool hasPOPCNTFalseDeps() const { return HasPOPCNTFalseDeps; }
   bool hasLZCNTFalseDeps() const { return HasLZCNTFalseDeps; }
   bool hasFastVariableShuffle() const {
     return HasFastVariableShuffle;
   }
-  bool hasFastPartialYMMorZMMWrite() const {
-    return HasFastPartialYMMorZMMWrite;
-  }
+  bool insertVZEROUPPER() const { return InsertVZEROUPPER; }
   bool hasFastGather() const { return HasFastGather; }
   bool hasFastScalarFSQRT() const { return HasFastScalarFSQRT; }
   bool hasFastVectorFSQRT() const { return HasFastVectorFSQRT; }
@@ -638,7 +676,10 @@ public:
   bool hasFastSHLDRotate() const { return HasFastSHLDRotate; }
   bool hasFastBEXTR() const { return HasFastBEXTR; }
   bool hasFastHorizontalOps() const { return HasFastHorizontalOps; }
+  bool hasFastScalarShiftMasks() const { return HasFastScalarShiftMasks; }
+  bool hasFastVectorShiftMasks() const { return HasFastVectorShiftMasks; }
   bool hasMacroFusion() const { return HasMacroFusion; }
+  bool hasBranchFusion() const { return HasBranchFusion; }
   bool hasERMSB() const { return HasERMSB; }
   bool hasSlowDivide32() const { return HasSlowDivide32; }
   bool hasSlowDivide64() const { return HasSlowDivide64; }
@@ -657,8 +698,9 @@ public:
   bool hasVLX() const { return HasVLX; }
   bool hasPKU() const { return HasPKU; }
   bool hasVNNI() const { return HasVNNI; }
+  bool hasBF16() const { return HasBF16; }
+  bool hasVP2INTERSECT() const { return HasVP2INTERSECT; }
   bool hasBITALG() const { return HasBITALG; }
-  bool hasMPX() const { return HasMPX; }
   bool hasSHSTK() const { return HasSHSTK; }
   bool hasCLFLUSHOPT() const { return HasCLFLUSHOPT; }
   bool hasCLWB() const { return HasCLWB; }
@@ -669,11 +711,27 @@ public:
   bool hasSGX() const { return HasSGX; }
   bool threewayBranchProfitable() const { return ThreewayBranchProfitable; }
   bool hasINVPCID() const { return HasINVPCID; }
+  bool hasENQCMD() const { return HasENQCMD; }
   bool useRetpolineIndirectCalls() const { return UseRetpolineIndirectCalls; }
   bool useRetpolineIndirectBranches() const {
     return UseRetpolineIndirectBranches;
   }
   bool useRetpolineExternalThunk() const { return UseRetpolineExternalThunk; }
+
+  // These are generic getters that OR together all of the thunk types
+  // supported by the subtarget. Therefore useIndirectThunk*() will return true
+  // if any respective thunk feature is enabled.
+  bool useIndirectThunkCalls() const {
+    return useRetpolineIndirectCalls() || useLVIControlFlowIntegrity();
+  }
+  bool useIndirectThunkBranches() const {
+    return useRetpolineIndirectBranches() || useLVIControlFlowIntegrity();
+  }
+
+  bool preferMaskRegisters() const { return PreferMaskRegisters; }
+  bool useGLMDivSqrtCosts() const { return UseGLMDivSqrtCosts; }
+  bool useLVIControlFlowIntegrity() const { return UseLVIControlFlowIntegrity; }
+  bool useLVILoadHardening() const { return UseLVILoadHardening; }
 
   unsigned getPreferVectorWidth() const { return PreferVectorWidth; }
   unsigned getRequiredVectorWidth() const { return RequiredVectorWidth; }
@@ -706,12 +764,8 @@ public:
   /// TODO: to be removed later and replaced with suitable properties
   bool isAtom() const { return X86ProcFamily == IntelAtom; }
   bool isSLM() const { return X86ProcFamily == IntelSLM; }
-  bool isGLM() const {
-    return X86ProcFamily == IntelGLM ||
-           X86ProcFamily == IntelGLP ||
-           X86ProcFamily == IntelTRM;
-  }
   bool useSoftFloat() const { return UseSoftFloat; }
+  bool useAA() const override { return UseAA; }
 
   /// Use mfence if we have SSE2 or we're on x86-64 (even if we asked for
   /// no-sse2). There isn't any reason to disable it if the target processor
@@ -744,10 +798,6 @@ public:
     return TargetTriple.isWindowsMSVCEnvironment();
   }
 
-  bool isTargetKnownWindowsMSVC() const {
-    return TargetTriple.isKnownWindowsMSVCEnvironment();
-  }
-
   bool isTargetWindowsCoreCLR() const {
     return TargetTriple.isWindowsCoreCLREnvironment();
   }
@@ -772,11 +822,11 @@ public:
 
   bool isTargetWin32() const { return !In64BitMode && isOSWindows(); }
 
-  bool isPICStyleGOT() const { return PICStyle == PICStyles::GOT; }
-  bool isPICStyleRIPRel() const { return PICStyle == PICStyles::RIPRel; }
+  bool isPICStyleGOT() const { return PICStyle == PICStyles::Style::GOT; }
+  bool isPICStyleRIPRel() const { return PICStyle == PICStyles::Style::RIPRel; }
 
   bool isPICStyleStubPIC() const {
-    return PICStyle == PICStyles::StubPIC;
+    return PICStyle == PICStyles::Style::StubPIC;
   }
 
   bool isPositionIndependent() const { return TM.isPositionIndependent(); }
@@ -786,6 +836,7 @@ public:
     // On Win64, all these conventions just use the default convention.
     case CallingConv::C:
     case CallingConv::Fast:
+    case CallingConv::Tail:
     case CallingConv::Swift:
     case CallingConv::X86_FastCall:
     case CallingConv::X86_StdCall:
@@ -825,19 +876,19 @@ public:
   /// Return true if the subtarget allows calls to immediate address.
   bool isLegalToCallImmediateAddr() const;
 
-  /// If we are using retpolines, we need to expand indirectbr to avoid it
+  /// If we are using indirect thunks, we need to expand indirectbr to avoid it
   /// lowering to an actual indirect jump.
   bool enableIndirectBrExpand() const override {
-    return useRetpolineIndirectBranches();
+    return useIndirectThunkBranches();
   }
 
   /// Enable the MachineScheduler pass for all X86 subtargets.
   bool enableMachineScheduler() const override { return true; }
 
-  // TODO: Update the regression tests and return true.
-  bool supportPrintSchedInfo() const override { return false; }
-
   bool enableEarlyIfConversion() const override;
+
+  void getPostRAMutations(std::vector<std::unique_ptr<ScheduleDAGMutation>>
+                              &Mutations) const override;
 
   AntiDepBreakMode getAntiDepBreakMode() const override {
     return TargetSubtargetInfo::ANTIDEP_CRITICAL;

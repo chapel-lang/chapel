@@ -1,9 +1,8 @@
 //===--- TestVisitor.h ------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -86,8 +85,8 @@ public:
   }
 
 protected:
-  virtual ASTFrontendAction* CreateTestAction() {
-    return new TestAction(this);
+  virtual std::unique_ptr<ASTFrontendAction> CreateTestAction() {
+    return std::make_unique<TestAction>(this);
   }
 
   class FindConsumer : public ASTConsumer {
@@ -110,7 +109,7 @@ protected:
     std::unique_ptr<clang::ASTConsumer>
     CreateASTConsumer(CompilerInstance &, llvm::StringRef dummy) override {
       /// TestConsumer will be deleted by the framework calling us.
-      return llvm::make_unique<FindConsumer>(Visitor);
+      return std::make_unique<FindConsumer>(Visitor);
     }
 
   protected:

@@ -2,6 +2,6 @@ class MyClass { }
 
 proc testShared() {
   var mine = (new shared MyClass()).borrow();
-  var x = new shared(mine);
+  var x = shared.create(mine);
 }
 testShared();

@@ -1,9 +1,8 @@
 //=== StackAddrEscapeChecker.cpp ----------------------------------*- C++ -*--//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -156,14 +155,15 @@ void StackAddrEscapeChecker::EmitStackError(CheckerContext &C,
   if (!N)
     return;
   if (!BT_returnstack)
-    BT_returnstack = llvm::make_unique<BuiltinBug>(
+    BT_returnstack = std::make_unique<BuiltinBug>(
         this, "Return of address to stack-allocated memory");
   // Generate a report for this bug.
   SmallString<128> buf;
   llvm::raw_svector_ostream os(buf);
   SourceRange range = genName(os, R, C.getASTContext());
   os << " returned to caller";
-  auto report = llvm::make_unique<BugReport>(*BT_returnstack, os.str(), N);
+  auto report =
+      std::make_unique<PathSensitiveBugReport>(*BT_returnstack, os.str(), N);
   report->addRange(RetE->getSourceRange());
   if (range.isValid())
     report->addRange(range);
@@ -194,14 +194,14 @@ void StackAddrEscapeChecker::checkAsyncExecutedBlockCaptures(
     if (!N)
       continue;
     if (!BT_capturedstackasync)
-      BT_capturedstackasync = llvm::make_unique<BuiltinBug>(
+      BT_capturedstackasync = std::make_unique<BuiltinBug>(
           this, "Address of stack-allocated memory is captured");
     SmallString<128> Buf;
     llvm::raw_svector_ostream Out(Buf);
     SourceRange Range = genName(Out, Region, C.getASTContext());
     Out << " is captured by an asynchronously-executed block";
-    auto Report =
-        llvm::make_unique<BugReport>(*BT_capturedstackasync, Out.str(), N);
+    auto Report = std::make_unique<PathSensitiveBugReport>(
+        *BT_capturedstackasync, Out.str(), N);
     if (Range.isValid())
       Report->addRange(Range);
     C.emitReport(std::move(Report));
@@ -217,14 +217,14 @@ void StackAddrEscapeChecker::checkReturnedBlockCaptures(
     if (!N)
       continue;
     if (!BT_capturedstackret)
-      BT_capturedstackret = llvm::make_unique<BuiltinBug>(
+      BT_capturedstackret = std::make_unique<BuiltinBug>(
           this, "Address of stack-allocated memory is captured");
     SmallString<128> Buf;
     llvm::raw_svector_ostream Out(Buf);
     SourceRange Range = genName(Out, Region, C.getASTContext());
     Out << " is captured by a returned block";
-    auto Report =
-        llvm::make_unique<BugReport>(*BT_capturedstackret, Out.str(), N);
+    auto Report = std::make_unique<PathSensitiveBugReport>(*BT_capturedstackret,
+                                                           Out.str(), N);
     if (Range.isValid())
       Report->addRange(Range);
     C.emitReport(std::move(Report));
@@ -332,7 +332,7 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     return;
 
   if (!BT_stackleak)
-    BT_stackleak = llvm::make_unique<BuiltinBug>(
+    BT_stackleak = std::make_unique<BuiltinBug>(
         this, "Stack address stored into global variable",
         "Stack address was saved into a global variable. "
         "This is dangerous because the address will become "
@@ -352,7 +352,8 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
     const VarRegion *VR = cast<VarRegion>(P.first->getBaseRegion());
     Out << *VR->getDecl()
         << "' upon returning to the caller.  This will be a dangling reference";
-    auto Report = llvm::make_unique<BugReport>(*BT_stackleak, Out.str(), N);
+    auto Report =
+        std::make_unique<PathSensitiveBugReport>(*BT_stackleak, Out.str(), N);
     if (Range.isValid())
       Report->addRange(Range);
 
@@ -360,11 +361,23 @@ void StackAddrEscapeChecker::checkEndFunction(const ReturnStmt *RS,
   }
 }
 
-#define REGISTER_CHECKER(name) \
-  void ento::register##name(CheckerManager &Mgr) { \
-    StackAddrEscapeChecker *Chk = \
-        Mgr.registerChecker<StackAddrEscapeChecker>(); \
-    Chk->ChecksEnabled[StackAddrEscapeChecker::CK_##name] = true; \
+void ento::registerStackAddrEscapeBase(CheckerManager &mgr) {
+  mgr.registerChecker<StackAddrEscapeChecker>();
+}
+
+bool ento::shouldRegisterStackAddrEscapeBase(const LangOptions &LO) {
+  return true;
+}
+
+#define REGISTER_CHECKER(name)                                                 \
+  void ento::register##name(CheckerManager &Mgr) {                             \
+    StackAddrEscapeChecker *Chk =                                              \
+        Mgr.getChecker<StackAddrEscapeChecker>();                              \
+    Chk->ChecksEnabled[StackAddrEscapeChecker::CK_##name] = true;              \
+  }                                                                            \
+                                                                               \
+  bool ento::shouldRegister##name(const LangOptions &LO) {                     \
+    return true;                                                               \
   }
 
 REGISTER_CHECKER(StackAddrEscapeChecker)

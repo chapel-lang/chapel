@@ -18,6 +18,11 @@ record Foo {
   }
 }
 
+proc =(ref lhs: Foo, const ref rhs: Foo) {
+  lhs.x = rhs.x;
+  lhs.y = rhs.y;
+}
+
 var one = new Foo(1);
 
 proc *(a: Foo, b: Foo) {

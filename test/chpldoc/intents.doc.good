@@ -11,6 +11,13 @@ intents.doc
 
    use intents.doc;
 
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc;
+
 **Submodules**
 
 .. toctree::
@@ -90,6 +97,13 @@ Inner
 .. code-block:: chapel
 
    use intents.doc.Inner;
+
+
+or
+
+.. code-block:: chapel
+
+   import intents.doc.Inner;
 
 .. function:: proc one(in val)
 

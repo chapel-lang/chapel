@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -129,8 +130,10 @@ other task is consuming it.
  */
 module Spawn {
   public use IO;
-  public use SysError;
-  private use SysCTypes;
+  use SysError;
+  use SysCTypes;
+  use SysBasic;
+  use CPtr;
 
   private extern proc qio_openproc(argv:c_ptr(c_string),
                                    env:c_ptr(c_string),
@@ -264,8 +267,7 @@ module Spawn {
        can write to the subprocess through this pipe if the subprocess
        was created with stdin=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdin pipe open.
+       :throws SystemError: If the subprocess does not have a stdin pipe open.
      */
     proc stdin throws {
       try _throw_on_launch_error();
@@ -281,8 +283,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stdout=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stdout pipe open.
+       :throws SystemError: If the subprocess does not have a stdout pipe open.
      */
     proc stdout throws {
       try _throw_on_launch_error();
@@ -298,8 +299,7 @@ module Spawn {
        can read from the subprocess through this pipe if the subprocess
        was created with stderr=PIPE.
 
-       Causes a fatal error if the subprocess does not have a
-       stderr pipe open.
+       :throws SystemError: If the subprocess does not have a stderr pipe open.
      */
     proc stderr throws {
       try _throw_on_launch_error();
@@ -463,19 +463,21 @@ module Spawn {
     // register with the NIC for numLocales == 1, and vfork is used instead of
     // fork when stdin, stdout, stderr=FORWARD so we won't run into this issue
     // under those circumstances. See issue #7550 for more details.
-    if CHPL_COMM == "ugni" then
+    if CHPL_COMM == "ugni" {
+      use Sys;
       if stdin != FORWARD || stdout != FORWARD || stderr != FORWARD then
         if numLocales > 1 {
           var env_c_str:c_string;
           var env_str:string;
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
-            env_str = env_c_str;
+            env_str = createStringWithNewBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw SystemError.fromSyserr(
                   EINVAL,
                   "spawn with more than 1 locale for CHPL_COMM=ugni with hugepages currently requires stdin, stdout, stderr=FORWARD");
           }
         }
+    }
 
     if stdin == QIO_FD_PIPE || stdin == QIO_FD_BUFFERED_PIPE then
       stdin_pipe = true;

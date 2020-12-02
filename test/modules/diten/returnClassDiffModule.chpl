@@ -15,6 +15,6 @@ module M2 {
   }
   proc bar() {
     use M1;
-    return new unmanaged C();
+    return new C();
   }
 }

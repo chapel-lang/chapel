@@ -2,7 +2,6 @@ ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/..
 endif
 include $(CHPL_MAKE_HOME)/make/Makefile.base
-include $(THIRD_PARTY_DIR)/chpl-venv/Makefile.include
 
 ifdef CHPL_DEVELOPER
 DEBUG=1
@@ -16,7 +15,8 @@ endif
 
 default: all
 
-all: test-venv chpldoc-venv gasnet gmp hwloc jemalloc libunwind qthread llvm
+all: test-venv chpldoc-venv \
+     gasnet gmp hwloc jemalloc libfabric libunwind qthread llvm
 
 clean: FORCE
 	cd chpl-venv && $(MAKE) clean
@@ -24,6 +24,7 @@ clean: FORCE
 	cd gmp && $(MAKE) clean
 	cd hwloc && $(MAKE) clean
 	cd jemalloc && $(MAKE) clean
+	cd libfabric && $(MAKE) clean
 	cd libunwind && $(MAKE) clean
 	cd llvm && $(MAKE) clean
 	cd qthread && $(MAKE) clean
@@ -36,6 +37,7 @@ cleanall: FORCE
 	cd gmp && $(MAKE) cleanall
 	cd hwloc && $(MAKE) cleanall
 	cd jemalloc && $(MAKE) cleanall
+	cd libfabric && $(MAKE) cleanall
 	cd libunwind && $(MAKE) cleanall
 	cd llvm && $(MAKE) cleanall
 	cd qthread && $(MAKE) cleanall
@@ -48,6 +50,7 @@ clobber: FORCE
 	cd gmp && $(MAKE) clobber
 	cd hwloc && $(MAKE) clobber
 	cd jemalloc && $(MAKE) clobber
+	cd libfabric && $(MAKE) clobber
 	cd libunwind && $(MAKE) clobber
 	cd llvm && $(MAKE) clobber
 	cd qthread && $(MAKE) clobber
@@ -71,19 +74,21 @@ GASNET_DEPEND         := $(call find_3p_depend, $(GASNET_DIR))
 GMP_DEPEND            := $(call find_3p_depend, $(GMP_DIR))
 HWLOC_DEPEND          := $(call find_3p_depend, $(HWLOC_DIR))
 JEMALLOC_DEPEND       := $(call find_3p_depend, $(JEMALLOC_DIR))
+LIBFABRIC_DEPEND      := $(call find_3p_depend, $(LIBFABRIC_DIR))
 LIBUNWIND_DEPEND      := $(call find_3p_depend, $(LIBUNWIND_DIR))
 LLVM_DEPEND           := $(call find_3p_depend, $(LLVM_DIR))
 QTHREAD_DEPEND        := $(call find_3p_depend, $(QTHREAD_DIR))
 RE2_DEPEND            := $(call find_3p_depend, $(RE2_DIR))
 
 
-test-venv: $(CHPL_VENV_TEST_REQS)
-$(CHPL_VENV_TEST_REQS): $(CHPL_VENV_TEST_REQUIREMENTS_FILE)
+test-venv: FORCE
 	cd chpl-venv && $(MAKE) test-venv
 
-chpldoc-venv: $(CHPL_VENV_SPHINX_BUILD)
-$(CHPL_VENV_SPHINX_BUILD): $(CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE)
+chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
+
+c2chapel-venv: FORCE
+	cd chpl-venv && $(MAKE) c2chapel-venv
 
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
@@ -114,6 +119,11 @@ $(JEMALLOC_INSTALL_DIR): $(JEMALLOC_DEPEND)
 	rm -rf $(JEMALLOC_INSTALL_DIR) && rm -rf $(JEMALLOC_BUILD_DIR)
 	cd jemalloc && $(MAKE)
 
+libfabric: $(LIBFABRIC_INSTALL_DIR)
+$(LIBFABRIC_INSTALL_DIR): $(LIBFABRIC_DEPEND)
+	rm -rf $(LIBFABRIC_INSTALL_DIR) && rm -rf $(LIBFABRIC_BUILD_DIR)
+	cd libfabric && $(MAKE)
+
 libunwind: $(LIBUNWIND_INSTALL_DIR)
 $(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
 	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
@@ -125,12 +135,16 @@ $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	cd llvm && $(MAKE)
 
 # Qthreads may use hwloc and/or jemalloc. Ensure they are built first.
-ifeq ($(CHPL_MAKE_HWLOC), hwloc)
+ifeq ($(CHPL_MAKE_HWLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
 endif
-ifeq ($(CHPL_MAKE_JEMALLOC), jemalloc)
+ifeq ($(CHPL_MAKE_JEMALLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
+# Qthreads uses our memory allocator, trigger rebuilds if our interface changes
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(CHPL_MAKE_HOME)/runtime/include/chpl-mem.h
+QTHREAD_OTHER_INSTALL_DIR_DEPS += $(CHPL_MAKE_HOME)/runtime/include/mem/$(CHPL_MAKE_TARGET_MEM)/chpl-mem-impl.h
+
 qthread: $(QTHREAD_INSTALL_DIR)
 
 $(QTHREAD_INSTALL_DIR): $(QTHREAD_DEPEND) $(QTHREAD_OTHER_INSTALL_DIR_DEPS)

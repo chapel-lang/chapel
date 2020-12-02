@@ -1,1 +1,26 @@
-(x = 42)
+split-init-global1.chpl:26: error: module-scope variable 'x1' may be used before it is initialized
+split-init-global1.chpl:25: note: 'x1' declared here
+split-init-global1.chpl:27: note: 'x1' initialized here
+split-init-global1.chpl:26: note: calls function 'inner1'
+split-init-global1.chpl:30: note: mentions module-scope variable 'x1' not initialized yet
+split-init-global1.chpl:36: error: module-scope variable 'x2' may be used before it is initialized
+split-init-global1.chpl:34: note: 'x2' declared here
+split-init-global1.chpl:38: note: 'x2' initialized here
+split-init-global1.chpl:40: note: 'x2' initialized here
+split-init-global1.chpl:36: note: calls function 'inner2'
+split-init-global1.chpl:44: note: mentions module-scope variable 'x2' not initialized yet
+split-init-global1.chpl:49: error: module-scope variable 'x3' may be used before it is initialized
+split-init-global1.chpl:48: note: 'x3' declared here
+split-init-global1.chpl:50: note: 'x3' initialized here
+split-init-global1.chpl:49: note: calls function 'inner3'
+split-init-global1.chpl:53: note: mentions module-scope variable 'x3' not initialized yet
+split-init-global1.chpl:58: error: module-scope variable 'x4' may be used before it is initialized
+split-init-global1.chpl:57: note: 'x4' declared here
+split-init-global1.chpl:59: note: 'x4' initialized here
+split-init-global1.chpl:58: note: calls function 'inner4'
+split-init-global1.chpl:62: note: mentions module-scope variable 'x4' not initialized yet
+split-init-global1.chpl:67: error: module-scope variable 'x5' may be used before it is initialized
+split-init-global1.chpl:66: note: 'x5' declared here
+split-init-global1.chpl:68: note: 'x5' initialized here
+split-init-global1.chpl:67: note: calls function 'inner5'
+split-init-global1.chpl:71: note: mentions module-scope variable 'x5' not initialized yet

@@ -1,1 +1,2 @@
-Conditional jump or move depends on uninitialised value(s)
+arrOfTupleOfArr.chpl:2: warning: [domain(1,int(64),false)] 2*[domain(1,int(64),false)] int(64)
+arrOfTupleOfArr.chpl:1: error: default initialization of tuple containing array or domain type not yet implemented

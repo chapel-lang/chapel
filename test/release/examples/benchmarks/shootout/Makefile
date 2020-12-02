@@ -23,8 +23,8 @@ TARGETS = \
 	spectralnorm \
 	threadring
 
-CHPL_MAKE_REGEXP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_regexp.py)
-CHPL_MAKE_GMP=$(shell python $(CHPL_HOME)/util/chplenv/chpl_gmp.py)
+CHPL_MAKE_REGEXP=$(shell python3 $(CHPL_HOME)/util/chplenv/chpl_regexp.py)
+CHPL_MAKE_GMP=$(shell python3 $(CHPL_HOME)/util/chplenv/chpl_gmp.py)
 
 REALS = $(TARGETS:%=%_real)
 

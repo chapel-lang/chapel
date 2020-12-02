@@ -1,3 +1,4 @@
+use CPtr;
 use Random, IO;
 
 config const nBytes = 1024;
@@ -13,7 +14,7 @@ buf[nBytes] = 0;
 const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
                                                     size=nBytes+1);
 
-if randomBytes.length != nBytes {
+if randomBytes.size != nBytes {
   halt("Error creating bytes object with correct length");
 }
 
@@ -44,7 +45,7 @@ var bytesChannel = opentmp();
 {
   // write them to a channel
   var bytesWriter = bytesChannel.writer();
-  bytesWriter.writef("%|*s", randomBytes.length, randomBytes);
+  bytesWriter.writef("%|*s", randomBytes.size, randomBytes);
   bytesWriter.close();
 }
 
@@ -52,7 +53,7 @@ var bytesChannel = opentmp();
   // read them into a different object
   var bytesReader = bytesChannel.reader();
   var readBytes = b"";
-  var readLen = randomBytes.length;
+  var readLen = randomBytes.size;
   bytesReader.readf("%|*s", readLen, readBytes);
   bytesReader.close();
   // compare

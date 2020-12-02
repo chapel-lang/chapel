@@ -4,7 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #2 version by Matt Brubeck
 */
-private use IO, SysCTypes;
+private use IO, SysCTypes, CPtr;
 
 /*
    This is very ugly because we don't have good IO support for
@@ -34,7 +34,7 @@ record buf {
     this.complete();
 
     chan = fi.reader(locking=false);
-    numLeft = fi.length();
+    numLeft = fi.size;
   }
 
   // Returns (by ref-ish) a slice of the buffer starting at 'low'
@@ -110,7 +110,7 @@ proc main(args: [] string) {
   // NOTE: We can't do this with lists yet.
   /*
   {
-    const r = 1..stdin.length();
+    const r = 1..stdin.size;
     data._value.dataAllocRange = r;
     data._value.dsiReallocate((r,));
     data._value.dsiPostReallocate();
@@ -120,9 +120,9 @@ proc main(args: [] string) {
   sync {     // wait for all process() tasks to complete before continuing
     while true {
       input.readUntil("\n".toByte(), data);
-      const start = data.size + 1;
+      const start = data.size;
       input.readUntil(">".toByte(), data);
-      const last = data.size;
+      const last = data.size-1;
 
       if data[last] == ">".toByte() {
         // '-2' to skip over '\n>'
@@ -160,7 +160,7 @@ proc process(ref data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

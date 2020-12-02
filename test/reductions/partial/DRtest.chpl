@@ -26,7 +26,7 @@ proc setup3(A3) {
 
 proc d2d(DIMS) {
   var ranges: DIMS.size * range;
-  for param dim in 1..DIMS.size do
+  for param dim in 0..DIMS.size-1 do
     ranges(dim) = 
       if isRange(DIMS(dim)) then DIMS(dim)
       else DIMS(dim)..DIMS(dim);
@@ -34,7 +34,7 @@ proc d2d(DIMS) {
 }
 
 proc d2u(DIMS, param dim) {
-  if dim == DIMS.size then {
+  if dim == DIMS.size-1 then {
     if isRange(DIMS(dim)) then
       return (..,);
     else
@@ -54,7 +54,7 @@ proc test(ARR,DIMS) {
   writeln("RES = \n", RES1);
   var RES2 = plusPR(d2d(DIMS), ARR);
   assert(RES2 == RES1);
-  var RES3 = plusPR(d2u(DIMS,1), ARR);
+  var RES3 = plusPR(d2u(DIMS,0), ARR);
   assert(RES3 == RES1);
 }
 

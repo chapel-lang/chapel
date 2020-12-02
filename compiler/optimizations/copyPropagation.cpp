@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -401,7 +402,6 @@ static bool isUse(SymExpr* se)
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:
      case PRIM_ARRAY_GET:
-     case PRIM_ARRAY_GET_VALUE:
       // The first operand is treated like a reference.
       if (isFirstActual)
       {

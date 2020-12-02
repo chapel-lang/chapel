@@ -1,0 +1,68 @@
+newCopyFromList
+x:list(int(64),false) = [1, 2]
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+y:list(int(64),true) = [1, 2]
+d:list(int(64),false) = [1, 2]
+e:list(int(64),false) = [1, 2]
+f:list(int(64),true) = [1, 2]
+initCopyFromList
+x:list(int(64),false) = [1, 2]
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+y:list(int(64),true) = [1, 2]
+d:list(int(64),true) = [1, 2]
+e:list(int(64),false) = [1, 2]
+f:list(int(64),true) = [1, 2]
+g:list(int(64),true) = [1, 2]
+h:list(int(64),false) = [1, 2]
+i:list(int(64),false) = [1, 2]
+z:list(int(8),false) = [1, 2]
+j:list(int(64),false) = [1, 2]
+k:list(int(64),false) = [1, 2]
+l:list(int(64),true) = [1, 2]
+newCopyFromArray
+x:[domain(1,int(64),false)] int(64) = 1 2
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+initCopyFromArray
+x:[domain(1,int(64),false)] int(64) = 1 2
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+z:[domain(1,int(64),false)] int(8) = 1 2
+j:list(int(64),false) = [1, 2]
+k:list(int(64),false) = [1, 2]
+l:list(int(64),true) = [1, 2]
+newCopyFromRange
+x:range(int(64),bounded,false) = 1..2
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+initCopyFromRange
+x:range(int(64),bounded,false) = 1..2
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),true) = [1, 2]
+z:range(int(8),bounded,false) = 1..2
+j:list(int(64),false) = [1, 2]
+k:list(int(64),false) = [1, 2]
+l:list(int(64),true) = [1, 2]
+newCopyFromIter
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),false) = [1, 2]
+d:list(int(64),false) = [1, 2]
+e:list(int(64),true) = [1, 2]
+initCopyFromIter
+a:list(int(64),false) = [1, 2]
+b:list(int(64),false) = [1, 2]
+c:list(int(64),false) = [1, 2]
+d:list(int(64),false) = [1, 2]
+e:list(int(64),true) = [1, 2]
+j:list(int(64),false) = [1, 2]
+k:list(int(64),false) = [1, 2]
+l:list(int(64),true) = [1, 2]

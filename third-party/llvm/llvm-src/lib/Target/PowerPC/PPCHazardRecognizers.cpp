@@ -1,9 +1,8 @@
 //===-- PPCHazardRecognizers.cpp - PowerPC Hazard Recognizer Impls --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,9 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 #include "PPCHazardRecognizers.h"
-#include "PPC.h"
 #include "PPCInstrInfo.h"
-#include "PPCTargetMachine.h"
+#include "PPCSubtarget.h"
 #include "llvm/CodeGen/ScheduleDAG.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -160,7 +158,7 @@ unsigned PPCDispatchGroupSBHazardRecognizer::PreEmitNoops(SUnit *SU) {
   // new group.
   if (isLoadAfterStore(SU) && CurSlots < 6) {
     unsigned Directive =
-        DAG->MF.getSubtarget<PPCSubtarget>().getDarwinDirective();
+        DAG->MF.getSubtarget<PPCSubtarget>().getCPUDirective();
     // If we're using a special group-terminating nop, then we need only one.
     // FIXME: the same for P9 as previous gen until POWER9 scheduling is ready
     if (Directive == PPC::DIR_PWR6 || Directive == PPC::DIR_PWR7 ||
@@ -220,7 +218,7 @@ void PPCDispatchGroupSBHazardRecognizer::Reset() {
 
 void PPCDispatchGroupSBHazardRecognizer::EmitNoop() {
   unsigned Directive =
-      DAG->MF.getSubtarget<PPCSubtarget>().getDarwinDirective();
+      DAG->MF.getSubtarget<PPCSubtarget>().getCPUDirective();
   // If the group has now filled all of its slots, or if we're using a special
   // group-terminating nop, the group is complete.
   // FIXME: the same for P9 as previous gen until POWER9 scheduling is ready

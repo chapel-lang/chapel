@@ -11,27 +11,19 @@
 #ifndef _GASNET_RATOMIC_FWD_H
 #define _GASNET_RATOMIC_FWD_H
 
+// Enable use of RMA Put and Get for atomic SET and GET operations within
+// the AM-based atomics.
+//
 // GNI RMA of naturally aligned 4 and 8 byte values are "tools safe" (free of
 // word-tearing and intermediate values).  So long as the Tools have those same
 // properties, we allow the AM-based atomics to use RMA Put and Get for the
 // atomic SET and GET operations.
-//
-// TODO-EX: SIGNALSAFE is not the precise property we are looking for,
-// though it is accurate for the current tools implementations.
-#if GASNETI_ATOMIC32_NOT_SIGNALSAFE
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_I32 0
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_U32 0
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_FLT 0
-#else
+#if 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_I32 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_U32 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_FLT 1
 #endif
-#if GASNETI_ATOMIC64_NOT_SIGNALSAFE
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_I64 0
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_U64 0
-  #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_DBL 0
-#else
+#if 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_I64 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_U64 1
   #define GASNETE_AMRATOMIC_USE_RMA_gex_dt_DBL 1
@@ -46,8 +38,6 @@
 #endif
 
 #if GASNETC_BUILD_GNIRATOMIC
-  #define GASNETE_HAVE_RATOMIC_EXTRA_H 1
-
   #define GASNETI_AD_CREATE_HOOK gasnete_gniratomic_create_hook
 
   /* stats needed by the GNI-specific atomics implementation */

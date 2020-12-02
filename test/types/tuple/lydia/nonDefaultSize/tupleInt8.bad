@@ -1,2 +1,1 @@
-tupleInt8.chpl:2: error: illegal lvalue in assignment
 tupleInt8.chpl:2: error: Cannot assign to int(8) from int(64)

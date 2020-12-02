@@ -1,9 +1,8 @@
 //===- AArch64FalkorHWPFFix.cpp - Avoid HW prefetcher pitfalls on Falkor --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file For Falkor, we want to avoid HW prefetcher instruction tag collisions
@@ -43,6 +42,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Metadata.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Debug.h"
@@ -213,8 +213,8 @@ private:
 struct LoadInfo {
   LoadInfo() = default;
 
-  unsigned DestReg = 0;
-  unsigned BaseReg = 0;
+  Register DestReg;
+  Register BaseReg;
   int BaseRegIdx = -1;
   const MachineOperand *OffsetOpnd = nullptr;
   bool IsPrePost = false;
@@ -643,12 +643,12 @@ static Optional<LoadInfo> getLoadInfo(const MachineInstr &MI) {
   }
 
   // Loads from the stack pointer don't get prefetched.
-  unsigned BaseReg = MI.getOperand(BaseRegIdx).getReg();
+  Register BaseReg = MI.getOperand(BaseRegIdx).getReg();
   if (BaseReg == AArch64::SP || BaseReg == AArch64::WSP)
     return None;
 
   LoadInfo LI;
-  LI.DestReg = DestRegIdx == -1 ? 0 : MI.getOperand(DestRegIdx).getReg();
+  LI.DestReg = DestRegIdx == -1 ? Register() : MI.getOperand(DestRegIdx).getReg();
   LI.BaseReg = BaseReg;
   LI.BaseRegIdx = BaseRegIdx;
   LI.OffsetOpnd = OffsetIdx == -1 ? nullptr : &MI.getOperand(OffsetIdx);

@@ -205,7 +205,7 @@ if debug then writeln("reading symmetric cell locations");
 // (i.e. 'forall x in XSym' rather than 'forall i in 0..#numSymX ... XSym[i]').
 //
 // Moreover, an array's size can also be queried directly
-// (i.e., 'const numSymX = XSym.numElements')
+// (i.e., 'const numSymX = XSym.size')
 //
 // We used the style below to demonstrate a commonly used idiom in
 // current unstructured codes.

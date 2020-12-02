@@ -1,9 +1,8 @@
 //===- llvm/ADT/PointerIntPair.h - Pair for pointer and int -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,7 +13,9 @@
 #ifndef LLVM_ADT_POINTERINTPAIR_H
 #define LLVM_ADT_POINTERINTPAIR_H
 
+#include "llvm/Support/Compiler.h"
 #include "llvm/Support/PointerLikeTypeTraits.h"
+#include "llvm/Support/type_traits.h"
 #include <cassert>
 #include <cstdint>
 #include <limits>
@@ -59,19 +60,19 @@ public:
 
   IntType getInt() const { return (IntType)Info::getInt(Value); }
 
-  void setPointer(PointerTy PtrVal) {
+  void setPointer(PointerTy PtrVal) LLVM_LVALUE_FUNCTION {
     Value = Info::updatePointer(Value, PtrVal);
   }
 
-  void setInt(IntType IntVal) {
+  void setInt(IntType IntVal) LLVM_LVALUE_FUNCTION {
     Value = Info::updateInt(Value, static_cast<intptr_t>(IntVal));
   }
 
-  void initWithPointer(PointerTy PtrVal) {
+  void initWithPointer(PointerTy PtrVal) LLVM_LVALUE_FUNCTION {
     Value = Info::updatePointer(0, PtrVal);
   }
 
-  void setPointerAndInt(PointerTy PtrVal, IntType IntVal) {
+  void setPointerAndInt(PointerTy PtrVal, IntType IntVal) LLVM_LVALUE_FUNCTION {
     Value = Info::updateInt(Info::updatePointer(0, PtrVal),
                             static_cast<intptr_t>(IntVal));
   }
@@ -89,7 +90,7 @@ public:
 
   void *getOpaqueValue() const { return reinterpret_cast<void *>(Value); }
 
-  void setFromOpaqueValue(void *Val) {
+  void setFromOpaqueValue(void *Val) LLVM_LVALUE_FUNCTION {
     Value = reinterpret_cast<intptr_t>(Val);
   }
 
@@ -125,6 +126,19 @@ public:
     return Value >= RHS.Value;
   }
 };
+
+// Specialize is_trivially_copyable to avoid limitation of llvm::is_trivially_copyable
+// when compiled with gcc 4.9.
+template <typename PointerTy, unsigned IntBits, typename IntType,
+          typename PtrTraits,
+          typename Info>
+struct is_trivially_copyable<PointerIntPair<PointerTy, IntBits, IntType, PtrTraits, Info>> : std::true_type {
+#ifdef HAVE_STD_IS_TRIVIALLY_COPYABLE
+  static_assert(std::is_trivially_copyable<PointerIntPair<PointerTy, IntBits, IntType, PtrTraits, Info>>::value,
+                "inconsistent behavior between llvm:: and std:: implementation of is_trivially_copyable");
+#endif
+};
+
 
 template <typename PointerT, unsigned IntBits, typename PtrTraits>
 struct PointerIntPairInfo {
@@ -174,12 +188,6 @@ struct PointerIntPairInfo {
     // Preserve all bits other than the ones we are updating.
     return (OrigValue & ~ShiftedIntMask) | IntWord << IntShift;
   }
-};
-
-template <typename T> struct isPodLike;
-template <typename PointerTy, unsigned IntBits, typename IntType>
-struct isPodLike<PointerIntPair<PointerTy, IntBits, IntType>> {
-  static const bool value = true;
 };
 
 // Provide specialization of DenseMapInfo for PointerIntPair.

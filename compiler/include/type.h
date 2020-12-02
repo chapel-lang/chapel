@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -449,6 +450,7 @@ int  get_width(Type*);
 int  get_mantissa_width(Type*);
 int  get_exponent_width(Type*);
 bool isClass(Type* t); // includes ref, ddata, classes; not unmanaged
+bool isHeapAllocatedType(Type* t); // includes ddata, classes, wide classes
 bool isClassOrNil(Type* t);
 bool isUnmanagedClass(Type* t);
 bool isBorrowedClass(Type* t);
@@ -469,6 +471,9 @@ bool isRecordWrappedType(const Type* t);
 bool isDomImplType(Type* t);
 bool isArrayImplType(Type* t);
 bool isDistImplType(Type* t);
+bool isAliasingArrayImplType(Type* t);
+bool isAliasingArrayType(Type* t);
+
 bool isManagedPtrType(const Type* t);
 Type* getManagedPtrBorrowType(const Type* t);
 AggregateType* getManagedPtrManagerType(Type* t);
@@ -506,8 +511,6 @@ bool isClassWithInitializers (Type* type);
 bool isRecordOrUnionWithInitializers(Type* type);
 
 bool needsGenericRecordInitializer(Type* type);
-
-Type* getNamedType(std::string name);
 
 bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);

@@ -1,14 +1,14 @@
 //===----- JITTargetMachineBuilder.cpp - Build TargetMachines for JIT -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/ExecutionEngine/Orc/JITTargetMachineBuilder.h"
 
+#include "llvm/Support/Host.h"
 #include "llvm/Support/TargetRegistry.h"
 
 namespace llvm {
@@ -23,7 +23,19 @@ JITTargetMachineBuilder::JITTargetMachineBuilder(Triple TT)
 Expected<JITTargetMachineBuilder> JITTargetMachineBuilder::detectHost() {
   // FIXME: getProcessTriple is bogus. It returns the host LLVM was compiled on,
   //        rather than a valid triple for the current process.
-  return JITTargetMachineBuilder(Triple(sys::getProcessTriple()));
+  JITTargetMachineBuilder TMBuilder((Triple(sys::getProcessTriple())));
+
+  // Retrieve host CPU name and sub-target features and add them to builder.
+  // Relocation model, code model and codegen opt level are kept to default
+  // values.
+  llvm::StringMap<bool> FeatureMap;
+  llvm::sys::getHostCPUFeatures(FeatureMap);
+  for (auto &Feature : FeatureMap)
+    TMBuilder.getFeatures().AddFeature(Feature.first(), Feature.second);
+
+  TMBuilder.setCPU(llvm::sys::getHostCPUName());
+
+  return TMBuilder;
 }
 
 Expected<std::unique_ptr<TargetMachine>>

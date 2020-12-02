@@ -6,7 +6,7 @@ class C {
 }
 
 proc run(c:borrowed C) {
-  for i in 1..dim do
+  for i in 0..#dim do
     c.x(i) = 1;
 }
 

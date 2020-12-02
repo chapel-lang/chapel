@@ -7,8 +7,8 @@ supported by :doc:`LibFormat` and :doc:`ClangFormat`.
 
 When using :program:`clang-format` command line utility or
 ``clang::format::reformat(...)`` functions from code, one can either use one of
-the predefined styles (LLVM, Google, Chromium, Mozilla, WebKit) or create a
-custom style by configuring specific style options.
+the predefined styles (LLVM, Google, Chromium, Mozilla, WebKit, Microsoft) or
+create a custom style by configuring specific style options.
 
 
 Configuring Style with clang-format
@@ -68,6 +68,10 @@ An example of a configuration file for multiple languages:
   Language: Proto
   # Don't format .proto files.
   DisableFormat: true
+  ---
+  Language: CSharp
+  # Use 100 columns for C#.
+  ColumnLimit: 100
   ...
 
 An easy way to get a valid ``.clang-format`` file containing all configuration
@@ -134,16 +138,19 @@ the configuration (without a prefix: ``Auto``).
     <https://llvm.org/docs/CodingStandards.html>`_
   * ``Google``
     A style complying with `Google's C++ style guide
-    <http://google-styleguide.googlecode.com/svn/trunk/cppguide.xml>`_
+    <https://google.github.io/styleguide/cppguide.html>`_
   * ``Chromium``
     A style complying with `Chromium's style guide
-    <http://www.chromium.org/developers/coding-style>`_
+    <https://chromium.googlesource.com/chromium/src/+/master/styleguide/styleguide.md>`_
   * ``Mozilla``
     A style complying with `Mozilla's style guide
     <https://developer.mozilla.org/en-US/docs/Developer_Guide/Coding_Style>`_
   * ``WebKit``
     A style complying with `WebKit's style guide
-    <http://www.webkit.org/coding/coding-style.html>`_
+    <https://www.webkit.org/coding/coding-style.html>`_
+  * ``Microsoft``
+    A style complying with `Microsoft's style guide
+    <https://docs.microsoft.com/en-us/visualstudio/ide/editorconfig-code-style-settings-reference?view=vs-2017>`_
 
 .. START_FORMAT_STYLE_OPTIONS
 
@@ -209,6 +216,20 @@ the configuration (without a prefix: ``Auto``).
     float       b = 23;
     std::string ccc = 23;
 
+**AlignConsecutiveMacros** (``bool``)
+  If ``true``, aligns consecutive C/C++ preprocessor macros.
+
+  This will align C/C++ preprocessor macros of consecutive lines.
+  Will result in formattings like
+
+  .. code-block:: c++
+
+    #define SHORT_NAME       42
+    #define LONGER_NAME      0x007f
+    #define EVEN_LONGER_NAME (2)
+    #define foo(x)           (x * x)
+    #define bar(y, z)        (y + z)
+
 **AlignEscapedNewlines** (``EscapedNewlineAlignmentStyle``)
   Options for aligning backslashes in escaped newlines.
 
@@ -270,6 +291,41 @@ the configuration (without a prefix: ``Auto``).
     int a;     // My comment a      vs.     int a; // My comment a
     int b = 2; // comment  b                int b = 2; // comment about b
 
+**AllowAllArgumentsOnNextLine** (``bool``)
+  If a function call or braced initializer list doesn't fit on a
+  line, allow putting all arguments onto the next line, even if
+  ``BinPackArguments`` is ``false``.
+
+  .. code-block:: c++
+
+    true:
+    callFunction(
+        a, b, c, d);
+
+    false:
+    callFunction(a,
+                 b,
+                 c,
+                 d);
+
+**AllowAllConstructorInitializersOnNextLine** (``bool``)
+  If a constructor definition with a member initializer list doesn't
+  fit on a single line, allow putting all member initializers onto the next
+  line, if ```ConstructorInitializerAllOnOneLineOrOnePerLine``` is true.
+  Note that this parameter has no effect if
+  ```ConstructorInitializerAllOnOneLineOrOnePerLine``` is false.
+
+  .. code-block:: c++
+
+    true:
+    MyClass::MyClass() :
+        member0(0), member1(2) {}
+
+    false:
+    MyClass::MyClass() :
+        member0(0),
+        member1(2) {}
+
 **AllowAllParametersOfDeclarationOnNextLine** (``bool``)
   If the function declaration doesn't fit on a line,
   allow putting all parameters of a function declaration onto
@@ -288,10 +344,42 @@ the configuration (without a prefix: ``Auto``).
                     int d,
                     int e);
 
-**AllowShortBlocksOnASingleLine** (``bool``)
-  Allows contracting simple braced statements to a single line.
+**AllowShortBlocksOnASingleLine** (``ShortBlockStyle``)
+  Dependent on the value, ``while (true) { continue; }`` can be put on a
+  single line.
 
-  E.g., this allows ``if (a) { return; }`` to be put on a single line.
+  Possible values:
+
+  * ``SBS_Never`` (in configuration: ``Never``)
+    Never merge blocks into a single line.
+
+    .. code-block:: c++
+
+      while (true) {
+      }
+      while (true) {
+        continue;
+      }
+
+  * ``SBS_Empty`` (in configuration: ``Empty``)
+    Only merge empty blocks.
+
+    .. code-block:: c++
+
+      while (true) {}
+      while (true) {
+        continue;
+      }
+
+  * ``SBS_Always`` (in configuration: ``Always``)
+    Always merge short blocks into a single line.
+
+    .. code-block:: c++
+
+      while (true) {}
+      while (true) { continue; }
+
+
 
 **AllowShortCaseLabelsOnASingleLine** (``bool``)
   If ``true``, short case labels will be contracted to a single line.
@@ -367,8 +455,83 @@ the configuration (without a prefix: ``Auto``).
 
 
 
-**AllowShortIfStatementsOnASingleLine** (``bool``)
+**AllowShortIfStatementsOnASingleLine** (``ShortIfStyle``)
   If ``true``, ``if (a) return;`` can be put on a single line.
+
+  Possible values:
+
+  * ``SIS_Never`` (in configuration: ``Never``)
+    Never put short ifs on the same line.
+
+    .. code-block:: c++
+
+      if (a)
+        return ;
+      else {
+        return;
+      }
+
+  * ``SIS_WithoutElse`` (in configuration: ``WithoutElse``)
+    Without else put short ifs on the same line only if
+    the else is not a compound statement.
+
+    .. code-block:: c++
+
+      if (a) return;
+      else
+        return;
+
+  * ``SIS_Always`` (in configuration: ``Always``)
+    Always put short ifs on the same line if
+    the else is not a compound statement or not.
+
+    .. code-block:: c++
+
+      if (a) return;
+      else {
+        return;
+      }
+
+
+
+**AllowShortLambdasOnASingleLine** (``ShortLambdaStyle``)
+  Dependent on the value, ``auto lambda []() { return 0; }`` can be put on a
+  single line.
+
+  Possible values:
+
+  * ``SLS_None`` (in configuration: ``None``)
+    Never merge lambdas into a single line.
+
+  * ``SLS_Empty`` (in configuration: ``Empty``)
+    Only merge empty lambdas.
+
+    .. code-block:: c++
+
+      auto lambda = [](int a) {}
+      auto lambda2 = [](int a) {
+          return a;
+      };
+
+  * ``SLS_Inline`` (in configuration: ``Inline``)
+    Merge lambda into a single line if argument of a function.
+
+    .. code-block:: c++
+
+      auto lambda = [](int a) {
+          return a;
+      };
+      sort(a.begin(), a.end(), ()[] { return x < y; })
+
+  * ``SLS_All`` (in configuration: ``All``)
+    Merge all lambdas fitting on a single line.
+
+    .. code-block:: c++
+
+      auto lambda = [](int a) {}
+      auto lambda2 = [](int a) { return a; };
+
+
 
 **AllowShortLoopsOnASingleLine** (``bool``)
   If ``true``, ``while (true) continue;`` can be put on a single
@@ -587,6 +750,23 @@ the configuration (without a prefix: ``Auto``).
   Nested configuration flags:
 
 
+  * ``bool AfterCaseLabel`` Wrap case labels.
+
+    .. code-block:: c++
+
+      false:                                true:
+      switch (foo) {                vs.     switch (foo) {
+        case 1: {                             case 1:
+          bar();                              {
+          break;                                bar();
+        }                                       break;
+        default: {                            }
+          plop();                             default:
+        }                                     {
+      }                                         plop();
+                                              }
+                                            }
+
   * ``bool AfterClass`` Wrap class definitions.
 
     .. code-block:: c++
@@ -598,24 +778,47 @@ the configuration (without a prefix: ``Auto``).
       class foo
       {};
 
-  * ``bool AfterControlStatement`` Wrap control statements (``if``/``for``/``while``/``switch``/..).
+  * ``BraceWrappingAfterControlStatementStyle AfterControlStatement``
+    Wrap control statements (``if``/``for``/``while``/``switch``/..).
 
-    .. code-block:: c++
+    Possible values:
 
-      true:
-      if (foo())
-      {
-      } else
-      {}
-      for (int i = 0; i < 10; ++i)
-      {}
+    * ``BWACS_Never`` (in configuration: ``Never``)
+      Never wrap braces after a control statement.
 
-      false:
-      if (foo()) {
-      } else {
-      }
-      for (int i = 0; i < 10; ++i) {
-      }
+      .. code-block:: c++
+
+        if (foo()) {
+        } else {
+        }
+        for (int i = 0; i < 10; ++i) {
+        }
+
+    * ``BWACS_MultiLine`` (in configuration: ``MultiLine``)
+      Only wrap braces after a multi-line control statement.
+
+      .. code-block:: c++
+
+        if (foo && bar &&
+            baz)
+        {
+          quux();
+        }
+        while (foo || bar) {
+        }
+
+    * ``BWACS_Always`` (in configuration: ``Always``)
+      Always wrap braces after a control statement.
+
+      .. code-block:: c++
+
+        if (foo())
+        {
+        } else
+        {}
+        for (int i = 0; i < 10; ++i)
+        {}
+
 
   * ``bool AfterEnum`` Wrap enum definitions.
 
@@ -755,7 +958,7 @@ the configuration (without a prefix: ``Auto``).
 
     .. code-block:: c++
 
-      int f()   vs.   inf f()
+      int f()   vs.   int f()
       {}              {
                       }
 
@@ -925,19 +1128,56 @@ the configuration (without a prefix: ``Auto``).
 
     .. code-block:: c++
 
-      try {
+      try
+      {
         foo();
       }
-      catch () {
+      catch ()
+      {
       }
       void foo() { bar(); }
-      class foo {
+      class foo
+      {
       };
-      if (foo()) {
+      if (foo())
+      {
       }
-      else {
+      else
+      {
       }
-      enum X : int { A, B };
+      enum X : int
+      {
+        A,
+        B
+      };
+
+  * ``BS_Whitesmiths`` (in configuration: ``Whitesmiths``)
+    Like ``Allman`` but always indent braces and line up code with braces.
+
+    .. code-block:: c++
+
+      try
+        {
+        foo();
+        }
+      catch ()
+        {
+        }
+      void foo() { bar(); }
+      class foo
+        {
+        };
+      if (foo())
+        {
+        }
+      else
+        {
+        }
+      enum X : int
+        {
+        A,
+        B
+        };
 
   * ``BS_GNU`` (in configuration: ``GNU``)
     Always break before braces and add an extra level of indentation to
@@ -1082,6 +1322,17 @@ the configuration (without a prefix: ``Auto``).
 **BreakStringLiterals** (``bool``)
   Allow breaking string literals when formatting.
 
+  .. code-block:: c++
+
+     true:
+     const char* x = "veryVeryVeryVeryVeryVe"
+                     "ryVeryVeryVeryVeryVery"
+                     "VeryLongString";
+
+     false:
+     const char* x =
+       "veryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryVeryLongString";
+
 **ColumnLimit** (``unsigned``)
   The column limit.
 
@@ -1181,6 +1432,10 @@ the configuration (without a prefix: ``Auto``).
      f(MyMap[{composite, key}]);            f(MyMap[{ composite, key }]);
      new int[3]{1, 2, 3};                   new int[3]{ 1, 2, 3 };
 
+**DeriveLineEnding** (``bool``)
+  Analyze the formatted file for the most used line ending (``\r\n``
+  or ``\n``). ``UseCRLF`` is only used as a fallback if none can be derived.
+
 **DerivePointerAlignment** (``bool``)
   If ``true``, analyze the formatted file for the most common
   alignment of ``&`` and ``*``.
@@ -1212,7 +1467,7 @@ the configuration (without a prefix: ``Auto``).
      true:                                  false:
      namespace a {                  vs.     namespace a {
      foo();                                 foo();
-     } // namespace a;                      }
+     } // namespace a                       }
 
 **ForEachMacros** (``std::vector<std::string>``)
   A vector of macros that should be interpreted as foreach loops
@@ -1278,7 +1533,7 @@ the configuration (without a prefix: ``Auto``).
   used for ordering ``#includes``.
 
   `POSIX extended
-  <http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html>`_
+  <https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html>`_
   regular expressions are supported.
 
   These regular expressions are matched against the filename of an include
@@ -1294,6 +1549,13 @@ the configuration (without a prefix: ``Auto``).
   can also assign negative priorities if you have certain headers that
   always need to be first.
 
+  There is a third and optional field ``SortPriority`` which can used while
+  ``IncludeBloks = IBS_Regroup`` to define the priority in which ``#includes``
+  should be ordered, and value of ``Priority`` defines the order of
+  ``#include blocks`` and also enables to group ``#includes`` of different
+  priority for order.``SortPriority`` is set to the value of ``Priority``
+  as default if it is not assigned.
+
   To configure this in the .clang-format file, use:
 
   .. code-block:: yaml
@@ -1301,12 +1563,14 @@ the configuration (without a prefix: ``Auto``).
     IncludeCategories:
       - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
         Priority:        2
+        SortPriority:    2
       - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
         Priority:        3
       - Regex:           '<[[:alnum:].]+>'
         Priority:        4
       - Regex:           '.*'
         Priority:        1
+        SortPriority:    0
 
 **IncludeIsMainRegex** (``std::string``)
   Specify a regular expression of suffixes that are allowed in the
@@ -1321,11 +1585,32 @@ the configuration (without a prefix: ``Auto``).
   For example, if configured to "(_test)?$", then a header a.h would be seen
   as the "main" include in both a.cc and a_test.cc.
 
+**IncludeIsMainSourceRegex** (``std::string``)
+  Specify a regular expression for files being formatted
+  that are allowed to be considered "main" in the
+  file-to-main-include mapping.
+
+  By default, clang-format considers files as "main" only when they end
+  with: ``.c``, ``.cc``, ``.cpp``, ``.c++``, ``.cxx``, ``.m`` or ``.mm``
+  extensions.
+  For these files a guessing of "main" include takes place
+  (to assign category 0, see above). This config option allows for
+  additional suffixes and extensions for files to be considered as "main".
+
+  For example, if this option is configured to ``(Impl\.hpp)$``,
+  then a file ``ClassImpl.hpp`` is considered "main" (in addition to
+  ``Class.c``, ``Class.cc``, ``Class.cpp`` and so on) and "main
+  include file" logic will be executed (with *IncludeIsMainRegex* setting
+  also being respected in later phase). Without this option set,
+  ``ClassImpl.hpp`` would not have the main include file put on top
+  before any other include.
+
 **IndentCaseLabels** (``bool``)
   Indent case labels one level from the switch statement.
 
-  When ``false``, use the same indentation level as for the switch statement.
-  Switch statement body is always indented one level more than case labels.
+  When ``false``, use the same indentation level as for the switch
+  statement. Switch statement body is always indented one level more than
+  case labels.
 
   .. code-block:: c++
 
@@ -1336,6 +1621,23 @@ the configuration (without a prefix: ``Auto``).
        break;                                   break;
      default:                                 default:
        plop();                                  plop();
+     }                                      }
+
+**IndentGotoLabels** (``bool``)
+  Indent goto labels.
+
+  When ``false``, goto labels are flushed left.
+
+  .. code-block:: c++
+
+     true:                                  false:
+     int f() {                      vs.     int f() {
+       if (foo()) {                           if (foo()) {
+       label1:                              label1:
+         bar();                                 bar();
+       }                                      }
+     label2:                                label2:
+       return 1;                              return 1;
      }                                      }
 
 **IndentPPDirectives** (``PPDirectiveIndentStyle``)
@@ -1363,6 +1665,17 @@ the configuration (without a prefix: ``Auto``).
        #  if BAR
        #    include <foo>
        #  endif
+       #endif
+
+  * ``PPDIS_BeforeHash`` (in configuration: ``BeforeHash``)
+    Indents directives before the hash.
+
+    .. code-block:: c++
+
+       #if FOO
+         #if BAR
+           #include <foo>
+         #endif
        #endif
 
 
@@ -1496,6 +1809,9 @@ the configuration (without a prefix: ``Auto``).
   * ``LK_Cpp`` (in configuration: ``Cpp``)
     Should be used for C, C++.
 
+  * ``LK_CSharp`` (in configuration: ``CSharp``)
+    Should be used for C#.
+
   * ``LK_Java`` (in configuration: ``Java``)
     Should be used for Java.
 
@@ -1606,6 +1922,19 @@ the configuration (without a prefix: ``Auto``).
        }
 
 
+
+**NamespaceMacros** (``std::vector<std::string>``)
+  A vector of macros which are used to open namespace blocks.
+
+  These are expected to be macros of the form:
+
+  .. code-block:: c++
+
+    NAMESPACE(<namespace-name>, ...) {
+      <namespace-content>
+    }
+
+  For example: TESTSUITE
 
 **ObjCBinPackProtocolList** (``BinPackStyle``)
   Controls bin-packing Objective-C protocol conformance list
@@ -1812,6 +2141,14 @@ the configuration (without a prefix: ``Auto``).
      true:                                  false:
      (int) i;                       vs.     (int)i;
 
+**SpaceAfterLogicalNot** (``bool``)
+  If ``true``, a space is inserted after the logical not operator (``!``).
+
+  .. code-block:: c++
+
+     true:                                  false:
+     ! someExpression();            vs.     !someExpression();
+
 **SpaceAfterTemplateKeyword** (``bool``)
   If ``true``, a space will be inserted after the 'template' keyword.
 
@@ -1826,8 +2163,8 @@ the configuration (without a prefix: ``Auto``).
   .. code-block:: c++
 
      true:                                  false:
-     int a = 5;                     vs.     int a=5;
-     a += 42                                a+=42;
+     int a = 5;                     vs.     int a= 5;
+     a += 42;                               a+= 42;
 
 **SpaceBeforeCpp11BracedList** (``bool``)
   If ``true``, a space will be inserted before a C++11 braced list
@@ -1886,6 +2223,19 @@ the configuration (without a prefix: ``Auto``).
          }
        }
 
+  * ``SBPO_NonEmptyParentheses`` (in configuration: ``NonEmptyParentheses``)
+    Put a space before opening parentheses only if the parentheses are not
+    empty i.e. '()'
+
+    .. code-block:: c++
+
+      void() {
+        if (true) {
+          f();
+          g (x, y, z);
+        }
+      }
+
   * ``SBPO_Always`` (in configuration: ``Always``)
     Always put a space before opening parentheses, except when it's
     prohibited by the syntax rules (in function-like macro definitions) or
@@ -1910,6 +2260,25 @@ the configuration (without a prefix: ``Auto``).
 
      true:                                  false:
      for (auto v : values) {}       vs.     for(auto v: values) {}
+
+**SpaceBeforeSquareBrackets** (``bool``)
+  If ``true``, spaces will be before  ``[``.
+  Lambdas will not be affected. Only the first ``[`` will get a space added.
+
+  .. code-block:: c++
+
+     true:                                  false:
+     int a [5];                    vs.      int a[5];
+     int a [5][5];                 vs.      int a[5][5];
+
+**SpaceInEmptyBlock** (``bool``)
+  If ``true``, spaces will be inserted into ``{}``.
+
+  .. code-block:: c++
+
+     true:                                false:
+     void f() { }                   vs.   void f() {}
+     while (true) { }                     while (true) {}
 
 **SpaceInEmptyParentheses** (``bool``)
   If ``true``, spaces may be inserted into ``()``.
@@ -1959,6 +2328,9 @@ the configuration (without a prefix: ``Auto``).
      true:                                  false:
      x = ( int32 )y                 vs.     x = (int32)y
 
+**SpacesInConditionalStatement** (``bool``)
+  If ``true``, spaces will be inserted around if/for/while (and similar) conditions.
+
 **SpacesInContainerLiterals** (``bool``)
   If ``true``, spaces are inserted inside container literals (e.g.
   ObjC and Javascript array and dict literals).
@@ -1979,7 +2351,8 @@ the configuration (without a prefix: ``Auto``).
 
 **SpacesInSquareBrackets** (``bool``)
   If ``true``, spaces will be inserted after ``[`` and before ``]``.
-  Lambdas or unspecified size array declarations will not be affected.
+  Lambdas without arguments or unspecified size array declarations will not
+  be affected.
 
   .. code-block:: c++
 
@@ -1988,17 +2361,34 @@ the configuration (without a prefix: ``Auto``).
      std::unique_ptr<int[]> foo() {} // Won't be affected
 
 **Standard** (``LanguageStandard``)
-  Format compatible with this standard, e.g. use ``A<A<int> >``
-  instead of ``A<A<int>>`` for ``LS_Cpp03``.
+  Parse and format C++ constructs compatible with this standard.
+
+  .. code-block:: c++
+
+     c++03:                                 latest:
+     vector<set<int> > x;           vs.     vector<set<int>> x;
 
   Possible values:
 
-  * ``LS_Cpp03`` (in configuration: ``Cpp03``)
-    Use C++03-compatible syntax.
+  * ``LS_Cpp03`` (in configuration: ``c++03``)
+    Parse and format as C++03.
+    ``Cpp03`` is a deprecated alias for ``c++03``
 
-  * ``LS_Cpp11`` (in configuration: ``Cpp11``)
-    Use features of C++11, C++14 and C++1z (e.g. ``A<A<int>>`` instead of
-    ``A<A<int> >``).
+  * ``LS_Cpp11`` (in configuration: ``c++11``)
+    Parse and format as C++11.
+
+  * ``LS_Cpp14`` (in configuration: ``c++14``)
+    Parse and format as C++14.
+
+  * ``LS_Cpp17`` (in configuration: ``c++17``)
+    Parse and format as C++17.
+
+  * ``LS_Cpp20`` (in configuration: ``c++20``)
+    Parse and format as C++20.
+
+  * ``LS_Latest`` (in configuration: ``Latest``)
+    Parse and format using the latest supported language version.
+    ``Cpp11`` is a deprecated alias for ``Latest``
 
   * ``LS_Auto`` (in configuration: ``Auto``)
     Automatic detection based on the input.
@@ -2017,6 +2407,28 @@ the configuration (without a prefix: ``Auto``).
 
 **TabWidth** (``unsigned``)
   The number of columns used for tab stops.
+
+**TypenameMacros** (``std::vector<std::string>``)
+  A vector of macros that should be interpreted as type declarations
+  instead of as function calls.
+
+  These are expected to be macros of the form:
+
+  .. code-block:: c++
+
+    STACK_OF(...)
+
+  In the .clang-format configuration file, this can be configured like:
+
+  .. code-block:: yaml
+
+    TypenameMacros: ['STACK_OF', 'LIST']
+
+  For example: OpenSSL STACK_OF, BSD LIST_ENTRY.
+
+**UseCRLF** (``bool``)
+  Use ``\r\n`` instead of ``\n`` for line breaks.
+  Also used as fallback if ``DeriveLineEnding`` is true.
 
 **UseTab** (``UseTabStyle``)
   The way to use tab characters in the resulting file.

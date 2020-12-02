@@ -13,7 +13,7 @@
 
 #include <firehose_trace.h>
 
-#define GASNET_EXTENDED_VERSION      2.3
+#define GASNET_EXTENDED_VERSION      2.5
 #define GASNET_EXTENDED_VERSION_STR  _STRINGIFY(GASNET_EXTENDED_VERSION)
 #define GASNET_EXTENDED_NAME         IBV
 #define GASNET_EXTENDED_NAME_STR     _STRINGIFY(GASNET_EXTENDED_NAME)
@@ -79,8 +79,8 @@
 #endif
 
 // Configure default VIS tuning knobs
-// 12/15/17: Measurements on multiple systems show 256 is a good value
-#define GASNETE_VIS_MAXCHUNK_DEFAULT 256
+// 2020/3/8: Measurements on multiple systems show 3kb is a reasonable default (with NPAM and 64kb maxmedium)
+#define GASNETE_VIS_MAXCHUNK_DEFAULT 3072
 
 #endif
 

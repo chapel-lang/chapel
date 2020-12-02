@@ -1,6 +1,6 @@
-field 1 = real(64) is a type
-field 2 = 1 is a param
-field 3 = 0.0 is not a param or type
+field 0 = real(64) is a type
+field 1 = 1 is a param
+field 2 = 0.0 is not a param or type
 field t = real(64) is a type
 field p = 1 is a param
 field a = 0.0 is not a param or type

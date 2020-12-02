@@ -7,16 +7,20 @@ group("unittests") {
     "AsmParser:AsmParserTests",
     "BinaryFormat:BinaryFormatTests",
     "Bitcode:BitcodeTests",
+    "Bitstream:BitstreamTests",
     "CodeGen:CodeGenTests",
     "CodeGen/GlobalISel:GlobalISelTests",
     "DebugInfo/CodeView:DebugInfoCodeViewTests",
     "DebugInfo/DWARF:DebugInfoDWARFTests",
+    "DebugInfo/GSYM:DebugInfoGSYMTests",
     "DebugInfo/MSF:DebugInfoMSFTests",
     "DebugInfo/PDB:DebugInfoPDBTests",
     "Demangle:DemangleTests",
     "ExecutionEngine:ExecutionEngineTests",
+    "ExecutionEngine/JITLink:JITLinkTests",
     "ExecutionEngine/MCJIT:MCJITTests",
     "ExecutionEngine/Orc:OrcJITTests",
+    "Frontend:LLVMFrontendTests",
     "FuzzMutate:FuzzMutateTests",
     "IR:IRTests",
     "LineEditor:LineEditorTests",
@@ -25,12 +29,13 @@ group("unittests") {
     "MI:MITests",
     "Object:ObjectTests",
     "ObjectYAML:ObjectYAMLTests",
-    "OptRemarks:OptRemarksTests",
     "Option:OptionTests",
     "Passes:PluginsTests",
     "ProfileData:ProfileDataTests",
+    "Remarks:RemarksTests",
     "Support:SupportTests",
     "Support/DynamicLibrary:DynamicLibraryTests",
+    "TableGen:TableGenTests",
     "TextAPI:TextAPITests",
     "Transforms/IPO:IPOTests",
     "Transforms/Scalar:ScalarTests",
@@ -52,16 +57,25 @@ group("unittests") {
     ]
   }
   if (llvm_build_ARM) {
-    deps += [ "tools/llvm-exegesis/ARM:LLVMExegesisARMTests" ]
+    deps += [
+      "Target/ARM:ARMTests",
+      "tools/llvm-exegesis/ARM:LLVMExegesisARMTests",
+    ]
   }
-  if (llvm_build_WebAssembly) {
-    deps += [ "Target/WebAssembly:WebAssemblyTests" ]
+  if (llvm_build_Mips) {
+    deps += [ "tools/llvm-exegesis/Mips:LLVMExegesisMipsTests" ]
   }
   if (llvm_build_PowerPC) {
     deps += [ "tools/llvm-exegesis/PowerPC:LLVMExegesisPowerPCTests" ]
   }
+  if (llvm_build_WebAssembly) {
+    deps += [ "Target/WebAssembly:WebAssemblyTests" ]
+  }
   if (llvm_build_X86) {
-    deps += [ "tools/llvm-exegesis/X86:LLVMExegesisX86Tests" ]
+    deps += [
+      "Target/X86:X86Tests",
+      "tools/llvm-exegesis/X86:LLVMExegesisX86Tests",
+    ]
   }
 
   testonly = true

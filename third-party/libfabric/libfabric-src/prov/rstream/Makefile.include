@@ -1,0 +1,28 @@
+if HAVE_RSTREAM
+_rstream_files = \
+	prov/rstream/src/rstream_domain.c	\
+	prov/rstream/src/rstream_fabric.c	\
+	prov/rstream/src/rstream_attr.c	\
+	prov/rstream/src/rstream_init.c	\
+	prov/rstream/src/rstream_cm.c	\
+	prov/rstream/src/rstream_msg.c	\
+	prov/rstream/src/rstream_eq.c	\
+	prov/rstream/src/rstream_ep.c   \
+	prov/rstream/src/rstream.h
+
+if HAVE_RSTREAM_DL
+pkglib_LTLIBRARIES += librstream-fi.la
+librstream_fi_la_SOURCES = $(_rstream_files) $(common_srcs)
+librstream_fi_la_LIBADD = $(linkback) $(rstream_LIBS)
+librstream_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+librstream_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_RSTREAM_DL
+src_libfabric_la_SOURCES += $(_rstream_files)
+src_libfabric_la_LIBADD += $(rstream_LIBS)
+endif !HAVE_RSTREAM_DL
+
+prov_install_man_pages += man/man7/fi_rstream.7
+
+endif HAVE_RSTREAM
+
+prov_dist_man_pages += man/man7/fi_rstream.7

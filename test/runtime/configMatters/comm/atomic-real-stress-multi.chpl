@@ -1,1 +1,0 @@
-atomic-real-stress.chpl

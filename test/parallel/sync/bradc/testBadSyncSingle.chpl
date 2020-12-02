@@ -3,7 +3,7 @@ config param testSingle = false;
 
 proc main() {
   var x: if testSingle then sync t else single t;
-  writeln(x.readXX());
+//  writeln(x.readXX());
 }
 
 record R {

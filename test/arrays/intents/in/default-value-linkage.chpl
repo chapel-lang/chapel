@@ -6,25 +6,37 @@ proc main() {
   var Linked : [D] int;
   var Unlinked : [1..4] int;
 
+  writeln("simple(D, Linked)");
   simple(D, Linked);
+  writeln("simple(D, Unlinked)");
   simple(D, Unlinked);
 
+  writeln("defaultsType()");
   defaultsType();
+
+  writeln("defaultsType(D)");
   defaultsType(D);
+
+  writeln("defaultsType(D, Linked)");
   defaultsType(D, Linked);
+
+  writeln("defaultsType(D, Unlinked)");
   defaultsType(D, Unlinked);
+
+  writeln("defaultsType(A=Linked)");
   defaultsType(A=Linked);
+
+  writeln("defaultsType(A=Unlinked)");
   defaultsType(A=Unlinked);
 
+  writeln("defaultsValue()");
   defaultsValue();
-  defaultsValue(D);
-  defaultsValue(D, Linked);
-  defaultsValue(D, Unlinked);
-  defaultsValue(A=Linked);
-  defaultsValue(A=Unlinked);
 
+  writeln("defaultsValue(D)");
+  defaultsValue(D);
+
+  writeln("defaultFromArg(D, Linked)");
   defaultFromArg(D, Linked);
-  defaultFromArg(D, Linked, Unlinked);
 
   if numErrors > 0 {
     if numErrors == 1 then writeln("1 Failure");

@@ -1,9 +1,8 @@
 //===- MachineFunction.cpp ------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -44,6 +43,7 @@
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalValue.h"
@@ -78,10 +78,11 @@ using namespace llvm;
 
 #define DEBUG_TYPE "codegen"
 
-static cl::opt<unsigned>
-AlignAllFunctions("align-all-functions",
-                  cl::desc("Force the alignment of all functions."),
-                  cl::init(0), cl::Hidden);
+static cl::opt<unsigned> AlignAllFunctions(
+    "align-all-functions",
+    cl::desc("Force the alignment of all functions in log2 format (e.g. 4 "
+             "means align on 16B boundaries)."),
+    cl::init(0), cl::Hidden);
 
 static const char *getPropertyName(MachineFunctionProperties::Property Prop) {
   using P = MachineFunctionProperties::Property;
@@ -165,7 +166,7 @@ void MachineFunction::init() {
                       !F.hasFnAttribute("no-realign-stack");
   FrameInfo = new (Allocator) MachineFrameInfo(
       getFnStackAlignment(STI, F), /*StackRealignable=*/CanRealignSP,
-      /*ForceRealign=*/CanRealignSP &&
+      /*ForcedRealign=*/CanRealignSP &&
           F.hasFnAttribute(Attribute::StackAlignment));
 
   if (F.hasFnAttribute(Attribute::StackAlignment))
@@ -175,13 +176,13 @@ void MachineFunction::init() {
   Alignment = STI->getTargetLowering()->getMinFunctionAlignment();
 
   // FIXME: Shouldn't use pref alignment if explicit alignment is set on F.
-  // FIXME: Use Function::optForSize().
+  // FIXME: Use Function::hasOptSize().
   if (!F.hasFnAttribute(Attribute::OptimizeForSize))
     Alignment = std::max(Alignment,
                          STI->getTargetLowering()->getPrefFunctionAlignment());
 
   if (AlignAllFunctions)
-    Alignment = AlignAllFunctions;
+    Alignment = Align(1ULL << AlignAllFunctions);
 
   JumpTableInfo = nullptr;
 
@@ -200,7 +201,7 @@ void MachineFunction::init() {
          "Target-incompatible DataLayout attached\n");
 
   PSVManager =
-    llvm::make_unique<PseudoSourceValueManager>(*(getSubtarget().
+    std::make_unique<PseudoSourceValueManager>(*(getSubtarget().
                                                   getInstrInfo()));
 }
 
@@ -269,9 +270,30 @@ getOrCreateJumpTableInfo(unsigned EntryKind) {
   return JumpTableInfo;
 }
 
+DenormalMode MachineFunction::getDenormalMode(const fltSemantics &FPType) const {
+  // TODO: Should probably avoid the connection to the IR and store directly
+  // in the MachineFunction.
+  Attribute Attr = F.getFnAttribute("denormal-fp-math");
+
+  // FIXME: This should assume IEEE behavior on an unspecified
+  // attribute. However, the one current user incorrectly assumes a non-IEEE
+  // target by default.
+  StringRef Val = Attr.getValueAsString();
+  if (Val.empty())
+    return DenormalMode::Invalid;
+
+  return parseDenormalFPAttribute(Val);
+}
+
 /// Should we be emitting segmented stack stuff for the function
 bool MachineFunction::shouldSplitStack() const {
   return getFunction().hasFnAttribute("split-stack");
+}
+
+LLVM_NODISCARD unsigned
+MachineFunction::addFrameInst(const MCCFIInstruction &Inst) {
+  FrameInstructions.push_back(Inst);
+  return FrameInstructions.size() - 1;
 }
 
 /// This discards all of the MachineBasicBlock numbers and recomputes them.
@@ -357,6 +379,13 @@ MachineInstr &MachineFunction::CloneMachineInstrBundle(MachineBasicBlock &MBB,
 /// ~MachineInstr() destructor must be empty.
 void
 MachineFunction::DeleteMachineInstr(MachineInstr *MI) {
+  // Verify that a call site info is at valid state. This assertion should
+  // be triggered during the implementation of support for the
+  // call site info of a new architecture. If the assertion is triggered,
+  // back trace will tell where to insert a call to updateCallSiteInfo().
+  assert((!MI->isCall(MachineInstr::IgnoreBundle) ||
+          CallSitesInfo.find(MI) == CallSitesInfo.end()) &&
+         "Call site info was not updated!");
   // Strip it for parts. The operand array and the MI object itself are
   // independently recyclable.
   if (MI->Operands)
@@ -396,19 +425,18 @@ MachineMemOperand *MachineFunction::getMachineMemOperand(
 MachineMemOperand *
 MachineFunction::getMachineMemOperand(const MachineMemOperand *MMO,
                                       int64_t Offset, uint64_t Size) {
-  if (MMO->getValue())
-    return new (Allocator)
-               MachineMemOperand(MachinePointerInfo(MMO->getValue(),
-                                                    MMO->getOffset()+Offset),
-                                 MMO->getFlags(), Size, MMO->getBaseAlignment(),
-                                 AAMDNodes(), nullptr, MMO->getSyncScopeID(),
-                                 MMO->getOrdering(), MMO->getFailureOrdering());
+  const MachinePointerInfo &PtrInfo = MMO->getPointerInfo();
+
+  // If there is no pointer value, the offset isn't tracked so we need to adjust
+  // the base alignment.
+  unsigned Align = PtrInfo.V.isNull()
+                       ? MinAlign(MMO->getBaseAlignment(), Offset)
+                       : MMO->getBaseAlignment();
+
   return new (Allocator)
-             MachineMemOperand(MachinePointerInfo(MMO->getPseudoValue(),
-                                                  MMO->getOffset()+Offset),
-                               MMO->getFlags(), Size, MMO->getBaseAlignment(),
-                               AAMDNodes(), nullptr, MMO->getSyncScopeID(),
-                               MMO->getOrdering(), MMO->getFailureOrdering());
+      MachineMemOperand(PtrInfo.getWithOffset(Offset), MMO->getFlags(), Size,
+                        Align, AAMDNodes(), nullptr, MMO->getSyncScopeID(),
+                        MMO->getOrdering(), MMO->getFailureOrdering());
 }
 
 MachineMemOperand *
@@ -425,12 +453,20 @@ MachineFunction::getMachineMemOperand(const MachineMemOperand *MMO,
                                MMO->getOrdering(), MMO->getFailureOrdering());
 }
 
-MachineInstr::ExtraInfo *
-MachineFunction::createMIExtraInfo(ArrayRef<MachineMemOperand *> MMOs,
-                                   MCSymbol *PreInstrSymbol,
-                                   MCSymbol *PostInstrSymbol) {
+MachineMemOperand *
+MachineFunction::getMachineMemOperand(const MachineMemOperand *MMO,
+                                      MachineMemOperand::Flags Flags) {
+  return new (Allocator) MachineMemOperand(
+      MMO->getPointerInfo(), Flags, MMO->getSize(), MMO->getBaseAlignment(),
+      MMO->getAAInfo(), MMO->getRanges(), MMO->getSyncScopeID(),
+      MMO->getOrdering(), MMO->getFailureOrdering());
+}
+
+MachineInstr::ExtraInfo *MachineFunction::createMIExtraInfo(
+    ArrayRef<MachineMemOperand *> MMOs, MCSymbol *PreInstrSymbol,
+    MCSymbol *PostInstrSymbol, MDNode *HeapAllocMarker) {
   return MachineInstr::ExtraInfo::create(Allocator, MMOs, PreInstrSymbol,
-                                         PostInstrSymbol);
+                                         PostInstrSymbol, HeapAllocMarker);
 }
 
 const char *MachineFunction::createExternalSymbolName(StringRef Name) {
@@ -446,6 +482,12 @@ uint32_t *MachineFunction::allocateRegMask() {
   uint32_t *Mask = Allocator.Allocate<uint32_t>(Size);
   memset(Mask, 0, Size * sizeof(Mask[0]));
   return Mask;
+}
+
+ArrayRef<int> MachineFunction::allocateShuffleMask(ArrayRef<int> Mask) {
+  int* AllocMask = Allocator.Allocate<int>(Mask.size());
+  copy(Mask, AllocMask);
+  return {AllocMask, Mask.size()};
 }
 
 #if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
@@ -497,6 +539,13 @@ void MachineFunction::print(raw_ostream &OS, const SlotIndexes *Indexes) const {
   }
 
   OS << "\n# End machine code for function " << getName() << ".\n\n";
+}
+
+/// True if this function needs frame moves for debug or exceptions.
+bool MachineFunction::needsFrameMoves() const {
+  return getMMI().hasDebugInfo() ||
+         getTarget().Options.ForceDwarfFrameSection ||
+         F.needsUnwindTableEntry();
 }
 
 namespace llvm {
@@ -802,6 +851,47 @@ try_next:;
   return FilterID;
 }
 
+MachineFunction::CallSiteInfoMap::iterator
+MachineFunction::getCallSiteInfo(const MachineInstr *MI) {
+  assert(MI->isCall() && "Call site info refers only to call instructions!");
+
+  if (!Target.Options.EnableDebugEntryValues)
+    return CallSitesInfo.end();
+  return CallSitesInfo.find(MI);
+}
+
+void MachineFunction::moveCallSiteInfo(const MachineInstr *Old,
+                                       const MachineInstr *New) {
+  assert(New->isCall() && "Call site info refers only to call instructions!");
+
+  CallSiteInfoMap::iterator CSIt = getCallSiteInfo(Old);
+  if (CSIt == CallSitesInfo.end())
+    return;
+
+  CallSiteInfo CSInfo = std::move(CSIt->second);
+  CallSitesInfo.erase(CSIt);
+  CallSitesInfo[New] = CSInfo;
+}
+
+void MachineFunction::eraseCallSiteInfo(const MachineInstr *MI) {
+  CallSiteInfoMap::iterator CSIt = getCallSiteInfo(MI);
+  if (CSIt == CallSitesInfo.end())
+    return;
+  CallSitesInfo.erase(CSIt);
+}
+
+void MachineFunction::copyCallSiteInfo(const MachineInstr *Old,
+                                       const MachineInstr *New) {
+  assert(New->isCall() && "Call site info refers only to call instructions!");
+
+  CallSiteInfoMap::iterator CSIt = getCallSiteInfo(Old);
+  if (CSIt == CallSitesInfo.end())
+    return;
+
+  CallSiteInfo CSInfo = CSIt->second;
+  CallSitesInfo[New] = CSInfo;
+}
+
 /// \}
 
 //===----------------------------------------------------------------------===//
@@ -834,13 +924,13 @@ unsigned MachineJumpTableInfo::getEntryAlignment(const DataLayout &TD) const {
   // alignment.
   switch (getEntryKind()) {
   case MachineJumpTableInfo::EK_BlockAddress:
-    return TD.getPointerABIAlignment(0);
+    return TD.getPointerABIAlignment(0).value();
   case MachineJumpTableInfo::EK_GPRel64BlockAddress:
-    return TD.getABIIntegerTypeAlignment(64);
+    return TD.getABIIntegerTypeAlignment(64).value();
   case MachineJumpTableInfo::EK_GPRel32BlockAddress:
   case MachineJumpTableInfo::EK_LabelDifference32:
   case MachineJumpTableInfo::EK_Custom32:
-    return TD.getABIIntegerTypeAlignment(32);
+    return TD.getABIIntegerTypeAlignment(32).value();
   case MachineJumpTableInfo::EK_Inline:
     return 1;
   }
@@ -888,9 +978,11 @@ void MachineJumpTableInfo::print(raw_ostream &OS) const {
   OS << "Jump Tables:\n";
 
   for (unsigned i = 0, e = JumpTables.size(); i != e; ++i) {
-    OS << printJumpTableEntryReference(i) << ": ";
+    OS << printJumpTableEntryReference(i) << ':';
     for (unsigned j = 0, f = JumpTables[i].MBBs.size(); j != f; ++j)
       OS << ' ' << printMBBReference(*JumpTables[i].MBBs[j]);
+    if (i != e)
+      OS << '\n';
   }
 
   OS << '\n';

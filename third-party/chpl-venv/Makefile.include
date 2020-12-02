@@ -7,69 +7,23 @@ CHPL_VENV_DIR=$(shell cd $(THIRD_PARTY_DIR)/chpl-venv && pwd)
 
 CHPL_VENV_TEST_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/test-requirements.txt
 CHPL_VENV_CHPLDOC_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chpldoc-requirements.txt
+CHPL_VENV_C2CHAPEL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/c2chapel-requirements.txt
+
 CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE=$(CHPL_VENV_DIR)/chplspell-requirements.txt
-
-# Do not include this file from $(CHPL_MAKE_HOME)/make/Makefile.base.
-# Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv stuff
-# is not used by the chpl compiler.
-# The following Python version processing would needlessly add to chpl's run times.
-
-# Python version
-PYTHON = $(shell which python)
-ifeq ($(wildcard $(PYTHON)),)
-PYTHON_VERSION = _not_found
-PYTHON_MAJOR_VERSION = _not_found
-else
-# Python version has 2 digits, like "2.6" or "2.7"
-PYTHON_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py)
-PYTHON_MAJOR_VERSION = $(shell $(CHPL_MAKE_HOME)/util/chplenv/chpl_python_version.py --major-only)
-endif
-
-# chpl-venv installation path depends on Python version
-CHPL_VENV_UNIQUE_SUBDIR=$(CHPL_MAKE_HOST_BIN_SUBDIR)/py$(PYTHON_VERSION)
-CHPL_VENV_INSTALL_SUBDIR=install/$(CHPL_VENV_UNIQUE_SUBDIR)
-CHPL_VENV_INSTALL_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_INSTALL_SUBDIR)
-CHPL_VENV_VIRTUALENV=$(CHPL_VENV_INSTALL_SUBDIR)/bin/virtualenv
-CHPL_VENV_VIRTUALENV_NAME=chpl-virtualenv
-CHPL_VENV_VIRTUALENV_SUBDIR=$(CHPL_VENV_INSTALL_SUBDIR)/$(CHPL_VENV_VIRTUALENV_NAME)
-CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV_SUBDIR)
-CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
-CHPL_VENV_SPHINX_BUILD=$(CHPL_VENV_VIRTUALENV_BIN)/sphinx-build
-CHPL_VENV_TEST_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-test-reqs
 CHPL_VENV_CHPLSPELL_REQS=$(CHPL_VENV_VIRTUALENV_DIR)/chpl-chplspell-reqs
 
+# Do not include this file from $(CHPL_MAKE_HOME)/make/Makefile.base.
+# Makefile.base gets run by the chpl compiler, but the third-party/chpl-venv
+# stuff is not used by the chpl compiler.
 
-CHPL_VENV_PIP_CACHE_DIR=$(CHPL_VENV_INSTALL_SUBDIR)/pip-cache
-CHPL_PIP_INSTALL_PARAMS+=--cache-dir $(CHPL_VENV_PIP_CACHE_DIR)
+# Python version
+PYTHON=$(CHPL_MAKE_PYTHON)
+PIP=$(PYTHON) -m pip
 
-# pip installation path variants
-PIPLIB_VER=$(CHPL_VENV_INSTALL_DIR)/lib/python$(PYTHON_VERSION)/site-packages
-PIPLIB=$(CHPL_VENV_INSTALL_DIR)/lib/python/site-packages
-PIPLIB64_VER=$(CHPL_VENV_INSTALL_DIR)/lib64/python$(PYTHON_VERSION)/site-packages
-PIPLIB64=$(CHPL_VENV_INSTALL_DIR)/lib64/python/site-packages
-
-PIPLIBS=$(PIPLIB_VER):$(PIPLIB):$(PIPLIB64_VER):$(PIPLIB64)
-
-
-GET_PIP_COMMAND=export PYTHONUSERBASE=$(CHPL_VENV_INSTALL_DIR) && python get-pip.py --user --no-warn-conflicts
-# If CHPL_PIP env var is set, then don't install custom pip
-ifdef CHPL_PIP
-  PIP = $(CHPL_PIP)
-else
-  ifdef VIRTUAL_ENV
-    PIP=$(VIRTUAL_ENV)/bin/pip
-    GET_PIP_COMMAND=python get-pip.py --no-warn-conflicts
-  else
-    PIP=-S $(CHPL_VENV_INSTALL_DIR)/bin/pip
-    # This must be separate from global CHPL_PIP_INSTALL_PARAMS
-    LOCAL_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location
-  endif
-endif
-
-
-# If using python 2.6, get an older version of pip
-ifeq ($(PYTHON_VERSION), 2.6)
-  GETPIP=https://bootstrap.pypa.io/2.6/get-pip.py
-else
-  GETPIP=https://bootstrap.pypa.io/get-pip.py
-endif
+CHPL_VENV_BUILD=$(CHPL_VENV_DIR)/build
+CHPL_VENV_VIRTUALENV_DIR=$(CHPL_VENV_BUILD)/build-venv
+CHPL_VENV_VIRTUALENV_DIR_OK=$(CHPL_VENV_BUILD)/build-venv/ok
+CHPL_VENV_VIRTUALENV_BIN=$(CHPL_VENV_VIRTUALENV_DIR)/bin
+CHPL_VENV_INSTALL=$(CHPL_VENV_DIR)/install
+CHPL_VENV_CHPLDEPS=$(CHPL_VENV_INSTALL)/chpldeps
+CHPL_VENV_CHPLDEPS_MAIN=$(CHPL_VENV_CHPLDEPS)/__main__.py

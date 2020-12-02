@@ -53,7 +53,7 @@ class GridCFGhostRegion {
       
       var fine_intersection = grid.extended_cells( refine(coarse_grid.cells, ref_ratio) );
       
-      if fine_intersection.numIndices > 0 {
+      if fine_intersection.size > 0 {
         
         //---- Initialize a MultiDomain to the intersection, less grid's interior ----
         
@@ -66,7 +66,7 @@ class GridCFGhostRegion {
         
         for (neighbor, region) in parent_level.sibling_ghost_regions(grid)! {
           
-          if fine_intersection(region).numIndices > 0 {
+          if fine_intersection(region).size > 0 {
             boundary_multidomain.subtract(region);     
           } 
         }

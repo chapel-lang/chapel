@@ -8,8 +8,8 @@ $chplhomedir = abs_path("$cwd/../..");
 
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
+$failuremail = "chapel+tests\@discoursemail.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
 $printusage = 1;
@@ -44,11 +44,9 @@ $pid = getpgrp();
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
-if ($debugmail eq "") {
-    $debugmail = "$user\@cray.com";
-    if ($debug == 1) {
-        $replymail = $debugemail;
-    }
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
 }
 
 if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
@@ -232,11 +230,12 @@ sub mysystem {
         if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
             print "Trying to mail message... using $mailcommand\n";
             open(MAIL, $mailcommand);
-            print MAIL "=== Summary - testRelease ===================================================\n";
+            print MAIL "=== Summary - testRelease =====================================\n";
             print MAIL "ERROR $_[1]: $status\n";
             $host = `hostname`; chomp($host);
             print MAIL "(workspace left at $host:$tmpdir)\n";
-            print MAIL "===============================================================\n";
+            print MAIL "(or better, visit 'release-tarball-smoke-test' in jenkins)\n";
+            print MAIL "=== End Summary ===============================================\n";
             close(MAIL);
         } else {
             print "CHPL_TEST_NOMAIL: No $mailcommand\n";

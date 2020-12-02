@@ -1,9 +1,8 @@
 //===- MipsISelLowering.h - Mips DAG Lowering Interface ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -285,6 +284,8 @@ class TargetRegisterClass;
 
     bool isCheapToSpeculateCttz() const override;
     bool isCheapToSpeculateCtlz() const override;
+    bool shouldFoldConstantShiftPairToMask(const SDNode *N,
+                                           CombineLevel Level) const override;
 
     /// Return the register type for a given MVT, ensuring vectors are treated
     /// as a series of gpr sized integers.
@@ -303,11 +304,12 @@ class TargetRegisterClass;
         unsigned &NumIntermediates, MVT &RegisterVT) const override;
 
     /// Return the correct alignment for the current calling convention.
-    unsigned getABIAlignmentForCallingConv(Type *ArgTy,
-                                           DataLayout DL) const override {
+    Align getABIAlignmentForCallingConv(Type *ArgTy,
+                                        DataLayout DL) const override {
+      const Align ABIAlign(DL.getABITypeAlignment(ArgTy));
       if (ArgTy->isVectorTy())
-        return std::min(DL.getABITypeAlignment(ArgTy), 8U);
-      return DL.getABITypeAlignment(ArgTy);
+        return std::min(ABIAlign, Align(8));
+      return ABIAlign;
     }
 
     ISD::NodeType getExtendForAtomicOps() const override {
@@ -346,8 +348,8 @@ class TargetRegisterClass;
 
     void HandleByVal(CCState *, unsigned &, unsigned) const override;
 
-    unsigned getRegisterByName(const char* RegName, EVT VT,
-                               SelectionDAG &DAG) const override;
+    Register getRegisterByName(const char* RegName, LLT VT,
+                               const MachineFunction &MF) const override;
 
     /// If a physical register, this returns the register that receives the
     /// exception address on entry to an EH pad.
@@ -652,9 +654,11 @@ class TargetRegisterClass;
 
     unsigned
     getInlineAsmMemConstraint(StringRef ConstraintCode) const override {
+      if (ConstraintCode == "o")
+        return InlineAsm::Constraint_o;
       if (ConstraintCode == "R")
         return InlineAsm::Constraint_R;
-      else if (ConstraintCode == "ZC")
+      if (ConstraintCode == "ZC")
         return InlineAsm::Constraint_ZC;
       return TargetLowering::getInlineAsmMemConstraint(ConstraintCode);
     }
@@ -669,12 +673,13 @@ class TargetRegisterClass;
                             unsigned SrcAlign,
                             bool IsMemset, bool ZeroMemset,
                             bool MemcpyStrSrc,
-                            MachineFunction &MF) const override;
+                            const AttributeList &FuncAttributes) const override;
 
     /// isFPImmLegal - Returns true if the target can instruction select the
     /// specified FP immediate natively. If false, the legalizer will
     /// materialize the FP immediate as a load from a constant pool.
-    bool isFPImmLegal(const APFloat &Imm, EVT VT) const override;
+    bool isFPImmLegal(const APFloat &Imm, EVT VT,
+                      bool ForCodeSize) const override;
 
     unsigned getJumpTableEncoding() const override;
     bool useSoftFloat() const override;

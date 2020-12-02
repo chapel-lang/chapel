@@ -45,7 +45,7 @@ proc AMRHierarchy.advance_AdvectionCTU(
   // finer levels, dt will have to be refined in conjunction with dx.
   //---------------------------------------------------------------------
 
-  var max_dt_values = levels(1).dx / abs(velocity);
+  var max_dt_values = levels(1)!.dx / abs(velocity);
   var dt_target = min( (...max_dt_values) );
   dt_target *= 0.95;
 
@@ -112,7 +112,7 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
   
   
   //---- Aliases ----
-  const level_solution = level_solutions(i_level);
+  const level_solution = level_solutions(i_level)!;
   const t =              level_solution.current_time;
 
 
@@ -122,7 +122,7 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
 
   //---- If level is fine, fill its CF ghost region ----
   if i_level > 1 then
-    level_solution.current_data.fillCFGhostRegion( cf_ghost_solutions(i_level), t );
+    level_solution.current_data.fillCFGhostRegion( cf_ghost_solutions(i_level)!, t );
 
 
   //---- Step the LevelSolution ahead ----
@@ -141,11 +141,11 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
   if i_level < level_indices.high {
 
     //---- Fill CFGhostSolution for the next level ----
-    cf_ghost_solutions(i_level+1).fill( level_solution );
+    cf_ghost_solutions(i_level+1)!.fill( level_solution );
 
 
     //---- Step the finer solution as many times as necessary ----
-    const ref_ratio      = refinementRatio(levels(i_level), levels(i_level+1));
+    const ref_ratio      = refinementRatio(levels(i_level)!, levels(i_level+1)!);
     const time_ref_ratio = max( (...ref_ratio) );
     const dt_fine        = dt / time_ref_ratio;
     
@@ -156,8 +156,8 @@ proc AMRHierarchy.stepLevel_AdvectionCTU(
 
 
     //---- Correct current_data on the invalid region ----
-    level_solution.current_data.fillInvalidRegion( invalid_regions(i_level), 
-                                                   level_solutions(i_level+1).current_data );
+    level_solution.current_data.fillInvalidRegion( invalid_regions(i_level)!, 
+                                                   level_solutions(i_level+1)!.current_data );
 
   }
 

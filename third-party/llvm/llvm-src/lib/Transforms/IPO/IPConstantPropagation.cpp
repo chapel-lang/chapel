@@ -1,9 +1,8 @@
 //===-- IPConstantPropagation.cpp - Propagate constants through calls -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -22,6 +21,7 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Module.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Transforms/IPO.h"
 using namespace llvm;
@@ -62,32 +62,55 @@ static bool PropagateConstantsIntoArguments(Function &F) {
     // Ignore blockaddress uses.
     if (isa<BlockAddress>(UR)) continue;
 
-    // Used by a non-instruction, or not the callee of a function, do not
-    // transform.
-    if (!isa<CallInst>(UR) && !isa<InvokeInst>(UR))
+    // If no abstract call site was created we did not understand the use, bail.
+    AbstractCallSite ACS(&U);
+    if (!ACS)
       return false;
 
-    CallSite CS(cast<Instruction>(UR));
-    if (!CS.isCallee(&U))
+    // Mismatched argument count is undefined behavior. Simply bail out to avoid
+    // handling of such situations below (avoiding asserts/crashes).
+    unsigned NumActualArgs = ACS.getNumArgOperands();
+    if (F.isVarArg() ? ArgumentConstants.size() > NumActualArgs
+                     : ArgumentConstants.size() != NumActualArgs)
       return false;
 
     // Check out all of the potentially constant arguments.  Note that we don't
     // inspect varargs here.
-    CallSite::arg_iterator AI = CS.arg_begin();
     Function::arg_iterator Arg = F.arg_begin();
-    for (unsigned i = 0, e = ArgumentConstants.size(); i != e;
-         ++i, ++AI, ++Arg) {
+    for (unsigned i = 0, e = ArgumentConstants.size(); i != e; ++i, ++Arg) {
 
       // If this argument is known non-constant, ignore it.
       if (ArgumentConstants[i].second)
         continue;
 
-      Constant *C = dyn_cast<Constant>(*AI);
+      Value *V = ACS.getCallArgOperand(i);
+      Constant *C = dyn_cast_or_null<Constant>(V);
+
+      // Mismatched argument type is undefined behavior. Simply bail out to avoid
+      // handling of such situations below (avoiding asserts/crashes).
+      if (C && Arg->getType() != C->getType())
+        return false;
+
+      // We can only propagate thread independent values through callbacks.
+      // This is different to direct/indirect call sites because for them we
+      // know the thread executing the caller and callee is the same. For
+      // callbacks this is not guaranteed, thus a thread dependent value could
+      // be different for the caller and callee, making it invalid to propagate.
+      if (C && ACS.isCallbackCall() && C->isThreadDependent()) {
+        // Argument became non-constant. If all arguments are non-constant now,
+        // give up on this function.
+        if (++NumNonconstant == ArgumentConstants.size())
+          return false;
+
+        ArgumentConstants[i].second = true;
+        continue;
+      }
+
       if (C && ArgumentConstants[i].first == nullptr) {
         ArgumentConstants[i].first = C;   // First constant seen.
       } else if (C && ArgumentConstants[i].first == C) {
         // Still the constant value we think it is.
-      } else if (*AI == &*Arg) {
+      } else if (V == &*Arg) {
         // Ignore recursive calls passing argument down.
       } else {
         // Argument became non-constant.  If all arguments are non-constant now,
@@ -232,7 +255,7 @@ static bool PropagateConstantReturn(Function &F) {
       // Find the index of the retval to replace with
       int index = -1;
       if (ExtractValueInst *EV = dyn_cast<ExtractValueInst>(Ins))
-        if (EV->hasIndices())
+        if (EV->getNumIndices() == 1)
           index = *EV->idx_begin();
 
       // If this use uses a specific return value, and we have a replacement,

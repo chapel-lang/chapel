@@ -1,2 +1,2 @@
-bug-13615.chpl:8: warning: arg:true
-bug-13615.chpl:11: warning: arg:true
+bug-13615.chpl:10: warning: arg:true
+bug-13615.chpl:13: warning: arg:true

@@ -23,22 +23,12 @@ def get_chpl_third_party():
     return chpl_third_party
 
 # Get the chpl-venv install directory:
-# $CHPL_HOME/third-party/chpl-venv/install/$bin_subdir/$py_version/chpl-virtualenv
+# $CHPL_HOME/third-party/chpl-venv/install/chpldeps
 @memoize
-def get_chpl_venv():
-    chpl_venv = os.path.join(get_chpl_third_party(), 'chpl-venv')
-    bin_subdir = chpl_bin_subdir.get('host')
-    py_version = 'py{0}'.format(chpl_python_version.get())
-    uniq_path = os.path.join(bin_subdir, py_version)
-    venv_dir = os.path.join(chpl_venv, 'install', uniq_path, 'chpl-virtualenv')
-    return venv_dir
-
-# Get the test chpl-venv directory. Defaults to get_chpl_venv(), but can be
-# overridden with CHPL_TEST_VENV_DIR
-@memoize
-def get_chpl_test_venv():
-    venv_dir = os.getenv('CHPL_TEST_VENV_DIR', get_chpl_venv())
-    return venv_dir
+def get_chpldeps():
+    chpl_venv = os.path.join(get_chpl_third_party(), 'chpl-venv',
+                             'install', 'chpldeps')
+    return chpl_venv
 
 @memoize
 def using_chapel_module():
@@ -55,10 +45,8 @@ def _main():
                       dest='func', const=get_chpl_home)
     parser.add_option('--third-party', action='store_const',
                       dest='func', const=get_chpl_third_party)
-    parser.add_option('--venv', action='store_const',
-                      dest='func', const=get_chpl_venv)
-    parser.add_option('--test-venv', action='store_const',
-                      dest='func', const=get_chpl_test_venv)
+    parser.add_option('--chpldeps', action='store_const',
+                      dest='func', const=get_chpldeps)
     parser.add_option('--using-module', action='store_const',
                       dest='func', const=using_chapel_module)
     (options, args) = parser.parse_args()

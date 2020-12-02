@@ -425,6 +425,8 @@ tags
 
 /test/users/thom/returnGenericLineno/strassen
 
+test/types/string/validation/stress.good
+
 # Third party ignores.
 /third-party/**/build
 /third-party/**/install

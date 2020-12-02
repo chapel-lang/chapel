@@ -9,6 +9,5 @@ MYLOG=""
 
 LAST=""
 
-MYLOG=`grep print-module-resolution $LOG | sed 's/[0-9][0-9]*/nnnn/g'`
-
-echo $MYLOG > $LOG
+grep -v contains $LOG > $LOG.tmp
+mv $LOG.tmp $LOG

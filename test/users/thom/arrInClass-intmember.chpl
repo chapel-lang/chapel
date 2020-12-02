@@ -3,7 +3,7 @@ class StoreSomeInts {
   var m_someints: [1..numInts] int;
 
   proc init(m_someints: [] int) {
-    numInts = m_someints.numElements;
+    numInts = m_someints.size;
     this.m_someints = m_someints;
   }
 }

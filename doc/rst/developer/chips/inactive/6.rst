@@ -1,0 +1,203 @@
+Tuple Semantics
+===============
+
+Status
+  Inactive - Implemented
+
+Author
+  Michael Ferguson
+
+
+Abstract
+--------
+
+Tuples behave as records, with some fields being automatically 'ref' fields.
+
+Motivation
+----------
+
+Chapel makes use of tuples as a convenience for bundling several items
+together. This is done when passing them into and out of functions,
+variable-length argument lists, yielding from iterators, storing in
+variables and data structures.
+
+This CHIP defines the semantics of what tuples are.
+It is intended to add precision to certain parts
+of the spec and to settle some open questions.
+
+
+Design Overview
+---------------
+
+We had been considering two major options:
+
+* a tuple is a shorthand for writing down individual variables
+* a tuple is a shorthand for creating a record
+
+The key appeal of the "individual variables" option is
+the preservation of argument intents.
+E.g if A is an array, and `f` takes in an argument by blank intent,
+`f((1,A));`` passes A by reference.
+
+The appeal of the "record" option is:
+
+* tuples are record-like in Rust, Swift, Fortress
+* (and also in Python, Ruby, Julia, although that's less interesting)
+* a few team members already had the mental model of tuples as records
+* grouping a few things together sounds like creating a record
+* the implementation had already treated tuples as records
+
+This CHIP describes a design that combines some attributes
+of each of these strategies, but is closer to a tuple
+being shorthand for individual variables.
+
+In particular, the driving design principle is that a 1-element tuple
+should behave similarly to just the element. This applies when passing
+the tuple to a function by blank intent, when returning it from a
+function, or when assigning it to a new variable. The behaviour of
+tuples with more elements can be understood as a generalization of
+1-element tuples.
+
+Tuples May Contain Elements or Refer to Them
+--------------------------------------------
+
+A tuple may store a reference to an element or the actual element.
+This distinction is particularly important because if a tuple stores
+actual elements, generally that means that a copy of the element is
+made upon storing it into a tuple.
+
+A given tuple type might contain references to elements in some
+situations and store the elements in other situations. In particular,
+when assigning a tuple to a new variable or returning it from a function,
+the value assigned or returned will contain elements rather than
+references to elements.
+
+Some element types are never referred to by tuples. In particular,
+element types that have a blank intent of `const in` are not ever
+referred to in tuples. Instead, they are stored directly in the tuple
+(and copied as necessary).
+
+For example, a tuple never stores a reference to an `int` element.
+However, a tuple may store a reference to a record, array, or domain.
+
+Tuple Argument Behavior
+-----------------------
+
+A tuple argument to a function with blank intent will not make a copy of
+the tuple elements but can accept a tuple expression. A tuple argument
+with `ref` intent requires an `lvalue` argument - a variable or returned
+tuple. In neither case does passing a tuple argument to a function create
+a copy of the tuple.
+
+A tuple argument declared with `const` intent will work similarly to one
+with a `blank` intent, but contain `const` elements.
+
+Tuple Expression Behavior
+-------------------------
+
+When a tuple is constructed with the tuple expression, that tuple refers
+to any elements for which the blank argument intent is ref or const ref.
+In particular, in the following example:
+
+.. code-block:: chapel
+
+  record R { var x:int; }
+  var A:[1..1] int;
+  var i:int;
+  var r = new R(0);
+
+  test( (A, i, r) ); // A, r are not copied here, but i is
+
+  proc test(tup) {
+    A[1] = 1;
+    i = 2;
+    r.x = 3;
+    writeln(tup); // outputs (1, 0, (x = 3))
+  }
+
+the tuple `(A, i, r)` refers to the array and record but contains
+a copy of the integer `i`.
+
+Tuple Variable Behavior
+-----------------------
+
+When a tuple is stored into a variable, the variable will not refer
+to any tuple elements but instead contains copies of those elements.
+
+For example, in this code:
+
+.. code-block:: chapel
+
+  record R { var x:int; }
+  var A:[1..1] int;
+  var i:int;
+  var r = new R(0);
+
+  var tup = (A, i, r); // A, i, and r are copied into tup
+
+  A[1] = 1;
+  i = 2;
+  r.x = 3;
+
+  writeln(tup); // outputs (0, 0, (x = 0))
+
+the variable `tup` contains a copy of the array `A` and the
+record `r`.
+
+Default Return Intent
+---------------------
+
+This section clarifies the "Return Intents" section of the
+"Procedures" chapter of the spec.
+
+When a function's return intent is not specified explicitly,
+the function is said to have the "default" return intent.
+The "default" return intent always corresponds to returning a value for
+all types. This behavior can be overridden by specifying the `ref` or
+`const ref` return intent.
+
+
+Tuple Return Behavior
+---------------------
+
+When a tuple is returned from a function with `ref` or `const ref`
+return intent, that tuple must refer to a variable or other tuple
+that does not refer to elements. Otherwise there is a compilation
+error.
+
+When a tuple expression is returned from a function with blank return intent,
+the tuple elements are returned by value. For example:
+
+.. code-block:: chapel
+
+  record R { var x:int; }
+  var A:[1..1] int;
+  var i:int;
+  var r = new R(0);
+
+  updateGlobalsAndOutput(returnTuple());
+  
+  proc returnTuple() {
+    return (A, i, r); // returns a copy of A, i, and r
+  }
+  proc updateGlobalsAndOutput(tup) {
+    A[1] = 1;
+    i = 2;
+    r.x = 3;
+    writeln(tup); // outputs (0, 0, (x = 0))
+  }
+
+
+Corner Cases and Open Issues
+----------------------------
+
+Passing a tuple literal to a function by `ref` intent is an error.
+
+Assigning to a tuple with an array component results in copying
+into that component's array, not into re-aliasing that component
+to point to the RHS array.
+
+Open Issue:
+Consider a function with a formal that has the default intent and
+is a tuple with an array component. Within the function,
+can the corresponding array be modified?

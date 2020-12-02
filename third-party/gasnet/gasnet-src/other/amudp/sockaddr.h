@@ -96,6 +96,9 @@ class SockAddr {
     operator sockaddr_in*(void) { return &addr; }
     unsigned long IP(void) { return ntohl(addr.sin_addr.s_addr); }
     unsigned short port(void) { return ntohs(addr.sin_port); }
+    bool is_localhost() {
+      return (addr.sin_addr.s_addr & 0x000000FFu) == 0x7Fu;
+    }
     char *IPStr(void) { 
       // inet_ntoa(((sockaddr_in*)&addr)->sin_addr); // This may screw up transparency
       unsigned char * pdata = (unsigned char *)(((sockaddr*)&addr)->sa_data);

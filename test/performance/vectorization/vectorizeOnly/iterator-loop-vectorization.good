@@ -1,0 +1,4 @@
+iterator-loop-vectorization.chpl:93: note: loop vectorization (with parallel access) hinted for CForLoop
+iterator-loop-vectorization.chpl:101: note: loop vectorization (with parallel access) hinted for CForLoop
+iterator-loop-vectorization.chpl:110: note: loop vectorization (with parallel access) hinted for CForLoop
+iterator-loop-vectorization.chpl:118: note: loop vectorization (with parallel access) hinted for CForLoop

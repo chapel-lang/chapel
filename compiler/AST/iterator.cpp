@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -164,7 +165,7 @@ LOGISTICS
 
 IteratorGroup::IteratorGroup() :
   serial(NULL), standalone(NULL), leader(NULL), follower(NULL),
-  noniterSA(false), noniterL(false)
+  noniterSA(NULL), noniterL(NULL)
 {}
 
 static bool isIteratorOrForwarder(FnSymbol* it) {
@@ -181,15 +182,17 @@ static bool isIteratorOrForwarder(FnSymbol* it) {
 // Look for the iterator for 'iterKindTag' and update the iterator group.
 static void checkParallelIterator(FnSymbol* serial, Expr* call,
                                   Symbol* iterKindTag, IteratorGroup* igroup,
-                                  FnSymbol*& outParIter, bool& noniterFlag)
+                                  FnSymbol*& outParIter, FnSymbol*& noniterFn)
 {
   // Build a "representative call".
   CallExpr* repCall = new CallExpr(new UnresolvedSymExpr(serial->name));
 
   // Use the formals of 'serial', for the purposes of resolution.
-  for_formals(formal, serial)
-    repCall->insertAtTail(
-      new NamedExpr(formal->name, createSymExprPropagatingParam(formal)) );
+  for_formals(formal, serial) {
+    if (formal->name != astrTag)
+      repCall->insertAtTail(
+        new NamedExpr(formal->name, createSymExprPropagatingParam(formal)) );
+  }
 
   // Add the tag argument.
   repCall->insertAtTail(new NamedExpr(astrTag, new SymExpr(iterKindTag)));
@@ -207,7 +210,7 @@ static void checkParallelIterator(FnSymbol* serial, Expr* call,
     } else {
       // If this is not an iterator, do not record it.
       // We may need to raise an error later.
-      noniterFlag = true;
+      noniterFn = parIter;
     }
   }
 

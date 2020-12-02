@@ -35,7 +35,7 @@ config const printCommCounts = false;
 proc distributedRead(distribArr, filenames, sizes) {
   // copy the sizes array into an array with the first element set
   // to '0' to turn the scan into an exclusive scan.
-  var fileSizes: [1..sizes.numElements+1] int;
+  var fileSizes: [1..sizes.size+1] int;
   fileSizes[2..] = sizes;
   const totSizes = + scan fileSizes;
 
@@ -51,7 +51,7 @@ proc distributedRead(distribArr, filenames, sizes) {
                                          chunkShape=chunkShape,
                                          eltType = c_int),
                           0..) {
-      const size = chunk.numElements,
+      const size = chunk.size,
             start = distribArr.domain.low + totSizes[i+1] + j*chunkSize,
             end = start + size - 1;
       ref blockSlice = distribArr[start..end];

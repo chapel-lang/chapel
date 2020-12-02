@@ -18,8 +18,7 @@ config const mm = 3;
 
 var MyDomain = LocaleSpace;
 if numLocales == 1 then MyDomain = {1..locs};
-var MyLocales: [MyDomain] locale;
-if numLocales == 1 then MyLocales = here; else MyLocales = Locales;
+var MyLocales: [MyDomain] locale = for i in MyDomain do Locales[i%numLocales];
 //writeln(MyLocales);
 
 iter myiter() {

@@ -2,10 +2,10 @@ use FileSystem;
 use Path;
 
 proc repr(str) {
-  writef("%ht\n", str.encode(errors=encodePolicy.unescape));
+  writef("%ht\n", str.encode(policy=encodePolicy.unescape));
 }
 
-const dirName = b"\xffNOT\xffUTF8\xff".decode(errors=decodePolicy.escape);
+const dirName = b"\xffNOT\xffUTF8\xff".decode(policy=decodePolicy.escape);
 
 mkdir(dirName);
 const dirPath = realPath(dirName);

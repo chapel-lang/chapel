@@ -1,5 +1,6 @@
 /*
- * Copyright 2004-2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -39,12 +40,14 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
+#include "view.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
 #include <algorithm>
 #include <map>
 #include <set>
+#include <stack>
 
 /************************************* | **************************************
 *                                                                             *
@@ -78,21 +81,20 @@ static void          scopeResolve(ModuleSymbol*       module,
 
 static void          scopeResolveExpr(Expr* expr, ResolveScope* scope);
 
-static bool          isStableClassType(Type* t);
-static Expr*         handleUnstableClassType(SymExpr* se);
-
 static astlocT*      resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               bool returnRename = false);
 
 static void          resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                               Symbol* sym);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames);
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 static ModuleSymbol* definesModuleSymbol(Expr* expr);
 
@@ -126,9 +128,6 @@ static void handleReceiverFormals() {
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
-
-        } else {
-          USR_FATAL(fn, "cannot resolve base type for method '%s.%s'", sym->unresolved, fn->name);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -541,18 +540,52 @@ static void processImportExprs() {
       // Collect *all* asts within this top-level module in text order
       collect_asts(topLevelModule, asts);
 
+      std::stack<ResolveScope*> scopes;
       for_vector(BaseAST, item, asts) {
-        if (UseStmt* useStmt = toUseStmt(item)) {
-          BaseAST*      astScope = getScope(useStmt);
+        Expr* exprItem = toExpr(item);
+        if (exprItem != NULL && exprItem->parentExpr != NULL) {
+          BaseAST*      astScope = getScope(item);
           ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
 
-          useStmt->scopeResolve(scope);
-        } else if (ImportStmt* importStmt = toImportStmt(item)) {
-          BaseAST*      astScope = getScope(importStmt);
-          ResolveScope* scope    = ResolveScope::getScopeFor(astScope);
+          // Resolve any uses or imports we find
+          if (UseStmt* useStmt = toUseStmt(item)) {
+            useStmt->scopeResolve(scope);
+          } else if (ImportStmt* importStmt = toImportStmt(item)) {
+            importStmt->scopeResolve(scope);
+          }
 
-          importStmt->scopeResolve(scope);
+          // As we finish with this statement, check to see if we've exited one
+          // or more scopes and update its/their statuses to reflect that we
+          // have finished resolving all the use or import statements within
+          // them.
+          if (scope != NULL) {
+            if (scopes.empty()) {
+              scopes.push(scope);
+            }
+            if (scope != scopes.top()) {
+              ResolveScope* last = scopes.top();
+              BlockStmt* lastAst = last->asBlockStmt();
+              BlockStmt* curBlock = scope->asBlockStmt();
+              if (curBlock != NULL) {
+                if (lastAst->contains(curBlock)) {
+                  scopes.push(scope);
+                } else {
+                  while (!lastAst->contains(curBlock) && !scopes.empty()) {
+                    scopes.pop();
+                    last->progress = IUP_COMPLETED;
+                  }
+                }
+              }
+            }
+          }
         }
+      }
+
+      // Once we've finished traversing, close any remaining unclosed scopes.
+      while (!scopes.empty()) {
+        ResolveScope* last = scopes.top();
+        scopes.pop();
+        last->progress = IUP_COMPLETED;
       }
     }
   }
@@ -658,6 +691,8 @@ static bool isMethodNameLocal(const char* name, Type* type);
 static void checkIdInsideWithClause(Expr*              exprInAst,
                                     UnresolvedSymExpr* origUSE);
 
+static void checkModuleSymExpr(SymExpr* se);
+
 static void resolveUnresolvedSymExprs() {
   //
   // Translate M.x where M is a ModuleSymbol into just x where x is
@@ -686,41 +721,6 @@ void resolveUnresolvedSymExprs(BaseAST* inAst) {
    }
 }
 
-static bool callSpecifiesTaskIntents(CallExpr* call) {
-  if (call->isPrimitive(PRIM_ACTUALS_LIST))
-    if (BlockStmt* pblock = toBlockStmt(call->parentExpr))
-      if (CallExpr* blockInfo = pblock->blockInfoGet())
-        if (blockInfo->isPrimitive(PRIM_BLOCK_COFORALL)    ||
-            blockInfo->isPrimitive(PRIM_BLOCK_COFORALL_ON) ||
-            blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN)     ||
-            blockInfo->isPrimitive(PRIM_BLOCK_COBEGIN_ON)  ||
-            blockInfo->isPrimitive(PRIM_BLOCK_BEGIN)       ||
-            blockInfo->isPrimitive(PRIM_BLOCK_BEGIN_ON)    )
-          return true;
-
-  return false;
-}
-
-static bool isStableClassType(Type* t) {
-  bool ok = false;
-
-  TypeSymbol* ts = t->symbol;
-
-  if (isClass(t)) {
-    // Always consider locale type unmanaged
-    if (ts->type == dtLocale)
-      ok = true;
-    // Always consider ddata type unmanaged
-    if (ts->hasFlag(FLAG_DATA_CLASS))
-      ok = true;
-    // Something with "no object" flag isn't really an object anyway
-    if (ts->hasFlag(FLAG_NO_OBJECT))
-      ok = true;
-  }
-
-  return ok;
-}
-
 static bool callSpecifiesClassKind(CallExpr* call) {
   return (call->isNamed("_to_borrowed") ||
           call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
@@ -735,183 +735,6 @@ static bool callSpecifiesClassKind(CallExpr* call) {
           call->isNamed("chpl__distributed"));
 }
 
-static bool hasChplManagerArgument(CallExpr* call) {
-  if (call == NULL)
-    return false;
-
-  for_actuals(actual, call) {
-    if (NamedExpr* ne = toNamedExpr(actual))
-      if (ne->name == astr_chpl_manager)
-        return true;
-  }
-
-  return false;
-}
-
-static bool callMakesDmap(CallExpr* call) {
-  if (SymExpr* se = toSymExpr(call->baseExpr))
-    if (se->symbol()->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION))
-      return true;
-  return false;
-}
-
-// Returns the expr resulting, either se or a call containing it
-// Handle the case where se->symbol() is "unstable" i.e. an undecorated
-// class type. With --warn-unstable, issue a warning. With --default-unmanaged,
-// wrap it in a (call PRIM_TO_UNMANAGED se). Return either se or the
-// new call just created.
-static Expr* handleUnstableClassType(SymExpr* se) {
-  if (se->getModule()->modTag == MOD_USER) {
-    if (TypeSymbol* ts = toTypeSymbol(se->symbol())) {
-      if (isClass(ts->type)) {
-        bool ok = false;
-        CallExpr* pCall = toCallExpr(se->parentExpr);
-        DefExpr* inDef = NULL;
-        CatchStmt* inCatch = NULL;
-        CallExpr* inCall = NULL;
-
-        // Find outer def/catch
-        for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
-          if (CatchStmt* c = toCatchStmt(cur))
-            inCatch = c;
-          if (DefExpr* d = toDefExpr(cur))
-            inDef = d;
-        }
-        // Find outer call, but don't count:
-        //  * baseExpr
-        //  * type construction (calls to types, buildArrayRuntimeType)
-        for (Expr* cur = se; cur != NULL; cur = cur->parentExpr ) {
-          if (CallExpr* c = toCallExpr(cur))
-            inCall = c;
-          if (CallExpr* p = toCallExpr(cur->parentExpr)) {
-            if (p->baseExpr == cur) {
-              // don't count base expr so we can warn on
-              // var x:MyGenericClass(int).
-              break;
-            } else if (SymExpr* curSE = toSymExpr(p->baseExpr)) {
-              if (isTypeSymbol(curSE->symbol()))
-                // Don't count calls to types (type construction)
-                break;
-            } else if (p->isNamed("chpl__buildArrayRuntimeType")) {
-              // Don't count array type construction
-              break;
-            }
-          }
-        }
-
-        FnSymbol* inFn = se->getFunction();
-        if (pCall) {
-          if (callSpecifiesClassKind(pCall)) {
-            // It's OK, it's decorated
-            ok = true;
-          } else if (callSpecifiesTaskIntents(pCall)) {
-            // 'se' is probably a reduce intent, leave it alone.
-            ok = true;
-          }
-          CallExpr* outerCall = toCallExpr(pCall->parentExpr);
-          CallExpr* outerOuterCall = NULL;
-          if (outerCall) outerOuterCall = toCallExpr(outerCall->parentExpr);
-
-          if (hasChplManagerArgument(pCall) ||
-              hasChplManagerArgument(outerCall)) {
-            ok = true;
-          } else if (outerOuterCall && outerCall &&
-              callSpecifiesClassKind(outerOuterCall) &&
-              outerCall == outerOuterCall->get(1) &&
-              outerCall->isPrimitive(PRIM_NEW) &&
-              pCall == outerCall->get(1)) {
-            // 'new Owned(SomeClass(int))'
-            ok = true;
-          } else if (outerCall && callMakesDmap(outerCall)) {
-            // var something: dmap( Block( ) )
-            ok = true;
-          } else if (outerOuterCall && callMakesDmap(outerOuterCall)) {
-            // new dmap( new Block( ) )
-            ok = true;
-          } else if (outerOuterCall &&
-                     outerOuterCall->isPrimitive(PRIM_THROW)) {
-            // throw new Error()
-            USR_WARN(outerOuterCall, "throw new SomeError is unstable");
-            ok = true;
-          } else if (outerCall && outerCall->isPrimitive(PRIM_NEW) &&
-                     pCall == outerCall->get(1)) {
-            // 'new SomeClass()'
-            // let ok be set as it was above
-          } else if (outerCall && callSpecifiesClassKind(outerCall) &&
-                     pCall->baseExpr == se) {
-            // ':borrowed MyGenericClass(int)'
-            ok = true;
-          } else if (pCall->baseExpr == se) {
-            // ':MyGenericClass(int)'
-            // let ok be set as it was above
-          }
-          if (pCall->isNamed(".") &&
-              pCall->get(1) == se) {
-            // Another pattern for the above case
-            ok = true;
-          }
-        }
-
-        if (inDef && inDef->sym->hasFlag(FLAG_TYPE_VARIABLE)) {
-          // Types in type aliases are OK
-          ok = true;
-        } else if (inCatch) {
-          // Types in catch block specifications are OK
-          ok = true;
-        } else if (inCall && !inCall->isPrimitive(PRIM_NEW)) {
-          // typefunction(SomeClass)
-          // typefunction(SomeGenericClass(int))
-          ok = true;
-        }
-
-        // Types in extern function procs are assumed to
-        // be unmanaged, so OK
-        if (inFn && inFn->hasFlag(FLAG_EXTERN))
-          ok = true;
-
-        if (isStableClassType(ts->type))
-          ok = true;
-
-        if (isShadowVarSymbol(se->parentSymbol)) {
-          // Compiler generates reduce intents with e.g. SumReduceScanOp
-          // and might get confused if it's unmanaged.
-          ok = true;
-        }
-
-        // Don't worry about this arguments if we're only warning
-        // (do worry about it if we're changing the default)
-        if (ArgSymbol* arg = toArgSymbol(se->parentSymbol)) {
-          if (arg->hasFlag(FLAG_ARG_THIS))
-            // this default intent is currently 'borrowed' always
-            // and there's not yet a way to adjust it.
-            ok = true;
-        }
-
-        if (!ok) {
-          if (fWarnUnstable) {
-            // error
-            USR_WARN(se, "undecorated class type %s is unstable", ts->name);
-            if (inDef && se == inDef->exprType)
-                USR_PRINT(inDef, "in declared type for %s",
-                                     inDef->sym->name);
-
-            USR_PRINT(se, "use 'unmanaged %s' "
-                          "'owned %s', "
-                          "'borrowed %s', or "
-                          "'shared %s'",
-                          ts->name, ts->name, ts->name, ts->name);
-
-            if (developer)
-              USR_PRINT(se, "undecorated symexpr has id %i", se->id);
-          }
-        }
-      }
-    }
-  }
-
-  return se;
-}
-
 static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
                                          bool returnRename) {
   SET_LINENO(usymExpr);
@@ -921,6 +744,20 @@ static astlocT* resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   if (name == astrSdot || !usymExpr->inTree())
     return NULL;
+
+  if (CallExpr* parentCall = toCallExpr(usymExpr->parentExpr)) {
+    if (parentCall->baseExpr && parentCall->baseExpr == usymExpr &&
+        parentCall->numActuals() > 0) {
+      if (SymExpr* firstArg = toSymExpr(parentCall->get(1))) {
+        if (firstArg->symbol() == gModuleToken) {
+          // Don't resolve the name of transformed module calls - doing so will
+          // accidentally find closer symbols with the same name instead of
+          // going into the intended module.
+          return NULL;
+        }
+      }
+    }
+  }
 
   // Avoid duplicate work by not trying to resolve UnresolvedSymExprs that we've
   // already encountered an error when trying to resolve.
@@ -982,10 +819,12 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
     symExpr = new SymExpr(sym);
     usymExpr->replace(symExpr);
 
-    if (fWarnUnstable)
-      handleUnstableClassType(symExpr);
-
     updateMethod(usymExpr, sym, symExpr);
+
+    // Check for invalid uses of module symbols
+    if (isModuleSymbol(sym)) {
+      checkModuleSymExpr(symExpr);
+    }
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
@@ -1281,6 +1120,47 @@ static void checkIdInsideWithClause(Expr*              exprInAst,
   }
 }
 
+// se refers to a ModuleSymbol. Check it is a valid mention of a module.
+static void checkModuleSymExpr(SymExpr* se) {
+  bool validModuleMention = false;
+
+  ModuleSymbol* mod = toModuleSymbol(se->symbol());
+  INT_ASSERT(mod != NULL); // caller should ensure this
+
+  CallExpr* call = toCallExpr(se->parentExpr);
+  if (call != NULL) {
+    // check for (Call gModuleToken, ModuleName, Args)
+    if (SymExpr* prevSe = toSymExpr(se->prev))
+      if (prevSe->symbol() == gModuleToken)
+        validModuleMention = true;
+    // check for (Call (Call . ModuleName FnName) Args)
+    if (call->isNamedAstr(astrSdot))
+      validModuleMention = true;
+    // check for PRIM_REFERENCED_MODULES_LIST
+    if (call->isPrimitive(PRIM_REFERENCED_MODULES_LIST))
+      validModuleMention = true;
+  }
+  if (Expr* stmt = se->getStmtExpr())
+    if (isUseStmt(stmt) || isImportStmt(stmt))
+      validModuleMention = true;
+
+  if (validModuleMention == false) {
+    bool callOfModule = false;
+    if (call != NULL)
+      if (SymExpr* baseSe = toSymExpr(call->baseExpr))
+        if (baseSe->symbol() == mod)
+          callOfModule = true;
+
+    const char* reason = NULL;
+    if (callOfModule)
+      reason = "cannot be called like procedures";
+    else
+      reason = "cannot be mentioned like variables";
+
+    USR_FATAL_CONT(se, "modules (like '%s' here) %s", mod->name, reason);
+  }
+}
+
 static bool hasOuterVariable(ShadowVarSymbol* svar) {
   switch (svar->intent) {
     case TFI_DEFAULT:
@@ -1384,6 +1264,19 @@ static void setupShadowVars() {
 
 static CallExpr* resolveModuleGetNewExpr(CallExpr* call, Symbol* sym);
 
+// Track modules that we name explicitly in the scope where we do so
+static void storeReferencedMod(ModuleSymbol* mod, BaseAST* cur) {
+  if (cur == NULL) {
+    return;
+  }
+  BaseAST* scope = getScope(cur);
+  if (BlockStmt* block = toBlockStmt(scope)) {
+    block->modRefsAdd(mod);
+  } else {
+    storeReferencedMod(mod, scope);
+  }
+}
+
 static void resolveModuleCall(CallExpr* call) {
   if (call->isNamedAstr(astrSdot) == true) {
     astlocT* renameLoc = NULL;
@@ -1405,8 +1298,21 @@ static void resolveModuleCall(CallExpr* call) {
 
         currModule->moduleUseAdd(mod);
 
+        // Track modules that we name explicitly in the scope where we do so
+        storeReferencedMod(mod, call);
+
         // First, try regular scope resolution
         Symbol* sym = scope->lookupNameLocally(mbrName);
+
+        // Then, try public import statements in the module
+        if (!sym) {
+          sym = scope->lookupPublicVisStmts(mbrName);
+        }
+
+        // Then, try public import statements that enables unqualified access
+        if (!sym) {
+          sym = scope->lookupPublicUnqualAccessSyms(mbrName, call);
+        }
 
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
@@ -1430,12 +1336,21 @@ static void resolveModuleCall(CallExpr* call) {
                 call->replace(new CallExpr(fn));
 
               } else {
-                CallExpr* parent = toCallExpr(call->parentExpr);
+                if (CallExpr* parent = toCallExpr(call->parentExpr)) {
 
-                call->replace(new UnresolvedSymExpr(mbrName));
+                  call->replace(new UnresolvedSymExpr(mbrName));
 
-                parent->insertAtHead(mod);
-                parent->insertAtHead(gModuleToken);
+                  parent->insertAtHead(mod);
+                  parent->insertAtHead(gModuleToken);
+                } else {
+                  USR_FATAL_CONT(call, "This appears to be a first class "
+                                 "function reference created using qualified "
+                                 "access");
+                  USR_PRINT("First class functions created using "
+                            "qualified access are not supported");
+                  USR_PRINT("If this is not intended as a first class "
+                           "function, please report it to the Chapel team");
+                }
               }
 
             } else if (CallExpr* c = resolveModuleGetNewExpr(call, sym)) {
@@ -1470,20 +1385,27 @@ static void resolveModuleCall(CallExpr* call) {
           }
 
         } else {
-          if (!uSE || uSE->unresolved == mod->name) {
-            USR_FATAL_CONT(call,
-                           "Symbol '%s' undeclared in module '%s'",
-                           mbrName,
-                           mod->name);
+          // we didn't get a symbol, but it may be due to multiply defined
+          // symbols. To check that see if this call wasn't added to
+          // failedUSymExprs
+          if (std::count(failedUSymExprs.begin(),
+                         failedUSymExprs.end(),
+                         call) == 0) {
+            if (!uSE || uSE->unresolved == mod->name) {
+              USR_FATAL_CONT(call,
+                             "Symbol '%s' undeclared in module '%s'",
+                             mbrName,
+                             mod->name);
 
-          } else {
-            USR_FATAL_CONT(call,
-                           "Symbol '%s' undeclared in module '%s'",
-                           mbrName,
-                           uSE->unresolved);
-            USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                      uSE->unresolved, mod->name, renameLoc->filename,
-                      renameLoc->lineno);
+            } else {
+              USR_FATAL_CONT(call,
+                             "Symbol '%s' undeclared in module '%s'",
+                             mbrName,
+                             uSE->unresolved);
+              USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
+                        uSE->unresolved, mod->name, renameLoc->filename,
+                        renameLoc->lineno);
+            }
           }
         }
       }
@@ -1622,13 +1544,15 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames);
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts);
 
 // Show what symbols from 'symbols' conflict with the given 'sym'.
-static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
-                                    const char* nameUsed,
-                                    bool storeRenames,
-                                    std::map<Symbol*, astlocT*> renameLocs)
+static void
+printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
+                        const char* nameUsed, bool storeRenames,
+                        std::map<Symbol*, astlocT*> renameLocs,
+                        std::map<Symbol*, VisibilityStmt*>& reexportPts)
 {
   Symbol* sampleFunction = NULL;
   for_vector(Symbol, another, symbols) if (another != sym)
@@ -1636,6 +1560,12 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
     if (isFnSymbol(another))
       sampleFunction = another;
     else {
+      if (VisibilityStmt* reexport = reexportPts[another]) {
+        USR_PRINT(another,
+                  "symbol '%s', defined here, was last reexported at %s:%d",
+                  another->name, reexport->astloc.filename,
+                  reexport->astloc.lineno);
+      }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
@@ -1643,7 +1573,7 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
                   another->name, nameUsed, renameLoc->filename,
                   renameLoc->lineno);
       } else {
-        USR_PRINT(another, "also defined here", another->name);
+        USR_PRINT(another, "also defined here");
       }
     }
   }
@@ -1653,19 +1583,56 @@ static void printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
               "also defined as a function here (and possibly elsewhere)");
 }
 
+void checkConflictingSymbols(std::vector<Symbol *>& symbols,
+                             const char* name,
+                             BaseAST* context,
+                             bool storeRenames,
+                             std::map<Symbol*, astlocT*>& renameLocs,
+                             std::map<Symbol*, VisibilityStmt*>& reexportPts) {
+
+  // If they're all functions
+  //   then      assume function resolution will be applied
+  //   otherwise fail
+  for_vector(Symbol, sym, symbols) {
+    if (!isFnSymbol(sym)) {
+      if (std::count(failedUSymExprs.begin(),
+                     failedUSymExprs.end(),
+                     context) == 0) {
+        failedUSymExprs.push_back(context);
+        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
+
+        if (VisibilityStmt* reexport = reexportPts[sym]) {
+          USR_PRINT("'%s' was last reexported at %s:%d", name,
+                    reexport->astloc.filename, reexport->astloc.lineno);
+        }
+        astlocT* symRenameLoc = renameLocs[sym];
+        if (storeRenames && symRenameLoc != NULL) {
+          USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
+                    name, symRenameLoc->filename, symRenameLoc->lineno);
+        }
+        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
+                                reexportPts);
+        break;
+      }
+    }
+  }
+}
+
 // Given a name and a calling context, determine the symbol referred to
 // by that name in the context of that call
 Symbol* lookupAndCount(const char*           name,
                        BaseAST*              context,
                        int&                  nSymbolsFound,
                        bool storeRenames,
-                       astlocT** renameLoc) {
+                       astlocT** renameLoc,
+                       bool issueErrors) {
 
   std::vector<Symbol*> symbols;
   std::map<Symbol*, astlocT*> renameLocs;
+  std::map<Symbol*, VisibilityStmt*> reexportPts;
   Symbol*              retval = NULL;
 
-  lookup(name, context, symbols, renameLocs, storeRenames);
+  lookup(name, context, symbols, renameLocs, reexportPts, storeRenames);
 
   nSymbolsFound = symbols.size();
 
@@ -1682,25 +1649,21 @@ Symbol* lookupAndCount(const char*           name,
 
   } else {
     // Multiple symbols found for this name.
-    // If they're all functions
-    //   then      assume function resolution will be applied
-    //   otherwise fail
-
-    for_vector(Symbol, sym, symbols) {
-      if (! isFnSymbol(sym)) {
-        failedUSymExprs.push_back(context);
-        astlocT* symRenameLoc = renameLocs[sym];
-        USR_FATAL_CONT(sym, "symbol %s is multiply defined", name);
-        if (storeRenames && symRenameLoc != NULL) {
-          USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                    name, symRenameLoc->filename, symRenameLoc->lineno);
-        }
-        printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs);
-        break;
+    if (issueErrors) {
+      if (renameLocs.size() > 0) {
+        // this can be the case when we resolved an urse through a public import
+        // that renames the symbol
+        checkConflictingSymbols(symbols, name, context, true, renameLocs,
+                                reexportPts);
       }
+      else {
+        checkConflictingSymbols(symbols, name, context, storeRenames,
+                                renameLocs, reexportPts);
+      }
+      retval = NULL;
+    } else {
+      retval = symbols[0];
     }
-
-    retval = NULL;
   }
 
   return retval;
@@ -1715,10 +1678,12 @@ void lookup(const char*           name,
             BaseAST*              context,
             std::vector<Symbol*>& symbols,
             std::map<Symbol*, astlocT*>& renameLocs,
+            std::map<Symbol*, VisibilityStmt*>& reexportPts,
             bool storeRenames) {
   Vec<BaseAST*> visited;
 
-  lookup(name, context, context, visited, symbols, renameLocs, storeRenames);
+  lookup(name, context, context, visited, symbols, renameLocs, storeRenames,
+         reexportPts);
 }
 
 static void lookup(const char*           name,
@@ -1729,13 +1694,14 @@ static void lookup(const char*           name,
 
                    std::vector<Symbol*>& symbols,
                    std::map<Symbol*, astlocT*>& renameLocs,
-                   bool storeRenames) {
+                   bool storeRenames,
+                   std::map<Symbol*, VisibilityStmt*>& reexportPts) {
 
   if (!visited.set_in(scope)) {
     visited.set_add(scope);
 
     if (lookupThisScopeAndUses(name, context, scope, symbols, renameLocs,
-                               storeRenames) == true) {
+                               storeRenames, reexportPts) == true) {
       // We've found an instance here.
       // Lydia note: in the access call case, we'd want to look in our
       // surrounding scopes for the symbols on the left and right part
@@ -1752,8 +1718,25 @@ static void lookup(const char*           name,
     if (scope->getModule()->block == scope) {
       BaseAST* outerScope = getScope(scope);
       if (outerScope != NULL) {
-        lookup(name, context, outerScope, visited, symbols, renameLocs,
-               storeRenames);
+        // if this is a top-level module, keep searching upwards to get
+        // the built-in stuff defined in the root/program modules
+        if (outerScope->getModule() == rootModule ||
+            outerScope->getModule() == theProgram) {
+          lookup(name, context, outerScope, visited, symbols, renameLocs,
+                 storeRenames, reexportPts);
+        } else {
+          // if it's a nested module, don't look into the parent
+          // module (a 'use' or 'import' is required to do that), but
+          // do see if ChapelStandard or theProgram resolve things for
+          // us that are not yet resolved.
+          lookup(name, context, standardModule->block, visited, symbols,
+                 renameLocs, storeRenames, reexportPts);
+          if (symbols.size() == 0) {
+            
+            lookup(name, context, theProgram->block, visited, symbols,
+                   renameLocs, storeRenames, reexportPts);
+          }
+        }
         // As a last ditch effort, see if this module's name happens to match.
         // This handles the case when we refer to the name of the module in
         // which we are declared (e.g., `module M { ...M.xyz... }`
@@ -1775,7 +1758,7 @@ static void lookup(const char*           name,
         if (AggregateType* ct =
             toAggregateType(canonicalClassType(fn->_this->type))) {
           lookup(name, context, ct->symbol, visited, symbols, renameLocs,
-                 storeRenames);
+                 storeRenames, reexportPts);
         }
       }
 
@@ -1784,7 +1767,7 @@ static void lookup(const char*           name,
         // If we didn't find something in the aggregate type that matched,
         // or we weren't in an aggregate type method, so look at next scope up.
         lookup(name, context, getScope(scope), visited, symbols, renameLocs,
-               storeRenames);
+               storeRenames, reexportPts);
       }
     }
   }
@@ -1818,12 +1801,14 @@ static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
 static bool      skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
                          ImportStmt* current);
 
-static bool lookupThisScopeAndUses(const char*           name,
-                                   BaseAST*              context,
-                                   BaseAST*              scope,
-                                   std::vector<Symbol*>& symbols,
-                                   std::map<Symbol*, astlocT*>& renameLocs,
-                                   bool storeRenames) {
+static
+bool lookupThisScopeAndUses(const char*           name,
+                            BaseAST*              context,
+                            BaseAST*              scope,
+                            std::vector<Symbol*>& symbols,
+                            std::map<Symbol*, astlocT*>& renameLocs,
+                            bool storeRenames,
+                            std::map<Symbol*, VisibilityStmt*>& reexportPts) {
   if (Symbol* sym = inSymbolTable(name, scope)) {
     if (sym->hasFlag(FLAG_PRIVATE) == true) {
       if (sym->isVisible(context) == true) {
@@ -1879,12 +1864,24 @@ static bool lookupThisScopeAndUses(const char*           name,
 
         forv_Vec(Stmt, stmt, *moduleUses) {
           if (UseStmt* use = toUseStmt(stmt)) {
-            if (use->skipSymbolSearch(name, false) == false) {
+            if (use->skipSymbolSearch(name) == false) {
               const char* nameToUse = use->isARenamedSym(name) ?
                 use->getRenamedSym(name) : name;
               BaseAST* scopeToUse = use->getSearchScope();
 
-              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
+              Symbol* sym = inSymbolTable(nameToUse, scopeToUse);
+              if (!sym && use->canReexport) {
+                if (ResolveScope* rs = ResolveScope::getScopeFor(scopeToUse)) {
+                  sym = rs->lookupPublicUnqualAccessSyms(nameToUse, context,
+                                                         renameLocs,
+                                                         reexportPts, false);
+                  // propagate this information to the UseStmt
+                  if (!rs->canReexport) {
+                    use->canReexport = false;
+                  }
+                }
+              }
+              if (sym) {
                 if (sym->hasFlag(FLAG_PRIVATE) == true) {
                   if (sym->isVisible(context) == true &&
                       isRepeat(sym, symbols)  == false) {
@@ -1902,11 +1899,33 @@ static bool lookupThisScopeAndUses(const char*           name,
                 }
               }
             }
-
-          } else if (!isImportStmt(stmt)) {
-            // break on each new depth if a symbol has been found, but don't
-            // traverse import statements at this stage, we need to only look
-            // for explicitly named symbols
+          } else if (ImportStmt* import = toImportStmt(stmt)) {
+            // Only traverse import statements that define a symbol with this
+            // name for unqualified access.  We're only looking for explicitly
+            // named symbols
+            if (import->skipSymbolSearch(name) == false) {
+              const char* nameToUse = import->isARenamedSym(name) ?
+                import->getRenamedSym(name) : name;
+              BaseAST* scopeToUse = import->getSearchScope();
+              if (Symbol* sym = inSymbolTable(nameToUse, scopeToUse)) {
+                if (sym->hasFlag(FLAG_PRIVATE) == true) {
+                  if (sym->isVisible(context) == true &&
+                      isRepeat(sym, symbols)  == false) {
+                    symbols.push_back(sym);
+                    if (storeRenames && import->isARenamedSym(name)) {
+                      renameLocs[sym] = &import->astloc;
+                    }
+                  }
+                } else if (isRepeat(sym, symbols) == false) {
+                  symbols.push_back(sym);
+                  if (storeRenames && import->isARenamedSym(name)) {
+                    renameLocs[sym] = &import->astloc;
+                  }
+                }
+              }
+            }
+          } else {
+            // break on each new depth if a symbol has been found
             if (symbols.size() > 0) {
               break;
             }
@@ -1939,11 +1958,14 @@ static bool lookupThisScopeAndUses(const char*           name,
           // symbols that they define.
           forv_Vec(VisibilityStmt, stmt, *moduleUses) {
             if (stmt != NULL) {
-              if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
-                if (isRepeat(modSym, symbols) == false) {
-                  symbols.push_back(modSym);
-                  if (storeRenames && stmt->isARename()) {
-                    renameLocs[modSym] = &stmt->astloc;
+              if (!isImportStmt(stmt) ||
+                  toImportStmt(stmt)->providesQualifiedAccess()) {
+                if (Symbol* modSym = stmt->checkIfModuleNameMatches(name)) {
+                  if (isRepeat(modSym, symbols) == false) {
+                    symbols.push_back(modSym);
+                    if (storeRenames && stmt->isARename()) {
+                      renameLocs[modSym] = &stmt->astloc;
+                    }
                   }
                 }
               }
@@ -2164,17 +2186,30 @@ static void buildBreadthFirstModuleList(
                 SymExpr* importSE = toSymExpr(import->src);
                 INT_ASSERT(importSE);
 
-                if (!importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                if (!import->isPrivate &&
+                    !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                  ImportStmt* importToAdd = import->applyOuterUse(srcUse);
                   // Imports of private modules are not transitive - the
                   // symbols in the private modules are only visible to itself
                   // and its immediate parent.  Therefore, if the symbol is
                   // private, we will not traverse it further and will merely
                   // add it to the alreadySeen map.
-                  if (skipUse(alreadySeen, import) == false) {
-                    next.add(import);
-                    modules->add(import);
+                  if (importToAdd != NULL &&
+                      skipUse(alreadySeen, importToAdd) == false) {
+                    next.add(importToAdd);
+                    modules->add(importToAdd);
                   }
-                } else {
+
+                  if (importToAdd != NULL) {
+                    (*alreadySeen)[importSE->symbol()].push_back(importToAdd);
+                  }
+                } else if (!import->isPrivate &&
+                           importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                  // If we're skipping because the import was public, but the
+                  // module was private, then we shouldn't look at the module
+                  // again and should add it to the alreadySeen map.  Otherwise
+                  // there might be a later import or use that is public, so
+                  // we should allow it to be found
                   (*alreadySeen)[importSE->symbol()].push_back(import);
                 }
               } else {
@@ -2183,9 +2218,84 @@ static void buildBreadthFirstModuleList(
             }
           }
         }
-      } else if (isImportStmt(source)) {
-        // Don't traverse the use statements of a module we imported, their
-        // contents aren't brought into scope.
+      } else if (ImportStmt* srcImport = toImportStmt(source)) {
+        // Don't traverse the use statements of a module we imported for
+        // qualified access, their contents aren't brought into scope.
+        SymExpr* se = toSymExpr(srcImport->src);
+        INT_ASSERT(se);
+        ModuleSymbol* mod = toModuleSymbol(se->symbol());
+        INT_ASSERT(mod);
+        if (mod->block->useList != NULL) {
+          for_actuals(expr, mod->block->useList) {
+            if (UseStmt* use = toUseStmt(expr)) {
+              SymExpr* useSE = toSymExpr(use->src);
+              INT_ASSERT(useSE);
+
+              ImportStmt* importToAdd = NULL;
+              if (!use->isPrivate &&
+                  !useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // Uses of private modules are not transitive - the symbols
+                // in the private modules are only visible to itself and its
+                // immediate parent.  Therefore, if the symbol is private,
+                // we will not traverse it further and will merely add it to
+                // the alreadySeen map.
+                importToAdd = use->applyOuterImport(srcImport);
+
+                if (importToAdd                       != NULL &&
+                    skipUse(alreadySeen, importToAdd) == false) {
+                  next.add(importToAdd);
+                  modules->add(importToAdd);
+                }
+
+                // if applyOuterUse returned NULL, the number of symbols
+                // that could be provided from this use was 0, so it didn't
+                // need to be added to the alreadySeen map.
+                if (importToAdd != NULL) {
+                  (*alreadySeen)[useSE->symbol()].push_back(importToAdd);
+                }
+
+              } else if (!use->isPrivate &&
+                         useSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // Private uses should be skipped, but should not prevent us
+                // from traversing the module in a later use of it, if that
+                // later use is not private.
+                (*alreadySeen)[useSE->symbol()].push_back(use);
+              }
+            } else if (ImportStmt* import = toImportStmt(expr)) {
+              SymExpr* importSE = toSymExpr(import->src);
+              INT_ASSERT(importSE);
+
+              if (!import->isPrivate &&
+                  !importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                ImportStmt* importToAdd = import->applyOuterImport(srcImport);
+                // Imports of private modules are not transitive - the
+                // symbols in the private modules are only visible to itself
+                // and its immediate parent.  Therefore, if the symbol is
+                // private, we will not traverse it further and will merely
+                // add it to the alreadySeen map.
+                if (importToAdd != NULL &&
+                    skipUse(alreadySeen, importToAdd) == false) {
+                  next.add(importToAdd);
+                  modules->add(importToAdd);
+                }
+
+                if (importToAdd != NULL) {
+                  (*alreadySeen)[importSE->symbol()].push_back(importToAdd);
+                }
+              } else if (!import->isPrivate &&
+                         importSE->symbol()->hasFlag(FLAG_PRIVATE)) {
+                // If we're skipping because the import was public, but the
+                // module was private, then we shouldn't look at the module
+                // again and should add it to the alreadySeen map.  Otherwise
+                // there might be a later import or use that is public, so
+                // we should allow it to be found
+                (*alreadySeen)[importSE->symbol()].push_back(import);
+              }
+            } else {
+              INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
+            }
+          }
+        }
 
       } else {
         INT_ASSERT("Bad use list, expected UseStmt or ImportStmt");
@@ -2244,13 +2354,27 @@ static bool skipUse(std::map<Symbol*, std::vector<VisibilityStmt*> >* seen,
   std::vector<VisibilityStmt*> vec = (*seen)[useSE->symbol()];
 
   if (vec.size() > 0) {
-    // We've already seen at least one use or import of this module.  Since
-    // imports only impact qualified naming, by definition any previous use or
-    // import of the same module will provide at least as much as this import
-    return true;
+    // We've already seen at least one use or import of this module, but it
+    // might not be thorough enough to justify skipping the newest 'import'
+    for_vector(VisibilityStmt, stmt, vec) {
+      if (UseStmt* use = toUseStmt(stmt)) {
+        if (current->providesNewSymbols(use) == false) {
+          // We found a prior use that covered all the symbols available
+          // from current.  We can skip looking at current
+          return true;
+        }
+      } else if (ImportStmt* import = toImportStmt(stmt)) {
+        if (current->providesNewSymbols(import) == false) {
+          // The current import statement is equivalent to a prior import
+          // statement so no need to include it
+          return true;
+        }
+      }
+    }
   }
 
-  // We didn't have a prior use or import.  Don't skip current.
+  // We didn't have a prior use or import that covered the symbols this
+  // provides.  Don't skip current.
   return false;
 }
 
@@ -2594,6 +2718,18 @@ static void removeUnusedModules() {
     if (usedModules.count(mod) == 0) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
+
+      // Check that any mentions of the dead module are in
+      // dead modules
+      if (fVerify) {
+        for_SymbolSymExprs(se, mod) {
+          if (ModuleSymbol* inMod = se->getModule()) {
+            if (usedModules.count(inMod) != 0) {
+              INT_FATAL(se, "Invalid reference to unused module");
+            }
+          }
+        }
+      }
     }
   }
 }
@@ -2609,6 +2745,160 @@ static void detectUserDefinedBorrowMethods() {
     }
   }
 }
+
+
+/* Look up the symbol named 'name' and add it to the map and set of visible
+   symbols in a given file. The map maps from a filename to a set of visible
+   symbols.
+ */
+static void lookupAndAddToVisibleMap(const char* name, CallExpr* call,
+  std::map<std::string, std::set<Symbol*>*>& visibleMap,
+  std::set<Symbol*>& alreadyFound) {
+
+  int numSymbolsFound;
+  Symbol* found = lookupAndCount(name, call, numSymbolsFound,
+                                 false, NULL, false);
+  if (found != NULL && alreadyFound.count(found) == 0 &&
+      !found->hasFlag(FLAG_GLOBAL_VAR_BUILTIN) &&
+      !found->hasFlag(FLAG_COMPILER_GENERATED) &&
+      !found->hasFlag(FLAG_TEMP) &&
+      strcmp(found->defPoint->fname(), "<internal>") != 0) {
+    const char* fname = found->defPoint->fname();
+    alreadyFound.insert(found);
+    if (visibleMap.count(fname) == 0) {
+      visibleMap.insert(make_pair(fname, new std::set<Symbol*>()));
+    }
+    visibleMap[(std::string)fname]->insert(found);
+  }
+}
+
+static bool readNamedArgument(CallExpr* call, const char* name,
+                              bool defaultValue,
+                              std::vector<std::string>& expectedNames) {
+  bool ret = defaultValue;
+  expectedNames.push_back((std::string)name);
+
+  for (int i = 1; i<= call->numActuals(); i++) { 
+    NamedExpr* ne = toNamedExpr(call->get(i));
+    if (ne && !strcmp(ne->name, name)) {
+      SymExpr* se = toSymExpr(ne->actual);
+      if (se && (se->symbol() == gTrue || se->symbol() == gFalse)) {
+        ret = se->symbol() == gTrue;
+      } else {
+        USR_FATAL(se, "the arguments to 'get visible symbols' must be either 'true' or 'false'");
+      }
+      break;
+    }
+  }
+  return ret;
+}
+
+static bool symbolInBuiltinModule(Symbol* sym) {
+  ModuleSymbol* mod = sym->getModule();
+  if (mod->modTag == MOD_STANDARD &&
+      (!strcmp(mod->name, "Builtins") ||
+       !strcmp(mod->name, "Types") ||
+       !strcmp(mod->name, "Math"))) {
+    return true;
+  }
+  return false;
+}
+
+
+static void errorForUnexpectedArgName(std::vector<std::string> argNames,
+                                      CallExpr* call) {
+  if (((unsigned)call->numActuals()) > argNames.size()) {
+    USR_FATAL(call, "too many arguments to 'get visible symbols'");
+  }
+
+  for (int i = 1; i <= call->numActuals(); i++) {
+    NamedExpr* actual = toNamedExpr(call->get(i));
+    if (!actual) {
+      USR_FATAL(call, "'get visible symbols' requires named arguments");
+    }
+    if (std::find(argNames.begin(), argNames.end(), (std::string)actual->name) == argNames.end()) {
+      USR_FATAL_CONT(actual, "unrecognized argument to 'get visible symbols': %s", actual->name);
+      USR_FATAL_CONT(call, "recognized names are:");
+      for (int i = 0; ((unsigned)i) < argNames.size(); i++) {
+        USR_FATAL_CONT(call, "  %s", argNames[i].c_str());
+      }
+      USR_STOP();
+    }
+  }
+}
+
+
+/* Find any "get visible symbols" primitive calls and print out all
+   symbols that are visible from that point.
+ */
+static void processGetVisibleSymbols() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_GET_VISIBLE_SYMBOLS)) {
+      std::vector<std::string> argNames;
+      bool ignoreInternalModules = readNamedArgument(call, "ignoreInternalModules", true, argNames);
+      bool ignoreBuiltinModules = readNamedArgument(call, "ignoreBuiltinModules", false, argNames);
+
+      errorForUnexpectedArgName(argNames, call);
+
+      std::set<Symbol*> alreadyFound;
+      // build a map from filename to set of visible symbols in that file
+      std::map<std::string, std::set<Symbol*>*> visibleMap;
+      forv_Vec(VarSymbol, sym, gVarSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(FnSymbol, sym, gFnSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+      forv_Vec(TypeSymbol, sym, gTypeSymbols) {
+        lookupAndAddToVisibleMap(sym->name, call, visibleMap, alreadyFound);
+      }
+
+      // create and sort a vector of all the filenames in the map
+      std::vector<std::string> sortedFilenames;
+      std::map<std::string, std::set<Symbol*>*>::iterator mapIdx;
+
+      for (mapIdx = visibleMap.begin(); mapIdx != visibleMap.end(); mapIdx++) {
+        sortedFilenames.push_back((std::string)(mapIdx->first));
+      }
+      std::sort(sortedFilenames.begin(), sortedFilenames.end());
+
+      printf("%s:%d: Printing symbols visible from here:\n",
+             call->fname(), call->linenum());
+      // now walk the sorted vector printing visible symbols from each file
+      for (std::vector<std::string>::iterator it = sortedFilenames.begin();
+           it != sortedFilenames.end(); it++) {
+        // create and sort a vector of <lineNumber, Symbol*> pairs
+        // for the current file by line number
+        std::set<Symbol*>::iterator setIdx;
+        std::vector<std::pair<int, Symbol*> > sortedSymbols;
+        for (setIdx = visibleMap[it->c_str()]->begin();
+             setIdx != visibleMap[it->c_str()]->end(); setIdx++) {
+          Symbol* sym = *setIdx;
+          sortedSymbols.push_back(std::make_pair(sym->defPoint->linenum(),
+                                                 sym));
+        }
+        std::sort(sortedSymbols.begin(), sortedSymbols.end());
+
+        // walk the sorted vector of symbols to print information on each
+        for (std::vector<std::pair<int, Symbol*> >::iterator symPair = sortedSymbols.begin(); symPair != sortedSymbols.end(); symPair++) {
+          Symbol* sym = symPair->second;
+          if (ignoreInternalModules &&
+              sym->getModule()->modTag == MOD_INTERNAL)
+            continue;
+          if (ignoreBuiltinModules && symbolInBuiltinModule(sym))
+            continue;
+
+          printf("  %s:%d: %s\n", sym->defPoint->fname(),
+                 sym->defPoint->linenum(), sym->name); 
+        }
+
+        delete visibleMap[it->c_str()];
+      }
+      call->remove();
+    }
+  }
+}
+
 
 void scopeResolve() {
   addToSymbolTable();
@@ -2634,6 +2924,8 @@ void scopeResolve() {
   markGenerics();
 
   processGenericFields();
+
+  processGetVisibleSymbols();
 
   ResolveScope::destroyAstMap();
 

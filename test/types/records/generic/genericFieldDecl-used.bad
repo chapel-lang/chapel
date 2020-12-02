@@ -1,0 +1,3 @@
+genericFieldDecl-used.chpl:8: In function 'main':
+genericFieldDecl-used.chpl:9: error: this default-initialization is not yet supported
+genericFieldDecl-used.chpl:2: note: field 'x' is declared with a generic type and also a default value

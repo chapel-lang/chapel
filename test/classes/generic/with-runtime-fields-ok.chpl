@@ -8,7 +8,7 @@ module w {
   }
 
   // a runtime type
-  type RT = Locales.type;
+  type RT = [Locales.domain] int;
 
   proc test(ref arg) {
     type AT = arg.type;

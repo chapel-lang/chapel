@@ -1,9 +1,8 @@
 //===- DAGISelEmitter.cpp - Generate an instruction selector --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -174,7 +173,7 @@ void DAGISelEmitter::run(raw_ostream &OS) {
   }
 
   std::unique_ptr<Matcher> TheMatcher =
-    llvm::make_unique<ScopeMatcher>(PatternMatchers);
+    std::make_unique<ScopeMatcher>(PatternMatchers);
 
   OptimizeMatcher(TheMatcher, CGP);
   //Matcher->dump();
