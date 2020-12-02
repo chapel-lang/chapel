@@ -2296,10 +2296,8 @@ Type* getNamedTypeDuringCodegen(const char* name) {
 }
 
 
-void codegen() {
-  if (no_codegen)
-    return;
-
+// Do this once for CPU and GPU
+void codegenPartOne() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
@@ -2312,6 +2310,27 @@ void codegen() {
   gatherTypesForCodegen();
   setupDefaultFilenames();
 
+  SET_LINENO(rootModule);
+
+  adjustArgSymbolTypesForIntent();
+
+  convertToRefTypes();
+
+  // Wrap calls to chosen functions from c library
+  if( fLlvmCodegen ) {
+#ifdef HAVE_LLVM
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_EXTERN)) {
+          if(hasWrapper(fn->cname))
+            fn->cname = getClangBuiltinWrappedName(fn->cname);
+      }
+    }
+#endif
+  }
+}
+
+// Do this for CPU and then do for GPU
+void codegenPartTwo() { 
   if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
@@ -2335,22 +2354,6 @@ void codegen() {
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
-
-  adjustArgSymbolTypesForIntent();
-
-  convertToRefTypes();
-
-  // Wrap calls to chosen functions from c library
-  if( fLlvmCodegen ) {
-#ifdef HAVE_LLVM
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_EXTERN)) {
-          if(hasWrapper(fn->cname))
-            fn->cname = getClangBuiltinWrappedName(fn->cname);
-      }
-    }
-#endif
-  }
 
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
@@ -2491,11 +2494,6 @@ void codegen() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-}
-
-void makeBinary(void) {
-  if (no_codegen)
-    return;
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
@@ -2512,6 +2510,35 @@ void makeBinary(void) {
   if (fLibraryCompile && fLibraryPython) {
     codegen_make_python_module();
   }
+}
+
+void codegen() {
+  if (no_codegen)
+    return;
+
+  codegenPartOne();
+/*
+  if targetting CPU+GPU locale model {
+    set some global variable to indicate GPU code generation
+       (or pass as an argument to codegenPartTwo and to runClang)
+    codegenPartTwo();
+    unset GPU code generation global
+
+      -- ultimately output to tmp/chpl__module-gpu.ptx
+  }
+*/
+
+  codegenPartTwo();
+    // add to codegenPartTwo to embed tmp/chpl__module-gpu.ptx
+    // in the binary "hello"?
+
+}
+
+void makeBinary(void) {
+  // moved to codegenPartTwo
+
+  // TODO: make runLLVMLinking to here so we can get just 1 executable
+  // Question: where does the GPU kernel go? Is it even in the executable?
 }
 
 GenInfo::GenInfo()
