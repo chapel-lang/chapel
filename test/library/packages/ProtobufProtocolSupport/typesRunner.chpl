@@ -1,3 +1,3 @@
 use endToEndRunnerUtils;
-var package = "types";
+var package = "typesTest";
 endToEndTest(package);
