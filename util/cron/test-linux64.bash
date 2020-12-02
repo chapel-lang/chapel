@@ -9,4 +9,4 @@ source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="linux64"
 
-$CWD/nightly -cron -mason -futures ${nightly_args} $(get_nightly_paratest_args 6)
+$CWD/nightly -cron -mason -protobuf -futures ${nightly_args} $(get_nightly_paratest_args 6)
