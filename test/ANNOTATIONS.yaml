@@ -452,7 +452,7 @@ all:
   09/29/20:
     - text: Do sequential DR assignment if GETs are to be used (#16488)
       config: 16-node-xc, 16-node-cs
-  10/19/20:
+  11/19/20:
     - Improve the speed of tracking arrays declared over a domain (#16740)
 # End all
 
@@ -1355,8 +1355,6 @@ memleaksfull:
     - Close leaks coming from unnamed array types (#16600)
   11/04/20:
     - Deallocate the RTT memory returned from empty for expressions (#16628)
-  10/19/20:
-    - Improve the speed of tracking arrays declared over a domain (#16740)
   11/20/20:
     - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
 # End memleaksfull
