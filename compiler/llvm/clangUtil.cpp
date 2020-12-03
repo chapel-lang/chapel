@@ -3632,7 +3632,7 @@ void makeBinaryLLVM(void) {
   }
 
   // If we're not using a launcher, copy the program here
-  if (0 == strcmp(CHPL_LAUNCHER, "none")) {
+  if (fLibraryCompile || (0 == strcmp(CHPL_LAUNCHER, "none"))) {
 
     if (fLibraryCompile) {
       moveGeneratedLibraryFile(tmpbinname);
