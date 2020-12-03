@@ -139,8 +139,8 @@ def check_pr_number_dates(ann_data):
                         pr_date = pr_to_date_dict[pr_num]
                         if pr_date >= date:
                             warnings.warn('Warning: annotation date for "{0}: '
-                                          '{1}" appears to be earlier than the '
-                                          'commit date'.format(graph, text))
+                                          '{1}" is earlier than or the same as '
+                                          'the commit date'.format(graph, text))
 
 
 if __name__ == '__main__':
