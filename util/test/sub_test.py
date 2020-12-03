@@ -267,14 +267,11 @@ def get_chplenv():
     chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
     return chpl_env
 
-# os.path.expandvars but stuff chplenv into it too
+# Similar to os.path.expandvars but stuff chplenv into it too
 def expandvars_chpl(path):
-    orig_env = os.environ.copy()
-    os.environ.update(get_chplenv())
-    new_path = os.path.expandvars(path)
-    os.environ.clear()
-    os.environ.update(orig_env)
-    return new_path
+    expand_env = os.environ.copy()
+    expand_env.update(get_chplenv())
+    return string.Template(path).safe_substitute(expand_env)
 
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
