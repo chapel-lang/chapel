@@ -1116,7 +1116,7 @@ memleaks:
   08/17/16:
     - Single as record (#4350)
   01/05/17:
-    - Maybe "adding support for params without initializers"(#5075)?
+    - Maybe "adding support for params without initializers"(#5069)?
   01/07/17:
     - new test verifying the user's guide type aliases section (#5075)
   01/17/17:
@@ -1655,7 +1655,7 @@ revcomp: &revcomp-base
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
-  08/12/16:
+  08/14/16:
     - text: Discontinued performance testing (data invalid) (#4333)
       config: 1-node-xc
   03/10/17:
