@@ -3,7 +3,6 @@
 from distutils.spawn import find_executable
 
 import os
-import os.path
 
 chplPath = os.path.join(os.environ['CHPL_HOME'], "bin", os.environ['CHPL_HOST_BIN_SUBDIR'])
 
