@@ -2,6 +2,7 @@
 // https://bitbucket.hdfgroup.org/projects/HDFFV/repos/hdf5/browse/examples/h5_crtdat.c
 
 use HDF5.C_HDF5;
+use Hdf5PathHelp;
 
 param RANK = 2:c_int;
 
@@ -13,7 +14,7 @@ proc main {
                              4:c_int, 5:c_int, 6:c_int];
 
   /* create HDF5 file */
-  file_id = H5Fcreate(c"ex_lite1.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+  file_id = H5Fcreate((readPrefixEnv() + "ex_lite1.h5").c_str(), H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
 
   /* create and write an integer type dataset named "dset" */
   H5LTmake_dataset_WAR(file_id, c"dset", RANK,

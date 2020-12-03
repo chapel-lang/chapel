@@ -1,4 +1,5 @@
 use FileSystem, HDF5;
+use Hdf5PathHelp;
 
 type inputTypes = (int, real, c_string);
 
@@ -10,13 +11,19 @@ config const printTiming = false;
 proc main {
   use HDF5, Time;
 
+  const pathPrefix = readPrefixEnv();
+  if pathPrefix != "" {
+    use FileSystem;
+    copyTree(inputDir, pathPrefix + inputDir);
+  }
+
   var t = new Timer();
 
   for param i in 0..<inputTypes.size {
     type inType = inputTypes(i);
     param typeName = inType:string;
     t.start();
-    var files = readAllHDF5Files(Locales, inputDir, "/dset",
+    var files = readAllHDF5Files(Locales, pathPrefix+inputDir, "/dset",
                                  inType:string, inType, rank=2);
     t.stop();
 
@@ -35,5 +42,9 @@ proc main {
       writeln("read type ", typeName);
     }
     t.clear();
+  }
+  if pathPrefix != "" {
+    use FileSystem;
+    rmTree(pathPrefix + inputDir);
   }
 }

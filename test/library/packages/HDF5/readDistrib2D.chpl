@@ -6,7 +6,13 @@ config param testBlock       = true,
              testBlockCyclic = false;
 
 proc main {
-  use HDF5, HDF5.IOusingMPI;
+  use HDF5, HDF5.IOusingMPI, Hdf5PathHelp;
+
+  const pathPrefix = readPrefixEnv();
+  if pathPrefix != "" {
+    use FileSystem;
+    copy(fileName, pathPrefix + fileName);
+  }
 
   var Space = {1..10, 1..10};
 
@@ -17,7 +23,7 @@ proc main {
     var BlockSpace = Space dmapped Block(boundingBox=Space);
     var A: [BlockSpace] int;
 
-    hdf5ReadDistributedArray(A, fileName, dsetName);
+    hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
     writeln(A);
   }
 
@@ -26,7 +32,7 @@ proc main {
     writeln("CyclicDist:");
     var CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
     var A: [CyclicSpace] int;
-    hdf5ReadDistributedArray(A, fileName, dsetName);
+    hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
     writeln(A);
   }
 
@@ -36,7 +42,7 @@ proc main {
     var BlockCyclicSpace = Space dmapped BlockCyclic(startIdx=Space.low,
                                                      blocksize=(3,3));
     var A: [BlockCyclicSpace] int;
-    hdf5ReadDistributedArray(A, fileName, dsetName);
+    hdf5ReadDistributedArray(A, pathPrefix+fileName, dsetName);
     writeln(A);
   }
 }
