@@ -261,10 +261,25 @@ def PerfDirFile(s):
 def PerfTFile(test_filename, sfx):
     return test_filename + '.' + perflabel + sfx
 
+def get_chplenv():
+    env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
+    chpl_env = py3_compat.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
+    chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
+    return chpl_env
+
+# os.path.expandvars but stuff chplenv into it too
+def expandvars_chpl(path):
+    orig_env = os.environ.copy()
+    os.environ.update(get_chplenv())
+    new_path = os.path.expandvars(path)
+    os.environ.clear()
+    os.environ.update(orig_env)
+    return new_path
+
 # Read a file or if the file is executable read its output. If the file is
 # executable, the current chplenv is copied into the env before executing.
-# Expands shell variables and strip out comments/whitespace. Returns a list of
-# string, one per line in the file.
+# Expands shell and chplenv variables and strip out comments/whitespace.
+# Returns a list of string, one per line in the file.
 def ReadFileWithComments(f, ignoreLeadingSpace=True):
     mylines = ""
     # if the file is executable, run it and grab the output. If we get an
@@ -272,9 +287,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
     if os.access(f, os.X_OK):
         try:
             # grab the chplenv so it can be stuffed into the subprocess env
-            env_cmd = [os.path.join(utildir, 'printchplenv'), '--all', '--simple', '--no-tidy', '--internal']
-            chpl_env = py3_compat.Popen(env_cmd, stdout=subprocess.PIPE).communicate()[0]
-            chpl_env = dict(map(lambda l: l.split('=', 1), chpl_env.splitlines()))
+            chpl_env = get_chplenv()
             file_env = os.environ.copy()
             file_env.update(chpl_env)
 
@@ -303,7 +316,7 @@ def ReadFileWithComments(f, ignoreLeadingSpace=True):
         else:
             if line[0] == '#': continue
         # expand shell variables
-        line = os.path.expandvars(line)
+        line = expandvars_chpl(line)
         mylist.append(line)
     return mylist
 
