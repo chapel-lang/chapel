@@ -350,6 +350,7 @@ checkFunction(FnSymbol* fn) {
   // empty body instead.  This is consistent with the current draft
   // of the spec as well.
   if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
+   if (!isInterfaceSymbol(fn->defPoint->parentSymbol))
     USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
 
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))

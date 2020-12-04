@@ -556,6 +556,34 @@ class TypeSymbol : public Symbol {
 *                                                                             *
 ************************************** | *************************************/
 
+class InterfaceSymbol : public Symbol {
+public:
+  static DefExpr* buildDef(const char* name, CallExpr* formals, BlockStmt* body);
+  static DefExpr* buildFormal(const char* name, IntentTag intent);
+  InterfaceSymbol(const char* name, BlockStmt* body);
+
+  DECLARE_SYMBOL_COPY(InterfaceSymbol);
+  virtual void verify();
+  virtual void accept(AstVisitor* visitor);
+
+  virtual void replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void         printDocs(std::ostream* file, unsigned int tabs);
+
+  static void  verifyInterfaceFormal(Symbol* sym); // light-weight
+  int          numFormals() const { return ifcFormals.length; }
+
+  AList      ifcFormals; // DefExprs of interface formals
+  BlockStmt* ifcBody;    // the body of the interface declaration
+                         // both are always non-null and non-empty
+  SymbolMap  ifcSymbols; // the symbols defined by the interface
+};
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 class EnumSymbol : public Symbol {
 public:
                   EnumSymbol(const char* initName);
@@ -741,9 +769,6 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
-// Pass this to a return-by-ref formal when the result is not needed.
-// Used when inlining iterators for ForallStmts.
-extern Symbol *gDummyRef;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
@@ -755,6 +780,10 @@ extern Symbol *gStringC;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern Symbol *gTaskID;
+extern Symbol *gDummyWitness;
+// Pass this to a return-by-ref formal when the result is not needed.
+// Used when inlining iterators for ForallStmts.
+extern Symbol *gDummyRef;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;

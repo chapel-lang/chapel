@@ -220,6 +220,7 @@
   #include "ForallStmt.h"
   #include "ForLoop.h"
   #include "IfExpr.h"
+  #include "interfaces.h"
   #include "misc.h"
   #include "parser.h"
   #include "stmt.h"
@@ -320,6 +321,7 @@
 %token TFALSE TFOR TFORALL TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
 %token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIMPLEMENTS TINTERFACE
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -409,9 +411,6 @@
 %type <pch> fn_ident assignop_ident opt_label_ident
 //%type <pch> opt_string
 
-
-
-
 %type <pblockstmt> program
 %type <pblockstmt> toplevel_stmt_ls
 %type <pblockstmt> toplevel_stmt
@@ -427,6 +426,10 @@
 %type <pimportstmt> import_expr
 %type <pblockstmt> use_stmt import_stmt import_ls require_stmt
 %type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
+
+%type <pblockstmt> implements_stmt interface_stmt
+%type <pcallexpr>  ifc_formal_ls
+%type <pdefexpr>   ifc_formal
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -485,7 +488,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr
+%type <pexpr> query_expr implements_expr
 
 %type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
@@ -537,6 +540,8 @@ stmt:
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
+| implements_stmt
+| interface_stmt
 | loop_stmt
 | select_stmt
 | defer_stmt
@@ -1082,6 +1087,30 @@ $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5); }
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
 | TIF expr assignop_ident expr block_stmt TELSE stmt     {
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
+;
+
+interface_stmt:
+  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+  { $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, $4, $6)); }
+;
+
+ifc_formal_ls:
+  ifc_formal                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| ifc_formal_ls TCOMMA ifc_formal { $1->insertAtTail($3); }
+;
+
+ifc_formal:
+  TTYPE ident_def  { $$ = InterfaceSymbol::buildFormal($2, INTENT_TYPE); }
+;
+
+implements_stmt:
+  TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, NULL)); }
+;
+
+implements_expr:
+  TIMPLEMENTS ident_def TLP actual_ls TRP
+  { $$ = ImplementsExpr::build($2, $4); }
 ;
 
 defer_stmt:
@@ -2094,6 +2123,7 @@ expr:
 | lambda_decl_expr
 | new_expr
 | let_expr
+| implements_expr
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr

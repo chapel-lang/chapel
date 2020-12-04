@@ -78,6 +78,8 @@ FnSymbol::FnSymbol(const char* initName)
   gFnSymbols.add(this);
 
   formals.parent = this;
+  constrainedTypes.parent = this;
+  interfaceConstraints.parent = this;
 }
 
 FnSymbol::~FnSymbol() {
@@ -117,6 +119,19 @@ void FnSymbol::verify() {
   if (lifetimeConstraints && lifetimeConstraints->parentSymbol != this) {
     INT_FATAL(this, "Bad FnSymbol::lifetimeConstraints::parentSymbol");
   }
+
+  // constrainedTypes: AList of DefExpr of ConstrainedType
+  INT_ASSERT(constrainedTypes.parent == this);
+  for_alist(ctExpr, constrainedTypes) {
+    Symbol* ctSym = toDefExpr(ctExpr)->sym;
+    Type*  ctType = toTypeSymbol(ctSym)->type;
+    INT_ASSERT(isConstrainedType(ctType));
+  }
+
+  // interfaceConstraints: AList of ImplementsExpr
+  INT_ASSERT(interfaceConstraints.parent == this);
+  for_alist(ic, interfaceConstraints)
+    INT_ASSERT(isImplementsExpr(ic));
 
   if (retExprType && retExprType->parentSymbol != this) {
     INT_FATAL(this, "Bad FnSymbol::retExprType::parentSymbol");
@@ -186,6 +201,12 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
   }
+
+  for_alist(ct, this->constrainedTypes)
+    newFn->constrainedTypes.insertAtTail(COPY_INT(ct));
+
+  for_alist(gc, this->interfaceConstraints)
+    newFn->interfaceConstraints.insertAtTail(COPY_INT(gc));
 
   // Copy members that are needed by both copyInner and partialCopy.
   newFn->astloc             = this->astloc;
@@ -780,6 +801,11 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
+    } else if (isConstrainedType(formal->type)) {
+      if (isConstrainedGeneric())
+        isGeneric = true;
+      // otherwise - concrete?
+
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;
       if (map != NULL && formal->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -861,6 +887,12 @@ void FnSymbol::accept(AstVisitor* visitor) {
 
     if (lifetimeConstraints)
       lifetimeConstraints->accept(visitor);
+
+    for_alist(ct, constrainedTypes)
+      ct->accept(visitor);
+
+    for_alist(gc, interfaceConstraints)
+      gc->accept(visitor);
 
     if (retExprType) {
       retExprType->accept(visitor);
@@ -1090,12 +1122,12 @@ bool FnSymbol::throwsError() const {
   return _throwsError;
 }
 
-bool FnSymbol::isGeneric() {
+bool FnSymbol::isGeneric() const {
   INT_ASSERT(mIsGenericIsValid);
   return mIsGeneric;
 }
 
-bool FnSymbol::isGenericIsValid() {
+bool FnSymbol::isGenericIsValid() const {
   return mIsGenericIsValid;
 }
 
@@ -1106,6 +1138,10 @@ void FnSymbol::setGeneric(bool generic) {
 
 void FnSymbol::clearGeneric() {
   mIsGeneric = mIsGenericIsValid = false;
+}
+
+bool FnSymbol::isConstrainedGeneric() const {
+  return ! interfaceConstraints.empty();
 }
 
 bool FnSymbol::retExprDefinesNonVoid() const {

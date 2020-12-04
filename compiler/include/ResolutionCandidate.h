@@ -53,6 +53,9 @@ typedef enum {
   // Implicit where clause does not match
   RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED,
 
+  // Could not fulfilled interface constraints
+  RESOLUTION_CANDIDATE_INTERFACE_CONSTRAINTS_NOT_SATISFIED,
+
   // Types do not match and are in different categories
   RESOLUTION_CANDIDATE_UNRELATED_TYPE,
 
@@ -90,6 +93,7 @@ public:
   FnSymbol*               fn;
   std::vector<Symbol*>    formalIdxToActual;
   std::vector<ArgSymbol*> actualIdxToFormal;
+  std::vector<ImplementsStmt*>    witnesses; // if 'fn' is CG
 
   Symbol*                 failingArgument; // actual or formal
   ResolutionCandidateFailureReason reason;
@@ -102,6 +106,9 @@ private:
 
   bool                    isApplicableGeneric(CallInfo& info,
                                               VisibilityInfo* visInfo);
+
+  bool                    isApplicableCG(CallInfo& info,
+                                         VisibilityInfo* visInfo);
 
   bool                    computeAlignment(CallInfo& info);
 

@@ -275,6 +275,36 @@ class NamedExpr : public Expr {
 };
 
 
+class ImplementsExpr : public Expr {
+public:
+  static ImplementsExpr* build(const char* name,
+                               CallExpr* actuals);
+  ImplementsExpr(Expr* iifc);
+
+  DECLARE_COPY(ImplementsExpr);
+  virtual GenRet codegen();
+  virtual void   verify();
+  virtual void   accept(AstVisitor* visitor);
+  virtual QualifiedType qualType();
+
+  virtual void   replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*  getFirstExpr();
+  virtual Expr*  getNextExpr(Expr* expr);
+  virtual void   prettyPrint(std::ostream* o);
+
+  InterfaceSymbol* implInterfaceSym() const;
+  int              numActuals()       const { return implActuals.length; }
+
+  Expr* implInterface;  // UnresolvedSymExpr -> SymExpr(InterfaceSymbol)
+  AList implActuals;    // Exprs -> SymExprs of actuals
+};
+
+// valid after scopeResolve
+inline InterfaceSymbol* ImplementsExpr::implInterfaceSym() const {
+  return toInterfaceSymbol(toSymExpr(implInterface)->symbol());  
+}
+
+
 // Determines whether a node is in the AST (vs. has been removed
 // from the AST). Used e.g. by cleanAst().
 //

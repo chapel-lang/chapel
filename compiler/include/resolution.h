@@ -171,6 +171,16 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
+// interface constraints
+void resolveInterfaceSymbol(InterfaceSymbol* isym);
+void resolveImplementsStmt(ImplementsStmt* istm);
+void resolveConstrainedGenericFun(FnSymbol* fn);
+ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
+                                                ImplementsExpr* constraint,
+                                                SymbolMap& substitutions);
+void cleanupInstantiatedCGfun(FnSymbol* fn,
+                              std::vector<ImplementsStmt*>& witnesses);
+
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
                                VisibilityInfo* info);
@@ -331,6 +341,8 @@ bool isCallExprTemporary(Symbol* fromSym);
 bool isTemporaryFromNoCopyReturn(Symbol* fromSym);
 
 void resolveIfExprType(CondStmt* stmt);
+
+void addVisibleFunctionsToScope(BlockStmt* scope, std::vector<FnSymbol*> fns);
 
 void trimVisibleCandidates(CallInfo& call,
                            Vec<FnSymbol*>& mostApplicable,

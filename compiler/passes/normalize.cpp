@@ -53,6 +53,7 @@ bool normalized = false;
 static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
+static void        moveInterfaceConstraints();
 static void        transformLogicalShortCircuit();
 static void        checkReduceAssign();
 
@@ -127,6 +128,9 @@ void normalize() {
   insertModuleInit();
 
   doPreNormalizeArrayOptimizations();
+
+  moveInterfaceConstraints();
+  wrapImplementsStatements();
 
   transformLogicalShortCircuit();
 
@@ -384,6 +388,39 @@ static bool isInLifetimeClause(CallExpr* call) {
 
   FnSymbol* fn = call->getFunction();
   return (fn && parentBlock && fn->lifetimeConstraints == parentBlock);
+}
+
+/************************************* | **************************************
+* Move each 'implements' constraint in a where clause, ex.
+*   proc constrainedGenericFun(...) where implements MyIFC(T1,T2) {...}
+* to the enclosing FnSymbol's interfaceConstraints list.
+*
+* TODO handle the case where the actuals of the implements constraints
+* undergo normalization.
+*
+* TODO handle the case where the 'where' clause has other things
+* besides a single IC, for example 'where IFC1(...) && IFC2(...)'.
+*
+************************************** | *************************************/
+
+static void moveInterfaceConstraints() {
+  forv_Vec(ImplementsExpr, ie, gImplementsExprs) {
+    if (isImplementsStmt(ie->parentExpr))
+      continue;  // this IE is part of an ImplementsStmt, do not move it
+
+    FnSymbol* fn = toFnSymbol(ie->parentSymbol);
+    if (BlockStmt* block = toBlockStmt(ie->parentExpr)) {
+      if (fn != NULL && fn->where == block) {
+        fn->interfaceConstraints.insertAtTail(ie->remove());
+        if (block->body.empty())
+          block->remove();
+        continue;
+      }
+    }
+
+    USR_FATAL_CONT(ie, "'implements %s(..)' is not supported in this context",
+                   toSymExpr(ie->implInterface)->symbol()->name);
+  }
 }
 
 /************************************* | **************************************
@@ -3764,6 +3801,8 @@ static void cloneParameterizedPrimitive(FnSymbol* fn,
 *                                                                             *
 ************************************** | *************************************/
 
+static void introduceConstrainedTypes(FnSymbol* fn);
+
 static void replaceUsesWithPrimTypeof(FnSymbol* fn, ArgSymbol* formal);
 
 static bool isQueryForGenericTypeSpecifier(ArgSymbol* formal);
@@ -3783,6 +3822,10 @@ static void addToWhereClause(FnSymbol*  fn,
                              Expr*      test);
 
 static void fixupQueryFormals(FnSymbol* fn) {
+  if (fn->isConstrainedGeneric()) {
+    introduceConstrainedTypes(fn);
+    return;
+  }
   for_formals(formal, fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       Expr* tail = typeExpr->body.tail;
@@ -4216,6 +4259,35 @@ static void addToWhereClause(FnSymbol*  fn,
   where->replace(combine);
   combine->insertAtTail(where);
   combine->insertAtTail(test);
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+static void introduceConstrainedTypes(FnSymbol* fn) {
+  for_formals(formal, fn)
+    if (BlockStmt* typeExpr = formal->typeExpr)
+      if (DefExpr* def = toDefExpr(typeExpr->body.tail)) {
+        INT_ASSERT(formal->type == dtUnknown); //fyi
+        Symbol* queryT = def->sym;
+        Symbol* CT     = ConstrainedType::build(queryT->name);
+        fn->constrainedTypes.insertAtTail(new DefExpr(CT));
+
+        // replace queryT with CT throughout
+        formal->type = CT->type;
+        for_SymbolSymExprs(se, queryT)
+          se->setSymbol(CT);
+
+        // cleanup
+        def->remove();
+        if (! typeExpr->body.empty())
+          USR_FATAL(typeExpr, "this formal's type query expression"
+            " is currently not supported for constrained generic functions");
+        typeExpr->remove();
+      }
 }
 
 /************************************* | **************************************

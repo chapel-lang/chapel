@@ -225,7 +225,10 @@ void findVisibleFunctions(CallInfo&             info,
   }
 }
 
+/************************************* | *************************************/
 
+static VisibleFunctionBlock* getVFBforScope(BlockStmt* block);
+static void addVisibleFunctionToVFB(VisibleFunctionBlock* vfb, FnSymbol* fn);
 
 static void buildVisibleFunctionMap() {
   for (int i = nVisibleFunctions; i < gFnSymbols.n; i++) {
@@ -241,20 +244,35 @@ static void buildVisibleFunctionMap() {
         // So, ensure we do not add anything there.
         INT_ASSERT(block != rootBlock);
       }
+      VisibleFunctionBlock* vfb = getVFBforScope(block);
+      addVisibleFunctionToVFB(vfb, fn);
+    }
+  }
+  nVisibleFunctions = gFnSymbols.n;
+}
+
+static VisibleFunctionBlock* getVFBforScope(BlockStmt* block) {
       VisibleFunctionBlock* vfb = visibleFunctionMap.get(block);
       if (!vfb) {
         vfb = new VisibleFunctionBlock();
         visibleFunctionMap.put(block, vfb);
       }
+      return vfb;
+}
+
+static void addVisibleFunctionToVFB(VisibleFunctionBlock* vfb, FnSymbol* fn) {
       Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(fn->name);
       if (!fns) {
         fns = new Vec<FnSymbol*>();
         vfb->visibleFunctions.put(fn->name, fns);
       }
       fns->add(fn);
-    }
-  }
-  nVisibleFunctions = gFnSymbols.n;
+}
+
+void addVisibleFunctionsToScope(BlockStmt* scope, std::vector<FnSymbol*> fns) {
+  VisibleFunctionBlock* vfb = getVFBforScope(scope);
+  for_vector(FnSymbol, fn, fns)
+    addVisibleFunctionToVFB(vfb, fn);
 }
 
 // Build the cache of names we care about even though they aren't methods

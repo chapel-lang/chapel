@@ -793,6 +793,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
+  if (isConstrainedType(formalType)) {
+    INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC));
+    return true;
+  }
+
   if (formalType == dtIntegral &&
       (is_int_type(actualType) || is_uint_type(actualType))) {
     return true;
@@ -8344,6 +8349,11 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
+    if (FnSymbol* fsym = toFnSymbol(def->sym))
+      resolveConstrainedGenericFun(fsym);
+    else if (InterfaceSymbol* isym = toInterfaceSymbol(def->sym))
+      resolveInterfaceSymbol(isym);
+
     retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
@@ -8374,6 +8384,10 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
     retval = foldTryCond(postFold(expr));
+
+  } else if (ImplementsStmt* is = toImplementsStmt(expr)) {
+    resolveImplementsStmt(is);
+    retval = is;
 
   } else {
     retval = foldTryCond(postFold(expr));

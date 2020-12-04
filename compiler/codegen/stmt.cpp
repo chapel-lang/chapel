@@ -372,6 +372,17 @@ GenRet ForwardingStmt::codegen() {
 *                                                                   *
 ********************************* | ********************************/
 
+GenRet ImplementsStmt::codegen() {
+  INT_FATAL(this, "ImplementsStmt should have been lowered in resolution");
+  GenRet dummy;
+  return dummy;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
 GenRet ExternBlockStmt::codegen() {
   GenRet ret;
   // Needs to be handled specially by creating a C

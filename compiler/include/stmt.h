@@ -268,6 +268,35 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+class ImplementsStmt : public Stmt {
+public:
+  static ImplementsStmt* build(const char* name, CallExpr* actuals,
+                               BlockStmt* body);
+  ImplementsStmt(ImplementsExpr* iimplExpr, BlockStmt* iimplBody);
+
+  DECLARE_COPY(ImplementsStmt);
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*       getFirstExpr();
+  virtual Expr*       getNextExpr(Expr* expr);
+
+  int                 numActuals() const { return implExpr->numActuals(); }
+
+  static const char* wrapperName(InterfaceSymbol* sym);
+  static ImplementsStmt* extractImplementsStmtFromWrapper(FnSymbol* wrapFn);
+
+  ImplementsExpr* implExpr;  // both always non-null
+  BlockStmt*      implBody;  // implBody can be empty
+  SymbolMap       witnesses; // populated upon resolution
+};
 
 /************************************* | **************************************
 *                                                                             *
@@ -292,7 +321,6 @@ public:
   // Local interface
   const char*         c_code;
 };
-
 
 /************************************* | **************************************
 *                                                                             *

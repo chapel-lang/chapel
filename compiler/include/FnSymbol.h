@@ -66,6 +66,15 @@ public:
   // Support for genericsCache.
   GenericsCacheInfo*         cacheInfo;
 
+  // Support for constrained generics / CG.
+  // TODO: move to a separate class analogously ex. to IteratorGroup.
+  AList                      constrainedTypes; // DefExpr of ConstrainedType
+  AList                      interfaceConstraints; // ImplementsExpr
+  std::vector<SymbolMap>     interface2actuals;    // for each IE:
+                               // IFC formal -> IE actual, plus
+                               // IFC required Fn -> instantiated signature
+                               //   only for those actually queried
+
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;
   SymbolMap                  substitutions;
@@ -190,10 +199,11 @@ public:
   bool                       isDefaultInit()                             const;
   bool                       isCopyInit()                                const;
 
-  bool                       isGeneric();
-  bool                       isGenericIsValid();
+  bool                       isGeneric()                                 const;
+  bool                       isGenericIsValid()                          const;
   void                       setGeneric(bool generic);
   void                       clearGeneric();
+  bool                       isConstrainedGeneric()                      const;
 
   AggregateType*             getReceiverType()                           const;
 
