@@ -116,14 +116,14 @@ use BitOps;
    for param i in 0..settingsTuple.size-1 {
      var s = settingsTuple(i);
      var B = input;
-     MSBRadixSort.msbRadixSort(start, end, B, comparator,
+     MSBRadixSort.msbRadixSort(B, start, end, comparator,
                                0, max(int), s);
      if i == 1 then
        writef("radixSort  %ht\n", B);
      testSorted(B, comparator);
 
      var Br = input;
-     MSBRadixSort.msbRadixSort(start, end, Br,
+     MSBRadixSort.msbRadixSort(Br, start, end,
                                new ReverseComparator(comparator),
                                0, max(int), s);
      if i == 1 then
@@ -204,7 +204,7 @@ proc testSortsUnsigned(input) {
    var t: Timer;
    t.start();
 
-   MSBRadixSort.msbRadixSort(1, size, array, new intCriterion(),
+   MSBRadixSort.msbRadixSort(array, 1, size, new intCriterion(),
                              0, max(int), new MSBRadixSortSettings());
 
    t.stop();
