@@ -592,7 +592,7 @@ static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval->addFlag(FLAG_TYPE_VARIABLE);
-  } else {
+  } else if (!formal->hasFlag(FLAG_NO_AUTO_DESTROY)) {
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 
