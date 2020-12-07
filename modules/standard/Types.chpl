@@ -892,4 +892,60 @@ inline proc _bor_id(type t) return 0:t;
 pragma "no doc"
 inline proc _bxor_id(type t) return 0:t;
 
+/* Returns `true` if the type `from` is coercible to the type `to`,
+   or if ``isSubtype(from, to)`` would return `true`.
+ */
+pragma "docs only" // handled directly by compiler
+proc isCoercible(type from, type to) param {
+  return __primitive("is_coercible", from, to);
+}
+
+/* Returns `true` if the type `sub` is a subtype of the type `super`.
+   In particular, returns `true` in any of these cases:
+
+     * `sub` is the same type as `super`
+     * `sub` is an instantiation of a generic type `super`
+     * `sub` is a class type inheriting from `super`
+
+   Note that ``isSubtype(a,b)`` can also be written as
+   ``a <= b`` or ``b >= a``.
+   */
+pragma "docs only" // handled directly by compiler
+proc isSubtype(type sub, type super) param {
+  return __primitive("is_subtype", super, sub);
+}
+
+/* Similar to :proc:`isSubtype` but returns `false` if
+   `sub` and `super` refer to the same type.
+
+   Note that ``isProperSubtype(a,b)`` can also be written
+   as ``a < b`` or ``b > a``.
+   */
+pragma "docs only" // handled directly by compiler
+proc isProperSubtype(type sub, type super) param {
+  return __primitive("is_proper_subtype", super, sub);
+}
+
+/* :returns: isProperSubtype(a,b) */
+pragma "docs only" // handled directly by compiler
+proc <(type a, type b) param {
+  return isProperSubtype(a,b);
+}
+/* :returns: isSubtype(a,b) */
+pragma "docs only" // handled directly by compiler
+proc <=(type a, type b) param {
+  return isSubtype(a,b);
+}
+/* :returns: isProperSubtype(b,a) */
+pragma "docs only" // handled directly by compiler
+proc >(type a, type b) param {
+  return isProperSubtype(b,a);
+}
+/* :returns: isSubtype(b,a) */
+pragma "docs only" // handled directly by compiler
+proc >=(type a, type b) param {
+  return isSubtype(b,a);
+}
+
+
 } // module Types
