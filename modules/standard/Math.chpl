@@ -892,24 +892,15 @@ module Math {
   // min and max
   //
 
-  /* Returns the maximum value of two integer arguments.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
-  /* Returns the maximum value of two unsigned integer arguments.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
-  /* Returns the maximum value of two ``real`` arguments.
-     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
 
      :rtype: The type of `x`.
    */
@@ -920,7 +911,7 @@ module Math {
 
     return if x > y then x else y;
   }
-  /* Returns the maximum value of 3 or more arguments using the above calls.
+  /* Returns the maximum value of 3 or more arguments using the above call.
    */
   inline proc max(x, y, z...?k) return max(max(x, y), (...z));
   /* Returns the maximum of 2 param ``int``, ``uint``, ``real``, or ``imag``
@@ -931,24 +922,16 @@ module Math {
     return if x > y then x else y;
   }
 
-  /* Returns the minimum value of two integer arguments.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
-  /* Returns the minimum value of two unsigned integer arguments.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
-  /* Returns the minimum value of two ``real`` arguments.
-     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
-
-     :rtype: The type of `x`.
-   */
+  pragma "no doc"
   inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
+
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
 
      :rtype: The type of `x`.
    */
@@ -959,7 +942,7 @@ module Math {
 
     return if x < y then x else y;
   }
-  /* Returns the minimum value of 3 or more arguments using the above calls.
+  /* Returns the minimum value of 3 or more arguments using the above call.
    */
   inline proc min(x, y, z...?k) return min(min(x, y), (...z));
   /* Returns the minimum of 2 param ``int``, ``uint``, ``real``, or ``imag``
