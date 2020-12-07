@@ -933,7 +933,7 @@ static void buildRecordEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gFalse)));
     }
@@ -953,7 +953,7 @@ static void buildRecordNotEqualsBody(AggregateType *ct, FnSymbol *fn,
         !tmp->hasFlag(FLAG_TYPE_VARIABLE)) {  // types fields must be equal
       Expr* left = new CallExpr(tmp->name, gMethodToken, arg1);
       Expr* right = new CallExpr(tmp->name, gMethodToken, arg2);
-      CallExpr *elemComp = new CallExpr("!=", left, right);
+      CallExpr *elemComp = new CallExpr("chpl_field_neq", left, right);
       fn->insertAtTail(new CondStmt(elemComp,
                                     new CallExpr(PRIM_RETURN, gTrue)));
     }
