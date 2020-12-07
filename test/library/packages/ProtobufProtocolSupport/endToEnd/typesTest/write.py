@@ -1,6 +1,6 @@
-import types_pb2
+import typesTest_pb2
 
-messageObj = types_pb2.Types()
+messageObj = typesTest_pb2.Types()
 
 messageObj.ui64 = 9223372036854
 messageObj.ui32 = 429496729

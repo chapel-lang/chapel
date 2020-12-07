@@ -1,4 +1,4 @@
-use types;
+use typesTest;
 use IO;
 
 var messageObj = new Types();

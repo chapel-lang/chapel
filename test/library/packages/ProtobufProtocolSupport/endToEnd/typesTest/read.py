@@ -1,6 +1,6 @@
-import types_pb2
+import typesTest_pb2
 
-messageObj = types_pb2.Types()
+messageObj = typesTest_pb2.Types()
 
 file = open("out", "rb")
 messageObj.ParseFromString(file.read())
