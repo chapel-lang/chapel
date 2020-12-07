@@ -46,53 +46,5 @@ Additional utilities
 
 module UtilMisc_forDocs {
 
-  /* Returns `true` if the type `from` is coercible to the type `to`,
-     or if ``isSubtype(from, to)`` would return `true`.
-   */
-  proc isCoercible(type from, type to) param {
-    return __primitive("is_coercible", from, to);
-  }
-
-  /* Returns `true` if the type `sub` is a subtype of the type `super`.
-     In particular, returns `true` in any of these cases:
-
-       * `sub` is the same type as `super`
-       * `sub` is an instantiation of a generic type `super`
-       * `sub` is a class type inheriting from `super`
-
-     Note that ``isSubtype(a,b)`` can also be written as
-     ``a <= b`` or ``b >= a``.
-     */
-  proc isSubtype(type sub, type super) param {
-    return __primitive("is_subtype", super, sub);
-  }
-
-  /* Similar to :proc:`isSubtype` but returns `false` if
-     `sub` and `super` refer to the same type.
-
-     Note that ``isProperSubtype(a,b)`` can also be written
-     as ``a < b`` or ``b > a``.
-     */
-  proc isProperSubtype(type sub, type super) param {
-    return __primitive("is_proper_subtype", super, sub);
-  }
-
-  /* :returns: isProperSubtype(a,b) */
-  proc <(type a, type b) param {
-    return isProperSubtype(a,b);
-  }
-  /* :returns: isSubtype(a,b) */
-  proc <=(type a, type b) param {
-    return isSubtype(a,b);
-  }
-  /* :returns: isProperSubtype(b,a) */
-  proc >(type a, type b) param {
-    return isProperSubtype(b,a);
-  }
-  /* :returns: isSubtype(b,a) */
-  proc >=(type a, type b) param {
-    return isSubtype(b,a);
-  }
-
 
 }
