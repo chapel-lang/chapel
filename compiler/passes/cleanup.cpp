@@ -215,7 +215,10 @@ static void cleanup(ModuleSymbol* module) {
   for_vector(BaseAST, ast, asts) {
     backPropagate(ast);
     if (DefExpr* def = toDefExpr(ast)) {
-      if (FnSymbol* fn = toFnSymbol(def->sym)) {
+      if (def->sym->hasFlag(FLAG_DOCS_ONLY) == true) {
+        // Delete functions/variables that are for docs only
+        def->remove();
+      } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
         SET_LINENO(def);
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
