@@ -144,6 +144,7 @@ struct GenInfo {
 extern GenInfo* gGenInfo;
 extern int      gMaxVMT;
 extern int      gStmtCount;
+extern bool     gCodegenGPU;
 
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
@@ -172,5 +173,8 @@ Type* getNamedTypeDuringCodegen(const char* name);
 void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
+
+bool localeUsesGPU();
+
 
 #endif //CODEGEN_H

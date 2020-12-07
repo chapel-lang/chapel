@@ -1476,12 +1476,49 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
 
-  INT_ASSERT(C->getJobs().size() == 1);
+  if (printSystemCommands && developer) {
+    printf("<internal clang jobs>\n");
+    for(auto command : C->getJobs()){
+      command.Print(llvm::dbgs(), "\n\n", false);
+    }
+  }
 
-  clang::driver::Command& j = *C->getJobs().begin();
+  clang::driver::Command* job = NULL;
+
+  if (localeUsesGPU() == false) {
+    // Not a CPU+GPU compilation, so just use first job.
+    job = &*C->getJobs().begin();
+  } else {
+    // CPU+GPU compilation
+    //  1st cc1 command is for the GPU
+    //  2nd cc1 command is for the CPU
+    for (auto &command : C->getJobs()) {
+      bool isCC1 = false;
+      for (auto arg : command.getArguments()) {
+        if (0 == strcmp(arg, "-cc1")) {
+          isCC1 = true;
+          break;
+        }
+      }
+      if (isCC1) {
+
+        if (gCodegenGPU) {
+          // For GPU, set j to 1st cc1 command
+          if (job == NULL) job = &command;
+        } else {
+          // For CPU, set j to last cc1 command
+          job = &command;
+        }
+      }
+    }
+  }
+
+  if (job == NULL)
+    USR_FATAL("Could not find cc1 command from clang driver");
+
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
-    for ( auto a : j.getArguments() ) {
+    for ( auto a : job->getArguments() ) {
       printf("%s ", a);
     }
     printf("\n");
@@ -1496,12 +1533,12 @@ void setupClang(GenInfo* info, std::string mainFile)
 #if HAVE_LLVM_VER >= 100
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-            j.getArguments(),
+            job->getArguments(),
             *Diags);
 #else
   bool success = CompilerInvocation::CreateFromArgs(
             Clang->getInvocation(),
-            &j.getArguments().front(), (&j.getArguments().back())+1,
+            &job->getArguments().front(), (&job->getArguments().back())+1,
             *Diags);
 #endif
 
@@ -2092,6 +2129,12 @@ void runClang(const char* just_parse_filename) {
   // library directories/files and ldflags are handled during linking later.
 
   clangCCArgs.push_back("-DCHPL_GEN_CODE");
+
+  // tell clang to use CUDA support
+  if (localeUsesGPU()) {
+    clangOtherArgs.push_back("-x");
+    clangOtherArgs.push_back("cuda");
+  }
 
   // Always include sys_basic because it might change the
   // behaviour of macros!

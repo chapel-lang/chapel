@@ -72,6 +72,7 @@ static bool compareSymbol(const void* v1, const void* v2);
 GenInfo* gGenInfo   =  0;
 int      gMaxVMT    = -1;
 int      gStmtCount =  0;
+bool     gCodegenGPU = false;
 
 std::map<std::string, int> commIDMap;
 
@@ -2296,8 +2297,13 @@ Type* getNamedTypeDuringCodegen(const char* name) {
 }
 
 
+// Return true if the current locale model needs GPU code generation
+bool localeUsesGPU() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
+}
+
 // Do this once for CPU and GPU
-void codegenPartOne() {
+static void codegenPartOne() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
@@ -2330,7 +2336,7 @@ void codegenPartOne() {
 }
 
 // Do this for CPU and then do for GPU
-void codegenPartTwo() { 
+static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
@@ -2411,7 +2417,7 @@ void codegenPartTwo() {
         }
       }
     }
-    
+
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
@@ -2481,7 +2487,7 @@ void codegenPartTwo() {
     codegen_header_addons();
 
     fprintf(hdrfile.fptr, "\n#endif");
-    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n");
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
@@ -2495,20 +2501,23 @@ void codegenPartTwo() {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
 
-  if(fLlvmCodegen) {
+  // Don't want to link yet if we're doing the GPU part
+  if (gCodegenGPU == false) {
+    if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
-    makeBinaryLLVM();
+      makeBinaryLLVM();
 #endif
-  } else {
-    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-    const char* command = astr(astr(CHPL_MAKE, " "),
-                               makeflags,
-                               getIntermediateDirName(), "/Makefile");
-    mysystem(command, "compiling generated source");
-  }
+    } else {
+      const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+      const char* command = astr(astr(CHPL_MAKE, " "),
+                                 makeflags,
+                                 getIntermediateDirName(), "/Makefile");
+      mysystem(command, "compiling generated source");
+    }
 
-  if (fLibraryCompile && fLibraryPython) {
-    codegen_make_python_module();
+    if (fLibraryCompile && fLibraryPython) {
+      codegen_make_python_module();
+    }
   }
 }
 
@@ -2517,16 +2526,13 @@ void codegen() {
     return;
 
   codegenPartOne();
-/*
-  if targetting CPU+GPU locale model {
-    set some global variable to indicate GPU code generation
-       (or pass as an argument to codegenPartTwo and to runClang)
-    codegenPartTwo();
-    unset GPU code generation global
 
-      -- ultimately output to tmp/chpl__module-gpu.ptx
+  if (localeUsesGPU()) {
+    gCodegenGPU = true;
+    codegenPartTwo();
+    // ? save the PTX somewhere meaningful?
+    gCodegenGPU = false;
   }
-*/
 
   codegenPartTwo();
     // add to codegenPartTwo to embed tmp/chpl__module-gpu.ptx
