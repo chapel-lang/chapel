@@ -888,6 +888,87 @@ module Math {
     return logBasePow2(val, 1);
   }
 
+  //
+  // min and max
+  //
+
+  /* Returns the maximum value of two integer arguments.
+
+     :rtype: The type of `x`.
+   */
+  inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
+  /* Returns the maximum value of two unsigned integer arguments.
+
+     :rtype: The type of `x`.
+   */
+  inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
+  /* Returns the maximum value of two ``real`` arguments.
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
+
+     :rtype: The type of `x`.
+   */
+  inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
+  /* Returns the maximum value of two arguments using the ``>`` operator
+     for comparison.
+
+     :rtype: The type of `x`.
+   */
+  inline proc max(x, y) {
+    if isAtomic(x) || isAtomic(y) {
+      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+    }
+
+    return if x > y then x else y;
+  }
+  /* Returns the maximum value of 3 or more arguments using the above calls.
+   */
+  inline proc max(x, y, z...?k) return max(max(x, y), (...z));
+  /* Returns the maximum of 2 param ``int``, ``uint``, ``real``, or ``imag``
+     values as a param.
+   */
+  inline proc max(param x: numeric, param y: numeric) param
+    where !(isComplex(x) || isComplex(y)) {
+    return if x > y then x else y;
+  }
+
+  /* Returns the minimum value of two integer arguments.
+
+     :rtype: The type of `x`.
+   */
+  inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
+  /* Returns the minimum value of two unsigned integer arguments.
+
+     :rtype: The type of `x`.
+   */
+  inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
+  /* Returns the minimum value of two ``real`` arguments.
+     If one of the arguments is :proc:`Math.NAN`, the result is also NAN.
+
+     :rtype: The type of `x`.
+   */
+  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
+  /* Returns the minimum value of two arguments using the ``<`` operator
+     for comparison.
+
+     :rtype: The type of `x`.
+   */
+  inline proc min(x, y) {
+    if isAtomic(x) || isAtomic(y) {
+      compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
+    }
+
+    return if x < y then x else y;
+  }
+  /* Returns the minimum value of 3 or more arguments using the above calls.
+   */
+  inline proc min(x, y, z...?k) return min(min(x, y), (...z));
+  /* Returns the minimum of 2 param ``int``, ``uint``, ``real``, or ``imag``
+     values as a param.
+   */
+  inline proc min(param x: numeric, param y: numeric) param
+    where !(isComplex(x) || isComplex(y)) {
+    return if x < y then x else y;
+  }
 
   /* Computes the mod operator on the two arguments, defined as
      ``mod(m,n) = m - n * floor(m / n)``.
@@ -1182,7 +1263,7 @@ module Math {
     extern proc truncf(x: real(32)): real(32);
     return truncf(x);
   }
-  
+
   /* Returns the greatest common divisor of the integer argument `a` and
      `b`. */
   proc gcd(in a: int,in b: int): int {

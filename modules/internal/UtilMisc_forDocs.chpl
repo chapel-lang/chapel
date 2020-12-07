@@ -46,16 +46,6 @@ Additional utilities
 
 module UtilMisc_forDocs {
 
-  /* Compute the minimum value of 2 or more arguments
-     using the ``<`` operator for comparison.
-     If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
-  inline proc min(x, y...) return min();  // dummy
-
-  /* Compute the maximum value of 2 or more arguments
-     using the ``>`` operator for comparison.
-     If one of the arguments is :proc:`Math.NAN`, the result is also NAN. */
-  inline proc max(x, y...) return max();  // dummy
-
   /* Returns `true` if the type `from` is coercible to the type `to`,
      or if ``isSubtype(from, to)`` would return `true`.
    */
