@@ -2396,4 +2396,31 @@ module ChapelBase {
   inline proc _removed_cast(in x) {
     return x;
   }
+
+  /* The following two overloads support compiler-generated == and !=
+     operators for records with array fields */
+
+  proc chpl_field_neq(a: [] ?t, b: [] t) {
+    return || reduce (a != b);
+  }
+
+  inline proc chpl_field_neq(a: ?t, b: t) where !isArrayType(t) {
+    return a != b;
+  }
+
+  proc <(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not implemented for arrays");
+  }
+
+  proc >(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not implemented for arrays");
+  }
+
+  proc >=(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not implemented for arrays");
+  }
+
+  proc <=(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not implemented for arrays");
+  }
 }

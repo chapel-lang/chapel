@@ -32,7 +32,7 @@ module DefaultSparse {
     var _nnz = 0;
 
     pragma "local field"
-    var _indices: [nnzDom] index(rank, idxType);  // [(1, 3, 2), (2, 4, 7), ...];
+    var _indices: [nnzDom] index(rank, idxType);
 
     override proc linksDistribution() param return false;
     override proc dsiLinksDistribution() return false;
@@ -47,7 +47,7 @@ module DefaultSparse {
     proc stridable param {
       return parentDom.stridable;
     }
-    
+
     override proc getNNZ(): int{
       return _nnz;
     }
