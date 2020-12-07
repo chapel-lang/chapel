@@ -2408,19 +2408,19 @@ module ChapelBase {
     return a != b;
   }
 
-  proc <(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not implemented for arrays");
+  proc chpl_field_lt(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not supported by default on objects with array fields");
   }
 
-  proc >(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not implemented for arrays");
+  proc chpl_field_lt(a: ?t, b: t) where !isArrayType(t) {
+    return a < b;
   }
 
-  proc >=(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not implemented for arrays");
+  proc chpl_field_gt(a: [] ?t, b: [] t) {
+    compilerError("ordered comparisons not supported by default on objects with array fields");
   }
 
-  proc <=(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not implemented for arrays");
+  proc chpl_field_gt(a: ?t, b: t) where !isArrayType(t) {
+    return a > b;
   }
 }
