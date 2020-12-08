@@ -2404,23 +2404,23 @@ module ChapelBase {
     return || reduce (a != b);
   }
 
-  inline proc chpl_field_neq(a: ?t, b: t) where !isArrayType(t) {
+  inline proc chpl_field_neq(a, b) where !isArrayType(a.type) {
     return a != b;
   }
 
   proc chpl_field_lt(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not supported by default on objects with array fields");
+    compilerError("ordered comparisons not supported by default on records with array fields");
   }
 
-  proc chpl_field_lt(a: ?t, b: t) where !isArrayType(t) {
+  inline proc chpl_field_lt(a, b) where !isArrayType(a.type) {
     return a < b;
   }
 
   proc chpl_field_gt(a: [] ?t, b: [] t) {
-    compilerError("ordered comparisons not supported by default on objects with array fields");
+    compilerError("ordered comparisons not supported by default on records with array fields");
   }
 
-  proc chpl_field_gt(a: ?t, b: t) where !isArrayType(t) {
+  inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
   }
 }

@@ -1,1 +1,1 @@
-compareRecords.chpl:24: error: ordered comparisons not supported by default on objects with array fields
+compareRecords.chpl:24: error: ordered comparisons not supported by default on records with array fields
