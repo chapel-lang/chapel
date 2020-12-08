@@ -62,13 +62,13 @@ checkConstLoops() {
 
 static void checkForIllegalClassOps(FnSymbol* fn) {
   if (fn->getModule()->modTag == MOD_USER) {
-    if (fn->formals.head && fn->formals.head->next &&
+    if (fn->formals.length == 2 &&
         (strcmp(fn->name, "=") == 0 ||
          strcmp(fn->name, "==") == 0 ||
          strcmp(fn->name, "!=") == 0)) {
-      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
+      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.get(1))->sym);
       Type* formalType = formal->type->getValType();
-      ArgSymbol* formal2 = toArgSymbol(toDefExpr(fn->formals.head->next)->sym);
+      ArgSymbol* formal2 = toArgSymbol(toDefExpr(fn->formals.get(2))->sym);
       Type* formal2Type = formal2->type->getValType();
       //
       // This checks that both arguments are classes, permitting cases
