@@ -436,8 +436,21 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
           bool outIntentFormalReturn = forErrorReturn == false &&
                                        var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
-          if (outIntentFormalReturn == false)
-            deinitialize(insertBeforeStmt, NULL, var);
+          if (outIntentFormalReturn == false) {
+            bool inTupleDeserializer = false;
+
+            if (FnSymbol *parentFn = toFnSymbol(var->defPoint->parentSymbol)) {
+              if (strcmp(parentFn->name, "chpl__deserialize") == 0) {
+                if (parentFn->retType->symbol->hasFlag(FLAG_TUPLE)) {
+                  inTupleDeserializer = true;
+                }
+              }
+            }
+
+            if (!inTupleDeserializer) {
+              deinitialize(insertBeforeStmt, NULL, var);
+            }
+          }
         }
       }
 

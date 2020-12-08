@@ -48,6 +48,7 @@ module ArrayViewSlice {
   // class implementations, it supports the standard dsi interface.
   //
   pragma "aliasing array"
+  pragma "aliasing runtime type"
   class ArrayViewSliceArr: AbsBaseArr {
     // the representation of the slicing domain
     //
@@ -132,6 +133,8 @@ module ArrayViewSlice {
       compilerWarning("ArrayViewSliceArr.chpl__deserialize");
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
+      extern proc printf(s...);
+      printf("deserialize data %lld %lld\n", data[0], data[1]);
       const dom = _to_borrowed(domType).chpl__deserialize(data(0));
       const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
       var r = new unmanaged ArrayViewSliceArr(eltType=arr.eltType,

@@ -2465,6 +2465,13 @@ module ChapelArray {
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
+    proc type isView() param {
+      use ArrayViewSlice;
+      type instanceType = __primitive("static field type", this, "_instance");
+      param ret = isSubtype(instanceType, ArrayViewSliceArr);
+      return ret;
+    }
+
     proc chpl__serialize() where _instance.chpl__rvfMe() {
       return _instance.chpl__serialize();
     }
@@ -2778,6 +2785,8 @@ module ChapelArray {
       // a slice's domain shouldn't generate a reallocate call for the
       // underlying array
       d._value.add_arr(a, locking=true, addToList=false);
+
+      //type t = chpl__buildArrayRuntimeType(a.dom, a.eltType);
       return _newArray(a);
     }
 
@@ -5000,6 +5009,17 @@ module ChapelArray {
     // intended to call initCopy
     pragma "no auto destroy" var ret = x;
     return ret;
+  }
+
+  pragma "no copy return"
+  pragma "unref fn"
+  inline proc chpl__removeref(x: []) where chpl__isArrayView(x._value) {
+   
+    var val = x._value;
+    return new _array(val.pid, val);
+
+    //return ret;
+
   }
 
   //pragma "fn returns infinite lifetime"

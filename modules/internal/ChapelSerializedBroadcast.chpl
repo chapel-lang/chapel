@@ -29,8 +29,29 @@ module ChapelSerializedBroadcast {
 
   extern proc chpl_get_global_serialize_table(idx : int) : c_void_ptr;
 
-  proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
+  proc tupleHasView(type t) param {
+    for param i in 0..#t.size {
+      if isArray(t[i]) {
+        if t[i].isView() {
+          return true;
+        }
+      }
+    }
+
+    return false;
+
+  }
+
+  proc chpl__broadcastGlobal(type globalType, ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
+    compilerWarning("Broadcast of type: ", globalType:string);
+    compilerWarning("Broadcast of type2: ", localeZeroGlobal.type:string);
+    compilerWarning("Broadcast of type3: ", isArray(localeZeroGlobal):string);
+    compilerWarning("Broadcast of type4: ",
+        (isArray(localeZeroGlobal) &&
+         chpl__isArrayView(localeZeroGlobal)):string);
+    compilerWarning("Broadcast of type5: ",
+                    (isTuple(T) && tupleHasView(T)):string);
     //
     // BLC: The following conditional is necessary due to the use of
     // .type on localeZeroGlobal during deserialization because if it
@@ -45,22 +66,25 @@ module ChapelSerializedBroadcast {
     // since it knows the precise type.
     //
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
+       (isTuple(T) && tupleHasView(T)) ||
        (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
-      compilerWarning("localeZeroGlobal.type: ", localeZeroGlobal.type:string);
+      compilerWarning("localeZeroGlobal.type: ", localeZeroGlobal.type:string); // array, slice
       const data = localeZeroGlobal.chpl__serialize();
       const root = here.id;
       coforall loc in Locales do on loc {
         if here.id != root {
           pragma "no copy"
           pragma "no auto destroy"
-          var temp = localeZeroGlobal.type.chpl__deserialize(data);
-          compilerWarning("temp.type: ", temp.type:string);
+          //var temp = localeZeroGlobal.type.chpl__deserialize(data);
+          var temp = globalType.chpl__deserialize(data);
+          compilerWarning("temp.type: ", temp.type:string);  // array, slice
 
           const destVoidPtr = chpl_get_global_serialize_table(id);
-          const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
-          compilerWarning("dest.type: ", dest.type:string);
+          //const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
+          const dest = destVoidPtr:c_ptr(globalType);
+          compilerWarning("dest.type: ", dest.type:string); // cptr to array,slice
           compilerWarning("dest.deref().type: ", dest.deref().type:string);
 
           __primitive("=", dest.deref(), temp);
@@ -69,20 +93,26 @@ module ChapelSerializedBroadcast {
     }
   }
 
-  proc chpl__destroyBroadcastedGlobal(ref localeZeroGlobal, id : int)
+  proc chpl__destroyBroadcastedGlobal(type globalType, ref localeZeroGlobal: ?T, id : int)
   where chpl__enableSerializedGlobals {
-    type globalType = localeZeroGlobal.type;
-    const root = here.id;
-    coforall loc in Locales do on loc {
-      if here.id != root {
-        const voidPtr = chpl_get_global_serialize_table(id);
-        var ptr = voidPtr:c_ptr(globalType);
+    //type globalType = localeZeroGlobal.type;
+    if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
+       (isTuple(T) && tupleHasView(T)) ||
+       (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {
+      halt("internal error: can't broadcast module-scope arrays yet");
+    } else {
+      const root = here.id;
+      coforall loc in Locales do on loc {
+        if here.id != root {
+          const voidPtr = chpl_get_global_serialize_table(id);
+          var ptr = voidPtr:c_ptr(globalType);
 
-        pragma "no copy"
-        pragma "no auto destroy"
-        var temp = ptr.deref();
+          pragma "no copy"
+          pragma "no auto destroy"
+          var temp = ptr.deref();
 
-        chpl__autoDestroy(temp);
+          chpl__autoDestroy(temp);
+        }
       }
     }
   }

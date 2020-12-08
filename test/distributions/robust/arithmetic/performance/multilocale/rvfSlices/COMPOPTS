@@ -1,1 +1,1 @@
--M../../.. --fast -schpl_serializeSlices=true --main-module=testWrapper --no-cache-remote
+-M../../.. --fast -schpl_serializeSlices=false --main-module=testWrapper --no-cache-remote

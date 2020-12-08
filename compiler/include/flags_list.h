@@ -37,6 +37,7 @@
 // Indicates an array implementation class can alias other array implementations
 // e.g. array views
 symbolFlag( FLAG_ALIASING_ARRAY , ypr, "aliasing array" , ncm )
+symbolFlag( FLAG_ALIASING_RUNTIME_TYPE , ypr, "aliasing runtime type" , ncm )
 // alias analysis can assume that the marked field (or return from a function)
 // can alias the same scopes as 'this'
 symbolFlag( FLAG_ALIAS_SCOPE_FROM_THIS , ypr, "alias scope from this" , ncm )

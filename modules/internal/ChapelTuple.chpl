@@ -48,89 +48,173 @@ module ChapelTuple {
     param size : int;
   }
 
+
   proc _tuple.chpl__tupleIsSerializeable() param {
     use Reflection;
     if (size != 2) then
       return false;
-        compilerWarning("In tupleIsSerializeable() with type" + this.type:string);
-    for param i in 0..#size do
-      if !canResolveMethod(this[i], "chpl__serialize") then {
-                compilerWarning("Couldn't resolve " + this[i].type:string + ".chpl__serialize()");
-        return false;
-      } else {
-              compilerWarning("!!! Yay, could resolve " + this[i].type:string + ".chpl__serialize()");
+    if isHomogeneousTupleOfAliasingArrays(this.type) {
+      compilerWarning("In tupleIsSerializeable() with type" + this.type:string);
+      for param i in 0..#size {
+        type t1 =  __primitive("static typeof", this[i]);
+        type t2 =  this[i].type;
+        compilerWarning("t1: ", t1:string);
+        compilerWarning("t2: ", t2:string);
+        //compilerWarning("t1_instance: ", __primitive("static typeof", this[i]._instance).type;:string);
+        compilerWarning("t2_instance: ", this[i]._instance.type:string);
+        type t = t1;
+        if !canResolveMethod(this[i], "chpl__serialize") then {
+          compilerWarning("Couldn't resolve " + t:string + ".chpl__serialize()");
+          return false;
+        } else {
+          compilerWarning("!!! Yay, could resolve " + t:string + ".chpl__serialize()");
+        }
       }
-    compilerWarning("Permitting serialization of " + this.type:string);
-    return true;
+      compilerWarning("Permitting serialization of " + this.type:string);
+      return true;
+    }
+    return false;
   }
   
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
     //    compilerWarning("Resolving _tuple.chpl__serialize() for " + this.type:string);
-    writeln("In chpl__serialize() for " + this.type:string);
+    compilerWarning("In chpl__serialize() for " + __primitive("static typeof", this):string);
     return (this[0].chpl__serialize(), this[1].chpl__serialize());
   }
 
-      pragma "build tuple"
-  //          pragma "no copy return"
+  //pragma "build tuple"
+  //pragma "no copy return"
+  //pragma "do not allow ref"
+  //pragma "last resort"
+  //proc type _tuple.chpl__deserialize(data) where
+            //!isHomogeneousTupleOfAliasingArrays(this) && false {
+    //compilerWarning("YYthis.type = " + __primitive("static typeof", this):string);
+    //type pretend = __primitive("static typeof", this);
+    ////    ref p1 = pretend(0).chpl__deserialize(data(0));
+    ////    ref p2 = pretend(1).chpl__deserialize(data(1));
+    ////    return (p1, p2);
 
-        pragma "do not allow ref"
-      proc type _tuple.chpl__deserialize(data) {
-    compilerWarning("this.type = " + __primitive("static typeof", this):string);
+    //type tmpType0 = __primitive("static typeof", pretend(0));
+    //type tmpType1 = __primitive("static typeof", pretend(1));
+
+    
+    ////return (__primitive("deref", this[0].chpl__deserialize(data(0))),
+            ////__primitive("deref", this[1].chpl__deserialize(data(1))));
+    ////return (this[0].chpl__deserialize(data(0)),
+            ////this[1].chpl__deserialize(data(1)));
+    //var v1 = tmpType0.chpl__deserialize(data(0));
+    //ref v2 = tmpType1.chpl__deserialize(data(1));
+
+    //compilerWarning("v1.type = ", v1.type:string);
+    //compilerWarning("v2.type = ", v2.type:string);
+    //compilerWarning("v1.typeof = ", __primitive("static typeof", v1):string);
+    //compilerWarning("v2.typeof = ", __primitive("static typeof", v2):string);
+    //compilerWarning("tmpType0 = ", tmpType0:string);
+    //compilerWarning("tmpType1 = ", tmpType1:string);
+
+    //return     (tmpType0.chpl__deserialize(data(0)),
+                //tmpType1.chpl__deserialize(data(1)));
+    ////ref ret2 =  (tmpType0.chpl__deserialize(data(0)),
+                ////tmpType1.chpl__deserialize(data(1)));
+
+    ////var ret3 = (v1, v2);
+
+    ////var ret3 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
+                ////tmpType1.chpl__deserialize(data(1)));
+    ////ref ret4 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
+                ////tmpType1.chpl__deserialize(data(1)));
+
+    ////compilerWarning("ret.type = ", ret.type:string);
+    ////compilerWarning("ret.typeof = ", __primitive("static typeof", ret):string);
+    ////compilerWarning("ret2.type = ", ret2.type:string);
+    ////compilerWarning("ret2.typeof = ", __primitive("static typeof", ret2):string);
+    ////compilerWarning("ret3.type = ", ret3.type:string);
+    ////compilerWarning("ret3.typeof = ", __primitive("static typeof", ret3):string);
+    ////compilerWarning("ret4.type = ", ret.type:string);
+    ////compilerWarning("ret4.typeof = ", __primitive("static typeof", ret):string);
+
+
+    ////return ret;
+  //}
+
+  proc isHomogeneousTupleOfAliasingArrays(type t) param {
+    //var dummy: t;
+    if isHomogeneousTuple(t) {
+      type elemType = t[0];
+      if (isArray(elemType)) {
+        //use ArrayViewSlice;
+        //type instanceType = elemType._value.type;
+        //var dummy: elemType = noinit;
+        //type instanceType = dummy._value.type;
+        //param ret = isSubtype(instanceType, ArrayViewSliceArr);
+        param ret = elemType.isView();
+        compilerWarning("XXt0 :", elemType:string);
+        compilerWarning("XXReturning :", ret:string);
+        return ret;
+      }
+    }
+        compilerWarning("YYt :", t:string);
+        compilerWarning("YYReturning :", false:string);
+    return false;
+  }
+
+  //pragma "build tuple"
+  pragma "no copy return"
+  //pragma "do not allow ref"
+  proc type _tuple.chpl__deserialize(data) where 
+            isHomogeneousTupleOfAliasingArrays(this) {
+              compilerWarning("resolved the new deserializer");
+    compilerWarning("XXthis.type = " + __primitive("static typeof", this):string);
     type pretend = __primitive("static typeof", this);
-    //    ref p1 = pretend(0).chpl__deserialize(data(0));
-    //    ref p2 = pretend(1).chpl__deserialize(data(1));
-    //    return (p1, p2);
-
-    type tmpType = __primitive("static typeof", pretend(0));
-    var t = tmpType.chpl__deserialize(data(0));
-        writeln("*** type t: " + t.type:string);
-        writeln("*** prim type p1: " + __primitive("static typeof", pretend(0)):string);
-        writeln("*** prim type t: " + __primitive("static typeof", t):string);
+    type tmpType0 = __primitive("static typeof", pretend(0));
+    type tmpType1 = __primitive("static typeof", pretend(1));
 
     
-    return (__primitive("static typeof", pretend(0)).chpl__deserialize(data(0)),
-            __primitive("static typeof", pretend(1)).chpl__deserialize(data(1)));
-    
+    //return (__primitive("deref", this[0].chpl__deserialize(data(0))),
+            //__primitive("deref", this[1].chpl__deserialize(data(1))));
+    //return (this[0].chpl__deserialize(data(0)),
+            //this[1].chpl__deserialize(data(1)));
+    //ref v1 = tmpType0.chpl__deserialize(data(0));
+    //ref v2 = tmpType1.chpl__deserialize(data(1));
 
-    //var toRet =  _build_tuple_noref(__primitive("static typeof", pretend(0)).chpl__deserialize(data(0)),
-                        //__primitive("static typeof", pretend(1)).chpl__deserialize(data(1)));
+    //compilerWarning("v1.type = ", v1.type:string);
+    //compilerWarning("v2.type = ", v2.type:string);
+    //compilerWarning("v1.typeof = ", __primitive("static typeof", v1):string);
+    //compilerWarning("v2.typeof = ", __primitive("static typeof", v2):string);
+    compilerWarning("tmpType0 = ", tmpType0:string);
+    compilerWarning("tmpType1 = ", tmpType1:string);
 
-    //compilerWarning(toRet.type:string);
-    //return toRet;
+    //pragma "no auto destroy"
+    //ref ret0 = tmpType0.chpl__deserialize(data(0));
+
+    //pragma "no auto destroy"
+    //ref ret1 = tmpType1.chpl__deserialize(data(1));
+
+    //return (ret0, ret1);
+    return (this[0].chpl__deserialize(data(0)),
+            this[1].chpl__deserialize(data(1)));
+    //return _build_tuple_noref(v1, v2);
+    //ref ret2 =  (tmpType0.chpl__deserialize(data(0)),
+                //tmpType1.chpl__deserialize(data(1)));
+
+    //var ret3 = (v1, v2);
+
+    //var ret3 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
+                //tmpType1.chpl__deserialize(data(1)));
+    //ref ret4 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
+                //tmpType1.chpl__deserialize(data(1)));
+
+    //compilerWarning("ret.type = ", ret.type:string);
+    //compilerWarning("ret.typeof = ", __primitive("static typeof", ret):string);
+    //compilerWarning("ret2.type = ", ret2.type:string);
+    //compilerWarning("ret2.typeof = ", __primitive("static typeof", ret2):string);
+    //compilerWarning("ret3.type = ", ret3.type:string);
+    //compilerWarning("ret3.typeof = ", __primitive("static typeof", ret3):string);
+    //compilerWarning("ret4.type = ", ret.type:string);
+    //compilerWarning("ret4.typeof = ", __primitive("static typeof", ret):string);
 
 
-    
-    //ref x: __primitive("static typeof", pretend(0)) = __primitive("static typeof", pretend(0)).chpl__deserialize(data(0));
-    //ref y: __primitive("static typeof", pretend(1)) = __primitive("static typeof", pretend(1)).chpl__deserialize(data(1));
-    
-        //compilerWarning("*** type x: " + x.type:string);
-        //compilerWarning("*** prim type x: " + __primitive("static typeof", x):string);
-        //var toRet = _build_tuple_always_allow_ref(x,y);
-        //return toRet;
-    //    return (pretend(0), pretend(1));
-    //    return _build_tuple(x, y);
-    /*
-    var retval: (__primitive("static typeof", pretend(0)),
-                 __primitive("static typeof", pretend(1)));
-    retval(1) = x;
-    retval(2) = y;
-    */
-    //    compilerWarning("*** prim type retval: " + __primitive("static typeof", retval):string);
-//    return (x,y);
-//    return retval;
-
-      /* Nope:
-          return (__primitive("static typeof", pretend(0)).chpl__deserialize(data(1)),
-          __primitive("static typeof", pretend(1)).chpl__deserialize(data(2)));
-      */
-
-      /* Nope:
-    return _build_tuple_always_allow_ref(
-            __primitive("static typeof", pretend(0)).chpl__deserialize(data(1)),
-            __primitive("static typeof", pretend(1)).chpl__deserialize(data(2)));
-    */
-    //return  _build_tuple_noref(__primitive("static typeof", pretend(0)).chpl__deserialize(data(0)),
-                        //__primitive("static typeof", pretend(1)).chpl__deserialize(data(1)));
+    //return ret;
   }
   
   pragma "tuple init fn"

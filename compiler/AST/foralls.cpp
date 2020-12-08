@@ -905,6 +905,7 @@ static void tryToMakeForwardable(VarSymbol* iterRec, CallExpr* buildTup) {
     for (int i=1; i<=numElems; i++) {
       list_view(buildTup->get(i));
     }
+    iterRec->addFlag(FLAG_ALWAYS_RVF);
     printf("---\n");
   }
 
@@ -963,7 +964,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   preFS->insertAtTail(new DefExpr(iterRec));
   preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   if (zippered) {
-    tryToMakeForwardable(iterRec, buildTup);
+    if (strcmp(iterRec->fname(), "/Users/ekayraklio/code/chapel/versions/f04/chapel/rvfTest.chpl") == 0) {
+      tryToMakeForwardable(iterRec, buildTup);
+    }
   }
   Expr* toNormalize = preFS->body.tail;
 

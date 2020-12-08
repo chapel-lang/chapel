@@ -2092,7 +2092,7 @@ static void reissueMsgHelp(CallExpr* from, const char* str, bool err) {
   if (err) {
     USR_FATAL(from, "%s", str);
   } else {
-    gdbShouldBreakHere();
+    //gdbShouldBreakHere();
     USR_WARN(from, "%s", str);
   }
 }
@@ -3116,6 +3116,78 @@ static bool isTypeConstructionCall(CallExpr* call) {
   return ret;
 }
 
+// if at is an ArrayView type or it is a tuple with an ArrayView type ...
+static void mapArrayViewsToRuntimeTypes(Type *t) {
+  // check if runtimeTypeMap populated here.
+  // make sure at is a slice, get the .type of it
+  // maybe just use chpl__buildArrayRuntimeType to get the type
+  //std::cout << "CALLED\n";
+  //nprint_view(at);
+  if (AggregateType *at = toAggregateType(t)) {
+    Type *retValType = at->getValType();
+    if (retValType->symbol->hasFlag(FLAG_TUPLE)) {
+      if (Symbol *val = at->getField("_val", false)) {
+        if (AggregateType *valAggType = toAggregateType(val->type)) {
+          for_fields(field, valAggType) {
+            if (field->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
+              if (AggregateType *fieldAggType = toAggregateType(field->getValType())) {
+                if (Symbol *instanceField = fieldAggType->getField("_instance", false)) {
+                  if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
+
+
+
+                    //if (field->id == 2419462) {
+                      //gdbShouldBreakHere();
+                    //}
+
+                    if (DecoratedClassType *dct = toDecoratedClassType(instanceField->type)) {
+                      if (AggregateType *at2 = dct->getCanonicalClass()) {
+                        //gdbShouldBreakHere();
+                        SET_LINENO(field->defPoint);
+
+                        std::cout << "FIELD:\n";
+                        nprint_view(field);
+
+                        CallExpr *dummy = new CallExpr("chpl__convertValueToRuntimeType",
+                            new SymExpr(field));
+                        field->defPoint->insertAfter(dummy);
+
+                        resolveNormalCall(dummy);
+
+                        Type *rtt = dummy->resolvedFunction()->retType;
+                        if (rtt != dtUnknown) {
+                          runtimeTypeMap.put(field->getValType(), rtt);
+                          std::cout << "added mapping\n";
+                          nprint_view(field->getValType());
+                          nprint_view(rtt);
+                        }
+
+                        dummy->remove();
+
+                      }
+                    }
+
+
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    //Type *retValType = at->getValType();
+    //if (retValType->symbol->hasFlag(FLAG_TUPLE)) {
+      //if (AggregateType *atVal = toAggregateType(retValType)) {
+        //std::cout << "Tuple type specifier's fields:\n";
+        //for_fields(field, atVal) {
+          //nprint_view(field);
+        //}
+      //}
+    //}
+  }
+}
+
 static Type* resolveTypeSpecifier(CallInfo& info) {
   CallExpr* call = info.call;
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
@@ -3153,6 +3225,9 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     }
   } else {
     ret = at->generateType(info.call, info.toString());
+
+    mapArrayViewsToRuntimeTypes(ret);
+
     if (ret && decorated) {
       // Include the decorator in the type
       ret = getDecoratedClass(ret, decorator);
@@ -9240,8 +9315,14 @@ static FnSymbol* resolveNormalSerializer(CallExpr* call) {
   return ret;
 }
 
-static bool resolveSerializeDeserialize(AggregateType* at) {
-  SET_LINENO(at->symbol);
+static bool resolveSerializeDeserialize(AggregateType* _at) {
+  SET_LINENO(_at->symbol);
+
+  AggregateType *at = _at;
+
+  //if (_at->symbol->hasFlag(FLAG_TUPLE)) {
+    //at = computeNonRefTuple(_at);
+  //}
   VarSymbol* tmp          = newTemp(at);
   FnSymbol* serializeFn   = NULL;
   FnSymbol* deserializeFn = NULL;
@@ -9332,13 +9413,13 @@ static void resolveBroadcasters(AggregateType* at) {
   FnSymbol* destroyFn;
   {
     SET_LINENO(tmp);
-    CallExpr* call = new CallExpr("chpl__broadcastGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
+    CallExpr* call = new CallExpr("chpl__broadcastGlobal", new SymExpr(at->symbol), tmp, new_IntSymbol(0, INT_SIZE_64));
     broadcastFn = resolveNormalSerializer(call);
     broadcastFn->addFlag(FLAG_BROADCAST_FN);
   }
   {
     SET_LINENO(tmp);
-    CallExpr* call = new CallExpr("chpl__destroyBroadcastedGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
+    CallExpr* call = new CallExpr("chpl__destroyBroadcastedGlobal", new SymExpr(at->symbol), tmp, new_IntSymbol(0, INT_SIZE_64));
     destroyFn = resolveNormalSerializer(call);
   }
   if (broadcastFn == NULL || destroyFn == NULL) {
@@ -9363,37 +9444,94 @@ static void resolveSerializers() {
         ! isSingleType(ts->type)                   &&
         ! isSyncType(ts->type)                     &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-      if (AggregateType* at = toAggregateType(ts->type)) {
-        if (ts->hasFlag(FLAG_TUPLE)) {
-          bool allRVF = true;
-          //          printf("Considering this tuple: %s\n", ts->name);
-          for_fields(field, at) {
-            if (strcmp(field->name, "size") != 0) {
-              //              printf("Looking at field: %s\n", field->name);
-              Type* fieldType = field->getValType();
-              if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-                //                printf("...but this field doesn't RVF: ");
-                //                list_view(field);
-                //                list_view(fieldType);
-                allRVF = false;
-                break;
+      if (AggregateType* _at = toAggregateType(ts->type)) {
+        //if (strcmp(ts->fname(), "/Users/ekayraklio/code/chapel/versions/f04/chapel/rvfTest.chpl") == 0) {
+
+
+          AggregateType *at = _at;
+
+          if (ts->hasFlag(FLAG_TUPLE)) {
+            //std::cout << "ConsideringZZZ:\n";
+            //nprint_view(at);
+            //at = computeNonRefTuple(_at);
+
+            bool allRVF = true;
+                      //printf("Considering this tuple: %s\n", ts->name);
+                      //nprint_view(ts);
+                      //printf("Considering this aggregate tuple: %s\n", at->name());
+                      //nprint_view(at);
+            for_fields(field, at) {
+              if (strcmp(field->name, "size") != 0) {
+                              //printf("Looking at field: %s\n", field->name);
+                Type* fieldType = field->getValType();
+                //if (fieldType->symbol->hasFlag(FLAG_REF)) {
+                if (field->isRef()) {
+                  //std::cout << "Field is ref\n";
+                }
+                else {
+                  //std::cout << "Field is not ref\n";
+                  allRVF=false;
+                  break;
+                }
+                if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+                                  //printf("...but this field doesn't RVF: ");
+                                  //list_view(field);
+                                  //list_view(fieldType);
+                  allRVF = false;
+                  break;
+                }
+                else {
+                  //printf("...this field RVFs: ");
+                  //list_view(field);
+                  //list_view(fieldType);
+                }
               }
             }
+            if (allRVF) {
+              fprintf(stderr, "Found an all-RVF tuple type %s\n", ts->name);
+              ts->addFlag(FLAG_ALWAYS_RVF);
+            }
           }
-          if (allRVF) {
-            fprintf(stderr, "Found an all-RVF tuple type %s\n", ts->name);
-            ts->addFlag(FLAG_ALWAYS_RVF);
+          if ((!ts->hasFlag(FLAG_TUPLE) && isRecord(at) == true) || 
+              (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_ALWAYS_RVF))) {
+            bool success = resolveSerializeDeserialize(at);
+            if (success) {
+              std::cout << "Resolving the broadcaster for\n";
+              nprint_view(at);
+              resolveBroadcasters(at);
+              std::cout << "resolveBroadcaster returned\n";
+            }
           }
-        }
-        if ((!ts->hasFlag(FLAG_TUPLE) && isRecord(at) == true) || 
-            (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_ALWAYS_RVF))) {
-          bool success = resolveSerializeDeserialize(at);
-          if (success) {
-            resolveBroadcasters(at);
-          }
-        }
+        //}
       }
     }
+    //else if (ts->hasFlag(FLAG_ITERATOR_RECORD)) {
+      //if (AggregateType *at = toAggregateType(ts->type)) {
+        //if (at->numFields() >= 2) {
+          //bool allRVF = true;
+          //printf("Considering this iterator record: %s\n", ts->name);
+          //for_fields(field, at) {
+            //printf("Looking at field: %s\n", field->name);
+            //Type* fieldType = field->getValType();
+            //if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+              //printf("...but this field doesn't RVF: ");
+              //list_view(field);
+              //list_view(fieldType);
+              //allRVF = false;
+              //break;
+            //}
+          //}
+          //if (allRVF) {
+            //fprintf(stderr, "Found an all-RVF iterator record type %s\n", ts->name);
+            ////ts->addFlag(FLAG_ALWAYS_RVF);
+          //}
+        //}
+      //}
+      //else {
+        //printf("Not aggregate\n");
+        //nprint_view(ts);
+      //}
+    //}
   }
 
   resolveAutoCopies();
