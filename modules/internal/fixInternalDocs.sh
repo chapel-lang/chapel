@@ -131,17 +131,6 @@ removeUsage $file
 ## End ChapelIO ##
 
 
-## ChapelIteratorSupport ##
-
-file="./ChapelIteratorSupport.rst"
-removePrefixFunctions $file
-fixTitle "Vectorizing Iterator" $file
-removeUsage $file
-
-
-## End ChapelIteratorSupport ##
-
-
 ## ChapelLocale ##
 
 file="./ChapelLocale.rst"
