@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/standard/Math.chpl:960: error: iterator or promoted expression iterator used in if or while condition
+$CHPL_HOME/modules/standard/Math.chpl:nnn: error: iterator or promoted expression iterator used in if or while condition
