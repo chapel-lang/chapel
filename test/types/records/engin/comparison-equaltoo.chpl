@@ -44,6 +44,8 @@ writeln("success");
 write("Class field with operators overloaded... ");
 {
   class C { var x = 0; }
+  proc ==(c1: borrowed C, c2: borrowed C) return c1.x == c2.x;
+  proc !=(c1: borrowed C, c2: borrowed C) return c1.x != c2.x;
   proc <(c1: borrowed C, c2: borrowed C) return c1.x < c2.x;
   proc <=(c1: borrowed C, c2: borrowed C) return c1.x <= c2.x;
   proc >(c1: borrowed C, c2: borrowed C) return c1.x > c2.x;
@@ -58,17 +60,15 @@ write("Class field with operators overloaded... ");
   var small2 = new R(1);
   var big = new R(2);
 
-  test(small, small2, big, true);
+  test(small, small2, big);
 }
 writeln("success");
 
-proc test(small, small2, big, skipequals=false) {
-  if (!skipequals) {
-    assert((small == small2) == true);
-    assert((small != small2) == false);
-    assert((small == big) == false);
-    assert((small != big) == true);
-  }
+proc test(small, small2, big) {
+  assert((small == small2) == true);
+  assert((small != small2) == false);
+  assert((small == big) == false);
+  assert((small != big) == true);
 
   assert((small < small2) == false);
   assert((small < big) == true);

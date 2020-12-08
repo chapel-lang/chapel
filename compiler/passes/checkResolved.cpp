@@ -60,15 +60,17 @@ checkConstLoops() {
   }
 }
 
-static void checkForClassAssignOps(FnSymbol* fn) {
+static void checkForIllegalClassOps(FnSymbol* fn) {
   if (fn->getModule()->modTag == MOD_USER) {
-    if (strcmp(fn->name, "=") == 0 &&
-        fn->formals.head) {
+    if (fn->formals.head &&
+        (strcmp(fn->name, "=") == 0 ||
+         strcmp(fn->name, "==") == 0 ||
+         strcmp(fn->name, "!=") == 0)) {
       ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
       Type* formalType = formal->type->getValType();
       if (isOwnedOrSharedOrBorrowed(formalType) ||
           isUnmanagedClass(formalType)) {
-        USR_FATAL_CONT(fn, "Can't overload assignments for class types");
+        USR_FATAL_CONT(fn, "Can't overload %s for class types", fn->name);
       }
     }
   }
@@ -77,7 +79,7 @@ static void checkForClassAssignOps(FnSymbol* fn) {
 void
 checkResolved() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    checkForClassAssignOps(fn);
+    checkForIllegalClassOps(fn);
     checkReturnPaths(fn);
     if (fn->retType->symbol->hasFlag(FLAG_ITERATOR_RECORD) &&
         !fn->isIterator()) {
