@@ -6,20 +6,56 @@ import os
 import shutil
 import sys
 
-parser = optparse.OptionParser(
-    usage = 'usage: %prog dst src',
-    description = 'Updates dst with src. If they differ, copies dst to src. '
-                  'Deletes src either way.')
+def main():
+    parser = optparse.OptionParser(
+        usage = 'usage: %prog dst src',
+        description = 'Updates dst with src. If they differ, copies dst to src. '
+                      'Deletes src either way.')
+    parser.add_option("--update", action="store_true", dest="update",
+                      help=("given dst src - update dst with src. "
+                            "If the differ, copy dst to src. "
+                            "Removes src either way"))
+    parser.add_option("--copy", action="store_true", dest="copy",
+                      help=("given src dst - copy src to dst. "
+                            "Only updates files that differ"))
 
-(options, args) = parser.parse_args()
 
-if len(args) != 2:
-    parser.error("Requires exactly 2 arguments")
+    (options, args) = parser.parse_args()
 
-(dst, src) = args
+    if len(args) != 2:
+        parser.error("Requires exactly 2 arguments")
 
-if not os.path.exists(dst) or not filecmp.cmp(src, dst):
-    sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
-    shutil.copyfile(src, dst)
+    if options.update:
+        (dst, src) = args
+        update(dst, src)
 
-os.remove(src)
+    elif options.copy:
+        (src, dst) = args
+        copy(src, dst)
+
+
+def update(dst, src):
+    if not os.path.exists(dst) or not filecmp.cmp(src, dst):
+        sys.stdout.write("Updating {0} from {1}\n".format(dst, src))
+        shutil.copyfile(src, dst)
+
+    os.remove(src)
+
+def copy(src, dst):
+    if not os.path.isdir(src):
+        # handle regular files
+        if not os.path.exists(dst) or not filecmp.cmp(src, dst):
+            sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
+            shutil.copyfile(src, dst)
+    else:
+        # handle directories
+        if not os.path.exists(dst):
+            sys.stdout.write("Copying dir {0} to {1}\n".format(src, dst))
+            shutil.copytree(src, dst)
+        else:
+            contents = sorted(os.listdir(src))
+            for sub in contents:
+                copy(os.path.join(src, sub), os.path.join(dst, sub))
+
+if __name__ == '__main__':
+    main()
