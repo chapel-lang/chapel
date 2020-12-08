@@ -58,17 +58,15 @@ write("Class field with operators overloaded... ");
   var small2 = new R(1);
   var big = new R(2);
 
-  test(small, small2, big, true);
+  test(small, small2, big, false);
 }
 writeln("success");
 
-proc test(small, small2, big, skipequals=false) {
-  if (!skipequals) {
-    assert((small == small2) == true);
-    assert((small != small2) == false);
-    assert((small == big) == false);
-    assert((small != big) == true);
-  }
+proc test(small, small2, big, smallequals=true) {
+  assert((small == small2) == smallequals);
+  assert((small != small2) == !smallequals);
+  assert((small == big) == false);
+  assert((small != big) == true);
 
   assert((small < small2) == false);
   assert((small < big) == true);
