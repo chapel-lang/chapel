@@ -1,1 +1,1 @@
-comparison-equaltoo.chpl:48: error: Can't overload != for class types
+comparison-equaltoo.chpl:48: error: Can't overload '!=' for class types

@@ -1,0 +1,11 @@
+noOverloadNotEquals.chpl:45: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:49: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:53: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:57: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:61: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:65: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:69: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:73: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:77: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:81: error: Can't overload '!=' for class types
+noOverloadNotEquals.chpl:85: error: Can't overload '!=' for class types

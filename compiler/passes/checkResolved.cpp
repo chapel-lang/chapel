@@ -62,15 +62,24 @@ checkConstLoops() {
 
 static void checkForIllegalClassOps(FnSymbol* fn) {
   if (fn->getModule()->modTag == MOD_USER) {
-    if (fn->formals.head &&
+    if (fn->formals.head && fn->formals.head->next &&
         (strcmp(fn->name, "=") == 0 ||
          strcmp(fn->name, "==") == 0 ||
          strcmp(fn->name, "!=") == 0)) {
       ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.head)->sym);
       Type* formalType = formal->type->getValType();
-      if (isOwnedOrSharedOrBorrowed(formalType) ||
-          isUnmanagedClass(formalType)) {
-        USR_FATAL_CONT(fn, "Can't overload %s for class types", fn->name);
+      ArgSymbol* formal2 = toArgSymbol(toDefExpr(fn->formals.head->next)->sym);
+      Type* formal2Type = formal2->type->getValType();
+      //
+      // This checks that both arguments are classes, permitting cases
+      // when a class is assigned to/from or compared with some
+      // non-class type; but maybe we should outlaw those cases too?
+      //
+      if ((isOwnedOrSharedOrBorrowed(formalType) ||
+           isUnmanagedClass(formalType)) &&
+          (isOwnedOrSharedOrBorrowed(formal2Type) ||
+           isUnmanagedClass(formal2Type))) {
+        USR_FATAL_CONT(fn, "Can't overload '%s' for class types", fn->name);
       }
     }
   }
