@@ -76,7 +76,7 @@ def get():
                 llvm_val = 'bundled'
 
     if llvm_val == 'llvm':
-        sys.stdout.write("Warning: CHPL_LLVM=llvm is deprecated. "
+        sys.stderr.write("Warning: CHPL_LLVM=llvm is deprecated. "
                          "Use CHPL_LLVM=bundled instead\n")
         llvm_val = 'bundled'
 
