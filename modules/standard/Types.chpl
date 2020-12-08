@@ -892,10 +892,14 @@ inline proc _bor_id(type t) return 0:t;
 pragma "no doc"
 inline proc _bxor_id(type t) return 0:t;
 
+// the following functions (isCoercible etc) are handled directly by
+// the compiler - so their declarations are marked "docs only"
+// and only used for chpldoc.
+
 /* Returns `true` if the type `from` is coercible to the type `to`,
    or if ``isSubtype(from, to)`` would return `true`.
  */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc isCoercible(type from, type to) param {
   return __primitive("is_coercible", from, to);
 }
@@ -910,7 +914,7 @@ proc isCoercible(type from, type to) param {
    Note that ``isSubtype(a,b)`` can also be written as
    ``a <= b`` or ``b >= a``.
    */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc isSubtype(type sub, type super) param {
   return __primitive("is_subtype", super, sub);
 }
@@ -921,28 +925,28 @@ proc isSubtype(type sub, type super) param {
    Note that ``isProperSubtype(a,b)`` can also be written
    as ``a < b`` or ``b > a``.
    */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc isProperSubtype(type sub, type super) param {
   return __primitive("is_proper_subtype", super, sub);
 }
 
 /* :returns: isProperSubtype(a,b) */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
-pragma "docs only" // handled directly by compiler
+pragma "docs only"
 proc >=(type a, type b) param {
   return isSubtype(b,a);
 }
