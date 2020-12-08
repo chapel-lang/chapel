@@ -70,6 +70,10 @@ astlocMarker::~astlocMarker() {
 //   not in a function in beginning with chpl__
 //     (unless developer==true or preserveInlinedLineNumbers==true)
 // to use for line number reporting.
+//
+// Note that "inlined" here refers to FLAG_INLINED_FN.
+// It does not mean the same as the 'inline'
+// keyword and it may only apply to task functions.
 Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
   while (true) {
