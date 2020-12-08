@@ -234,17 +234,6 @@ replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
 
-## UtilMisc_forDocs ##
-
-file="./UtilMisc_forDocs.rst"
-
-# Don't removePrefixFunctions since it's a stand-in documentation file
-# so shouldn't have any that we don't want documented.
-fixTitle "Misc Functions" $file
-removeUsage $file
-
-# End UtilMisc_forDocs ##
-
 ## ChapelEnv ##
 
 file="./ChapelEnv.rst"
