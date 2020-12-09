@@ -18,7 +18,16 @@
  * limitations under the License.
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "clang_builtins_wrapper.h"
+
+#ifdef __cplusplus
+}
+#endif
+
 #include <complex.h>
 
 
