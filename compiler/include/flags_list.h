@@ -199,6 +199,10 @@ symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
+
+
+symbolFlag( FLAG_ALWAYS_RESOLVE , ypr, "always resolve function" , "keep this function even if it is not called so it can be called during codegen e.g." )
+
 // In resolution, functions marked as last-resort are considered only if
 // no functions without that flag are found. This usually is used to create
 // a pattern enabling user-supplied replacement of default behavior.
