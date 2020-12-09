@@ -64,6 +64,11 @@
 #include <cstdio>
 #include <vector>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <cstdlib>
+
 // function prototypes
 static bool compareSymbol(const void* v1, const void* v2);
 
@@ -2574,10 +2579,23 @@ void codegen() {
   codegenPartOne();
 
   if (localeUsesGPU()) {
-    gCodegenGPU = true;
-    codegenPartTwo();
-    // ? save the PTX somewhere meaningful?
-    gCodegenGPU = false;
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+      // child process
+      gCodegenGPU = true;
+      codegenPartTwo();
+      // ? save the PTX somewhere meaningful?
+      gCodegenGPU = false;
+      exit(0);
+    } else {
+      // parent process
+      int status = 0;
+      while (wait(&status) != pid) {
+        // wait for child process
+      }
+    }
   }
 
   codegenPartTwo();
