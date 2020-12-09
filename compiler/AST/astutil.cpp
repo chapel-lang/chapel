@@ -926,7 +926,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 
   // Mark exported symbols and module init/deinit functions as visible.
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT))
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
       pruneVisit(fn, fns, types);
 
   // Mark well-known functions as visible
