@@ -1453,10 +1453,10 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
-static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
-  std::vector<FnSymbol*> & functions, std::vector<VarSymbol*> & globals) {
-  GenInfo* info = gGenInfo;
-
+static void uniquify_names(std::set<const char*> & cnames,
+                           std::vector<TypeSymbol*> & types,
+                           std::vector<FnSymbol*> & functions,
+                           std::vector<VarSymbol*> & globals) {
   // reserved symbol names that require renaming to compile
 #include "reservedSymbolNames.h"
 
@@ -1629,6 +1629,44 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     }
     uniquifyNameCounts.clear();
   }
+}
+
+static void codegen_header(std::set<const char*> & cnames,
+                           std::vector<TypeSymbol*> & types,
+                           std::vector<FnSymbol*> & functions,
+                           std::vector<VarSymbol*> & globals) {
+  GenInfo* info = gGenInfo;
+
+  //
+  // collect types and apply canonical sort
+  //
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      legalizeName(ts);
+      types.push_back(ts);
+    }
+  }
+  std::sort(types.begin(), types.end(), compareSymbol);
+
+  //
+  // collect globals and apply canonical sort
+  //
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->defPoint->parentExpr != rootModule->block &&
+        toModuleSymbol(var->defPoint->parentSymbol)) {
+      legalizeName(var);
+      globals.push_back(var);
+    }
+  }
+  std::sort(globals.begin(), globals.end(), compareSymbol);
+  //
+  // collect functions and apply canonical sort
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    legalizeName(fn);
+    functions.push_back(fn);
+  }
+  std::sort(functions.begin(), functions.end(), compareSymbol);
 
   codegen_header_compilation_config();
 
@@ -2333,6 +2371,14 @@ static void codegenPartOne() {
     }
 #endif
   }
+
+  // Vectors to store different symbol names to be used while uniquifying
+  std::set<const char*> cnames;
+  std::vector<TypeSymbol*> types;
+  std::vector<FnSymbol*> functions;
+  std::vector<VarSymbol*> globals;
+
+  uniquify_names(cnames, types, functions, globals);
 }
 
 // Do this for CPU and then do for GPU
