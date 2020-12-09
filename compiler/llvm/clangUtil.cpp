@@ -2480,6 +2480,13 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
+  if (cdecl->getIdentifier() == nullptr) {
+    // Certain C++ things such as constructors can have
+    // special compound names. In this case getName() will
+    // fail.
+    return;
+  }
+
   addGlobalCDecl(cdecl->getName(), cdecl);
 
   // Also file structs under 'struct struct_name'
