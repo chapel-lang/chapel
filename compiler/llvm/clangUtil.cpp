@@ -1222,6 +1222,35 @@ class CCodeGenConsumer : public ASTConsumer {
       adjustLayoutForGlobalToWide();
     }
 
+    void doHandleDecl(Decl* d) {
+      if (TypedefDecl *td = dyn_cast<TypedefDecl>(d)) {
+        const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
+        if(ctype != NULL) {
+          info->lvt->addGlobalCDecl(td);
+        }
+      } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
+        info->lvt->addGlobalCDecl(fd);
+      } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
+        info->lvt->addGlobalCDecl(vd);
+      } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
+        if( rd->getName().size() > 0 ) {
+          // Handle forward declaration for structs
+          info->lvt->addGlobalCDecl(rd);
+        }
+      } else if (LinkageSpecDecl* ld = dyn_cast<LinkageSpecDecl>(d)) {
+        // Handles extern "C" { }
+        for (auto &sub : ld->decls()) {
+          doHandleDecl(sub);
+        }
+      } else if (ExternCContextDecl *ed = dyn_cast<ExternCContextDecl>(d)) {
+        // TODO: is this an alternative extern "C"?
+        // do we need to handle it?
+        for (auto &sub : ed->decls()) {
+          doHandleDecl(sub);
+        }
+      }
+    }
+
     // HandleTopLevelDecl - Handle the specified top-level declaration.
     // This is called by the parser to process every top-level Decl*.
     //
@@ -1231,21 +1260,7 @@ class CCodeGenConsumer : public ASTConsumer {
       if (Diags->hasErrorOccurred()) return true;
 
       for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
-        if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
-          const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-          if(ctype != NULL) {
-            info->lvt->addGlobalCDecl(td);
-          }
-        } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
-          info->lvt->addGlobalCDecl(fd);
-        } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
-          info->lvt->addGlobalCDecl(vd);
-        } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-          if( rd->getName().size() > 0 ) {
-            // Handle forward declaration for structs
-            info->lvt->addGlobalCDecl(rd);
-          }
-        }
+        doHandleDecl(*I);
       }
 
       if (parseOnly) return true;
