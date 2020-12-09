@@ -20,14 +20,19 @@ include Makefile.sphinx
 CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps)
 
 CHPL2RST = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) ./util/chpl2rst.py
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
-CHPL_DOC_PRIMERS_DIR = $(SOURCEDIR)/primers
-CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
-CHPL_DOC_HELLO_DIR = $(SOURCEDIR)/examples/hellos
-CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
+CHPL_DOC_PRIMERS_BUILD_DIR = build/primers
+CHPL_DOC_PRIMERS_RST_DIR = $(SOURCEDIR)/primers
+CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
-SPECSRCDIR = $(SOURCEDIR)/language/spec
+CHPL_DOC_HELLO_BUILD_DIR = ../build/examples/hellos
+CHPL_DOC_HELLO_RST_DIR = $(SOURCEDIR)/examples/hellos
+CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
+
+SPEC_BUILD_DIR = ../build/language/spec
+SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 help: help-sphinx help-source
 
@@ -57,42 +62,48 @@ man-chapel: FORCE
 source: collect-syntax module-docs primers hellos symlinks
 
 
-collect-syntax: clean-collect-syntax
+collect-syntax:
 	@echo
-	@echo "Collecting syntax from '$(SPECSRCDIR)' into '$(SPECSRCDIR)/syntax.rst'"
-	./util/collect-syntax.py rst/language/spec --outdir $(SPECSRCDIR)
+	@echo "Collecting syntax from '$(SPEC_RST_DIR)' into '$(SPEC_RST_DIR)/syntax.rst'"
+	@mkdir -p $(SPEC_BUILD_DIR)
+	@touch $(SPEC_BUILD_DIR)/syntax.rst
+	@./util/collect-syntax.py rst/language/spec --outdir $(SPEC_BUILD_DIR)
+	@$(COPY_IF_DIFFERENT) "$(SPEC_BUILD_DIR)" "$(SPEC_RST_DIR)"
 
-module-docs: clean-module-docs
+module-docs:
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
-	(cd ../modules && $(MAKE) documentation)
-	cp -f $(SOURCEDIR)/meta/modules/* $(SOURCEDIR)/modules/
-	cp -f $(SOURCEDIR)/meta/builtins/* $(SOURCEDIR)/builtins/
+	@(cd ../modules && $(MAKE) documentation)
+	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/modules" "$(SOURCEDIR)/modules"
+	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/builtins" "$(SOURCEDIR)/builtins"
 
-primers: clean-primers
+primers:
 	@echo
 	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/primers"
 	@#Note - this assumes that we are not in a release tar ball
-	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
-	$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
-	cp -f $(SOURCEDIR)/meta/primers/* $(SOURCEDIR)/primers
+	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
+	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
+	@$(COPY_IF_DIFFERENT) "$(CHPL_DOC_PRIMERS_BUILD_DIR)" "$(CHPL_DOC_PRIMERS_RST_DIR)"
+	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/primers" "$(SOURCEDIR)/primers"
 
-hellos: clean-hellos
+
+hellos:
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
-	$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../examples/hello*.chpl
-	cp -f $(SOURCEDIR)/meta/examples/* $(SOURCEDIR)/examples
+	@$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../examples/hello*.chpl
+	@$(COPY_IF_DIFFERENT) "$(CHPL_DOC_HELLO_BUILD_DIR)" "$(CHPL_DOC_HELLO_RST_DIR)"
+	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/examples" "$(SOURCEDIR)/examples"
 
-symlinks: clean-symlinks
+symlinks:
 	@echo
 	@echo "Creating symlinks"
-	ln -s $$CHPL_HOME/man/chpl.rst $(SOURCEDIR)/usingchapel/man.rst
-	ln -s $$CHPL_HOME/man/chpldoc.rst $(SOURCEDIR)/tools/chpldoc/man.rst
-	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/tools/chplvis/examples
-	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/base/examples
-	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/taskpar/examples
-	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples
-	ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples
+	@if [ ! -e $(SOURCEDIR)/usingchapel/man.rst ]; then ln -s $$CHPL_HOME/man/chpl.rst $(SOURCEDIR)/usingchapel/man.rst; fi
+	@if [ ! -e $(SOURCEDIR)/tools/chpldoc/man.rst ]; then ln -s $$CHPL_HOME/man/chpldoc.rst $(SOURCEDIR)/tools/chpldoc/man.rst; fi
+	@if [ ! -e $(SOURCEDIR)/tools/chplvis/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/tools/chplvis/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/base/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/base/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/taskpar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/taskpar/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/datapar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples; fi
+	@if [ ! -e $(SOURCEDIR)/users-guide/locality/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples; fi
 
 checkdocs: FORCE
 	$(MAKE) check
@@ -109,18 +120,21 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source
+clean: clean-source clean-build clean-build-dir
 
-cleanall: clean-source
+cleanall: clean-source clean-build clean-build-dir
 
-clobber: clean-source clean-build
+clobber: clean-source clean-build clean-build-dir
 
-clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks
+clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks clean-collect-syntax
+
+clean-build-dir: FORCE
+	rm -rf ../build/doc
 
 clean-collect-syntax: FORCE
 	@echo
 	@echo "Removing generated RST file for syntax productions"
-	touch $(SPECSRCDIR)/syntax.rst && rm $(SPECSRCDIR)/syntax.rst
+	touch $(SPEC_RST_DIR)/syntax.rst && rm $(SPEC_RST_DIR)/syntax.rst
 
 clean-module-docs: FORCE
 	@echo
