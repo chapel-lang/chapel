@@ -3271,10 +3271,22 @@ void makeBinaryLLVM(void) {
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  std::string moduleFilename = genIntermediateFilename("chpl__module.o");
-  std::string preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
-  std::string opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
-  std::string opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+
+  if (gCodegenGPU == false) {
+    moduleFilename = genIntermediateFilename("chpl__module.o");
+    preOptFilename = genIntermediateFilename("chpl__module-nopt.bc");
+    opt1Filename = genIntermediateFilename("chpl__module-opt1.bc");
+    opt2Filename = genIntermediateFilename("chpl__module-opt2.bc");
+  } else {
+    moduleFilename = genIntermediateFilename("chpl__gpu_module.o");
+    preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
+    opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
+    opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
+  }
 
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
@@ -3499,6 +3511,11 @@ void makeBinaryLLVM(void) {
 
   //finishClang is before the call to the debug finalize
   deleteClang(clangInfo);
+
+  // Just make the .o file for GPU code
+  if (gCodegenGPU) {
+    return;
+  }
 
   std::string options = "";
 

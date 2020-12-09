@@ -2552,20 +2552,19 @@ static void codegenPartTwo() {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
 
-  // Don't want to link yet if we're doing the GPU part
-  if (gCodegenGPU == false) {
-    if(fLlvmCodegen) {
+  if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
-      makeBinaryLLVM();
+    makeBinaryLLVM();
 #endif
-    } else {
-      const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
-      const char* command = astr(astr(CHPL_MAKE, " "),
-                                 makeflags,
-                                 getIntermediateDirName(), "/Makefile");
-      mysystem(command, "compiling generated source");
-    }
+  } else {
+    const char* makeflags = printSystemCommands ? "-f " : "-s -f ";
+    const char* command = astr(astr(CHPL_MAKE, " "),
+                               makeflags,
+                               getIntermediateDirName(), "/Makefile");
+    mysystem(command, "compiling generated source");
+  }
 
+  if (gCodegenGPU == false) {
     if (fLibraryCompile && fLibraryPython) {
       codegen_make_python_module();
     }
