@@ -902,6 +902,73 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
 }
 
 /*
+  Returns the inverse of ``A`` square matrix A.
+
+
+    .. note::
+
+      This procedure is used when `lapackImpl=off` is used and currently
+      does not support inplace inversion of matrices
+*/
+proc inv(ref A: [?Adom] ?eltType) throws
+where !usingLAPACK
+{
+  if !isSquare(A) then
+    halt("Matrix inverse only supports square matrices");
+
+  const n = A.shape(0);
+  var ACopy = A;
+
+  var i = 1;
+  ref ident = eye(n);
+
+  while i <= n {
+    if isclose(ACopy[i,i], 0.0)  {
+      var j = i + 1;
+      while j <= n && isclose(ACopy[j,i], 0.0) do j += 1;
+      if j <= n {
+        ACopy[i, ..] <=> ACopy[j, ..];
+        ident[i, ..] <=> ident[j, ..];
+      } else throw new LinearAlgebraError("Cannot compute\
+                          inverse of singular matrix");
+    }
+    for j in i+1..n {
+      var normalVal = ACopy[j, i] / ACopy[i, i];
+      ACopy[j, ..] -= normalVal * ACopy[i, ..];
+      ident[j, ..] -= normalVal * ident[i, ..];
+    }
+    i += 1;
+  }
+
+  i = n;
+
+  while i >= 1 {
+    if isclose(ACopy[i,i], 0.0)  {
+      var j = i + 1;
+      while j >= 1 && isclose(ACopy[j,i], 0.0) do j -= 1;
+      if j >= 1 {
+        ACopy[i, ..] <=> ACopy[j, ..];
+        ident[i, ..] <=> ident[j, ..];
+      } else throw new LinearAlgebraError("Cannot compute\
+                          inverse of singular matrix");
+    }
+    for j in 1..i-1 by -1 {
+      var normalVal = ACopy[j, i] / ACopy[i, i];
+      ACopy[j, ..] -= normalVal * ACopy[i, ..];
+      ident[j, ..] -= normalVal * ident[i, ..];
+    }
+    i -= 1;
+  }
+
+  ref diagVec = diag(ACopy);
+  forall (x1, x2) in zip(diagVec.domain, 1..n) {
+    ident[x2, ..] /= diagVec[x1];
+  }
+
+  return ident;
+}
+
+/*
   Return the matrix ``A`` to the ``bth`` power, where ``b`` is a positive
   integral type.
 
