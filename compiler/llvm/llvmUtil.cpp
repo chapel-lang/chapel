@@ -563,6 +563,17 @@ void print_llvm(llvm::Value* v)
   fprintf(stderr, "\n");
 }
 
+void print_llvm(llvm::Module* m)
+{
+  if (m == NULL)
+    fprintf(stderr, "NULL");
+  else
+    m->print(llvm::dbgs(), NULL);
+
+  fprintf(stderr, "\n");
+}
+
+
 
 #endif
 
