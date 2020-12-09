@@ -160,7 +160,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelIO.chpl                \
 	internal/ChapelIteratorSupport.chpl   \
 	internal/ChapelLocale.chpl            \
-	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
 	internal/Bytes.chpl                   \
 	internal/String.chpl                  \
