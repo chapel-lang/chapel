@@ -60,26 +60,32 @@ checkConstLoops() {
   }
 }
 
+static bool formalIsClass(Expr* arg) {
+  ArgSymbol* formal = toArgSymbol(toDefExpr(arg)->sym);
+  Type* formalType = formal->type->getValType();
+  return (isOwnedOrSharedOrBorrowed(formalType) ||
+          isUnmanagedClass(formalType));
+}
+
 static void checkForIllegalClassOps(FnSymbol* fn) {
   if (fn->getModule()->modTag == MOD_USER) {
     if (fn->formals.length == 2 &&
         (strcmp(fn->name, "=") == 0 ||
          strcmp(fn->name, "==") == 0 ||
          strcmp(fn->name, "!=") == 0)) {
-      ArgSymbol* formal = toArgSymbol(toDefExpr(fn->formals.get(1))->sym);
-      Type* formalType = formal->type->getValType();
-      ArgSymbol* formal2 = toArgSymbol(toDefExpr(fn->formals.get(2))->sym);
-      Type* formal2Type = formal2->type->getValType();
+      bool arg1IsClass = formalIsClass(fn->formals.get(1));
+      bool arg2IsClass = formalIsClass(fn->formals.get(2));
+      
       //
       // This checks that both arguments are classes, permitting cases
       // when a class is assigned to/from or compared with some
       // non-class type; but maybe we should outlaw those cases too?
       //
-      if ((isOwnedOrSharedOrBorrowed(formalType) ||
-           isUnmanagedClass(formalType)) &&
-          (isOwnedOrSharedOrBorrowed(formal2Type) ||
-           isUnmanagedClass(formal2Type))) {
+      if (arg1IsClass || arg2IsClass) {
         USR_FATAL_CONT(fn, "Can't overload '%s' for class types", fn->name);
+        if (!(arg1IsClass && arg2IsClass)) {
+          USR_PRINT(fn, "If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830");
+        }
       }
     }
   }

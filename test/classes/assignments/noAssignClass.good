@@ -9,3 +9,7 @@ noAssignClass.chpl:73: error: Can't overload '=' for class types
 noAssignClass.chpl:77: error: Can't overload '=' for class types
 noAssignClass.chpl:81: error: Can't overload '=' for class types
 noAssignClass.chpl:85: error: Can't overload '=' for class types
+noAssignClass.chpl:89: error: Can't overload '=' for class types
+noAssignClass.chpl:89: note: If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830
+noAssignClass.chpl:93: error: Can't overload '=' for class types
+noAssignClass.chpl:93: note: If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830
