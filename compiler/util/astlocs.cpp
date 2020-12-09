@@ -67,7 +67,7 @@ astlocMarker::~astlocMarker() {
 //   task function in an inlined function
 //     in non-user modules
 //     (unless preserveInlinedLineNumbers==true)
-//   not in a function in beginning with chpl__
+//   not in a function beginning with chpl__
 //     (unless developer==true or preserveInlinedLineNumbers==true)
 // to use for line number reporting.
 //
