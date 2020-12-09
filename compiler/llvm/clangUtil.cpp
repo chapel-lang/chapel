@@ -2147,6 +2147,10 @@ void runClang(const char* just_parse_filename) {
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
+    // Need to pass this flag so atomics header will compile
+    clangOtherArgs.push_back("--std=c++11");
+    // Need to select CUDA mode in embedded clang to
+    // activate the GPU target
     clangOtherArgs.push_back("-x");
     clangOtherArgs.push_back("cuda");
   }
