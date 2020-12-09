@@ -106,6 +106,8 @@ void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
 
+void print_clang(clang::Decl* d);
+
 #endif // HAVE_LLVM
 
 #endif //CLANGUTIL_H

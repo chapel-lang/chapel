@@ -3891,4 +3891,13 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
+void print_clang(clang::Decl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
+}
+
 #endif
