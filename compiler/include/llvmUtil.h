@@ -70,6 +70,7 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
+void print_llvm(llvm::Module* m);
 
 #endif //HAVE_LLVM
 
