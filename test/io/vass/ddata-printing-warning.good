@@ -1,2 +1,3 @@
 $CHPL_HOME/modules/standard/IO.chpl:n: warning: printing _ddata class
 ddata-printing-warning.chpl:n: error:      *** READ THIS -- IMPORTANT ***     When updating this .good, also update test/distributions/deitz/test_block_representation*.good and any other .good files with the 'printing _ddata class' warning
+$CHPL_HOME/modules/standard/IO.chpl:n: In function '_write_one_internal':
