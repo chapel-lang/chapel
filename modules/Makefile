@@ -38,7 +38,7 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC_BUILD=${CHPL_MAKE_HOME}/doc/build
+DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
 DOC_RST=${CHPL_MAKE_HOME}/doc/rst
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
@@ -180,17 +180,22 @@ documentation: $(SYS_CTYPES_MODULE_DOC)
 	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
 	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}
 	@echo "Copying generated module documentation to ${DOC_BUILD}"
+	@rm -rf {DOC_BUILD}/modules
+	@rm -rf {DOC_BUILD}/builtins
 	@mkdir -p ${DOC_BUILD}/modules
 	@mkdir -p ${DOC_BUILD}/builtins
 	@cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
+	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
 	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
+	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
 	@echo "Updating generated module documentation in ${DOC_RST}"
 	@mkdir -p ${DOC_RST}/modules
 	@mkdir -p ${DOC_RST}/builtins
-	@${COPY_IF_DIFFERENT} ${DOC_BUILD} ${DOC_RST}
+	@${COPY_IF_DIFFERENT} ${DOC_BUILD}/modules ${DOC_RST}/modules
+	@${COPY_IF_DIFFERENT} ${DOC_BUILD}/builtins ${DOC_RST}/builtins
 	@echo "Removing generated files and directories in modules/"
 	@rm -rf ./docs
 	@rm -rf ${MODULE_SPHINX}

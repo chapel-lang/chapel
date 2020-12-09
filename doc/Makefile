@@ -23,15 +23,18 @@ CHPL2RST = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) ./util/chpl2rst.py
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 
-CHPL_DOC_PRIMERS_BUILD_DIR = build/primers
+CHPL_DOC_PRIMERS_BUILD_DIR = ../build/doc/primers
 CHPL_DOC_PRIMERS_RST_DIR = $(SOURCEDIR)/primers
 CHPL2RSTOPTS = --output=rst --prefix=$(CHPL_DOC_PRIMERS_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
-CHPL_DOC_HELLO_BUILD_DIR = ../build/examples/hellos
-CHPL_DOC_HELLO_RST_DIR = $(SOURCEDIR)/examples/hellos
+CHPL_DOC_EXAMPLES_BUILD_DIR = ../build/doc/examples
+CHPL_DOC_EXAMPLES_RST_DIR = $(SOURCEDIR)/examples
+
+CHPL_DOC_HELLO_BUILD_DIR = $(CHPL_DOC_EXAMPLES_BUILD_DIR)/hellos
+CHPL_DOC_HELLO_RST_DIR = $(CHPL_DOC_EXAMPLES_RST_DIR)/hellos
 CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_BUILD_DIR) --link=$(WEB_DOC_DIR)$(WEB_DOC_VERSION)
 
-SPEC_BUILD_DIR = ../build/language/spec
+SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 help: help-sphinx help-source
@@ -43,7 +46,7 @@ help-source:
 	@echo "  man-chapel     to invoke 'make man'"
 	@echo "  module-docs    to invoke 'make documentation' in ../modules"
 	@echo "  primers        to generate primer docs in $(SOURCEDIR)/primers/"
-	@echo "  hellos         to generate hellos docs in $(SOURCEDIR)/examples/"
+	@echo "  examples       to generate hellos docs in $(SOURCEDIR)/examples/"
 	@echo "  symlinks       to create symlinks from ../man and ../test"
 	@echo "  clean          to remove all generated files excluding ../build/doc"
 	@echo "  clean-build    to remove all generated files in ../build/doc"
@@ -59,7 +62,7 @@ man-chapel: FORCE
 	$(MAKE) man
 
 
-source: collect-syntax module-docs primers hellos symlinks
+source: collect-syntax module-docs primers examples symlinks
 
 
 collect-syntax:
@@ -68,31 +71,38 @@ collect-syntax:
 	@mkdir -p $(SPEC_BUILD_DIR)
 	@touch $(SPEC_BUILD_DIR)/syntax.rst
 	@./util/collect-syntax.py rst/language/spec --outdir $(SPEC_BUILD_DIR)
-	@$(COPY_IF_DIFFERENT) "$(SPEC_BUILD_DIR)" "$(SPEC_RST_DIR)"
+	@$(COPY_IF_DIFFERENT) "$(SPEC_BUILD_DIR)/syntax.rst" "$(SPEC_RST_DIR)/syntax.rst"
 
 module-docs:
 	@echo
 	@echo "Generating module docs from "'$$CHPL_HOME'"/modules/ into $(SOURCEDIR)/modules"
+	@# modules/Makefile will
+	@#   store module docs in doc/rst/modules and doc/rst/builtins
+	@#   including meta/modules/* and meta/builtins/*
 	@(cd ../modules && $(MAKE) documentation)
-	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/modules" "$(SOURCEDIR)/modules"
-	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/builtins" "$(SOURCEDIR)/builtins"
 
 primers:
 	@echo
 	@echo "Generating primers from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/primers"
+	@rm -rf $(CHPL_DOC_PRIMERS_BUILD_DIR)
+	@mkdir -p $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@#Note - this assumes that we are not in a release tar ball
 	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*.chpl
 	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
-	@$(COPY_IF_DIFFERENT) "$(CHPL_DOC_PRIMERS_BUILD_DIR)" "$(CHPL_DOC_PRIMERS_RST_DIR)"
-	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/primers" "$(SOURCEDIR)/primers"
+	@mkdir -p $(CHPL_DOC_PRIMERS_RST_DIR)
+	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
+	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
 
 
-hellos:
+examples:
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"
+	@rm -rf $(CHPL_DOC_EXAMPLES_BUILD_DIR)
+	@mkdir -p $(CHPL_DOC_EXAMPLES_BUILD_DIR)
 	@$(CHPL2RST) $(CHPL2RSTOPTS_HELLO) ../examples/hello*.chpl
-	@$(COPY_IF_DIFFERENT) "$(CHPL_DOC_HELLO_BUILD_DIR)" "$(CHPL_DOC_HELLO_RST_DIR)"
-	@$(COPY_IF_DIFFERENT) "$(SOURCEDIR)/meta/examples" "$(SOURCEDIR)/examples"
+	@cp -f $(SOURCEDIR)/meta/examples/* $(CHPL_DOC_EXAMPLES_BUILD_DIR)
+	@mkdir -p $(CHPL_DOC_EXAMPLES_RST_DIR)
+	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_EXAMPLES_BUILD_DIR) $(CHPL_DOC_EXAMPLES_RST_DIR)
 
 symlinks:
 	@echo
@@ -126,7 +136,7 @@ cleanall: clean-source clean-build clean-build-dir
 
 clobber: clean-source clean-build clean-build-dir
 
-clean-source: clean-module-docs clean-primers clean-hellos clean-symlinks clean-collect-syntax
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
@@ -147,7 +157,7 @@ clean-primers: FORCE
 	@echo "Removing primers generated into $(CHPL_DOC_HELLO_DIR)"
 	rm -rf $(SOURCEDIR)/primers/
 
-clean-hellos: FORCE
+clean-examples: FORCE
 	@echo
 	@echo "Removing hellos generated into $(CHPL_DOC_HELLO_DIR)"
 	rm -rf $(SOURCEDIR)/examples/
