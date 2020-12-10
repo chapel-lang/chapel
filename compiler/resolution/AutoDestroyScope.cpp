@@ -437,8 +437,13 @@ void AutoDestroyScope::variablesDestroy(Expr*      refStmt,
                                        var->hasFlag(FLAG_FORMAL_TEMP_OUT);
           // No deinit for out formal returns - deinited at call site
           if (outIntentFormalReturn == false) {
-            bool inTupleDeserializer = false;
 
+            // Engin: A workaround that I am not proud of
+            // The only tuple deserializer we have shouldn't free any
+            // temporaries created in there, so this avoids that. TODO what is a
+            // more principled way of moving a local allocation into the
+            // variable that captures the return value?
+            bool inTupleDeserializer = false;
             if (FnSymbol *parentFn = toFnSymbol(var->defPoint->parentSymbol)) {
               if (strcmp(parentFn->name, "chpl__deserialize") == 0) {
                 if (parentFn->retType->symbol->hasFlag(FLAG_TUPLE)) {

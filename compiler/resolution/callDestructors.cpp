@@ -883,9 +883,9 @@ static FnSymbol *getAutoDestroyForViewField(Symbol *field, AggregateType *baseTy
           if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
             if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->getValType())) {
 
-              std::cout << "Returning autoDestroy for reffield\n";
-              nprint_view(field);
-              nprint_view(baseType);
+              //std::cout << "Returning autoDestroy for reffield\n";
+              //nprint_view(field);
+              //nprint_view(baseType);
               return autoDestroyFn;
             }
           }
@@ -901,12 +901,9 @@ static void
 fixupDestructors() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_DESTRUCTOR)) {
-      std::cout << "Looking at fn " << fn->id << std::endl;
       if (fn->_this == NULL) {
-        std::cout << "Nope, this is NULL\n";
         continue;
       }
-      std::cout << "Still looking\n";
       AggregateType* ct = toAggregateType(fn->_this->getValType());
       INT_ASSERT(ct);
 
@@ -919,26 +916,12 @@ fixupDestructors() {
       for_fields_backward(field, ct) {
         SET_LINENO(field);
 
-        std::cout << "fixupDestructor field\n";
-
-
-
-        nprint_view(field);
-
-
-        if (fn->id == 1710513) {
-          gdbShouldBreakHere();
-        }
-
-        if (field->type->hasDestructor()) {
-            std::cout << "in if1\n";
+        if (field->type->hasDestructor() == true) {
           AggregateType* fct = toAggregateType(field->type);
 
           INT_ASSERT(fct);
 
           if (!isClass(fct) && !field->hasFlag(FLAG_NO_AUTO_DESTROY)) {
-            std::cout << "in if2\n";
-            std::cout << "fn id" << fn->id << std::endl;
             bool       useRefType = !isRecordWrappedType(fct);
             VarSymbol* tmp        = newTemp("_field_destructor_tmp_",
                                             useRefType ? fct->refType : fct);
@@ -957,8 +940,6 @@ fixupDestructors() {
               fn->insertIntoEpilogue(new CallExpr(field->type->getDestructor(),
                                                   tmp));
             }
-
-
           }
 
         } else if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->type)) {
@@ -993,10 +974,6 @@ fixupDestructors() {
             fn->insertIntoEpilogue(new CondStmt(new SymExpr(unownedView),
                                                 thenBlock));
           }
-
-
-
-
         }
       }
 

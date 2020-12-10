@@ -9412,76 +9412,45 @@ static void resolveSerializers() {
       if (AggregateType* _at = toAggregateType(ts->type)) {
 
 
-          AggregateType *at = _at;
+        AggregateType *at = _at;
 
-          if (ts->hasFlag(FLAG_TUPLE)) {
-            bool allRVF = true;
-            for_fields(field, at) {
-              if (strcmp(field->name, "size") != 0) {
-                Type* fieldType = field->getValType();
-                if (field->isRef()) {
-                  //std::cout << "Field is ref\n";
-                }
-                else {
-                  //std::cout << "Field is not ref\n";
-                  allRVF=false;
-                  break;
-                }
-                if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-                  allRVF = false;
-                  break;
-                }
-                else {
-                  //printf("...this field RVFs: ");
-                  //list_view(field);
-                  //list_view(fieldType);
-                }
+        if (ts->hasFlag(FLAG_TUPLE)) {
+          bool allRVF = true;
+          for_fields(field, at) {
+            if (strcmp(field->name, "size") != 0) {
+              Type* fieldType = field->getValType();
+              if (field->isRef()) {
+                //std::cout << "Field is ref\n";
+              }
+              else {
+                //std::cout << "Field is not ref\n";
+                allRVF=false;
+                break;
+              }
+              if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
+                allRVF = false;
+                break;
+              }
+              else {
+                //printf("...this field RVFs: ");
+                //list_view(field);
+                //list_view(fieldType);
               }
             }
-            if (allRVF) {
-              fprintf(stderr, "Found an all-RVF tuple type %s\n", ts->name);
-              ts->addFlag(FLAG_ALWAYS_RVF);
-            }
           }
-          if ((!ts->hasFlag(FLAG_TUPLE) && isRecord(at) == true) || 
-              (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_ALWAYS_RVF))) {
-            bool success = resolveSerializeDeserialize(at);
-            if (success) {
-              std::cout << "Resolving the broadcaster for\n";
-              nprint_view(at);
-              resolveBroadcasters(at);
-              std::cout << "resolveBroadcaster returned\n";
-            }
+          if (allRVF) {
+            ts->addFlag(FLAG_ALWAYS_RVF);
           }
+        }
+        if ((!ts->hasFlag(FLAG_TUPLE) && isRecord(at) == true) || 
+            (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_ALWAYS_RVF))) {
+          bool success = resolveSerializeDeserialize(at);
+          if (success) {
+            resolveBroadcasters(at);
+          }
+        }
       }
     }
-    //else if (ts->hasFlag(FLAG_ITERATOR_RECORD)) {
-      //if (AggregateType *at = toAggregateType(ts->type)) {
-        //if (at->numFields() >= 2) {
-          //bool allRVF = true;
-          //printf("Considering this iterator record: %s\n", ts->name);
-          //for_fields(field, at) {
-            //printf("Looking at field: %s\n", field->name);
-            //Type* fieldType = field->getValType();
-            //if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-              //printf("...but this field doesn't RVF: ");
-              //list_view(field);
-              //list_view(fieldType);
-              //allRVF = false;
-              //break;
-            //}
-          //}
-          //if (allRVF) {
-            //fprintf(stderr, "Found an all-RVF iterator record type %s\n", ts->name);
-            ////ts->addFlag(FLAG_ALWAYS_RVF);
-          //}
-        //}
-      //}
-      //else {
-        //printf("Not aggregate\n");
-        //nprint_view(ts);
-      //}
-    //}
   }
 
   resolveAutoCopies();

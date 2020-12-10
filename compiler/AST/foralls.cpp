@@ -886,27 +886,17 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
 
 #include "view.h"
 
+// I don't think this does anything meaningful at the moment
 static void tryToMakeForwardable(VarSymbol* iterRec, CallExpr* buildTup) {
   int numElems = buildTup->numActuals();
-  printf("Considering forwarding this tuple:\n");
   bool allForwardable = true;
   for (int i=1; i<=numElems; i++) {
-    list_view(buildTup->get(i));
     if (!buildTup->get(1)->typeInfo()->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-      printf("doesn't have always RVF\n");
       allForwardable = false;
-    } else {
-      printf("has always RVF\n");
     }
   }
-  //printf("---\n");
   if (allForwardable) {
-    printf("Looks like we can forward this tuple:\n");
-    for (int i=1; i<=numElems; i++) {
-      list_view(buildTup->get(i));
-    }
     iterRec->addFlag(FLAG_ALWAYS_RVF);
-    printf("---\n");
   }
 
 }

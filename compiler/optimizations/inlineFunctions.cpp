@@ -194,10 +194,6 @@ static void inlineCall(CallExpr* call) {
   FnSymbol*  fn    = call->resolvedFunction();
   BlockStmt* bCopy = copyFnBodyForInlining(call, fn, stmt);
 
-  if (stmt->id == 2728603) {
-    gdbShouldBreakHere();
-  }
-
   // Transfer most of the statements from the body to immediately before
   // the statement that that contains the call.
   // The final statement, which be some form of return, is handled specially.
