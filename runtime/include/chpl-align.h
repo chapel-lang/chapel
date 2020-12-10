@@ -27,6 +27,10 @@
 #include <stdint.h>
 #include <limits.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // If we have a mask representing 2^n - 1,
 // round an offset down to a multiple of 2^n.
 static inline
@@ -53,5 +57,8 @@ unsigned char* round_up_to_mask_ptr(unsigned char* p, uintptr_t mask)
   return (unsigned char*) round_up_to_mask((uintptr_t)p, mask);
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_align_h_

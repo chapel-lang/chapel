@@ -35,6 +35,10 @@
 
 #include "chpl-comp-detect-macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // chpl_bitops_popcount_*
 // ----------------------
 // C implementations from Bithacks: 'Counting bits set, in parallel'
@@ -245,4 +249,9 @@ CHPL_BITOPS_ROTR(64)
 
 #undef CHPL_BITOPS_ROTR
 #undef UI
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _chpl_bitops_h_

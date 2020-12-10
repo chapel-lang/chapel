@@ -29,6 +29,10 @@
 #include "chpl-comm-task-decls.h"
 #include "chpl-tasks-impl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This holds per-runtime-task information the tasking layer maintains
 // on behalf of other runtime layers.  Its components are intended to
@@ -68,6 +72,10 @@ typedef struct chpl_task_bundle {
 } chpl_task_bundle_t;
 
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
+
+#ifdef __cplusplus
+}
+#endif
 
 //
 // Interface functions

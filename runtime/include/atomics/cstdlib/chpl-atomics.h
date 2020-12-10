@@ -62,6 +62,10 @@
   #error "The cstdlib atomics need at least C11.  Use intrinsics or locks."
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef Atomic(_real64) atomic__real64;
 typedef Atomic(_real32) atomic__real32;
 
@@ -273,5 +277,9 @@ static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
 static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
   atomic_store_explicit(lock, false, memory_order_release);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_atomics_h_

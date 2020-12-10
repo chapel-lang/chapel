@@ -25,6 +25,10 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Returns the string value of a CHPL_RT_* environment variable, with
 // a default.
@@ -72,5 +76,9 @@ size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
 
 void chpl_env_set(const char*, const char*, int);
 void chpl_env_set_uint(const char*, uint64_t, int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

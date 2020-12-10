@@ -27,6 +27,10 @@
 
 #include "chpl-comm-callbacks.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This is here for use in the runtime comm code to quickly
 // determine if the code needs to call any callbacks:
@@ -47,5 +51,9 @@ int chpl_comm_have_callbacks(chpl_comm_cb_event_kind_t event_kind) {
 }
 
 void chpl_comm_do_callbacks (const chpl_comm_cb_info_t *cb_data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -23,6 +23,10 @@
 
 #include <pthread.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifdef __GNUC__
 // For GCC and CLANG, where we know there is __thread, use it instead
 // of pthread_get/setspecific since __thread appears to be 2x faster.
@@ -66,5 +70,8 @@ static inline void chpl_tlschk(int got, int expect)
 # define CHPL_TLS_DELETE(name)          chpl_tlschk(pthread_key_delete(name), 0)
 #endif // ifdef CHPL_TLS
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

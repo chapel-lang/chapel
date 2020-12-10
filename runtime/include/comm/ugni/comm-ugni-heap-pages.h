@@ -32,6 +32,10 @@
 #include "chplrt.h"
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 size_t chpl_comm_ugni_getSysPageSize(void);
 size_t chpl_comm_ugni_getHeapPageSize(void);
 
@@ -67,6 +71,10 @@ char* chpl_comm_ugni_jemalloc_conf_ev_name(void) {
 #else
 static inline
 char* chpl_comm_ugni_jemalloc_conf_ev_name(void) { return "MALLOC_CONF"; }
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif // _comm_ugni_heap_pages_h_

@@ -25,6 +25,10 @@
 
 #include "chpl-cache.h" // for chpl_cache_release, chpl_cache_acquire
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // These functions support memory consistency with the remote
 // data cache. They do not need to do anything if the cache is
 // not enabled.
@@ -120,5 +124,8 @@ void chpl_rmem_consist_fence(memory_order order, int ln, int32_t fn) {
   }
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

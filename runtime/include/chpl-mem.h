@@ -33,6 +33,9 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* The names and arguments for these functions are part
    of Chapel's user-facing interface because they are
@@ -52,11 +55,19 @@ void* chpl_pvalloc(size_t size);
 // returns 0 if valid, EINVAL otherwise
 int chpl_posix_memalign_check_valid(size_t alignment);
 
+#ifdef __cplusplus
+}
+#endif
+
 // runtime/include/mem/*/chpl-mem-impl.h defines
 // chpl_calloc, chpl_malloc, chpl_realloc, chpl_free
 // with the same signatures as the standard functions
 // and no additional error checking.
 #include "chpl-mem-impl.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void chpl_mem_init(void);
 void chpl_mem_exit(void);
@@ -180,6 +191,10 @@ void chpl_mem_layerExit(void);
 void* chpl_mem_layerAlloc(size_t, int32_t lineno, int32_t filename);
 void* chpl_mem_layerRealloc(void*, size_t, int32_t lineno, int32_t filename);
 void chpl_mem_layerFree(void*, int32_t lineno, int32_t filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #else // LAUNCHER
 
