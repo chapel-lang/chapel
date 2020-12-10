@@ -76,67 +76,6 @@ module ChapelTuple {
     return false;
   }
   
-  proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
-    //    compilerWarning("Resolving _tuple.chpl__serialize() for " + this.type:string);
-    compilerWarning("In chpl__serialize() for " + __primitive("static typeof", this):string);
-    return (this[0].chpl__serialize(), this[1].chpl__serialize());
-  }
-
-  //pragma "build tuple"
-  //pragma "no copy return"
-  //pragma "do not allow ref"
-  //pragma "last resort"
-  //proc type _tuple.chpl__deserialize(data) where
-            //!isHomogeneousTupleOfAliasingArrays(this) && false {
-    //compilerWarning("YYthis.type = " + __primitive("static typeof", this):string);
-    //type pretend = __primitive("static typeof", this);
-    ////    ref p1 = pretend(0).chpl__deserialize(data(0));
-    ////    ref p2 = pretend(1).chpl__deserialize(data(1));
-    ////    return (p1, p2);
-
-    //type tmpType0 = __primitive("static typeof", pretend(0));
-    //type tmpType1 = __primitive("static typeof", pretend(1));
-
-    
-    ////return (__primitive("deref", this[0].chpl__deserialize(data(0))),
-            ////__primitive("deref", this[1].chpl__deserialize(data(1))));
-    ////return (this[0].chpl__deserialize(data(0)),
-            ////this[1].chpl__deserialize(data(1)));
-    //var v1 = tmpType0.chpl__deserialize(data(0));
-    //ref v2 = tmpType1.chpl__deserialize(data(1));
-
-    //compilerWarning("v1.type = ", v1.type:string);
-    //compilerWarning("v2.type = ", v2.type:string);
-    //compilerWarning("v1.typeof = ", __primitive("static typeof", v1):string);
-    //compilerWarning("v2.typeof = ", __primitive("static typeof", v2):string);
-    //compilerWarning("tmpType0 = ", tmpType0:string);
-    //compilerWarning("tmpType1 = ", tmpType1:string);
-
-    //return     (tmpType0.chpl__deserialize(data(0)),
-                //tmpType1.chpl__deserialize(data(1)));
-    ////ref ret2 =  (tmpType0.chpl__deserialize(data(0)),
-                ////tmpType1.chpl__deserialize(data(1)));
-
-    ////var ret3 = (v1, v2);
-
-    ////var ret3 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
-                ////tmpType1.chpl__deserialize(data(1)));
-    ////ref ret4 =  _build_tuple_always_allow_ref(tmpType0.chpl__deserialize(data(0)),
-                ////tmpType1.chpl__deserialize(data(1)));
-
-    ////compilerWarning("ret.type = ", ret.type:string);
-    ////compilerWarning("ret.typeof = ", __primitive("static typeof", ret):string);
-    ////compilerWarning("ret2.type = ", ret2.type:string);
-    ////compilerWarning("ret2.typeof = ", __primitive("static typeof", ret2):string);
-    ////compilerWarning("ret3.type = ", ret3.type:string);
-    ////compilerWarning("ret3.typeof = ", __primitive("static typeof", ret3):string);
-    ////compilerWarning("ret4.type = ", ret.type:string);
-    ////compilerWarning("ret4.typeof = ", __primitive("static typeof", ret):string);
-
-
-    ////return ret;
-  //}
-
   proc isHomogeneousTupleOfAliasingArrays(type t) param {
     //var dummy: t;
     if isHomogeneousTuple(t) {
@@ -158,41 +97,26 @@ module ChapelTuple {
     return false;
   }
 
+  proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
+    //    compilerWarning("Resolving _tuple.chpl__serialize() for " + this.type:string);
+    //compilerWarning("In chpl__serialize() for " + __primitive("static typeof", this):string);
+    return (this[0].chpl__serialize(), this[1].chpl__serialize());
+  }
+
+
   //pragma "build tuple"
   pragma "no copy return"
   //pragma "do not allow ref"
-  proc type _tuple.chpl__deserialize(data) where 
-            isHomogeneousTupleOfAliasingArrays(this) {
-              compilerWarning("resolved the new deserializer");
-    compilerWarning("XXthis.type = " + __primitive("static typeof", this):string);
-    type pretend = __primitive("static typeof", this);
-    type tmpType0 = __primitive("static typeof", pretend(0));
-    type tmpType1 = __primitive("static typeof", pretend(1));
-
-    
-    //return (__primitive("deref", this[0].chpl__deserialize(data(0))),
-            //__primitive("deref", this[1].chpl__deserialize(data(1))));
-    //return (this[0].chpl__deserialize(data(0)),
-            //this[1].chpl__deserialize(data(1)));
-    //ref v1 = tmpType0.chpl__deserialize(data(0));
-    //ref v2 = tmpType1.chpl__deserialize(data(1));
-
-    //compilerWarning("v1.type = ", v1.type:string);
-    //compilerWarning("v2.type = ", v2.type:string);
-    //compilerWarning("v1.typeof = ", __primitive("static typeof", v1):string);
-    //compilerWarning("v2.typeof = ", __primitive("static typeof", v2):string);
-    compilerWarning("tmpType0 = ", tmpType0:string);
-    compilerWarning("tmpType1 = ", tmpType1:string);
-
-    //pragma "no auto destroy"
-    //ref ret0 = tmpType0.chpl__deserialize(data(0));
-
-    //pragma "no auto destroy"
-    //ref ret1 = tmpType1.chpl__deserialize(data(1));
-
-    //return (ret0, ret1);
+  proc type _tuple.chpl__deserialize(data) where isHomogeneousTupleOfAliasingArrays(this) {
     return (this[0].chpl__deserialize(data(0)),
             this[1].chpl__deserialize(data(1)));
+              //compilerWarning("resolved the new deserializer");
+    //compilerWarning("XXthis.type = " + __primitive("static typeof", this):string);
+    //type pretend = __primitive("static typeof", this);
+    //type tmpType0 = __primitive("static typeof", pretend(0));
+    //type tmpType1 = __primitive("static typeof", pretend(1));
+
+    
     //return _build_tuple_noref(v1, v2);
     //ref ret2 =  (tmpType0.chpl__deserialize(data(0)),
                 //tmpType1.chpl__deserialize(data(1)));
@@ -245,12 +169,6 @@ module ChapelTuple {
   pragma "build tuple type"
   inline proc _build_tuple_noref(type t...) type {
     // body inserted during generic instantiation
-  }
-
-  pragma "do not allow ref"
-  pragma "build tuple"
-    inline proc _build_tuple_noref(x...) {
-      return x;
   }
 
   // tuple value allowing refs (ref actuals)

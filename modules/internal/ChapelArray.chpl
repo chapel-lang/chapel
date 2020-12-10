@@ -2480,7 +2480,12 @@ module ChapelArray {
     pragma "no copy return"
     proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
-      return new _array(nullPid, arrinst, _unowned=true);
+      //if this.isView() {
+        //return new _array(nullPid, arrinst, _unowned=false);
+      //}
+      //else {
+        return new _array(nullPid, arrinst, _unowned=true);
+      //}
     }
 
     proc chpl__promotionType() type {
@@ -2786,7 +2791,6 @@ module ChapelArray {
       // underlying array
       d._value.add_arr(a, locking=true, addToList=false);
 
-      //type t = chpl__buildArrayRuntimeType(a.dom, a.eltType);
       return _newArray(a);
     }
 
@@ -5011,16 +5015,16 @@ module ChapelArray {
     return ret;
   }
 
-  pragma "no copy return"
-  pragma "unref fn"
-  inline proc chpl__removeref(x: []) where chpl__isArrayView(x._value) {
+  //pragma "no copy return"
+  //pragma "unref fn"
+  //inline proc chpl__removeref(x: []) where chpl__isArrayView(x._value) {
    
-    var val = x._value;
-    return new _array(val.pid, val);
+    //var val = x._value;
+    //return new _array(val.pid, val);
 
-    //return ret;
+    ////return ret;
 
-  }
+  //}
 
   //pragma "fn returns infinite lifetime"
   pragma "no copy return"

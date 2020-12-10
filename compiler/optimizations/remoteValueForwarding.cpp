@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
@@ -509,6 +510,16 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
   INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
 
   FnSymbol* dataDestroyFn = getAutoDestroy(arg->getValType());
+
+  std::cout << "Seeking destroy for\n";
+  nprint_view(arg);
+  nprint_view(deserialized);
+
+  //if (strcmp(deserialized->name, "chpl__iterLF") == 0) {
+  if (2728587 == deserialized->id){
+    gdbShouldBreakHere();
+  }
+
   if (dataDestroyFn != NULL) {
     lastExpr->insertBefore(new CallExpr(dataDestroyFn, arg));
   }
