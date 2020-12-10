@@ -42,16 +42,16 @@ module ChapelSerializedBroadcast {
 
   }
 
-  proc chpl__broadcastGlobal(type globalType, ref localeZeroGlobal : ?T, id : int)
+  proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
   where chpl__enableSerializedGlobals {
-    compilerWarning("Broadcast of type: ", globalType:string);
-    compilerWarning("Broadcast of type2: ", localeZeroGlobal.type:string);
-    compilerWarning("Broadcast of type3: ", isArray(localeZeroGlobal):string);
-    compilerWarning("Broadcast of type4: ",
-        (isArray(localeZeroGlobal) &&
-         chpl__isArrayView(localeZeroGlobal)):string);
-    compilerWarning("Broadcast of type5: ",
-                    (isTuple(T) && tupleHasView(T)):string);
+    //compilerWarning("Broadcast of type: ", globalType:string);
+    //compilerWarning("Broadcast of type2: ", localeZeroGlobal.type:string);
+    //compilerWarning("Broadcast of type3: ", isArray(localeZeroGlobal):string);
+    //compilerWarning("Broadcast of type4: ",
+        //(isArray(localeZeroGlobal) &&
+         //chpl__isArrayView(localeZeroGlobal)):string);
+    //compilerWarning("Broadcast of type5: ",
+                    //(isTuple(T) && tupleHasView(T)):string);
     //
     // BLC: The following conditional is necessary due to the use of
     // .type on localeZeroGlobal during deserialization because if it
@@ -77,13 +77,13 @@ module ChapelSerializedBroadcast {
         if here.id != root {
           pragma "no copy"
           pragma "no auto destroy"
-          //var temp = localeZeroGlobal.type.chpl__deserialize(data);
-          var temp = globalType.chpl__deserialize(data);
+          var temp = localeZeroGlobal.type.chpl__deserialize(data);
+          //var temp = globalType.chpl__deserialize(data);
           compilerWarning("temp.type: ", temp.type:string);  // array, slice
 
           const destVoidPtr = chpl_get_global_serialize_table(id);
-          //const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
-          const dest = destVoidPtr:c_ptr(globalType);
+          const dest = destVoidPtr:c_ptr(localeZeroGlobal.type);
+          //const dest = destVoidPtr:c_ptr(globalType);
           compilerWarning("dest.type: ", dest.type:string); // cptr to array,slice
           compilerWarning("dest.deref().type: ", dest.deref().type:string);
 
@@ -93,9 +93,9 @@ module ChapelSerializedBroadcast {
     }
   }
 
-  proc chpl__destroyBroadcastedGlobal(type globalType, ref localeZeroGlobal: ?T, id : int)
+  proc chpl__destroyBroadcastedGlobal(ref localeZeroGlobal: ?T, id : int)
   where chpl__enableSerializedGlobals {
-    //type globalType = localeZeroGlobal.type;
+    type globalType = localeZeroGlobal.type;
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
        (isTuple(T) && tupleHasView(T)) ||
        (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {

@@ -935,11 +935,8 @@ static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
     FnSymbol* destroyFn   = ser.destroyer;
     INT_ASSERT(broadcastFn != NULL && destroyFn != NULL);
 
-    TypeSymbol *globalTypeSym = sym->type->symbol;
-
     VarSymbol* broadcastID = new_IntSymbol(broadcastGlobalID++);
-    beforeExpr->insertAfter(new CallExpr(broadcastFn, new SymExpr(globalTypeSym),
-                                         sym, broadcastID));
+    beforeExpr->insertAfter(new CallExpr(broadcastFn, sym, broadcastID));
 
     FnSymbol* autoDestroyFn = autoDestroyMap.get(sym->type);
 
@@ -962,8 +959,7 @@ static void insertBroadcast(Expr* beforeExpr, Symbol* sym) {
       INT_ASSERT(destroyExpr != NULL);
 
       // Destroy broadcasted copies before the original.
-      destroyExpr->insertBefore(new CallExpr(destroyFn, new SymExpr(globalTypeSym),
-                                             sym, broadcastID));
+      destroyExpr->insertBefore(new CallExpr(destroyFn, sym, broadcastID));
     }
   } else {
     beforeExpr->insertAfter(new CallExpr(PRIM_PRIVATE_BROADCAST, sym));

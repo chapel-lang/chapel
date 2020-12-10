@@ -9378,13 +9378,13 @@ static void resolveBroadcasters(AggregateType* at) {
   FnSymbol* destroyFn;
   {
     SET_LINENO(tmp);
-    CallExpr* call = new CallExpr("chpl__broadcastGlobal", new SymExpr(at->symbol), tmp, new_IntSymbol(0, INT_SIZE_64));
+    CallExpr* call = new CallExpr("chpl__broadcastGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
     broadcastFn = resolveNormalSerializer(call);
     broadcastFn->addFlag(FLAG_BROADCAST_FN);
   }
   {
     SET_LINENO(tmp);
-    CallExpr* call = new CallExpr("chpl__destroyBroadcastedGlobal", new SymExpr(at->symbol), tmp, new_IntSymbol(0, INT_SIZE_64));
+    CallExpr* call = new CallExpr("chpl__destroyBroadcastedGlobal", tmp, new_IntSymbol(0, INT_SIZE_64));
     destroyFn = resolveNormalSerializer(call);
   }
   if (broadcastFn == NULL || destroyFn == NULL) {

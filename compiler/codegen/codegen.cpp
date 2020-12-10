@@ -1292,7 +1292,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
   std::vector<CallExpr*> serializeCalls;
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isResolved() && call->resolvedFunction()->hasFlag(FLAG_BROADCAST_FN)) {
-      SymExpr* se = toSymExpr(call->get(3));
+      SymExpr* se = toSymExpr(call->get(2));
       INT_ASSERT(se != NULL);
 
       VarSymbol* imm = toVarSymbol(se->symbol());
@@ -1316,7 +1316,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
       for (unsigned int i = 0; i < serializeCalls.size(); i++) {
         CallExpr* call = serializeCalls[i];
         INT_ASSERT(call != NULL);
-        SymExpr* global = toSymExpr(call->get(2));
+        SymExpr* global = toSymExpr(call->get(1));
         INT_ASSERT(isModuleSymbol(global->symbol()->defPoint->parentSymbol));
 
         const char* prefix = i == 0 ? "\n&%s" : ",\n&%s";
@@ -1332,7 +1332,7 @@ static void genGlobalSerializeTable(GenInfo* info) {
     std::vector<llvm::Constant *> global_serializeTable;
 
     for_vector(CallExpr, call, serializeCalls) {
-      SymExpr* se = toSymExpr(call->get(2));
+      SymExpr* se = toSymExpr(call->get(1));
       INT_ASSERT(se);
 
       global_serializeTable.push_back(llvm::cast<llvm::Constant>(
