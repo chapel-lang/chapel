@@ -4969,7 +4969,10 @@ size_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
 
 static
 void reportCQError(struct fid_cq* cq) {
-  struct fi_cq_err_entry err = { 0 };
+  char err_data[ofi_info->domain_attr->max_err_data];
+  struct fi_cq_err_entry err = (struct fi_cq_err_entry)
+                               { .err_data = err_data,
+                                 .err_data_size = sizeof(err_data) };
   fi_cq_readerr(cq, &err, 0);
   if (err.err == FI_ETRUNC) {
     //
