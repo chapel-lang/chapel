@@ -579,6 +579,7 @@ override proc Stencil.dsiNewRectangularDom(param rank: int, type idxType,
 // output distribution
 //
 proc Stencil.writeThis(x) throws {
+  use IO;
   x <~> "Stencil\n";
   x <~> "-------\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
@@ -824,6 +825,7 @@ iter StencilDom.these(param tag: iterKind, followThis) where tag == iterKind.fol
 // output domain
 //
 proc StencilDom.dsiSerialWrite(x) {
+  use IO;
   x <~> whole;
 }
 
@@ -1372,6 +1374,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
 // output array
 //
 proc StencilArr.dsiSerialWrite(f) {
+  use IO;
   type strType = chpl__signedType(idxType);
   var binary = f.binary();
   if dom.dsiNumIndices == 0 then return;

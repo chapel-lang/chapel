@@ -613,6 +613,7 @@ override proc Block.dsiNewSparseDom(param rank: int, type idxType,
 // output distribution
 //
 proc Block.writeThis(x) throws {
+  use IO;
   x <~> "Block" <~> "\n";
   x <~> "-------" <~> "\n";
   x <~> "distributes: " <~> boundingBox <~> "\n";
@@ -868,6 +869,7 @@ iter BlockDom.these(param tag: iterKind, followThis) where tag == iterKind.follo
 // output domain
 //
 proc BlockDom.dsiSerialWrite(x) {
+  use IO;
   x <~> whole;
 }
 

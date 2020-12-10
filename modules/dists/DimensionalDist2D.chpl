@@ -769,6 +769,7 @@ proc DimensionalDom.dimSpecifier(param dim: int) {
 //== writing
 
 proc DimensionalDom.dsiSerialWrite(f): void {
+  use IO;
   f <~> whole;
 }
 

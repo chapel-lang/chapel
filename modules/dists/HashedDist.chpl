@@ -234,6 +234,7 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
+    use IO;
     x <~> "Hashed\n";
     x <~> "-------\n";
     x <~> "distributed using: " <~> mapper <~> "\n";
@@ -458,6 +459,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   // the print method for the domain
   //
   proc dsiSerialWrite(x) {
+    use IO;
     for locDom in locDoms do
       // TODO: This doesn't work -- accesses a bad file descriptor
       //      on locDom {

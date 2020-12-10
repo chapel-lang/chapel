@@ -395,6 +395,7 @@ proc _cyclic_matchArgsShape(type rangeType, type scalarType, args) type {
 }
 
 proc Cyclic.writeThis(x) throws {
+  use IO;
   x <~> this.type:string <~> "\n";
   x <~> "------\n";
   for locid in targetLocDom do
@@ -596,6 +597,7 @@ proc CyclicDom.dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
 }
 
 proc CyclicDom.dsiSerialWrite(x) {
+  use IO;
   if verboseCyclicDistWriters {
     x <~> this.type:string <~> "\n";
     x <~> "------\n";

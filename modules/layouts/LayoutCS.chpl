@@ -615,6 +615,7 @@ class CSDom: BaseSparseDomImpl {
   }
 
   proc dsiSerialWrite(f) {
+    use IO;
     f <~> "{\n";
     if this.compressRows {
       for r in rowRange {
@@ -726,6 +727,7 @@ class CSArr: BaseSparseArrImpl {
   }
 
   proc dsiSerialWrite(f) {
+    use IO;
     if dom.compressRows {
       for r in dom.rowRange {
         const lo = dom.startIdx(r);

@@ -76,6 +76,7 @@ class Private: BaseDist {
   }
 
   proc writeThis(x) throws {
+    use IO;
     x <~> "Private Distribution\n";
   }
   // acts like a singleton
@@ -105,7 +106,7 @@ class PrivateDom: BaseRectangularDom {
       yield i;
   }
 
-  proc dsiSerialWrite(x) { x <~> "Private Domain"; }
+  proc dsiSerialWrite(x) { use IO; x <~> "Private Domain"; }
 
   proc dsiBuildArray(type eltType, param initElts:bool) {
     return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this), initElts=initElts);
@@ -286,6 +287,7 @@ iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind
 }
 
 proc PrivateArr.dsiSerialWrite(x) {
+  use IO;
   var first: bool = true;
   for i in dom {
     if first then first = !first; else x <~> " ";

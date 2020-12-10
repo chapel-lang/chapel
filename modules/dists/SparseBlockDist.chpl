@@ -229,6 +229,7 @@ class SparseBlockDom: BaseSparseDomImpl {
   // output domain
   //
   proc dsiSerialWrite(f) {
+    use IO;
     if (rank == 1) {
       f <~> "{";
       for locdom in locDoms do {
@@ -367,6 +368,7 @@ class LocSparseBlockDom {
   }
 
   proc dsiSerialWrite(w) {
+    use IO;
     mySparseBlock._value.dsiSerialWrite(w, printBrackets=false);
     // w.write(mySparseBlock); // works, but gets brackets printed out redundantly
     //    w <~> mySparseBlock;
@@ -794,6 +796,7 @@ proc LocSparseBlockArr.this(i) ref {
 // output array
 //
 proc SparseBlockArr.dsiSerialWrite(f) {
+  use IO;
   if (rank == 1) {
     f <~> "[";
     for locarr in locArr do {
