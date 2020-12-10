@@ -70,6 +70,7 @@ module ChapelStandard {
   public use Builtins;
   public use Types;
   public use Math;
+  public use VectorizingIterator;
 
   use stopInitCommDiags;  // Internal, but uses standard/CommDiagnostics
 }
