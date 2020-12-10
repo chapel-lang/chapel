@@ -22,6 +22,9 @@
 
 Basic types and utilities in support of I/O operation.
 
+.. note:: All Chapel programs automatically ``use`` this module by default.
+          An explicit ``use`` statement is not necessary.
+
 Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.

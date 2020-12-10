@@ -80,6 +80,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/ChapelIO.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
@@ -158,7 +159,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelError.chpl             \
-	internal/ChapelIO.chpl                \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
 	internal/Bytes.chpl                   \
