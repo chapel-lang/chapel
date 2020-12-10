@@ -255,9 +255,6 @@ module SharedObject {
     //   var s : shared = ownedThing;
     pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
-      if isNonNilableClass(this.type) && isNilableClass(take) then
-        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
-
       var p = take.release();
 
       this.chpl_t = if this.type.chpl_t != ?
@@ -273,6 +270,9 @@ module SharedObject {
       this.chpl_pn = rc;
 
       this.complete();
+
+      if isNonNilableClass(this.type) && isNilableClass(take) then
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
     }
 
     /*
@@ -281,12 +281,6 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init=(pragma "nil from arg" const ref src:_shared) {
-      if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
-
-      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
-
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -298,6 +292,12 @@ module SharedObject {
 
       if this.chpl_pn != nil then
         this.chpl_pn!.retain();
+
+      if isNonNilableClass(this.type) && isNilableClass(src) then
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
     }
 
     pragma "no doc"

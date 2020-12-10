@@ -199,18 +199,18 @@ module OwnedObject {
        refer to `nil` after this call.
      */
     proc init=(pragma "leaves arg nil" pragma "nil from arg" ref src:_owned) {
-      if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot create a non-nilable owned variable from a nilable class instance");
-
-      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
-
       // Use 'this.type.chpl_t' if it is set in case RHS is a subtype
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
       this.chpl_p = src.release();
       this.complete();
+
+      if isNonNilableClass(this.type) && isNilableClass(src) then
+        compilerError("cannot create a non-nilable owned variable from a nilable class instance");
+
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
     }
 
     pragma "no doc"
