@@ -27,6 +27,7 @@ end of module search dirs
   $CHPL_HOME/modules/standard/Builtins.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl
+  $CHPL_HOME/modules/standard/VectorizingIterator.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
   $CHPL_HOME/modules/standard/Reflection.chpl
