@@ -23,6 +23,10 @@
 
 #include "qio.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // TODO: it would be nicer if these all had "plugin" in their name
 
 // create a plugin channel to attach to the qio channel
@@ -48,5 +52,8 @@ syserr chpl_qio_get_locales_for_region(void* file, int64_t start, int64_t end, v
 
 // close a file
 syserr chpl_qio_file_close(void* file);
+#ifdef __cplusplus
+}
+#endif
 
 #endif

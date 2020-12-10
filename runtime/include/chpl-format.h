@@ -23,10 +23,18 @@
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // snprintf() a size as nnn[KMG]
 //
 int chpl_snprintf_KMG_z(char* buf, int bufSize, size_t val);
 int chpl_snprintf_KMG_f(char* buf, int bufSize, double val);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_format_h_

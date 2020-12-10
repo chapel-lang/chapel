@@ -32,6 +32,10 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-desc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Shared interface (implemented in chpl-comm.c)
 //
@@ -549,6 +553,9 @@ void* chpl_get_global_serialize_table(int64_t idx);
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
 
+#ifdef __cplusplus
+}
+#endif
 
 #else // LAUNCHER
 

@@ -30,6 +30,10 @@
 #include "chpl-tasks.h"
 #include "chpl-comm-callbacks.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int chpl_vdebug_fd;    // fd of output file, 0 => not gathering data
 extern int chpl_vdebug;       // Should we generate debug data
 
@@ -58,6 +62,8 @@ void chpl_vdebug_tagname(const char* tagname, int tagno);
 //  mark the current task as a xxxVdebug() task and all children
 extern void chpl_vdebug_mark(void);
 
+#ifdef __cplusplus
+}
 #endif
 
-
+#endif

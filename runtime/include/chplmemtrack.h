@@ -33,7 +33,6 @@
 extern "C" {
 #endif
 
-
 // Memory tracking activated?
 extern int chpl_memTrack;
 extern int chpl_verbose_mem;      // set via startVerboseMem

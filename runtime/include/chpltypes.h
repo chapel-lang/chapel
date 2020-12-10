@@ -34,6 +34,10 @@
 #include <complex.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // C types usable from Chapel.
 typedef char c_char;
 typedef signed char c_schar;
@@ -91,6 +95,10 @@ static inline int isActualSublocID(c_sublocid_t subloc) {
   return subloc >= 0;
 }
 
+#ifdef __cplusplus
+}
+#endif
+
 #ifndef LAUNCHER
 
 // The type for wide-pointer-to-void. This is used in the runtime in order to
@@ -120,6 +128,10 @@ typedef wide_ptr_t* ptr_wide_ptr_t;
 // global variables registry), can continue to work.
 typedef void* ptr_wide_ptr_t;
 #endif // LAUNCHER
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define nil 0
 typedef void* _nilType;
@@ -289,8 +301,6 @@ static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t 
   return args->argv[i];
 }
 
-#include "chpl-string-support.h"
-
 //
 // The first member of both the task and on-stmt body function argument
 // bundle header structs is a 'kind' indicator of this type.  This lets
@@ -307,5 +317,11 @@ typedef int8_t chpl_arg_bundle_kind_t;
 
 #define CHPL_ARG_BUNDLE_KIND_TASK 0
 #define CHPL_ARG_BUNDLE_KIND_COMM 1
+
+#ifdef __cplusplus
+}
+#endif
+
+#include "chpl-string-support.h"
 
 #endif

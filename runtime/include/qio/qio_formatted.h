@@ -42,6 +42,10 @@
 #include "qio_style.h"
 #include "encoding/encoding-support.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int qio_glocale_utf8; // for testing use.
 #define QIO_GLOCALE_UTF8 1
 #define QIO_GLOCALE_ASCII 2
@@ -821,5 +825,8 @@ qioerr qio_format_error_arg_mismatch(int64_t arg);
 qioerr qio_format_error_bad_regexp(void);
 qioerr qio_format_error_write_regexp(void);
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

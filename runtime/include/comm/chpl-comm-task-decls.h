@@ -26,6 +26,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define the type of a n.b. communications handle.
 typedef void* chpl_comm_nb_handle_t;
 
@@ -41,5 +45,9 @@ typedef struct {
 } chpl_comm_bundleData_t;
 
 #undef HAS_CHPL_CACHE_FNS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

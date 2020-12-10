@@ -24,6 +24,10 @@
 #include "sys_basic.h"
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This is the type of a global locale ID.
 //
@@ -79,5 +83,9 @@ c_sublocid_t chpl_localeModel_sublocToExecutionSubloc(
 extern
 c_sublocid_t chpl_localeModel_sublocMerge(c_sublocid_t full_subloc,
                   c_sublocid_t execution_subloc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_locale_model_h_

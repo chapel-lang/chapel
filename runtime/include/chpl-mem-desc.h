@@ -23,6 +23,10 @@
 
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // When defining a new allocation type (for new instances of
 // chpl_mem_allocMany or chpl_mem_realloc in the runtime), add an
@@ -117,5 +121,9 @@ typedef int16_t chpl_mem_descInt_t;
 
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

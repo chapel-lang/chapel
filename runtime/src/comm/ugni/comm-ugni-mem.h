@@ -31,6 +31,9 @@
 
 #include "chpl-mem.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void chpl_comm_mem_reg_add_request(size_t size);
 
@@ -43,5 +46,9 @@ void *chpl_comm_mem_reg_allocMany(size_t number, size_t size,
                                   int32_t lineno, int32_t filename);
 
 void chpl_comm_mem_reg_exit(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _comm_ugni_mem_h_

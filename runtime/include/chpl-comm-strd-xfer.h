@@ -41,6 +41,9 @@
 // Don't get warning macros for chpl_comm_get etc
 #include "chpl-comm-no-warning-macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 //
@@ -397,5 +400,8 @@ void get_strd_common(void* dstaddr_arg, size_t* dststrides, int32_t srclocale,
   }
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #include "chpl-comm-warning-macros.h"

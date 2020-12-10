@@ -21,6 +21,10 @@
 #ifndef _APRUN_UTILS_H_
 #define _APRUN_UTILS_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
   aprun_cc,   // binding policy
   aprun_n,    // num locales
@@ -46,5 +50,9 @@ int getAprunArg(aprun_arg_t argt);           // possibly inline
 
 char** chpl_create_aprun_cmd(int argc, char* argv[],
                              int32_t numLocales, const char* _ccArg);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
