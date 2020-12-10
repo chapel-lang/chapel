@@ -17,6 +17,7 @@ default:
    :maxdepth: 1
 
    Builtins <standard/Builtins>
+   IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
    VectorizingIterator <standard/VectorizingIterator>
