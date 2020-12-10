@@ -217,15 +217,6 @@ replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
 
-## ChapelEnv ##
-
-file="./ChapelEnv.rst"
-fixTitle "Chapel Environment Variables" $file
-replace " = AppendExpr.Call09" "" $file
-removeUsage $file
-
-## End of ChapelEnv ##
-
 ## ChapelError ##
 
 file=ChapelError.rst
