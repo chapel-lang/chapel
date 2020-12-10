@@ -2367,6 +2367,7 @@ void FnSymbol::codegenDef() {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
+      func->setSubprogram(dbgScope);
     }
 
     // ABI support in this function is inspired by clang's
