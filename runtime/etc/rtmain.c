@@ -21,18 +21,6 @@
 // This file is used in --llvm compiles to compile the header
 // declarations for the Chapel runtime into an LLVM module.
 
-#ifdef __cplusplus
-extern "C" {
-// Use extern "C" block to avoid name mangling for the
-// runtime which is really C.
-// TODO: Does this mess up CHPL_REGEXP=re2 support?
-//       If so, move the extern "C" into individual headers.
-#endif
-
 #include "stdchpl.h"
 
 #include "chpl-gen-includes.h"
-
-#ifdef __cplusplus
-}
-#endif
