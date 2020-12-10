@@ -1237,15 +1237,20 @@ class CCodeGenConsumer : public ASTConsumer {
           // Handle forward declaration for structs
           info->lvt->addGlobalCDecl(rd);
         }
+      } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
+        for (auto shadow : ud->shadows()) {
+          NamedDecl* nd = shadow->getTargetDecl();
+          doHandleDecl(nd);
+        }
       } else if (LinkageSpecDecl* ld = dyn_cast<LinkageSpecDecl>(d)) {
         // Handles extern "C" { }
-        for (auto &sub : ld->decls()) {
+        for (auto sub : ld->decls()) {
           doHandleDecl(sub);
         }
       } else if (ExternCContextDecl *ed = dyn_cast<ExternCContextDecl>(d)) {
         // TODO: is this an alternative extern "C"?
         // do we need to handle it?
-        for (auto &sub : ed->decls()) {
+        for (auto sub : ed->decls()) {
           doHandleDecl(sub);
         }
       }
