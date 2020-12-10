@@ -26,6 +26,9 @@
 
 #include "chpl-tasks-callbacks.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Don't refer to this directly.  It's only here in public to support
@@ -60,5 +63,9 @@ void chpl_task_do_callbacks(chpl_task_cb_event_kind_t event_kind,
     chpl_task_do_callbacks_internal(event_kind,
                                     fid, filename, lineno, id, is_executeOn);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

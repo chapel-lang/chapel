@@ -25,6 +25,10 @@
 
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 size_t chpl_getSysPageSize(void);
 size_t chpl_getHeapPageSize(void); // note: only works after mem layer inited
 uint64_t chpl_sys_physicalMemoryBytes(void);
@@ -35,5 +39,9 @@ int chpl_sys_getNumCPUsLogical(chpl_bool accessible_only);
 // returns the name of a locale via uname -n or the like
 //
 c_string chpl_nodeName(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -583,4 +583,3 @@ static inline uintptr_t qio_ptr_align(void* ptr, uintptr_t align)
 
 
 #endif
-

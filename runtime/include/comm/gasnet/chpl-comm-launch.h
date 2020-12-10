@@ -21,8 +21,12 @@
 #ifndef _chpl_comm_launch_h
 #define _chpl_comm_launch_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
-// Launch assistance for the uGNI communication interface.
+// Launch assistance for the gasnet communication interface.
 //
 
 //
@@ -31,5 +35,9 @@
 //
 #define CHPL_COMM_PRELAUNCH() chpl_comm_preLaunch()
 void chpl_comm_preLaunch(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

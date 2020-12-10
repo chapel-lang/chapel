@@ -34,6 +34,10 @@
 // Don't warn about chpl_comm_get e.g. in this file.
 #include "chpl-comm-no-warning-macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Multi-locale macros used for compiler code generation
 //
@@ -210,6 +214,10 @@ void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 // Include LLVM support functions for --llvm-wide-opt
 #include "chpl-comm-compiler-llvm-support.h"

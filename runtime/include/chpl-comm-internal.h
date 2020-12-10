@@ -25,6 +25,10 @@
 #include "chpltypes.h"
 #include "chpl-mem-desc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Support for broadcasting globals.  Comm layer implementations must
 // supply this.  It is called collectively.  On node 0 it must arrange
@@ -75,5 +79,9 @@ void chpl_comm_really_bcast_rt_private(int id) {
   chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
                               chpl_rt_priv_bcast_lens[id]);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

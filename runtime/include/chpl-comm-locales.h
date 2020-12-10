@@ -23,6 +23,10 @@
 
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Returns the default number of locales to use for this comm layer if
 // the user does not specify a number.  For most comm layers, this
@@ -41,5 +45,8 @@ int64_t chpl_comm_default_num_locales(void);
 //
 void chpl_comm_verify_num_locales(int64_t proposedNumLocales);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

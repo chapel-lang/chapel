@@ -29,6 +29,10 @@
 #include "chpl-comm.h"
 #include "chpl-tasks.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef union {
   chpl_arg_bundle_kind_t kind;
   chpl_comm_on_bundle_t comm;
@@ -54,6 +58,10 @@ size_t chpl_argBundleSizeofHdr(void* arg) {
          ? sizeof(chpl_task_bundle_t)
          : sizeof(chpl_comm_on_bundle_t);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LAUNCHER
 

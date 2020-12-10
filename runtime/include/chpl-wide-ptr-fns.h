@@ -26,6 +26,10 @@
 // chpl_error needed for some of the packed wide pointer error cases.
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Methods for working with wide pointers and localeID_t.
 // There are several variants of many of these in order to simplify
 // different code generation tasks. The versions that take in a pointer
@@ -103,5 +107,8 @@ wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
   return ptr;
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

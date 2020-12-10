@@ -30,6 +30,9 @@
 
 #include "utf8-decoder.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Returns the difference between two pointers,
    but returns 0 if either pointer is NULL.
@@ -224,5 +227,8 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int64_t *num_cp) {
   return 0;  // valid
 }
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

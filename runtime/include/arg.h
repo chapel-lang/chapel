@@ -25,6 +25,10 @@
 
 #include <stdint.h> // for int32_t
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // defined in arg.c
 //
@@ -53,5 +57,10 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 void printAdditionalHelp(void);
 
 void printHelpTable(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
