@@ -205,8 +205,10 @@ module OwnedObject {
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
         compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
 
-      // Use 'this.type.chpl_t' in case RHS is a subtype
-      this.chpl_t = this.type.chpl_t;
+      // Use 'this.type.chpl_t' if it is set in case RHS is a subtype
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
       this.chpl_p = src.release();
       this.complete();
     }
@@ -214,24 +216,33 @@ module OwnedObject {
     pragma "no doc"
     proc init=(src: shared) {
       compilerError("cannot create an owned variable from a shared class instance");
-      this.chpl_t = int; //dummy
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
     }
 
     pragma "no doc"
     proc init=(src: borrowed) {
       compilerError("cannot create an owned variable from a borrowed class instance");
-      this.chpl_t = int; //dummy
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
     }
 
     pragma "no doc"
     proc init=(src: unmanaged) {
       compilerError("cannot create an owned variable from an unmanaged class instance");
-      this.chpl_t = int; //dummy
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
     }
 
     pragma "no doc"
     pragma "leaves this nil"
     proc init=(src : _nilType) {
+      if this.type.chpl_t == ? then
+        compilerError("Cannot establish type of owned when initializing with  nil");
+
       this.init(this.type.chpl_t);
 
       if isNonNilableClass(chpl_t) then
