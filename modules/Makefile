@@ -71,6 +71,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
+	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
@@ -165,7 +166,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
-	internal/ChapelEnv.chpl               \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl
 

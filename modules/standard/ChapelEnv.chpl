@@ -24,7 +24,7 @@
 
 /*
 
-Chapel Environment Variables
+Access to Chapel Environment Variables
 
 .. note:: All Chapel programs automatically ``use`` this module by default.
           An explicit ``use`` statement is not necessary.
