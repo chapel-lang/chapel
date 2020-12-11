@@ -9,7 +9,5 @@ noOverloadNotEquals.chpl:73: error: Can't overload '!=' for class types
 noOverloadNotEquals.chpl:77: error: Can't overload '!=' for class types
 noOverloadNotEquals.chpl:81: error: Can't overload '!=' for class types
 noOverloadNotEquals.chpl:85: error: Can't overload '!=' for class types
-noOverloadNotEquals.chpl:89: error: Can't overload '!=' for class types
-noOverloadNotEquals.chpl:89: note: If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830
-noOverloadNotEquals.chpl:93: error: Can't overload '!=' for class types
-noOverloadNotEquals.chpl:93: note: If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830
+noOverloadNotEquals.chpl:89: error: Can't currently overload '!=' for a mix of class/non-class types
+noOverloadNotEquals.chpl:93: error: Can't currently overload '!=' for a mix of class/non-class types

@@ -77,14 +77,18 @@ static void checkForIllegalClassOps(FnSymbol* fn) {
       bool arg2IsClass = formalIsClass(fn->formals.get(2));
       
       //
-      // This checks that both arguments are classes, permitting cases
-      // when a class is assigned to/from or compared with some
-      // non-class type; but maybe we should outlaw those cases too?
+      // Generate an error if either of the arguments of '=', '==',
+      // or '!=' is a class.  Temper the error with "currently" if
+      // only one is a class in case someone wants to advocate for
+      // supporting mixed class/non-class overloads in the future
+      // (see issue #16830).
       //
       if (arg1IsClass || arg2IsClass) {
-        USR_FATAL_CONT(fn, "Can't overload '%s' for class types", fn->name);
-        if (!(arg1IsClass && arg2IsClass)) {
-          USR_PRINT(fn, "If you feel this should be permitted for mixed class/non-class pairs, please comment on issue #16830");
+        bool onlyOneClassArg = !(arg1IsClass && arg2IsClass);
+        if (onlyOneClassArg) {
+          USR_FATAL_CONT(fn, "Can't currently overload '%s' for a mix of class/non-class types", fn->name);
+        } else {
+          USR_FATAL_CONT(fn, "Can't overload '%s' for class types", fn->name);
         }
       }
     }
