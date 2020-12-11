@@ -3130,7 +3130,8 @@ static void mapArrayViewsToRuntimeTypes(Type *t) {
             if (field->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
               if (AggregateType *fieldAggType = toAggregateType(field->getValType())) {
                 if (Symbol *instanceField = fieldAggType->getField("_instance", false)) {
-                  if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
+                  //if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
+                  if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
                     if (DecoratedClassType *dct = toDecoratedClassType(instanceField->type)) {
                       if (AggregateType *at2 = dct->getCanonicalClass()) {
                         SET_LINENO(field->defPoint);
