@@ -16,6 +16,6 @@ proc filterTest(title, filter1, filter2) {
 
 filterTest("less than 3", noIndex < 3, 3 > noIndex);
 filterTest("greater than 3", noIndex > 3, 3 < noIndex);
-filterTest("equal to 3", noIndex == 3, 3 == noIndex);
+filterTest("equal to 3", equals(noIndex, 3), equals(3, noIndex));
 filterTest("less than or equal to 3", noIndex <= 3, 3 >= noIndex);
 filterTest("greater than or equal to 3", noIndex >= 3, 3 <= noIndex);

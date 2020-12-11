@@ -1078,11 +1078,11 @@ module DataFrames {
     return rhs.lt_scalar(n);
   }
 
-  proc ==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  proc equals(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.eq_scalar(n);
   }
 
-  proc ==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  proc equals(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.eq_scalar(n);
   }
 
