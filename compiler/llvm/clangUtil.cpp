@@ -3280,6 +3280,7 @@ void makeBinaryLLVM(void) {
   std::string preOptFilename;
   std::string opt1Filename;
   std::string opt2Filename;
+  std::string asmFilename;
 
   if (gCodegenGPU == false) {
     moduleFilename = genIntermediateFilename("chpl__module.o");
@@ -3291,6 +3292,7 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
+    asmFilename = genIntermediateFilename("chpl__gpu_ptx.ptx");
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -3508,6 +3510,18 @@ void makeBinaryLLVM(void) {
                                              FileType,
                                              disableVerify);
 #endif
+
+    //if (gCodegenGPU){
+    llvm::CodeGenFileType asmFileType =
+      llvm::CodeGenFileType::CGFT_AssemblyFile;
+
+    llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
+
+    info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+                                             nullptr,
+                                             asmFileType,
+                                             disableVerify);
+    //}
 
     // Run the passes to emit the .o file now!
     emitPM.run(*info->module);
