@@ -17,6 +17,7 @@ default:
    :maxdepth: 1
 
    Builtins <standard/Builtins>
+   Chapel Environment Variables <standard/ChapelEnv>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
