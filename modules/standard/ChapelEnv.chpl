@@ -26,15 +26,13 @@
 
 Access to Chapel Environment Variables
 
-.. note:: All Chapel programs automatically ``use`` this module by default.
-          An explicit ``use`` statement is not necessary.
-
 The values of Chapel's environment variables upon compile time are
 accessible through the built-in parameters shown below. This information
 can also be displayed from the command line by executing the compiled
 program with the ``--about`` flag.
 
  */
+pragma "module included by default"
 module ChapelEnv {
   private use String;
   private use ChapelStandard;
