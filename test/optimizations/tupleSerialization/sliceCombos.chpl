@@ -2,6 +2,7 @@ use BlockDist;
 use CommDiagnostics;
 
 config const printTable = false;
+config const printArrays = false;
 
 var dom = newBlockDom(1..10);
 var innerDom = dom.expand(-1);
@@ -69,6 +70,8 @@ proc endDiag(str) {
   resetCommDiagnostics();
 }
 
-assert((+ reduce A) == 0, "Something went terribly wrong");
-assert((+ reduce B) == 0, "Something went terribly wrong");
-assert((+ reduce C) == 0, "Something went terribly wrong");
+if printArrays {
+  writeln(A);
+  writeln(B);
+  writeln(C);
+}
