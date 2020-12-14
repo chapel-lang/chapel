@@ -51,43 +51,64 @@ module ChapelTuple {
 
   proc _tuple.chpl__tupleIsSerializeable() param {
     use Reflection;
+    use ArrayViewSlice;
+
     if (size != 2) then
       return false;
-    if isHomogeneousTupleOfAliasingArrays(this.type) {
-      use ArrayViewSlice;
-      for param i in 0..#size {
-        if chpl__isArrayView(this[i]) {
-          if !chpl_serializeSlices {
-            return false;
-          }
-        }
-        else {
-          if !canResolveMethod(this[i], "chpl__serialize") then {
-            return false;
-          }
+
+    for param i in 0..#size {
+      if isArray(this[i]) && chpl__isArrayView(this[i]) {
+        if !chpl_serializeSlices {
+          return false;
         }
       }
-      return true;
+      else {
+        if !canResolveMethod(this[i], "chpl__serialize") then {
+          return false;
+        }
+      }
     }
-    return false;
-  }
-  
-  proc isHomogeneousTupleOfAliasingArrays(type t) param {
-    if t.size != 2 {
-      return false;
-    }
-    else {
-      return isArray(t[0]) && isArray(t[1]);
-    }
+
+    return true;
   }
 
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
     return (this[0].chpl__serialize(), this[1].chpl__serialize());
   }
 
+  proc type _tuple.chpl__tupleIsDeserializable(data) param {
+    use Reflection;
+    use ArrayViewSlice;
+
+    if (size != 2) then
+      return false;
+
+    for param i in 0..#size {
+      type t = __primitive("static typeof", this[i]);
+      if isArray(t) && t.isView() {
+        if !chpl_serializeSlices {
+          return false;
+        }
+      }
+      else {
+        // Engin: I wanted to be extra cautious and add the following check
+        // here, but can't get rid of some resolution errors quickly. I don't
+        // think it is a must, as I believe we first check to resolve
+        // chpl__serialize, and most of the types will not even hit this
+
+        /*
+        if !canResolveTypeMethod(t, "chpl__deserialize", data) then {
+          return false;
+        }
+        */
+      }
+    }
+
+    return true;
+  }
 
   pragma "no copy return"
-  proc type _tuple.chpl__deserialize(data) where isHomogeneousTupleOfAliasingArrays(this) {
+  proc type _tuple.chpl__deserialize(data) where this.chpl__tupleIsDeserializable(data) {
     //compilerWarning("deserializing ", this:string);
     return (this[0].chpl__deserialize(data(0)),
             this[1].chpl__deserialize(data(1)));
