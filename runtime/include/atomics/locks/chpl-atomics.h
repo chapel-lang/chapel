@@ -33,6 +33,9 @@
 // the same thread from different tasks or unlocking from a different thread,
 // both of which violate pthread semantics.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Since some of these non-intrinsic atomic routines are somewhat verbose, the GNU
 // compiler issues a warning if inlining is requested and denied.
@@ -331,5 +334,9 @@ static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
 static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
   pthread_spin_unlock(lock);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_atomics_h_

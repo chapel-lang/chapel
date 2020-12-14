@@ -37,6 +37,10 @@
 
 /* This header file is for routines that are in the generated code */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
 extern const char* chpl_compileVersion;
@@ -102,5 +106,9 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

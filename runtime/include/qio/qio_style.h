@@ -27,6 +27,10 @@
 #include <limits.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define QIO_NATIVE 1
 #define QIO_BIG 2
 #define QIO_LITTLE 3
@@ -305,5 +309,9 @@ void qio_style_free(qio_style_t* style)
 {
   qio_free(style);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

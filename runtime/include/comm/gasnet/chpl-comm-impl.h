@@ -21,6 +21,10 @@
 #ifndef _chpl_comm_impl_h_
 #define _chpl_comm_impl_h_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This is the comm layer sub-interface for dynamic allocation and
 // registration of memory.
@@ -28,5 +32,9 @@
 #define CHPL_COMM_IMPL_REG_MEM_HEAP_INFO(start_p, size_p) \
     chpl_comm_impl_regMemHeapInfo(start_p, size_p)
 void chpl_comm_impl_regMemHeapInfo(void** start_p, size_t* size_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_comm_impl_h_

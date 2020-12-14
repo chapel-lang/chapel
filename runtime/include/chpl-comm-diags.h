@@ -28,6 +28,10 @@
 #include "chpl-comm.h"
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 ////////////////////
 //
 // Public
@@ -177,5 +181,9 @@ int chpl_comm_diags_is_enabled(void) {
       (void) atomic_fetch_add_uint_least64_t(ctrAddr, 1);               \
     }                                                                   \
   } while(0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

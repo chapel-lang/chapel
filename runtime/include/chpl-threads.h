@@ -25,6 +25,10 @@
 
 #include "chpl-threads-impl.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Threads are the execution vehicles for tasks.  This file declares the
 // interface by which the tasking layer obtains thread services.
@@ -121,5 +125,9 @@ chpl_thread_mutex_p chpl_thread_mutexNew(void);
 void chpl_thread_mutexLock(chpl_thread_mutex_p);
 void chpl_thread_mutexUnlock(chpl_thread_mutex_p);
 void chpl_thread_mutexDestroy(chpl_thread_mutex_p);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

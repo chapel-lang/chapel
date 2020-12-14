@@ -21,6 +21,14 @@
 #ifndef _GDB_H_
 #define _GDB_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void gdbShouldBreakHere(void);  // must be in separate file to avoid elimination
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

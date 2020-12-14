@@ -33,6 +33,10 @@
 #include "chpl-cache-task-decls.h"
 #define HAS_CHPL_CACHE_FNS
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
   chpl_bool taskIsEnding;       // task is ending? (anticipate _downEndCount())
   chpl_bool amDonePending;      // some delayed AM 'done' is expected?
@@ -62,5 +66,9 @@ typedef struct {
 
 // The type of the communication handle.
 typedef void* chpl_comm_nb_handle_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

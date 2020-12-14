@@ -26,6 +26,10 @@
 #include <stdarg.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern int verbosity;
 
 // These functions eventually call out to chpl_exit_any, or try to perform a
@@ -104,5 +108,9 @@ void chpl_error_init(void);
 
 char* chpl_stack_unwind_to_string(char sep);
 void chpl_stack_unwind(FILE* out, char sep);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

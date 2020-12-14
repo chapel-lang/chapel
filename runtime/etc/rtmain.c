@@ -22,5 +22,5 @@
 // declarations for the Chapel runtime into an LLVM module.
 
 #include "stdchpl.h"
-#include "chpl-gen-includes.h"
 
+#include "chpl-gen-includes.h"

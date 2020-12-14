@@ -24,6 +24,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef void (*chpl_free_func)(void*);
 
 typedef struct {
@@ -49,5 +53,9 @@ typedef struct {
 } chpl_opaque_array;
 
 void cleanupOpaqueArray(chpl_opaque_array * arr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
