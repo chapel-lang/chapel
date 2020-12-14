@@ -54,12 +54,17 @@ module ChapelTuple {
     if (size != 2) then
       return false;
     if isHomogeneousTupleOfAliasingArrays(this.type) {
+      use ArrayViewSlice;
       for param i in 0..#size {
-        type t1 =  __primitive("static typeof", this[i]);
-        type t2 =  this[i].type;
-        type t = t1;
-        if !canResolveMethod(this[i], "chpl__serialize") then {
-          return false;
+        if chpl__isArrayView(this[i]) {
+          if !chpl_serializeSlices {
+            return false;
+          }
+        }
+        else {
+          if !canResolveMethod(this[i], "chpl__serialize") then {
+            return false;
+          }
         }
       }
       return true;
@@ -77,7 +82,6 @@ module ChapelTuple {
   }
 
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
-    //compilerWarning("serializing ", this.type:string);
     return (this[0].chpl__serialize(), this[1].chpl__serialize());
   }
 

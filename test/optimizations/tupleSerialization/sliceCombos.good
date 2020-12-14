@@ -1,3 +1,15 @@
-zip(slice, arr): No excess comm
-zip(arr, slice): No excess comm
-zip(slice, slice): No excess comm
+zip(slice, arr)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(arr, slice)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(slice, slice)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
