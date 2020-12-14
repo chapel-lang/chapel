@@ -71,6 +71,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
+	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
@@ -80,7 +81,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
-	standard/ChapelIO.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
