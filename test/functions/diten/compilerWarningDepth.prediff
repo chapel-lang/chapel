@@ -2,5 +2,5 @@
 
 outfile=$2
 
-sed -e "/ChapelBase/ s/[0-9]*//g" $outfile > $outfile.tmp
+sed -e "/CHPL_HOME/ s/[0-9][0-9]*/nnn/g" $outfile > $outfile.tmp
 mv $outfile.tmp $outfile
