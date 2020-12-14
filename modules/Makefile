@@ -95,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
+	standard/VectorizingIterator.chpl \
 	standard/Version.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
@@ -158,7 +159,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelError.chpl             \
 	internal/ChapelIO.chpl                \
-	internal/ChapelIteratorSupport.chpl   \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
 	internal/Bytes.chpl                   \

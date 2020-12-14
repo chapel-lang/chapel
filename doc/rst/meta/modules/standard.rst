@@ -19,6 +19,7 @@ default:
    Builtins <standard/Builtins>
    Math <standard/Math>
    Types <standard/Types>
+   VectorizingIterator <standard/VectorizingIterator>
 
 
 Data Structures
@@ -84,6 +85,7 @@ Parallelism/Distributed Computing
 
    Barriers <standard/Barriers>
    DynamicIters <standard/DynamicIters>
+   VectorizingIterator <standard/VectorizingIterator>
 
 System/Interoperability
 -----------------------

@@ -170,6 +170,8 @@ Builtins
   from print-module-resolution.ChapelStandard.Builtins
 Types
   from print-module-resolution.ChapelStandard.Types
+VectorizingIterator
+  from print-module-resolution.ChapelStandard.VectorizingIterator
 stopInitCommDiags
   from print-module-resolution.ChapelStandard.stopInitCommDiags
 ChapelStandard

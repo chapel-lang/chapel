@@ -2797,6 +2797,7 @@ static bool symbolInBuiltinModule(Symbol* sym) {
   ModuleSymbol* mod = sym->getModule();
   if (mod->modTag == MOD_STANDARD &&
       (!strcmp(mod->name, "Builtins") ||
+       !strcmp(mod->name, "VectorizingIterator") ||
        !strcmp(mod->name, "Types") ||
        !strcmp(mod->name, "Math"))) {
     return true;
