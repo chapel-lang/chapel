@@ -210,7 +210,7 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
-.. _Git tips for Chapel devlopers: git.rst
+.. _Git tips for Chapel developers: git.rst
 .. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
 
    
