@@ -2480,6 +2480,11 @@ module ChapelArray {
     pragma "no copy return"
     proc type chpl__deserialize(data) {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
+      if _isPrivatized(arrinst) {
+        compilerAssert(data.type == int,
+                       "A privatized array's serial representation must be its pid only");
+        return new _array(data, arrinst, _unowned=true);
+      }
       return new _array(nullPid, arrinst, _unowned=true);
     }
 

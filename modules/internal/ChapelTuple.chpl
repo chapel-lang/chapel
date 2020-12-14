@@ -68,23 +68,23 @@ module ChapelTuple {
   }
   
   proc isHomogeneousTupleOfAliasingArrays(type t) param {
-    if isHomogeneousTuple(t) {
-      type elemType = t[0];
-      if (isArray(elemType)) {
-        param ret = elemType.isView();
-        return ret;
-      }
+    if t.size != 2 {
+      return false;
     }
-    return false;
+    else {
+      return isArray(t[0]) && isArray(t[1]);
+    }
   }
 
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
+    //compilerWarning("serializing ", this.type:string);
     return (this[0].chpl__serialize(), this[1].chpl__serialize());
   }
 
 
   pragma "no copy return"
   proc type _tuple.chpl__deserialize(data) where isHomogeneousTupleOfAliasingArrays(this) {
+    //compilerWarning("deserializing ", this:string);
     return (this[0].chpl__deserialize(data(0)),
             this[1].chpl__deserialize(data(1)));
   }
