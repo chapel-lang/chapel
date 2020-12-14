@@ -210,9 +210,12 @@ const char* toString(Type* type, bool decorateAllClasses) {
     if (retval == NULL)
       retval = vt->symbol->name;
     /* This can be helpful when debugging (and perhaps we should enable it
-       by default?): */
+       by default?):
+
     if (developer)
       retval = vt->symbol->cname;
+
+    */
 
   } else {
     retval = "null type";

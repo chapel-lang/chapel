@@ -3116,11 +3116,9 @@ static bool isTypeConstructionCall(CallExpr* call) {
   return ret;
 }
 
-// if at is an ArrayView type or it is a tuple with an ArrayView type ...
+// if `t` is a tuple with an ArrayView type, we want to create a mapping between
+// such ArrayView types to the rtt of the original array.
 static void mapArrayViewsToRuntimeTypes(Type *t) {
-  // check if runtimeTypeMap populated here.
-  // make sure at is a slice, get the .type of it
-  // maybe just use chpl__buildArrayRuntimeType to get the type
   if (AggregateType *at = toAggregateType(t)) {
     Type *retValType = at->getValType();
     if (retValType->symbol->hasFlag(FLAG_TUPLE)) {
@@ -3130,7 +3128,6 @@ static void mapArrayViewsToRuntimeTypes(Type *t) {
             if (field->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
               if (AggregateType *fieldAggType = toAggregateType(field->getValType())) {
                 if (Symbol *instanceField = fieldAggType->getField("_instance", false)) {
-                  //if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
                   if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
                     if (DecoratedClassType *dct = toDecoratedClassType(instanceField->type)) {
                       if (AggregateType *at2 = dct->getCanonicalClass()) {
@@ -9342,8 +9339,6 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
           const char* att =  (developer == false) ? at->symbol->name
                                                   : at->symbol->cname;
           USR_FATAL(deserializeFn, "chpl__deserialize returning '%s' when it must return '%s'", rt, att);
-        } else {
-          //USR_WARN("*** resolved chpl__deserialize for %s\n", at->symbol->cname);
         }
       }
 
@@ -9410,32 +9405,25 @@ static void resolveSerializers() {
         ! isSingleType(ts->type)                   &&
         ! isSyncType(ts->type)                     &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-      if (AggregateType* _at = toAggregateType(ts->type)) {
-
-
-        AggregateType *at = _at;
-
+      if (AggregateType* at = toAggregateType(ts->type)) {
+        // look for a RVF-able tuple. Currently we look at tuples that stores
+        // their items as ref. This is the case for the tuple that we create for
+        // zippered foralls
         if (ts->hasFlag(FLAG_TUPLE)) {
           bool allRVF = true;
           for_fields(field, at) {
             if (strcmp(field->name, "size") != 0) {
-              Type* fieldType = field->getValType();
               if (field->isRef()) {
-                //std::cout << "Field is ref\n";
               }
               else {
-                //std::cout << "Field is not ref\n";
                 allRVF=false;
                 break;
               }
+
+              Type* fieldType = field->getValType();
               if (!fieldType->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
                 allRVF = false;
                 break;
-              }
-              else {
-                //printf("...this field RVFs: ");
-                //list_view(field);
-                //list_view(fieldType);
               }
             }
           }

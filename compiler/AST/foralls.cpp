@@ -884,24 +884,6 @@ static void resolveIdxVar(ForallStmt* pfs, FnSymbol* iterFn)
   }
 }
 
-#include "view.h"
-
-// I don't think this does anything meaningful at the moment
-static void tryToMakeForwardable(VarSymbol* iterRec, CallExpr* buildTup) {
-  int numElems = buildTup->numActuals();
-  bool allForwardable = true;
-  for (int i=1; i<=numElems; i++) {
-    if (!buildTup->get(1)->typeInfo()->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF)) {
-      allForwardable = false;
-    }
-  }
-  if (allForwardable) {
-    iterRec->addFlag(FLAG_ALWAYS_RVF);
-  }
-
-}
-
-
 static Expr* rebuildIterableCall(ForallStmt* pfs,
                                  CallExpr* iterCall,
                                  Expr* origExprFlw)
@@ -927,8 +909,7 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
-  CallExpr* buildTup = toCallExpr(iterExpr);
-  if (buildTup != NULL) {
+  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
     INT_ASSERT(buildTup->isNamed("_build_tuple"));
     if (buildTup->numActuals() > 1)
       zippered = true;
@@ -953,11 +934,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
   preFS->insertAtTail(new DefExpr(iterRec));
   preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
-  if (zippered) {
-    if (strcmp(iterRec->fname(), "/Users/ekayraklio/code/chapel/versions/f04/chapel/rvfTest.chpl") == 0) {
-      tryToMakeForwardable(iterRec, buildTup);
-    }
-  }
   Expr* toNormalize = preFS->body.tail;
 
   followBlock = buildFollowLoop(iterRec,

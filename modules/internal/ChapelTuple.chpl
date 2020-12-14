@@ -48,7 +48,6 @@ module ChapelTuple {
     param size : int;
   }
 
-
   proc _tuple.chpl__tupleIsSerializeable() param {
     use Reflection;
     use ArrayViewSlice;
@@ -102,7 +101,6 @@ module ChapelTuple {
 
   pragma "no copy return"
   proc type _tuple.chpl__deserialize(data) where this.chpl__tupleIsDeserializable(data) {
-    //compilerWarning("deserializing ", this:string);
     return (this[0].chpl__deserialize(data(0)),
             this[1].chpl__deserialize(data(1)));
   }

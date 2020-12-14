@@ -36,7 +36,6 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
-#include "view.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -880,12 +879,9 @@ static FnSymbol *getAutoDestroyForViewField(Symbol *field, AggregateType *baseTy
     if (field->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
       if (AggregateType *fieldAggType = toAggregateType(field->getValType())) {
         if (Symbol *instanceField = fieldAggType->getField("_instance", false)) {
-          if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_RUNTIME_TYPE)) {
+          if (instanceField->type->symbol->hasFlag(FLAG_ALIASING_ARRAY)) {
             if (FnSymbol* autoDestroyFn = autoDestroyMap.get(field->getValType())) {
 
-              //std::cout << "Returning autoDestroy for reffield\n";
-              //nprint_view(field);
-              //nprint_view(baseType);
               return autoDestroyFn;
             }
           }
