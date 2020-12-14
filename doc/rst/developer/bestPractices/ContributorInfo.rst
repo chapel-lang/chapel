@@ -242,7 +242,7 @@ As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
 
-Development commands: git.rst#development-commands
+.. _Development commands: git.rst#development-commands
 
 .. _Add new tests:
 
