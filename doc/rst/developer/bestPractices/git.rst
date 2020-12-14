@@ -326,6 +326,8 @@ How to open a PR:
 
   and you can discuss the patch with your reviewers there.
 
+.. _Submit a pull request: https://help.github.com/articles/using-pull-requests
+.. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
 .. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
 
 .. _How to merge a PR:
@@ -350,6 +352,9 @@ merge the pull request from the command line also and the pull request page has
 details). When you click "Merge pull request", you will need to enter a commit
 message. See `Final merge message`_ for a reminder on what that commit message
 should entail (generally, this will closely resemble the PR message).
+
+..Who has or needs commit access to the main repository?: ContributorInfo.rst#who-has-or-needs-commit-access-to-the-main-repository
+..Final merge message: ContributorInfo.rst#final-merge-message
 
 More information on using git
 +++++++++++++++++++++++++++++

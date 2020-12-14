@@ -275,6 +275,8 @@ work (see `How to push`_ for command details).  Note that if you have already
 created a pull request from a feature branch, pushing your work to that feature
 branch will update the pull request.
 
+.. _How to push: git.rst#how-to-push
+
 .. _Ask for feedback on your branch early (optional):
 
 Ask for feedback on your branch early (optional)
@@ -382,6 +384,9 @@ appropriate amount of testing before merging the final PR may be found at
 
 After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
+
+.. _Developer Certificate of Origin: DCO.rst
+.. _How to merge a PR: git.rst#how-to-merge-a-pr
 
 
 .. _After merging:
@@ -687,8 +692,6 @@ Reviewer responsibilities
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/
-.. _Submit a pull request: https://help.github.com/articles/using-pull-requests
-.. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
 
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
