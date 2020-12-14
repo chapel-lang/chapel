@@ -1,0 +1,3 @@
+zip(slice, arr): No excess comm
+zip(arr, slice): No excess comm
+zip(slice, slice): No excess comm
