@@ -43,7 +43,6 @@ Overview:
 
 #. `Other useful information`_
 
-   #. `Chapel git workflow`_
    #. `Policy details`_
    #. `Chapel release process`_
 
@@ -221,8 +220,11 @@ Create new branch
 
 This should happen once for every new effort.
 
-Develop your feature, bug fix, etc on your fork.  To create a new branch, use
-the `New branch command`_.  Using a concisely named branch is encouraged.
+Develop your feature, bug fix, etc. on your fork.  To create a new
+branch, use ``git checkout -b <branch_name>``.  Using a concisely
+named branch is encouraged.
+
+
 
 .. _Develop and test contributions locally:
 
@@ -233,12 +235,14 @@ Your contribution will take the form of a series of commits.  While including
 sensible commit messages is a good idea, it is more important to have a good
 merge message once the pull request is going in. Likewise, it is OK to have many
 small commits that reflect the history of development rather than commits for
-the feature.  See `Development commands`_ for how to perform some common
+the feature.  Review git `Development commands`_ for how to perform some common
 operations during development.
 
 As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
+
+.. _Development commands: git.rst#development-commands
 
 .. _Add new tests:
 
@@ -270,6 +274,8 @@ Push your changes to your feature branch on GitHub to enable others to see your
 work (see `How to push`_ for command details).  Note that if you have already
 created a pull request from a feature branch, pushing your work to that feature
 branch will update the pull request.
+
+.. _How to push: git.rst#how-to-push
 
 .. _Ask for feedback on your branch early (optional):
 
@@ -310,6 +316,8 @@ Just do your local development and then update your feature branch as in
 `Push your work to your feature branch`_
 
 Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
+
+.. _How to open a PR: git.rst#how-to-open-a-pr
 
 .. _Find a reviewer:
 
@@ -378,6 +386,9 @@ appropriate amount of testing before merging the final PR may be found at
 
 After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
+
+.. _Developer Certificate of Origin: DCO.rst
+.. _How to merge a PR: git.rst#how-to-merge-a-pr
 
 
 .. _After merging:
@@ -677,8 +688,6 @@ Reviewer responsibilities
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/
-.. _Submit a pull request: https://help.github.com/articles/using-pull-requests
-.. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
 
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
