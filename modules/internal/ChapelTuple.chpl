@@ -57,15 +57,8 @@ module ChapelTuple {
       return false;
 
     for param i in 0..#size {
-      if isArray(this[i]) && chpl__isArrayView(this[i]) {
-        if !chpl_serializeSlices {
-          return false;
-        }
-      }
-      else {
-        if !canResolveMethod(this[i], "chpl__serialize") then {
-          return false;
-        }
+      if !canResolveMethod(this[i], "chpl__serialize") then {
+        return false;
       }
     }
 
