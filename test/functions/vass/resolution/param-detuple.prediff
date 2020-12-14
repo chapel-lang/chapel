@@ -1,4 +1,4 @@
 #!/bin/bash
 
-cat $2 | sed s@ChapelBase.chpl:..:@ChapelBase.chpl:@ > $2.tmp
+cat $2 | sed -e "/CHPL_HOME/ s/:[0-9][0-9]*:/:nnn:/g" > $2.tmp
 mv $2.tmp $2
