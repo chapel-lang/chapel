@@ -24,6 +24,7 @@ end of module search dirs
   ./bah.chpl
   $CHPL_HOME/modules/standard/CPtr.chpl
   $CHPL_HOME/modules/standard/HaltWrappers.chpl
+  $CHPL_HOME/modules/standard/ChapelIO.chpl
   $CHPL_HOME/modules/standard/Builtins.chpl
   $CHPL_HOME/modules/standard/Types.chpl
   $CHPL_HOME/modules/standard/Math.chpl

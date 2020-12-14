@@ -71,6 +71,7 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
+	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
@@ -158,7 +159,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelError.chpl             \
-	internal/ChapelIO.chpl                \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
 	internal/Bytes.chpl                   \

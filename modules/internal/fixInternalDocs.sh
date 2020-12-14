@@ -122,13 +122,7 @@ removePattern "record:: _tuple" $file
 fixTitle "Tuples" $file
 removeUsage $file
 
-## ChapelIO ##
-
-file="./ChapelIO.rst"
-fixTitle "IO Support" $file
-removeUsage $file
-
-## End ChapelIO ##
+## End ChapelTuple ##
 
 
 ## ChapelLocale ##
