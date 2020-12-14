@@ -187,7 +187,7 @@ $(LLVM_CLANG_CONFIG_FILE): FORCE
         else \
           touch $(LLVM_CLANG_CONFIG_FILE).incoming ; \
         fi
-	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
+	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
 
 configure-llvm: $(LLVM_CONFIGURED_HEADER_FILE)
 
