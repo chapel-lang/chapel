@@ -21,9 +21,8 @@
 /*
   This module contains built-in functions.
 
-  .. note:: All Chapel programs automatically ``use`` this module by default.
-            An explicit ``use`` statement is not necessary.
 */
+pragma "module included by default"
 module Builtins {
 
   /*

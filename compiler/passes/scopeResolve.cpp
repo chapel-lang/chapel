@@ -2795,16 +2795,8 @@ static bool readNamedArgument(CallExpr* call, const char* name,
 
 static bool symbolInBuiltinModule(Symbol* sym) {
   ModuleSymbol* mod = sym->getModule();
-  if (mod->modTag == MOD_STANDARD &&
-      (!strcmp(mod->name, "Builtins") ||
-       !strcmp(mod->name, "ChapelEnv") ||
-       !strcmp(mod->name, "ChapelIO") ||
-       !strcmp(mod->name, "VectorizingIterator") ||
-       !strcmp(mod->name, "Types") ||
-       !strcmp(mod->name, "Math"))) {
-    return true;
-  }
-  return false;
+  return (mod->modTag == MOD_STANDARD &&
+          mod->hasFlag(FLAG_MODULE_INCLUDED_BY_DEFAULT));
 }
 
 
