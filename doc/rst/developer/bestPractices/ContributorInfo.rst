@@ -317,6 +317,8 @@ Just do your local development and then update your feature branch as in
 
 Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
 
+.. _How to open a PR: git.rst#how-to-open-a-pr
+
 .. _Find a reviewer:
 
 Find a reviewer

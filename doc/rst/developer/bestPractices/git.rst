@@ -353,8 +353,8 @@ details). When you click "Merge pull request", you will need to enter a commit
 message. See `Final merge message`_ for a reminder on what that commit message
 should entail (generally, this will closely resemble the PR message).
 
-..Who has or needs commit access to the main repository?: ContributorInfo.rst#who-has-or-needs-commit-access-to-the-main-repository
-..Final merge message: ContributorInfo.rst#final-merge-message
+.. _Who has or needs commit access to the main repository?: ContributorInfo.rst#who-has-or-needs-commit-access-to-the-main-repository
+.. _Final merge message: ContributorInfo.rst#final-merge-message
 
 More information on using git
 +++++++++++++++++++++++++++++
