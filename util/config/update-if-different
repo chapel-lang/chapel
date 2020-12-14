@@ -53,6 +53,17 @@ def update(dst, src):
     os.remove(src)
 
 def copy(src, dst):
+    """ copy src into dst.
+        The copy handles these two cases in a special way:
+          * If dst is a directory containing a file not in an src directory,
+            that file will be removed.
+          * If dst contains a file that is the same as the file in src,
+            the file will not be copied (so that it is not "updated"
+            for follow-on build steps).
+        Additionally, this function handles the case where src is a file
+        and dst is a directory similarly to the 'cp' command.
+    """
+
     if not os.path.isdir(src):
         # handle regular files
 
