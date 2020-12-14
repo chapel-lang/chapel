@@ -22,7 +22,7 @@ develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
 
-docs: chpldoc
+docs: chpldoc man-chpldoc man-chapel
 	cd doc && $(MAKE) docs
 
 checkdocs: FORCE
