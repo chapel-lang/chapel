@@ -22,9 +22,6 @@
 
   Iterators supporting vectorization without creating tasks.
 
-   .. note:: All Chapel programs automatically ``use`` this module by default.
-             An explicit ``use`` statement is not necessary.
-
   Data parallel constructs (such as ``forall`` loops) are implicitly
   vectorizable. If the ``--vectorize`` compiler flag is thrown the Chapel
   compiler will emit vectorization hints to the backend compiler, though the
@@ -42,6 +39,7 @@
  */
 pragma "error mode fatal"
 pragma "unsafe"
+pragma "module included by default"
 module VectorizingIterator {
   private use ChapelStandard;
 
