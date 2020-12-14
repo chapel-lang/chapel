@@ -179,14 +179,13 @@ grow).
 #. `Set up a GitHub account`_. The "Free" plan is sufficient for contributing to
    Chapel.
 
+#. Use the GitHub web interface to create a fork of the Chapel repo by visiting
+   https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
+   also `Fork the repo`_).
+
 #. Make sure you have configured your environment to work with
    git. See `Git tips for Chapel developers`_ for details,
    particularly if you are new to git.
-
-#. Use the GitHub web interface to create a fork of the Chapel repo by visiting
-   https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
-   also `Fork the repo`_).  Then `configure your local git`_ and check out your
-   fork
 
 #. Make sure you understand how to sign your commits with respect to the DCO.
 
@@ -211,6 +210,7 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
+.. _Git tips for Chapel devlopers: git.rst
 .. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
 
    
