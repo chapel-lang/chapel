@@ -55,7 +55,7 @@ def update(dst, src):
 def copy(src, dst):
     """ copy src into dst.
         The copy handles these two cases in a special way:
-          * If dst is a directory containing a file not in an src directory,
+          * If dst is a directory containing a file not in a src directory,
             that file will be removed.
           * If dst contains a file that is the same as the file in src,
             the file will not be copied (so that it is not "updated"
