@@ -1,0 +1,29 @@
+.. default-domain:: chpl
+
+.. module:: variablepatterns.doc
+
+variablepatterns.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use variablepatterns.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import variablepatterns.doc;
+
+.. data:: var a = AppendExpr.Call09
+
+.. data:: var b = if true then 1 else 2
+
+.. data:: var c = AppendExpr.Loop04
+
+.. data:: var d = AppendExpr.Loop03
+
+.. data:: var e = [i in 1..10] i
+
