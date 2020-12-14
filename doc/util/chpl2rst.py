@@ -71,11 +71,16 @@ def gen_link(link, chapelfile):
     abspath = os.path.realpath(chapelfile)
     filename = os.path.split(chapelfile)[1]
 
-    chpl_home = os.path.realpath(os.getenv('CHPL_HOME'))
+    chpl_home = os.getenv('CHPL_MAKE_HOME')
+    if not chpl_home:
+        chpl_home = os.getenv('CHPL_HOME')
+
     if not chpl_home:
         print('Error: --link flag only works when $CHPL_HOME is defined')
         sys.exit(1)
-    elif not chpl_home in abspath:
+
+    chpl_home = os.path.realpath(chpl_home)
+    if not chpl_home in abspath:
         print('Error: --link flag only work for files within $CHPL_HOME')
         print('CHPL_HOME: {0}'.format(chpl_home))
         print('file path: {0}'.format(abspath))
