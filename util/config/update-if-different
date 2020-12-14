@@ -13,7 +13,7 @@ def main():
                       'Deletes src either way.')
     parser.add_option("--update", action="store_true", dest="update",
                       help=("given dst src - update dst with src. "
-                            "If the differ, copy dst to src. "
+                            "If they differ, copy dst to src. "
                             "Removes src either way"))
     parser.add_option("--copy", action="store_true", dest="copy",
                       help=("given src dst - copy src to dst. "
