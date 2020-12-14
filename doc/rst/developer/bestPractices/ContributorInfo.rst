@@ -43,7 +43,6 @@ Overview:
 
 #. `Other useful information`_
 
-   #. `Chapel git workflow`_
    #. `Policy details`_
    #. `Chapel release process`_
 
@@ -221,8 +220,11 @@ Create new branch
 
 This should happen once for every new effort.
 
-Develop your feature, bug fix, etc on your fork.  To create a new branch, use
-the `New branch command`_.  Using a concisely named branch is encouraged.
+Develop your feature, bug fix, etc. on your fork.  To create a new
+branch, use ``git checkout -b <branch_name>``.  Using a concisely
+named branch is encouraged.
+
+
 
 .. _Develop and test contributions locally:
 
@@ -233,12 +235,14 @@ Your contribution will take the form of a series of commits.  While including
 sensible commit messages is a good idea, it is more important to have a good
 merge message once the pull request is going in. Likewise, it is OK to have many
 small commits that reflect the history of development rather than commits for
-the feature.  See `Development commands`_ for how to perform some common
+the feature.  Review git `Development commands`_ for how to perform some common
 operations during development.
 
 As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
+
+Development commands: git.rst#development-commands
 
 .. _Add new tests:
 
