@@ -271,7 +271,7 @@ module ArrayViewReindex {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       return downdom.dsiTargetLocales();
     }
 

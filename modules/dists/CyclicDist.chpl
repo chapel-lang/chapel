@@ -1250,13 +1250,13 @@ where useBulkTransferDist {
   return true;
 }
 
-proc CyclicArr.dsiTargetLocales() {
+proc CyclicArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocs;
 }
-proc CyclicDom.dsiTargetLocales() {
+proc CyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocs;
 }
-proc Cyclic.dsiTargetLocales() {
+proc Cyclic.dsiTargetLocales() const ref {
   return targetLocs;
 }
 
