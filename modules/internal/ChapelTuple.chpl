@@ -50,7 +50,7 @@ module ChapelTuple {
     param size : int;
   }
 
-  proc isSerializeableArray(a) param {
+  private proc isSerializeableArray(a) param {
     use Reflection;
     if isArray(a) {
       // Engin: I have no idea why, but we can resolve
@@ -64,8 +64,19 @@ module ChapelTuple {
     return false;
   }
 
+  private proc isTupleOfPrivatizedArrays(t) param {
+    for param i in 0..#t.size {
+      if !isArray(t[i]) || (isArray(t[i]) && !_isPrivatized(t[i]._instance)) then
+        return false;
+    }
+    return true;
+  }
+
   proc _tuple.chpl__tupleIsSerializeable() param {
     if size > maxSerializeableTupleSize {
+      return false;
+    }
+    else if isTupleOfPrivatizedArrays(this) {
       return false;
     }
     else {
