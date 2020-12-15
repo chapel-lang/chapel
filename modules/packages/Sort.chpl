@@ -1817,6 +1817,22 @@ module ShallowCopy {
       }
     }
   }
+  proc shallowCopyPutGetRefs(ref dst, const ref src, numBytes: size_t) {
+    if dst.locale.id == here.id {
+      __primitive("chpl_comm_get", dst, src.locale.id, src, numBytes);
+    } else if src.locale.id == here.id {
+      __primitive("chpl_comm_put", src, dst.locale.id, dst, numBytes);
+    } else {
+      halt("Remote src and remote dst not yet supported");
+    }
+  }
+
+  // For the case in which we know that the source and dest regions
+  // are contiguous within a locale
+  proc shallowCopyPutGet(ref DstA, dst, const ref SrcA, src, nElts) {
+    var size = (nElts:size_t)*c_sizeof(DstA.eltType);
+    shallowCopyPutGetRefs(DstA[dst], SrcA[src], size);
+  }
 }
 pragma "no doc"
 module SequentialInPlacePartitioning {
@@ -1937,6 +1953,7 @@ module TwoArrayPartitioning {
   import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
 
   private param debug = false;
+  private param debugDist = false;
   param maxBuckets = 512;
 
   record TwoArraySortTask {
@@ -1956,6 +1973,109 @@ module TwoArrayPartitioning {
       this.doSort = doSort;
     }
   }
+
+  record TwoArrayDistSortPerBucketTaskStartComparator {
+    proc key(arg: TwoArrayDistSortPerBucketTask) {
+      return arg.start;
+    }
+  }
+
+  record TwoArrayDistSortPerBucketTask {
+    var start: int;
+    var size: int;
+    var startbit: int; // could be moved to TwoArrayDistSortTask
+
+    var firstLocaleId: int;
+    var lastLocaleId: int;
+    var useSecondState: bool;
+
+    proc isEmpty() {
+      return size == 0;
+    }
+
+    // create an easy-to-identify empty task
+    proc init() {
+      this.start = -1;
+      this.size = 0;
+      this.startbit = max(int);
+      this.firstLocaleId = max(int);
+      this.lastLocaleId = -1;
+      this.useSecondState = false;
+    }
+    // To make sure all fields are specified
+    proc init(start:int, size:int, startbit:int,
+              firstLocaleId:int, lastLocaleId:int,
+              useSecondState:bool) {
+      this.start = start;
+      this.size = size;
+      this.startbit = startbit;
+      this.firstLocaleId = firstLocaleId;
+      this.lastLocaleId = lastLocaleId;
+      this.useSecondState = useSecondState;
+    }
+    proc nLocales() {
+      return lastLocaleId - firstLocaleId + 1;
+    }
+    // yields tuples of (loc, tid) for the locales involved with this bucket
+    iter localeAndIds(A) {
+      const ref tgtLocs = A.targetLocales();
+      for tid in firstLocaleId..lastLocaleId {
+        const loc = tgtLocs[tid];
+        yield (loc, tid);
+      }
+    }
+    // yield the other ids but do so in an order that depends on myId
+    //  myId + 1 will be the first id.
+    iter otherIds(myId) {
+      const nIds = lastLocaleId-firstLocaleId+1;
+      for i in 1..#nIds {
+        yield firstLocaleId + ((myId + i) % nIds);
+      }
+    }
+    iter otherIds(param tag: iterKind, myId) where tag == iterKind.standalone {
+      const nIds = lastLocaleId-firstLocaleId+1;
+      forall i in 1..#nIds {
+        yield firstLocaleId + ((myId + i) % nIds);
+      }
+    }
+  }
+
+  record TwoArrayDistSortTask {
+    var tasks: list(TwoArrayDistSortPerBucketTask);
+
+    // Create an empty one
+    proc init() { }
+    // Create one with just 1 bucket
+    proc init(start:int, size:int, startbit:int,
+              firstLocaleId:int, lastLocaleId:int) {
+      var t = new TwoArrayDistSortPerBucketTask(start, size, startbit,
+                                                firstLocaleId, lastLocaleId,
+                                                false);
+      assert(!t.isEmpty());
+      this.complete();
+      tasks.append(t);
+    }
+    proc writeThis(f) throws {
+      f <~> "TwoArrayDistSortTask";
+      for t in tasks {
+        f <~> " ";
+        f <~> t;
+      }
+    }
+    proc isEmpty() {
+      return tasks.isEmpty();
+    }
+    // yield (loc, locId, task) for each non-empty bucket
+    // loc is the locale "owning" the bucket.
+    iter localesAndTasks(A) {
+      for t in tasks {
+        const locId = t.firstLocaleId;
+        const loc = A.targetLocales()[locId];
+        yield (loc, locId, t);
+      }
+    }
+  }
+
 
   record TwoArrayBucketizerPerTaskState {
     var localCounts: [0..#maxBuckets] int;
@@ -2015,11 +2135,6 @@ module TwoArrayPartitioning {
     var globalEnds:[0..#countsSize] int;
   }
 
-  record TasksForLocale {
-    // was [0..-1]
-    var localTasks: list(TwoArraySortTask);
-  }
-
   record TwoArrayDistributedBucketizerSharedState {
     type bucketizerType;
 
@@ -2028,6 +2143,7 @@ module TwoArrayPartitioning {
         TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
 
     const baseCaseSize:int;
+    const distributedBaseCaseSize:int;
     const endbit:int = max(int);
 
     const countsSize:int = numLocales*maxBuckets;
@@ -2041,10 +2157,6 @@ module TwoArrayPartitioning {
     // i.e. bin*nTasks + localeId
     var globalCounts:[0..#countsSize] int;
     var globalEnds:[0..#countsSize] int;
-
-    // was [0..-1]
-    var distTasks: list(TwoArraySortTask);
-    var localTasks: [0..#numLocales] TasksForLocale;
 
     proc postinit() {
       // Copy some vars to the compat
@@ -2378,10 +2490,10 @@ module TwoArrayPartitioning {
 
   private proc distributedPartitioningSortWithScratchSpaceBaseCase(
           start_n:int, end_n:int, A:[], Scratch:[],
-          ref state: TwoArrayDistributedBucketizerSharedState,
+          ref compat: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
 
-    if startbit > state.endbit then
+    if startbit > compat.endbit then
       return;
 
     const n = end_n - start_n + 1;
@@ -2390,25 +2502,32 @@ module TwoArrayPartitioning {
     const curDomain = {start_n..end_n};
     const intersect = curDomain[localSubdomain];
     if curDomain == intersect {
-      if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     A.localSlice(curDomain), criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
-      } else {
-        ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+      local {
+        if n > compat.baseCaseSize {
+          compat.bigTasks.clear();
+          compat.smallTasks.clear();
+          partitioningSortWithScratchSpace(start_n, end_n,
+                       A.localSlice(curDomain), Scratch.localSlice(curDomain),
+                       compat, criterion,
+                       startbit);
+        } else {
+          ShellSort.shellSort(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+        }
       }
     } else {
       const size = end_n-start_n+1;
       // Copy it to one locale
       var LocalA:[start_n..end_n] A.eltType;
+      var LocalScratch:[start_n..end_n] A.eltType;
       ShallowCopy.shallowCopy(LocalA, start_n, A, start_n, size);
       // Sort it
-      if n > state.baseCaseSize {
-        msbRadixSort(start_n, end_n,
-                     LocalA, criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
+      if n > compat.baseCaseSize {
+        compat.bigTasks.clear();
+        compat.smallTasks.clear();
+        partitioningSortWithScratchSpace(start_n, end_n,
+                     LocalA, LocalScratch,
+                     compat, criterion,
+                     startbit);
       } else {
         ShellSort.shellSort(LocalA, criterion, start=start_n, end=end_n);
       }
@@ -2484,118 +2603,210 @@ module TwoArrayPartitioning {
 
   proc distributedPartitioningSortWithScratchSpace(
           start_n:int, end_n:int, A:[], Scratch:[],
-          ref state: TwoArrayDistributedBucketizerSharedState,
+          ref state1: TwoArrayDistributedBucketizerSharedState,
+          ref state2: TwoArrayDistributedBucketizerSharedState,
           criterion, startbit:int): void {
-
-    //use BlockDist only;
 
     if !A.hasSingleLocalSubdomain() {
       compilerError("distributedPartitioningSortWithScratchSpace needs single local subdomain");
     }
     // TODO: assert that src and dst have the same distribution?
 
-    if startbit > state.endbit then
+    if startbit > state1.endbit then
       return;
 
-    if end_n - start_n < state.baseCaseSize {
+    // If it's really small, just sort it on Locale 0.
+    if end_n - start_n < state1.distributedBaseCaseSize {
+      ref compat = state1.perLocale[0].compat;
       distributedPartitioningSortWithScratchSpaceBaseCase(start_n, end_n,
                                                           A, Scratch,
-                                                          state, criterion,
+                                                          compat, criterion,
                                                           startbit);
       return;
     }
 
 
-    if debug {
+    if debugDist {
       writeln("in distributed radix sort ", start_n, "..", end_n,
-              " startbit ", startbit, " endbit ", state.endbit);
+              " startbit ", startbit, " endbit ", state1.endbit);
     }
 
-    const n = (end_n - start_n + 1);
-    state.distTasks.append(new TwoArraySortTask(start_n, n, startbit, true, true));
-    assert(state.distTasks.size == 1);
+    // TODO: use something more like distributed bag for these
+    var distTask: TwoArrayDistSortTask =
+      new TwoArrayDistSortTask(start_n, end_n - start_n + 1,
+                               startbit,
+                               0, state1.numLocales-1);
+    var nextDistTaskElts: list(TwoArrayDistSortPerBucketTask, parSafe=true);
+    var smallTasksPerLocale = newBlockArr(0..#numLocales,
+                                          list(TwoArraySortTask, parSafe=true));
 
-    while !state.distTasks.isEmpty() {
-      const task = state.distTasks.pop();
-      const taskStart = task.start;
-      const taskEnd = task.start + task.size - 1;
+    assert(!distTask.isEmpty());
 
-      assert(task.doSort);
-      assert(task.inA);
+    const nBuckets = state1.perLocale[0].compat.bucketizer.getNumBuckets();
+    const nLocalesTotal = state1.numLocales;
 
-      distributedPartitioningSortWithScratchSpaceHandleSampling(
-            task.start, taskEnd, A, Scratch,
-            state, criterion, task.startbit);
+    // Part A: Handle the "big" subproblems
+    while true {
+      if distTask.isEmpty() then break;
 
-      const nBuckets = state.perLocale[0].compat.bucketizer.getNumBuckets();
-      const nTasks = state.numLocales;
+      if debugDist then
+        writeln("Doing big task ", distTask);
 
-      // Step 1: Each locale sorts local portions into buckets
-      // and saves counts in globalCounts
-      coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
-        on loc do {
+      if debugDist {
+        var usedLocales1:[0..#nLocalesTotal] bool;
+        var usedLocales2:[0..#nLocalesTotal] bool;
+        // check: non-overlapping locales are used by each bucket in distTask
+        for t in distTask.tasks {
+          if !t.isEmpty() {
+            if t.useSecondState {
+              for (loc, tid) in t.localeAndIds(A) {
+                assert(!usedLocales2[tid]); // means race condition would occur
+                usedLocales2[tid] = true;
+              }
+
+            } else {
+              for (loc, tid) in t.localeAndIds(A) {
+                assert(!usedLocales1[tid]); // means race condition would occur
+                usedLocales1[tid] = true;
+              }
+            }
+          }
+        }
+      }
+
+      // TODO: put this call back in somewhere to support sample sort
+      // ... or just rewrite sample sort.
+      // Distributed sample sort should have sample size ~= numLocales,
+      // but that would interfere with maxBuckets being param.
+      // distributedPartitioningSortWithScratchSpaceHandleSampling(
+      //       task.start, taskEnd, A, Scratch,
+      //       state, criterion, task.startbit);
+
+      coforall (bktLoc, bktLocId, bktTask) in distTask.localesAndTasks(A)
+      with (ref state1, ref state2, ref nextDistTaskElts) do
+      on bktLoc {
+        // Each bucket can run in parallel - this allows each
+        // bucket to use nested coforalls to barrier.
+        assert(!bktTask.isEmpty());
+        const nLocalesBucket = bktTask.nLocales();
+        ref state = if bktTask.useSecondState then state2 else state1;
+
+        if debugDist then
+          writeln(bktLocId, " doing big task component ", bktTask);
+
+        coforall (loc,tid) in bktTask.localeAndIds(A) with (ref state) do
+        on loc {
+          const task = bktTask;
+
+          // Step 1: Each locale sorts local portions into buckets
+          // and shares those counts in globalCounts.
+          // This uses perLocale[tid].compat.
+          const taskStart = task.start;
+          const taskEnd = task.start + task.size - 1;
+
           const localDomain = A.localSubdomain()[task.start..taskEnd];
           ref localSrc = A.localSlice(localDomain);
           ref localDst = Scratch.localSlice(localDomain);
+
+          if debugDist then
+            writeln(tid, " bucketizing local portion ", localDomain);
 
           bucketize(localDomain.alignedLow,
                     localDomain.alignedHigh,
                     localDst, localSrc,
                     state.perLocale[tid].compat, criterion, task.startbit);
+
           ref localCounts = state.perLocale[tid].compat.counts;
-          if debug {
+
+          if debugDist {
             var total = 0;
             for bin in 0..#nBuckets {
               if localCounts[bin] > 0 {
-                writeln("localCounts[", bin, "]=", localCounts[bin]);
                 total += localCounts[bin];
               }
             }
             assert(total == localDomain.size);
           }
-          // Now store the counts into the global counts array
-          for bin in vectorizeOnly(0..#nBuckets) {
-            state.perLocale[0].globalCounts[bin*nTasks + tid] = localCounts[bin];
-          }
-          //state.globalCounts[tid.. by nTasks] = localCounts;
-        }
-      }
-      // Now the data is in Scratch
 
-      if debug {
-        writef("after bucketize local portions, Scratch is %xt\n", Scratch[task.start..taskEnd]);
-      }
-
-      // Step 2: scan
-      state.perLocale[0].globalEnds = (+ scan state.perLocale[0].globalCounts) + task.start;
-
-      // Store counts on each other locale
-      forall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
-        if tid != 0 {
-          state.perLocale[tid].globalCounts = state.perLocale[0].globalCounts;
-          state.perLocale[tid].globalEnds = state.perLocale[0].globalEnds;
-        }
-      }
-
-      if debug {
-        var total = 0;
-        for i in 0..#state.countsSize {
-          if state.perLocale[0].globalCounts[i] != 0 {
-            total += state.perLocale[0].globalCounts[i];
-            writeln("state.globalCounts[", i, "]=", state.perLocale[0].globalCounts[i]);
-            writeln("state.globalEnds[", i, "]=", state.perLocale[0].globalEnds[i]);
+          // Do an all-to-all to send the counts to everybody
+          // To make this communication more efficient, temporarily store
+          // in the order
+          //     count for locale 0, bin 0
+          //     count for locale 0, bin 1
+          //     ...
+          // (i.e. the transpose of the order needed for scan)
+          const toIdx = maxBuckets * tid;
+          ref perLocale = state.perLocale;
+          forall dstTid in task.otherIds(tid) {
+            // perLocale[dstTid].globalCounts[toIdx..#maxBuckets] = localCounts;
+            ShallowCopy.shallowCopyPutGet(
+                perLocale[dstTid].globalCounts, toIdx,
+                localCounts, 0, maxBuckets);
           }
         }
-        assert(total == task.size);
-      }
+        // Now the data is in Scratch
 
-      // Step 3: distribute the keys to the src array according
-      // to the globalEnds.
-      // In particular, bin i from task j should be stored into
-      // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
-      // (because the scan is inclusive)
-      coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
-        on loc do {
+        if debugDist {
+          writef("%i after bucketize local portions, Scratch is %xt\n",
+              bktLocId,
+              Scratch[bktTask.start..#bktTask.size]);
+        }
+
+        // ending coforall and recreating it is just a barrier
+
+        coforall (loc,tid) in bktTask.localeAndIds(A) with (ref state) do
+        on loc {
+          const task = bktTask;
+          const taskStart = task.start;
+          const taskEnd = task.start + task.size - 1;
+
+          const bktFirstLocale = bktTask.firstLocaleId;
+          const bktLastLocale = bktTask.lastLocaleId;
+
+          // Step 2: scan
+          // Note that the globalCounts arrays are stored in transpose
+          // order up until now to optimize communication, so we first
+          // rearrange them.
+
+          // Temporarily use the globalEnds array to reorder
+          {
+            ref globalCounts = state.perLocale[tid].globalCounts;
+            ref globalEnds = state.perLocale[tid].globalEnds;
+
+            // Compute the transpose
+            forall (tid,bkt) in {0..#nLocalesTotal, 0..#maxBuckets} {
+              var count = 0;
+              if bktFirstLocale <= tid && tid <= bktLastLocale then
+                count = globalCounts[tid*maxBuckets+bkt];
+
+              globalEnds[bkt*nLocalesTotal+tid] = count;
+            }
+            globalCounts = globalEnds;
+
+            // Do the scan itself
+            globalEnds = (+ scan globalCounts) + task.start;
+          }
+
+          if debugDist && tid == bktLocId {
+            var total = 0;
+            for i in 0..#state.countsSize {
+              if state.perLocale[bktLocId].globalCounts[i] != 0 {
+                total += state.perLocale[bktLocId].globalCounts[i];
+                writeln(tid, " state.globalCounts[", i, "]=",
+                    state.perLocale[bktLocId].globalCounts[i]);
+                writeln(tid, " state.globalEnds[", i, "]=",
+                    state.perLocale[bktLocId].globalEnds[i]);
+              }
+            }
+            assert(total == task.size);
+          }
+
+          // Step 3: distribute the keys to the src array according
+          // to the globalEnds.
+          // In particular, bin i from task j should be stored into
+          // globalEnds[i*ntasks+j-1] .. globalEnds[i*ntasks+j] - 1
+          // (because the scan is inclusive)
+
           const ref globalCounts = state.perLocale[tid].globalCounts;
           const ref globalEnds = state.perLocale[tid].globalEnds;
           const localSubdomain = A.localSubdomain()[task.start..taskEnd];
@@ -2606,103 +2817,176 @@ module TwoArrayPartitioning {
             var offset = localSubdomain.low;
             for bin in 0..#nBuckets {
               localOffsets[bin] = offset;
-              offset += globalCounts[bin*nTasks + tid];
+              offset += globalCounts[bin*nLocalesTotal + tid];
             }
           }
 
           forall bin in 0..#nBuckets {
-            var size = globalCounts[bin*nTasks + tid];
+            var size = globalCounts[bin*nLocalesTotal + tid];
             if size > 0 {
               var localStart = localOffsets[bin];
               var localEnd = localStart + size - 1;
-              var globalStart = if bin*nTasks+tid > 0
-                                then globalEnds[bin*nTasks+tid-1]
+              var globalStart = if bin*nLocalesTotal+tid > 0
+                                then globalEnds[bin*nLocalesTotal+tid-1]
                                 else taskStart;
-              var globalEnd = globalEnds[bin*nTasks+tid] - 1;
-              if debug {
+              var globalEnd = globalEnds[bin*nLocalesTotal+tid] - 1;
+              if debugDist {
                 writeln("bin ", bin, " tid ", tid, " range ", taskStart..taskEnd,
                         " A[", globalStart, "..", globalEnd, "] = Scratch[",
                         localStart, "..", localEnd, "]");
-                assert(globalCounts[bin*nTasks+tid] ==
-                    state.perLocale[0].globalCounts[bin*nTasks+tid]);
-                assert(globalEnds[bin*nTasks+tid] ==
-                    state.perLocale[0].globalEnds[bin*nTasks+tid]);
+                assert(globalCounts[bin*nLocalesTotal+tid] ==
+                    state.perLocale[bktLocId].globalCounts[bin*nLocalesTotal+tid]);
+                assert(globalEnds[bin*nLocalesTotal+tid] ==
+                    state.perLocale[bktLocId].globalEnds[bin*nLocalesTotal+tid]);
               }
               ShallowCopy.shallowCopy(A, globalStart, Scratch, localStart, size);
             }
           }
         }
-      }
-      // now the data is all in A
-      if debug {
-        writef("after distribute, A is %xt\n", A[task.start..taskEnd]);
-      }
 
-      // Step 4: Add sub-tasks depending on if the bin is local or distributed
-      // still.
-      for bin in state.perLocale[0].compat.bucketizer.getBinsToRecursivelySort() {
-        const binStart = if bin*nTasks > 0
-                          then state.perLocale[0].globalEnds[bin*nTasks-1]
-                          else task.start;
-        const binEnd = state.perLocale[0].globalEnds[bin*nTasks+nTasks-1] - 1;
-        const binSize = binEnd - binStart + 1;
-        const binStartBit = state.perLocale[0].compat.bucketizer.getNextStartBit(task.startbit);
-        if binSize > 1 {
-          // could this work for block?
-          //var isOnOneLocale = A.domain.dist.idxToLocale(globalStart) ==
-          //                    A.domain.dist.idxToLocale(globalEnd)
-          var isOnOneLocale = false;
-          var theLocaleId = -1;
-          for (loc,tid) in zip(A.targetLocales(),0..) {
-            const localSubdomain = A.localSubdomain(loc)[task.start..taskEnd];
-            const curDomain = {binStart..binEnd};
-            const intersect = curDomain[localSubdomain];
-            if curDomain == intersect { // curDomain.isSubset(localSubdomain)
-              isOnOneLocale = true;
-              theLocaleId = tid;
+        // aka barrier
+
+        // now the data is all in A
+
+        // Step 4: Add sub-tasks depending on if the bin is local or distributed
+        // still.
+        ref bktOwnerState = state.perLocale[bktLocId];
+
+        for bin in bktOwnerState.compat.bucketizer.getBinsToRecursivelySort() {
+          const binStart = if bin*nLocalesTotal > 0
+                            then bktOwnerState.globalEnds[bin*nLocalesTotal-1]
+                            else bktTask.start;
+          const binEnd = bktOwnerState.globalEnds[bin*nLocalesTotal+nLocalesTotal-1] - 1;
+          const binSize = binEnd - binStart + 1;
+          const binStartBit = bktOwnerState.compat.bucketizer.getNextStartBit(bktTask.startbit);
+          if binSize > 1 {
+            var small = false;
+            var theLocaleId = -1;
+
+            // Compute the regions on the same locale as the first, last
+            // elements in the bin.
+            const firstLoc = A.domain.dist.idxToLocale(binStart);
+            const lastLoc = A.domain.dist.idxToLocale(binEnd);
+            const onFirstLoc = A.localSubdomain(firstLoc)[binStart..binEnd];
+            const onLastLoc = A.localSubdomain(lastLoc)[binStart..binEnd];
+            var theLocale = firstLoc;
+            if onFirstLoc.size == binSize {
+              // case 1: all elements are on firstLoc
+              small = true;
+            } else if binSize <= state.distributedBaseCaseSize {
+              // case 2: size is small enough to do on 1 locale
+              small = true;
+            }
+            theLocaleId = theLocale.id;
+            assert(A.targetLocales()[theLocaleId] == theLocale);
+
+            if debugDist then
+              writeln(bktLocId,
+                      " Recursive bin ", bin,
+                      " start = ", binStart,
+                      " size = ", binSize,
+                      " startbit = ", binStartBit,
+                      " small = ", small);
+
+            if small {
+              var small = new TwoArraySortTask(binStart, binSize, binStartBit,
+                                               true, true);
+
+              if debugDist then
+                writeln(bktLocId, " Adding small task ", small);
+
+              smallTasksPerLocale[theLocaleId].append(small);
+            } else {
+              // Create a distributed sorting task
+              var firstLocId = firstLoc.id;
+              var lastLocId = lastLoc.id;
+              assert(A.targetLocales()[firstLocId] == firstLoc);
+              assert(A.targetLocales()[lastLocId] == lastLoc);
+              if debugDist {
+                // the above assumes something block-like.
+                // check that the bin only involves firstLoc..lastLoc
+                for (loc,tid) in zip(A.targetLocales(),0..) {
+                  if !(firstLocId..lastLocId).contains(tid) {
+                    assert(A.localSubdomain(loc)[binStart..binEnd].size == 0);
+                  }
+                }
+              }
+
+              var t = new TwoArrayDistSortPerBucketTask(
+                                     binStart, binSize, binStartBit,
+                                     firstLocId, lastLocId,
+                                     useSecondState=false);
+
+              if debugDist then
+                writeln(bktLocId, " Adding big subtask", t);
+
+              nextDistTaskElts.append(t);
             }
           }
+        }
+      }
 
-          if isOnOneLocale {
-            state.localTasks[theLocaleId].localTasks.append(
-                new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
-          } else {
-            state.distTasks.append(
-                new TwoArraySortTask(binStart, binSize, binStartBit, true, true));
-          }
+      // Update distTasks based on nextDistTaskElts
+      nextDistTaskElts.sort(
+          comparator=new TwoArrayDistSortPerBucketTaskStartComparator());
+
+      // For each of those tasks, decide if they should use
+      // counts1 or counts2
+      var lastLocaleIdIn1 = -1;
+      var lastLocaleIdIn2 = -1;
+      for t in nextDistTaskElts {
+        if lastLocaleIdIn1 < t.firstLocaleId {
+          t.useSecondState = false;
+          lastLocaleIdIn1 = t.lastLocaleId;
+        } else if lastLocaleIdIn2 < t.firstLocaleId {
+          t.useSecondState = true;
+          lastLocaleIdIn2 = t.lastLocaleId;
+        } else {
+          halt("Algorithm Problem!");
+        }
+      }
+
+      distTask.tasks = nextDistTaskElts;
+      nextDistTaskElts.clear();
+    }
+
+    // Part B: Handle the "small" subproblems
+
+    if debugDist then
+      writef("After big tasks, A is: %xt\n", A);
+
+    // Always use state 1 for small subproblems...
+    ref state = state1;
+    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
+    on loc {
+      // Get the tasks to sort here
+
+      while true {
+        if smallTasksPerLocale[tid].isEmpty() then break;
+        const task = smallTasksPerLocale[tid].pop();
+
+        if debugDist then
+          writeln(tid, " Doing small task ", task);
+
+        // Run the local task
+        ref compat = state.perLocale[tid].compat;
+        const taskEnd = task.start + task.size - 1;
+
+        distributedPartitioningSortWithScratchSpaceBaseCase(
+            task.start, taskEnd,
+            A, Scratch,
+            compat, criterion, task.startbit);
+
+        if debugDist {
+          checkSorted(task.start, taskEnd, A, criterion);
+          writef("%i after small sort, dst is %xt\n", tid, A[task.start..taskEnd]);
         }
       }
     }
 
-    // Handle the local tasks
-    coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) {
-      on loc do {
-        // Copy the tasks to do from locale 0
-        var myTasks = state.localTasks[tid].localTasks;
-        var baseCaseSize = state.baseCaseSize;
-        ref compat = state.perLocale[tid].compat;
-
-        for task in myTasks {
-          const taskEnd = task.start + task.size - 1;
-          const curDomain = {task.start..taskEnd};
-
-          // Great! Just sort it locally.
-          if n > baseCaseSize {
-            compat.bigTasks.clear();
-            compat.smallTasks.clear();
-            partitioningSortWithScratchSpace(
-                task.start, taskEnd,
-                A.localSlice(curDomain), Scratch.localSlice(curDomain),
-                compat, criterion, task.startbit);
-          } else {
-            ShellSort.shellSort(A.localSlice(curDomain), criterion,
-                start=task.start, end=taskEnd);
-          }
-          if debug {
-            writef("after recursive sorts, dst is %xt\n", A[task.start..taskEnd]);
-          }
-        }
-      }
+    if debugDist {
+      writef("After small tasks, A is: %xt\n", A);
+      checkSorted(start_n, end_n, A, criterion);
     }
   }
 }
@@ -2717,6 +3001,7 @@ module TwoArrayRadixSort {
 
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -2738,17 +3023,23 @@ module TwoArrayRadixSort {
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
-      var state = new TwoArrayDistributedBucketizerSharedState(
+      var state1 = new TwoArrayDistributedBucketizerSharedState(
         bucketizerType=RadixBucketizer,
         numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
+        distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
-
+      var state2 = new TwoArrayDistributedBucketizerSharedState(
+        bucketizerType=RadixBucketizer,
+        numLocales=Data.targetLocales().size,
+        baseCaseSize=baseCaseSize,
+        distributedBaseCaseSize=distributedBaseCaseSize,
+        endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
                                        Data.domain.low, Data.domain.high,
                                        Data, Scratch,
-                                       state,
+                                       state1, state2,
                                        comparator, 0);
     }
   }
@@ -2767,6 +3058,7 @@ module TwoArraySampleSort {
   proc twoArraySampleSort(Data:[], comparator:?rec=defaultComparator) {
 
     var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
@@ -2790,6 +3082,7 @@ module TwoArraySampleSort {
         bucketizerType=SampleBucketizer(Data.eltType),
         numLocales=Data.targetLocales().size,
         baseCaseSize=baseCaseSize,
+        distributedBaseCaseSize=distributedBaseCaseSize,
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
