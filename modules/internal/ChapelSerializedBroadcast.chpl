@@ -29,7 +29,7 @@ module ChapelSerializedBroadcast {
 
   extern proc chpl_get_global_serialize_table(idx : int) : c_void_ptr;
 
-  proc tupleHasView(type t) param {
+  private proc tupleHasView(type t) param {
     for param i in 0..#t.size {
       if isArray(t[i]) {
         if t[i].isView() {
@@ -37,9 +37,7 @@ module ChapelSerializedBroadcast {
         }
       }
     }
-
     return false;
-
   }
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
@@ -58,8 +56,7 @@ module ChapelSerializedBroadcast {
     // since it knows the precise type.
     //
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
-       (isTuple(T) && tupleHasView(T)) ||
-       (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {
+       (isTuple(T) && tupleHasView(T)) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
       const data = localeZeroGlobal.chpl__serialize();
@@ -83,8 +80,7 @@ module ChapelSerializedBroadcast {
   where chpl__enableSerializedGlobals {
     type globalType = localeZeroGlobal.type;
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
-       (isTuple(T) && tupleHasView(T)) ||
-       (isHomogeneousTuple(T) && chpl__isArrayView(localeZeroGlobal[0])) {
+       (isTuple(T) && tupleHasView(T)) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
       const root = here.id;
