@@ -2092,7 +2092,7 @@ static void reissueMsgHelp(CallExpr* from, const char* str, bool err) {
   if (err) {
     USR_FATAL(from, "%s", str);
   } else {
-    //gdbShouldBreakHere();
+    gdbShouldBreakHere();
     USR_WARN(from, "%s", str);
   }
 }
@@ -9413,9 +9413,7 @@ static void resolveSerializers() {
           bool allRVF = true;
           for_fields(field, at) {
             if (strcmp(field->name, "size") != 0) {
-              if (field->isRef()) {
-              }
-              else {
+              if (!field->isRef()) {
                 allRVF=false;
                 break;
               }
