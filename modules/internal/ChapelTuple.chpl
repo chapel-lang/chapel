@@ -48,19 +48,24 @@ module ChapelTuple {
     param size : int;
   }
 
-  proc _tuple.chpl__tupleIsSerializeable() param {
+  proc isSerializeableArray(a) param {
     use Reflection;
-    use ArrayViewSlice;
-
-    if (size != 2) then
-      return false;
-
-    for param i in 0..#size {
-      if !canResolveMethod(this[i], "chpl__serialize") then {
-        return false;
+    if isArray(a) {
+      // Engin: I have no idea why, but we can resolve
+      // _array(DRArr).chpl__serialize, where we shouldn't. However, we cannot
+      // resolve the deserializer counterpart. And that causes weird resolution
+      // errors
+      if !isSubtype(a.domain.dist.type, DefaultDist) {
+        return canResolveMethod(a, "chpl__serialize");
       }
     }
+    return false;
+  }
 
+  proc _tuple.chpl__tupleIsSerializeable() param {
+    for param i in 0..#this.size {
+      if !isSerializeableArray(this[i]) then return false;
+    }
     return true;
   }
 
