@@ -44,6 +44,8 @@ assignment, and unary, binary, and relational operators.
 module ChapelTuple {
   use ChapelStandard, DSIUtil;
 
+  private param maxSerializeableTupleSize = 4;
+
   pragma "tuple" record _tuple {
     param size : int;
   }
@@ -63,51 +65,86 @@ module ChapelTuple {
   }
 
   proc _tuple.chpl__tupleIsSerializeable() param {
-    for param i in 0..#this.size {
-      if !isSerializeableArray(this[i]) then return false;
+    if size > maxSerializeableTupleSize {
+      return false;
     }
-    return true;
+    else {
+      for param i in 0..#this.size {
+        if !isSerializeableArray(this[i]) then return false;
+      }
+      return true;
+    }
   }
 
+  // we can maybe implement a more general scheme with some recursion here.
+  // however, such recursion can get messy (see the fast follower
+  // implementation). For now, I am implementing it this way:
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
-    return (this[0].chpl__serialize(), this[1].chpl__serialize());
+    if size == 2 then
+      return (this[0].chpl__serialize(), this[1].chpl__serialize());
+    else if size == 3 then
+      return (this[0].chpl__serialize(), this[1].chpl__serialize(),
+              this[2].chpl__serialize());
+    else if size == 4 then
+      return (this[0].chpl__serialize(), this[1].chpl__serialize(),
+              this[2].chpl__serialize(), this[3].chpl__serialize());
+    else
+      compilerError("_tuple.chpl__serialize called with a tuple of size ",
+          size:string, " where the maximum serializeable tuple size is ",
+          maxSerializeableTupleSize:string);
+
   }
 
   proc type _tuple.chpl__tupleIsDeserializable(data) param {
-    use Reflection;
-    use ArrayViewSlice;
-
-    if (size != 2) then
+    if size > maxSerializeableTupleSize {
       return false;
-
-    for param i in 0..#size {
-      type t = __primitive("static typeof", this[i]);
-      if isArray(t) && t.isView() {
-        if !chpl_serializeSlices {
-          return false;
-        }
-      }
-      else {
-        // Engin: I wanted to be extra cautious and add the following check
-        // here, but can't get rid of some resolution errors quickly. I don't
-        // think it is a must, as I believe we first check to resolve
-        // chpl__serialize, and most of the types will not even hit this
-
-        /*
-        if !canResolveTypeMethod(t, "chpl__deserialize", data) then {
-          return false;
-        }
-        */
-      }
     }
+    else {
+      use ArrayViewSlice; // for chpl_serializeSlices
+      for param i in 0..#size {
+        type t = __primitive("static typeof", this[i]);
+        if isArray(t) && t.isView() {
+          if !chpl_serializeSlices {
+            return false;
+          }
+        }
+        else {
+          // Engin: I wanted to be extra cautious and add the following check
+          // here, but can't get rid of some resolution errors quickly. I don't
+          // think it is a must, as I believe we first check to resolve
+          // chpl__serialize, and most of the types will not even hit this
 
-    return true;
+          /*
+          use Reflection;
+          if !canResolveTypeMethod(t, "chpl__deserialize", data) then {
+            return false;
+          }
+          */
+        }
+      }
+
+      return true;
+    }
   }
 
   pragma "no copy return"
   proc type _tuple.chpl__deserialize(data) where this.chpl__tupleIsDeserializable(data) {
-    return (this[0].chpl__deserialize(data(0)),
-            this[1].chpl__deserialize(data(1)));
+    if size == 2 then 
+      return (this[0].chpl__deserialize(data(0)),
+              this[1].chpl__deserialize(data(1)));
+    else if size == 3 then 
+      return (this[0].chpl__deserialize(data(0)),
+              this[1].chpl__deserialize(data(1)),
+              this[2].chpl__deserialize(data(2)));
+    else if size == 4 then
+      return (this[0].chpl__deserialize(data(0)),
+              this[1].chpl__deserialize(data(1)),
+              this[2].chpl__deserialize(data(2)),
+              this[3].chpl__deserialize(data(3)));
+    else
+      compilerError("_tuple.chpl__deserialize called with a tuple of size ",
+          size:string, " where the maximum serializeable tuple size is ",
+          maxSerializeableTupleSize:string);
   }
   
   pragma "tuple init fn"
