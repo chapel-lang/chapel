@@ -2649,7 +2649,7 @@ module TwoArrayPartitioning {
     while true {
       if distTask.isEmpty() then break;
 
-      if debugDist then // good to uncomment to see progress
+      if debugDist then
         writeln("Doing big task ", distTask);
 
       if debugDist {
@@ -2722,7 +2722,6 @@ module TwoArrayPartitioning {
             var total = 0;
             for bin in 0..#nBuckets {
               if localCounts[bin] > 0 {
-                //writeln("localCounts[", bin, "]=", localCounts[bin]);
                 total += localCounts[bin];
               }
             }
@@ -2848,9 +2847,6 @@ module TwoArrayPartitioning {
         // aka barrier
 
         // now the data is all in A
-        /*if debugDist {
-          writef("after distribute, A is %xt\n", A[task.start..taskEnd]);
-        }*/
 
         // Step 4: Add sub-tasks depending on if the bin is local or distributed
         // still.
@@ -2901,17 +2897,7 @@ module TwoArrayPartitioning {
 
               smallTasksPerLocale[theLocaleId].append(small);
             } else {
-              // Create one or more distributed sorting tasks
-
-              // Distributed sorting tasks need to use the per-locale data
-              // structures allocated above...
-              // so we can have each locale involved in only one distributed
-              // sort task at a time.
-              // (we could consider relaxing this in various ways;
-              //  creating 2 state records being one option).
-
-              // Which locales will own this bucket?
-
+              // Create a distributed sorting task
               var firstLocId = firstLoc.id;
               var lastLocId = lastLoc.id;
               assert(A.targetLocales()[firstLocId] == firstLoc);
