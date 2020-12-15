@@ -29,15 +29,16 @@ module ChapelSerializedBroadcast {
 
   extern proc chpl_get_global_serialize_table(idx : int) : c_void_ptr;
 
-  private proc tupleHasView(type t) param {
+  private proc tupleHasView(t) param {
     for param i in 0..#t.size {
       if isArray(t[i]) {
-        if t[i].isView() {
+        if chpl__isArrayView(t[i]) {
           return true;
         }
       }
     }
     return false;
+
   }
 
   proc chpl__broadcastGlobal(ref localeZeroGlobal : ?T, id : int)
@@ -55,8 +56,15 @@ module ChapelSerializedBroadcast {
     // being serialized rather than querying it from localeZeroGlobal
     // since it knows the precise type.
     //
+    // ENGIN: I have tried to add a new type to the broadcaster and its
+    // destructor counterpart. However, there are some broadcast calls that are
+    // added at the `parallel` pass that comes after resolution. So, at that
+    // point, there's no such thing as type arguments. There must be a way to
+    // get a specific instantiation of a function, but even then, how can we
+    // ensure that we have instantiated the broadcasters for that type before
+    // `parallel`?
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
-       (isTuple(T) && tupleHasView(T)) {
+       (isTuple(localeZeroGlobal) && tupleHasView(localeZeroGlobal)) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
       const data = localeZeroGlobal.chpl__serialize();
@@ -80,7 +88,7 @@ module ChapelSerializedBroadcast {
   where chpl__enableSerializedGlobals {
     type globalType = localeZeroGlobal.type;
     if (isArray(localeZeroGlobal) && chpl__isArrayView(localeZeroGlobal)) ||
-       (isTuple(T) && tupleHasView(T)) {
+       (isTuple(localeZeroGlobal) && tupleHasView(localeZeroGlobal)) {
       halt("internal error: can't broadcast module-scope arrays yet");
     } else {
       const root = here.id;
