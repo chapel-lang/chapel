@@ -778,21 +778,37 @@ module ChapelLocale {
   }
 
   pragma "no doc"
-  inline proc chpl_defaultLocaleInitPrivate() {
+  proc chpl_defaultLocaleInitPrivate() {
     pragma "no copy" pragma "no auto destroy"
     const ref rl = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
     defaultLocale._instance = rl[0]._instance;
   }
 
   pragma "no doc"
-  inline proc chpl_singletonCurrentLocaleInitPrivate(locIdx) {
+  proc chpl_singletonCurrentLocaleInitPrivateSublocs(arg: locale) {
+    for i in 0..#arg.getChildCount() {
+      var subloc = arg.getChild(i);
+
+      var val = subloc._instance:unmanaged AbstractLocaleModel?;
+      if val == nil then
+        halt("error in locale initialization");
+
+      val!.chpl_singletonThisLocaleArray[0]._instance = val;
+
+      chpl_singletonCurrentLocaleInitPrivateSublocs(subloc);
+    }
+  }
+  pragma "no doc"
+  proc chpl_singletonCurrentLocaleInitPrivate(locIdx) {
     pragma "no copy" pragma "no auto destroy"
     const ref rl = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
-    var val = rl[locIdx]._instance:unmanaged AbstractLocaleModel?;
+    var loc = rl[locIdx];
+    var val = loc._instance:unmanaged AbstractLocaleModel?;
     if val == nil then
-      halt("error in locale initialization order");
+      halt("error in locale initialization");
 
     val!.chpl_singletonThisLocaleArray[0]._instance = val;
+    chpl_singletonCurrentLocaleInitPrivateSublocs(loc);
   }
 
   pragma "fn synchronization free"
