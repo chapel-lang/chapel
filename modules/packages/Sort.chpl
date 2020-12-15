@@ -2682,7 +2682,7 @@ module TwoArrayPartitioning {
 
       coforall (bktLoc, bktLocId, bktTask) in distTask.localesAndTasks(A)
       with (ref state1, ref state2, ref nextDistTaskElts) do
-      on bktLoc do {
+      on bktLoc {
         // Each bucket can run in parallel - this allows each
         // bucket to use nested coforalls to barrier.
         assert(!bktTask.isEmpty());
@@ -2693,7 +2693,7 @@ module TwoArrayPartitioning {
           writeln(bktLocId, " doing big task component ", bktTask);
 
         coforall (loc,tid) in bktTask.localeAndIds(A) with (ref state) do
-        on loc do {
+        on loc {
           const task = bktTask;
 
           // Step 1: Each locale sorts local portions into buckets
@@ -2754,7 +2754,7 @@ module TwoArrayPartitioning {
         // ending coforall and recreating it is just a barrier
 
         coforall (loc,tid) in bktTask.localeAndIds(A) with (ref state) do
-        on loc do {
+        on loc {
           const task = bktTask;
           const taskStart = task.start;
           const taskEnd = task.start + task.size - 1;
@@ -2970,7 +2970,7 @@ module TwoArrayPartitioning {
     // Always use state 1 for small subproblems...
     ref state = state1;
     coforall (loc,tid) in zip(A.targetLocales(),0..) with (ref state) do
-    on loc do {
+    on loc {
       // Get the tasks to sort here
 
       while true {
