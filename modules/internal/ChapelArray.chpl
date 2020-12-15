@@ -2483,7 +2483,17 @@ module ChapelArray {
       return isArray(this.eltType) || isDomain(this.eltType);
     }
 
+    // We don't want to serialize an array if it is privatized.
     proc chpl__serialize() where _instance.chpl__rvfMe() &&
+                                 !isEltTypeRuntimeType() &&
+                                 !_isPrivatized(_instance) {
+      return _instance.chpl__serialize();
+    }
+
+    // ... however, we might want to serialize it if it is inside a tuple that
+    // has non-privatized arrays (this is only used by tuple serialization
+    // logic)
+    proc chpl__forceSerialize() where _instance.chpl__rvfMe() &&
                                  !isEltTypeRuntimeType() {
       return _instance.chpl__serialize();
     }

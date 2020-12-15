@@ -58,7 +58,7 @@ module ChapelTuple {
       // resolve the deserializer counterpart. And that causes weird resolution
       // errors
       if !isSubtype(a.domain.dist.type, DefaultDist) {
-        return canResolveMethod(a, "chpl__serialize");
+        return canResolveMethod(a, "chpl__forceSerialize");
       }
     }
     return false;
@@ -92,15 +92,15 @@ module ChapelTuple {
   // implementation). For now, I am implementing it this way:
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
     if size == 1 then
-      return (this[0].chpl__serialize(), );
+      return (this[0].chpl__forceSerialize(), );
     else if size == 2 then
-      return (this[0].chpl__serialize(), this[1].chpl__serialize());
+      return (this[0].chpl__forceSerialize(), this[1].chpl__forceSerialize());
     else if size == 3 then
-      return (this[0].chpl__serialize(), this[1].chpl__serialize(),
-              this[2].chpl__serialize());
+      return (this[0].chpl__forceSerialize(), this[1].chpl__forceSerialize(),
+              this[2].chpl__forceSerialize());
     else if size == 4 then
-      return (this[0].chpl__serialize(), this[1].chpl__serialize(),
-              this[2].chpl__serialize(), this[3].chpl__serialize());
+      return (this[0].chpl__forceSerialize(), this[1].chpl__forceSerialize(),
+              this[2].chpl__forceSerialize(), this[3].chpl__forceSerialize());
     else
       compilerError("_tuple.chpl__serialize called with a tuple of size ",
           size:string, " where the maximum serializeable tuple size is ",
