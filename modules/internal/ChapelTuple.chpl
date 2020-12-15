@@ -80,7 +80,9 @@ module ChapelTuple {
   // however, such recursion can get messy (see the fast follower
   // implementation). For now, I am implementing it this way:
   proc _tuple.chpl__serialize() where this.chpl__tupleIsSerializeable() {
-    if size == 2 then
+    if size == 1 then
+      return (this[0].chpl__serialize(), );
+    else if size == 2 then
       return (this[0].chpl__serialize(), this[1].chpl__serialize());
     else if size == 3 then
       return (this[0].chpl__serialize(), this[1].chpl__serialize(),
@@ -129,7 +131,9 @@ module ChapelTuple {
 
   pragma "no copy return"
   proc type _tuple.chpl__deserialize(data) where this.chpl__tupleIsDeserializable(data) {
-    if size == 2 then 
+    if size == 1 then 
+      return (this[0].chpl__deserialize(data(0)), );
+    else if size == 2 then 
       return (this[0].chpl__deserialize(data(0)),
               this[1].chpl__deserialize(data(1)));
     else if size == 3 then 
