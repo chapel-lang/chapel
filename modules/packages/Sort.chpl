@@ -2020,7 +2020,8 @@ module TwoArrayPartitioning {
     iter localeAndIds(A) {
       const ref tgtLocs = A.targetLocales();
       for tid in firstLocaleId..lastLocaleId {
-        yield (tgtLocs[tid], tid);
+        const loc = tgtLocs[tid];
+        yield (loc, tid);
       }
     }
     // yield the other ids but do so in an order that depends on myId
@@ -2069,7 +2070,8 @@ module TwoArrayPartitioning {
     iter localesAndTasks(A) {
       for t in tasks {
         const locId = t.firstLocaleId;
-        yield (A.targetLocales()[locId], locId, t);
+        const loc = A.targetLocales()[locId];
+        yield (loc, locId, t);
       }
     }
   }
