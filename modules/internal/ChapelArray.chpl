@@ -2472,7 +2472,19 @@ module ChapelArray {
       return ret;
     }
 
-    proc chpl__serialize() where _instance.chpl__rvfMe() {
+    // deserializers are type methods. Within instances deserializers, we need
+    // to do `this.eltType` where `this` is a type. You cannot currently do that
+    // if `this.eltType` is supposed to be a runtime type. So, we can't
+    // serialize arrays of arrays and arrays of domains today.
+    // This notably comes up in SSCA and miniMD. But as far as I can see, not in
+    // a way that can impact performance. I expect that this limitation can
+    // impact performance if you zipper an array-of-rtts with an ArrayView
+    proc isEltTypeRuntimeType() param {
+      return isArray(this.eltType) || isDomain(this.eltType);
+    }
+
+    proc chpl__serialize() where _instance.chpl__rvfMe() &&
+                                 !isEltTypeRuntimeType() {
       return _instance.chpl__serialize();
     }
 
