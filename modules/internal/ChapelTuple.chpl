@@ -108,6 +108,13 @@ module ChapelTuple {
 
   }
 
+  private proc isSlice(type t) param {
+    use ArrayViewSlice;
+    type instanceType = __primitive("static field type", t, "_instance");
+    param ret = isSubtype(instanceType, ArrayViewSliceArr);
+    return ret;
+  }
+
   proc type _tuple.chpl__tupleIsDeserializable(data) param {
     if size > maxSerializeableTupleSize {
       return false;
@@ -116,7 +123,7 @@ module ChapelTuple {
       use ArrayViewSlice; // for chpl_serializeSlices
       for param i in 0..#size {
         type t = __primitive("static typeof", this[i]);
-        if isArray(t) && t.isView() {
+        if isArray(t) && isSlice(t) {
           if !chpl_serializeSlices {
             return false;
           }

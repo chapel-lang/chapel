@@ -2465,13 +2465,6 @@ module ChapelArray {
     var _instance; // generic, but an instance of a subclass of BaseArr
     var _unowned:bool;
 
-    proc type isView() param {
-      use ArrayViewSlice;
-      type instanceType = __primitive("static field type", this, "_instance");
-      param ret = isSubtype(instanceType, ArrayViewSliceArr);
-      return ret;
-    }
-
     // deserializers are type methods. Within instances deserializers, we need
     // to do `this.eltType` where `this` is a type. You cannot currently do that
     // if `this.eltType` is supposed to be a runtime type. So, we can't
