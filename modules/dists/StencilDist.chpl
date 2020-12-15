@@ -1891,15 +1891,15 @@ proc StencilArr.dsiPrivatize(privatizeData) {
 }
 
 
-proc StencilArr.dsiTargetLocales() {
+proc StencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc StencilDom.dsiTargetLocales() {
+proc StencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Stencil.dsiTargetLocales() {
+proc Stencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

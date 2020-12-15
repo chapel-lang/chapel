@@ -788,8 +788,8 @@ module DefaultAssociative {
       __primitive("=", dst, src);
     }
 
-    proc dsiTargetLocales() {
-      return [this.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

@@ -689,8 +689,8 @@ module DefaultRectangular {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
 
-    proc dsiTargetLocales() {
-      return [this.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -1513,8 +1513,8 @@ module DefaultRectangular {
       return rad;
     }
 
-    proc dsiTargetLocales() {
-      return [this.data.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;

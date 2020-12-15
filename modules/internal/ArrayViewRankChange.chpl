@@ -332,7 +332,7 @@ module ArrayViewRankChange {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       //
       // BLC: there's a bit of a question in my mind about whether
       // rank-change slices (and regular slices for that matter) ought

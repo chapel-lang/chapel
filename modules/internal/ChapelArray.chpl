@@ -1148,7 +1148,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this distribution was declared.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
   }  // record _distribution
@@ -2217,7 +2217,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
 
@@ -3197,7 +3197,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       //
       // TODO: Is it really appropriate that the array should provide
       // this dsi routine rather than having this call forward to the

@@ -799,7 +799,7 @@ class UserMapAssocArr: AbsBaseArr {
     return locArr[i];
   }
 
-  proc dsiTargetLocales() {
+  proc dsiTargetLocales() const ref {
     return dom.dist.targetLocales;
   }
 
