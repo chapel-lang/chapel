@@ -2116,31 +2116,6 @@ void cache_put(struct rdcache_s* cache,
 
 }
 
-/*
-    // Handle prefetching. See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
-    // for inspiration.
-    // Here we decide whether or not we are going to prefetch the next page in the forward
-    // or backward direction, and we also increase the request size if access looks sequential.
-    trigger_prefetch = 0;
-    nvalid_before = count_valid_lines_before(entry->valid_lines, ra_line >> CACHELINE_BITS);
-    nvalid_after = count_valid_lines_at_after(entry->valid_lines, ra_line_end >> CACHELINE_BITS);
-    if( nvalid_before >= PREFETCH_TRIGGER_LINES && nvalid_before > nvalid_after ) {
-      trigger_prefetch = 1; // prefetch in the forward direction.
-      // Ask for the rest of the page going forward.
-      ra_line_end = ra_page + CACHEPAGE_SIZE;
-    } else if( nvalid_after >= PREFETCH_TRIGGER_LINES && nvalid_after > nvalid_before ) {
-      trigger_prefetch = -1; // prefetch in the reverse direction.
-      // Ask for the rest of the page going backward.
-      ra_line = ra_page;
-    }
-
-    TODO. use trigger_prefetch. Check page entry's trigger condition.
-
-    // Should we increase what we're getting in order to do synchronous
-    // prefetch, and should we trigger asynchronous prefetch?
-    if( count_valid_lines_before(entry->valid_lines, 
-*/
-
 static inline
 int is_congested(struct rdcache_s* cache)
 {
@@ -2169,6 +2144,13 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
                                  cache_seqn_t last_acquire,
                                  int32_t commID, int ln, int32_t fn)
 {
+  // Handle prefetching.
+  // See http://www.ece.eng.wayne.edu/~sjiang/Tsinghua-2010/linux-readahead.pdf
+  // for inspiration.
+  // Here we decide whether or not we are going to prefetch the next page
+  // in the forward or backward direction, and we also increase the request
+  // size if access looks sequential.
+
   int next_ra_length;
   int ok;
   raddr_t prefetch_start, prefetch_end;
@@ -2291,15 +2273,15 @@ int should_readahead_extend(uint64_t* valid,
   return 0;
 }
 
-
 // If addr == NULL, this will prefetch.
+// This call handles only accesses within a page.
 static
-void cache_get(struct rdcache_s* cache,
-                unsigned char * addr,
-                c_nodeid_t node, raddr_t raddr, size_t size,
-                cache_seqn_t last_acquire,
-                int sequential_readahead_length,
-                int32_t commID, int ln, int32_t fn)
+void cache_get_in_page(struct rdcache_s* cache,
+                       unsigned char * addr,
+                       c_nodeid_t node, raddr_t raddr, size_t size,
+                       cache_seqn_t last_acquire,
+                       int sequential_readahead_length,
+                       int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   struct cache_entry_s* aout_entry;
@@ -2324,15 +2306,11 @@ void cache_get(struct rdcache_s* cache,
   struct timespec start_get1, start_get2, wait1, wait2;
 #endif
 
-  INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
+  INFO_PRINT(("%i cache_get_in_page addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
-
-  // And don't do anything if it's a zero-length 
-  if( size == 0 ) {
-    return;
-  }
+  assert(size != 0); // should be handled at call site
 
   // first_page = raddr of start of first needed page
   ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
@@ -2350,11 +2328,358 @@ void cache_get(struct rdcache_s* cache,
     ra_last_page = ra_first_page + CACHEPAGE_SIZE*MAX_PAGES_PER_PREFETCH;
   }
 
-  // Try to find it in the cache. Go through one page at a time.
-  for( ra_page = ra_first_page, ra_line = ra_first_line;
-       ra_page <= ra_last_page;
-       ra_page += CACHEPAGE_SIZE, ra_line = ra_page ) {
+  ra_page = ra_first_page;
+  ra_line = ra_first_line;
+
+  assert(ra_first_page == ra_last_page);
+  // Try to find this page data in the cache.
+
+  // We will need from ra_line to ra_line_end.
+  ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
+  // Compute the portion of the page that was requested
+  requested_start = raddr_max(raddr,ra_page);
+  requested_end = raddr_min(raddr+size,ra_line_end);
+  requested_size = requested_end - requested_start;
+
+  // Is the page in the tree?
+  entry = lookup_entry(cache, node, ra_page);
+  aout_entry = NULL;
+  page = NULL;
+
+  // Ignore entries in Aout for now.
+  if( entry && ! entry->page ) {
+    aout_entry = entry;
+    entry = NULL;
+  }
+
+  if( entry ) {
+    // Is this cache line available for use, based on when we
+    // last ran an acquire fence?
+    entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
+   
+    // Is the relevant data available in the cache line?
+    has_data = check_valid_lines(entry->valid_lines,
+                                 (ra_line - ra_page) >> CACHELINE_BITS,
+                                 (ra_line_end - ra_line) >> CACHELINE_BITS);
+  } else {
+    entry_after_acquire = 1;
+    has_data = 0;
+  }
+
+  //printf("%i entry is %p after_acquire %i has_data %i\n", chpl_nodeID, entry, entry_after_acquire, has_data);
+
+  // If we are doing a GET that is adjacent to the last GET,
+  // fetch the rest of the data in this page.
+  readahead_skip = 0;
+  readahead_len = 0;
+  if( ENABLE_READAHEAD &&
+      entry_after_acquire &&
+      sequential_readahead_length == 0 &&
+      ! has_data &&
+      ! (entry && entry->readahead_len) ) {
     
+    ra = 0;
+
+    if( ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE && entry ) {
+      ra = should_readahead_extend(entry->valid_lines,
+                               (ra_line - ra_page) >> CACHELINE_BITS,
+                               (ra_line_end - ra_line) >> CACHELINE_BITS);
+      if( ra ) {
+        INFO_PRINT(("%i readahead trigger within-page direction=%i from %p to %p last %p\n",
+             (int) chpl_nodeID, ra, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+      }
+    }
+   
+    if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
+        cache->last_cache_miss_read_node == node ) {
+      if(cache->last_cache_miss_read_addr < ra_line &&
+         ra_line <= cache->last_cache_miss_read_addr + CACHEPAGE_SIZE) {
+        // forward prefetch.
+        ra = 1;
+        INFO_PRINT(("%i readahead trigger forward from %p to %p last %p\n",
+               (int) chpl_nodeID, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+      } else if(cache->last_cache_miss_read_addr > ra_line &&
+                ra_line >= cache->last_cache_miss_read_addr - CACHEPAGE_SIZE) {
+        // reverse prefetch
+        ra = -1;
+        INFO_PRINT(("readahead trigger reverse from %p to %p last %p\n",
+               (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
+      }
+    }
+
+    if( ra == 1 ) {
+      // Extend ra_line_end to the end of the current page.
+      ra_line_end = ra_page + CACHEPAGE_SIZE;
+      
+      readahead_skip = CACHEPAGE_SIZE;
+      readahead_len = CACHEPAGE_SIZE;
+    } else if(ra == -1) {
+      // reverse prefetch
+      // Extend ra_line to the start of the current page.
+      ra_line = ra_page;
+      
+      readahead_skip = -CACHEPAGE_SIZE;
+      readahead_len = CACHEPAGE_SIZE;
+    }
+  }
+
+  if( entry ) {
+    page = entry->page;
+
+    // Check for data in the dirty region
+    if( !has_data && entry->dirty ) {
+      has_data = all_set_for_skip_len(entry->dirty->dirty,
+                                      requested_start & CACHEPAGE_MASK,
+                                      requested_size,
+                                      CACHEPAGE_BITMASK_WORDS);
+    }
+
+    if( entry_after_acquire && has_data ) {
+      // Data is already in cache...  but to do a 'get' for previously
+      // prefetched data, we might have to wait for it.
+      if( !isprefetch ) {
+        if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
+#ifdef TIME
+          clock_gettime(CLOCK_REALTIME, &wait1);
+#endif
+
+          wait_for(cache, entry->max_prefetch_sequence_number);
+
+#ifdef TIME
+          clock_gettime(CLOCK_REALTIME, &wait2);
+
+          printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
+#endif
+        }
+      }
+      // If the cache line is in Am, move it to the front of Am.
+      use_entry(cache, entry);
+      if( ! isprefetch ) {
+    
+        //printf("cache hit on page %i:%p %p ra_len %i\n", 
+        //       node, (void*) ra_page, (void*) requested_start,
+        //       (int) entry->readahead_len);
+        // Copy the data out.
+        chpl_memcpy(addr+(requested_start-raddr),
+                    page+(requested_start-ra_page),
+                    requested_size);
+  
+        // If we are accessing a page that has a readahead condition,
+        // trigger that readahead.
+        if( ENABLE_READAHEAD && entry->readahead_len ) {
+          // Remove the readahead trigger from this page since
+          // we're starting the readahead now.
+          readahead_skip = entry->readahead_skip;
+          readahead_len = entry->readahead_len;
+          entry->readahead_skip = 0;
+          entry->readahead_len = 0;
+
+          cache_get_trigger_readahead(cache, node, ra_page,
+                                      raddr, size,
+                                      readahead_skip,
+                                      readahead_len,
+                                      last_acquire,
+                                      commID, ln, fn);
+          entry = NULL; // note trigger readahead could evict entry...
+        }
+      }
+
+      return; // Move on to the next page.
+    }
+ 
+    // Get ready to start a get !
+
+    // If there was an intervening acquire fence preventing
+    // us from using this cache line, we need to mark everything
+    // as invalid and clear the min and max request numbers.
+    // We also need to wait for pending puts using that data...
+
+    // If the cache line contains any overlapping writes or prefetches,
+    // we must wait for them to complete before we request new data.
+    // Prefetches might not yet have filled in the data according
+    // to the promised valid bits. GETs and PUTs must not have
+    // their buffers changed during operation.
+    flush_entry(cache, entry,
+                entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
+                ra_line, ra_line_end-ra_line);
+  }
+
+  // Otherwise -- start a get !
+
+  if( ! page ) {
+    // get a page from the free list.
+    page = allocate_page(cache);
+  }
+
+  // Now we need to start a get into page.
+  // If we don't have entry set, we will also need to plumb
+  // it into the tree while we are awaiting our get.
+  // We'll get within ra_page from ra_line to ra_line_end.
+  INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
+               (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
+               (int) (ra_line_end - ra_line)));
+
+#ifdef TIME
+  clock_gettime(CLOCK_REALTIME, &start_get1);
+#endif
+  // Note: chpl_comm_get_nb could cause a different task body to run.
+  handle = 
+    chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
+                     node, (void*) ra_line,
+                     ra_line_end - ra_line /*size*/,
+                     commID, ln, fn);
+#ifdef TIME
+  clock_gettime(CLOCK_REALTIME, &start_get2);
+#endif
+
+  // Now, while that get is going, plumb into the tree.
+
+  if( entry ) {
+    use_entry(cache, entry);
+  } else {
+    entry = make_entry(cache, node, ra_page, page, aout_entry);
+  }
+
+  // Set the valid lines
+  set_valid_lines(entry->valid_lines,
+                  (ra_line - ra_page) >> CACHELINE_BITS,
+                  (ra_line_end - ra_line) >> CACHELINE_BITS);
+
+  if( ! isprefetch ) {
+    // This will increment next request number so cache events are recorded.
+    sn = cache->next_request_number;
+    cache->next_request_number++;
+  } else {
+    // For a prefetch, store sequence number and record operation handle.
+
+    // This will increment next request number so cache events are recorded.
+    sn = pending_push(cache, handle);
+    entry->max_prefetch_sequence_number = seqn_max(entry->max_prefetch_sequence_number, sn);
+  }
+
+  // Set the minimum sequence number
+  entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+  // Decide what to store in the readahead trigger for this page
+  // if we are currently doing a readahead.
+  if( ENABLE_READAHEAD ) {
+    if( sequential_readahead_length > 0 && ra_page == ra_first_page ) {
+      // forward readahead
+      readahead_skip = size;
+      readahead_len = sequential_readahead_length;
+    }
+    if( sequential_readahead_length < 0 && ra_page == ra_last_page ) {
+      // reverse readahead
+      readahead_skip = sequential_readahead_length -
+                       (ra_last_page - ra_first_page);
+      readahead_len = -sequential_readahead_length; // positive.
+    }
+  }
+
+  // Save readahead trigger for this page if we have one to set.
+  // It could come from just above or from readahead start.
+  if( ENABLE_READAHEAD && readahead_len ) {
+
+    INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
+                 (int) chpl_nodeID, (int) node, (void*) entry->raddr,
+                 (int) readahead_skip, (int) readahead_len));
+
+    entry->readahead_skip = readahead_skip;
+    entry->readahead_len = readahead_len;
+  }
+
+  // Update the last read location on a miss
+  // (as long as there was not an intervening acquire)
+  if( entry_after_acquire && sequential_readahead_length == 0 ) {
+    cache->last_cache_miss_read_node = node;
+    cache->last_cache_miss_read_addr = ra_line;
+  }
+
+  // Make sure that there is an available page for next time,
+  // but do it without evicting entry (that we are working with).
+  // This could happen if entry is the last element of Ain..
+  ensure_free_page(cache, entry);
+
+  if( ! isprefetch ) {
+    // If we're not prefetching... wait for the get to complete and copy it
+    // back out of the cache.
+
+#ifdef TIME
+    clock_gettime(CLOCK_REALTIME, &wait1);
+#endif
+
+    chpl_comm_wait_nb_some(&handle, 1);
+
+#ifdef TIME
+    clock_gettime(CLOCK_REALTIME, &wait2);
+
+    printf("after get %p\n%li ns in start_get\n%li ns in wait_some\n%li ns total\n",
+           (void*) ra_line,
+           time_duration(&start_get1, &start_get2),
+           time_duration(&wait1, &wait2),
+           time_duration(&start_get1, &wait2));
+#endif
+
+    // Then, copy it out.
+    chpl_memcpy(addr+(requested_start-raddr),
+                page+(requested_start-ra_page),
+                requested_size);
+
+  }
+}
+
+
+// If addr == NULL, this will prefetch.
+static
+void cache_get(struct rdcache_s* cache,
+               unsigned char * addr,
+               c_nodeid_t node, raddr_t raddr, size_t size,
+               cache_seqn_t last_acquire,
+               int sequential_readahead_length,
+               int32_t commID, int ln, int32_t fn)
+{
+  raddr_t ra_first_page;
+  raddr_t ra_last_page;
+  raddr_t ra_page;
+  raddr_t requested_start, requested_end, requested_size;
+  raddr_t ra_last_line;
+  raddr_t ra_next_line;
+  raddr_t ra_line_end;
+  int isprefetch = (addr == NULL);
+#ifdef TIME
+  struct timespec start_get1, start_get2, wait1, wait2;
+#endif
+
+  INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
+               (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
+
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
+
+  // And don't do anything if it's a zero-length 
+  if( size == 0 ) {
+    return;
+  }
+
+  // first_page = raddr of start of first needed page
+  ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // last_page = raddr of start of last needed page
+  ra_last_page = round_down_to_mask(raddr+size-1, CACHEPAGE_MASK);
+  // last_line = raddr of start of last needed line
+  ra_last_line = round_down_to_mask(raddr+size-1, CACHELINE_MASK);
+  ra_next_line = ra_last_line + CACHELINE_SIZE;
+
+  // If the request is too large to reasonably fit in the cache, limit
+  // the amount of data prefetched. (or do nothing?)
+  if( isprefetch && (ra_last_page-ra_first_page)/CACHEPAGE_SIZE+1 > MAX_PAGES_PER_PREFETCH ) {
+    ra_last_page = ra_first_page + CACHEPAGE_SIZE*MAX_PAGES_PER_PREFETCH;
+  }
+
+  // Try to find it in the cache. Go through one page at a time.
+  for( ra_page = ra_first_page;
+       ra_page <= ra_last_page;
+       ra_page += CACHEPAGE_SIZE ) {
+
+   
     // We will need from ra_line to ra_line_end.
     ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
     // Compute the portion of the page that was requested
@@ -2362,291 +2687,11 @@ void cache_get(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size,ra_line_end);
     requested_size = requested_end - requested_start;
 
-    // Is the page in the tree?
-    entry = lookup_entry(cache, node, ra_page);
-    aout_entry = NULL;
-    page = NULL;
-
-    // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) {
-      aout_entry = entry;
-      entry = NULL;
-    }
-
-    if( entry ) {
-      // Is this cache line available for use, based on when we
-      // last ran an acquire fence?
-      entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-     
-      // Is the relevant data available in the cache line?
-      has_data = check_valid_lines(entry->valid_lines,
-                                   (ra_line - ra_page) >> CACHELINE_BITS,
-                                   (ra_line_end - ra_line) >> CACHELINE_BITS);
-    } else {
-      entry_after_acquire = 1;
-      has_data = 0;
-    }
-
-    //printf("%i entry is %p after_acquire %i has_data %i\n", chpl_nodeID, entry, entry_after_acquire, has_data);
-
-    // If we are doing a GET that is adjacent to the last GET,
-    // fetch the rest of the data in this page.
-    readahead_skip = 0;
-    readahead_len = 0;
-    if( ENABLE_READAHEAD &&
-        entry_after_acquire &&
-        sequential_readahead_length == 0 &&
-        ! has_data &&
-        ! (entry && entry->readahead_len) ) {
-      
-      ra = 0;
-
-      if( ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE && entry ) {
-        ra = should_readahead_extend(entry->valid_lines,
-                                 (ra_line - ra_page) >> CACHELINE_BITS,
-                                 (ra_line_end - ra_line) >> CACHELINE_BITS);
-        if( ra ) {
-          INFO_PRINT(("%i readahead trigger within-page direction=%i from %p to %p last %p\n",
-               (int) chpl_nodeID, ra, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        }
-      }
-     
-      if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
-          cache->last_cache_miss_read_node == node ) {
-        if(cache->last_cache_miss_read_addr < ra_line &&
-           ra_line <= cache->last_cache_miss_read_addr + CACHEPAGE_SIZE) {
-          // forward prefetch.
-          ra = 1;
-          INFO_PRINT(("%i readahead trigger forward from %p to %p last %p\n",
-                 (int) chpl_nodeID, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        } else if(cache->last_cache_miss_read_addr > ra_line &&
-                  ra_line >= cache->last_cache_miss_read_addr - CACHEPAGE_SIZE) {
-          // reverse prefetch
-          ra = -1;
-          INFO_PRINT(("readahead trigger reverse from %p to %p last %p\n",
-                 (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
-        }
-      }
-
-      if( ra == 1 ) {
-        // Extend ra_line_end to the end of the current page.
-        ra_line_end = ra_page + CACHEPAGE_SIZE;
-        
-        readahead_skip = CACHEPAGE_SIZE;
-        readahead_len = CACHEPAGE_SIZE;
-      } else if(ra == -1) {
-        // reverse prefetch
-        // Extend ra_line to the start of the current page.
-        ra_line = ra_page;
-        
-        readahead_skip = -CACHEPAGE_SIZE;
-        readahead_len = CACHEPAGE_SIZE;
-      }
-    }
-
-    if( entry ) {
-      page = entry->page;
-
-      // Check for data in the dirty region
-      if( !has_data && entry->dirty ) {
-        has_data = all_set_for_skip_len(entry->dirty->dirty,
-                                        requested_start & CACHEPAGE_MASK,
-                                        requested_size,
-                                        CACHEPAGE_BITMASK_WORDS);
-      }
-
-      if( entry_after_acquire && has_data ) {
-        // Data is already in cache...  but to do a 'get' for previously
-        // prefetched data, we might have to wait for it.
-        if( !isprefetch ) {
-          if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait1);
-#endif
-
-            wait_for(cache, entry->max_prefetch_sequence_number);
-
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait2);
-
-            printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
-#endif
-          }
-        }
-        // If the cache line is in Am, move it to the front of Am.
-        use_entry(cache, entry);
-        if( ! isprefetch ) {
-      
-          //printf("cache hit on page %i:%p %p ra_len %i\n", 
-          //       node, (void*) ra_page, (void*) requested_start,
-          //       (int) entry->readahead_len);
-          // Copy the data out.
-          chpl_memcpy(addr+(requested_start-raddr),
-                      page+(requested_start-ra_page),
-                      requested_size);
-    
-          // If we are accessing a page that has a readahead condition,
-          // trigger that readahead.
-          if( ENABLE_READAHEAD && entry->readahead_len ) {
-            // Remove the readahead trigger from this page since
-            // we're starting the readahead now.
-            readahead_skip = entry->readahead_skip;
-            readahead_len = entry->readahead_len;
-            entry->readahead_skip = 0;
-            entry->readahead_len = 0;
-
-            cache_get_trigger_readahead(cache, node, ra_page,
-                                        raddr, size,
-                                        readahead_skip,
-                                        readahead_len,
-                                        last_acquire,
-                                        commID, ln, fn);
-            entry = NULL; // note trigger readahead could evict entry...
-          }
-        }
-
-        continue; // Move on to the next page.
-      }
-   
-      // Get ready to start a get !
-
-      // If there was an intervening acquire fence preventing
-      // us from using this cache line, we need to mark everything
-      // as invalid and clear the min and max request numbers.
-      // We also need to wait for pending puts using that data...
-
-      // If the cache line contains any overlapping writes or prefetches,
-      // we must wait for them to complete before we request new data.
-      // Prefetches might not yet have filled in the data according
-      // to the promised valid bits. GETs and PUTs must not have
-      // their buffers changed during operation.
-      flush_entry(cache, entry,
-                  entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
-                  ra_line, ra_line_end-ra_line);
-    }
-
-    // Otherwise -- start a get !
-
-    if( ! page ) {
-      // get a page from the free list.
-      page = allocate_page(cache);
-    }
-
-    // Now we need to start a get into page.
-    // If we don't have entry set, we will also need to plumb
-    // it into the tree while we are awaiting our get.
-    // We'll get within ra_page from ra_line to ra_line_end.
-    INFO_PRINT(("%i chpl_comm_start_get(%p, %i, %p, %i)\n",
-                 (int) chpl_nodeID, page+(ra_line-ra_page), node, (void*) ra_line,
-                 (int) (ra_line_end - ra_line)));
-
-#ifdef TIME
-    clock_gettime(CLOCK_REALTIME, &start_get1);
-#endif
-    // Note: chpl_comm_get_nb could cause a different task body to run.
-    handle = 
-      chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
-                       node, (void*) ra_line,
-                       ra_line_end - ra_line /*size*/,
-                       commID, ln, fn);
-#ifdef TIME
-    clock_gettime(CLOCK_REALTIME, &start_get2);
-#endif
-
-    // Now, while that get is going, plumb into the tree.
-
-    if( entry ) {
-      use_entry(cache, entry);
-    } else {
-      entry = make_entry(cache, node, ra_page, page, aout_entry);
-    }
-
-    // Set the valid lines
-    set_valid_lines(entry->valid_lines,
-                    (ra_line - ra_page) >> CACHELINE_BITS,
-                    (ra_line_end - ra_line) >> CACHELINE_BITS);
-
-    if( ! isprefetch ) {
-      // This will increment next request number so cache events are recorded.
-      sn = cache->next_request_number;
-      cache->next_request_number++;
-    } else {
-      // For a prefetch, store sequence number and record operation handle.
-
-      // This will increment next request number so cache events are recorded.
-      sn = pending_push(cache, handle);
-      entry->max_prefetch_sequence_number = seqn_max(entry->max_prefetch_sequence_number, sn);
-    }
-
-    // Set the minimum sequence number
-    entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
-
-    // Decide what to store in the readahead trigger for this page
-    // if we are currently doing a readahead.
-    if( ENABLE_READAHEAD ) {
-      if( sequential_readahead_length > 0 && ra_page == ra_first_page ) {
-        // forward readahead
-        readahead_skip = size;
-        readahead_len = sequential_readahead_length;
-      }
-      if( sequential_readahead_length < 0 && ra_page == ra_last_page ) {
-        // reverse readahead
-        readahead_skip = sequential_readahead_length -
-                         (ra_last_page - ra_first_page);
-        readahead_len = -sequential_readahead_length; // positive.
-      }
-    }
-
-    // Save readahead trigger for this page if we have one to set.
-    // It could come from just above or from readahead start.
-    if( ENABLE_READAHEAD && readahead_len ) {
-
-      INFO_PRINT(("%i saving for %i:%p skip %i len %i\n",
-                   (int) chpl_nodeID, (int) node, (void*) entry->raddr,
-                   (int) readahead_skip, (int) readahead_len));
-
-      entry->readahead_skip = readahead_skip;
-      entry->readahead_len = readahead_len;
-    }
-
-    // Update the last read location on a miss
-    // (as long as there was not an intervening acquire)
-    if( entry_after_acquire && sequential_readahead_length == 0 ) {
-      cache->last_cache_miss_read_node = node;
-      cache->last_cache_miss_read_addr = ra_line;
-    }
-
-    // Make sure that there is an available page for next time,
-    // but do it without evicting entry (that we are working with).
-    // This could happen if entry is the last element of Ain..
-    ensure_free_page(cache, entry);
-
-    if( ! isprefetch ) {
-      // If we're not prefetching... wait for the get to complete and copy it
-      // back out of the cache.
-
-#ifdef TIME
-      clock_gettime(CLOCK_REALTIME, &wait1);
-#endif
-
-      chpl_comm_wait_nb_some(&handle, 1);
-
-#ifdef TIME
-      clock_gettime(CLOCK_REALTIME, &wait2);
-
-      printf("after get %p\n%li ns in start_get\n%li ns in wait_some\n%li ns total\n",
-             (void*) ra_line,
-             time_duration(&start_get1, &start_get2),
-             time_duration(&wait1, &wait2),
-             time_duration(&start_get1, &wait2));
-#endif
-
-      // Then, copy it out.
-      chpl_memcpy(addr+(requested_start-raddr),
-                  page+(requested_start-ra_page),
-                  requested_size);
-  
-    }
+    cache_get_in_page(cache,
+                      (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                      node, requested_start, requested_size,
+                      last_acquire, sequential_readahead_length,
+                      commID, ln, fn);
   }
 
   if( VERIFY ) validate_cache(cache);
