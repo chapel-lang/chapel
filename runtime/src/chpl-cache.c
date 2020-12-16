@@ -1988,12 +1988,13 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
   return bottom_match;
 }
 
+// put data with a length within a page
 static
-void cache_put(struct rdcache_s* cache,
-                unsigned char* addr,
-                c_nodeid_t node, raddr_t raddr, size_t size,
-                cache_seqn_t last_acquire,
-                int32_t commID, int ln, int32_t fn)
+void cache_put_in_page(struct rdcache_s* cache,
+                       unsigned char* addr,
+                       c_nodeid_t node, raddr_t raddr, size_t size,
+                       cache_seqn_t last_acquire,
+                       int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   struct cache_entry_s* aout_entry;
@@ -2006,6 +2007,114 @@ void cache_put(struct rdcache_s* cache,
   unsigned char* page;
   int entry_after_acquire;
   cache_seqn_t sn;
+
+  DEBUG_PRINT(("cache_put_in_page %i:%p from %p len %i\n",
+               (int) node, (void*) raddr, addr, (int) size));
+
+  assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
+  assert(size != 0); // should be handled at call site
+
+  // first_page = raddr of start of first needed page
+  ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+  // last_page = raddr of start of last needed page
+  ra_last_page = round_down_to_mask(raddr+size-1, CACHEPAGE_MASK);
+  ra_next_page = ra_last_page + CACHEPAGE_SIZE;
+
+  ra_page = ra_first_page;
+
+  // We will put from ra_page to ra_page_end
+  ra_page_end = (ra_page==ra_last_page)?(ra_next_page):(ra_page+CACHEPAGE_SIZE);
+
+  // Compute the portion of the page that was requested
+  requested_start = raddr_max(raddr, ra_page);
+  requested_end = raddr_min(raddr+size, ra_page_end);
+  requested_size = requested_end - requested_start;
+
+  // Is the page in the tree?
+  entry = lookup_entry(cache, node, ra_page);
+  aout_entry = NULL;
+  page = NULL;
+
+  // Ignore entries in Aout for now.
+  if( entry && ! entry->page ) {
+    aout_entry = entry;
+    entry = NULL;
+  }
+
+  if( entry ) {
+    // Is this cache line available for use, based on when we
+    // last ran an acquire fence?
+    entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
+
+    // If the cache line contains any overlapping writes or prefetches,
+    // we must wait for them to complete before we store new data.
+    // Nonblocking GETs and PUTs must not have their buffers changed
+    // during operation. And, we don't want an earlier prefetch to overwrite
+    // our later write!
+    flush_entry(cache, entry,
+                entry_after_acquire?FLUSH_PREPARE_PUT:FLUSH_INVALIDATE_PAGE,
+                requested_start, requested_size);
+    page = entry->page;
+  }
+
+  if( ! page ) {
+    // get a page from the free list.
+    page = allocate_page(cache);
+    assert(page != NULL);
+  }
+
+  if( entry ) use_entry(cache, entry);
+  else entry = make_entry(cache, node, ra_page, page, aout_entry);
+
+  // Make sure we have a dirty structure.
+  if( ! entry->dirty ) {
+    allocate_dirty(cache, entry);
+  } else {
+    // Make it the most recently use dirty page.
+    use_dirty(cache, entry->dirty);
+  }
+
+  // Now, set the dirty bits.
+  set_valids_for_skip_len(entry->dirty->dirty,
+                          requested_start & CACHEPAGE_MASK, requested_size,
+                          CACHEPAGE_BITMASK_WORDS);
+
+  // Op will be started for this in flush_entry for a dirty page.
+
+  // This will increment next request number so cache events are recorded.
+  sn = cache->next_request_number;
+  cache->next_request_number++;
+  // Set the minimum sequence number so an acquire fence before
+  // the next read will cause this write to be disregarded.
+  entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
+
+  assert(page != NULL);
+
+  // Copy the data into page.
+  chpl_memcpy(page+(requested_start-ra_page),
+              addr+(requested_start-raddr),
+              requested_size);
+
+  // Make sure that there is a dirty page available for next time.
+  ensure_free_dirty(cache);
+  // Make sure that there is an available page for next time.
+  ensure_free_page(cache, NULL);
+}
+
+
+static
+void cache_put(struct rdcache_s* cache,
+                unsigned char* addr,
+                c_nodeid_t node, raddr_t raddr, size_t size,
+                cache_seqn_t last_acquire,
+                int32_t commID, int ln, int32_t fn)
+{
+  raddr_t ra_first_page;
+  raddr_t ra_last_page;
+  raddr_t ra_next_page;
+  raddr_t ra_page_end;
+  raddr_t ra_page;
+  raddr_t requested_start, requested_end, requested_size;
 
   DEBUG_PRINT(("cache_put %i:%p from %p len %i\n",
                (int) node, (void*) raddr, addr, (int) size));
@@ -2036,75 +2145,11 @@ void cache_put(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size, ra_page_end);
     requested_size = requested_end - requested_start;
 
-    // Is the page in the tree?
-    entry = lookup_entry(cache, node, ra_page);
-    aout_entry = NULL;
-    page = NULL;
-
-    // Ignore entries in Aout for now.
-    if( entry && ! entry->page ) {
-      aout_entry = entry;
-      entry = NULL;
-    }
-
-    if( entry ) {
-      // Is this cache line available for use, based on when we
-      // last ran an acquire fence?
-      entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-
-      // If the cache line contains any overlapping writes or prefetches,
-      // we must wait for them to complete before we store new data.
-      // Nonblocking GETs and PUTs must not have their buffers changed
-      // during operation. And, we don't want an earlier prefetch to overwrite
-      // our later write!
-      flush_entry(cache, entry,
-                  entry_after_acquire?FLUSH_PREPARE_PUT:FLUSH_INVALIDATE_PAGE,
-                  requested_start, requested_size);
-      page = entry->page;
-    }
-
-    if( ! page ) {
-      // get a page from the free list.
-      page = allocate_page(cache);
-      assert(page != NULL);
-    }
-
-    if( entry ) use_entry(cache, entry);
-    else entry = make_entry(cache, node, ra_page, page, aout_entry);
-
-    // Make sure we have a dirty structure.
-    if( ! entry->dirty ) {
-      allocate_dirty(cache, entry);
-    } else {
-      // Make it the most recently use dirty page.
-      use_dirty(cache, entry->dirty);
-    }
-
-    // Now, set the dirty bits.
-    set_valids_for_skip_len(entry->dirty->dirty,
-                            requested_start & CACHEPAGE_MASK, requested_size,
-                            CACHEPAGE_BITMASK_WORDS);
-
-    // Op will be started for this in flush_entry for a dirty page.
-
-    // This will increment next request number so cache events are recorded.
-    sn = cache->next_request_number;
-    cache->next_request_number++;
-    // Set the minimum sequence number so an acquire fence before
-    // the next read will cause this write to be disregarded.
-    entry->min_sequence_number = seqn_min(entry->min_sequence_number, sn);
-
-    assert(page != NULL);
-
-    // Copy the data into page.
-    chpl_memcpy(page+(requested_start-ra_page),
-                addr+(requested_start-raddr),
-                requested_size);
-
-    // Make sure that there is a dirty page available for next time.
-    ensure_free_dirty(cache);
-    // Make sure that there is an available page for next time.
-    ensure_free_page(cache, NULL);
+    cache_put_in_page(cache,
+                      (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                      node, requested_start, requested_size,
+                      last_acquire,
+                      commID, ln, fn);
   }
 
   if( VERIFY ) validate_cache(cache);
