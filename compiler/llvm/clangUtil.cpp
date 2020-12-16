@@ -1222,6 +1222,40 @@ class CCodeGenConsumer : public ASTConsumer {
       adjustLayoutForGlobalToWide();
     }
 
+    void doHandleDecl(Decl* d) {
+      if (TypedefDecl *td = dyn_cast<TypedefDecl>(d)) {
+        const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
+        if(ctype != NULL) {
+          info->lvt->addGlobalCDecl(td);
+        }
+      } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
+        info->lvt->addGlobalCDecl(fd);
+      } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
+        info->lvt->addGlobalCDecl(vd);
+      } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
+        if( rd->getName().size() > 0 ) {
+          // Handle forward declaration for structs
+          info->lvt->addGlobalCDecl(rd);
+        }
+      } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
+        for (auto shadow : ud->shadows()) {
+          NamedDecl* nd = shadow->getTargetDecl();
+          doHandleDecl(nd);
+        }
+      } else if (LinkageSpecDecl* ld = dyn_cast<LinkageSpecDecl>(d)) {
+        // Handles extern "C" { }
+        for (auto sub : ld->decls()) {
+          doHandleDecl(sub);
+        }
+      } else if (ExternCContextDecl *ed = dyn_cast<ExternCContextDecl>(d)) {
+        // TODO: is this an alternative extern "C"?
+        // do we need to handle it?
+        for (auto sub : ed->decls()) {
+          doHandleDecl(sub);
+        }
+      }
+    }
+
     // HandleTopLevelDecl - Handle the specified top-level declaration.
     // This is called by the parser to process every top-level Decl*.
     //
@@ -1231,21 +1265,7 @@ class CCodeGenConsumer : public ASTConsumer {
       if (Diags->hasErrorOccurred()) return true;
 
       for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
-        if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
-          const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-          if(ctype != NULL) {
-            info->lvt->addGlobalCDecl(td);
-          }
-        } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
-          info->lvt->addGlobalCDecl(fd);
-        } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
-          info->lvt->addGlobalCDecl(vd);
-        } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-          if( rd->getName().size() > 0 ) {
-            // Handle forward declaration for structs
-            info->lvt->addGlobalCDecl(rd);
-          }
-        }
+        doHandleDecl(*I);
       }
 
       if (parseOnly) return true;
@@ -2480,6 +2500,13 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
+  if (cdecl->getIdentifier() == nullptr) {
+    // Certain C++ things such as constructors can have
+    // special compound names. In this case getName() will
+    // fail.
+    return;
+  }
+
   addGlobalCDecl(cdecl->getName(), cdecl);
 
   // Also file structs under 'struct struct_name'
@@ -3867,6 +3894,15 @@ static std::string getLibraryOutputPath() {
 static void moveGeneratedLibraryFile(const char* tmpbinname) {
   std::string outputPath = getLibraryOutputPath();
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
+}
+
+void print_clang(clang::Decl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
 }
 
 #endif
