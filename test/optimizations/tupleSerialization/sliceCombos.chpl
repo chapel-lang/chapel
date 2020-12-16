@@ -10,7 +10,12 @@ var innerDom = dom.expand(-1);
 var A: [dom] int;
 var B: [innerDom] int;
 var C: [dom] int;
+var D: [innerDom] int;
+var E: [innerDom] int;
 
+// we have to make sure that none of the loops here cause GETs when slice
+// serialization is enabled (the test also checks other commcounts to be below a
+// threshold)
 startDiag();
 forall (x,y) in zip(A[innerDom], B) do x=y;
 endDiag("zip(slice, arr)");
@@ -22,6 +27,30 @@ endDiag("zip(arr, slice)");
 startDiag();
 forall (x,y) in zip(A[innerDom], C[innerDom]) do x=y;
 endDiag("zip(slice, slice)");
+
+startDiag();
+forall (x,y,z) in zip(A[innerDom], B, D) do x=y+z;
+endDiag("zip(slice, arr, arr)");
+
+startDiag();
+forall (x,y,z) in zip(A[innerDom], B, C[innerDom]) do x=y+z;
+endDiag("zip(slice, arr, slice)");
+
+startDiag();
+forall (x,y,z) in zip(D, B, C[innerDom]) do x=y+z;
+endDiag("zip(arr, arr, slice)");
+
+startDiag();
+forall (x,y,z,t) in zip(A[innerDom], B, C[innerDom], D) do x=y+z+t;
+endDiag("zip(slice, arr, slice, arr)");
+
+startDiag();
+forall (x,y,z,t) in zip(E, B, C[innerDom], D) do x=y+z+t;
+endDiag("zip(arr, arr, slice, arr)");
+
+startDiag();
+forall (x,y,z,t) in zip(A[innerDom], B, E, D) do x=y+z+t;
+endDiag("zip(slice, arr, arr, arr)");
 
 proc startDiag() {
   startCommDiagnostics();

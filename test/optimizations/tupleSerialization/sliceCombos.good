@@ -13,3 +13,33 @@ zip(slice, slice)
 	No excess slow on
 	No excess fast on
 	No excess non-blocking on
+zip(slice, arr, arr)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(slice, arr, slice)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(arr, arr, slice)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(slice, arr, slice, arr)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(arr, arr, slice, arr)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
+zip(slice, arr, arr, arr)
+	No excess comm
+	No excess slow on
+	No excess fast on
+	No excess non-blocking on
