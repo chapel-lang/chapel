@@ -2,15 +2,15 @@
  * Copyright 2020 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -294,7 +294,7 @@ use.
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
 
-// CACHEPAGE_BITS 
+// CACHEPAGE_BITS
 // Controls the cache page size - the cache manages items of this many bytes
 // but also includes facilities for partial pages (valid and dirty bits).
 //
@@ -306,7 +306,7 @@ use.
 #define CACHEPAGE_SIZE (1 << CACHEPAGE_BITS)
 #define CACHEPAGE_MASK (CACHEPAGE_SIZE-1)
 
-// CACHELINE_BITS 
+// CACHELINE_BITS
 // Controls the cache line size - that is, the minimum number of bytes
 // that are fetched for any 'get' operation.
 //
@@ -317,7 +317,7 @@ use.
 #define CACHELINE_MASK (CACHELINE_SIZE-1)
 
 // What type can store the number of cache lines in a cache page?
-typedef int8_t line_per_page_t; 
+typedef int8_t line_per_page_t;
 // What type for a number of lines to read ahead?
 typedef int16_t readahead_distance_t;
 
@@ -331,7 +331,7 @@ typedef int16_t entry_id_t;
 #define MAX_PAGES_PER_PREFETCH 2
 
 // Should we enable sequential readahead?
-// For sequential access If we're reading  
+// For sequential access If we're reading
 #define ENABLE_READAHEAD 1
 #define ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE 1
 #define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 0
@@ -386,7 +386,7 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 
 
 
-// ----------  SUPPORT FUNCTIONS 
+// ----------  SUPPORT FUNCTIONS
 #include "chpl-cache-support.c"
 
 
@@ -530,7 +530,7 @@ static int set_valid_lines(uint64_t* valid, uintptr_t skip, uintptr_t len)
 static void unset_valid_lines(uint64_t* valid, uintptr_t skip, uintptr_t len)
 {
   uint64_t myvalid[CACHE_LINES_PER_PAGE_BITMASK_WORDS];
-  unset_valids_for_skip_len(valid, myvalid, skip, len, CACHE_LINES_PER_PAGE_BITMASK_WORDS);  
+  unset_valids_for_skip_len(valid, myvalid, skip, len, CACHE_LINES_PER_PAGE_BITMASK_WORDS);
 }
 
 struct rdcache_s {
@@ -538,7 +538,7 @@ struct rdcache_s {
   // See "2Q: A Low Overhead High Performance Buffer Management
   //      Replacement Algorithm"
   //    by Theodore Johnson and Dennis Sasha, Proc 20th VLDB conference, 1994.
-  
+
   // The next request number -- there is currently no request or cache
   // element with this sequence number.
   cache_seqn_t next_request_number;
@@ -585,13 +585,13 @@ struct rdcache_s {
   //
   // Ain and Aout stores entries and pending operations and newly cached data
   // and looks like this:
-  //  <--                  <--                   <--                       <-- 
+  //  <--                  <--                   <--                       <--
   //  tail              complete                 start                     head
   //  "first entry"                                                "last entry"
   //  | completed requests | in-progress requests | write/prefetch requests |
   //                                                not yet started
   //
-  
+
   int max_pages;
   int max_entries;
 
@@ -703,7 +703,7 @@ struct rdcache_s* cache_create(void) {
 
   size_t total_size = 0;
   size_t allocated_size = 0;
-  unsigned int pending_len = MAX_PENDING; 
+  unsigned int pending_len = MAX_PENDING;
   unsigned char* buffer;
   unsigned char* pages;
 
@@ -721,7 +721,7 @@ struct rdcache_s* cache_create(void) {
   // How many pages can be dirty at once?
   dirty_pages = 16 + cache_pages / 64;
 
-  // How many cache entries do we need? 
+  // How many cache entries do we need?
   n_entries = cache_pages + aout_pages;
 
   // Lookup table size (note each slot is 4 entries, so this is 4x slots)
@@ -1354,7 +1354,7 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
 {
   struct cache_entry_s* ret;
 
-  //printf("alloc entry ain %i aout %i am %i\n", 
+  //printf("alloc entry ain %i aout %i am %i\n",
   //       cache->ain_current, cache->aout_current, cache->am_current);
 
   // Make sure we have a free entry..
@@ -1365,7 +1365,7 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
   // Remove it from the single-linked list.
   SINGLE_POP_HEAD(cache, free_entries);
 
-  return ret; 
+  return ret;
 }
 
 
@@ -1481,7 +1481,7 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
   index = cache->pending_last_entry;
   cache->pending[index] = handle;
   cache->pending_sequence_numbers[index] = sn;
- 
+
   DEBUG_PRINT(("in pending_push added pending[%i]=%p sn=%i\n",
                index, (void*) handle, (int) sn));
 
@@ -1651,9 +1651,9 @@ void validate_cache(struct rdcache_s* tree)
     assert(num_dirty == tree->num_dirty_pages);
     assert(with_entry_count == tree->num_dirty_pages);
   }
-  
+
   // 5: must not lose entries. Check that the entry free list
-  // contains the right number of entries. 
+  // contains the right number of entries.
   {
     struct cache_list_entry_s* cur;
     int num_free_entries = 0;
@@ -1749,7 +1749,7 @@ void flush_entry(struct rdcache_s* cache, struct cache_entry_s* entry, int op,
   uintptr_t num_lines, skip_lines;
   chpl_comm_nb_handle_t handle;
   uintptr_t got_skip, got_len;
-  
+
   DEBUG_PRINT(("flush_entry(%p, %i, %p, %i)\n",
                entry, op, (void*) raddr, (int) len));
 #ifdef DUMP
@@ -1875,7 +1875,7 @@ void use_entry(struct rdcache_s* cache,
   if( entry->queue == QUEUE_AM ) {
     DOUBLE_REMOVE(cache, entry, am_lru);
     DOUBLE_PUSH_HEAD(cache, entry, am_lru);
-  } 
+  }
   // Otherwise (it is in Ain) so leave it where it is.
 }
 
@@ -2012,11 +2012,11 @@ void cache_put(struct rdcache_s* cache,
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_put
 
-  // And don't do anything if it's a zero-length 
+  // And don't do anything if it's a zero-length
   if( size == 0 ) {
     return;
   }
- 
+
   // first_page = raddr of start of first needed page
   ra_first_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
   // last_page = raddr of start of last needed page
@@ -2051,7 +2051,7 @@ void cache_put(struct rdcache_s* cache,
       // Is this cache line available for use, based on when we
       // last ran an acquire fence?
       entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-   
+
       // If the cache line contains any overlapping writes or prefetches,
       // we must wait for them to complete before we store new data.
       // Nonblocking GETs and PUTs must not have their buffers changed
@@ -2197,7 +2197,7 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     if( ! ok && request_raddr != 0 && request_size != 0 ) {
       // Adjust prefetch_start/prefetch_end so that it lies on the same
       // system page as the requested data.
-      
+
       page_size = sys_page_size();
 
       request_page = round_down_to_mask(request_raddr, page_size-1);
@@ -2356,7 +2356,7 @@ void cache_get_in_page(struct rdcache_s* cache,
     // Is this cache line available for use, based on when we
     // last ran an acquire fence?
     entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-   
+
     // Is the relevant data available in the cache line?
     has_data = check_valid_lines(entry->valid_lines,
                                  (ra_line - ra_page) >> CACHELINE_BITS,
@@ -2377,7 +2377,7 @@ void cache_get_in_page(struct rdcache_s* cache,
       sequential_readahead_length == 0 &&
       ! has_data &&
       ! (entry && entry->readahead_len) ) {
-    
+
     ra = 0;
 
     if( ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE && entry ) {
@@ -2389,7 +2389,7 @@ void cache_get_in_page(struct rdcache_s* cache,
              (int) chpl_nodeID, ra, (void*) ra_line, (void*) ra_line_end, (void*) cache->last_cache_miss_read_addr));
       }
     }
-   
+
     if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
         cache->last_cache_miss_read_node == node ) {
       if(cache->last_cache_miss_read_addr < ra_line &&
@@ -2410,14 +2410,14 @@ void cache_get_in_page(struct rdcache_s* cache,
     if( ra == 1 ) {
       // Extend ra_line_end to the end of the current page.
       ra_line_end = ra_page + CACHEPAGE_SIZE;
-      
+
       readahead_skip = CACHEPAGE_SIZE;
       readahead_len = CACHEPAGE_SIZE;
     } else if(ra == -1) {
       // reverse prefetch
       // Extend ra_line to the start of the current page.
       ra_line = ra_page;
-      
+
       readahead_skip = -CACHEPAGE_SIZE;
       readahead_len = CACHEPAGE_SIZE;
     }
@@ -2455,15 +2455,15 @@ void cache_get_in_page(struct rdcache_s* cache,
       // If the cache line is in Am, move it to the front of Am.
       use_entry(cache, entry);
       if( ! isprefetch ) {
-    
-        //printf("cache hit on page %i:%p %p ra_len %i\n", 
+
+        //printf("cache hit on page %i:%p %p ra_len %i\n",
         //       node, (void*) ra_page, (void*) requested_start,
         //       (int) entry->readahead_len);
         // Copy the data out.
         chpl_memcpy(addr+(requested_start-raddr),
                     page+(requested_start-ra_page),
                     requested_size);
-  
+
         // If we are accessing a page that has a readahead condition,
         // trigger that readahead.
         if( ENABLE_READAHEAD && entry->readahead_len ) {
@@ -2486,7 +2486,7 @@ void cache_get_in_page(struct rdcache_s* cache,
 
       return; // Move on to the next page.
     }
- 
+
     // Get ready to start a get !
 
     // If there was an intervening acquire fence preventing
@@ -2523,7 +2523,7 @@ void cache_get_in_page(struct rdcache_s* cache,
   clock_gettime(CLOCK_REALTIME, &start_get1);
 #endif
   // Note: chpl_comm_get_nb could cause a different task body to run.
-  handle = 
+  handle =
     chpl_comm_get_nb(page+(ra_line-ra_page), /*local addr*/
                      node, (void*) ra_line,
                      ra_line_end - ra_line /*size*/,
@@ -2655,7 +2655,7 @@ void cache_get(struct rdcache_s* cache,
 
   assert(chpl_nodeID != node); // should be handled in chpl_gen_comm_prefetch.
 
-  // And don't do anything if it's a zero-length 
+  // And don't do anything if it's a zero-length
   if( size == 0 ) {
     return;
   }
@@ -2679,7 +2679,7 @@ void cache_get(struct rdcache_s* cache,
        ra_page <= ra_last_page;
        ra_page += CACHEPAGE_SIZE ) {
 
-   
+
     // We will need from ra_line to ra_line_end.
     ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
     // Compute the portion of the page that was requested
@@ -2739,7 +2739,7 @@ int mock_get(struct rdcache_s* cache,
   if (chpl_nodeID == node)
     return 1;
 
-  // And don't do anything if it's a zero-length 
+  // And don't do anything if it's a zero-length
   if( size == 0 ) {
     return 1;
   }
@@ -2760,7 +2760,7 @@ int mock_get(struct rdcache_s* cache,
   for( ra_page = ra_first_page, ra_line = ra_first_line;
        ra_page <= ra_last_page;
        ra_page += CACHEPAGE_SIZE, ra_line = ra_page ) {
-    
+
     // We will need from ra_line to ra_line_end.
     ra_line_end = (ra_page==ra_last_page)?(ra_next_line):(ra_page+CACHEPAGE_SIZE);
     // Compute the portion of the page that was requested
@@ -2783,7 +2783,7 @@ int mock_get(struct rdcache_s* cache,
       // Is this cache line available for use, based on when we
       // last ran an acquire fence?
       entry_after_acquire = ( entry->min_sequence_number >= last_acquire );
-     
+
       // Is the relevant data available in the cache line?
       has_data = check_valid_lines(entry->valid_lines,
                                    (ra_line - ra_page) >> CACHELINE_BITS,
@@ -2829,7 +2829,7 @@ int mock_get(struct rdcache_s* cache,
         // Would copy the data out here, but not in mock get
         continue; // Move on to the next page.
       }
-   
+
       // Get ready to start a get !
 
       // If there was an intervening acquire fence preventing
