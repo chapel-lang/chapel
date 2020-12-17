@@ -2017,6 +2017,7 @@ module TwoArrayPartitioning {
       return lastLocaleId - firstLocaleId + 1;
     }
     // yields tuples of (loc, tid) for the locales involved with this bucket
+    pragma "order independent yielding loops"
     iter localeAndIds(A) {
       const ref tgtLocs = A.targetLocales();
       for tid in firstLocaleId..lastLocaleId {
@@ -2026,6 +2027,7 @@ module TwoArrayPartitioning {
     }
     // yield the other ids but do so in an order that depends on myId
     //  myId + 1 will be the first id.
+    pragma "order independent yielding loops"
     iter otherIds(myId) {
       const nIds = lastLocaleId-firstLocaleId+1;
       for i in 1..#nIds {
@@ -2067,6 +2069,7 @@ module TwoArrayPartitioning {
     }
     // yield (loc, locId, task) for each non-empty bucket
     // loc is the locale "owning" the bucket.
+    pragma "order independent yielding loops"
     iter localesAndTasks(A) {
       for t in tasks {
         const locId = t.firstLocaleId;
