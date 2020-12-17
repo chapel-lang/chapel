@@ -279,10 +279,13 @@ use.
 #include "chpl-atomics.h"
 #include "chpl-thread-local-storage.h" // CHPL_TLS_DECL etc
 #include "chpl-cache.h"
+#include "chpl-comm-strd-xfer.h"
 #include "chpl-linefile-support.h"
 #include "sys.h" // sys_page_size()
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-comm-no-warning-macros.h" // No warnings for chpl_comm_get etc.
+
+
 #include <string.h> // memcpy, memset, etc.
 #include <assert.h>
 
@@ -3237,29 +3240,83 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
                               size_t size, int32_t commID, int ln, int32_t fn)
 {
   struct rdcache_s* cache = tls_cache_remote_data();
-  cache_lock(cache);
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  cache_lock(cache);
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
   chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
   // Always use the cache for prefetches.
   //saturating_increment(&info->prefetch_since_acquire);
-  cache_get(cache, NULL, node, (raddr_t)raddr, size, task_local->last_acquire,
-            0, CHPL_COMM_UNKNOWN_ID, ln, fn);
+  cache_get(cache, task_local,
+            /* addr */ NULL, node, (raddr_t)raddr, size,
+            /* sequential_readahead_length */ 0,
+            CHPL_COMM_UNKNOWN_ID, ln, fn);
   cache_unlock(cache);
 }
+
+struct cache_strd_callback_ctx {
+  struct rdcache_s* cache;
+  chpl_cache_taskPrvData_t* task_local;
+};
+
+static
+void strd_invalidate_fn(void* addr,
+                        int32_t node,
+                        void* raddr,
+                        size_t size,
+                        void* ctxv,
+                        int32_t commID,
+                        int ln,
+                        int32_t fn)
+{
+
+  struct cache_strd_callback_ctx* ctx = (struct cache_strd_callback_ctx*) ctxv;
+
+  struct rdcache_s* cache = ctx->cache;
+  chpl_cache_taskPrvData_t* task_local = ctx->task_local;
+
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+}
+
+static
+void strd_invalidate(void *addr, void *dststr, c_nodeid_t node,
+                     void *raddr, void *srcstr, void *count,
+                     int32_t strlevels, size_t elemSize,
+                     int32_t commID, int ln, int32_t fn) {
+
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+  struct cache_strd_callback_ctx ctx;
+  ctx.cache = cache;
+  ctx.task_local = task_local;
+  strd_common_call(addr, dststr, node,
+                   raddr, srcstr, count, strlevels, elemSize,
+                   &ctx, &strd_invalidate_fn, commID, ln, fn);
+}
+
+#define STRIDED_INVALIDATE_ALL 0
+
 void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_get_strd\n", chpl_nodeID));
-  // do a full fence - so that:
-  // 1) any pending writes are completed (in case they were to the
-  //    same location handled by the strided get)
-  // 2) the cache does not have older values than what we're getting now
-  // Alternatively, we could invalidate the requested regions.
-  // Alternatively, the strided get could be done through the cache
-  // system. This is just the current (possibly temporary) solution.
-  chpl_cache_fence(1, 1, ln, fn);
+
+  if (STRIDED_INVALIDATE_ALL) {
+    // do a full fence - so that:
+    // 1) any pending writes are completed (in case they were to the
+    //    same location handled by the strided get)
+    // 2) the cache does not have older values than what we're getting now
+    // Alternatively, we could invalidate the requested regions.
+    // Alternatively, the strided get could be done through the cache
+    // system. This is just the current (possibly temporary) solution.
+    chpl_cache_fence(1, 1, ln, fn);
+  } else {
+    strd_invalidate(addr, dststr, node,
+                    raddr, srcstr, count,
+                    strlevels, elemSize,
+                    commID, ln, fn);
+  }
   // do the strided get.
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
@@ -3269,14 +3326,21 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               int32_t strlevels, size_t elemSize,
                               int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
-  // do a full fence - so that:
-  // 1) any pending writes are completed (in case they were to the
-  //    same location handled by the strided put and would
-  //    complete in the wrong order)
-  // 2) the cache does not keep older values from before the put.
-  // Alternatively, the strided put could be done through the cache
-  // system. This is just the current (possibly temporary) solution.
-  chpl_cache_fence(1, 1, ln, fn);
+  if (STRIDED_INVALIDATE_ALL) {
+    // do a full fence - so that:
+    // 1) any pending writes are completed (in case they were to the
+    //    same location handled by the strided put and would
+    //    complete in the wrong order)
+    // 2) the cache does not keep older values from before the put.
+    // Alternatively, the strided put could be done through the cache
+    // system. This is just the current (possibly temporary) solution.
+    chpl_cache_fence(1, 1, ln, fn);
+  } else {
+    strd_invalidate(addr, dststr, node,
+                    raddr, srcstr, count,
+                    strlevels, elemSize,
+                    commID, ln, fn);
+  }
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
