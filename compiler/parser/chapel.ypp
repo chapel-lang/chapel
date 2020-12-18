@@ -470,7 +470,7 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr
+%type <pexpr> call_base_expr call_expr dot_expr
 %type <pexpr> lhs_expr
 %type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
@@ -2144,22 +2144,21 @@ lhs_expr:
 ;
 
 /* Representations of values which can be invoked as functions.
- * Rather than allowing any value these values were deliberately restricted
- * to valid lhs_values and anonymous lambda function declarations.
  *
  * NOTE:  In order to allow expr to be invoked as a function
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
-fun_expr:
+call_base_expr:
   lhs_expr           { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
 | sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
 | lambda_decl_expr   { $$ = $1; }
+| str_bytes_literal
 ;
 
 call_expr:
-  fun_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
-| fun_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
+  call_base_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
+| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
 | TPRIMITIVE TLP opt_actual_ls TRP      { $$ = buildPrimitiveExpr($3); }
 ;
 
@@ -2214,14 +2213,6 @@ literal_expr:
     {
       $$ = new CallExpr("chpl__buildAssociativeArrayExpr", $2);
     }
-| str_bytes_literal TLSBR actual_expr TRSBR
-  {
-    $$ = buildSquareCallExpr($1, new CallExpr(PRIM_ACTUALS_LIST, $3));
-  }
-| str_bytes_literal TLP actual_expr TRP
-  {
-    $$ = new CallExpr($1, new CallExpr(PRIM_ACTUALS_LIST, $3));
-  }  
 
 ;
 
