@@ -1252,6 +1252,8 @@ void aout_evict(struct rdcache_s* cache,
     return;
   }
 
+  assert(z->entryReservedByTask == NULL);
+
   // Remove the tail element from Aout
   DOUBLE_REMOVE_TAIL(cache, aout);
   cache->aout_current--;
@@ -1269,7 +1271,8 @@ void aout_evict(struct rdcache_s* cache,
 static
 void ain_evict(struct rdcache_s* cache,
                chpl_cache_taskPrvData_t* task_local,
-               struct cache_entry_s* dont_evict_me)
+               struct cache_entry_s* dont_evict_me,
+               int give_up_if_locked)
 {
   struct cache_entry_s* y;
 
@@ -1280,11 +1283,15 @@ void ain_evict(struct rdcache_s* cache,
     // Remove dont_evict_me from the tail of ain
     DOUBLE_REMOVE_TAIL(cache, ain);
     // Evict the new tail element
-    ain_evict(cache, task_local, NULL);
+    ain_evict(cache, task_local, NULL, give_up_if_locked);
     // Put dont_evict_me back on the tail.
     DOUBLE_PUSH_TAIL(cache, dont_evict_me, ain);
     return;
   }
+
+  // give up if locked
+  if (give_up_if_locked && y->entryReservedByTask != NULL)
+    return;
 
 #ifdef DEBUG
   DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
@@ -1296,6 +1303,8 @@ void ain_evict(struct rdcache_s* cache,
   // immediately wait for them to complete, before we modify the contents
   // of Ain in any way (or reuse the associated page).
   flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+  assert(y->entryReservedByTask == NULL);
+  assert(y == cache->ain_tail);
 
   DOUBLE_REMOVE_TAIL(cache, ain);
   cache->ain_current--;
@@ -1316,7 +1325,9 @@ void ain_evict(struct rdcache_s* cache,
 static
 void am_evict(struct rdcache_s *cache,
               chpl_cache_taskPrvData_t* task_local,
-              struct cache_entry_s* dont_evict_me) {
+              struct cache_entry_s* dont_evict_me,
+              int give_up_if_locked)
+{
   struct cache_entry_s *y;
   struct cache_list_entry_s* entry;
 
@@ -1327,16 +1338,22 @@ void am_evict(struct rdcache_s *cache,
     // Remove dont_evict_me from the tail of am
     DOUBLE_REMOVE_TAIL(cache, am_lru);
     // Evict the new tail element
-    am_evict(cache, task_local, NULL);
+    am_evict(cache, task_local, NULL, give_up_if_locked);
     // Put dont_evict_me back on the tail.
     DOUBLE_PUSH_TAIL(cache, dont_evict_me, am_lru);
     return;
   }
 
+  // give up if locked
+  if (give_up_if_locked && y->entryReservedByTask != NULL)
+    return;
+
   // If the entry in Am has any pending/dirty requests, we must
   // immediately wait for them to complete, before we modify the contents
   // of Ain in any way (or reuse the associated page).
   flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+  assert(y->entryReservedByTask == NULL);
+  assert(y == cache->am_lru_tail);
 
   DOUBLE_REMOVE_TAIL(cache, am_lru);
   cache->am_current--;
@@ -1354,19 +1371,20 @@ void am_evict(struct rdcache_s *cache,
 static
 void reclaim(struct rdcache_s* cache,
              chpl_cache_taskPrvData_t* task_local,
-             struct cache_entry_s* dont_evict_me)
+             struct cache_entry_s* dont_evict_me,
+             int give_up_if_locked)
 {
   // This is like 'reclaimfor' in the 2Q paper
   // if the number of elements in Ain > max
   if( cache->ain_current > cache->ain_max ) {
     // Page out the tail of Ain (and record it in Aout)
     // ain_evict will also evict from aout if necessary.
-    ain_evict(cache, task_local, dont_evict_me);
+    ain_evict(cache, task_local, dont_evict_me, give_up_if_locked);
   } else {
     // otherwise
     // page out the tail of Am, call it Y
     // do not put it on Aout, as it hasn't been accessed recently.
-    am_evict(cache, task_local, dont_evict_me);
+    am_evict(cache, task_local, dont_evict_me, give_up_if_locked);
   }
 }
 
@@ -1375,12 +1393,8 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
 {
   struct cache_entry_s* ret;
 
-  //printf("alloc entry ain %i aout %i am %i\n",
-  //       cache->ain_current, cache->aout_current, cache->am_current);
-
   // Make sure we have a free entry..
   assert(cache->free_entries_head != NULL); // caller's responsibility
-  //if( ! cache->free_entries_head ) reclaim(cache, NULL);
 
   ret = (struct cache_entry_s*) cache->free_entries_head;
 
@@ -1396,14 +1410,15 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
 static
 void ensure_free_page(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
-                      struct cache_entry_s* dont_evict_me)
+                      struct cache_entry_s* dont_evict_me,
+                      int give_up_if_locked)
 {
   // If there are free page slots, then use a free page slot.
   if( cache->free_pages_head ) {
     return;
   }
 
-  reclaim(cache, task_local, dont_evict_me);
+  reclaim(cache, task_local, dont_evict_me, give_up_if_locked);
 
   assert( cache->free_pages_head && cache->free_pages_head->page );
 }
@@ -1415,8 +1430,6 @@ unsigned char* allocate_page(struct rdcache_s* cache)
   unsigned char* ret;
 
   assert(cache->free_pages_head != NULL); // caller's responsibility.
-
-  //if( ! cache->free_pages_head ) ensure_free_page(cache, NULL);
 
   page_list_entry = cache->free_pages_head;
   SINGLE_POP_HEAD(cache, free_pages);
@@ -1767,6 +1780,9 @@ int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       // cache->pending[index] == NULL now
     }
     if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
+      // assume chpl_comm_test_nb_complete can yield
+      ret = 1;
+
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
       fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
@@ -1784,6 +1800,15 @@ int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 }
 
 
+// "lock" the entry
+//  * if entry->entryReservedByTask is task_local, return - already locked
+//  * if entry->entryReservedByTask is NULL, set it to task_local
+//  * otherwise wait for entry->entryReservedByTask to become NULL
+//    by yielding, and then set it to task_local.
+//
+// This lock protects the entry from being evicted by another task
+// in the same pthread.
+//
 // returns 1 if the lock was taken (0 means we already had it)
 static
 int reserve_entry(struct rdcache_s* cache,
@@ -1887,7 +1912,7 @@ int flush_entry(struct rdcache_s* cache,
                  page+start, entry->base.node, (void*) (entry->raddr+start),
                  (int) got_len));
 
-          // Note: chpl_comm_put_nb could cause a different task body to run.
+          // Note: chpl_comm_put_nb, pending_push can yield
           handle =
             chpl_comm_put_nb(page+start, /*local addr*/
                              entry->base.node,
@@ -1992,6 +2017,8 @@ void use_entry(struct rdcache_s* cache,
 // Otherwise, this will create a new entry in Ain and it will assume
 // that the entry does not currently exist in the cache.
 //
+// Assumes caller has ensured there is a free page and a free entry.
+//
 // The returned entry is always "reserved" i.e. entryInUse = 1.
 static
 struct cache_entry_s* make_entry(struct rdcache_s* tree,
@@ -2047,7 +2074,7 @@ struct cache_entry_s* make_entry(struct rdcache_s* tree,
     DEBUG_PRINT(("%d: Found %p nowhere\n", chpl_nodeID, (void*) raddr));
 
     // This is our new entry...
-    bottom_tmp = allocate_entry(tree); // note: can evict something & change tbl
+    bottom_tmp = allocate_entry(tree);
     // We know that this entry does not exist in the tree,
     // so we only need to lookup where to add it.
     prev_table = lookup_entry_adding(tree, node, raddr);
@@ -2104,10 +2131,11 @@ typedef enum {
 } cache_op_t;
 
 // Reserves an entry, creating it if necessary.
-//  First checks if 'hint_entry' can serve as the entry for this page.
-//  If not, searches for the entry.
 //  If one is found, "use" it in the cache algorithm.
 //  If none is found, create a new entry and page.
+//
+//  hint_entry is an entry to check first (before traversing the tree)
+//  for a match.
 //
 //  Returns a reserved entry (with entryInUse=1) that needs to
 //  be unreserved at the end of the operation.
@@ -2175,13 +2203,14 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free page
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, aout_entry);
+        ensure_free_page(cache, task_local, aout_entry,
+                         /* give_up_if_locked */ 0);
         continue;
       }
 
       {
-        // allocate_page should not yield because above code ensured
-        // a free page exists.
+        // allocate_page can't yield.
+        // above code ensured a free page exists.
         unsigned char* page = allocate_page(cache);
         assert(page);
         entry = make_entry(cache, node, ra_page, page, aout_entry);
@@ -2196,18 +2225,20 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free entry if needed
       if (cache->free_entries_head == NULL) {
         // free an entry and try again to find the entry
-        reclaim(cache, task_local, NULL);
+        reclaim(cache, task_local, NULL, /* give_up_if_locked */ 0);
         continue;
       }
 
       // make sure we have a free page if needed
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, NULL);
+        ensure_free_page(cache, task_local, NULL, /* give_up_if_locked */ 0);
         continue;
       }
 
       {
+        // allocate_page and make_entry can't yield.
+        // above code ensured a free page & free entry exist.
         unsigned char* page = allocate_page(cache);
         entry = make_entry(cache, node, ra_page, page, aout_entry);
         assert(entry->entryReservedByTask == NULL); // new, should be unlocked
@@ -2244,6 +2275,8 @@ void cache_put_in_page(struct rdcache_s* cache,
 
   // We will put from raddr to raddr+size
 
+  // get a "lock"ed entry for raddr.
+  // the "lock" prevents tasks yielded to from updating it.
   entry = get_reserved_entry(cache, task_local, NULL, node, ra_page,
                              CACHE_OP_PUT);
   assert(entry && entry->page && entry->entryReservedByTask);
@@ -2262,21 +2295,20 @@ void cache_put_in_page(struct rdcache_s* cache,
   flush_entry(cache, task_local, entry,
               entry_after_acquire?FLUSH_PREPARE_PUT:FLUSH_INVALIDATE_PAGE,
               raddr, size);
+  // note: flush_entry can yield, but entry is locked
+  // no chance of deadlock because above flush might create/wait for comms
+  // but does not try to lock another page.
   assert(entry->page && entry->entryReservedByTask == task_local);
-
-  if (!entry->page) {
-    // get a page from the free list.
-    if (!cache->free_pages_head) {
-      ensure_free_page(cache, task_local, entry);
-      assert(entry->page && entry->entryReservedByTask == task_local);
-    }
-    entry->page = allocate_page(cache);
-  }
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
 
   // Make sure we have a dirty structure.
   if (!entry->dirty) {
     allocate_dirty(cache, task_local, entry);
+    // note: allocate_dirty can yield, but entry is locked
+    // and won't deadlock because it doesn't wait on an entry
+    // (it might start comm events and clear out dirty bits)
     assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
     assert(entry->dirty);
   } else {
     // Make it the most recently use dirty page.
@@ -2305,8 +2337,10 @@ void cache_put_in_page(struct rdcache_s* cache,
 
   // Make sure that there is a dirty page available for next time.
   ensure_free_dirty(cache, task_local);
+
   // Make sure that there is an available page for next time.
-  ensure_free_page(cache, task_local, NULL);
+  ensure_free_page(cache, task_local, NULL,
+                   /* give_up_if_locked */ 0);
 }
 
 
@@ -2610,7 +2644,6 @@ void cache_get_in_page(struct rdcache_s* cache,
   int entry_after_acquire;
   chpl_comm_nb_handle_t handle;
   uintptr_t readahead_len, readahead_skip;
-  int data_ready;
 
   isprefetch = (addr == NULL);
 
@@ -2634,87 +2667,18 @@ void cache_get_in_page(struct rdcache_s* cache,
   // Try to find this page data in the cache.
   // We will need from ra_line to ra_line_end.
 
-  entry = lookup_entry(cache, node, ra_page);
-  if (entry && entry->page) {
-    // Is this cache line available for use, based on when we
-    // last ran an acquire fence?
-    entry_after_acquire = (entry->min_sequence_number >=
-                           task_local->last_acquire);
+  // Find the entry in the cache and "lock" it to keep this
+  // code simpler. (It would be possible to process some cache-hit GETs
+  // without "lock"ing but that would require care about the order in
+  // which entry fields are set in other regions of the code that
+  // are protected by the "lock").
 
-    // Is the relevant data available in the cache line?
-    has_data = check_valid_lines(entry->valid_lines,
-                                 (ra_line - ra_page) >> CACHELINE_BITS,
-                                 (ra_line_end - ra_line) >> CACHELINE_BITS);
-
-    // Is the data only in the dirty region?
-    if( !has_data && entry->dirty ) {
-        has_data = all_set_for_skip_len(entry->dirty->dirty,
-                                        raddr & CACHEPAGE_MASK,
-                                        size,
-                                        CACHEPAGE_BITMASK_WORDS);
-    }
-    data_ready = entry_after_acquire && has_data;
-  } else {
-    data_ready = 0;
-  }
-
-  if (data_ready) {
-    // Data is already in cache...  but to do a 'get' for previously
-    // prefetched data, we might have to wait for it.
-    if (!isprefetch) {
-      if (entry->max_prefetch_sequence_number >
-          cache->completed_request_number) {
-        int redo = wait_for(cache, entry->max_prefetch_sequence_number);
-        if (redo) {
-          // could have yielded - so need to take the slow path.
-          data_ready = 0;
-        }
-      }
-    }
-  }
-
-  if (data_ready) {
-    // able to use the data without yielding. So do it!
-
-    // If the cache line is in Am, move it to the front of Am.
-    use_entry(cache, entry);
-
-    if (!isprefetch) {
-
-      // Copy the data out.
-      chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
-
-      // If we are accessing a page that has a readahead condition,
-      // trigger that readahead.
-      if( ENABLE_READAHEAD && entry->readahead_len ) {
-        // Remove the readahead trigger from this page since
-        // we're starting the readahead now.
-        readahead_skip = entry->readahead_skip;
-        readahead_len = entry->readahead_len;
-        entry->readahead_skip = 0;
-        entry->readahead_len = 0;
-
-        cache_get_trigger_readahead(cache, task_local,
-                                    node, ra_page,
-                                    raddr, size,
-                                    readahead_skip, readahead_len,
-                                    commID, ln, fn);
-        // note - triggering readahead can yield or possibly evict entry...
-      }
-    }
-
-    // return because we have processed an
-    // easy cache hit (other cache hit scenarios handled below).
-    return;
-  }
-
-  // If we get here, the data might be in the cache (or not)
-  // but either way we need to do some operations that "lock" the
-  // entry in order to handle the case that operations on that
-  // entry yield and lead to another task trying to evict it (say).
-  entry = get_reserved_entry(cache, task_local, entry, node, ra_page,
+  // The "lock" prevents another operation that occurs within another
+  // task we get to through yielding from doing something with the entry.
+  entry = get_reserved_entry(cache, task_local, NULL, node, ra_page,
                              isprefetch?CACHE_OP_PREFETCH:CACHE_OP_GET);
   assert(entry && entry->page && entry->entryReservedByTask);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
 
   // Is this cache line available for use, based on when we
   // last ran an acquire fence?
@@ -2758,10 +2722,11 @@ void cache_get_in_page(struct rdcache_s* cache,
     if (!isprefetch) {
       if (entry->max_prefetch_sequence_number >
           cache->completed_request_number) {
-        // this wait_for can yield but such a yield must not
-        // evict entry (because it is reserved)
         wait_for(cache, entry->max_prefetch_sequence_number);
+        // note: wait_for can yield, but entry is locked
+        // no chance of deadlock since wait_for just processes comm events
         assert(entry->page && entry->entryReservedByTask == task_local);
+        assert(entry->base.raddr == ra_page && entry->base.node == node);
       }
 
       // Copy the data out.
@@ -2813,7 +2778,11 @@ void cache_get_in_page(struct rdcache_s* cache,
   flush_entry(cache, task_local, entry,
               entry_after_acquire?FLUSH_PREPARE_GET:FLUSH_INVALIDATE_PAGE,
               ra_line, ra_line_end-ra_line);
+  // note: flush_entry can yield, but entry is locked
+  // no chance of deadlock because above flush might create/wait for comms
+  // but does not try to lock another page.
   assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
 
   // Now we need to start a get into page.
   // We'll get within ra_page from ra_line to ra_line_end.
@@ -2827,6 +2796,9 @@ void cache_get_in_page(struct rdcache_s* cache,
                             node, (void*) ra_line,
                             ra_line_end - ra_line /*size*/,
                             commID, ln, fn);
+  // note: chpl_comm_get_nb can yield, but entry is locked
+  assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
 
   // Set the valid lines
   set_valid_lines(entry->valid_lines,
@@ -2842,6 +2814,10 @@ void cache_get_in_page(struct rdcache_s* cache,
 
     // This will increment next request number so cache events are recorded.
     sn = pending_push(cache, handle);
+    // note: pending_push can yield, but entry is locked
+    assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
+
     entry->max_prefetch_sequence_number = seqn_max(entry->max_prefetch_sequence_number, sn);
   }
 
@@ -2885,21 +2861,34 @@ void cache_get_in_page(struct rdcache_s* cache,
 
   // Make sure that there is an available page for next time,
   // but do it without evicting entry (that we are working with).
-  // This could happen if entry is the last element of Ain..
-  ensure_free_page(cache, task_local, entry);
+  // This could happen if entry is the last element of Ain.
+  //
+  // To prevent deadlock, this call does nothing if the page we would
+  // reclaim is locked. That is OK because this call is here for performance,
+  // and not correctness, and so be skipped in that event.
+  ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 1);
+  // note: ensure_free_page can yield, but entry is locked
   assert(entry->page && entry->entryReservedByTask == task_local);
+  assert(entry->base.raddr == ra_page && entry->base.node == node);
 
   if (!isprefetch) {
     // If we're not prefetching... wait for the get to complete and copy it
     // back out of the cache.
 
     chpl_comm_wait_nb_some(&handle, 1);
+    // note: chpl_comm_wait_nb_some can yield, but entry is locked
+    assert(entry->page && entry->entryReservedByTask == task_local);
+    assert(entry->base.raddr == ra_page && entry->base.node == node);
 
     // Then, copy it out.
     chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
   }
 
   unreserve_entry(cache, task_local, entry);
+  entry = NULL;
+
+  // TODO: is this call necessary?
+  ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 0);
 }
 
 
@@ -3087,17 +3076,7 @@ int mock_get(struct rdcache_s* cache,
         // prefetched data, we might have to wait for it.
         {
           if( entry->max_prefetch_sequence_number > cache->completed_request_number ) {
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait1);
-#endif
-
             wait_for(cache, entry->max_prefetch_sequence_number);
-
-#ifdef TIME
-            clock_gettime(CLOCK_REALTIME, &wait2);
-
-            printf("%li ns waiting for %p\n", time_duration(&wait1, &wait2), (void*) ra_page);
-#endif
           }
         }
         // If the cache line is in Am, move it to the front of Am.
@@ -3173,7 +3152,7 @@ int mock_get(struct rdcache_s* cache,
     // Make sure that there is an available page for next time,
     // but do it without evicting entry (that we are working with).
     // This could happen if entry is the last element of Ain..
-    ensure_free_page(cache, task_local, entry);
+    ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 0);
 
     // would copy the data out here, but not in mock get
   }
@@ -3236,6 +3215,7 @@ void cache_invalidate(struct rdcache_s* cache,
     if( entry && entry->page ) {
       flush_entry(cache, task_local, entry,
                   FLUSH_INVALIDATE_REGION, requested_start, requested_size);
+      // note: flush_entry can yield
     }
   }
 }
@@ -3252,6 +3232,7 @@ void cache_clean_dirty(struct rdcache_s* cache,
     if( ! cur || ! cur->entry ) break;
     flush_entry(cache, task_local, cur->entry,
                 FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+    // note: flush_entry can yield
   }
 }
 
