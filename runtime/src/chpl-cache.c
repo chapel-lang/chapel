@@ -294,6 +294,9 @@ use.
 
 #define VERIFY 0
 
+// for testing
+#define EXTRA_YIELDS 1 // TODO DISABLE - DEBUG ONLY
+
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
 
@@ -388,6 +391,25 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 #endif
 
 
+// custom assert with stack trace
+#if 0
+#undef assert
+
+#ifdef NDEBUG
+#define assert(ignore)((void) 0)
+#else
+#define assert(x)                                                 \
+  do {                                                            \
+    if (!x) {                                                     \
+      char* stack = NULL;                                         \
+      stack = chpl_stack_unwind_to_string('\n');                  \
+      if (stack != NULL) {                                        \
+        fprintf(stderr, "assertion failed. Trace: %s", stack);    \
+      }                                                           \
+      __assert_fail(x, __FILE__, __LINE__, __func__);             \
+  } while(0)
+#endif
+#endif
 
 // ----------  SUPPORT FUNCTIONS
 #include "chpl-cache-support.c"
@@ -1055,7 +1077,7 @@ struct cache_entry_s* lookup_entry_prev(struct rdcache_s* tree,
   }
 
   // Traverse the lists
-  while (true) {
+  while (1) {
     int any_lists = 0;
     // Check each cur list for a match and note if all are NULL.
     for (int idx = 0; idx < TABLE_ENTRIES_PER_SLOT; idx++) {
@@ -1227,14 +1249,23 @@ void tree_remove(struct rdcache_s* tree, struct cache_entry_s* element)
 #define FLUSH_PREPARE_GET (FLUSH_DO_CLEAR_DIRTY|FLUSH_DO_PENDING)
 
 static
-int flush_entry(struct rdcache_s* cache,
-                chpl_cache_taskPrvData_t* task_local,
-                struct cache_entry_s* entry, int op,
-                raddr_t raddr, int32_t len_in);
+void flush_entry(struct rdcache_s* cache,
+                 chpl_cache_taskPrvData_t* task_local,
+                 struct cache_entry_s* entry, int op,
+                 raddr_t raddr, int32_t len_in);
+static
+int try_reserve_entry(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      struct cache_entry_s* entry);
 
 static
-void aout_evict(struct rdcache_s* cache,
-                struct cache_entry_s* dont_evict_me)
+void unreserve_entry(struct rdcache_s* cache,
+                   chpl_cache_taskPrvData_t* task_local,
+                   struct cache_entry_s* entry);
+
+
+static
+void aout_evict(struct rdcache_s* cache)
 {
   struct cache_entry_s* z;
   struct cache_list_entry_s* entry;
@@ -1242,15 +1273,6 @@ void aout_evict(struct rdcache_s* cache,
   z = cache->aout_tail;
 
   if( !z ) return;
-  if( z == dont_evict_me ) {
-    // Remove dont_evict_me from the tail of aout
-    DOUBLE_REMOVE_TAIL(cache, aout);
-    // Evict the new tail element
-    aout_evict(cache, NULL);
-    // Put dont_evict_me back on the tail.
-    DOUBLE_PUSH_TAIL(cache, dont_evict_me, aout);
-    return;
-  }
 
   assert(z->entryReservedByTask == NULL);
 
@@ -1271,53 +1293,58 @@ void aout_evict(struct rdcache_s* cache,
 static
 void ain_evict(struct rdcache_s* cache,
                chpl_cache_taskPrvData_t* task_local,
-               struct cache_entry_s* dont_evict_me,
                int give_up_if_locked)
 {
-  struct cache_entry_s* y;
 
-  y = cache->ain_tail;
+  while (1) {
+    struct cache_entry_s* y = cache->ain_tail;
 
-  if( ! y ) return;
-  if( y == dont_evict_me ) {
-    // Remove dont_evict_me from the tail of ain
-    DOUBLE_REMOVE_TAIL(cache, ain);
-    // Evict the new tail element
-    ain_evict(cache, task_local, NULL, give_up_if_locked);
-    // Put dont_evict_me back on the tail.
-    DOUBLE_PUSH_TAIL(cache, dont_evict_me, ain);
-    return;
-  }
+    if (y==NULL)
+      return;
 
-  // give up if locked
-  if (give_up_if_locked && y->entryReservedByTask != NULL)
-    return;
+    assert(y->entryReservedByTask != task_local);
+    // give up if locked
+    if (give_up_if_locked && y->entryReservedByTask != NULL)
+      return;
+
+    if (!try_reserve_entry(cache, task_local, y)) {
+      // could not "lock" entry y so try again
+      chpl_task_yield();
+      continue;
+    }
+
+    // "lock"ed entry y
 
 #ifdef DEBUG
-  DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
-  cache_entry_print( y, " ain evict ", 1);
-  rdcache_print(cache);
+    DEBUG_PRINT(("Ain is evicting entry for raddr %p\n", (void*) y->raddr));
+    cache_entry_print( y, " ain evict ", 1);
+    rdcache_print(cache);
 #endif
 
-  // If the entry in Ain has any pending/dirty requests, we must
-  // immediately wait for them to complete, before we modify the contents
-  // of Ain in any way (or reuse the associated page).
-  flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
-  assert(y->entryReservedByTask == NULL);
-  assert(y == cache->ain_tail);
+    // If the entry in Ain has any pending/dirty requests, we must
+    // immediately wait for them to complete, before we modify the contents
+    // of Ain in any way (or reuse the associated page).
+    flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+    assert(y->entryReservedByTask == task_local);
+    assert(y->queue == QUEUE_AIN && y == cache->ain_tail);
 
-  DOUBLE_REMOVE_TAIL(cache, ain);
-  cache->ain_current--;
+    DOUBLE_REMOVE_TAIL(cache, ain);
+    cache->ain_current--;
 
-  y->queue = QUEUE_AOUT;
+    y->queue = QUEUE_AOUT;
 
-  // Since we are kicking entry off of Ain, we have to add it to Aout.
-  DOUBLE_PUSH_HEAD(cache, y, aout);
-  cache->aout_current++;
+    // Since we are kicking entry off of Ain, we have to add it to Aout.
+    DOUBLE_PUSH_HEAD(cache, y, aout);
+    cache->aout_current++;
 
-  if( cache->aout_current > cache->aout_max ) {
-    // Remove the tail element from aout.
-    aout_evict(cache, dont_evict_me);
+    // "unlock" entry y
+    unreserve_entry(cache, task_local, y);
+
+    if( cache->aout_current > cache->aout_max ) {
+      // Remove the tail element from aout.
+      aout_evict(cache);
+    }
+    return;
   }
 }
 
@@ -1325,53 +1352,57 @@ void ain_evict(struct rdcache_s* cache,
 static
 void am_evict(struct rdcache_s *cache,
               chpl_cache_taskPrvData_t* task_local,
-              struct cache_entry_s* dont_evict_me,
               int give_up_if_locked)
 {
-  struct cache_entry_s *y;
-  struct cache_list_entry_s* entry;
 
-  y = cache->am_lru_tail;
+  while (1) {
+    struct cache_entry_s* y = cache->am_lru_tail;
+    struct cache_list_entry_s* entry;
 
-  if( !y ) return;
-  if( y == dont_evict_me ) {
-    // Remove dont_evict_me from the tail of am
+    if (y==NULL)
+      return;
+
+    assert(y->entryReservedByTask != task_local);
+    // give up if locked
+    if (give_up_if_locked && y->entryReservedByTask != NULL)
+      return;
+
+    if (!try_reserve_entry(cache, task_local, y)) {
+      // could not "lock" entry y so try again
+      chpl_task_yield();
+      continue;
+    }
+
+    // "lock"ed entry y
+
+    // If the entry in Am has any pending/dirty requests, we must
+    // immediately wait for them to complete, before we modify the contents
+    // of Ain in any way (or reuse the associated page).
+    flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
+    assert(y->entryReservedByTask == task_local);
+    assert(y->queue == QUEUE_AM && y == cache->am_lru_tail);
+
     DOUBLE_REMOVE_TAIL(cache, am_lru);
-    // Evict the new tail element
-    am_evict(cache, task_local, NULL, give_up_if_locked);
-    // Put dont_evict_me back on the tail.
-    DOUBLE_PUSH_TAIL(cache, dont_evict_me, am_lru);
+    cache->am_current--;
+
+    // Remove this entry in Am from the pointer tree.
+    tree_remove(cache, y);
+
+    y->queue = QUEUE_FREE;
+
+    // Add y to the free list
+    entry = &y->base;
+    SINGLE_PUSH_HEAD(cache, entry, free_entries);
+
+    // "unlock" entry y
+    unreserve_entry(cache, task_local, y);
     return;
   }
-
-  // give up if locked
-  if (give_up_if_locked && y->entryReservedByTask != NULL)
-    return;
-
-  // If the entry in Am has any pending/dirty requests, we must
-  // immediately wait for them to complete, before we modify the contents
-  // of Ain in any way (or reuse the associated page).
-  flush_entry(cache, task_local, y, FLUSH_EVICT, 0, CACHEPAGE_SIZE);
-  assert(y->entryReservedByTask == NULL);
-  assert(y == cache->am_lru_tail);
-
-  DOUBLE_REMOVE_TAIL(cache, am_lru);
-  cache->am_current--;
-
-  // Remove this entry in Am from the pointer tree.
-  tree_remove(cache, y);
-
-  y->queue = QUEUE_FREE;
-
-  // Add y to the free list
-  entry = &y->base;
-  SINGLE_PUSH_HEAD(cache, entry, free_entries);
 }
 
 static
 void reclaim(struct rdcache_s* cache,
              chpl_cache_taskPrvData_t* task_local,
-             struct cache_entry_s* dont_evict_me,
              int give_up_if_locked)
 {
   // This is like 'reclaimfor' in the 2Q paper
@@ -1379,12 +1410,12 @@ void reclaim(struct rdcache_s* cache,
   if( cache->ain_current > cache->ain_max ) {
     // Page out the tail of Ain (and record it in Aout)
     // ain_evict will also evict from aout if necessary.
-    ain_evict(cache, task_local, dont_evict_me, give_up_if_locked);
+    ain_evict(cache, task_local, give_up_if_locked);
   } else {
     // otherwise
     // page out the tail of Am, call it Y
     // do not put it on Aout, as it hasn't been accessed recently.
-    am_evict(cache, task_local, dont_evict_me, give_up_if_locked);
+    am_evict(cache, task_local, give_up_if_locked);
   }
 }
 
@@ -1410,7 +1441,6 @@ struct cache_entry_s* allocate_entry(struct rdcache_s* cache)
 static
 void ensure_free_page(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
-                      struct cache_entry_s* dont_evict_me,
                       int give_up_if_locked)
 {
   // If there are free page slots, then use a free page slot.
@@ -1418,9 +1448,10 @@ void ensure_free_page(struct rdcache_s* cache,
     return;
   }
 
-  reclaim(cache, task_local, dont_evict_me, give_up_if_locked);
+  reclaim(cache, task_local, give_up_if_locked);
 
-  assert( cache->free_pages_head && cache->free_pages_head->page );
+  if (!give_up_if_locked)
+    assert( cache->free_pages_head && cache->free_pages_head->page );
 }
 
 static
@@ -1445,11 +1476,23 @@ static
 void ensure_free_dirty(struct rdcache_s* cache,
                        chpl_cache_taskPrvData_t* task_local)
 {
-  assert( cache->dirty_lru_tail );
+  assert(cache->dirty_lru_tail);
 
-  if( cache->dirty_lru_tail->entry ) {
-    flush_entry(cache, task_local, cache->dirty_lru_tail->entry,
-                FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+  while (1) {
+    struct cache_entry_s* entry = cache->dirty_lru_tail->entry;
+    if (entry == NULL)
+      return;
+
+    if (!try_reserve_entry(cache, task_local, entry)) {
+      // could not "lock" entry so try again
+      chpl_task_yield();
+      continue;
+    }
+
+    // "lock"ed entry
+    flush_entry(cache, task_local, entry,
+              FLUSH_DO_PAGE|FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
+    unreserve_entry(cache, task_local, entry);
   }
 }
 
@@ -1487,15 +1530,14 @@ static void use_dirty(struct rdcache_s* cache, struct dirty_entry_s* dirty)
 
 
 static
-int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn);
+void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn);
 
-// return 1 if any potentially yielding action was taken
 static inline
-int wait_for(struct rdcache_s* cache, cache_seqn_t sn)
+void wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
   // Do nothing if we have already completed sn.
-  if( sn <= cache->completed_request_number ) return 0;
-  return do_wait_for(cache, sn);
+  if( sn <= cache->completed_request_number ) return;
+  do_wait_for(cache, sn);
 }
 
 static
@@ -1509,12 +1551,12 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
                fifo_circleb_count(cache->pending_first_entry, cache->pending_last_entry, cache->pending_len),
                cache->pending_len));
 
-  if( fifo_circleb_isfull(cache->pending_first_entry, cache->pending_last_entry, cache->pending_len) ) {
+  while (fifo_circleb_isfull(cache->pending_first_entry,
+                             cache->pending_last_entry,
+                             cache->pending_len) ) {
     index = cache->pending_first_entry;
     wait_sn = cache->pending_sequence_numbers[index];
     wait_for(cache, wait_sn);
-    // We should have completed at least the operation at index.
-    assert( cache->pending[index] == NULL );
   }
 
   sn = cache->next_request_number;
@@ -1732,31 +1774,29 @@ void validate_cache(struct rdcache_s* tree,
 #endif
 }
 
-// return 1 if any potentially yielding action was taken
 static
-int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
+void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
   int index;
   cache_seqn_t at;
   cache_seqn_t max_completed = cache->completed_request_number;
   int last;
-  int ret = 0;
 
   DEBUG_PRINT(("wait_for(%i) completed=%i\n", (int) sn, (int) max_completed));
 
   // Do nothing if there are no pending entries.
   if( cache->pending_first_entry < 0 || cache->pending_last_entry < 0 ) {
-    return 0;
+    return;
   }
 
   // Do nothing if we don't have a valid sequence number to wait for.
   if( sn == NO_SEQUENCE_NUMBER ) {
-    return 0;
+    return;
   }
 
   // Do nothing if we have already completed sn.
   if( sn <= max_completed ) {
-    return 0;
+    return;
   }
 
   // Note: chpl_comm_wait_nb_some could cause a different task body to run...
@@ -1775,13 +1815,13 @@ int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
         DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
         // Wait for some requests to complete.
         chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
-        ret = 1;
+        if (EXTRA_YIELDS) chpl_task_yield();
       }
       // cache->pending[index] == NULL now
     }
+    // assume chpl_comm_test_nb_complete can yield
+    if (EXTRA_YIELDS) chpl_task_yield();
     if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
-      // assume chpl_comm_test_nb_complete can yield
-      ret = 1;
 
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
@@ -1795,8 +1835,6 @@ int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   }
 
   cache->completed_request_number = max_completed;
-
-  return ret;
 }
 
 
@@ -1809,25 +1847,17 @@ int do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 // This lock protects the entry from being evicted by another task
 // in the same pthread.
 //
-// returns 1 if the lock was taken (0 means we already had it)
+// returns 1 if the lock was taken (0 means someone else has it)
+// if 0 is returned, the calling loop should call chpl_task_yield.
 static
-int reserve_entry(struct rdcache_s* cache,
-                  chpl_cache_taskPrvData_t* task_local,
-                  struct cache_entry_s* entry) {
+int try_reserve_entry(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      struct cache_entry_s* entry) {
 
-  if (entry->entryReservedByTask == task_local)
-    return 0; // already "locked" by this task
-
-  while (true) {
-    if (entry->entryReservedByTask != NULL) {
-      // yield and try again to find the entry.
-      // (searches again in the tree in case it is removed and
-      //  added elsewhere)
-      assert(entry->entryReservedByTask != task_local);
-      chpl_task_yield();
-      continue;
-    }
-
+  if (entry->entryReservedByTask != NULL) {
+    assert(entry->entryReservedByTask != task_local);
+    return 0;
+  } else {
     // now entry->entryReservedByTask == NULL
     entry->entryReservedByTask = task_local; // "lock"
     return 1;
@@ -1839,7 +1869,8 @@ void unreserve_entry(struct rdcache_s* cache,
                    chpl_cache_taskPrvData_t* task_local,
                    struct cache_entry_s* entry) {
   assert(entry->entryReservedByTask == task_local);
-  assert(entry->queue == QUEUE_AIN || entry->queue == QUEUE_AM);
+  assert(entry->queue == QUEUE_AIN || entry->queue == QUEUE_AM ||
+         entry->queue == QUEUE_AOUT);
   entry->entryReservedByTask = NULL;
 }
 
@@ -1847,12 +1878,13 @@ void unreserve_entry(struct rdcache_s* cache,
 // For the region of this page in raddr,len, we complete any pending/not
 // started operations that possibly overlap with that region.
 // If FLUSH_EVICT or FLUSH_INVALIDATE_PAGE is set, we will ignore the region.
-// Returns 1 if any potentially yielding action was taken, 0 otherwise.
+//
+// assumes that the entry is already locked
 static
-int flush_entry(struct rdcache_s* cache,
-                chpl_cache_taskPrvData_t* task_local,
-                struct cache_entry_s* entry, int op,
-                raddr_t raddr, int32_t len_in)
+void flush_entry(struct rdcache_s* cache,
+                 chpl_cache_taskPrvData_t* task_local,
+                 struct cache_entry_s* entry, int op,
+                 raddr_t raddr, int32_t len_in)
 {
   struct page_list_s* free_page_list_entry;
   unsigned char* page;
@@ -1865,11 +1897,8 @@ int flush_entry(struct rdcache_s* cache,
   uintptr_t num_lines, skip_lines;
   chpl_comm_nb_handle_t handle;
   uintptr_t got_skip, got_len;
-  int ret;
-  int locked;
 
-  // "lock" the entry
-  locked = reserve_entry(cache, task_local, entry);
+  assert(entry->entryReservedByTask == task_local);
 
   DEBUG_PRINT(("flush_entry(%p, %i, %p, %i)\n",
                entry, op, (void*) raddr, (int) len));
@@ -1877,8 +1906,6 @@ int flush_entry(struct rdcache_s* cache,
   printf("starting flush_entry, entry is:\n");
   cache_entry_print(entry, " toflush ", 1);
 #endif
-
-  ret = 0;
 
   if( op & FLUSH_DO_PAGE ) {
     // Ignore the passed-in raddr/len.
@@ -1919,12 +1946,10 @@ int flush_entry(struct rdcache_s* cache,
                              (void*)(entry->base.raddr+start),
                              got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
+          if (EXTRA_YIELDS) chpl_task_yield();
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
-
-          // Record that a flush action was taken
-          ret = 1;
 
           // Move past this region of 1s in dirty bits.
           start = got_skip + got_len;
@@ -1946,12 +1971,12 @@ int flush_entry(struct rdcache_s* cache,
   if( op & FLUSH_DO_PENDING ) {
     // If there is a pending put sequence number not completed, we must
     // wait for it now (since we don't know which region it corresponded to).
-    ret |= wait_for(cache, entry->max_put_sequence_number);
+    wait_for(cache, entry->max_put_sequence_number);
 
     // If the previously valid cache lines overlap with the
     // request, we must wait for them now.
     if( any_valid_lines(entry->valid_lines, skip_lines, num_lines) ) {
-      ret |= wait_for(cache, entry->max_prefetch_sequence_number);
+      wait_for(cache, entry->max_prefetch_sequence_number);
     }
   }
 
@@ -1982,15 +2007,10 @@ int flush_entry(struct rdcache_s* cache,
     }
   }
 
-  // "unlock" the entry
-  if (locked) unreserve_entry(cache, task_local, entry);
-
 #ifdef DUMP
   printf("after flush_entry, entry is:\n");
   cache_entry_print(entry, " flushed ", 1);
 #endif
-
-  return ret;
 }
 
 // Call this function to tell the cache that we are 'use'ing an entry;
@@ -2149,7 +2169,7 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
 
   assert(task_local != NULL);
 
-  while (true) {
+  while (1) {
     struct cache_entry_s* entry = NULL;
     struct cache_entry_s* aout_entry = NULL;
 
@@ -2180,21 +2200,16 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
     if (entry) {
       // entry was in Ain or Am
 
-      if (entry->entryReservedByTask != NULL) {
-        // yield and try again to find the entry.
-        // (searches again in the tree in case it is removed and
-        //  added elsewhere)
-        assert(entry->entryReservedByTask != task_local);
+      if (!try_reserve_entry(cache, task_local, entry)) {
+        // could not "lock" entry so try again
         chpl_task_yield();
         continue;
       }
 
-      // now entry->entryReservedByTask == NULL
-      entry->entryReservedByTask = task_local; // "lock"
+      // "lock"ed entry
 
       // move entry to the front of the cache if needed
       use_entry(cache, entry);
-
       return entry;
 
     } else if (aout_entry) {
@@ -2203,8 +2218,7 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free page
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, aout_entry,
-                         /* give_up_if_locked */ 0);
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
         continue;
       }
 
@@ -2215,8 +2229,12 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
         assert(page);
         entry = make_entry(cache, node, ra_page, page, aout_entry);
         assert(entry->entryReservedByTask == NULL); // new, should be unlocked
-        entry->entryReservedByTask = task_local; // "lock"
 
+        if (!try_reserve_entry(cache, task_local, entry)) {
+          assert(0); // unexpected case
+        }
+
+        // "lock"ed entry
         return entry;
       }
     } else {
@@ -2225,14 +2243,14 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free entry if needed
       if (cache->free_entries_head == NULL) {
         // free an entry and try again to find the entry
-        reclaim(cache, task_local, NULL, /* give_up_if_locked */ 0);
+        reclaim(cache, task_local, /* give_up_if_locked */ 1);
         continue;
       }
 
       // make sure we have a free page if needed
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, NULL, /* give_up_if_locked */ 0);
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
         continue;
       }
 
@@ -2242,12 +2260,19 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
         unsigned char* page = allocate_page(cache);
         entry = make_entry(cache, node, ra_page, page, aout_entry);
         assert(entry->entryReservedByTask == NULL); // new, should be unlocked
-        entry->entryReservedByTask = task_local; // "lock"
 
+        if (!try_reserve_entry(cache, task_local, entry)) {
+          assert(0); // unexpected case
+        }
+
+        // "lock"ed entry
         return entry;
       }
     }
   }
+
+  assert(0); // unexpected case
+  return NULL;
 }
 
 
@@ -2339,8 +2364,7 @@ void cache_put_in_page(struct rdcache_s* cache,
   ensure_free_dirty(cache, task_local);
 
   // Make sure that there is an available page for next time.
-  ensure_free_page(cache, task_local, NULL,
-                   /* give_up_if_locked */ 0);
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
 }
 
 
@@ -2796,6 +2820,7 @@ void cache_get_in_page(struct rdcache_s* cache,
                             node, (void*) ra_line,
                             ra_line_end - ra_line /*size*/,
                             commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
   // note: chpl_comm_get_nb can yield, but entry is locked
   assert(entry->page && entry->entryReservedByTask == task_local);
   assert(entry->base.raddr == ra_page && entry->base.node == node);
@@ -2866,7 +2891,9 @@ void cache_get_in_page(struct rdcache_s* cache,
   // To prevent deadlock, this call does nothing if the page we would
   // reclaim is locked. That is OK because this call is here for performance,
   // and not correctness, and so be skipped in that event.
-  ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 1);
+  // It also causes 'entry' not to be reclaimed if it is
+  // the last thing in Ain.
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
   // note: ensure_free_page can yield, but entry is locked
   assert(entry->page && entry->entryReservedByTask == task_local);
   assert(entry->base.raddr == ra_page && entry->base.node == node);
@@ -2876,6 +2903,8 @@ void cache_get_in_page(struct rdcache_s* cache,
     // back out of the cache.
 
     chpl_comm_wait_nb_some(&handle, 1);
+    if (EXTRA_YIELDS) chpl_task_yield();
+
     // note: chpl_comm_wait_nb_some can yield, but entry is locked
     assert(entry->page && entry->entryReservedByTask == task_local);
     assert(entry->base.raddr == ra_page && entry->base.node == node);
@@ -2888,7 +2917,7 @@ void cache_get_in_page(struct rdcache_s* cache,
   entry = NULL;
 
   // TODO: is this call necessary?
-  ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 0);
+  ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
 }
 
 
@@ -3152,7 +3181,7 @@ int mock_get(struct rdcache_s* cache,
     // Make sure that there is an available page for next time,
     // but do it without evicting entry (that we are working with).
     // This could happen if entry is the last element of Ain..
-    ensure_free_page(cache, task_local, entry, /* give_up_if_locked */ 0);
+    ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
 
     // would copy the data out here, but not in mock get
   }
@@ -3174,7 +3203,6 @@ void cache_invalidate(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
                       c_nodeid_t node, raddr_t raddr, size_t size)
 {
-  struct cache_entry_s* entry;
   raddr_t ra_first_page;
   raddr_t ra_last_page;
   raddr_t ra_next_page;
@@ -3209,13 +3237,22 @@ void cache_invalidate(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size,ra_page_end);
     requested_size = requested_end - requested_start;
 
-    // Is the page in the tree?
-    entry = lookup_entry(cache, node, ra_page);
+    while (1) {
+      // Is the page in the tree?
+      struct cache_entry_s* entry = lookup_entry(cache, node, ra_page);
 
-    if( entry && entry->page ) {
-      flush_entry(cache, task_local, entry,
-                  FLUSH_INVALIDATE_REGION, requested_start, requested_size);
-      // note: flush_entry can yield
+      if (entry && entry->page) {
+        if (!try_reserve_entry(cache, task_local, entry)) {
+          // couldn't reserve entry - yield and try the lookup again
+          chpl_task_yield();
+          continue;
+        }
+
+        // "lock"ed entry
+        flush_entry(cache, task_local, entry,
+                    FLUSH_INVALIDATE_REGION, requested_start, requested_size);
+        unreserve_entry(cache, task_local, entry);
+      }
     }
   }
 }
@@ -3224,15 +3261,27 @@ static
 void cache_clean_dirty(struct rdcache_s* cache,
                        chpl_cache_taskPrvData_t* task_local)
 {
-  struct dirty_entry_s* cur;
 
-  while( 1 ) {
+  while (1) {
+    struct dirty_entry_s* cur;
+    struct cache_entry_s* victim;
+
     cur = cache->dirty_lru_head;
     // Dirty records with page entries are before free ones without
     if( ! cur || ! cur->entry ) break;
-    flush_entry(cache, task_local, cur->entry,
+
+    victim = cur->entry;
+
+    if (!try_reserve_entry(cache, task_local, victim)) {
+      // couldn't reserve entry - yield and try the lookup again
+      chpl_task_yield();
+      continue;
+    }
+
+    // "lock"ed entry
+    flush_entry(cache, task_local, victim,
                 FLUSH_DO_CLEAR_DIRTY, 0, CACHEPAGE_SIZE);
-    // note: flush_entry can yield
+    unreserve_entry(cache, task_local, victim);
   }
 }
 
@@ -3376,6 +3425,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
+    if (EXTRA_YIELDS) chpl_task_yield();
     return;
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
@@ -3405,6 +3455,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
+    if (EXTRA_YIELDS) chpl_task_yield();
     return;
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
@@ -3506,6 +3557,7 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided get.
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
@@ -3530,6 +3582,7 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
 }
 
 //
@@ -3543,6 +3596,7 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
@@ -3552,6 +3606,7 @@ void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
 }
 
 
@@ -3565,6 +3620,7 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
   cache_invalidate(cache, task_local, srcnode, (raddr_t)srcaddr, size);
   cache_invalidate(cache, task_local, dstnode, (raddr_t)dstaddr, size);
   chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
+  if (EXTRA_YIELDS) chpl_task_yield();
 }
 
 void chpl_cache_comm_getput_unordered_task_fence(void)
