@@ -2,6 +2,8 @@ use CommDiagnostics;
 use Time;
 
 config const n = 10000;
+config const verbose = false;
+
 var A:[1..n] int;
 var B:[1..n] int;
 
@@ -40,13 +42,18 @@ stopCommDiagnostics();
 
 writeln(B[1]);
 writeln(B[n]);
-//writeln(t.elapsed(), " seconds");
+
+if verbose {
+  writeln(t.elapsed(), " seconds");
+}
 
 var d = getCommDiagnostics();
 var ngets = (d(1).get + d(1).get_nb):int;
-var nputs = (d(1).put + d(1).put):int;
-//writeln(ngets, " gets");
-//writeln(nputs, " puts");
+var nputs = (d(1).put + d(1).put_nb):int;
+if verbose {
+  writeln(ngets, " gets");
+  writeln(nputs, " puts");
+}
 
 assert(ngets < n);
 assert(nputs < n);
