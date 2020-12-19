@@ -369,9 +369,7 @@ module UnrolledLinkedList {
       if _tail!.size == nodeCapacity {
         // the node is full, create new node
         // This could change the value of _tail
-        try! {
-          _split(_tail!);
-        }
+        _split(_tail!);
       }
     }
 
@@ -598,12 +596,10 @@ module UnrolledLinkedList {
 
           if cur!.size == nodeCapacity {
             // The current node is full
-            try! {
-              var newNode = _split(cur!);
-              if i >= cur!.size {
-                dest = newNode;
-                i -= cur!.size;
-              }
+            var newNode = _split(cur!);
+            if i >= cur!.size {
+              dest = newNode;
+              i -= cur!.size;
             }
           }
 
@@ -845,10 +841,8 @@ module UnrolledLinkedList {
         // Maybe merge nodes
         cur = _head;
         while cur != nil {
-          try! {
-            var result = _merge(cur!);
-            if result == false then cur = cur!.next;
-          }
+          var result = _merge(cur!);
+          if result == false then cur = cur!.next;
         }
 
         result = removed;
@@ -874,9 +868,7 @@ module UnrolledLinkedList {
             cur!.data[i] = cur!.data[i+1];
           }
 
-          try! {
-            _merge(cur!);
-          }
+          _merge(cur!);
 
           return result;
         }
