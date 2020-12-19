@@ -1,4 +1,4 @@
-import UnrolledLinkedList.unrolledLinkedList;;
+import UnrolledLinkedList.unrolledLinkedList;
 
 proc testList(type t) where isTuple(t) {
   var l = new unrolledLinkedList(t);
