@@ -1062,12 +1062,6 @@ module UnrolledLinkedList {
       return result;
     }
 
-    pragma "no doc"
-    proc ref sort(comparator: ?rec=Sort.defaultComparator) {
-      compilerError("unrolledLinkedList doesn't support sort");
-      return;
-    }
-
     /*
       Index this unrolledLinkedList via subscript. Returns a reference to the 
       element at a given index in this unrolledLinkedList.
