@@ -33,7 +33,7 @@ module UnrolledLinkedList {
   private use List;
 
   pragma "no doc"
-  private param _sanityChecks = true;
+  private param _sanityChecks = false;
 
   //
   // Some asserts are useful while developing, but can be turned off when the
