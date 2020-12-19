@@ -194,8 +194,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes a unrolledLinkedList containing elements that are copy initialized from
-      the elements contained in an array.
+      Initializes a unrolledLinkedList containing elements that are copy 
+      initialized from the elements contained in an array.
 
       Used in new expressions.
 
@@ -219,8 +219,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes a unrolledLinkedList containing elements that are copy initialized from
-      the elements contained in another unrolledLinkedlist.
+      Initializes a unrolledLinkedList containing elements that are copy 
+      initialized from the elements contained in another unrolledLinkedlist.
 
       :arg other: The list to initialize from.
     */
@@ -413,8 +413,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Returns `true` if this unrolledLinkedList contains an element equal to the value of
-      `x`, and `false` otherwise.
+      Returns `true` if this unrolledLinkedList contains an element equal to the
+      value of `x`, and `false` otherwise.
 
       :arg x: An element to search for.
       :type x: `eltType`
@@ -445,9 +445,9 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
-        be performed.
+        Calling this method on an empty unrolledLinkedList will cause the 
+        currently running program to halt. If the `--fast` flag is used, no 
+        safety checks will be performed.
 
       :return: A reference to the first item in this unrolledLinkedList.
       :rtype: `ref eltType`
@@ -471,9 +471,9 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
-        be performed.
+        Calling this method on an empty unrolledLinkedList will cause the 
+        currently running program to halt. If the `--fast` flag is used, no 
+        safety checks will be performed.
 
       :return: A reference to the last item in this unrolledLinkedList.
       :rtype: `ref eltType`
@@ -502,8 +502,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element contained in
-      a list.
+      Extend this unrolledLinkedList by appending a copy of each element 
+      contained in a list.
 
       :arg other: A list containing elements of the same type as those
         contained in this list.
@@ -518,11 +518,11 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element contained in
-      a unrolledLinkedList.
+      Extend this unrolledLinkedList by appending a copy of each element 
+      contained in a unrolledLinkedList.
 
-      :arg other: A unrolledLinkedList containing elements of the same type as those
-        contained in this unrolledLinkedList.
+      :arg other: A unrolledLinkedList containing elements of the same type as 
+      those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
     */
     proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
@@ -534,8 +534,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extend this unrolledLinkedList by appending a copy of each element contained in an
-      array.
+      Extend this unrolledLinkedList by appending a copy of each element 
+      contained in an array.
 
       :arg other: An array containing elements of the same type as those
         contained in this unrolledLinkedList.
@@ -550,13 +550,13 @@ module UnrolledLinkedList {
     }
 
     /*
-      Extends this unrolledLinkedList by appending a copy of each element yielded by a
-      range.
+      Extends this unrolledLinkedList by appending a copy of each element 
+      yielded by a range.
 
       .. note::
 
-        Attempting to initialize a unrolledLinkedList from an unbounded range will trigger
-        a compiler error.
+        Attempting to initialize a unrolledLinkedList from an unbounded range 
+        will trigger a compiler error.
 
       :arg other: The range to initialize from.
       :type other: `range(eltType)`
@@ -621,18 +621,19 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert an element at a given position in this unrolledLinkedList, shifting all elements
-      currently at and following that index one to the right. The call
-      ``a.insert(0, x)`` inserts an element at the front of the unrolledLinkedList `a`, and
-      ``a.insert((a.size), x)`` is equivalent to ``a.append(x)``.
+      Insert an element at a given position in this unrolledLinkedList, shifting
+      all elements currently at and following that index one to the right. The 
+      call ``a.insert(0, x)`` inserts an element at the front of the 
+      unrolledLinkedList `a`, and ``a.insert((a.size), x)`` is equivalent to 
+      ``a.append(x)``.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
       
-        Inserting an element into this unrolledLinkedList may invalidate existing references
-        to the elements contained in this unrolledLinkedList.
+        Inserting an element into this unrolledLinkedList may invalidate 
+        existing references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
       :type idx: `int`
@@ -698,17 +699,17 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert an array of elements `arr` into this unrolledLinkedList at index `idx`,
-      shifting all elements at and following the index `arr.size` positions
-      to the right. 
+      Insert an array of elements `arr` into this unrolledLinkedList at index 
+      `idx`, shifting all elements at and following the index `arr.size` 
+      positions to the right. 
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
 
-        Inserting elements into this unrolledLinkedList may invalidate existing references
-        to the elements contained in this unrolledLinkedList.
+        Inserting elements into this unrolledLinkedList may invalidate existing 
+        references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
       :type idx: `int`
@@ -733,17 +734,17 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert a list of elements `lst` into this unrolledLinkedList at index `idx`, shifting
-      all elements at and following the index `lst.size` positions to the
-      right.
+      Insert a list of elements `lst` into this unrolledLinkedList at index 
+      `idx`, shifting all elements at and following the index `lst.size` 
+      positions to the right.
 
       If the insertion is successful, this method returns `true`. If the given
       index is out of bounds, this method does nothing and returns `false`.
 
       .. warning::
 
-        Inserting elements into this unrolledLinkedList may invalidate existing references
-        to the elements contained in this unrolledLinkedList.
+        Inserting elements into this unrolledLinkedList may invalidate existing 
+        references to the elements contained in this unrolledLinkedList.
 
       :arg idx: The index into this unrolledLinkedList at which to insert.
       :type idx: `int`
@@ -771,16 +772,17 @@ module UnrolledLinkedList {
     }
 
     /*
-      Remove the first `count` elements from this unrolledLinkedList with values equal to
-      `x`, shifting all elements following the removed item left.
+      Remove the first `count` elements from this unrolledLinkedList with values 
+      equal to `x`, shifting all elements following the removed item left.
 
       If the count of elements to remove is less than or equal to zero, then
-      all elements from this unrolledLinkedList equal to the value of `x` will be removed.
+      all elements from this unrolledLinkedList equal to the value of `x` will 
+      be removed.
 
       .. warning::
 
-        Removing elements from this unrolledLinkedList may invalidate existing references
-        to the elements contained in this unrolledLinkedList.
+        Removing elements from this unrolledLinkedList may invalidate existing 
+        references to the elements contained in this unrolledLinkedList.
 
       :arg x: The value of the element to remove.
       :type x: `eltType`
@@ -893,14 +895,15 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Popping an element from this unrolledLinkedList will invalidate any reference to
-        the element taken while it was contained in this unrolledLinkedList.
+        Popping an element from this unrolledLinkedList will invalidate any 
+        reference to the element taken while it was contained in this 
+        unrolledLinkedList.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList will cause the currently running
-        program to halt. If the `--fast` flag is used, no safety checks will
-        be performed.
+        Calling this method on an empty unrolledLinkedList will cause the 
+        currently running program to halt. If the `--fast` flag is used, no 
+        safety checks will be performed.
 
       :return: The element popped.
       :rtype: `eltType`
@@ -917,18 +920,21 @@ module UnrolledLinkedList {
     }
 
     /*
-      Remove the element at the index `idx` from this unrolledLinkedList and return it.
+      Remove the element at the index `idx` from this unrolledLinkedList and 
+      return it.
 
       .. warning::
 
-        Popping an element from this unrolledLinkedList will invalidate any reference to
-        the element taken while it was contained in this unrolledLinkedList.
+        Popping an element from this unrolledLinkedList will invalidate any 
+        reference to the element taken while it was contained in this 
+        unrolledLinkedList.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList or with values of `idx` that
-        are out of bounds will cause the currently running program to halt.
-        If the `--fast` flag is used, no safety checks will be performed.
+        Calling this method on an empty unrolledLinkedList or with values of 
+        `idx` that are out of bounds will cause the currently running program 
+        to halt. If the `--fast` flag is used, no safety checks will be 
+        performed.
 
       :arg idx: The index of the element to remove.
       :type idx: `int`
@@ -948,8 +954,8 @@ module UnrolledLinkedList {
 
       .. warning::
 
-        Clearing the contents of this unrolledLinkedList will invalidate all existing
-        references to the elements contained in this unrolledLinkedList.
+        Clearing the contents of this unrolledLinkedList will invalidate all 
+        existing references to the elements contained in this unrolledLinkedList.
     */
     proc ref clear() {
       on this {
@@ -970,15 +976,15 @@ module UnrolledLinkedList {
     }
 
     /*
-      Return a zero-based index into this unrolledLinkedList of the first item whose value
-      is equal to `x`. If no such element can be found this method returns
-      the value `-1`.
+      Return a zero-based index into this unrolledLinkedList of the first item 
+      whose value is equal to `x`. If no such element can be found this method 
+      returns the value `-1`.
 
       .. warning::
 
-        Calling this method on an empty unrolledLinkedList or with values of `start` or 
-        `end` that are out of bounds will cause the currently running program
-        to halt. If the `--fast` flag is used, no safety checks will be
+        Calling this method on an empty unrolledLinkedList or with values of 
+        `start` or `end` that are out of bounds will cause the currently running 
+        program to halt. If the `--fast` flag is used, no safety checks will be 
         performed.
 
       :arg x: An element to search for.
@@ -1071,8 +1077,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      Index this unrolledLinkedList via subscript. Returns a reference to the element at a
-      given index in this unrolledLinkedList.
+      Index this unrolledLinkedList via subscript. Returns a reference to the 
+      element at a given index in this unrolledLinkedList.
 
       :arg i: The index of the element to access.
 
@@ -1207,8 +1213,8 @@ module UnrolledLinkedList {
   } // End record "unrolledLinkedList".
 
   /*
-    Clear the contents of this unrolledLinkedList, then extend this now empty unrolledLinkedList with the
-    elements contained in another unrolledLinkedList.
+    Clear the contents of this unrolledLinkedList, then extend this now-empty 
+    unrolledLinkedList with the elements contained in another unrolledLinkedList.
 
     .. warning::
 
