@@ -1221,8 +1221,6 @@ module UnrolledLinkedList {
       This will invalidate any references to elements previously contained in
       `lhs`.
 
-    :arg lhs: The unrolledLinkedList to assign to.
-    :arg rhs: The unrolledLinkedList to assign from. 
   */
   proc =(ref lhs: unrolledLinkedList(?t, ?), rhs: unrolledLinkedList(t, ?)) {
     lhs.clear();
@@ -1231,9 +1229,6 @@ module UnrolledLinkedList {
 
   /*
     Returns `true` if the contents of two unrolledLinkedLists are the same.
-
-    :arg a: A unrolledLinkedList to compare.
-    :arg b: A unrolledLinkedList to compare.
 
     :return: `true` if the contents of two unrolledLinkedLists are equal.
     :rtype: `bool`
@@ -1250,9 +1245,6 @@ module UnrolledLinkedList {
 
   /*
     Return `true` if the contents of two unrolledLinkedLists are not the same.
-
-    :arg a: A unrolledLinkedList to compare.
-    :arg b: A unrolledLinkedList to compare.
 
     :return: `true` if the contents of two unrolledLinkedLists are not equal.
     :rtype: `bool`
