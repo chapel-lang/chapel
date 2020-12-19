@@ -117,6 +117,9 @@ module UnrolledLinkedList {
     /* The capacity of one linked node in the unrolledLinkedList */
     var nodeCapacity: int = 32;
 
+    /*
+      The number of nodes in the unrolledLinkedList
+    */
     pragma "no doc"
     var _size = 0;
 
