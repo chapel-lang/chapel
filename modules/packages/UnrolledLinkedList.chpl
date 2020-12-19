@@ -75,10 +75,10 @@ module UnrolledLinkedList {
   pragma "no doc"
   proc _checkNodeCapacity(cap: int) {
     if cap < 2 {
-      halt("nodeCapacity can't be less than 2");
+      halt("unrolledLinkedList nodeCapacity can't be less than 2");
     }
     if cap % 2 == 1 {
-      halt("nodeCapacity can't be odd");
+      halt("unrolledLinkedList nodeCapacity can't be odd");
     }
   }
 
