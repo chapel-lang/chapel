@@ -1195,11 +1195,8 @@ module UnrolledLinkedList {
       on this {
         _enter();
 
-        var i = 0;
-        for x in this {
-          result[i] = x;
-          i += 1;
-        }
+        for (a,x) in zip(result, this) do
+          a = x;
 
         _leave();
       }
