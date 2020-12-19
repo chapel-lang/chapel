@@ -91,14 +91,16 @@ module UnrolledLinkedList {
     var next: unmanaged _linkedNode(eltType)? = nil;
 
     proc append(in x: eltType) lifetime this < x {
-      _sanity(size != capacity);
+      if _sanityChecks then
+        assert(size != capacity);
       data[size] = x;
       size += 1;
     }
 
     proc append(ref x: eltType) where isOwnedClass(x)
     lifetime this < x {
-      _sanity(size != capacity);
+      if _sanityChecks then
+        assert(size != capacity);
       data[size] = x;
       size += 1;
     }
@@ -243,8 +245,10 @@ module UnrolledLinkedList {
     //
     pragma "no doc"
     inline proc const ref _getRef(idx: int) ref {
-      _sanity(idx >= 0 && idx < _size);
-      _sanity(_head != nil);
+      if _sanityChecks {
+        assert(idx >= 0 && idx < _size);
+        assert(_head != nil);
+      }
       var cur = _head, pos = 0;
       while cur != nil {
         if idx < pos + cur!.size {
@@ -280,14 +284,16 @@ module UnrolledLinkedList {
     */
     pragma "no doc"
     proc _split(p: unmanaged _linkedNode(eltType)) {
-      _sanity(p.size == nodeCapacity);
+      if _sanityChecks then
+        assert(p.size == nodeCapacity);
       var node = new unmanaged _linkedNode(eltType, nodeCapacity);
       var start = p.size/2;
       for i in start..p.size-1 {
         node.append(p.data[i]);
       }
       p.size -= node.size;
-      _sanity(p.size > 0);
+      if _sanityChecks then
+        assert(p.size > 0);
 
       // link the new node to the old node
       node.next = p.next;
@@ -354,7 +360,8 @@ module UnrolledLinkedList {
         _head = _tail;
       }
 
-      _sanity(_tail != nil);
+      if _sanityChecks then
+        assert(_tail != nil);
 
       if _tail!.size == nodeCapacity {
         // the node is full, create new node
@@ -660,7 +667,8 @@ module UnrolledLinkedList {
       //TODO: Maybe some optimization here. This O(N^2)
       var result = false;
 
-      _sanity(size >= 0);
+      if _sanityChecks then
+        assert(size >= 0);
 
       if size == 0 then
         return true;
@@ -949,8 +957,10 @@ module UnrolledLinkedList {
         _tail = nil;
         _size = 0;
 
-        _sanity(_size == 0);
-        _sanity(_head == nil);
+        if _sanityChecks {
+          assert(_size == 0);
+          assert(_head == nil);
+        }
 
         _leave();
       }
