@@ -421,9 +421,9 @@ Closing notes
 // Definitions of functions used above:
 //
 // This is an optimal partitioning algorithm for unweighted problem.
-// The absolute difference between number of tasks assigned to any two
-// tasks would be 0 or 1. If the value of remainder ``rem`` is equal to
-// 0, then each of the tasks would be assigned with ``elemsPerChunk``, equal
+// The absolute difference between the size of ranges assigned to any two
+// tasks atmost 1 (either 0 or 1). If the value of remainder ``rem`` is equal
+// to 0, then each of the tasks would be assigned with ``elemsPerChunk``, equal
 // to ``floor(numElements/NumChunks)`` work items. But if the ``rem`` is not
 // equal to 0, then the first rem tasks(from task id 0 to rem-1) get
 // (``elemsPerChunk``+ 1) work items and the rest of the tasks(for task id rem
