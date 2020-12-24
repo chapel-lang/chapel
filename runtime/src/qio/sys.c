@@ -483,7 +483,7 @@ err_t sys_readlink(const char* path, const char** string_out)
 // the process's environment block. Don't try to free it.
 // Returns false if the name was not found in the environment
 //  (ie getenv returned NULL).
-int sys_getenv(const char* name, const char** string_out)
+int procsys_getenv(const char* name, const char** string_out)
 {
   char *buf;
 
