@@ -18,10 +18,10 @@ module definesTertiary {
 module User {
   use definesType;
   // The module used below defines a tertiary method on `OtherType`, the
-  // forwarded type of `Container`.  Because of forwarding, this is method is
-  // also defined on instances of `Container` in that scope, but we've decided
-  // that the limitation clause only applies to the immediate type it is defined
-  // on, rather than additionally applying to all types it forwards to.
+  // forwarded type of `Container`.  Because of forwarding, this method is also
+  // defined on instances of `Container` in that scope, but we've decided that
+  // the limitation clause only applies to the immediate type it is defined on,
+  // rather than additionally applying to all types it forwards to.
   use definesTertiary only OtherType;
 
   proc main() {
