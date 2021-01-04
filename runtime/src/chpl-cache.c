@@ -344,7 +344,12 @@ typedef int16_t entry_id_t;
 #define MAX_SEQUENTIAL_READAHEAD_BYTES (MAX_PAGES_PER_PREFETCH*CACHEPAGE_SIZE)
 
 //#define TIME
+
+//#define TRACE_YIELDS
+//#define TRACE_READAHEAD
 //#define TRACE
+
+//#define TRACE_FENCES
 //#define DEBUG
 //#define DUMP
 //#define INFO
@@ -371,12 +376,30 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 #define TIME_PRINT(x) do {} while(0);
 #endif
 
+#ifdef TRACE_YIELDS
+#define TRACE_YIELD_PRINT(x) printf x
+#else
+#define TRACE_YIELD_PRINT(x) do {} while(0)
+#endif
+
+#ifdef TRACE_READAHEAD
+#define TRACE_READAHEAD_PRINT(x) printf x
+#else
+#define TRACE_READAHEAD_PRINT(x) do {} while(0)
+#endif
 
 #ifdef TRACE
 #define TRACE_PRINT(x) printf x
 #else
 #define TRACE_PRINT(x) do {} while(0)
 #endif
+
+#ifdef TRACE_FENCES
+#define TRACE_FENCE_PRINT(x) printf x
+#else
+#define TRACE_FENCE_PRINT(x) do {} while(0)
+#endif
+
 
 #ifdef DEBUG
 #define DEBUG_PRINT(x) printf x
@@ -1309,7 +1332,13 @@ void ain_evict(struct rdcache_s* cache,
 
     if (!try_reserve_entry(cache, task_local, y)) {
       // could not "lock" entry y so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in ain_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
       chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in ain_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
       continue;
     }
 
@@ -1369,7 +1398,13 @@ void am_evict(struct rdcache_s *cache,
 
     if (!try_reserve_entry(cache, task_local, y)) {
       // could not "lock" entry y so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in am_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
       chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in am_evict\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
       continue;
     }
 
@@ -1485,7 +1520,13 @@ void ensure_free_dirty(struct rdcache_s* cache,
 
     if (!try_reserve_entry(cache, task_local, entry)) {
       // could not "lock" entry so try again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in ensure_free_dirty\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+
       chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in ensure_free_dirty\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
       continue;
     }
 
@@ -1781,6 +1822,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
   cache_seqn_t at;
   cache_seqn_t max_completed = cache->completed_request_number;
   int last;
+  int completed;
 
   DEBUG_PRINT(("wait_for(%i) completed=%i\n", (int) sn, (int) max_completed));
 
@@ -1815,14 +1857,32 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
         DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
         // Wait for some requests to complete.
         chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
-        if (EXTRA_YIELDS) chpl_task_yield();
+        if (EXTRA_YIELDS) {
+          TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
+                             "for chpl_comm_wait_nb_some\n",
+                             chpl_nodeID, (int) chpl_task_getId(), cache));
+
+          chpl_task_yield();
+
+          TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
+                            chpl_nodeID, (int) chpl_task_getId(), cache));
+        }
       }
       // cache->pending[index] == NULL now
     }
-    // assume chpl_comm_test_nb_complete can yield
-    if (EXTRA_YIELDS) chpl_task_yield();
-    if( chpl_comm_test_nb_complete(cache->pending[index]) ) {
+    completed = chpl_comm_test_nb_complete(cache->pending[index]);
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
+                         "for chpl_comm_test_nb_complete\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
 
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
+                        chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
+
+    if (completed) {
       // we completed cache->pending[index], so remove the entry from the queue.
       DEBUG_PRINT(("wait_for removing %i\n", index));
       fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
@@ -1946,7 +2006,16 @@ void flush_entry(struct rdcache_s* cache,
                              (void*)(entry->base.raddr+start),
                              got_len /*size*/,
                              CHPL_COMM_UNKNOWN_ID, -1, 0);
-          if (EXTRA_YIELDS) chpl_task_yield();
+          if (EXTRA_YIELDS) {
+            TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in flush_entry "
+                               "for chpl_comm_put_nb\n",
+                               chpl_nodeID, (int) chpl_task_getId(), cache));
+
+            chpl_task_yield();
+
+            TRACE_YIELD_PRINT(("%d: task %d cache %p back in flush_entry\n",
+                               chpl_nodeID, (int) chpl_task_getId(), cache));
+          }
 
           // Save the handle in the list of pending requests.
           entry->max_put_sequence_number = pending_push(cache, handle);
@@ -2202,7 +2271,13 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
 
       if (!try_reserve_entry(cache, task_local, entry)) {
         // could not "lock" entry so try again
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in get_reserved0\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
         chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in get_reserved0\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
         continue;
       }
 
@@ -2218,7 +2293,8 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free page
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
         continue;
       }
 
@@ -2243,14 +2319,16 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
       // make sure we have a free entry if needed
       if (cache->free_entries_head == NULL) {
         // free an entry and try again to find the entry
-        reclaim(cache, task_local, /* give_up_if_locked */ 1);
+        reclaim(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
         continue;
       }
 
       // make sure we have a free page if needed
       if (cache->free_pages_head == NULL) {
         // free a page and try again to find the entry
-        ensure_free_page(cache, task_local, /* give_up_if_locked */ 1);
+        ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+        // above call may yield, so try everything again
         continue;
       }
 
@@ -2288,6 +2366,11 @@ void cache_put_in_page(struct rdcache_s* cache,
   raddr_t ra_page;
   int entry_after_acquire;
   cache_seqn_t sn;
+
+  TRACE_PRINT(("%d: task %d in put_in_page %s:%d get %d bytes from "
+               "%d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               (int)size, node, (void*)raddr, addr));
 
   DEBUG_PRINT(("cache_put_in_page %i:%p from %p len %i\n",
                (int) node, (void*) raddr, addr, (int) size));
@@ -2535,8 +2618,10 @@ void cache_get_trigger_readahead(struct rdcache_s* cache,
     //       ok, (void*) prefetch_start, (void*) prefetch_end);
 
     if( ok && prefetch_start < prefetch_end ) {
-      INFO_PRINT(("%i starting readahead from %p to %p\n",
-                  (int) chpl_nodeID, (void*) (prefetch_start), (void*) (prefetch_end)));
+      TRACE_READAHEAD_PRINT(("%d: task %d starting readahead from %p to %p\n",
+                             chpl_nodeID, (int)chpl_task_getId(),
+                             (void*) (prefetch_start), (void*) (prefetch_end)));
+
       cache_get(cache, task_local,
                 /* addr */ NULL /* means prefetch */,
                 node, prefetch_start, prefetch_end - prefetch_start,
@@ -2670,6 +2755,11 @@ void cache_get_in_page(struct rdcache_s* cache,
   uintptr_t readahead_len, readahead_skip;
 
   isprefetch = (addr == NULL);
+
+  TRACE_PRINT(("%d: task %d in get_in_page %s:%d get %d bytes from "
+               "%d:%p to %p\n",
+               chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
+               (int)size, node, (void*)raddr, addr));
 
   INFO_PRINT(("%i cache_get_in_page addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
@@ -2820,7 +2910,16 @@ void cache_get_in_page(struct rdcache_s* cache,
                             node, (void*) ra_line,
                             ra_line_end - ra_line /*size*/,
                             commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in cache_get_in_page "
+                       "for chpl_comm_get_nb\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back in cache_get_in_page\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
   // note: chpl_comm_get_nb can yield, but entry is locked
   assert(entry->page && entry->entryReservedByTask == task_local);
   assert(entry->base.raddr == ra_page && entry->base.node == node);
@@ -2903,7 +3002,16 @@ void cache_get_in_page(struct rdcache_s* cache,
     // back out of the cache.
 
     chpl_comm_wait_nb_some(&handle, 1);
-    if (EXTRA_YIELDS) chpl_task_yield();
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in cache_get_in_page "
+                         "for chpl_comm_wait_nb_some\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in cache_get_in_page\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
 
     // note: chpl_comm_wait_nb_some can yield, but entry is locked
     assert(entry->page && entry->entryReservedByTask == task_local);
@@ -3244,7 +3352,14 @@ void cache_invalidate(struct rdcache_s* cache,
       if (entry && entry->page) {
         if (!try_reserve_entry(cache, task_local, entry)) {
           // couldn't reserve entry - yield and try the lookup again
+          TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in invalidate\n",
+                             chpl_nodeID, (int) chpl_task_getId(), cache));
+
           chpl_task_yield();
+
+          TRACE_YIELD_PRINT(("%d: task %d cache %p back in invalidate\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
           continue;
         }
 
@@ -3274,7 +3389,14 @@ void cache_clean_dirty(struct rdcache_s* cache,
 
     if (!try_reserve_entry(cache, task_local, victim)) {
       // couldn't reserve entry - yield and try the lookup again
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in clean_dirty\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
       chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back in clean_dirty\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
       continue;
     }
 
@@ -3380,8 +3502,10 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
 
     INFO_PRINT(("%i fence acquire %i release %i %s:%i\n", chpl_nodeID, acquire, release, fn, ln));
 
-    TRACE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln));
-    //printf("%d: task %d in chpl_cache_fence(acquire=%i,release=%i) on cache %p from %s:%d\n", chpl_nodeID, (int) chpl_task_getId(), acquire, release, cache, fn?fn:"", ln);
+    TRACE_FENCE_PRINT(("%d: task %d in chpl_cache_fence(acquire=%i,release=%i)"
+                       " on cache %p from %s:%d\n",
+                       chpl_nodeID, (int) chpl_task_getId(), acquire, release,
+                       cache, chpl_lookupFilename(fn), ln));
 
 #ifdef DUMP
     DEBUG_PRINT(("%d: task %d before fence\n", chpl_nodeID, (int) chpl_task_getId()));
@@ -3425,7 +3549,15 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
-    if (EXTRA_YIELDS) chpl_task_yield();
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_put\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_put\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
     return;
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_put %s:%d put %d bytes to %d:%p "
@@ -3455,7 +3587,15 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
-    if (EXTRA_YIELDS) chpl_task_yield();
+    if (EXTRA_YIELDS) {
+      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_get\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+
+      chpl_task_yield();
+
+      TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_get\n",
+                         chpl_nodeID, (int) chpl_task_getId(), cache));
+    }
     return;
   }
   TRACE_PRINT(("%d: task %d in chpl_cache_comm_get %s:%d get %d bytes from "
@@ -3480,10 +3620,12 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
 {
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
   TRACE_PRINT(("%d: in chpl_cache_comm_prefetch\n", chpl_nodeID));
+
   chpl_comm_diags_verbose_rdma("prefetch", node, size, ln, fn, commID);
+
   // Always use the cache for prefetches.
-  //saturating_increment(&info->prefetch_since_acquire);
   cache_get(cache, task_local,
             /* addr */ NULL, node, (raddr_t)raddr, size,
             /* sequential_readahead_length */ 0,
@@ -3557,13 +3699,25 @@ void chpl_cache_comm_get_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided get.
   chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+#ifdef TRACE_YIELDS
+    struct rdcache_s* cache = tls_cache_remote_data();
+#endif
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_get_strd\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_get_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
                               void *raddr, void *srcstr, void *count,
                               int32_t strlevels, size_t elemSize,
                               int32_t commID, int ln, int32_t fn) {
   TRACE_PRINT(("%d: in chpl_cache_comm_put_strd\n", chpl_nodeID));
+
   if (STRIDED_INVALIDATE_ALL) {
     // do a full fence - so that:
     // 1) any pending writes are completed (in case they were to the
@@ -3582,7 +3736,18 @@ void chpl_cache_comm_put_strd(void *addr, void *dststr, c_nodeid_t node,
   // do the strided put.
   chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels,
                      elemSize, commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+#ifdef TRACE_YIELDS
+    struct rdcache_s* cache = tls_cache_remote_data();
+#endif
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for chpl_comm_put_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from chpl_comm_put_strd\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 //
@@ -3596,7 +3761,15 @@ void chpl_cache_comm_put_unordered(void* addr, c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_put_unordered(addr, node, raddr, size, commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
@@ -3606,7 +3779,15 @@ void chpl_cache_comm_get_unordered(void *addr, c_nodeid_t node, void* raddr,
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
   chpl_comm_get_unordered(addr, node, raddr, size, commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for get_unordered\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 
@@ -3620,7 +3801,15 @@ void chpl_cache_comm_getput_unordered(c_nodeid_t dstnode, void* dstaddr,
   cache_invalidate(cache, task_local, srcnode, (raddr_t)srcaddr, size);
   cache_invalidate(cache, task_local, dstnode, (raddr_t)dstaddr, size);
   chpl_comm_getput_unordered(dstnode, dstaddr, srcnode, srcaddr, size, commID, ln, fn);
-  if (EXTRA_YIELDS) chpl_task_yield();
+  if (EXTRA_YIELDS) {
+    TRACE_YIELD_PRINT(("%d: task %d cache %p yielding for getput_unordered\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+    chpl_task_yield();
+
+    TRACE_YIELD_PRINT(("%d: task %d cache %p back from put_unordered\n",
+                      chpl_nodeID, (int) chpl_task_getId(), cache));
+  }
 }
 
 void chpl_cache_comm_getput_unordered_task_fence(void)
@@ -3722,8 +3911,8 @@ int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size)
     chpl_internal_error("chpl_cache_mock_get called without --cache-remote");
 
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
-  TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p to %p\n",
-               chpl_nodeID, (int)chpl_task_getId(), node, (void*)raddr, addr));
+  TRACE_PRINT(("%d: task %d in chpl_cache_mock_get from %d:%p\n",
+               chpl_nodeID, (int)chpl_task_getId(), node, (void*)raddr));
 
 #ifdef DUMP
   chpl_cache_print();
