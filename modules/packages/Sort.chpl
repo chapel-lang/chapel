@@ -470,8 +470,8 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
 pragma "no doc"
 /* Error message for multi-dimension arrays */
 proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
-  where Dom.rank != 1 {
-    compilerError("sort() requires 1-D array");
+  where Dom.rank != 1 || !isRectangularArr(Data) {
+    compilerError("sort() is currently only supported for 1D rectangular arrays");
 }
 
 
