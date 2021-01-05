@@ -2407,18 +2407,20 @@ struct cache_entry_s* get_reserved_entry(struct rdcache_s* cache,
 }
 
 
-// put data with a length within a page
+// PUT size bytes starting at addr into node,raddr
+// returns 1 if it was a hit, 0 otherwise
 static
-void cache_put_in_page(struct rdcache_s* cache,
-                       chpl_cache_taskPrvData_t* task_local,
-                       unsigned char* addr,
-                       c_nodeid_t node, raddr_t raddr, size_t size,
-                       int32_t commID, int ln, int32_t fn)
+int cache_put_in_page(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      unsigned char* addr,
+                      c_nodeid_t node, raddr_t raddr, size_t size,
+                      int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_page;
   int entry_after_acquire;
   cache_seqn_t sn;
+  int hit = 0;
 
   TRACE_PRINT(("%d: task %d in put_in_page %s:%d get %d bytes from "
                "%d:%p to %p\n",
@@ -2471,9 +2473,11 @@ void cache_put_in_page(struct rdcache_s* cache,
     assert(entry->page && entry->entryReservedByTask == task_local);
     assert(entry->base.raddr == ra_page && entry->base.node == node);
     assert(entry->dirty);
+    hit = 0;
   } else {
     // Make it the most recently use dirty page.
     use_dirty(cache, entry->dirty);
+    hit = 1;
   }
 
   // Now, set the dirty bits.
@@ -2501,15 +2505,18 @@ void cache_put_in_page(struct rdcache_s* cache,
 
   // Make sure that there is an available page for next time.
   ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+
+  return hit;
 }
 
 
+// returns 1 if all of the page operations were "hit"s
 static
-void cache_put(struct rdcache_s* cache,
-               chpl_cache_taskPrvData_t* task_local,
-               unsigned char* addr,
-               c_nodeid_t node, raddr_t raddr, size_t size,
-               int32_t commID, int ln, int32_t fn)
+int cache_put(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char* addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int32_t commID, int ln, int32_t fn)
 {
   raddr_t ra_first_page;
   raddr_t ra_last_page;
@@ -2517,6 +2524,8 @@ void cache_put(struct rdcache_s* cache,
   raddr_t ra_page_end;
   raddr_t ra_page;
   raddr_t requested_start, requested_end, requested_size;
+  int hit = 0;
+  int all_hits = 1;
 
   DEBUG_PRINT(("cache_put %i:%p from %p len %i\n",
                (int) node, (void*) raddr, addr, (int) size));
@@ -2525,7 +2534,7 @@ void cache_put(struct rdcache_s* cache,
 
   // And don't do anything if it's a zero-length
   if( size == 0 ) {
-    return;
+    return 1;
   }
 
   // first_page = raddr of start of first needed page
@@ -2547,10 +2556,12 @@ void cache_put(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size, ra_page_end);
     requested_size = requested_end - requested_start;
 
-    cache_put_in_page(cache, task_local,
-                      (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
-                      node, requested_start, requested_size,
-                      commID, ln, fn);
+    hit = cache_put_in_page(cache, task_local,
+                            (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                            node, requested_start, requested_size,
+                            commID, ln, fn);
+
+    all_hits = all_hits && hit;
   }
 
   if( VERIFY ) validate_cache(cache, task_local);
@@ -2560,6 +2571,7 @@ void cache_put(struct rdcache_s* cache,
   rdcache_print(cache);
 #endif
 
+  return all_hits;
 }
 
 static inline
@@ -2572,12 +2584,12 @@ int is_congested(struct rdcache_s* cache)
 }
 
 static
-void cache_get(struct rdcache_s* cache,
-               chpl_cache_taskPrvData_t* task_local,
-               unsigned char * addr,
-               c_nodeid_t node, raddr_t raddr, size_t size,
-               int sequential_readahead_length,
-               int32_t commID, int ln, int32_t fn);
+int cache_get(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char * addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn);
 
 static
 void cache_get_trigger_readahead(struct rdcache_s* cache,
@@ -2788,14 +2800,15 @@ void cache_get_compute_readahead_extend(struct rdcache_s* cache,
 
 // If addr == NULL, this will prefetch.
 // This call handles only accesses within a page.
+// returns 1 if the request was a "hit"
 static
-void cache_get_in_page(struct rdcache_s* cache,
-                       chpl_cache_taskPrvData_t* task_local,
-                       unsigned char * addr,
-                       c_nodeid_t node, raddr_t raddr, size_t size,
-                       raddr_t ra_first_page, raddr_t ra_last_page,
-                       int sequential_readahead_length,
-                       int32_t commID, int ln, int32_t fn)
+int cache_get_in_page(struct rdcache_s* cache,
+                      chpl_cache_taskPrvData_t* task_local,
+                      unsigned char * addr,
+                      c_nodeid_t node, raddr_t raddr, size_t size,
+                      raddr_t ra_first_page, raddr_t ra_last_page,
+                      int sequential_readahead_length,
+                      int32_t commID, int ln, int32_t fn)
 {
   struct cache_entry_s* entry;
   raddr_t ra_page;
@@ -2938,14 +2951,14 @@ void cache_get_in_page(struct rdcache_s* cache,
                                     raddr, size,
                                     readahead_skip, readahead_len,
                                     commID, ln, fn);
-        return;
+        return 1;
       }
     }
 
     // "unlock" the entry
     unreserve_entry(cache, task_local, entry);
     entry = NULL;
-    return;
+    return 1;
   }
 
   // If we get here, the data was not available, so
@@ -3117,17 +3130,20 @@ void cache_get_in_page(struct rdcache_s* cache,
 
   // TODO: is this call necessary?
   ensure_free_page(cache, task_local, /* give_up_if_locked */ 0);
+
+  return 0;
 }
 
 
 // If addr == NULL, this will prefetch.
+// Returns 1 if all of the data was in the cache.
 static
-void cache_get(struct rdcache_s* cache,
-               chpl_cache_taskPrvData_t* task_local,
-               unsigned char * addr,
-               c_nodeid_t node, raddr_t raddr, size_t size,
-               int sequential_readahead_length,
-               int32_t commID, int ln, int32_t fn)
+int cache_get(struct rdcache_s* cache,
+              chpl_cache_taskPrvData_t* task_local,
+              unsigned char * addr,
+              c_nodeid_t node, raddr_t raddr, size_t size,
+              int sequential_readahead_length,
+              int32_t commID, int ln, int32_t fn)
 {
   raddr_t ra_first_page;
   raddr_t ra_last_page;
@@ -3140,6 +3156,8 @@ void cache_get(struct rdcache_s* cache,
 #ifdef TIME
   struct timespec start_get1, start_get2, wait1, wait2;
 #endif
+  int hit = 0;
+  int all_hits = 1;
 
   INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
                (int) chpl_nodeID, addr, (int) node, (void*) raddr, (int) size, sequential_readahead_length));
@@ -3148,7 +3166,7 @@ void cache_get(struct rdcache_s* cache,
 
   // And don't do anything if it's a zero-length
   if( size == 0 ) {
-    return;
+    return all_hits;
   }
 
   // first_page = raddr of start of first needed page
@@ -3178,12 +3196,14 @@ void cache_get(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size,ra_line_end);
     requested_size = requested_end - requested_start;
 
-    cache_get_in_page(cache, task_local,
-                      (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
-                      node, requested_start, requested_size,
-                      ra_first_page, ra_last_page,
-                      sequential_readahead_length,
-                      commID, ln, fn);
+    hit = cache_get_in_page(cache, task_local,
+                            (addr==NULL)?(NULL):(addr+(requested_start-raddr)),
+                            node, requested_start, requested_size,
+                            ra_first_page, ra_last_page,
+                            sequential_readahead_length,
+                            commID, ln, fn);
+
+    all_hits = all_hits && hit;
   }
 
   if( VERIFY ) validate_cache(cache, task_local);
@@ -3192,6 +3212,8 @@ void cache_get(struct rdcache_s* cache,
   printf("After cache_get cache is:\n");
   rdcache_print(cache);
 #endif
+
+  return all_hits;
 }
 
 // This is intended to match cache_get but
@@ -3659,6 +3681,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  int all_hits;
 
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
@@ -3684,11 +3707,15 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
   chpl_cache_print();
 #endif
 
-  //saturating_increment(&info->put_since_release);
-  //task_local->last_op = seqn_max(cache, addr, node, raddr, size);
-  cache_put(cache, task_local,
-            addr, node, (raddr_t)raddr, size,
-            commID, ln, fn);
+  all_hits = cache_put(cache, task_local,
+                       addr, node, (raddr_t)raddr, size,
+                       commID, ln, fn);
+
+  if (all_hits)
+    chpl_comm_diags_incr(cache_put_hits);
+  else
+    chpl_comm_diags_incr(cache_put_misses);
+
   return;
 }
 
@@ -3698,6 +3725,8 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   //printf("get len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+  int all_hits;
+
   if (size_merits_direct_comm(cache, size)) {
     cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
@@ -3722,9 +3751,14 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
   chpl_cache_print();
 #endif
 
-  //saturating_increment(&info->get_since_acquire);
-  cache_get(cache, task_local, addr, node, (raddr_t)raddr, size,
-            0, commID, ln, fn);
+  all_hits = cache_get(cache, task_local,
+                       addr, node, (raddr_t)raddr, size,
+                       0, commID, ln, fn);
+
+  if (all_hits)
+    chpl_comm_diags_incr(cache_get_hits);
+  else
+    chpl_comm_diags_incr(cache_get_misses);
 
   return;
 }
@@ -3744,6 +3778,8 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
             /* addr */ NULL, node, (raddr_t)raddr, size,
             /* sequential_readahead_length */ 0,
             CHPL_COMM_UNKNOWN_ID, ln, fn);
+
+  // TODO: record prefetches somewhere
 }
 
 struct cache_strd_callback_ctx {

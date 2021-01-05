@@ -54,7 +54,12 @@ extern int chpl_comm_diags_print_unstable;
   MACRO(amo) \
   MACRO(execute_on) \
   MACRO(execute_on_fast) \
-  MACRO(execute_on_nb)
+  MACRO(execute_on_nb) \
+  MACRO(cache_get_hits) \
+  MACRO(cache_get_misses) \
+  MACRO(cache_put_hits) \
+  MACRO(cache_put_misses)
+
 
 typedef struct _chpl_commDiagnostics {
 #define _COMM_DIAGS_DECL(cdv) uint64_t cdv;

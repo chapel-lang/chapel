@@ -238,6 +238,11 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
+    var cache_get_hits: uint(64);
+    var cache_get_misses: uint(64);
+    var cache_put_hits: uint(64);
+    var cache_put_misses: uint(64);
+
     proc writeThis(c) throws {
       use Reflection;
 
