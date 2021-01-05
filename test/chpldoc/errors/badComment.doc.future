@@ -1,0 +1,3 @@
+error message: chpldoc should report errors in terms of .chpl source line #s
+
+#16903
