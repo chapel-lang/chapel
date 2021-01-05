@@ -292,10 +292,16 @@ use.
 
 #ifdef HAS_CHPL_CACHE_FNS
 
+// When testing changes to the cache for correctness, it is a good practice
+// to run tests with these two settings enabled.
+//
+// VERIFY will cause cache structure validiation to be run after each
+// operation.
+//
+// EXTRA_YIELDS will call chpl_task_yield after comm layer calls
+// that could yield.
 #define VERIFY 0
-
-// for testing
-#define EXTRA_YIELDS 1 // TODO DISABLE - DEBUG ONLY
+#define EXTRA_YIELDS 0
 
 // How many pending operations can we have at once?
 #define MAX_PENDING 32
@@ -344,6 +350,8 @@ typedef int16_t entry_id_t;
 #define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 0
 
 #define MAX_SEQUENTIAL_READAHEAD_BYTES (MAX_PAGES_PER_PREFETCH*CACHEPAGE_SIZE)
+
+// These defines can enable different kinds of debugging output.
 
 //#define TIME
 
@@ -1701,7 +1709,6 @@ int validate_queue(struct rdcache_s* tree,
   assert(forward_count == reverse_count);
   return forward_count;
 }
-#endif
 
 static
 void validate_pending(struct rdcache_s* cache)
@@ -1725,6 +1732,7 @@ void validate_pending(struct rdcache_s* cache)
     last_sn = cur_sn;
   }
 }
+#endif // if VERIFY
 
 // aka verify_cache cache_verify cache_validate
 static
@@ -1879,12 +1887,9 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
     return;
   }
 
-  // Note: chpl_comm_wait_nb_some could cause a different task body to run...
-
-  // TODO
-//#if VERIFY
+#if VERIFY
   validate_pending(cache);
-//#endif
+#endif
 
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
@@ -1904,6 +1909,7 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
       if (last < index) last = cache->pending_len - 1;
 
       // Wait for some requests to complete.
+      // (this could cause a different task body to run)
       chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
 
       if (EXTRA_YIELDS) {
