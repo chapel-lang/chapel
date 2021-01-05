@@ -4302,7 +4302,7 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   memcpy(&info->src_v[vi], addr, size);
   info->src_addr_v[vi] = &info->src_v[vi];
   info->locale_v[vi] = node;
-  info->tgt_addr_v[vi] = raddr;
+  info->tgt_addr_v[vi] = (void*) mrRaddr;
   info->size_v[vi] = size;
   info->remote_mr_v[vi] = mrKey;
   info->local_mr_v[vi] = mrDesc;
@@ -4559,7 +4559,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
   info->tgt_addr_v[vi] = addr;
   info->locale_v[vi] = node;
   info->remote_mr_v[vi] = mrKey;
-  info->src_addr_v[vi] = raddr;
+  info->src_addr_v[vi] = (void*) mrRaddr;
   info->size_v[vi] = size;
   info->local_mr_v[vi] = mrDesc;
   info->vi++;
