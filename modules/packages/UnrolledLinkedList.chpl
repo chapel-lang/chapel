@@ -520,7 +520,7 @@ module UnrolledLinkedList {
       contained in a unrolledLinkedList.
 
       :arg other: A unrolledLinkedList containing elements of the same type as 
-      those contained in this unrolledLinkedList.
+        those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
     */
     proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
