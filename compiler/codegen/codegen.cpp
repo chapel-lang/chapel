@@ -219,13 +219,15 @@ genGlobalString(const char* cname, const char* value) {
     fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(
-          cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
-    globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-          new_CStringSymbol(value)->codegen().val)->getInitializer());
-    globalString->setConstant(true);
-    info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    if(gCodegenGPU == false) {
+      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
+            new_CStringSymbol(value)->codegen().val)->getInitializer());
+      globalString->setConstant(true);
+      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    }
 #endif
   }
 }
@@ -560,6 +562,10 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     return;
   }
 
+  if(gCodegenGPU == true){
+    return;
+  }
+
   GenRet funcPtrType = codegenTypeByName(eltType);
 
   // Construct the table elements
@@ -689,6 +695,11 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     codegenGlobalConstArray(vmt, eltType, NULL, true);
     return;
   }
+
+  if(gCodegenGPU == true){
+    return;
+  }
+
 
   // compute max # methods per type
   int maxVMT = 0;
@@ -1136,6 +1147,7 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "\nvoid chpl_program_about() {\n");
   } else {
 #ifdef HAVE_LLVM
+    if ( gCodegenGPU == false ) {
     llvm::FunctionType* programAboutType;
     llvm::Function* programAboutFunc;
     if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
@@ -1153,8 +1165,9 @@ static void genConfigGlobalsAndAbout() {
       info->module->getContext(), "entry", programAboutFunc
     );
     info->irBuilder->SetInsertPoint(programAboutBlock);
+    }
 #endif
-  }
+    }
 
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
@@ -1170,7 +1183,10 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "}\n");
   } else {
 #ifdef HAVE_LLVM
+    
+    if (gCodegenGPU == false) {
     info->irBuilder->CreateRetVoid();
+    }
 #endif
   }
 }
@@ -1205,8 +1221,10 @@ static void codegen_header_compilation_config() {
 
   if (fLlvmCodegen) {
     info->cfile = NULL;
+    if ( gCodegenGPU == false ) {
     genConfigGlobalsAndAbout();
     genFunctionTables();
+    }
   }
 
   // Generate the about info and function tables for the C backend and for the launcher
@@ -1957,6 +1975,7 @@ codegen_config() {
 
   // LLVM backend need _config.c generated for the launcher,
   // so we produce the C for it either way.
+  if(gCodegenGPU == false)
   {
     FILE* mainfile = info->cfile;
     if( mainfile ) fprintf(mainfile, "#include \"_config.c\"\n");
@@ -2484,18 +2503,22 @@ static void codegenPartTwo() {
 
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
-  codegen_header(cnames, types, functions, globals);
-
+  if ( gCodegenGPU == false ) {
+    codegen_header(cnames, types, functions, globals);
+  }
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
   // currently in codegen_header.
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
-  codegen_defn(cnames, types, functions, globals);
-
+  if ( gCodegenGPU == false ) {
+    codegen_defn(cnames, types, functions, globals);
+  }
   info->cfile = mainfile.fptr;
-  codegen_config();
+  if ( gCodegenGPU == false ) {
+    codegen_config();
+  }
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
@@ -2579,6 +2602,7 @@ void codegen() {
 
   if (localeUsesGPU()) {
 
+    gdbShouldBreakHere();
     pid_t pid = fork();
 
     if (pid == 0) {

@@ -2102,6 +2102,10 @@ void FnSymbol::codegenPrototype() {
 
   if (hasFlag(FLAG_EXTERN) && !hasFlag(FLAG_GENERATE_SIGNATURE)) return;
   if (hasFlag(FLAG_NO_CODEGEN))   return;
+  if( gCodegenGPU == true ){
+    if( hasFlag(FLAG_GPU_CODEGEN) == false ) return;
+  }
+
 
   if( id == breakOnCodegenID ||
       (breakOnCodegenCname[0] &&
@@ -2296,6 +2300,10 @@ void FnSymbol::codegenDef() {
 
   if( hasFlag(FLAG_NO_CODEGEN) ) return;
 
+  if( gCodegenGPU == true ){
+    if( hasFlag(FLAG_GPU_CODEGEN) == false ) return;
+  }
+
   info->cStatements.clear();
   info->cLocalDecls.clear();
 
@@ -2358,6 +2366,8 @@ void FnSymbol::codegenDef() {
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
+
+    if (!(info->irBuilder)) return;
 
     info->irBuilder->SetInsertPoint(block);
 
@@ -2627,6 +2637,7 @@ void FnSymbol::codegenDef() {
   }
 
   return;
+
 }
 
 GenRet FnSymbol::codegen() {

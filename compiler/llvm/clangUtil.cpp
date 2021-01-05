@@ -1935,7 +1935,9 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  info->irBuilder->setFastMathFlags(FM);
+  if ( gCodegenGPU == false) {
+    info->irBuilder->setFastMathFlags(FM);
+  }
 
   checkAdjustedDataLayout();
 }
@@ -2255,7 +2257,8 @@ void runClang(const char* just_parse_filename) {
         USR_FATAL("error running clang during code generation");
       }
     }
-
+    printf("gCodegenGPU: %d\n", gCodegenGPU);
+    if ( gCodegenGPU == false ){
     if( ! parseOnly ) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
@@ -2285,6 +2288,7 @@ void runClang(const char* just_parse_filename) {
 
     if( ! parseOnly ) {
       info->irBuilder->CreateRetVoid();
+    }
     }
   }
 }
@@ -3292,7 +3296,7 @@ void makeBinaryLLVM(void) {
     preOptFilename = genIntermediateFilename("chpl__gpu_module-nopt.bc");
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
-    asmFilename = genIntermediateFilename("chpl__gpu_ptx.ptx");
+    asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -3330,10 +3334,6 @@ void makeBinaryLLVM(void) {
   // Open the output file
   std::error_code error;
   llvm::sys::fs::OpenFlags flags = llvm::sys::fs::F_None;
-
-  llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
-  if (error || outputOfile.has_error())
-    USR_FATAL("Could not open output file %s", moduleFilename.c_str());
 
   static bool addedGlobalExts = false;
   if( ! addedGlobalExts ) {
@@ -3487,45 +3487,66 @@ void makeBinaryLLVM(void) {
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
+    
+    bool disableVerify = ! developer;
     llvm::legacy::PassManager emitPM;
 
     emitPM.add(createTargetTransformInfoWrapperPass(
                info->targetMachine->getTargetIRAnalysis()));
 
+    if (gCodegenGPU == false){
+      llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
+      if (error || outputOfile.has_error())
+        USR_FATAL("Could not open output file %s", moduleFilename.c_str());
+
 #if HAVE_LLVM_VER >= 100
-    llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
+      llvm::CodeGenFileType FileType = llvm::CGFT_ObjectFile;
 #else
-    llvm::TargetMachine::CodeGenFileType FileType =
-      llvm::TargetMachine::CGFT_ObjectFile;
+      llvm::TargetMachine::CodeGenFileType FileType =
+        llvm::TargetMachine::CGFT_ObjectFile;
 #endif
 
-    bool disableVerify = ! developer;
 #if HAVE_LLVM_VER > 60
-    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                             nullptr,
-                                             FileType,
-                                             disableVerify);
+      info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                               nullptr,
+                                               FileType,
+                                               disableVerify);
 #else
-    info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                             FileType,
-                                             disableVerify);
+      info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                               FileType,
+                                               disableVerify);
 #endif
+      emitPM.run(*info->module);
+      outputOfile.close();
 
-    //if (gCodegenGPU){
-    llvm::CodeGenFileType asmFileType =
-      llvm::CodeGenFileType::CGFT_AssemblyFile;
+    } else {
 
-    llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
+      llvm::CodeGenFileType asmFileType =
+        llvm::CodeGenFileType::CGFT_AssemblyFile;
 
-    info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
-                                             nullptr,
-                                             asmFileType,
-                                             disableVerify);
-    //}
+      llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 
-    // Run the passes to emit the .o file now!
-    emitPM.run(*info->module);
-    outputOfile.close();
+      info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+                                               nullptr,
+                                               asmFileType,
+                                               disableVerify);
+
+      emitPM.run(*info->module);
+
+      std::string ptx_cmd = "/usr/local/cuda/bin/ptxas -m64 --gpu-name "
+                            "sm_61 --output-file tmp/chpl_gpu_ptx.o "
+                            "tmp/chpl__gpu_ptx.s";
+
+      // "/usr/local/cuda/bin/ptxas" "-m64" "-O3" "--gpu-name" "sm_61" "--output-file" "hello-cuda-nvptx64-nvidia-cuda-sm_61.o" "hello-cuda-nvptx64-nvidia-cuda-sm_61.s"
+
+
+      //std::string ptx_cmd = "/usr/local/cuda/bin/ptxas" + "-m64" + "--gpu-name" +
+      //                  "sm_61" + "--output-file" + "chpl__gpu_ptx.o" +
+      //                  "chpl__gpu_ptx.s";
+      mysystem(ptx_cmd.c_str(), "PTX to  object file");
+
+      outputASMfile.close();
+    }
   }
 
   //finishClang is before the call to the debug finalize
