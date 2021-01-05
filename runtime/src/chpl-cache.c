@@ -3390,6 +3390,50 @@ int mock_get(struct rdcache_s* cache,
 }
 
 
+static
+void cache_invalidate_in_page(struct rdcache_s* cache,
+                              chpl_cache_taskPrvData_t* task_local,
+                              c_nodeid_t node, raddr_t raddr, size_t size)
+{
+  raddr_t ra_page;
+
+  // ra_page = raddr of start of the page
+  ra_page = round_down_to_mask(raddr, CACHEPAGE_MASK);
+
+  while (1) {
+    // Is the page in the tree?
+    struct cache_entry_s* entry = lookup_entry(cache, node, ra_page);
+
+    if (entry && entry->page) {
+      if (!try_reserve_entry(cache, task_local, entry)) {
+        // couldn't reserve entry - yield and try the lookup again
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in invalidate\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in invalidate\n",
+                       chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        // try again
+        continue;
+      }
+
+      // "lock"ed entry
+      flush_entry(cache, task_local, entry,
+                  FLUSH_INVALIDATE_REGION, raddr, size);
+
+      // "unlock" the entry
+      unreserve_entry(cache, task_local, entry);
+
+    }
+
+    // all cases other than the 'continue' case above should return now
+    //  * no page was found
+    //  * found page, locked it, and flushed it
+    return;
+  }
+}
 
 static
 void cache_invalidate(struct rdcache_s* cache,
@@ -3403,7 +3447,7 @@ void cache_invalidate(struct rdcache_s* cache,
   raddr_t ra_page_end;
   raddr_t requested_start, requested_end, requested_size;
 
-  DEBUG_PRINT(("shared_invalidate from %i:%p len %i\n",
+  DEBUG_PRINT(("invalidate from %i:%p len %i\n",
                (int) node, raddr, (int) size));
 
   if (chpl_nodeID == node) {
@@ -3430,30 +3474,9 @@ void cache_invalidate(struct rdcache_s* cache,
     requested_end = raddr_min(raddr+size,ra_page_end);
     requested_size = requested_end - requested_start;
 
-    while (1) {
-      // Is the page in the tree?
-      struct cache_entry_s* entry = lookup_entry(cache, node, ra_page);
-
-      if (entry && entry->page) {
-        if (!try_reserve_entry(cache, task_local, entry)) {
-          // couldn't reserve entry - yield and try the lookup again
-          TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in invalidate\n",
-                             chpl_nodeID, (int) chpl_task_getId(), cache));
-
-          chpl_task_yield();
-
-          TRACE_YIELD_PRINT(("%d: task %d cache %p back in invalidate\n",
-                         chpl_nodeID, (int) chpl_task_getId(), cache));
-
-          continue;
-        }
-
-        // "lock"ed entry
-        flush_entry(cache, task_local, entry,
-                    FLUSH_INVALIDATE_REGION, requested_start, requested_size);
-        unreserve_entry(cache, task_local, entry);
-      }
-    }
+    // invalidate that portion of the page
+    cache_invalidate_in_page(cache, task_local, node,
+                             requested_start, requested_size);
   }
 }
 
