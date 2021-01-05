@@ -1,0 +1,3 @@
+inheritance-subclassListed2b.chpl:37: In function 'main':
+inheritance-subclassListed2b.chpl:39: error: unresolved call 'owned Child.tertiaryMethod()'
+inheritance-subclassListed2b.chpl:39: note: because no functions named tertiaryMethod found in scope
