@@ -174,12 +174,13 @@ int chpl_comm_diags_is_enabled(void) {
                                   + ((strlen(kind) == 0) ? 0 : 1)),     \
                                  kind, (int) node)
 
-#define chpl_comm_diags_incr(_ctr)                                      \
-  do {                                                                  \
-    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {        \
-      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;  \
-      (void) atomic_fetch_add_uint_least64_t(ctrAddr, 1);               \
-    }                                                                   \
+#define chpl_comm_diags_incr(_ctr)                                           \
+  do {                                                                       \
+    if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {             \
+      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
+      (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
+                                                      memory_order_relaxed); \
+    }                                                                        \
   } while(0)
 
 #ifdef __cplusplus
