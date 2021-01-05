@@ -5612,7 +5612,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
       // EFORMAT means the pattern did not match.
     }
   } else {
-    error = qio_format_error_bad_regexp();;
+    error = qio_format_error_bad_regexp();
   }
 }
 
