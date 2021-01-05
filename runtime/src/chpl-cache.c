@@ -1859,83 +1859,89 @@ void validate_cache(struct rdcache_s* tree,
 static
 void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 {
-  int index;
-  cache_seqn_t at;
-  cache_seqn_t max_completed = cache->completed_request_number;
-  int last;
-  int completed;
 
-  DEBUG_PRINT(("wait_for(%i) completed=%i\n", (int) sn, (int) max_completed));
+  TRACE_NB_PRINT(("%d: task %d wait_for(%i) completed=%i\n",
+                  chpl_nodeID, (int)chpl_task_getId(),
+                  (int) sn, (int) cache->completed_request_number));
 
   // Do nothing if there are no pending entries.
-  if( cache->pending_first_entry < 0 || cache->pending_last_entry < 0 ) {
+  if (cache->pending_first_entry < 0 || cache->pending_last_entry < 0) {
     return;
   }
 
   // Do nothing if we don't have a valid sequence number to wait for.
-  if( sn == NO_SEQUENCE_NUMBER ) {
+  if (sn == NO_SEQUENCE_NUMBER) {
     return;
   }
 
   // Do nothing if we have already completed sn.
-  if( sn <= max_completed ) {
+  if (sn <= cache->completed_request_number) {
     return;
   }
 
   // Note: chpl_comm_wait_nb_some could cause a different task body to run...
 
+  // TODO
+//#if VERIFY
+  validate_pending(cache);
+//#endif
+
   // If we have any pending requests with sequence number <= sn,
   // wait for them to complete.
-  while( 1 ) {
+  while (1) {
+    int index;
+    int last;
+
     index = cache->pending_first_entry;
-    if( index == -1 ) break;
-    at = cache->pending_sequence_numbers[index];
-    if( at <= sn ) {
+    if (index == -1) break;
+
+    // If the first entry's sequence number is earlier than sn
+    // and that comm event isn't complete yet, then wait for some
+    if (cache->pending_sequence_numbers[index] <= sn &&
+        !chpl_comm_test_nb_complete(cache->pending[index])) {
       // Wait for some requests
       last = cache->pending_last_entry;
-      if( last < index ) last = cache->pending_len - 1;
-      while( cache->pending[index] ) {
-        DEBUG_PRINT(("wait_for waiting %i..%i\n", index, last));
-        // Wait for some requests to complete.
-        chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
-        if (EXTRA_YIELDS) {
-          TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
-                             "for chpl_comm_wait_nb_some\n",
-                             chpl_nodeID, (int) chpl_task_getId(), cache));
+      if (last < index) last = cache->pending_len - 1;
 
-          chpl_task_yield();
+      // Wait for some requests to complete.
+      chpl_comm_wait_nb_some(&cache->pending[index], last - index + 1);
 
-          TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
-                            chpl_nodeID, (int) chpl_task_getId(), cache));
-        }
+      if (EXTRA_YIELDS) {
+        TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
+                           "for chpl_comm_wait_nb_some\n",
+                           chpl_nodeID, (int) chpl_task_getId(), cache));
+
+        chpl_task_yield();
+
+        TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
+                          chpl_nodeID, (int) chpl_task_getId(), cache));
       }
-      // cache->pending[index] == NULL now
-    }
-    completed = chpl_comm_test_nb_complete(cache->pending[index]);
-    if (EXTRA_YIELDS) {
-      TRACE_YIELD_PRINT(("%d: task %d cache %p yielding in do_wait_for "
-                         "for chpl_comm_test_nb_complete\n",
-                         chpl_nodeID, (int) chpl_task_getId(), cache));
 
-      chpl_task_yield();
-
-      TRACE_YIELD_PRINT(("%d: task %d cache %p back in do_wait_for\n",
-                        chpl_nodeID, (int) chpl_task_getId(), cache));
+      // continue the loop
     }
 
-    if (completed) {
-      // we completed cache->pending[index], so remove the entry from the queue.
-      DEBUG_PRINT(("wait_for removing %i\n", index));
-      fifo_circleb_pop( &cache->pending_first_entry, &cache->pending_last_entry, cache->pending_len);
-      max_completed = seqn_max(max_completed, at);
-    } else if( at > sn ) {
-      // Stop if we have an uncompleted request for a later sequence number
+    // Whether we waited above or not, if the first entry's event
+    // is already complete, then remove it from the queue.
+    if (chpl_comm_test_nb_complete(cache->pending[index])) {
+      fifo_circleb_pop(&cache->pending_first_entry,
+                       &cache->pending_last_entry,
+                       cache->pending_len);
+      cache->completed_request_number =
+        seqn_max(cache->completed_request_number,
+                 cache->pending_sequence_numbers[index]);
+
+      TRACE_NB_PRINT(("%d: task %d wait_for popped %i completed=%i\n",
+                      chpl_nodeID, (int)chpl_task_getId(),
+                      (int) cache->pending_sequence_numbers[index],
+                      (int) cache->completed_request_number));
+    }
+
+    // Stop if we have an uncompleted request for a later sequence number
+    if (cache->pending_sequence_numbers[index] > sn) {
       DEBUG_PRINT(("wait_for stopped at %i\n", index));
       break;
     }
   }
-
-  cache->completed_request_number = max_completed;
 }
 
 
