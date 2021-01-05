@@ -340,13 +340,16 @@ typedef int16_t entry_id_t;
 // For sequential access If we're reading
 #define ENABLE_READAHEAD 1
 #define ENABLE_READAHEAD_TRIGGER_WITHIN_PAGE 1
+
 #define ENABLE_READAHEAD_TRIGGER_SEQUENTIAL 0
+
 #define MAX_SEQUENTIAL_READAHEAD_BYTES (MAX_PAGES_PER_PREFETCH*CACHEPAGE_SIZE)
 
 //#define TIME
 
 //#define TRACE_YIELDS
 //#define TRACE_READAHEAD
+//#define TRACE_NB
 //#define TRACE
 
 //#define TRACE_FENCES
@@ -386,6 +389,12 @@ static long time_duration(const struct timespec* t1, const struct timespec* t2)
 #define TRACE_READAHEAD_PRINT(x) printf x
 #else
 #define TRACE_READAHEAD_PRINT(x) do {} while(0)
+#endif
+
+#ifdef TRACE_NB
+#define TRACE_NB_PRINT(x) printf x
+#else
+#define TRACE_NB_PRINT(x) do {} while(0)
 #endif
 
 #ifdef TRACE
@@ -1608,8 +1617,11 @@ cache_seqn_t pending_push(struct rdcache_s* cache, chpl_comm_nb_handle_t handle)
   cache->pending[index] = handle;
   cache->pending_sequence_numbers[index] = sn;
 
-  DEBUG_PRINT(("in pending_push added pending[%i]=%p sn=%i\n",
-               index, (void*) handle, (int) sn));
+  TRACE_NB_PRINT(("%d: task %d pending_push added "
+                  "pending[%i]=%p sn=%i completed=%i\n",
+                  chpl_nodeID, (int)chpl_task_getId(),
+                  index, (void*) handle, (int) sn,
+                  (int) cache->completed_request_number));
 
   return sn;
 }
@@ -1690,6 +1702,29 @@ int validate_queue(struct rdcache_s* tree,
   return forward_count;
 }
 #endif
+
+static
+void validate_pending(struct rdcache_s* cache)
+{
+  int i = 0;
+  int count = fifo_circleb_count(cache->pending_first_entry,
+                                 cache->pending_last_entry,
+                                 cache->pending_len);
+  unsigned int len_mask = cache->pending_len - 1;
+
+  cache_seqn_t last_sn = NO_SEQUENCE_NUMBER;
+
+  // check len_mask is a power of 2
+  assert( !(cache->pending_len & len_mask));
+  for (i = 0; i < count; i++) {
+    unsigned int idx = (cache->pending_first_entry + i) & len_mask;
+    cache_seqn_t cur_sn = cache->pending_sequence_numbers[idx];
+    if (i != 0) {
+      assert(last_sn <= cur_sn);
+    }
+    last_sn = cur_sn;
+  }
+}
 
 // aka verify_cache cache_verify cache_validate
 static
@@ -1812,6 +1847,12 @@ void validate_cache(struct rdcache_s* tree,
     }
     assert( num_used_pages + num_free_pages == tree->max_pages );
   }
+
+  // 7: pending queue must have sequence numbers in order
+  // (or else do_wait_for would need updating to check all pending
+  //  sequence numbers)
+  validate_pending(tree);
+
 #endif
 }
 
@@ -2694,6 +2735,7 @@ void cache_get_compute_readahead_extend(struct rdcache_s* cache,
     }
   }
 
+  // Note that ENABLE_READAHEAD_TRIGGER_SEQUENTIAL is off by default
   if( ENABLE_READAHEAD_TRIGGER_SEQUENTIAL && ra == 0 &&
       cache->last_cache_miss_read_node == node ) {
     if(cache->last_cache_miss_read_addr < ra_line &&
@@ -2845,6 +2887,24 @@ void cache_get_in_page(struct rdcache_s* cache,
 
       // Copy the data out.
       chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
+
+#ifdef DUMP
+      {
+        // printing out gotten data for debug
+        int i = 0;
+        unsigned char* ptr = entry->page;
+        ptr += (raddr-ra_page);
+
+        printf("%d: task %d cache %p got from %d:%p to %p ",
+               chpl_nodeID, (int) chpl_task_getId(), cache,
+               node, (void*) ptr, addr);
+
+        for (i = 0; i < size; i++ ) {
+          printf("%02x", ptr[i]);
+        }
+        printf("\n");
+      }
+#endif
 
       // If we are accessing a page that has a readahead condition,
       // trigger that readahead.
@@ -3019,6 +3079,25 @@ void cache_get_in_page(struct rdcache_s* cache,
 
     // Then, copy it out.
     chpl_memcpy(addr, entry->page + (raddr-ra_page), size);
+
+#ifdef DUMP
+    {
+      // printing out gotten data for debug
+      int i = 0;
+      unsigned char* ptr = entry->page;
+      ptr += (raddr-ra_page);
+
+      printf("%d: task %d cache %p got from %d:%p to %p ",
+             chpl_nodeID, (int) chpl_task_getId(), cache,
+             node, (void*) ptr, addr);
+
+      for (i = 0; i < size; i++ ) {
+        printf("%02x", ptr[i]);
+      }
+      printf("\n");
+    }
+#endif
+
   }
 
   unreserve_entry(cache, task_local, entry);
