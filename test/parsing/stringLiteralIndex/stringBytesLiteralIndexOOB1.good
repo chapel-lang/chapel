@@ -1,0 +1,1 @@
+stringBytesLiteralIndexOOB1.chpl:1: error: halt reached - index 6 out of bounds for string with length 6

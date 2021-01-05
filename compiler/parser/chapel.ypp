@@ -470,11 +470,11 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr
+%type <pexpr> call_base_expr call_expr dot_expr
 %type <pexpr> lhs_expr
 %type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
-%type <pexpr> bool_literal literal_expr
+%type <pexpr> bool_literal str_bytes_literal literal_expr
 %type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
 %type <pexpr> lifetime_components_expr
 %type <pexpr> lifetime_expr lifetime_ident
@@ -2144,22 +2144,21 @@ lhs_expr:
 ;
 
 /* Representations of values which can be invoked as functions.
- * Rather than allowing any value these values were deliberately restricted
- * to valid lhs_values and anonymous lambda function declarations.
  *
  * NOTE:  In order to allow expr to be invoked as a function
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
-fun_expr:
+call_base_expr:
   lhs_expr           { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
 | sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
 | lambda_decl_expr   { $$ = $1; }
+| str_bytes_literal
 ;
 
 call_expr:
-  fun_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
-| fun_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
+  call_base_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
+| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
 | TPRIMITIVE TLP opt_actual_ls TRP      { $$ = buildPrimitiveExpr($3); }
 ;
 
@@ -2187,13 +2186,17 @@ bool_literal:
 | TTRUE  { $$ = new SymExpr(gTrue); }
 ;
 
+str_bytes_literal:
+  STRINGLITERAL   { $$ = buildStringLiteral($1); }
+| BYTESLITERAL    { $$ = buildBytesLiteral($1); }
+;
+
 literal_expr:
   bool_literal
+| str_bytes_literal
 | INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
-| STRINGLITERAL         { $$ = buildStringLiteral($1); }
-| BYTESLITERAL          { $$ = buildBytesLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
 | TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
