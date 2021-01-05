@@ -1951,17 +1951,16 @@ void do_wait_for(struct rdcache_s* cache, cache_seqn_t sn)
 }
 
 
-// "lock" the entry
-//  * if entry->entryReservedByTask is task_local, return - already locked
+// try to "lock" the entry
 //  * if entry->entryReservedByTask is NULL, set it to task_local
-//  * otherwise wait for entry->entryReservedByTask to become NULL
-//    by yielding, and then set it to task_local.
+//    and return 1 (indicating the lock was taken)
+//
+//  * otherwise, return 0
+//    (and assert that this task doesn't already have the lock).
+//    If 0 is returned, the caller should loop calling chpl_task_yield.
 //
 // This lock protects the entry from being evicted by another task
 // in the same pthread.
-//
-// returns 1 if the lock was taken (0 means someone else has it)
-// if 0 is returned, the calling loop should call chpl_task_yield.
 static
 int try_reserve_entry(struct rdcache_s* cache,
                       chpl_cache_taskPrvData_t* task_local,
@@ -1977,6 +1976,7 @@ int try_reserve_entry(struct rdcache_s* cache,
   }
 }
 
+// "unlock" the entry
 static
 void unreserve_entry(struct rdcache_s* cache,
                    chpl_cache_taskPrvData_t* task_local,
