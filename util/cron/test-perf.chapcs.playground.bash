@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of a cache-line aligned spinlock
+# Test performance of qthreads 1.16 RC 
 GITHUB_USER=ronawho
-GITHUB_BRANCH=use-runtime-spinlock-in-modules
-SHORT_NAME=aligned-spinlock
-START_DATE=09/29/20
+GITHUB_BRANCH=qthreads-1.16RC
+SHORT_NAME=qthreads116
+START_DATE=01/05/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
