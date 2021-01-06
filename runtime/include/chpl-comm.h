@@ -140,6 +140,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
+// This function must not call chpl_task_yield.
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h);
 
 // Wait on handles created by chpl_comm_start_....  ignores completed handles.
