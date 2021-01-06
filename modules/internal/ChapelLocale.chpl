@@ -530,6 +530,13 @@ module ChapelLocale {
   }
 
 
+  // Returns a reference to a singleton array (stored in AbstractLocaleModel)
+  // storing this locale.
+  //
+  // This singleton array is useful for some array/domain implementaitons
+  // (such as DefaultRectangular) to help the targetLocales call return
+  // by 'const ref' without requiring the array/domain implementation
+  // to store another array.
   pragma "no doc"
   proc chpl_getSingletonLocaleArray(arg: locale) const ref
   lifetime return c_sublocid_none // indicate return has global lifetime
@@ -543,6 +550,7 @@ module ChapelLocale {
 
   pragma "no doc"
   class AbstractLocaleModel : BaseLocale {
+    // Used in chpl_getSingletonLocaleArray -- see the comment there
     var chpl_singletonThisLocaleArray:[0..0] locale;
 
     // This will be used for interfaces that will be common to all
