@@ -3665,6 +3665,21 @@ void chpl_cache_fence(int acquire, int release, int ln, int32_t fn)
   // Do nothing if cache is not enabled.
 }
 
+void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
+                           int ln, int32_t fn)
+{
+  struct rdcache_s* cache = tls_cache_remote_data();
+  chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
+
+
+  TRACE_PRINT(("%d: task %d in chpl_cache_invalidate %s:%d %d bytes at %d:%p\n",
+               chpl_nodeID, (int)chpl_task_getId(),
+               chpl_lookupFilename(fn), ln,
+               (int)size, node, raddr, addr));
+
+  cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
+}
+
 // If a transfer is large enough we should directly initiate it to avoid
 // overheads of going through the cache
 //
@@ -3678,7 +3693,6 @@ int size_merits_direct_comm(const struct rdcache_s* cache, size_t size)
 void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                          size_t size, int32_t commID, int ln, int32_t fn)
 {
-  //printf("put len %d node %d raddr %p\n", (int) len * elemSize, node, raddr);
   struct rdcache_s* cache = tls_cache_remote_data();
   chpl_cache_taskPrvData_t* task_local = task_private_cache_data();
   int all_hits;
