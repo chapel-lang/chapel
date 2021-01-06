@@ -1147,7 +1147,6 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "\nvoid chpl_program_about() {\n");
   } else {
 #ifdef HAVE_LLVM
-    if ( gCodegenGPU == false ) {
     llvm::FunctionType* programAboutType;
     llvm::Function* programAboutFunc;
     if ((programAboutFunc = getFunctionLLVM("chpl_program_about"))) {
@@ -1165,7 +1164,6 @@ static void genConfigGlobalsAndAbout() {
       info->module->getContext(), "entry", programAboutFunc
     );
     info->irBuilder->SetInsertPoint(programAboutBlock);
-    }
 #endif
     }
 
@@ -1183,10 +1181,7 @@ static void genConfigGlobalsAndAbout() {
     fprintf(info->cfile, "}\n");
   } else {
 #ifdef HAVE_LLVM
-    
-    if (gCodegenGPU == false) {
     info->irBuilder->CreateRetVoid();
-    }
 #endif
   }
 }
@@ -1678,7 +1673,9 @@ static void codegen_header(std::set<const char*> & cnames,
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
       legalizeName(var);
-      globals.push_back(var);
+      if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
+        globals.push_back(var);
+      }
     }
   }
   std::sort(globals.begin(), globals.end(), compareSymbol);
@@ -1687,7 +1684,9 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     legalizeName(fn);
-    functions.push_back(fn);
+    if ( fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
+     functions.push_back(fn);
+    }
   }
   std::sort(functions.begin(), functions.end(), compareSymbol);
 
@@ -1840,9 +1839,10 @@ static void codegen_header(std::set<const char*> & cnames,
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,true);
 
+  
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
-    varSymbol->codegenGlobalDef(true);
+      varSymbol->codegenGlobalDef(true);
   }
   flushStatements();
 
@@ -2503,9 +2503,7 @@ static void codegenPartTwo() {
 
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
-  if ( gCodegenGPU == false ) {
-    codegen_header(cnames, types, functions, globals);
-  }
+  codegen_header(cnames, types, functions, globals);
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
   // currently in codegen_header.
@@ -2522,6 +2520,7 @@ static void codegenPartTwo() {
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
+
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();

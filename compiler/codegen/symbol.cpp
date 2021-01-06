@@ -2367,6 +2367,20 @@ void FnSymbol::codegenDef() {
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
 
+    if(gCodegenGPU == true){
+      printf("cname: %s\n", cname);
+      gdbShouldBreakHere();
+      llvm::errs() << "info->module: " << info->module->getName() << "\n";
+
+         for (auto curFref = info->module->getFunctionList().begin(),
+              endFref = info->module->getFunctionList().end();
+              curFref != endFref; ++curFref) {
+           llvm::errs() << "found function: " << curFref->getName() << "\n";
+    }
+
+      llvm::errs() << "fn: " << info->module->getFunction(cname) << "\n";
+      //if(block != NULL) llvm::errs() << *block;
+    }
     if (!(info->irBuilder)) return;
 
     info->irBuilder->SetInsertPoint(block);
@@ -2586,7 +2600,6 @@ void FnSymbol::codegenDef() {
   {
     std::vector<BaseAST*> asts;
     collect_top_asts(body, asts);
-
     for_vector(BaseAST, ast, asts) {
       if (DefExpr* def = toDefExpr(ast))
         if (!toTypeSymbol(def->sym)) {
@@ -3095,7 +3108,11 @@ void ModuleSymbol::codegenDef() {
   }
 #endif
 
+  //gdbShouldBreakHere();
   for_vector(FnSymbol, fn, fns) {
+    if(gCodegenGPU == true){
+      printf("Module: %s\n", this->cname);
+      printf("Function Name: %s\n", fn->cname);}
     fn->codegenDef();
   }
 

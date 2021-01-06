@@ -2258,7 +2258,6 @@ void runClang(const char* just_parse_filename) {
       }
     }
     printf("gCodegenGPU: %d\n", gCodegenGPU);
-    if ( gCodegenGPU == false ){
     if( ! parseOnly ) {
       // LLVM module should have been created by CCodeGenConsumer
       INT_ASSERT(gGenInfo->module);
@@ -2288,7 +2287,6 @@ void runClang(const char* just_parse_filename) {
 
     if( ! parseOnly ) {
       info->irBuilder->CreateRetVoid();
-    }
     }
   }
 }
