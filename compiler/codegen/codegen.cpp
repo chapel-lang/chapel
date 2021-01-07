@@ -681,7 +681,6 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     }
     finfo.push_back(nullStruct);
   }
-
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &finfo, false);
 }
@@ -696,9 +695,9 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     return;
   }
 
-  if(gCodegenGPU == true){
-    return;
-  }
+  //if(gCodegenGPU == true){
+  //  return;
+  //}
 
 
   // compute max # methods per type
@@ -734,6 +733,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
+            if ( vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ) {
             int classId = ct->classId;
             int fnId = i;
             int index = gMaxVMT * classId + fnId;
@@ -759,6 +759,7 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
             vmt_elts[index] = fnAddress;
 
             i++;
+          }
           }
         }
       }
@@ -2510,9 +2511,9 @@ static void codegenPartTwo() {
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
-  if ( gCodegenGPU == false ) {
-    codegen_defn(cnames, types, functions, globals);
-  }
+  //if ( gCodegenGPU == false ) {
+  codegen_defn(cnames, types, functions, globals);
+  //}
   info->cfile = mainfile.fptr;
   if ( gCodegenGPU == false ) {
     codegen_config();

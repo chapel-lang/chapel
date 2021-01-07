@@ -3487,10 +3487,7 @@ void makeBinaryLLVM(void) {
   {
     
     bool disableVerify = ! developer;
-    llvm::legacy::PassManager emitPM;
-
-    emitPM.add(createTargetTransformInfoWrapperPass(
-               info->targetMachine->getTargetIRAnalysis()));
+    //llvm::legacy::PassManager emitPM;
 
     if (gCodegenGPU == false){
       llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
@@ -3504,17 +3501,26 @@ void makeBinaryLLVM(void) {
         llvm::TargetMachine::CGFT_ObjectFile;
 #endif
 
+      {
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+        
 #if HAVE_LLVM_VER > 60
-      info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                               nullptr,
-                                               FileType,
-                                               disableVerify);
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 nullptr,
+                                                 FileType,
+                                                 disableVerify);
 #else
-      info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
-                                               FileType,
-                                               disableVerify);
+        info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
+                                                 FileType,
+                                                 disableVerify);
 #endif
-      emitPM.run(*info->module);
+
+        emitPM.run(*info->module);
+
+      }
       outputOfile.close();
 
     } else {
@@ -3524,26 +3530,30 @@ void makeBinaryLLVM(void) {
 
       llvm::raw_fd_ostream outputASMfile(asmFilename, error, flags);
 
-      info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
-                                               nullptr,
-                                               asmFileType,
-                                               disableVerify);
+      {
 
-      emitPM.run(*info->module);
+        llvm::legacy::PassManager emitPM;
+
+        emitPM.add(createTargetTransformInfoWrapperPass(
+                   info->targetMachine->getTargetIRAnalysis()));
+ 
+        info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
+                                                 nullptr,
+                                                 asmFileType,
+                                                 disableVerify);
+        
+        emitPM.run(*info->module);
+
+      }
+
+      outputASMfile.close();
 
       std::string ptx_cmd = "/usr/local/cuda/bin/ptxas -m64 --gpu-name "
                             "sm_61 --output-file tmp/chpl_gpu_ptx.o "
                             "tmp/chpl__gpu_ptx.s";
 
-      // "/usr/local/cuda/bin/ptxas" "-m64" "-O3" "--gpu-name" "sm_61" "--output-file" "hello-cuda-nvptx64-nvidia-cuda-sm_61.o" "hello-cuda-nvptx64-nvidia-cuda-sm_61.s"
-
-
-      //std::string ptx_cmd = "/usr/local/cuda/bin/ptxas" + "-m64" + "--gpu-name" +
-      //                  "sm_61" + "--output-file" + "chpl__gpu_ptx.o" +
-      //                  "chpl__gpu_ptx.s";
       mysystem(ptx_cmd.c_str(), "PTX to  object file");
-
-      outputASMfile.close();
+ 
     }
   }
 

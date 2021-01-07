@@ -2300,9 +2300,7 @@ void FnSymbol::codegenDef() {
 
   if( hasFlag(FLAG_NO_CODEGEN) ) return;
 
-  if( gCodegenGPU == true ){
-    if( hasFlag(FLAG_GPU_CODEGEN) == false ) return;
-  }
+  if ( hasFlag(FLAG_GPU_CODEGEN) != gCodegenGPU ) return;
 
   info->cStatements.clear();
   info->cLocalDecls.clear();
@@ -2366,7 +2364,7 @@ void FnSymbol::codegenDef() {
 
     llvm::BasicBlock *block =
       llvm::BasicBlock::Create(info->module->getContext(), "entry", func);
-
+/*
     if(gCodegenGPU == true){
       printf("cname: %s\n", cname);
       gdbShouldBreakHere();
@@ -2381,6 +2379,7 @@ void FnSymbol::codegenDef() {
       llvm::errs() << "fn: " << info->module->getFunction(cname) << "\n";
       //if(block != NULL) llvm::errs() << *block;
     }
+    */
     if (!(info->irBuilder)) return;
 
     info->irBuilder->SetInsertPoint(block);
@@ -3110,9 +3109,9 @@ void ModuleSymbol::codegenDef() {
 
   //gdbShouldBreakHere();
   for_vector(FnSymbol, fn, fns) {
-    if(gCodegenGPU == true){
-      printf("Module: %s\n", this->cname);
-      printf("Function Name: %s\n", fn->cname);}
+    //if(gCodegenGPU == true){
+    //  printf("Module: %s\n", this->cname);
+    // printf("Function Name: %s\n", fn->cname);}
     fn->codegenDef();
   }
 
