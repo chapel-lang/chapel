@@ -58,6 +58,8 @@ static FnSymbol*   err_fn           = NULL;
 static int         err_fn_id        = 0;
 static bool        err_fn_header_printed = false;
 
+static bool        handle_erroneous_fns = true;
+
 astlocT            last_error_loc(0, NULL);
 
 static bool forceWidePtrs();
@@ -643,9 +645,15 @@ void printCallStackCalls() {
   printf("\n");
 }
 
-static bool isErrorInErroneousFunction(BaseAST* ast) {
+static bool isErrorInOrCallingErroneousFunction(BaseAST* ast) {
   if (ast == NULL)
     return false;
+
+  if (CallExpr* call = toCallExpr(ast)) {
+    FnSymbol* fn = call->resolvedFunction();
+    if (fn && fn->hasFlag(FLAG_ERRONEOUS_COPY))
+      return true;
+  }
 
   FnSymbol* fn = ast->getFunction();
   return fn && fn->hasFlag(FLAG_ERRONEOUS_COPY);
@@ -654,13 +662,22 @@ static bool isErrorInErroneousFunction(BaseAST* ast) {
 static void reportErroneousFunctionCall(BaseAST* ast) {
   INT_ASSERT(ast);
 
-  FnSymbol* fn = ast->getFunction();
+  FnSymbol* fn = NULL;
+  if (CallExpr* call = toCallExpr(ast)) {
+    FnSymbol* calledFn = call->resolvedFunction();
+    if (calledFn && calledFn->hasFlag(FLAG_ERRONEOUS_COPY))
+      fn = calledFn;
+  }
+
+  if (fn == NULL)
+    fn = ast->getFunction();
+
   INT_ASSERT(fn && fn->hasFlag(FLAG_ERRONEOUS_COPY));
 
-  // find a call site that is not an errenous function call
+  // find a call site that is not in an erroneous function call
   BaseAST* cur = ast;
   Expr* next;
-  const char* err = NULL;
+  const char* err = getErroneousCopyError(fn);
 
   std::set<FnSymbol*> currentFns;
 
@@ -682,7 +699,10 @@ static void reportErroneousFunctionCall(BaseAST* ast) {
   INT_ASSERT(err);
   INT_ASSERT(cur);
 
+  bool save_handle_erroneous_fns = handle_erroneous_fns;
+  handle_erroneous_fns = false;
   handleError(cur, "%s", err);
+  handle_erroneous_fns = save_handle_erroneous_fns;
 }
 
 /************************************* | **************************************
@@ -739,7 +759,8 @@ static void vhandleError(const BaseAST* ast,
     return;
   }
 
-  if (isErrorInErroneousFunction(const_cast<BaseAST*>(ast))) {
+  if (handle_erroneous_fns && err_fatal &&
+      isErrorInOrCallingErroneousFunction(const_cast<BaseAST*>(ast))) {
     bool save_exit_immediately = exit_immediately;
 
     // don't exit yet
