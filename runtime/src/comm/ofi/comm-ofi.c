@@ -1018,6 +1018,38 @@ void debugOverrideHints(struct fi_info* hints) {
   uint64_t val;
 
   {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_ATOMIC),
+                                  CFG_HINT(FI_DIRECTED_RECV),
+                                  CFG_HINT(FI_FENCE),
+                                  CFG_HINT(FI_HMEM),
+                                  CFG_HINT(FI_LOCAL_COMM),
+                                  CFG_HINT(FI_MSG),
+                                  CFG_HINT(FI_MULTICAST),
+                                  CFG_HINT(FI_MULTI_RECV),
+                                  CFG_HINT(FI_NAMED_RX_CTX),
+                                  CFG_HINT(FI_READ),
+                                  CFG_HINT(FI_RECV),
+                                  CFG_HINT(FI_REMOTE_COMM),
+                                  CFG_HINT(FI_REMOTE_READ),
+                                  CFG_HINT(FI_REMOTE_WRITE),
+                                  CFG_HINT(FI_RMA),
+                                  CFG_HINT(FI_RMA_EVENT),
+                                  CFG_HINT(FI_RMA_PMEM),
+                                  CFG_HINT(FI_SEND),
+                                  CFG_HINT(FI_SHARED_AV),
+                                  CFG_HINT(FI_SOURCE),
+                                  CFG_HINT(FI_SOURCE_ERR),
+                                  CFG_HINT(FI_TAGGED),
+                                  CFG_HINT(FI_TRIGGER),
+                                  CFG_HINT(FI_VARIABLE_MSG),
+                                  CFG_HINT(FI_WRITE), };
+    if (getCfgHint("COMM_OFI_HINTS_CAPS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->caps = val;
+    }
+  }
+
+  {
     struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
                                   CFG_HINT(FI_COMPLETION),
                                   CFG_HINT(FI_DELIVERY_COMPLETE),
@@ -6211,8 +6243,8 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
   case FI_UINT64: return "uint64";
-  case FI_FLOAT: return "_real32";
-  case FI_DOUBLE: return "_real64";
+  case FI_FLOAT: return "real32";
+  case FI_DOUBLE: return "real64";
   default: return "amoType???";
   }
 }
