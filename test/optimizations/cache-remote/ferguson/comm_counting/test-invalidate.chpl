@@ -18,14 +18,14 @@ const A = buf:_ddata(uint(8));
 var rng = new RandomStream(int);
 
 var expectSum = 0;
-for i in 0..testSize {
+for i in 0..#testSize {
   A[i] = i:uint(8);
   expectSum += A[i];
 }
 
 { // sanity checking the allocation
   var sum = 0;
-  for i in 0..testSize {
+  for i in 0..#testSize {
     assert(A[i] == i:uint(8));
     sum += A[i];
   }

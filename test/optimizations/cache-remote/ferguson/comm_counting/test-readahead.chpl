@@ -13,12 +13,12 @@ const A = buf:_ddata(uint(8));
 
 var rng = new RandomStream(int);
 
-for i in 0..testSize {
+for i in 0..#testSize {
   A[i] = i:uint(8);
 }
 
 { // sanity checking the allocation
-  for i in 0..testSize {
+  for i in 0..#testSize {
     assert(A[i] == i:uint(8));
   }
 }
@@ -91,3 +91,7 @@ for size in acrossPageSizes {
 // TODO: add separate cache performance counters
 //   - include late prefetches / prefetches requiring a wait on a GET
 //   - check for late prefetches here
+
+writeln("done");
+
+c_free(buf);
