@@ -285,6 +285,9 @@ module SharedObject {
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
 
+      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
+        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
 
@@ -296,8 +299,6 @@ module SharedObject {
       if isNonNilableClass(this.type) && isNilableClass(src) then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
 
-      if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
     }
 
     pragma "no doc"
