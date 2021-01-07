@@ -1509,14 +1509,17 @@ void init_ofiDoProviderChecks(void) {
     //   It uses the AV attribute 'count' member to size the data
     //   structure in which it stores those.  So, that member will need
     //   to account for all transmitting endpoints.
-    // - Based on analyzing a segfault, RxD has to have a non-NULL
-    //   buf arg for fi_fetch_atomic(FI_ATOMIC_READ) even though the
-    //   fi_atomic man page says buf is ignored for that operation
-    //   and may be NULL.
     //
     provCtl_sizeAvsByNumEps = true;
-    provCtl_readAmoNeedsOpnd = true;
   }
+
+  //
+  // RxD and perhaps other providers must have a non-NULL buf arg for
+  // fi_fetch_atomic(FI_ATOMIC_READ) or they segfault, even though the
+  // fi_atomic man page says buf is ignored for that operation and may
+  // be NULL.
+  //
+  provCtl_readAmoNeedsOpnd = true;
 }
 
 
@@ -4778,8 +4781,9 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               ofiType, ofiOp, ctx));
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
+    // Workaround for bug wherein operand1 is unused but nevertheless
+    // must not be NULL.
     if (provCtl_readAmoNeedsOpnd) {
-      // Workaround for RxD bug.
       if (ofiOp == FI_ATOMIC_READ && bufArg == NULL) {
         static int64_t dummy;
         bufArg = &dummy;
