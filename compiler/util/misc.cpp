@@ -325,6 +325,12 @@ static const char* fnKindAndName(FnSymbol* fn) {
   return astr("function ", "'", fn->name, "'");
 }
 
+// should the function name itself be hidden?
+static bool isHiddenFunction(FnSymbol* fn) {
+  return (strncmp(fn->name, "chpl_", 5) == 0);
+}
+
+// should the body of the function be hidden?
 static bool isInternalFunction(FnSymbol* fn) {
   ModuleSymbol* module = fn->getModule();
   return (fn->hasFlag(FLAG_COMPILER_GENERATED) ||
@@ -385,22 +391,22 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       bool hideErrFn = false;
       bool hideInFn = false;
       if (developer == false && fPrintCallStackOnError == false) {
-        if (isInternalFunction(errFn))
-          hideErrFn = true;
-        if (isInternalFunction(inFn))
-          hideInFn = true;
+        hideErrFn = isHiddenFunction(errFn);
+        hideInFn = isInternalFunction(inFn);
       }
 
       // Continue printing stack frames until not generic;
       // or, with --print-callstack-on-error, module/main is reached
-      bool recurse = (inFn->instantiatedFrom != NULL || fPrintCallStackOnError);
+      bool recurse = (inFn->instantiatedFrom != NULL ||
+                      inFn->hasFlag(FLAG_INSTANTIATED_GENERIC) ||
+                      fPrintCallStackOnError);
 
       if (hideErrFn == false) {
         std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
                                                              printedUnderline);
 
         if (nameAndArgs.empty()) {
-          print_error("  %s:%d: %s called ",
+          print_error("  %s:%d: %s called",
                       cleanFilename(bestPoint),
                       bestPoint->linenum(),
                       fnKindAndName(errFn));
@@ -443,7 +449,8 @@ static void printCallstackForLastError() {
   if (err_fn_header_printed && err_fn) {
     bool printStack = false;
     if (fAutoPrintCallStackOnError)
-      printStack = err_fn->instantiatedFrom != NULL;
+      printStack = (err_fn->instantiatedFrom != NULL ||
+                    err_fn->hasFlag(FLAG_INSTANTIATED_GENERIC));
     else
       printStack = fPrintCallStackOnError;
 
@@ -636,6 +643,48 @@ void printCallStackCalls() {
   printf("\n");
 }
 
+static bool isErrorInErroneousFunction(BaseAST* ast) {
+  if (ast == NULL)
+    return false;
+
+  FnSymbol* fn = ast->getFunction();
+  return fn && fn->hasFlag(FLAG_ERRONEOUS_COPY);
+}
+
+static void reportErroneousFunctionCall(BaseAST* ast) {
+  INT_ASSERT(ast);
+
+  FnSymbol* fn = ast->getFunction();
+  INT_ASSERT(fn && fn->hasFlag(FLAG_ERRONEOUS_COPY));
+
+  // find a call site that is not an errenous function call
+  BaseAST* cur = ast;
+  Expr* next;
+  const char* err = NULL;
+
+  std::set<FnSymbol*> currentFns;
+
+  while (true) {
+    fn = cur->getFunction();
+    if (fn == NULL)
+      break;
+    if (!fn->hasFlag(FLAG_ERRONEOUS_COPY))
+      break;
+
+    err = getErroneousCopyError(fn);
+    next = findBestCallSite(fn, currentFns);
+    if (next == NULL)
+      break;
+
+    cur = next;
+  }
+
+  INT_ASSERT(err);
+  INT_ASSERT(cur);
+
+  handleError(cur, "%s", err);
+}
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -688,6 +737,30 @@ static void vhandleError(const BaseAST* ast,
                          va_list        args) {
   if (err_ignore) {
     return;
+  }
+
+  if (isErrorInErroneousFunction(const_cast<BaseAST*>(ast))) {
+    bool save_exit_immediately = exit_immediately;
+
+    // don't exit yet
+    if (exit_immediately) {
+      exit_immediately = false;
+      exit_eventually = true;
+    }
+
+    // Report the saved error at the call site
+    reportErroneousFunctionCall(const_cast<BaseAST*>(ast));
+
+    exit_immediately = save_exit_immediately;
+
+    if (fPrintAdditionalErrors == false) {
+      print_error("note: An additional error is hidden. "
+                  "Use --print-additional-errors to see it.\n");
+      exitIfFatalErrorsEncountered();
+      return;
+    }
+    print_error("note: Additional error follows\n");
+    // now the rest of this function will report the additional error
   }
 
   bool guess = false;

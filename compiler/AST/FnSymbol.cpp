@@ -1229,7 +1229,8 @@ static std::string argToString(FnSymbol* concreteFn,
 
   Type* t = sym->getValType();
 
-  bool isGeneric = genericArg && sym != genericArg;
+  bool isGeneric = (genericArg && sym != genericArg) ||
+                    concreteArg->hasFlag(FLAG_INSTANTIATED_GENERIC);
 
   bool isParam = genericArg && (genericArg->intent == INTENT_PARAM ||
                                 genericArg->originalIntent == INTENT_PARAM);
