@@ -1442,15 +1442,15 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
 ////// more /////////////////////////////////////////////////////////////////
 
-proc BlockArr.dsiTargetLocales() {
+proc BlockArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc BlockDom.dsiTargetLocales() {
+proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Block.dsiTargetLocales() {
+proc Block.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1731,7 +1731,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   // writing it.  This domain really wants an easier way to express
   // it...
   use ReplicatedDist;
-  ref targetLocs = this.dsiTargetLocales();
+  const ref targetLocs = this.dsiTargetLocales();
   const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
   var elemPerLoc: [elemPerLocDom] resType;
   var inputReady$: [elemPerLocDom] sync bool;

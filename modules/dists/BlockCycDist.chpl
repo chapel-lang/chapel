@@ -1045,13 +1045,13 @@ proc BlockCyclicArr.dsiSerialWrite(f) {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-proc BlockCyclicArr.dsiTargetLocales() {
+proc BlockCyclicArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
-proc BlockCyclicDom.dsiTargetLocales() {
+proc BlockCyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
-proc BlockCyclic.dsiTargetLocales() {
+proc BlockCyclic.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

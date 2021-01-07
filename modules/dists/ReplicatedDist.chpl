@@ -657,13 +657,13 @@ proc ReplicatedArr.dsiReallocate(d: domain): void {
 */
 
 // Note: returns an associative array
-proc Replicated.dsiTargetLocales() {
+proc Replicated.dsiTargetLocales() const ref {
   return targetLocales;
 }
-proc ReplicatedDom.dsiTargetLocales() {
+proc ReplicatedDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
-proc ReplicatedArr.dsiTargetLocales() {
+proc ReplicatedArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
