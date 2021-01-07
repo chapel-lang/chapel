@@ -19,8 +19,10 @@
  */
 
 #include "astutil.h"
+#include "build.h"
 #include "ForallStmt.h"
 #include "LoopStmt.h"
+#include "passes.h"
 #include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
@@ -56,6 +58,7 @@ class AggregationCandidateInfo {
   public:
 
     CallExpr *candidate;
+    ForallStmt *forall;
 
     LocalityInfo lhsLocalityInfo;
     LocalityInfo rhsLocalityInfo;
@@ -70,14 +73,18 @@ class AggregationCandidateInfo {
     CallExpr *dstAggCall;
 
     AggregationCandidateInfo();
-    AggregationCandidateInfo(CallExpr *candidate);
+    AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
 
     void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
+    void registerLogicalChild(CallExpr *logicalChild, bool lhs, LocalityInfo locInfo);
+    void tryAddingAggregator();
+
     void update();
 };
 
 AggregationCandidateInfo::AggregationCandidateInfo():
   candidate(NULL),
+  forall(NULL),
   lhsLocalityInfo(UNKNOWN),
   rhsLocalityInfo(UNKNOWN),
   lhsLogicalChild(NULL),
@@ -87,8 +94,10 @@ AggregationCandidateInfo::AggregationCandidateInfo():
   srcAggCall(NULL),
   dstAggCall(NULL) { }
 
-AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate):
+AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
+                                                   ForallStmt *forall):
   candidate(candidate),
+  forall(forall),
   lhsLocalityInfo(UNKNOWN),
   rhsLocalityInfo(UNKNOWN),
   lhsLogicalChild(NULL),
@@ -97,6 +106,45 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate):
   dstAggregator(NULL),
   srcAggCall(NULL),
   dstAggCall(NULL) { }
+
+void AggregationCandidateInfo::tryAddingAggregator() {
+  if (srcAggregator != NULL && dstAggregator != NULL) {
+    return; // we have already enough
+  }
+
+  // we have a lhs that waits analysis, and a rhs that we can't know about
+  if (lhsLocalityInfo == PENDING && (rhsLogicalChild != NULL && 
+                                     rhsLocalityInfo == UNKNOWN)) {
+    if (SymExpr *otherChildBaseSE = toSymExpr(this->rhsLogicalChild->baseExpr)) {
+      SET_LINENO(this->forall);
+
+      Symbol *otherChildBase = otherChildBaseSE->symbol();
+      ShadowVarSymbol *aggregator =
+        ShadowVarSymbol::buildForPrefix(SVP_VAR,
+            new UnresolvedSymExpr("chpl_src_auto_agg"),
+            NULL, // type expr for shadow var
+            new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
+      //DefExpr *aggDef = new DefExpr(aggregator);
+      forall->shadowVariables().insertAtTail(aggregator->defPoint);
+      std::cout << "potential source aggregation\n";
+
+      this->srcAggregator = aggregator;
+
+      //this->srcAggCall = new CallExpr(new UnresolvedSymExpr("copy"),
+          //aggregator,
+          //candidate->get(1)->copy(),
+          //candidate->get(2)->copy());
+
+      //candidate->insertAfter(this->srcAggCall);
+      //this->srcAggCall->remove();
+    }
+
+  }
+
+
+
+}
+
 
 void AggregationCandidateInfo::update() {
   if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
@@ -115,12 +163,77 @@ void AggregationCandidateInfo::update() {
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
     std::cout << "LHS local, I can't know about RHS. (source aggregation)\n";
+
     nprint_view(this->candidate);
+
+    if (!this->rhsLogicalChild->isResolved()) {
+      SymExpr *lhsSE = toSymExpr(candidate->get(1));
+      SymExpr *rhsSE = toSymExpr(candidate->get(2));
+      
+      if (rhsSE != NULL && lhsSE != NULL) {  // assert?
+        if (SymExpr *otherChildBaseSE = toSymExpr(this->rhsLogicalChild->baseExpr)) {
+          SET_LINENO(this->candidate);
+
+          //Symbol *otherChildBase = otherChildBaseSE->symbol();
+          //ShadowVarSymbol *aggregator =
+            //ShadowVarSymbol::buildForPrefix(SVP_VAR,
+                //new UnresolvedSymExpr("chpl_src_auto_agg"),
+                //NULL, // type expr for shadow var
+                //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
+          ////DefExpr *aggDef = new DefExpr(aggregator);
+          //forall->shadowVariables().insertAtTail(aggregator->defPoint);
+          //std::cout << "potential source aggregation\n";
+
+          //this->srcAggregator = aggregator;
+          //
+          Expr *callBase = buildDotExpr(this->srcAggregator, "copy");
+          this->srcAggCall = new CallExpr(callBase,
+              candidate->get(1)->copy(),
+              candidate->get(2)->copy());
+                        
+
+          //this->srcAggCall = new CallExpr(new UnresolvedSymExpr("copy"),
+              //gMethodToken,
+              //this->srcAggregator,
+              //candidate->get(1)->copy(),
+              //candidate->get(2)->copy());
+
+          this->candidate->insertAfter(this->srcAggCall);
+          normalize(this->srcAggCall);
+          //this->candidate->insertBefore(this->srcAggCall);
+          //resolveCall(this->srcAggCall);
+          //this->srcAggCall->remove();
+        }
+      }
+
+    }
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
     std::cout << "RHS local, I can't know about LHS. (destination aggregation)\n";
     nprint_view(this->candidate);
   }
+}
+
+void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
+                                                    bool lhs,
+                                                    LocalityInfo locInfo) {
+  if (lhs) {
+    this->lhsLocalityInfo = locInfo;
+    this->lhsLogicalChild = logicalChild;
+    // if lhs turns out to be remote, we won't need dstAggregator for sure, but
+    // we may need a srcAggregator
+    // TODO set srcAggregator here
+    //
+
+  }
+  else {
+    this->rhsLocalityInfo = locInfo;
+    this->rhsLogicalChild = logicalChild;
+    //std::cout << "potential destination aggregation\n";
+  }
+
+  this->tryAddingAggregator();
+
 }
 
 void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
@@ -134,7 +247,7 @@ void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool
 
   update();
 }
-//
+
 // maps a potential local access to an AggregationCandidate
 std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 
@@ -230,24 +343,26 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
     if (ret != NULL) {
       if (confirmed) {
         std::cout << "Confirmed a local access with parent\n";
-        nprint_view(call);
       }
       else {
         std::cout << "Reverted a local access with parent\n";
-        nprint_view(call);
       }
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
+      nprint_view(aggCandidate->candidate);
       aggCandidate->logicalChildAnalyzed(call, confirmed);
     }
   }
   return ret;
 }
 
-static void insertOrUpdateAggCandidate(CallExpr *candidate, CallExpr *logicalChild, bool lhs) {
-
+static void insertOrUpdateAggCandidate(CallExpr *candidate,
+                                       CallExpr *logicalChild,
+                                       bool lhs,
+                                       CallExpr *otherChild,
+                                       ForallStmt *forall) {
   AggregationCandidateInfo *info;
   if (aggCandidateCache.count(candidate) == 0) {
-    info = new AggregationCandidateInfo(candidate);
+    info = new AggregationCandidateInfo(candidate, forall);
     aggCandidateCache[candidate] = info;
     preNormalizeAggCandidate[logicalChild] = info;
   }
@@ -255,20 +370,11 @@ static void insertOrUpdateAggCandidate(CallExpr *candidate, CallExpr *logicalChi
     info = aggCandidateCache[candidate];
   }
 
-  if (lhs) {
-    info->lhsLocalityInfo = PENDING;
-    info->lhsLogicalChild = logicalChild;
-    // if lhs turns out to be remote, we won't need dstAggregator for sure, but
-    // we may need a srcAggregator
-    // TODO set srcAggregator here
-    std::cout << "potential source aggregation\n";
-  }
-  else {
-    info->rhsLocalityInfo = PENDING;
-    info->rhsLogicalChild = logicalChild;
-    std::cout << "potential destination aggregation\n";
-  }
+  info->registerLogicalChild(logicalChild, lhs, PENDING);
 
+  if (otherChild != NULL) {
+    info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
+  }
 }
 
 
@@ -846,15 +952,34 @@ static void optimizeLoop(ForallStmt *forall,
 
     CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
 
-    // associate the parent assignment with the newly added // PRIM_MAYBE_LOCAL_ACCESS
+    // associate the parent assignment with the newly added
+    // PRIM_MAYBE_LOCAL_ACCESS
     // there's no PRIM_MOVE or PRIM_ASSIGN at the moment
     if (parent != NULL && parent->isNamed("=")) {
       bool lhs = (parent->get(1) == replacement);
-      std::cout << "Prenormalize candidate\n";
-      nprint_view(candidate);
-      nprint_view(replacement);
-      insertOrUpdateAggCandidate(parent, replacement, lhs);
-      //preNormalizeAggCandidate[replacement] = parent;
+      //std::cout << "Prenormalize candidate\n";
+      //nprint_view(candidate);
+      //nprint_view(replacement);
+
+      CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
+      if (std::count(candidates.begin(), candidates.end(), otherChild) > 0) {
+        // other child is also a auto local access candidate, we don't need to
+        // register it to the aggregation candidate. It'll do so itself
+        insertOrUpdateAggCandidate(parent, replacement, lhs,
+                                   NULL, forall);
+      }
+      else {
+        std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
+        if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
+          // other child is not an auto local access candidate, but for now it
+          // looks like it might be an array access, record it
+          insertOrUpdateAggCandidate(parent, replacement, lhs,
+                                     otherChild, forall);
+        }
+        else {
+          // other child is not a well-known pattern, can't do aggregation
+        }
+      }
     }
   }
 }
@@ -1041,6 +1166,10 @@ static void autoLocalAccess(ForallStmt *forall) {
     Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall);
 
     if (accBaseSym == NULL) {
+      // if it looks like an array access, record it
+      if (Symbol *aggChildBaseSym = getCallBase(call)) {
+        forall->optInfo.suitableAggChildren.push_back(call);
+      }
       continue;
     }
 

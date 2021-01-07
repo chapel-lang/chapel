@@ -39,6 +39,7 @@ class ForallOptimizationInfo {
     // calls in the loop that are candidates for optimization
     std::vector<CallExpr *> staticCandidates;
     std::vector<CallExpr *> dynamicCandidates;
+    std::vector<CallExpr *> suitableAggChildren;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
