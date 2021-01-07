@@ -1334,7 +1334,21 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
 
   INT_ASSERT(at);
 
-  Type* borrowType = at->getField("chpl_t")->type;
+  Type* borrowType = NULL;
+  Symbol* field = at->getField("chpl_t", /*fatal*/ false);
+  if (field) {
+    borrowType = field->type;
+  } else {
+    const char* name = astr("chpl_t");
+    // look in substitutions
+    form_Map(SymbolMapElem, e, at->substitutions) {
+      if (e->key->name == name) {
+        borrowType = e->value->type;
+      }
+    }
+  }
+  if (borrowType == NULL)
+    INT_FATAL("Could not determine borrow type");
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
 
