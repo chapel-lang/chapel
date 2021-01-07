@@ -45,6 +45,102 @@ static int curLogDepth = 0;
 static void LOG(int depth, const char *msg, BaseAST *node);
 static void LOGLN(BaseAST *node);
 
+enum LocalityInfo { 
+  UNKNOWN, // analysis cannot understand the idiom
+  PENDING, // we will make a decision later
+  LOCAL    // we know this is local
+};
+
+
+class AggregationCandidateInfo {
+  public:
+
+    CallExpr *candidate;
+
+    LocalityInfo lhsLocalityInfo;
+    LocalityInfo rhsLocalityInfo;
+
+    CallExpr *lhsLogicalChild;
+    CallExpr *rhsLogicalChild;
+
+    Symbol *srcAggregator;   // remote rhs
+    Symbol *dstAggregator;   // remote lhs
+
+    CallExpr *srcAggCall;
+    CallExpr *dstAggCall;
+
+    AggregationCandidateInfo();
+    AggregationCandidateInfo(CallExpr *candidate);
+
+    void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
+    void update();
+};
+
+AggregationCandidateInfo::AggregationCandidateInfo():
+  candidate(NULL),
+  lhsLocalityInfo(UNKNOWN),
+  rhsLocalityInfo(UNKNOWN),
+  lhsLogicalChild(NULL),
+  rhsLogicalChild(NULL),
+  srcAggregator(NULL),
+  dstAggregator(NULL),
+  srcAggCall(NULL),
+  dstAggCall(NULL) { }
+
+AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate):
+  candidate(candidate),
+  lhsLocalityInfo(UNKNOWN),
+  rhsLocalityInfo(UNKNOWN),
+  lhsLogicalChild(NULL),
+  rhsLogicalChild(NULL),
+  srcAggregator(NULL),
+  dstAggregator(NULL),
+  srcAggCall(NULL),
+  dstAggCall(NULL) { }
+
+void AggregationCandidateInfo::update() {
+  if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
+    return; // we still need to wait for some of the children's analysis
+  }
+
+  if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
+    // TODO we may need to cleanup the info, remove added aggregators etc
+    return;
+  }
+
+  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
+    // TODO we may need to cleanup the info, remove added aggregators etc
+    return;
+  }
+
+  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
+    std::cout << "LHS local, I can't know about RHS. (source aggregation)\n";
+    nprint_view(this->candidate);
+  }
+  else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
+    std::cout << "RHS local, I can't know about LHS. (destination aggregation)\n";
+    nprint_view(this->candidate);
+  }
+}
+
+void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
+  LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
+  if (this->lhsLogicalChild == logicalChild) {
+    this->lhsLocalityInfo = newInfo;
+  }
+  else {
+    this->rhsLocalityInfo = newInfo;
+  }
+
+  update();
+}
+//
+// maps a potential local access to an AggregationCandidate
+std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
+
+// map from actual aggregation candidates to their info to avoid duplicates
+std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
+
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
@@ -68,9 +164,9 @@ static void generateDynamicCheckForAccess(CallExpr *access,
 static Symbol *generateStaticCheckForAccess(CallExpr *access,
                                             ForallStmt *forall,
                                             Expr *&allChecks);
-static void replaceCandidate(CallExpr *candidate,
-                             Symbol *staticCheckSym,
-                             bool doStatic);
+static CallExpr *replaceCandidate(CallExpr *candidate,
+                                  Symbol *staticCheckSym,
+                                  bool doStatic);
 static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic);
@@ -107,7 +203,9 @@ void doPreNormalizeArrayOptimizations() {
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
+  Expr *ret = NULL;
   if (fAutoLocalAccess) {
+    bool confirmed = false;
     // PRIM_MAYBE_LOCAL_THIS looks like
     //
     //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
@@ -117,17 +215,60 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
     // are confirming this to be a local access or not
     if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
       if (controlSE->symbol() == gTrue) {
-        return confirmAccess(call);
+        ret = confirmAccess(call);
+        confirmed = true;
       }
       else {
-        return revertAccess(call);
+        ret = revertAccess(call);
+        confirmed = false;
       }
     }
     else {
       INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
     }
+
+    if (ret != NULL) {
+      if (confirmed) {
+        std::cout << "Confirmed a local access with parent\n";
+        nprint_view(call);
+      }
+      else {
+        std::cout << "Reverted a local access with parent\n";
+        nprint_view(call);
+      }
+      AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
+      aggCandidate->logicalChildAnalyzed(call, confirmed);
+    }
   }
-  return NULL;
+  return ret;
+}
+
+static void insertOrUpdateAggCandidate(CallExpr *candidate, CallExpr *logicalChild, bool lhs) {
+
+  AggregationCandidateInfo *info;
+  if (aggCandidateCache.count(candidate) == 0) {
+    info = new AggregationCandidateInfo(candidate);
+    aggCandidateCache[candidate] = info;
+    preNormalizeAggCandidate[logicalChild] = info;
+  }
+  else {
+    info = aggCandidateCache[candidate];
+  }
+
+  if (lhs) {
+    info->lhsLocalityInfo = PENDING;
+    info->lhsLogicalChild = logicalChild;
+    // if lhs turns out to be remote, we won't need dstAggregator for sure, but
+    // we may need a srcAggregator
+    // TODO set srcAggregator here
+    std::cout << "potential source aggregation\n";
+  }
+  else {
+    info->rhsLocalityInfo = PENDING;
+    info->rhsLogicalChild = logicalChild;
+    std::cout << "potential destination aggregation\n";
+  }
+
 }
 
 
@@ -644,7 +785,7 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
 }
 
 // replace a candidate CallExpr with the corresponding PRIM_MAYBE_LOCAL_THIS
-static void replaceCandidate(CallExpr *candidate,
+static CallExpr* replaceCandidate(CallExpr *candidate,
                              Symbol *staticCheckSym,
                              bool doStatic) {
   SET_LINENO(candidate);
@@ -664,7 +805,12 @@ static void replaceCandidate(CallExpr *candidate,
   repl->insertAtTail(new SymExpr(doStatic?gTrue:gFalse));
 
   candidate->replace(repl);
+
+  return repl;
 }
+
+//static void analyzeCandidateForAggregation(CallExpr *candidate) {
+//}
 
 // replace all the candidates in the loop with PRIM_MAYBE_LOCAL_THIS
 // while doing that, also builds up static and dynamic conditions
@@ -675,6 +821,8 @@ static void optimizeLoop(ForallStmt *forall,
   std::vector<CallExpr *> candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
+
+  //std::set<CallExpr *> aggregationCandidates;
 
   for_vector(CallExpr, candidate, candidates) {
 
@@ -689,7 +837,25 @@ static void optimizeLoop(ForallStmt *forall,
                                     dynamicCond);
     }
 
-    replaceCandidate(candidate, checkSym, doStatic);
+    //if (strcmp(candidate->fname(), "unorderedTest.chpl") == 0) {
+      //gdbShouldBreakHere();
+    //}
+
+    // capture the parent before replacing
+    CallExpr *parent = toCallExpr(candidate->parentExpr);
+
+    CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
+
+    // associate the parent assignment with the newly added // PRIM_MAYBE_LOCAL_ACCESS
+    // there's no PRIM_MOVE or PRIM_ASSIGN at the moment
+    if (parent != NULL && parent->isNamed("=")) {
+      bool lhs = (parent->get(1) == replacement);
+      std::cout << "Prenormalize candidate\n";
+      nprint_view(candidate);
+      nprint_view(replacement);
+      insertOrUpdateAggCandidate(parent, replacement, lhs);
+      //preNormalizeAggCandidate[replacement] = parent;
+    }
   }
 }
 

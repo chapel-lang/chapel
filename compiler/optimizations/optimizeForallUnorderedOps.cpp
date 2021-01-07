@@ -32,6 +32,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 #include "virtualDispatch.h"
 #include "wellknown.h"
 
@@ -982,10 +983,14 @@ void optimizeForallUnorderedOps() {
         std::vector<Expr*> lastStmts;
         getLastStmts(loop, lastStmts);
         for_vector(Expr, lastStmt, lastStmts) {
-          if (isOptimizableAtomicStmt(lastStmt, loop))
+          if (isOptimizableAtomicStmt(lastStmt, loop)) {
             atomicsToOptimize.push_back(lastStmt);
-          else if (isOptimizableAssignStmt(lastStmt, loop))
+          }
+          else if (isOptimizableAssignStmt(lastStmt, loop)) {
+            std::cout << "Optimizable assignment\n";
+            nprint_view(lastStmt);
             assignsToOptimize.push_back(lastStmt);
+          }
         }
       }
     }
