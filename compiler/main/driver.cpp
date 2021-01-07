@@ -150,7 +150,6 @@ bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
 bool fNoNilChecks = false;
-bool fLegacyClasses = false;
 bool fIgnoreNilabilityErrors = false;
 bool fOverloadSetsChecks = true;
 bool fNoStackChecks = false;
@@ -575,14 +574,6 @@ static void verifyStageAndSetStageNum(const ArgumentDescription* desc,
     USR_FATAL("Unknown llvm-print-ir-stage argument");
 
   llvmPrintIrStageNum = stageNum;
-}
-
-static void warnUponLegacyClasses(const ArgumentDescription* desc,
-                                  const char* arg)
-{
-  USR_WARN("'--legacy-classes' option has been deprecated"
-           " and will be removed in the next Chapel release;"
-           " it no longer affects compilation");
 }
 
 // In order to handle accumulating ccflags arguments, the argument
@@ -1111,7 +1102,6 @@ static ArgumentDescription arg_desc[] = {
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
  {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
- {"legacy-classes", ' ', NULL, "Deprecated flag - does not affect compilation", "N", &fLegacyClasses, NULL, &warnUponLegacyClasses},
  {"ignore-nilability-errors", ' ', NULL, "Allow compilation to continue by coercing away nilability", "N", &fIgnoreNilabilityErrors, NULL, NULL},
  {"overload-sets-checks", ' ', NULL, "Report potentially hijacked calls", "N", &fOverloadSetsChecks, NULL, NULL},
  {"compile-time-nil-checking", ' ', NULL, "Enable [disable] compile-time nil checking", "N", &fCompileTimeNilChecking, "CHPL_NO_COMPILE_TIME_NIL_CHECKS", NULL},
