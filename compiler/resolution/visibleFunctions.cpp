@@ -536,7 +536,13 @@ static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
     } else if (ImportStmt* import = toImportStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, import->isPrivate))
         continue;
-      if (import->skipSymbolSearch(name))
+      bool methodOnNamedType = false;
+      if (call->numActuals() >= 2) {
+        Expr* thisArg = call->get(2);
+        Type* thisType = thisArg->typeInfo();
+        methodOnNamedType = import->typeWasNamed(thisType);
+      }
+      if (import->skipSymbolSearch(name) && !methodOnNamedType)
         continue;
 
       se = toSymExpr(import->src);

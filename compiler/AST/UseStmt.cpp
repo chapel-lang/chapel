@@ -161,6 +161,8 @@ bool UseStmt::hasExceptList() const {
 void UseStmt::scopeResolve(ResolveScope* scope) {
   // 2017-05-28: isValid() does not currently return on failure
   if (isValid(src) == true) {
+    bool wasTypeWithMethod = false;
+    std::string typeName;
     // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
       // Alternatively, we could have needed to resolve the use and import
@@ -169,10 +171,17 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       INT_ASSERT(se->symbol() == rootModule ||
                  scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true)) {
+    } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true,
+                                                    &wasTypeWithMethod,
+                                                    &typeName)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        if (wasTypeWithMethod) {
+          USR_FATAL(this,
+                    "'use' of non-module/enum symbol %s",
+                    typeName.c_str());
+        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
         updateEnclosingBlock(scope, sym);
@@ -343,14 +352,18 @@ void UseStmt::validateNamed() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
-        SymExpr* srcExpr = toSymExpr(src);
-        INT_ASSERT(srcExpr); // should have been resolved by this point
-        USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s' defined in"
-                       " '%s'",
-                       (except == true) ? "except" : "only",
-                       name,
-                       srcExpr->symbol()->name);
+        // Allows an only or except list to contain the name of a type with
+        // methods defined in that scope
+        if (!scope->matchesTypeWithMethods(name)) {
+          SymExpr* srcExpr = toSymExpr(src);
+          INT_ASSERT(srcExpr); // should have been resolved by this point
+          USR_FATAL_CONT(this,
+                         "Bad identifier in '%s' clause, no known '%s' defined "
+                         "in '%s'",
+                         (except == true) ? "except" : "only",
+                         name,
+                         srcExpr->symbol()->name);
+        }
 
       } else {
         for_vector(Symbol, sym, symbols) {
@@ -401,6 +414,18 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
   } else if (hasExceptList() == true) {
     fprintf(mFP, " 'except' ");
   }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the provided type was named in some form in the import         *
+* statement.  Used for determining if we should traverse the import statement *
+* to find its methods.                                                        *
+*                                                                             *
+************************************** | *************************************/
+bool UseStmt::typeWasNamed(Type* t) const {
+  INT_FATAL("Not implemented");
+  return false;
 }
 
 /************************************* | **************************************

@@ -345,6 +345,17 @@ int ResolveScope::numBindings() const {
   return retval;
 }
 
+int ResolveScope::numTypesWithMethods() const {
+  std::set<const char*>::const_iterator it;
+  int retval = 0;
+
+  for (it = mMethodsOnTypeName.begin(); it != mMethodsOnTypeName.end(); it++) {
+    retval += 1;
+  }
+
+  return retval;
+}
+
 BlockStmt* ResolveScope::asBlockStmt() const {
   BlockStmt* retval = NULL;
 
@@ -419,9 +430,15 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
       mBindings[name] = newSym;
     }
 
+    this->extendMethodTracking(newFn);
+
   } else {
     mBindings[name] = newSym;
     retval          = true;
+
+    if (FnSymbol* newFn = toFnSymbol(newSym)) {
+      this->extendMethodTracking(newFn);
+    }
   }
 
   return retval;
@@ -435,6 +452,55 @@ bool ResolveScope::extend(VisibilityStmt* stmt) {
   }
 
   return true;
+}
+
+// If the new function is a method, track the type on which it is defined, if
+// we can.
+void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
+  if (newFn->_this != NULL && newFn->hasFlag(FLAG_PRIVATE) == false) {
+    ArgSymbol* _this = toArgSymbol(newFn->_this);
+    INT_ASSERT(_this);
+    // New function is a method.  The type on which this method is defined might
+    // be listed in a limitation clause on a use or import statement, so we
+    // should track the type on which it is defined, if we can and it isn't
+    // private
+    if (_this->typeInfo() != dtUnknown) {
+      // The type is already known, so just use that information
+      mMethodsOnTypeName.insert(astr(_this->typeInfo()->symbol->name));
+
+    } else {
+      // The type is not already known, so determine it
+      BlockStmt* typeExpr = _this->typeExpr;
+      INT_ASSERT(typeExpr); // Shouldn't be NULL at this point but just in case
+
+      if (SymExpr* sType = toSymExpr(typeExpr->body.tail)) {
+        // The typeExpr was just a simple name, so store that name
+        mMethodsOnTypeName.insert(astr(sType->symbol()->name));
+
+      } else if (UnresolvedSymExpr* uType =
+                 toUnresolvedSymExpr(typeExpr->body.tail)) {
+        // The typeExpr was just a simple name, so store that name
+        mMethodsOnTypeName.insert(astr(uType->unresolved));
+
+      } else if (CallExpr* cType = toCallExpr(typeExpr->body.tail)) {
+        // The typeExpr was slightly more complicated.  Our best guess right now
+        // is the name used in the call because it could be a generic
+        // instantiation.
+        if (!cType->isPrimitive()) {
+          // Throw up our hands if the call is actually a primitive.  Otherwise,
+          // save the name.
+          if (UnresolvedSymExpr* typeName =
+              toUnresolvedSymExpr(cType->baseExpr)) {
+            mMethodsOnTypeName.insert(astr(typeName->unresolved));
+          }
+        }
+      } else {
+        // Lydia NOTE 01/06/2021: might have just forgotten to test a scenario
+        // We will need to do something in that case, to avoid missing matches
+        INT_FATAL("Unanticipated structure for argument typeExpr");
+      }
+    }
+  }
 }
 
 bool ResolveScope::isSymbolAndMethod(Symbol* sym0, Symbol* sym1) {
@@ -627,7 +693,9 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
-Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
+Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
+                                      bool* wasTypeWithMethod,
+                                      std::string* typeName) const {
   Symbol* retval = NULL;
 
   const char* stmtType = isUse ? "use" : "import";
@@ -737,12 +805,19 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
       USR_FATAL(expr, "Cannot find symbol '%s'", name);
   }
 
+  Symbol* modPreType = NULL;
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
-    if (!isModuleSymbol(retval))
-      USR_FATAL(call, "cannot make nested %s from non-module '%s'",
-                stmtType, retval->name);
+    if (!isModuleSymbol(retval)) {
+      if (retval == NULL) {
+        USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                  stmtType, (*typeName).c_str());
+      } else {
+        USR_FATAL(call, "cannot make nested %s from non-module '%s'",
+                  stmtType, retval->name);
+      }
+    }
 
     Symbol* outer = retval;
     ModuleSymbol* outerMod = toModuleSymbol(outer);
@@ -757,6 +832,15 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
                   symbol->name);
       }
       retval = symbol;
+
+    } else if (scope->matchesTypeWithMethods(rhsName)) {
+      // We would need to resolve further to know the exact type it is defined
+      // on, so for now just clear the symbol being returned and update the
+      // return argument to track this
+      modPreType = retval;
+      retval = NULL;
+      *wasTypeWithMethod = true;
+      *typeName = rhsName;
 
     } else {
       if (scope->progress == IUP_NOT_STARTED) {
@@ -799,7 +883,11 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse) const {
     call = toCallExpr(call->parentExpr);
   }
 
-  return retval;
+  if (retval == NULL && modPreType != NULL) {
+    return modPreType;
+  } else {
+    return retval;
+  }
 }
 
 /************************************* | **************************************
@@ -1015,6 +1103,19 @@ Symbol* ResolveScope::getFieldLocally(const char* fieldName) const {
   }
 
   return retval;
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
+bool ResolveScope::matchesTypeWithMethods(const char* name) const {
+  std::set<const char*>::const_iterator it = mMethodsOnTypeName.find(astr(name));
+  // Returns true if we found a method defined on this name in scope, false
+  // if no such method was found
+  return it != mMethodsOnTypeName.end();
 }
 
 /************************************* | **************************************

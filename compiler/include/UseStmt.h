@@ -59,6 +59,8 @@ public:
   UseStmt*        applyOuterUse(const UseStmt* outer);
   ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
+  bool            typeWasNamed(Type* t) const;
+
   bool            skipSymbolSearch(const char* name)                     const;
 
   bool            providesNewSymbols(const UseStmt* other)               const;

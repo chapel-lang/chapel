@@ -152,15 +152,27 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
   if (checkValid(src) == true) {
+    bool wasTypeWithMethod = false;
+    std::string typeName;
     if (isSymExpr(src)) {
       // We should at least be in the process of resolving the use and import
       // statements for this scope if src is a SymExpr at this point.
       INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, false)) {
+    } else if (Symbol* sym = scope->lookupForImport(src, false,
+                                                    &wasTypeWithMethod,
+                                                    &typeName)) {
       SET_LINENO(this);
 
       if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+        if (wasTypeWithMethod) {
+          // lookupForImport returned the last resolved symbol, but there was
+          // another name at the end of the expression corresponding to a
+          // type with methods defined in that scope.  This type name should be
+          // preserved by adding it to the end of the list of symbols for
+          // unqualified access.
+          this->unqualified.push_back(astr(typeName.c_str()));
+        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
         updateEnclosingBlock(scope, sym);
@@ -220,6 +232,7 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
           INT_FATAL(this, "'import' of non-module symbol");
         }
       }
+
     } else {
       if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
         USR_FATAL(this, "Cannot find module or symbol '%s'",
@@ -374,12 +387,15 @@ void ImportStmt::validateUnqualified() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
-        SymExpr* srcExpr = toSymExpr(src);
-        INT_ASSERT(srcExpr); // should have been resolved by this point
-        USR_FATAL_CONT(this,
-                       "Bad identifier, no known '%s' defined in '%s'",
-                       name,
-                       srcExpr->symbol()->name);
+        // Could also have been a type with methods defined in that scope
+        if (!scope->matchesTypeWithMethods(name)) {
+          SymExpr* srcExpr = toSymExpr(src);
+          INT_ASSERT(srcExpr); // should have been resolved by this point
+          USR_FATAL_CONT(this,
+                         "Bad identifier, no known '%s' defined in '%s'",
+                         name,
+                         srcExpr->symbol()->name);
+        }
 
       } else {
         for_vector(Symbol, sym, symbols) {
@@ -391,6 +407,48 @@ void ImportStmt::validateUnqualified() {
         }
       }
     }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the provided type was named in some form in the import         *
+* statement.  Used for determining if we should traverse the import statement *
+* to find its methods.                                                        *
+*                                                                             *
+************************************** | *************************************/
+bool ImportStmt::typeWasNamed(Type* t) const {
+  // We don't define any symbols for unqualified access, so the type was not
+  // listed
+  if (!providesUnqualifiedAccess()) {
+    return false;
+  } else {
+    // Otherwise, look through the list of unqualified symbol names to see if
+    // this one was listed
+    for_vector(const char, toCheck, unqualified) {
+      if (toCheck == t->symbol->name)
+        return true;
+    }
+
+    // Including if it was renamed
+    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
+        it != renamed.end();
+        ++it) {
+      if (astr(t->symbol->name) == astr(it->first)) {
+        return true;
+      }
+    }
+
+    // If a parent type was named, we want to traverse this import statement
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, pt, at->dispatchParents) {
+        if (typeWasNamed(pt) == true) {
+          return true;
+        }
+      }
+    }
+
+    return false;
   }
 }
 
