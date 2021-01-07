@@ -254,6 +254,21 @@ std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 // map from actual aggregation candidates to their info to avoid duplicates
 std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
 
+void updateAggregationCandidates() {
+  std::map<CallExpr *, AggregationCandidateInfo *>::iterator it;
+  for (it = aggCandidateCache.begin(); it != aggCandidateCache.end(); it++) {
+    AggregationCandidateInfo *info = it->second;
+    INT_ASSERT(info->candidate == it->first);
+
+    if (info->srcAggCall != NULL) {
+      INT_ASSERT(info->srcAggregator);
+      INT_ASSERT(info->srcAggCall->inTree());
+
+      info->srcAggCall->remove();
+    }
+  }
+}
+
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);

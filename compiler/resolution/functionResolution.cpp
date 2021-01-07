@@ -52,6 +52,7 @@
 #include "passes.h"
 #include "postFold.h"
 #include "preFold.h"
+#include "preNormalizeOptimizations.h"
 #include "ResolutionCandidate.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -9034,6 +9035,8 @@ void resolve() {
     stmt->useListClear();
     stmt->modRefsClear();
   }
+
+  updateAggregationCandidates();
 
   resolved = true;
 }
