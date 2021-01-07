@@ -1982,8 +1982,6 @@ void unreserve_entry(struct rdcache_s* cache,
                    chpl_cache_taskPrvData_t* task_local,
                    struct cache_entry_s* entry) {
   assert(entry->entryReservedByTask == task_local);
-  assert(entry->queue == QUEUE_AIN || entry->queue == QUEUE_AM ||
-         entry->queue == QUEUE_AOUT);
   entry->entryReservedByTask = NULL;
 }
 
@@ -2420,7 +2418,7 @@ int cache_put_in_page(struct rdcache_s* cache,
   raddr_t ra_page;
   int entry_after_acquire;
   cache_seqn_t sn;
-  int hit = 0;
+  int hit;
 
   TRACE_PRINT(("%d: task %d in put_in_page %s:%d get %d bytes from "
                "%d:%p to %p\n",
@@ -2524,7 +2522,7 @@ int cache_put(struct rdcache_s* cache,
   raddr_t ra_page_end;
   raddr_t ra_page;
   raddr_t requested_start, requested_end, requested_size;
-  int hit = 0;
+  int hit;
   int all_hits = 1;
 
   DEBUG_PRINT(("cache_put %i:%p from %p len %i\n",
@@ -3156,7 +3154,7 @@ int cache_get(struct rdcache_s* cache,
 #ifdef TIME
   struct timespec start_get1, start_get2, wait1, wait2;
 #endif
-  int hit = 0;
+  int hit;
   int all_hits = 1;
 
   INFO_PRINT(("%i cache_get addr %p from %i:%p len %i ra_len %i\n",
@@ -3166,7 +3164,7 @@ int cache_get(struct rdcache_s* cache,
 
   // And don't do anything if it's a zero-length
   if( size == 0 ) {
-    return all_hits;
+    return 1;
   }
 
   // first_page = raddr of start of first needed page
@@ -3725,10 +3723,12 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                        addr, node, (raddr_t)raddr, size,
                        commID, ln, fn);
 
-  if (all_hits)
-    chpl_comm_diags_incr(cache_put_hits);
-  else
-    chpl_comm_diags_incr(cache_put_misses);
+  if (size != 0) {
+    if (all_hits)
+      chpl_comm_diags_incr(cache_put_hits);
+    else
+      chpl_comm_diags_incr(cache_put_misses);
+  }
 
   return;
 }
@@ -3769,10 +3769,12 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                        addr, node, (raddr_t)raddr, size,
                        0, commID, ln, fn);
 
-  if (all_hits)
-    chpl_comm_diags_incr(cache_get_hits);
-  else
-    chpl_comm_diags_incr(cache_get_misses);
+  if (size != 0) {
+    if (all_hits)
+      chpl_comm_diags_incr(cache_get_hits);
+    else
+      chpl_comm_diags_incr(cache_get_misses);
+  }
 
   return;
 }
@@ -3793,7 +3795,7 @@ void chpl_cache_comm_prefetch(c_nodeid_t node, void* raddr,
             /* sequential_readahead_length */ 0,
             CHPL_COMM_UNKNOWN_ID, ln, fn);
 
-  // TODO: record prefetches somewhere
+  // TODO: record prefetches somewhere in diagnostic counters
 }
 
 struct cache_strd_callback_ctx {
