@@ -1238,8 +1238,9 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
-      && (prov_name == NULL || isInProvName("gni", prov_name))) {
+  if ((strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+       && (prov_name == NULL || isInProvName("gni", prov_name)))
+      || chpl_env_rt_get_bool("COMM_OFI_HINTS_CAPS_ATOMIC", false)) {
     hints->caps |= FI_ATOMIC;
   }
   hints->tx_attr->op_flags = FI_COMPLETION;
