@@ -1,4 +1,4 @@
-bug: I/O on class hierarchies seems broken when writeThis is overridden
+bug: I/O on class hierarchies seems broken
 
 In this test, I would expect:
 
