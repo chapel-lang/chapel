@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
 #include "astutil.h"
 #include "build.h"
 #include "ForallStmt.h"
