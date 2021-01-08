@@ -366,8 +366,10 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
         std::cout << "Reverted a local access with parent\n";
       }
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
-      nprint_view(aggCandidate->candidate);
-      aggCandidate->logicalChildAnalyzed(call, confirmed);
+      if (aggCandidate != NULL) {
+        nprint_view(aggCandidate->candidate);
+        aggCandidate->logicalChildAnalyzed(call, confirmed);
+      }
     }
   }
   return ret;
