@@ -1,5 +1,7 @@
 bug: I/O on class hierarchies seems broken
 
+#7118
+
 In this test, I would expect the 'child' class to inherit the 'parent'
 class's writeThis() routine, as with any other inherited method.  Or,
 if we decided that compiler-generated writeThis() routines should
