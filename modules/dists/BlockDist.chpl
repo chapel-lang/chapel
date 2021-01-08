@@ -1724,7 +1724,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // The result of this scan, which will be Block-distributed as well
   type resType = op.generate().type;
-  var res: [dom] resType;
+  var res: [dom] resType = noinit;
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
@@ -1800,6 +1800,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       delete myop;
     }
   }
+  res.dsiElementInitializationComplete();
 
   delete op;
   return res;
