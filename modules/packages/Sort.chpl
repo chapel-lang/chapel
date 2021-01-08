@@ -1222,19 +1222,18 @@ module ShellSort {
     var v,tmp:Data.eltType;
     const incs = (701, 301, 132, 57, 23, 10, 4, 1):(8*idxType);
     for h in incs {
-      // guard against cases in which either the 'incs' value wraps around
-      // for small-bit idxTypes
-      if h > 0 {
-        hs = h + start;
-        for is in hs..end {
-          v = Data[is];
-          js = is;
-          while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
-            Data[js] = Data[js - h];
-            js -= h;
-          }
-          Data[js] = v;
+      // skip past cases in which the 'incs' value is too big for idxType
+      if h < 0 || h:uint > max(idxType):uint then
+        continue;
+      hs = h + start;
+      for is in hs..end {
+        v = Data[is];
+        js = is;
+        while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
+          Data[js] = Data[js - h];
+          js -= h;
         }
+        Data[js] = v;
       }
     }
   }
