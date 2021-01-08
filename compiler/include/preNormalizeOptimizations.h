@@ -24,6 +24,42 @@
 #include "CallExpr.h"
 #include "symbol.h"
 
+enum LocalityInfo { 
+  UNKNOWN, // analysis cannot understand the idiom
+  PENDING, // we will make a decision later
+  LOCAL    // we know this is local
+};
+
+class AggregationCandidateInfo {
+  public:
+
+    CallExpr *candidate;
+    ForallStmt *forall;
+
+    LocalityInfo lhsLocalityInfo;
+    LocalityInfo rhsLocalityInfo;
+
+    CallExpr *lhsLogicalChild;
+    CallExpr *rhsLogicalChild;
+
+    Symbol *srcAggregator;   // remote rhs
+    Symbol *dstAggregator;   // remote lhs
+
+    CallExpr *srcAggCall;
+    CallExpr *dstAggCall;
+
+    AggregationCandidateInfo();
+    AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
+
+    void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
+    void registerLogicalChild(CallExpr *logicalChild, bool lhs, LocalityInfo locInfo);
+    void tryAddingAggregator();
+
+    void update();
+};
+
+extern std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
+
 // interface for normalize
 void doPreNormalizeArrayOptimizations();
 Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);

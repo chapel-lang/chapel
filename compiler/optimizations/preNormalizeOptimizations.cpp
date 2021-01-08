@@ -47,40 +47,7 @@ static int curLogDepth = 0;
 static void LOG(int depth, const char *msg, BaseAST *node);
 static void LOGLN(BaseAST *node);
 
-enum LocalityInfo { 
-  UNKNOWN, // analysis cannot understand the idiom
-  PENDING, // we will make a decision later
-  LOCAL    // we know this is local
-};
 
-
-class AggregationCandidateInfo {
-  public:
-
-    CallExpr *candidate;
-    ForallStmt *forall;
-
-    LocalityInfo lhsLocalityInfo;
-    LocalityInfo rhsLocalityInfo;
-
-    CallExpr *lhsLogicalChild;
-    CallExpr *rhsLogicalChild;
-
-    Symbol *srcAggregator;   // remote rhs
-    Symbol *dstAggregator;   // remote lhs
-
-    CallExpr *srcAggCall;
-    CallExpr *dstAggCall;
-
-    AggregationCandidateInfo();
-    AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
-
-    void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
-    void registerLogicalChild(CallExpr *logicalChild, bool lhs, LocalityInfo locInfo);
-    void tryAddingAggregator();
-
-    void update();
-};
 
 AggregationCandidateInfo::AggregationCandidateInfo():
   candidate(NULL),
@@ -125,6 +92,8 @@ void AggregationCandidateInfo::tryAddingAggregator() {
             NULL, // type expr for shadow var
             new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
       //DefExpr *aggDef = new DefExpr(aggregator);
+      //
+      aggregator->addFlag(FLAG_COMPILER_GENERATED); // disappears?
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
       std::cout << "potential source aggregation\n";
 
@@ -197,8 +166,40 @@ void AggregationCandidateInfo::update() {
               //this->srcAggregator,
               //candidate->get(1)->copy(),
               //candidate->get(2)->copy());
+              //
 
-          this->candidate->insertAfter(this->srcAggCall);
+          //CallExpr *aggPrim = new CallExpr(PRIM_MAYBE_AGGREGATE_ASSIGN,
+                                           //this->candidate->get(1)->remove(),
+                                           //this->candidate->get(1)->remove());
+
+
+          Symbol *aggMarker = newTemp("aggMarker", dtBool);
+          this->candidate->insertBefore(new DefExpr(aggMarker));
+
+          BlockStmt *thenBlock = new BlockStmt();
+          BlockStmt *elseBlock = new BlockStmt();
+
+          this->candidate->insertAfter(new CondStmt(new SymExpr(aggMarker),
+                                                    thenBlock,
+                                                    elseBlock));
+          thenBlock->insertAtTail(this->candidate->remove());
+          elseBlock->insertAtTail(this->srcAggCall);
+
+          //this->candidate->insertAfter(this->srcAggCall);
+          //this->candidate->replace(aggPrim);
+
+          //aggCandidateCache[aggPrim] = this;
+          //aggCandidateCache.erase(this->candidate);
+
+          //this->candidate = aggPrim;
+          //this->candidate->replace(new CallExpr(PRIM_MAYBE_AGGREGATE_ASSIGN,
+                                                //this->candidate->get(1)->remove(),
+                                                //this->candidate->get(1)->remove()));
+
+          //aggCandidateCache
+
+          //this->candidate->primitive = PRIM_MAYBE_AGGREGATE_ASSIGN;
+          //this->candidate->baseExpr = NULL;
           normalize(this->srcAggCall);
           //this->candidate->insertBefore(this->srcAggCall);
           //resolveCall(this->srcAggCall);
@@ -264,7 +265,7 @@ void updateAggregationCandidates() {
       INT_ASSERT(info->srcAggregator);
       INT_ASSERT(info->srcAggCall->inTree());
 
-      info->srcAggCall->remove();
+      //info->srcAggCall->remove();
     }
   }
 }

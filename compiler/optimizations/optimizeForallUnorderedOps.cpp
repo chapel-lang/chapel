@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -158,9 +159,28 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
           last = last->prev;
       }
     }
+    else if (CallExpr *prevCall = toCallExpr(call->prev)) {
+      if (AggregationCandidateInfo *info = aggCandidateCache[prevCall]) {
+        if (info->srcAggCall == call) {
+          std::cout << "Skipping over the potential aggregation call\n";
+          nprint_view(call);
+          last = last->prev;
+          std::cout << "Now the last statement is\n";
+          nprint_view(last);
+        }
+      }
+    }
   }
 
   last = skipIgnoredStmts(last);
+
+  if (CallExpr *call = toCallExpr(last)) {
+    AggregationCandidateInfo *info = aggCandidateCache[call];
+    if (info != NULL) {
+      std::cout << "Found an aggregation candidate last statement\n";
+      nprint_view(call);
+    }
+  }
   stmts.push_back(last);
 }
 
@@ -197,7 +217,7 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isPrimitive(PRIM_ASSIGN)) {
+    if (call->isPrimitive(PRIM_ASSIGN) || call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Expr* rhs = call->get(2);
       if (lhs->getValType() == rhs->getValType()) // same type
@@ -234,6 +254,11 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
     } else if (shadow->isTaskPrivate()) {
       // task private variable could include arbitrary init expr
       // effectively computing a task id
+      if (strcmp(shadow->name, "chpl_src_auto_agg") == 0) {
+        std::cout << "Ignoring the shadow variable\n";
+        nprint_view(shadow);
+        continue;
+      }
       return false;
     } else if (shadow->intent == TFI_IN || shadow->intent == TFI_CONST_IN) {
       // copy-init or = for in intent could compute a task ID
@@ -876,6 +901,48 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   return false;
 }
 
+static CondStmt *getAggregationCondStmt(Expr *stmt) {
+  if (stmt->id == 3069977) {
+    gdbShouldBreakHere();
+  }
+
+  // if this was an aggregatable assignment, it must be inside a then block of
+  // an:
+  //
+  // if aggMarker {
+  //    (call = ....);   <-this must be `stmt
+  // }
+  // else {
+  //    (call copy aggregator ....)
+  // }
+  //
+  // In that scenario, the immediate parent of `stmt` is the then block, and its
+  // parent is the actual conditional
+  if (CondStmt *aggCond = toCondStmt(stmt->parentExpr->parentExpr)) {
+    if (SymExpr *condExpr = toSymExpr(aggCond->condExpr)) {
+      if (strcmp(condExpr->symbol()->name, "aggMarker") == 0) {
+        return aggCond;
+      }
+    }
+  }
+  return NULL;
+}
+
+static void transformConditionalAggregation(CondStmt *cond) {
+  INT_ASSERT(cond->elseStmt->length() == 1);
+
+  // move the aggregation call before the conditional
+  cond->insertBefore(cond->elseStmt->body.first()->remove());
+  
+  // remove the defpoint of the aggregation marker
+  SymExpr *condExpr = toSymExpr(cond->condExpr);
+  INT_ASSERT(condExpr);
+  condExpr->symbol()->defPoint->remove();
+
+  // remove the conditional
+  cond->remove();
+}
+
 
 static void transformAssignStmt(Expr* stmt) {
   SET_LINENO(stmt);
@@ -968,6 +1035,7 @@ void optimizeForallUnorderedOps() {
   }
 
   std::vector<Expr*> atomicsToOptimize;
+  std::vector<CondStmt*> aggCondsToTransform;
   std::vector<Expr*> assignsToOptimize;
 
   // Gather expressions to optimize. This is done separately from
@@ -987,9 +1055,14 @@ void optimizeForallUnorderedOps() {
             atomicsToOptimize.push_back(lastStmt);
           }
           else if (isOptimizableAssignStmt(lastStmt, loop)) {
-            std::cout << "Optimizable assignment\n";
+            std::cout << "Optimizable\n";
             nprint_view(lastStmt);
-            assignsToOptimize.push_back(lastStmt);
+            if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
+              aggCondsToTransform.push_back(aggCond);
+            }
+            else {
+              assignsToOptimize.push_back(lastStmt);
+            }
           }
         }
       }
@@ -999,6 +1072,9 @@ void optimizeForallUnorderedOps() {
   // Now apply the transformation
   for_vector(Expr, atomic, atomicsToOptimize) {
     transformAtomicStmt(atomic);
+  }
+  for_vector(CondStmt, cond, aggCondsToTransform) {
+    transformConditionalAggregation(cond);
   }
   for_vector(Expr, assign, assignsToOptimize) {
     transformAssignStmt(assign);
