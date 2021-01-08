@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -497,11 +497,6 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
         if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
           bool suppress = false;
-
-          // Initializer might be inlined
-          if (err_fn->hasFlag(FLAG_INLINE) == true) {
-            suppress = (strcmp(err_fn->name, "init") != 0) ? true : false;
-          }
 
           // Suppress internal function names
           if (!developer && strncmp(err_fn->name, "chpl_", 5) == 0) {

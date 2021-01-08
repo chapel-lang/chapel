@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,10 @@
 #include "chpl-atomics.h"
 #include "chpl-comm.h"
 #include "error.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 ////////////////////
 //
@@ -177,5 +181,9 @@ int chpl_comm_diags_is_enabled(void) {
       (void) atomic_fetch_add_uint_least64_t(ctrAddr, 1);               \
     }                                                                   \
   } while(0)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

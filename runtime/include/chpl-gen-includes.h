@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#ifndef _CHPL_GEN_INCLUDES_H_
+#define _CHPL_GEN_INCLUDES_H_
+
 // chpl-gen-includes.h
 //
 // Inline functions used in code generation.
@@ -30,6 +33,10 @@
 #include "chpl-locale-model.h"
 #include "chpl-tasks.h"
 #include "chpltypes.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Call a function in the compiler-produced function table, passing it
@@ -65,3 +72,9 @@ chpl_localeID_t chpl_gen_getLocaleID(void)
   chpl_getLocaleID(&localeID, 0, 0);
   return localeID;
 }
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

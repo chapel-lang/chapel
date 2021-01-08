@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -9162,12 +9162,13 @@ static void resolveExports() {
       continue;
     }
 
-    if (fn->hasFlag(FLAG_EXPORT) == true) {
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
       SET_LINENO(fn);
 
       resolveSignatureAndFunction(fn);
 
-      exps.push_back(fn);
+      if (fn->hasFlag(FLAG_EXPORT))
+        exps.push_back(fn);
     }
   }
 

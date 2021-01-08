@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3470,7 +3470,7 @@ void codegenOpAssign(GenRet a, GenRet b, const char* op,
     info->cStatements.push_back(stmt);
   } else {
     // LLVM version of a += b is just a = a + b.
-    codegenAssign(aLocal, codegenOp(codegenValue(ap), bv));
+    codegenAssign(aLocal, codegenOp(codegenValue(aLocal), bv));
   }
 
   if( aIsRemote ) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -27,6 +27,10 @@
 
 #if defined(__APPLE__)
 #include <malloc/malloc.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 static inline void* chpl_calloc(size_t n, size_t size) {
@@ -60,5 +64,9 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
 }
 
 #define CHPL_USING_CSTDLIB_MALLOC 1
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

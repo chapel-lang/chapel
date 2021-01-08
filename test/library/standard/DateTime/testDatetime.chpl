@@ -188,6 +188,15 @@ proc test_more_strftime() {
   assert(t.strftime("%m %d %y %S %M %H %j") == "12 31 04 33 22 06 366");
 }
 
+proc test_strftime() {
+  var t = new datetime(2004, 12, 31, 6, 22, 33, 61234);
+  assert(t.strftime("%m %d %y %S %M %H %f %j") == "12 31 04 33 22 06 061234 366");
+  assert(t.strftime("%m %d %y %S %M %H %0f %j") == "12 31 04 33 22 06 061234 366");
+  assert(t.strftime("%m %d %y %S %M %H %%f %j") == "12 31 04 33 22 06 %f 366");
+  assert(t.strftime("%m %d %y %S %M %H %-f %j") == "12 31 04 33 22 06 61234 366");
+  assert(t.strftime("%m %d %y %S %M %H %_f %j") == "12 31 04 33 22 06  61234 366");
+}
+
 proc test_extract() {
   var dt = new datetime(2002, 3, 4, 18, 45, 3, 1234);
   assert(dt.getdate() == new date(2002, 3, 4));
@@ -260,6 +269,7 @@ test_more_compare();
 //test_utcfromtimestamp();
 //test_utcnow();
 test_more_timetuple();
+test_strftime();
 test_more_strftime();
 test_extract();
 test_combine();

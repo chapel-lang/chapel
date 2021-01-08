@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+#ifndef _CHPLGLOB_H_
+#define _CHPLGLOB_H_
+
 //
 // Both Glob.h and wordexp.h are part of POSIX (and can be found on
 // mac and Linux)
@@ -26,6 +29,10 @@
 #include <wordexp.h>
 // from qio runtime
 #include "sys.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline
 int chpl_glob(const char* pattern, int flags, glob_t* ret_glob) {
@@ -52,3 +59,8 @@ const char* chpl_wordexp_index(const wordexp_t wexp, size_t i) {
   return wexp.we_wordv[i];
 }
 
+#ifdef __cplusplus
+}
+#endif
+
+#endif

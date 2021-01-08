@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -119,6 +119,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref 
 symbolFlag( FLAG_COPY_INIT, npr, "copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
+symbolFlag( FLAG_DOCS_ONLY, ypr, "docs only", "this symbol is for documentation purposes only - ignore this symbol when compiling" )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
 symbolFlag( FLAG_DONT_DISABLE_REMOTE_VALUE_FORWARDING , ypr, "dont disable remote value forwarding" , ncm )
 symbolFlag( FLAG_DOWN_END_COUNT_FN , ypr, "down end count fn" , ncm )
@@ -199,6 +200,10 @@ symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
+
+
+symbolFlag( FLAG_ALWAYS_RESOLVE , ypr, "always resolve function" , "keep this function even if it is not called so it can be called during codegen e.g." )
+
 // In resolution, functions marked as last-resort are considered only if
 // no functions without that flag are found. This usually is used to create
 // a pattern enabling user-supplied replacement of default behavior.
@@ -257,6 +262,9 @@ symbolFlag( FLAG_METHOD_PRIMARY , npr, "primary method" , "function that is a me
 symbolFlag( FLAG_MODIFIES_CONST_FIELDS , npr, "modifies const fields" , "... of 'this' argument" )
 symbolFlag( FLAG_MODULE_FROM_COMMAND_LINE_FILE, npr, "module from command line file", "This is a module that came from a file named on the compiler command line")
 symbolFlag( FLAG_MODULE_INIT , npr, "module init" , "a module init function" )
+
+symbolFlag( FLAG_MODULE_INCLUDED_BY_DEFAULT , ypr, "module included by default" , "module is included by default" )
+
 // This flag marks the result of an autoCopy as necessary.
 // Necessary autoCopies are not removed by the removeUnnecessaryAutoCopyCalls optimization.
 symbolFlag( FLAG_NECESSARY_AUTO_COPY, npr, "necessary auto copy", "a variable containing a necessary autoCopy" )

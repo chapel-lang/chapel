@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1250,13 +1250,13 @@ where useBulkTransferDist {
   return true;
 }
 
-proc CyclicArr.dsiTargetLocales() {
+proc CyclicArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocs;
 }
-proc CyclicDom.dsiTargetLocales() {
+proc CyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocs;
 }
-proc Cyclic.dsiTargetLocales() {
+proc Cyclic.dsiTargetLocales() const ref {
   return targetLocs;
 }
 

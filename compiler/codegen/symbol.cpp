@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2367,6 +2367,7 @@ void FnSymbol::codegenDef() {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
+      func->setSubprogram(dbgScope);
     }
 
     // ABI support in this function is inspired by clang's

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,9 @@
 
 #include "jemalloc/jemalloc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Default configuration of jemalloc names the routines
 // like je_malloc, je_free, etc; but the Chapel configuration
@@ -103,5 +106,9 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
   }
   return CHPL_JE_NALLOCX(minSize, MALLOCX_NO_FLAGS);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

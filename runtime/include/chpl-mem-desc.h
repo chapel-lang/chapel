@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -22,6 +22,10 @@
 #define _chpl_mem_desc_H_
 
 #include "chpltypes.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // When defining a new allocation type (for new instances of
@@ -117,5 +121,9 @@ typedef int16_t chpl_mem_descInt_t;
 
 const char* chpl_mem_descString(chpl_mem_descInt_t mdi);
 chpl_bool chpl_mem_descTrack(chpl_mem_descInt_t mdi);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

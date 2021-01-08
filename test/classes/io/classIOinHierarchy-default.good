@@ -1,0 +1,9 @@
+c1 (static type: owned C, dynamic type: C) is: {x = 0}
+c2 (static type: owned C, dynamic type: D) is: {x = 0, y = 0.0}
+c3 (static type: owned C, dynamic type: E) is: {x = 0, y = 0.0, z = false}
+c4 (static type: owned D, dynamic type: D) is: {x = 0, y = 0.0}
+c5 (static type: owned D, dynamic type: E) is: {x = 0, y = 0.0, z = false}
+c6 (static type: owned E, dynamic type: E) is: {x = 0, y = 0.0, z = false}
+c7 (static type: owned C, dynamic type: C) is: {x = 0}
+c8 (static type: owned D, dynamic type: D) is: {x = 0, y = 0.0}
+c9 (static type: owned E, dynamic type: E) is: {x = 0, y = 0.0, z = false}

@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -22,7 +22,7 @@ develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
 
-docs: chpldoc
+docs: chpldoc man-chpl man-chpldoc
 	cd doc && $(MAKE) docs
 
 checkdocs: FORCE
@@ -31,10 +31,14 @@ checkdocs: FORCE
 man: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE)
 
-man-chpldoc: FORCE
+man-chpldoc: third-party-chpldoc-venv FORCE
 	cd man && $(MAKE) chpldoc
 
-man-chapel: FORCE
+man-chpl: third-party-chpldoc-venv FORCE
+	cd man && $(MAKE)
+
+# this target generates all of the API documentation into a single man page
+man-chapel: third-party-chpldoc-venv FORCE
 	cd doc && $(MAKE) man-chapel
 	mkdir -p man/man3
 	cp build/doc/man/chapel.3 man/man3/chapel.3

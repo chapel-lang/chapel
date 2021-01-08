@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -26,6 +26,10 @@
 
 #include <limits.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define QIO_NATIVE 1
 #define QIO_BIG 2
@@ -305,5 +309,9 @@ void qio_style_free(qio_style_t* style)
 {
   qio_free(style);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,8 +22,14 @@
 #define _chplcast_h_
 
 #include "chpltypes.h"
+
 #include <stdint.h>
 
+#include "chpl-string.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* invalid is a flag indicating valid or not
    invalidChar is the character that was invalid */
@@ -71,5 +77,8 @@ _complex128 c_string_to_complex128(c_string str, chpl_bool* err, int lineno, int
 c_string integral_to_c_string(int64_t x, uint32_t size, chpl_bool isSigned, chpl_bool* err);
 c_string real_to_c_string(_real64 x, chpl_bool isImag);
 
-#include "chpl-string.h"
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _chplcast_h_

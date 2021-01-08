@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +23,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef void (*chpl_free_func)(void*);
 
@@ -49,5 +53,9 @@ typedef struct {
 } chpl_opaque_array;
 
 void cleanupOpaqueArray(chpl_opaque_array * arr);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

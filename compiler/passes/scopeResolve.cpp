@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2795,13 +2795,8 @@ static bool readNamedArgument(CallExpr* call, const char* name,
 
 static bool symbolInBuiltinModule(Symbol* sym) {
   ModuleSymbol* mod = sym->getModule();
-  if (mod->modTag == MOD_STANDARD &&
-      (!strcmp(mod->name, "Builtins") ||
-       !strcmp(mod->name, "Types") ||
-       !strcmp(mod->name, "Math"))) {
-    return true;
-  }
-  return false;
+  return (mod->modTag == MOD_STANDARD &&
+          mod->hasFlag(FLAG_MODULE_INCLUDED_BY_DEFAULT));
 }
 
 

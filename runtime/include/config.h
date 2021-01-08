@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +23,10 @@
 
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void printHelpMessage(void);
 void initConfigVarTable(void);
 void printConfigVarTable(void);
@@ -30,7 +34,7 @@ void initSetValue(const char* varName, const char* value,
                   const char* moduleName, int32_t lineno, int32_t filename);
 const char* lookupSetValue(const char* varName, const char* moduleName);
 void installConfigVar(const char* varName, const char* value, 
-                      const char* moduleName, int private);
+                      const char* moduleName, int isprivate);
 
 int handlePossibleConfigVar(int* argc, char* argv[], int argnum, 
                             int32_t lineno, int32_t filename);
@@ -43,7 +47,8 @@ c_string chpl_config_get_value(c_string v, c_string m);
 extern const int mainHasArgs;
 extern chpl_main_argument chpl_gen_main_arg;
 
-
-
+#ifdef __cplusplus
+}
 #endif
 
+#endif

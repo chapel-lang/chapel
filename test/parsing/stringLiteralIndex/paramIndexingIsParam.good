@@ -1,0 +1,2 @@
+paramIndexingIsParam.chpl:17: warning: In compile-time string foo()
+paramIndexingIsParam.chpl:18: warning: In compile-time int bar()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -33,6 +33,10 @@
 
 // Don't warn about chpl_comm_get e.g. in this file.
 #include "chpl-comm-no-warning-macros.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Multi-locale macros used for compiler code generation
@@ -107,10 +111,10 @@ void chpl_gen_comm_get_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
+    chpl_cache_comm_get_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
-    chpl_comm_get_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
+    chpl_comm_get_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
   }
 }
 
@@ -122,10 +126,10 @@ void chpl_gen_comm_put_strd(void *addr, void *dststr, c_nodeid_t node, void *rad
   if( 0 ) {
 #ifdef HAS_CHPL_CACHE_FNS
   } else if( chpl_cache_enabled() ) {
-    chpl_cache_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
+    chpl_cache_comm_put_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
 #endif
   } else {
-    chpl_comm_put_strd(addr, dststr, node, raddr, srcstr, count, strlevels, elemSize, commID, ln, fn);
+    chpl_comm_put_strd(addr, (size_t*)dststr, node, raddr, (size_t*)srcstr, (size_t*)count, strlevels, elemSize, commID, ln, fn);
   }
 }
 
@@ -210,6 +214,10 @@ void chpl_check_nil(void* ptr, int32_t lineno, int32_t filename)
   if (ptr == nil)
     chpl_error("attempt to dereference nil", lineno, filename);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 // Include LLVM support functions for --llvm-wide-opt
 #include "chpl-comm-compiler-llvm-support.h"
