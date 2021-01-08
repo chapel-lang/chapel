@@ -5225,7 +5225,7 @@ proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toUnsigned(x:?t) where isUintType(t)
+proc _toUnsigned(x:uint(?w))
 {
   return (x, true);
 }
