@@ -1,0 +1,2 @@
+{p = 0, c = 0}
+halt-in-parent-class-io.chpl:3: error: halt reached - halt
