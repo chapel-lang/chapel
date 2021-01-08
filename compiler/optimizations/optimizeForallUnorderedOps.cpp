@@ -929,10 +929,13 @@ static CondStmt *getAggregationCondStmt(Expr *stmt) {
 }
 
 static void transformConditionalAggregation(CondStmt *cond) {
-  INT_ASSERT(cond->elseStmt->length() == 1);
+  //INT_ASSERT(cond->elseStmt->length() == 1);
 
-  // move the aggregation call before the conditional
-  cond->insertBefore(cond->elseStmt->body.first()->remove());
+  // move the aggregation call before the conditional (at this point in
+  // compilation it must be inlined)
+  for_alist(expr, cond->elseStmt->body) {
+    cond->insertBefore(expr->remove());
+  }
   
   // remove the defpoint of the aggregation marker
   SymExpr *condExpr = toSymExpr(cond->condExpr);
