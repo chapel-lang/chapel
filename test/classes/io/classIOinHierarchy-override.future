@@ -1,5 +1,7 @@
 bug: I/O on class hierarchies seems broken
 
+#7118
+
 In this test, I would expect:
 
 * objects of dynamic type C to always use the compiler-generated writeThis()
