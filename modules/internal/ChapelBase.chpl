@@ -2204,12 +2204,6 @@ module ChapelBase {
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
 
-  // Former support for --legacy-classes, to be removed after 1.21.
-  proc chpl_legacyClasses param {
-    compilerWarning("'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false");
-    return false;
-  }
-
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then
       return false;
