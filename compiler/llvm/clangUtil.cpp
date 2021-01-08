@@ -3553,6 +3553,13 @@ void makeBinaryLLVM(void) {
                             "tmp/chpl__gpu_ptx.s";
 
       mysystem(ptx_cmd.c_str(), "PTX to  object file");
+
+      std::string fatbinary_cmd = "/usr/local/cuda/bin/fatbinary -64 "
+                                  "--create tmp/chpl_gpu.fatbin "
+                                  "--image=profile=sm_61,file=tmp/chpl_gpu_ptx.o "
+                                  "--image=profile=compute_61,file=tmp/chpl__gpu_ptx.s";
+      
+      mysystem(fatbinary_cmd.c_str(), "object file to fatbinary");
  
     }
   }
