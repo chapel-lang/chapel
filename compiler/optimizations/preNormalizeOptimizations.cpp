@@ -76,7 +76,14 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   dstAggregator(NULL),
   aggCall(NULL) { }
 
-
+static Expr *getBaseExprOfLogicalChild(CallExpr *call) {
+  if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    return call->get(1);
+  }
+  else {
+    return call->baseExpr;
+  }
+}
 // currently we only support one aggregator at normalize time, however, we
 // should relax that limitation a bit. Normalize should be able to add both
 // aggregators for
@@ -88,14 +95,20 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
 // Because: b[i] is a local access candidate, and both sides of = will be
 // visited as such. Currently, that's not handled properly
 void AggregationCandidateInfo::tryAddingAggregator() {
-  if (srcAggregator != NULL || dstAggregator != NULL) {
+  if (srcAggregator != NULL && dstAggregator != NULL) {
     return; // we have already enough
   }
 
+  //if (lhsLogicalChild == NULL || rhsLogicalChild == NULL) {
+    //return; // we need to have both children to be able to determine what type
+            //// of aggregator to use
+  //}
+
   // we have a lhs that waits analysis, and a rhs that we can't know about
-  if (lhsLocalityInfo == PENDING && (rhsLogicalChild != NULL && 
-                                     rhsLocalityInfo == UNKNOWN)) {
-    if (SymExpr *otherChildBaseSE = toSymExpr(this->rhsLogicalChild->baseExpr)) {
+  if (srcAggregator == NULL &&
+      lhsLocalityInfo == PENDING &&
+      rhsLogicalChild != NULL) {
+    if (SymExpr *otherChildBaseSE = toSymExpr(getBaseExprOfLogicalChild(rhsLogicalChild))) {
       SET_LINENO(this->forall);
 
       Symbol *otherChildBase = otherChildBaseSE->symbol();
@@ -115,10 +128,11 @@ void AggregationCandidateInfo::tryAddingAggregator() {
     }
   }
   //
-  // we have a rhs that waits analysis, and a lhs that we can't know about
-  if (rhsLocalityInfo == PENDING && (lhsLogicalChild != NULL && 
-                                     lhsLocalityInfo == UNKNOWN)) {
-    if (SymExpr *otherChildBaseSE = toSymExpr(this->lhsLogicalChild->baseExpr)) {
+  // we have a rhs that waits analysis
+  if (dstAggregator == NULL &&
+      rhsLocalityInfo == PENDING &&
+      lhsLogicalChild != NULL) {
+    if (SymExpr *otherChildBaseSE = toSymExpr(getBaseExprOfLogicalChild(lhsLogicalChild))) {
       SET_LINENO(this->forall);
 
       Symbol *otherChildBase = otherChildBaseSE->symbol();
@@ -136,6 +150,25 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       this->dstAggregator = aggregator;
     }
   }
+
+  //// we have added both children who are candidates for localAccess 
+  //else if (lhsLocalityInfo == PENDING && rhsLocalityInfo == PENDING) {
+    //std::cout << "Both children are candidates\n";
+  //}
+  //else {
+    //std::cout << "this is weird\n";
+
+  //}
+}
+
+// called during resolution
+void AggregationCandidateInfo::updateASTForRegularAssignment() {
+  // we found out that both sides of the assignment is local, or neither can be
+  // proved to be local. So, we need all the aggregators we have created to be
+  // cleaned up
+  std::cout << "I need to remove shadow variables\n";
+  nprint_view(this->forall);
+  
 }
 
 // called during resolution
@@ -186,6 +219,7 @@ void AggregationCandidateInfo::update() {
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
     // TODO we may need to cleanup the info, remove added aggregators etc
+    this->updateASTForRegularAssignment();
     return;
   }
 
@@ -388,11 +422,14 @@ static void insertOrUpdateAggCandidate(CallExpr *candidate,
   if (aggCandidateCache.count(candidate) == 0) {
     info = new AggregationCandidateInfo(candidate, forall);
     aggCandidateCache[candidate] = info;
-    preNormalizeAggCandidate[logicalChild] = info;
   }
   else {
     info = aggCandidateCache[candidate];
   }
+
+  // map this child to the info, so that we can pull it up when we resolve the
+  // child
+  preNormalizeAggCandidate[logicalChild] = info;
 
   info->registerLogicalChild(logicalChild, lhs, PENDING);
 
@@ -965,6 +1002,22 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
 //static void analyzeCandidateForAggregation(CallExpr *candidate) {
 //}
 
+static bool isCallACandidateForAutoLocalAccess(CallExpr *call,
+                                               ForallStmt *forall) {
+  if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    return true; // we have already replaced the child with the primitive
+  }
+  else {
+    // it maybe something that's still in the candidates list
+    return std::count(forall->optInfo.staticCandidates.begin(),
+                      forall->optInfo.staticCandidates.end(),
+                      call) > 0 ||
+           std::count(forall->optInfo.dynamicCandidates.begin(),
+                      forall->optInfo.dynamicCandidates.end(),
+                      call) > 0;
+  }
+}
+
 // replace all the candidates in the loop with PRIM_MAYBE_LOCAL_THIS
 // while doing that, also builds up static and dynamic conditions
 static void optimizeLoop(ForallStmt *forall,
@@ -1014,7 +1067,7 @@ static void optimizeLoop(ForallStmt *forall,
         //nprint_view(replacement);
 
         CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
-        if (std::count(candidates.begin(), candidates.end(), otherChild) > 0) {
+        if (isCallACandidateForAutoLocalAccess(otherChild, forall)) {
           // other child is also a auto local access candidate, we don't need to
           // register it to the aggregation candidate. It'll do so itself
           insertOrUpdateAggCandidate(parent, replacement, lhs,

@@ -62,6 +62,7 @@ class AggregationCandidateInfo {
 
   private:
     void updateASTForAggregation(bool srcAggregation);
+    void updateASTForRegularAssignment();
 };
 
 extern std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
