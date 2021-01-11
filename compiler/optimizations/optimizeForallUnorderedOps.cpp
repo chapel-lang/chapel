@@ -161,7 +161,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     }
     else if (CallExpr *prevCall = toCallExpr(call->prev)) {
       if (AggregationCandidateInfo *info = aggCandidateCache[prevCall]) {
-        if (info->srcAggCall == call) {
+        if (info->aggCall == call) {
           std::cout << "Skipping over the potential aggregation call\n";
           nprint_view(call);
           last = last->prev;
@@ -254,7 +254,8 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
     } else if (shadow->isTaskPrivate()) {
       // task private variable could include arbitrary init expr
       // effectively computing a task id
-      if (strcmp(shadow->name, "chpl_src_auto_agg") == 0) {
+      //if (strcmp(shadow->name, "chpl_src_auto_agg") == 0) {
+      if (shadow->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
         std::cout << "Ignoring the shadow variable\n";
         nprint_view(shadow);
         continue;
@@ -1058,9 +1059,9 @@ void optimizeForallUnorderedOps() {
             atomicsToOptimize.push_back(lastStmt);
           }
           else if (isOptimizableAssignStmt(lastStmt, loop)) {
-            std::cout << "Optimizable\n";
-            nprint_view(lastStmt);
             if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
+              std::cout << "Will aggregate\n";
+              nprint_view(lastStmt);
               aggCondsToTransform.push_back(aggCond);
             }
             else {

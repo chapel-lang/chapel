@@ -42,11 +42,14 @@ class AggregationCandidateInfo {
     CallExpr *lhsLogicalChild;
     CallExpr *rhsLogicalChild;
 
+    // during normalize, we may generate aggregators for both sides of the
+    // assignment. However, after resolve we can have at most one aggregator per
+    // assignment ...
     Symbol *srcAggregator;   // remote rhs
     Symbol *dstAggregator;   // remote lhs
 
-    CallExpr *srcAggCall;
-    CallExpr *dstAggCall;
+    // ... and that's why we have a single aggregated alternative.
+    CallExpr *aggCall;
 
     AggregationCandidateInfo();
     AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
@@ -56,6 +59,9 @@ class AggregationCandidateInfo {
     void tryAddingAggregator();
 
     void update();
+
+  private:
+    void updateASTForAggregation(bool srcAggregation);
 };
 
 extern std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;

@@ -60,8 +60,7 @@ AggregationCandidateInfo::AggregationCandidateInfo():
   rhsLogicalChild(NULL),
   srcAggregator(NULL),
   dstAggregator(NULL),
-  srcAggCall(NULL),
-  dstAggCall(NULL) { }
+  aggCall(NULL) { }
 
 AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
                                                    ForallStmt *forall):
@@ -73,11 +72,21 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   rhsLogicalChild(NULL),
   srcAggregator(NULL),
   dstAggregator(NULL),
-  srcAggCall(NULL),
-  dstAggCall(NULL) { }
+  aggCall(NULL) { }
 
+
+// currently we only support one aggregator at normalize time, however, we
+// should relax that limitation a bit. Normalize should be able to add both
+// aggregators for
+//
+// forall i in a.domain {
+//   a[i] = b[i];
+// }
+//
+// Because: b[i] is a local access candidate, and both sides of = will be
+// visited as such. Currently, that's not handled properly
 void AggregationCandidateInfo::tryAddingAggregator() {
-  if (srcAggregator != NULL && dstAggregator != NULL) {
+  if (srcAggregator != NULL || dstAggregator != NULL) {
     return; // we have already enough
   }
 
@@ -93,30 +102,74 @@ void AggregationCandidateInfo::tryAddingAggregator() {
             new UnresolvedSymExpr("chpl_src_auto_agg"),
             NULL, // type expr for shadow var
             new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
-      //DefExpr *aggDef = new DefExpr(aggregator);
-      //
-      aggregator->addFlag(FLAG_COMPILER_GENERATED); // disappears?
+
+      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
+
       std::cout << "potential source aggregation\n";
 
       this->srcAggregator = aggregator;
-
-      //this->srcAggCall = new CallExpr(new UnresolvedSymExpr("copy"),
-          //aggregator,
-          //candidate->get(1)->copy(),
-          //candidate->get(2)->copy());
-
-      //candidate->insertAfter(this->srcAggCall);
-      //this->srcAggCall->remove();
     }
-
   }
+  //
+  // we have a rhs that waits analysis, and a lhs that we can't know about
+  if (rhsLocalityInfo == PENDING && (lhsLogicalChild != NULL && 
+                                     lhsLocalityInfo == UNKNOWN)) {
+    if (SymExpr *otherChildBaseSE = toSymExpr(this->lhsLogicalChild->baseExpr)) {
+      SET_LINENO(this->forall);
 
+      Symbol *otherChildBase = otherChildBaseSE->symbol();
+      ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
+            new UnresolvedSymExpr("chpl_dst_auto_agg"),
+            NULL, // type expr for shadow var
+            new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
 
+      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+      forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
+      std::cout << "potential destination aggregation\n";
+
+      this->dstAggregator = aggregator;
+    }
+  }
 }
 
+// called during resolution
+void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
+  // the candidate assignment must have been normalized, so, we expect symexpr
+  // on both sides
+  SymExpr *lhsSE = toSymExpr(candidate->get(1));
+  SymExpr *rhsSE = toSymExpr(candidate->get(2));
+  INT_ASSERT(lhsSE != NULL && rhsSE != NULL);
 
+  SET_LINENO(this->candidate);
+
+  // generate the aggregated call
+  Symbol *aggregator = srcAggregation ? this->srcAggregator : this->dstAggregator;
+  INT_ASSERT(aggregator != NULL);
+
+  Expr *callBase = buildDotExpr(aggregator, "copy");
+  this->aggCall = new CallExpr(callBase, lhsSE->copy(), rhsSE->copy());
+
+  // create the conditional with regular assignment on the then block
+  // and the aggregated call is on the else block
+  Symbol *aggMarker = newTemp("aggMarker", dtBool);
+  this->candidate->insertBefore(new DefExpr(aggMarker));
+
+  BlockStmt *thenBlock = new BlockStmt();
+  BlockStmt *elseBlock = new BlockStmt();
+
+  this->candidate->insertAfter(new CondStmt(new SymExpr(aggMarker),
+                                            thenBlock,
+                                            elseBlock));
+  thenBlock->insertAtTail(this->candidate->remove());
+  elseBlock->insertAtTail(this->aggCall);
+
+  // we are post-normalize, so we have to normalize the new call
+  normalize(this->aggCall);
+}
+
+// called during resolution
 void AggregationCandidateInfo::update() {
   if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
     return; // we still need to wait for some of the children's analysis
@@ -132,88 +185,15 @@ void AggregationCandidateInfo::update() {
     return;
   }
 
+  // TODO we should probably check whether the side we are aggregating is array?
+  // what happens if the other side turned out to be local access?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    std::cout << "LHS local, I can't know about RHS. (source aggregation)\n";
-
-    nprint_view(this->candidate);
-
-    if (!this->rhsLogicalChild->isResolved()) {
-      SymExpr *lhsSE = toSymExpr(candidate->get(1));
-      SymExpr *rhsSE = toSymExpr(candidate->get(2));
-      
-      if (rhsSE != NULL && lhsSE != NULL) {  // assert?
-        if (SymExpr *otherChildBaseSE = toSymExpr(this->rhsLogicalChild->baseExpr)) {
-          SET_LINENO(this->candidate);
-
-          //Symbol *otherChildBase = otherChildBaseSE->symbol();
-          //ShadowVarSymbol *aggregator =
-            //ShadowVarSymbol::buildForPrefix(SVP_VAR,
-                //new UnresolvedSymExpr("chpl_src_auto_agg"),
-                //NULL, // type expr for shadow var
-                //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
-          ////DefExpr *aggDef = new DefExpr(aggregator);
-          //forall->shadowVariables().insertAtTail(aggregator->defPoint);
-          //std::cout << "potential source aggregation\n";
-
-          //this->srcAggregator = aggregator;
-          //
-          Expr *callBase = buildDotExpr(this->srcAggregator, "copy");
-          this->srcAggCall = new CallExpr(callBase,
-              candidate->get(1)->copy(),
-              candidate->get(2)->copy());
-                        
-
-          //this->srcAggCall = new CallExpr(new UnresolvedSymExpr("copy"),
-              //gMethodToken,
-              //this->srcAggregator,
-              //candidate->get(1)->copy(),
-              //candidate->get(2)->copy());
-              //
-
-          //CallExpr *aggPrim = new CallExpr(PRIM_MAYBE_AGGREGATE_ASSIGN,
-                                           //this->candidate->get(1)->remove(),
-                                           //this->candidate->get(1)->remove());
-
-
-          Symbol *aggMarker = newTemp("aggMarker", dtBool);
-          this->candidate->insertBefore(new DefExpr(aggMarker));
-
-          BlockStmt *thenBlock = new BlockStmt();
-          BlockStmt *elseBlock = new BlockStmt();
-
-          this->candidate->insertAfter(new CondStmt(new SymExpr(aggMarker),
-                                                    thenBlock,
-                                                    elseBlock));
-          thenBlock->insertAtTail(this->candidate->remove());
-          elseBlock->insertAtTail(this->srcAggCall);
-
-          //this->candidate->insertAfter(this->srcAggCall);
-          //this->candidate->replace(aggPrim);
-
-          //aggCandidateCache[aggPrim] = this;
-          //aggCandidateCache.erase(this->candidate);
-
-          //this->candidate = aggPrim;
-          //this->candidate->replace(new CallExpr(PRIM_MAYBE_AGGREGATE_ASSIGN,
-                                                //this->candidate->get(1)->remove(),
-                                                //this->candidate->get(1)->remove()));
-
-          //aggCandidateCache
-
-          //this->candidate->primitive = PRIM_MAYBE_AGGREGATE_ASSIGN;
-          //this->candidate->baseExpr = NULL;
-          normalize(this->srcAggCall);
-          //this->candidate->insertBefore(this->srcAggCall);
-          //resolveCall(this->srcAggCall);
-          //this->srcAggCall->remove();
-        }
-      }
-
-    }
+    // we will aggregate the expression on the right
+    this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    std::cout << "RHS local, I can't know about LHS. (destination aggregation)\n";
-    nprint_view(this->candidate);
+    // we will aggregate the expression on the left
+    this->updateASTForAggregation(/*srcAggregation=*/false);
   }
 }
 
@@ -223,20 +203,14 @@ void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
   if (lhs) {
     this->lhsLocalityInfo = locInfo;
     this->lhsLogicalChild = logicalChild;
-    // if lhs turns out to be remote, we won't need dstAggregator for sure, but
-    // we may need a srcAggregator
-    // TODO set srcAggregator here
-    //
-
   }
   else {
     this->rhsLocalityInfo = locInfo;
     this->rhsLogicalChild = logicalChild;
-    //std::cout << "potential destination aggregation\n";
   }
 
+  // we registered a new child, do we need to add an aggregator to forall?
   this->tryAddingAggregator();
-
 }
 
 void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
@@ -263,11 +237,9 @@ void updateAggregationCandidates() {
     AggregationCandidateInfo *info = it->second;
     INT_ASSERT(info->candidate == it->first);
 
-    if (info->srcAggCall != NULL) {
-      INT_ASSERT(info->srcAggregator);
-      INT_ASSERT(info->srcAggCall->inTree());
-
-      //info->srcAggCall->remove();
+    if (info->aggCall != NULL) {
+      INT_ASSERT(info->srcAggregator || info->dstAggregator);
+      INT_ASSERT(info->aggCall->inTree());
     }
   }
 }
@@ -375,6 +347,8 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
   return ret;
 }
 
+// if the otherChild is not null, it means that we won't visit it as an
+// automatic local access candidate. So, `candidate` is registering it.
 static void insertOrUpdateAggCandidate(CallExpr *candidate,
                                        CallExpr *logicalChild,
                                        bool lhs,

@@ -2013,52 +2013,52 @@ static void addIteratorBreakBlocksJumptable(Expr* loopRef, Symbol* IC,
   // * How to handle zippering? or handle just one ic at a time?
 }
 
-static void getOldAggCalls(BlockStmt *block, CallExpr *&assignment,
-                           AggregationCandidateInfo *&aggInfo) {
+//static void getOldAggCalls(BlockStmt *block, CallExpr *&assignment,
+                           //AggregationCandidateInfo *&aggInfo) {
 
-  if (BlockStmt *loopBody = toBlockStmt(block->body.get(1))) {
-    INT_ASSERT(loopBody);
+  //if (BlockStmt *loopBody = toBlockStmt(block->body.get(1))) {
+    //INT_ASSERT(loopBody);
 
-    if (BlockStmt *lastBlock = toBlockStmt(loopBody->body.last())) {
-      std::cout << "1000\n";
-      if (strcmp(lastBlock->fname(), "unorderedTest.chpl") == 0) {
-        gdbShouldBreakHere();
-      }
-      if (CallExpr *callBefore = toCallExpr(lastBlock->prev)) {
-      std::cout << "2000\n";
-        if (CallExpr *callWithin = toCallExpr(lastBlock->body.first())) {
-      std::cout << "3000\n";
-          if (AggregationCandidateInfo *info = aggCandidateCache[callBefore]) {
-      std::cout << "4000\n";
-            if (info->srcAggCall == callWithin) {
-      std::cout << "5000\n";
-              assignment = callBefore;
-              aggInfo = info;
-            }
-          }
-        }
-        else {
-          std::cout << "Not 3000 because\n";
-          nprint_view(lastBlock->body.first());
-        }
-      }
-    }
-  }
-}
+    //if (BlockStmt *lastBlock = toBlockStmt(loopBody->body.last())) {
+      //std::cout << "1000\n";
+      //if (strcmp(lastBlock->fname(), "unorderedTest.chpl") == 0) {
+        //gdbShouldBreakHere();
+      //}
+      //if (CallExpr *callBefore = toCallExpr(lastBlock->prev)) {
+      //std::cout << "2000\n";
+        //if (CallExpr *callWithin = toCallExpr(lastBlock->body.first())) {
+      //std::cout << "3000\n";
+          //if (AggregationCandidateInfo *info = aggCandidateCache[callBefore]) {
+      //std::cout << "4000\n";
+            //if (info->srcAggCall == callWithin) {
+      //std::cout << "5000\n";
+              //assignment = callBefore;
+              //aggInfo = info;
+            //}
+          //}
+        //}
+        //else {
+          //std::cout << "Not 3000 because\n";
+          //nprint_view(lastBlock->body.first());
+        //}
+      //}
+    //}
+  //}
+//}
 
-static void getNewAggCalls(BlockStmt *block, CallExpr *&assignment,
-                           CallExpr *&aggCall) {
+//static void getNewAggCalls(BlockStmt *block, CallExpr *&assignment,
+                           //CallExpr *&aggCall) {
 
-  if (BlockStmt *lastBlock = toBlockStmt(block->body.last())) {
-    if (CallExpr *callBefore = toCallExpr(lastBlock->prev)) {
-      if (CallExpr *callWithin = toCallExpr(lastBlock->body.first())) {
-        // TODO check whether they are matching
-        assignment = callBefore;
-        aggCall = callWithin;
-      }
-    }
-  }
-}
+  //if (BlockStmt *lastBlock = toBlockStmt(block->body.last())) {
+    //if (CallExpr *callBefore = toCallExpr(lastBlock->prev)) {
+      //if (CallExpr *callWithin = toCallExpr(lastBlock->body.first())) {
+        //// TODO check whether they are matching
+        //assignment = callBefore;
+        //aggCall = callWithin;
+      //}
+    //}
+  //}
+//}
 
 static void
 expandBodyForIteratorInline(ForLoop*       forLoop,
@@ -2089,26 +2089,26 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
 
         BlockStmt* bodyCopy = forLoop->copyBody(&map);
 
-        CallExpr *origAssignment = NULL;
-        AggregationCandidateInfo *origAggInfo = NULL;
-        CallExpr *newAssignment = NULL;
-        CallExpr *newAggCall = NULL;
+        //CallExpr *origAssignment = NULL;
+        //AggregationCandidateInfo *origAggInfo = NULL;
+        //CallExpr *newAssignment = NULL;
+        //CallExpr *newAggCall = NULL;
 
-        getOldAggCalls(forLoop, origAssignment, origAggInfo);
+        //getOldAggCalls(forLoop, origAssignment, origAggInfo);
 
-        if (origAssignment && origAggInfo) {
-          getNewAggCalls(bodyCopy, newAssignment, newAggCall);
+        //if (origAssignment && origAggInfo) {
+          //getNewAggCalls(bodyCopy, newAssignment, newAggCall);
 
-          if (newAssignment && newAggCall) {
-            AggregationCandidateInfo *newInfo = new AggregationCandidateInfo(newAssignment,
-                                                                             origAggInfo->forall);
+          //if (newAssignment && newAggCall) {
+            //AggregationCandidateInfo *newInfo = new AggregationCandidateInfo(newAssignment,
+                                                                             //origAggInfo->forall);
 
-            newInfo->srcAggCall = origAggInfo->srcAggCall;
-            aggCandidateCache[newAssignment] = newInfo;
+            //newInfo->srcAggCall = origAggInfo->srcAggCall;
+            //aggCandidateCache[newAssignment] = newInfo;
 
-            gdbShouldBreakHere();
-          }
-        }
+            //gdbShouldBreakHere();
+          //}
+        //}
 
 
 

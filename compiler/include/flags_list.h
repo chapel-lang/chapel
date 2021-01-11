@@ -94,6 +94,7 @@ symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 //    for functions added by the compiler (e.g. with error handling)
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
+symbolFlag( FLAG_COMPILER_ADDED_AGGREGATOR , npr, "compiler added aggregator" , "marks aggregator symbols that the compiler added" )
 
 symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , ncm )
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
