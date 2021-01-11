@@ -453,11 +453,11 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fReportAutoLocalAccess);
+  LOG_help(depth, msg, node, fReportAutoLocalAccess || true);
 }
 
 static void LOGLN(BaseAST *node) {
-  LOGLN_help(node, fReportAutoLocalAccess);
+  LOGLN_help(node, fReportAutoLocalAccess || true);
 }
 
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
@@ -466,6 +466,14 @@ static void LOG_AA(int depth, const char *msg, BaseAST *node) {
 
 static void LOGLN_AA(BaseAST *node) {
   LOGLN_help(node, true);
+}
+
+static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
+  LOG_help(depth, msg, node, fReportAutoLocalAccess);
+}
+
+static void LOGLN_ALA(BaseAST *node) {
+  LOGLN_help(node, fReportAutoLocalAccess);
 }
 
 //
@@ -1212,7 +1220,7 @@ static void autoLocalAccess(ForallStmt *forall) {
       continue;
     }
 
-    LOG(2, "Start analyzing call", call);
+    LOG_ALA(2, "Start analyzing call", call);
 
     bool canOptimizeStatically = false;
 
@@ -1222,36 +1230,36 @@ static void autoLocalAccess(ForallStmt *forall) {
       if (forall->optInfo.dotDomIterSym == accBaseSym) {
         canOptimizeStatically = true;
 
-        LOG(3, "Can optimize: Access base is the iterator's base", call);
+        LOG_ALA(3, "Can optimize: Access base is the iterator's base", call);
       }
       else {
         Symbol *domSym = getDomSym(accBaseSym);
 
         if (domSym != NULL) {  //  I can find the domain of the array
-          LOG(3, "Found the domain of the access base", domSym);
+          LOG_ALA(3, "Found the domain of the access base", domSym);
           
           // forall i in A.domain do ... B[i] ... where B and A share domain
           if (forall->optInfo.dotDomIterSymDom == domSym) {
             canOptimizeStatically = true;
 
-            LOG(3, "Can optimize: Access base has the same domain as iterator's base", call);
+            LOG_ALA(3, "Can optimize: Access base has the same domain as iterator's base", call);
           }
          
           // forall i in D do ... A[i] ... where D is A's domain
           else if (forall->optInfo.iterSym == domSym) {
             canOptimizeStatically = true;
 
-            LOG(3, "Can optimize: Access base's domain is the iterator", call);
+            LOG_ALA(3, "Can optimize: Access base's domain is the iterator", call);
           }
         }
         else {
-          LOG(3, "Can't determine the domain of access base", accBaseSym);
+          LOG_ALA(3, "Can't determine the domain of access base", accBaseSym);
         }
       }
 
       if (canOptimizeStatically) {
-        LOG(2, "This call is a static optimization candidate", call);
-        LOGLN(call);
+        LOG_ALA(2, "This call is a static optimization candidate", call);
+        LOGLN_ALA(call);
         forall->optInfo.staticCandidates.push_back(call);
       }
     }
@@ -1267,8 +1275,8 @@ static void autoLocalAccess(ForallStmt *forall) {
       // determine the symbol of the loop domain. But this call that I am
       // looking at still has potential because it is `A(i)` where `i` is
       // the loop index. So, add this call to dynamic candidates
-      LOG(2, "This call is a dynamic optimization candidate", call);
-      LOGLN(call);
+      LOG_ALA(2, "This call is a dynamic optimization candidate", call);
+      LOGLN_ALA(call);
       forall->optInfo.dynamicCandidates.push_back(call);
     }
   }
@@ -1285,7 +1293,7 @@ static void autoLocalAccess(ForallStmt *forall) {
 // Resolution support for auto-local-access
 //
 static CallExpr *revertAccess(CallExpr *call) {
-  LOG(0, "Static check failed. Reverting optimization", call);
+  LOG_ALA(0, "Static check failed. Reverting optimization", call);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
@@ -1302,10 +1310,10 @@ static CallExpr *revertAccess(CallExpr *call) {
 
 static CallExpr *confirmAccess(CallExpr *call) {
   if (toSymExpr(call->get(call->argList.length))->symbol() == gTrue) {
-    LOG(0, "Static check successful. Using localAccess", call);
+    LOG_ALA(0, "Static check successful. Using localAccess", call);
   }
   else {
-    LOG(0, "Static check successful. Using localAccess with dynamic check", call);
+    LOG_ALA(0, "Static check successful. Using localAccess with dynamic check", call);
   }
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("localAccess"),
