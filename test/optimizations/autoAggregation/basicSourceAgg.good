@@ -7,6 +7,24 @@ Start analyzing forall (basicSourceAgg.chpl:10)
 |
 End analyzing forall (basicSourceAgg.chpl:10)
 
+
+Start analyzing forall (basicSourceAgg.chpl:16)
+| Found loop domain (basicSourceAgg.chpl:3)
+| Will attempt static and dynamic optimizations (basicSourceAgg.chpl:16)
+|
+End analyzing forall (basicSourceAgg.chpl:16)
+
 Aggregation candidate has confirmed local child (basicSourceAgg.chpl:11)
 Replaced assignment with aggregation (basicSourceAgg.chpl:11)
 10 9 8 7 6 5 4 3 2 1 0
+LOCALE0 0
+LOCALE0 9
+LOCALE0 6
+LOCALE0 1
+LOCALE0 3
+LOCALE0 10
+LOCALE0 4
+LOCALE0 5
+LOCALE0 2
+LOCALE0 7
+LOCALE0 8

@@ -1000,31 +1000,37 @@ static void optimizeLoop(ForallStmt *forall,
     CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
 
     // associate the parent assignment with the newly added
-    // PRIM_MAYBE_LOCAL_ACCESS
-    // there's no PRIM_MOVE or PRIM_ASSIGN at the moment
-    if (parent != NULL && parent->isNamed("=")) {
-      bool lhs = (parent->get(1) == replacement);
-      //std::cout << "Prenormalize candidate\n";
-      //nprint_view(candidate);
-      //nprint_view(replacement);
+    // PRIM_MAYBE_LOCAL_ACCESS. Currently, we only care about this only if the
+    // assignment is the very last statement in the loop body. This is because
+    // the subsequent analysis to check whether we can postpone this assignment
+    // only looks at the last statement and doesn't do a full alias analysis on
+    // the forall body
+    if (parent == forall->loopBody()->body.last()) {
+      // there's no PRIM_ASSIGN at the moment
+      if (parent != NULL && parent->isNamed("=")) {
+        bool lhs = (parent->get(1) == replacement);
+        //std::cout << "Prenormalize candidate\n";
+        //nprint_view(candidate);
+        //nprint_view(replacement);
 
-      CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
-      if (std::count(candidates.begin(), candidates.end(), otherChild) > 0) {
-        // other child is also a auto local access candidate, we don't need to
-        // register it to the aggregation candidate. It'll do so itself
-        insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                   NULL, forall);
-      }
-      else {
-        std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
-        if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
-          // other child is not an auto local access candidate, but for now it
-          // looks like it might be an array access, record it
+        CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
+        if (std::count(candidates.begin(), candidates.end(), otherChild) > 0) {
+          // other child is also a auto local access candidate, we don't need to
+          // register it to the aggregation candidate. It'll do so itself
           insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                     otherChild, forall);
+                                     NULL, forall);
         }
         else {
-          // other child is not a well-known pattern, can't do aggregation
+          std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
+          if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
+            // other child is not an auto local access candidate, but for now it
+            // looks like it might be an array access, record it
+            insertOrUpdateAggCandidate(parent, replacement, lhs,
+                                       otherChild, forall);
+          }
+          else {
+            // other child is not a well-known pattern, can't do aggregation
+          }
         }
       }
     }

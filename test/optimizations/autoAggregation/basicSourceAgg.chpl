@@ -12,3 +12,8 @@ forall i in a.domain {
 }
 
 writeln(a);
+
+forall i in a.domain {
+  a[i] = b[10-i];
+  writeln(here, " ", i);  // should thwart the optimization at normalize
+}
