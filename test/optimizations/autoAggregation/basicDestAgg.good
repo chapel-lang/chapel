@@ -1,0 +1,12 @@
+
+Start analyzing forall (basicDestAgg.chpl:10)
+| Found loop domain (basicDestAgg.chpl:3)
+| Will attempt static and dynamic optimizations (basicDestAgg.chpl:10)
+|
+|  Potential destination aggregation (basicDestAgg.chpl:11)
+|
+End analyzing forall (basicDestAgg.chpl:10)
+
+Aggregation candidate has confirmed local child (basicDestAgg.chpl:11)
+Replaced assignment with aggregation (basicDestAgg.chpl:11)
+0 0 0 0 0 0 0 0 0 0 0
