@@ -162,11 +162,9 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     else if (CallExpr *prevCall = toCallExpr(call->prev)) {
       if (AggregationCandidateInfo *info = aggCandidateCache[prevCall]) {
         if (info->aggCall == call) {
-          std::cout << "Skipping over the potential aggregation call\n";
-          nprint_view(call);
+          //std::cout << "Skipping over the potential aggregation call\n";
+          //nprint_view(call);
           last = last->prev;
-          std::cout << "Now the last statement is\n";
-          nprint_view(last);
         }
       }
     }
@@ -174,13 +172,13 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   last = skipIgnoredStmts(last);
 
-  if (CallExpr *call = toCallExpr(last)) {
-    AggregationCandidateInfo *info = aggCandidateCache[call];
-    if (info != NULL) {
-      std::cout << "Found an aggregation candidate last statement\n";
-      nprint_view(call);
-    }
-  }
+  //if (CallExpr *call = toCallExpr(last)) {
+    //AggregationCandidateInfo *info = aggCandidateCache[call];
+    //if (info != NULL) {
+      //std::cout << "Found an aggregation candidate last statement\n";
+      //nprint_view(call);
+    //}
+  //}
   stmts.push_back(last);
 }
 
@@ -256,8 +254,8 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
       // effectively computing a task id
       //if (strcmp(shadow->name, "chpl_src_auto_agg") == 0) {
       if (shadow->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
-        std::cout << "Ignoring the shadow variable\n";
-        nprint_view(shadow);
+        //std::cout << "Ignoring the shadow variable\n";
+        //nprint_view(shadow);
         continue;
       }
       return false;
@@ -929,25 +927,6 @@ static CondStmt *getAggregationCondStmt(Expr *stmt) {
   return NULL;
 }
 
-static void transformConditionalAggregation(CondStmt *cond) {
-  //INT_ASSERT(cond->elseStmt->length() == 1);
-
-  // move the aggregation call before the conditional (at this point in
-  // compilation it must be inlined)
-  for_alist(expr, cond->elseStmt->body) {
-    cond->insertBefore(expr->remove());
-  }
-  
-  // remove the defpoint of the aggregation marker
-  SymExpr *condExpr = toSymExpr(cond->condExpr);
-  INT_ASSERT(condExpr);
-  condExpr->symbol()->defPoint->remove();
-
-  // remove the conditional
-  cond->remove();
-}
-
-
 static void transformAssignStmt(Expr* stmt) {
   SET_LINENO(stmt);
 
@@ -1060,8 +1039,6 @@ void optimizeForallUnorderedOps() {
           }
           else if (isOptimizableAssignStmt(lastStmt, loop)) {
             if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
-              std::cout << "Will aggregate\n";
-              nprint_view(lastStmt);
               aggCondsToTransform.push_back(aggCond);
             }
             else {

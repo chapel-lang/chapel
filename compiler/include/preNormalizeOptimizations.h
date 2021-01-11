@@ -74,4 +74,7 @@ Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
 Expr *preFoldMaybeLocalThis(CallExpr *call);
 void updateAggregationCandidates();
 
+// interface for licm
+void transformConditionalAggregation(CondStmt *cond);
+
 #endif

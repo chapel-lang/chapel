@@ -49,6 +49,8 @@ static int curLogDepth = 0;
 static void LOG(int depth, const char *msg, BaseAST *node);
 static void LOGLN(BaseAST *node);
 
+static void LOG_AA(int depth, const char *msg, BaseAST *node);
+static void LOGLN_AA(BaseAST *node);
 
 
 AggregationCandidateInfo::AggregationCandidateInfo():
@@ -106,7 +108,8 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
-      std::cout << "potential source aggregation\n";
+      LOG_AA(2, "Potential source aggregation", this->candidate);
+      LOGLN_AA(this->candidate);
 
       this->srcAggregator = aggregator;
     }
@@ -127,7 +130,8 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
-      std::cout << "potential destination aggregation\n";
+      LOG_AA(2, "Potential destination aggregation", this->candidate);
+      LOGLN_AA(this->candidate);
 
       this->dstAggregator = aggregator;
     }
@@ -331,20 +335,46 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
     }
 
     if (ret != NULL) {
-      if (confirmed) {
-        std::cout << "Confirmed a local access with parent\n";
-      }
-      else {
-        std::cout << "Reverted a local access with parent\n";
-      }
+      //if (confirmed) {
+        //std::cout << "Confirmed a local access with parent\n";
+      //}
+      //else {
+        //std::cout << "Reverted a local access with parent\n";
+      //}
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
       if (aggCandidate != NULL) {
-        nprint_view(aggCandidate->candidate);
+        if (confirmed) {
+          LOG_AA(0, "Aggregation candidate has confirmed local child", aggCandidate->candidate);
+        }
+        else {
+          LOG_AA(0, "Aggregation candidate has reverted local child", aggCandidate->candidate);
+        }
         aggCandidate->logicalChildAnalyzed(call, confirmed);
       }
     }
   }
   return ret;
+}
+
+// called during LICM to restructure a conditional aggregation to direct
+// aggregation
+void transformConditionalAggregation(CondStmt *cond) {
+  // move the aggregation call before the conditional (at this point in
+  // compilation it must be inlined)
+  for_alist(expr, cond->elseStmt->body) {
+    cond->insertBefore(expr->remove());
+  }
+  
+  // remove the defpoint of the aggregation marker
+  SymExpr *condExpr = toSymExpr(cond->condExpr);
+
+  LOG_AA(0, "Replaced assignment with aggregation", condExpr);
+
+  INT_ASSERT(condExpr);
+  condExpr->symbol()->defPoint->remove();
+
+  // remove the conditional
+  cond->remove();
 }
 
 // if the otherChild is not null, it means that we won't visit it as an
@@ -371,18 +401,8 @@ static void insertOrUpdateAggCandidate(CallExpr *candidate,
   }
 }
 
-
-// logging support for --report-auto-local-access
-// during the first analysis phase depth is used roughly in the following way
-// 0: entering/exiting forall
-// 1: information about the forall
-// 2: entering/exiting call
-// 3: information about call
-//
-// during resolution, the output is much more straightforward, and depth 0 is
-// used always
-static void LOG(int depth, const char *msg, BaseAST *node) {
-  if (fReportAutoLocalAccess) {
+static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
+  if (flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
 
@@ -410,8 +430,8 @@ static void LOG(int depth, const char *msg, BaseAST *node) {
   }
 }
 
-static void LOGLN(BaseAST *node) {
-  if (fReportAutoLocalAccess) {
+static void LOGLN_help(BaseAST *node, bool flag) {
+  if (flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
     if (verbose) {
@@ -421,6 +441,31 @@ static void LOGLN(BaseAST *node) {
       std::cout << std::endl;
     }
   }
+}
+
+// logging support for --report-auto-local-access
+// during the first analysis phase depth is used roughly in the following way
+// 0: entering/exiting forall
+// 1: information about the forall
+// 2: entering/exiting call
+// 3: information about call
+//
+// during resolution, the output is much more straightforward, and depth 0 is
+// used always
+static void LOG(int depth, const char *msg, BaseAST *node) {
+  LOG_help(depth, msg, node, fReportAutoLocalAccess);
+}
+
+static void LOGLN(BaseAST *node) {
+  LOGLN_help(node, fReportAutoLocalAccess);
+}
+
+static void LOG_AA(int depth, const char *msg, BaseAST *node) {
+  LOG_help(depth, msg, node, true);
+}
+
+static void LOGLN_AA(BaseAST *node) {
+  LOGLN_help(node, true);
 }
 
 //
