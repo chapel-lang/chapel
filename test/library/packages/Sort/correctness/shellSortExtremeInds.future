@@ -1,0 +1,8 @@
+bug: shellSort doesn't work when the high bound is too high
+
+#16925
+
+@cassella points out that the current shellSort logic can access the
+array out of bounds when the high bound is too close to max(idxType).
+I took a quick stab at trying to address this, but was unable to in
+short order.
