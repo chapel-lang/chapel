@@ -101,6 +101,8 @@ void chpl_cache_print_stats(void);
 // just stores 0s in the cache; here to exercise the data structures
 // returns 1 if the data was cached
 int chpl_cache_mock_get(c_nodeid_t node, uint64_t raddr, size_t size);
+void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
+                           int ln, int32_t fn);
 
 #ifdef __cplusplus
 }

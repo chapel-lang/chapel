@@ -1,5 +1,6 @@
 use Time;
 use Math;
+use CommDiagnostics;
 
 inline proc prefetch(ref x, len:int) {
   __primitive("chpl_comm_remote_prefetch", x.locale.id,
@@ -11,6 +12,8 @@ config const m = 10000000;
 config const w = 1;
 config const n_experiments = 4;
 config const n_prefetch = 0;
+config const verbose = false;
+
 const M = 1000000;
 const Mi = 1024*1024;
 
@@ -66,14 +69,33 @@ proc test(n_prefetch:int): (int,real) {
   return (ret_sum, ret_time);
 }
 
+resetCommDiagnostics();
+startCommDiagnostics();
 var (sum0,time_no_prefetch) = test(0);
+stopCommDiagnostics();
+var no_prefetch_diags = getCommDiagnostics();
+
+resetCommDiagnostics();
+startCommDiagnostics();
 var (sum1,time_some_prefetch) = test(8);
+stopCommDiagnostics();
+var some_prefetch_diags = getCommDiagnostics();
 
 assert(sum0 == sum1);
-// Would like to test that prefetching is actually working
-// but this assert is currently failing... and it's probably
-// a timing/oversubscription issue rather than prefetch not
-// working, so disabling it for now.
-//assert(time_some_prefetch < time_no_prefetch);
 
+if verbose {
+  writeln("No prefetch diags: ", no_prefetch_diags);
+  writeln("No prefetch time: ", time_no_prefetch);
+  writeln();
+  writeln("Some prefetch diags: ", some_prefetch_diags);
+  writeln("Some prefetch time: ", time_some_prefetch);
+}
 
+// check that prefetching helps
+assert(no_prefetch_diags[1].cache_get_hits <
+       some_prefetch_diags[1].cache_get_hits);
+assert(no_prefetch_diags[1].cache_get_misses >
+       some_prefetch_diags[1].cache_get_misses);
+
+// check that there aren't too many misses in the prefetching configuration
+assert(some_prefetch_diags[1].cache_get_misses < 300);
