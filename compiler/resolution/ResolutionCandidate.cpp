@@ -1076,8 +1076,12 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                                  toString(failingFormal));
       } else {
         USR_PRINT(call, "because type %s", failingActualDesc);
-        USR_PRINT(fn, "is passed to non-type formal '%s'",
-                      toString(failingFormal));
+        if (failingFormal->hasFlag(FLAG_EXPANDED_VARARGS)) {
+          USR_PRINT(fn, "cannot be passed to a varargs routine");
+        } else {
+          USR_PRINT(fn, "is passed to non-type formal '%s'",
+                    toString(failingFormal));
+        }
       }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
