@@ -422,17 +422,15 @@ Closing notes
 //
 // This is an optimal partitioning algorithm for unweighted problem.
 // The absolute difference between the size of ranges assigned to any two
-// tasks atmost 1 (either 0 or 1). If the value of remainder ``rem`` is equal
-// to 0, then each of the tasks would be assigned with ``elemsPerChunk``, equal
-// to ``floor(numElements/NumChunks)`` work items. But if the ``rem`` is not
-// equal to 0, then the first rem tasks(from task id 0 to rem-1) get
+// tasks is atmost 1 (either 0 or 1). If the value of remainder ``rem`` is
+// equal to 0, then each of the tasks would be assigned with ``elemsPerChunk``,
+// equal to ``floor(numElements/NumChunks)`` work items. But if the ``rem`` is
+// not equal to 0, then the first rem tasks(from task id 0 to rem-1) get
 // (``elemsPerChunk``+ 1) work items and the rest of the tasks(for task id rem
 // to ``numTasks``-1) get ``elemsPerChunk`` tasks assigned. For simplicity it
 // only works for default index type ranges.  More work would be required
-// to generalize it for unbounded ranges.
-//
+// to generalize it for strided or unbounded ranges.
 // 
-//
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   const numElems = r.size;
   const elemsperChunk= numElems/numChunks;
@@ -444,41 +442,6 @@ proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   } else{
     mylow+=((elemsperChunk+1)*rem + (elemsperChunk)*(myChunk-rem));
     return mylow..#elemsperChunk;
-  }
-}
-// 
-// Overloaded ``computeChunk`` function, for stridable ranges. The working
-// of the function is the same, and the returned ranges differ by atmost 1
-// in size for any tasks.
-// 
-proc computeChunk(r: range(stridable=true), myChunk, numChunks){
-  const numElems=r.size;
-  const emptyStridable=1..0 by 2;
-  if(numElems==1) then{
-    if(myChunk==0){
-      return r;
-    }
-    else{
-      return emptyStridable;
-    }
-  }
-  else{
-    const strideFactor=(r.high-r.low)/(numElems-1);
-    const elemsperChunk=(numElems/numChunks);
-    const rem=(numElems%numChunks);
-    var mylow=r.low;
-    if(myChunk<rem){
-      mylow+=(elemsperChunk+1)*(myChunk)*(strideFactor);
-      return mylow..#(elemsperChunk+1)*strideFactor by strideFactor;
-    }
-    else if(myChunk!=numChunks-1){
-      mylow+=(elemsperChunk+1)*(rem)*(strideFactor)+(elemsperChunk)*(myChunk-rem)*(strideFactor);
-      return mylow..#(elemsperChunk*strideFactor) by strideFactor;
-    }
-    else{
-      mylow+=(elemsperChunk+1)*(rem)*(strideFactor)+(elemsperChunk)*(myChunk-rem)*(strideFactor);
-      return mylow..r.high by strideFactor;
-    }
   }
 }
 
