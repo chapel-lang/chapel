@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #
-# Ignores line numbers printed upon compilerError in Sort.chpl
 # Note: This is a work around for a bug. The line numbers should not be printed
 #
 
