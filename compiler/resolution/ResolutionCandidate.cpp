@@ -1075,11 +1075,12 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
         USR_PRINT(failingFormal, "is passed to formal '%s'",
                                  toString(failingFormal));
       } else {
-        USR_PRINT(call, "because type %s", failingActualDesc);
+        USR_PRINT(call, "because %s is a type", failingActualDesc);
         if (failingFormal->hasFlag(FLAG_EXPANDED_VARARGS)) {
-          USR_PRINT(fn, "cannot be passed to a varargs routine");
+          USR_PRINT(fn, "but is passed to non-type varargs formal '%s'",
+                    failingFormal->demungeVarArgName().c_str());
         } else {
-          USR_PRINT(fn, "is passed to non-type formal '%s'",
+          USR_PRINT(fn, "but is passed to non-type formal '%s'",
                     toString(failingFormal));
         }
       }
