@@ -46,8 +46,8 @@
 //     localAccess during resolution
 
 static int curLogDepth = 0;
-static void LOG(int depth, const char *msg, BaseAST *node);
-static void LOGLN(BaseAST *node);
+static void LOG_ALA(int depth, const char *msg, BaseAST *node);
+static void LOGLN_ALA(BaseAST *node);
 
 static void LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
@@ -122,7 +122,6 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
       LOG_AA(2, "Potential source aggregation", this->candidate);
-      LOGLN_AA(this->candidate);
 
       this->srcAggregator = aggregator;
     }
@@ -145,7 +144,6 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
       LOG_AA(2, "Potential destination aggregation", this->candidate);
-      LOGLN_AA(this->candidate);
 
       this->dstAggregator = aggregator;
     }
@@ -403,11 +401,15 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
 }
 
 static void autoAggregation(ForallStmt *forall) {
+  LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
     if (callSuitableForAggregation(lastCall)) {
+      LOG_AA(1, "Found an aggregation candidate", lastCall);
       insertAggCandidate(lastCall, forall);
     }
   }
+  LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
+  LOGLN_AA(forall);
 }
 
 void doPreNormalizeArrayOptimizations() {
@@ -581,14 +583,6 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 //
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
-static void LOG(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fReportAutoLocalAccess || true);
-}
-
-static void LOGLN(BaseAST *node) {
-  LOGLN_help(node, fReportAutoLocalAccess || true);
-}
-
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
   LOG_help(depth, msg, node, true);
 }
@@ -838,7 +832,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
   // pattern.
   if (indexVarCount == -1 ||
       ((std::size_t)indexVarCount) != indexSymbols.size()) {
-    LOG(1, "Can't recognize loop's index symbols", baseSym);
+    LOG_ALA(1, "Can't recognize loop's index symbols", baseSym);
     indexSymbols.clear();
   }
 
@@ -1340,26 +1334,26 @@ static void autoLocalAccess(ForallStmt *forall) {
   }
   forall->optInfo.autoLocalAccessChecked = true;
 
-  LOGLN(forall);
-  LOG(0, "Start analyzing forall", forall);
+  LOGLN_ALA(forall);
+  LOG_ALA(0, "Start analyzing forall", forall);
 
   gatherForallInfo(forall);
 
   if (!loopHasValidInductionVariables(forall)) {
-    LOG(1, "Can't optimize this forall: invalid induction variables", forall);
+    LOG_ALA(1, "Can't optimize this forall: invalid induction variables", forall);
     return;
   }
 
   Symbol *loopDomain = canDetermineLoopDomainStatically(forall);
   bool staticLoopDomain = loopDomain != NULL;
   if (staticLoopDomain) {
-    LOG(1, "Found loop domain", loopDomain);
-    LOG(1, "Will attempt static and dynamic optimizations", forall);
-    LOGLN(forall);
+    LOG_ALA(1, "Found loop domain", loopDomain);
+    LOG_ALA(1, "Will attempt static and dynamic optimizations", forall);
+    LOGLN_ALA(forall);
   }
   else {
-    LOG(1, "Couldn't determine loop domain: will attempt dynamic optimizations only", forall);
-    LOGLN(forall);
+    LOG_ALA(1, "Couldn't determine loop domain: will attempt dynamic optimizations only", forall);
+    LOGLN_ALA(forall);
   }
 
   std::vector<CallExpr *> allCallExprs;
@@ -1439,8 +1433,8 @@ static void autoLocalAccess(ForallStmt *forall) {
 
   generateOptimizedLoops(forall);
 
-  LOG(0, "End analyzing forall", forall);
-  LOGLN(forall);
+  LOG_ALA(0, "End analyzing forall", forall);
+  LOGLN_ALA(forall);
 }
 
 
