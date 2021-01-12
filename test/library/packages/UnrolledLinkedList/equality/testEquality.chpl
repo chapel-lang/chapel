@@ -18,6 +18,10 @@ lst2.extend(lst1);
 
 writeln(lst1 == lst2);
 
+lst1[300] = -1;
+
+writeln(lst1 != lst2);
+
 lst1.clear();
 
 writeln(lst1 != lst2);
