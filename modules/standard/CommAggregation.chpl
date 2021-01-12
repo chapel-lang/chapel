@@ -4,7 +4,7 @@ module CommAggregation {
   use UnorderedCopy;
   use CommPrimitives;
 
-  config param verboseAggregation = true;
+  config param verboseAggregation = false;
 
   // TODO should tune these values at startup
   private config const yieldFrequency = getEnvInt("ARKOUDA_SERVER_AGGREGATION_YIELD_FREQUENCY", 1024);

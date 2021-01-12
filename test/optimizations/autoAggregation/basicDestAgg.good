@@ -1,30 +1,31 @@
-
-Start analyzing forall (basicDestAgg.chpl:10)
-| Found loop domain (basicDestAgg.chpl:3)
-| Will attempt static and dynamic optimizations (basicDestAgg.chpl:10)
-|
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:10)
+| Found an aggregation candidate (basicDestAgg.chpl:11)
 |  Potential destination aggregation (basicDestAgg.chpl:11)
-|
-End analyzing forall (basicDestAgg.chpl:10)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:10)
 
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:16)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:16)
 
-Start analyzing forall (basicDestAgg.chpl:16)
-| Found loop domain (basicDestAgg.chpl:3)
-| Will attempt static and dynamic optimizations (basicDestAgg.chpl:16)
-|
-End analyzing forall (basicDestAgg.chpl:16)
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:10)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:10)
 
-Aggregation candidate has confirmed local child (basicDestAgg.chpl:11)
-Replaced assignment with aggregation (basicDestAgg.chpl:11)
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:16)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:16)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (basicDestAgg.chpl:11)
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (basicDestAgg.chpl:11)
+Replaced assignment with aggregation [static only ALA clone]  (basicDestAgg.chpl:11)
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
 0 0 0 0 0 0 0 0 0 0 0
-LOCALE0 0
-LOCALE0 9
-LOCALE0 6
-LOCALE0 1
-LOCALE0 10
-LOCALE0 3
-LOCALE0 7
-LOCALE0 4
-LOCALE0 8
-LOCALE0 2
-LOCALE0 5
+0 0 0 0 0 0 0 0 0 0 0
+5 5 5 5 5 5 5 5 5 5 5
