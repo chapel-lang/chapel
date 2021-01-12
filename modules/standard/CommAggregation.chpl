@@ -4,6 +4,8 @@ module CommAggregation {
   use UnorderedCopy;
   use CommPrimitives;
 
+  config param verboseAggregation = true;
+
   // TODO should tune these values at startup
   private config const yieldFrequency = getEnvInt("ARKOUDA_SERVER_AGGREGATION_YIELD_FREQUENCY", 1024);
   private config const dstBuffSize = getEnvInt("ARKOUDA_SERVER_AGGREGATION_DST_BUFF_SIZE", 4096);
@@ -60,6 +62,9 @@ module CommAggregation {
     }
 
     inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+      if verboseAggregation {
+        writeln("DstAggregator.copy is called");
+      }
       // Get the locale of dst and the local address on that locale
       const loc = dst.locale.id;
       const dstAddr = getAddr(dst);
@@ -168,6 +173,9 @@ module CommAggregation {
     }
 
     inline proc copy(ref dst: elemType, const ref src: elemType) {
+      if verboseAggregation {
+        writeln("SrcAggregator.copy is called");
+      }
       assert(dst.locale.id == here.id);
       const dstAddr = getAddr(dst);
 

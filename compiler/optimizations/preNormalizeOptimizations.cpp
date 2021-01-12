@@ -174,6 +174,15 @@ void AggregationCandidateInfo::updateASTForRegularAssignment() {
       def->remove();
     }
   }
+
+  //if (CondStmt *aggCond = toCondStmt(this->forall->loopBody()->body.last())) {
+    //if (SymExpr *condSE = toSymExpr(aggCond->condExpr)) {
+      //if (strcmp(condSE->symbol()->name, "aggMarker")) {
+        //std::cout << "Need to remove this conditional\n";
+        //nprint_view(aggCond);
+      //}
+    //}
+  //}
 }
 
 // called during resolution
@@ -396,8 +405,6 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
 static void autoAggregation(ForallStmt *forall) {
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
     if (callSuitableForAggregation(lastCall)) {
-      std::cout << "Post ala check\n";
-      nprint_view(lastCall);
       insertAggCandidate(lastCall, forall);
     }
   }
@@ -466,10 +473,10 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
         }
         aggCandidate->logicalChildAnalyzed(call, confirmed);
       }
-      else {
-        std::cout << "No aggregation candidate for this call\n";
-        nprint_view(call);
-      }
+      //else {
+        //std::cout << "No aggregation candidate for this call\n";
+        //nprint_view(call);
+      //}
     }
   }
   return ret;
@@ -498,11 +505,11 @@ void transformConditionalAggregation(CondStmt *cond) {
 
 // if the otherChild is not null, it means that we won't visit it as an
 // automatic local access candidate. So, `candidate` is registering it.
-static void insertOrUpdateAggCandidate(CallExpr *candidate,
-                                       CallExpr *logicalChild,
-                                       bool lhs,
-                                       CallExpr *otherChild,
-                                       ForallStmt *forall) {
+//static void insertOrUpdateAggCandidate(CallExpr *candidate,
+                                       //CallExpr *logicalChild,
+                                       //bool lhs,
+                                       //CallExpr *otherChild,
+                                       //ForallStmt *forall) {
   //AggregationCandidateInfo *info;
   //if (aggCandidateCache.count(candidate) == 0) {
     //info = new AggregationCandidateInfo(candidate, forall);
@@ -521,7 +528,7 @@ static void insertOrUpdateAggCandidate(CallExpr *candidate,
   //if (otherChild != NULL) {
     //info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
   //}
-}
+//}
 
 static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
   if (flag) {
@@ -1087,21 +1094,21 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
 //static void analyzeCandidateForAggregation(CallExpr *candidate) {
 //}
 
-static bool isCallACandidateForAutoLocalAccess(CallExpr *call,
-                                               ForallStmt *forall) {
-  if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    return true; // we have already replaced the child with the primitive
-  }
-  else {
-    // it maybe something that's still in the candidates list
-    return std::count(forall->optInfo.staticCandidates.begin(),
-                      forall->optInfo.staticCandidates.end(),
-                      call) > 0 ||
-           std::count(forall->optInfo.dynamicCandidates.begin(),
-                      forall->optInfo.dynamicCandidates.end(),
-                      call) > 0;
-  }
-}
+//static bool isCallACandidateForAutoLocalAccess(CallExpr *call,
+                                               //ForallStmt *forall) {
+  //if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    //return true; // we have already replaced the child with the primitive
+  //}
+  //else {
+    //// it maybe something that's still in the candidates list
+    //return std::count(forall->optInfo.staticCandidates.begin(),
+                      //forall->optInfo.staticCandidates.end(),
+                      //call) > 0 ||
+           //std::count(forall->optInfo.dynamicCandidates.begin(),
+                      //forall->optInfo.dynamicCandidates.end(),
+                      //call) > 0;
+  //}
+//}
 
 // replace all the candidates in the loop with PRIM_MAYBE_LOCAL_THIS
 // while doing that, also builds up static and dynamic conditions
@@ -1133,9 +1140,10 @@ static void optimizeLoop(ForallStmt *forall,
     //}
 
     // capture the parent before replacing
-    CallExpr *parent = toCallExpr(candidate->parentExpr);
+    //CallExpr *parent = toCallExpr(candidate->parentExpr);
 
-    CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
+    //CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
+    replaceCandidate(candidate, checkSym, doStatic);
 
     // associate the parent assignment with the newly added
     // PRIM_MAYBE_LOCAL_ACCESS. Currently, we only care about this only if the
@@ -1143,41 +1151,39 @@ static void optimizeLoop(ForallStmt *forall,
     // the subsequent analysis to check whether we can postpone this assignment
     // only looks at the last statement and doesn't do a full alias analysis on
     // the forall body
-    if (parent == forall->loopBody()->body.last()) {
-      // there's no PRIM_ASSIGN at the moment
-      if (parent != NULL && parent->isNamed("=")) {
-        bool lhs = (parent->get(1) == replacement);
-        //std::cout << "Prenormalize candidate\n";
-        //nprint_view(candidate);
-        //nprint_view(replacement);
+    //if (parent == forall->loopBody()->body.last()) {
+      //// there's no PRIM_ASSIGN at the moment
+      //if (parent != NULL && parent->isNamed("=")) {
+        //bool lhs = (parent->get(1) == replacement);
+        ////std::cout << "Prenormalize candidate\n";
+        ////nprint_view(candidate);
+        ////nprint_view(replacement);
 
-        CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
-        if (isCallACandidateForAutoLocalAccess(otherChild, forall)) {
-          // other child is also a auto local access candidate, we don't need to
-          // register it to the aggregation candidate. It'll do so itself
-          std::cout << "100\n";
-          nprint_view(parent);
-          insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                     NULL, forall);
-        }
-        else {
+        //CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
+        //if (isCallACandidateForAutoLocalAccess(otherChild, forall)) {
+          //// other child is also a auto local access candidate, we don't need to
+          //// register it to the aggregation candidate. It'll do so itself
+          //insertOrUpdateAggCandidate(parent, replacement, lhs,
+                                     //NULL, forall);
+        //}
+        //else {
 
-          if (Symbol *otherChildCallBase = getCallBase(otherChild)) {
-          //std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
-          //if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
-            // other child is not an auto local access candidate, but for now it
-            // looks like it might be an array access, record it
-          std::cout << "200\n";
-          nprint_view(parent);
-            insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                       otherChild, forall);
-          }
-          else {
-            // other child is not a well-known pattern, can't do aggregation
-          }
-        }
-      }
-    }
+          //if (Symbol *otherChildCallBase = getCallBase(otherChild)) {
+          ////std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
+          ////if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
+            //// other child is not an auto local access candidate, but for now it
+            //// looks like it might be an array access, record it
+          //std::cout << "200\n";
+          //nprint_view(parent);
+            //insertOrUpdateAggCandidate(parent, replacement, lhs,
+                                       //otherChild, forall);
+          //}
+          //else {
+            //// other child is not a well-known pattern, can't do aggregation
+          //}
+        //}
+      //}
+    //}
   }
 }
 
