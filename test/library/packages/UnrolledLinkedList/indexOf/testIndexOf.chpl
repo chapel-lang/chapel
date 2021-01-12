@@ -1,6 +1,6 @@
 private use UnrolledLinkedList;
 
-config const testIters = 8;
+config const testIters = 120;
 
 var lst: unrolledLinkedList(int, true);
 var idx = 0;
