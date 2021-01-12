@@ -548,6 +548,19 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
         std::cout << " ";
       }
       std::cout << msg;
+      if (ForallStmt *forall = toForallStmt(node)) {
+        switch (forall->optInfo.cloneType) {
+          case STATIC_AND_DYNAMIC:
+            std::cout << " [static and dynamic ALA clone] ";
+            break;
+          case STATIC_ONLY:
+            std::cout << " [static only ALA clone] ";
+            break;
+          default:
+            INT_ASSERT("Logging an unrecognized forall statement");
+            break;
+        }
+      }
       if (node != NULL) {
         std::cout << " (" << node->stringLoc() << ")";
         if (veryVerbose) {
@@ -1297,20 +1310,25 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   Expr *staticCond = NULL;
   CallExpr *dynamicCond = NULL;
 
+
   // copy the forall to have: `noOpt` == loop0, `forall` == loop1
   noOpt = cloneLoop(forall);
+  noOpt->optInfo.cloneType = NO_OPTIMIZATION;
 
   if (sOptCandidates.size() > 0) {
     // change potential static accesses in loop1
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ true);
+    forall->optInfo.cloneType = STATIC_ONLY;
   }
 
   if (dOptCandidates.size() > 0) {
     // copy the forall to have: `noDyn` == loop1, `forall` == loop2
     noDyn = cloneLoop(forall);
+    noDyn->optInfo.cloneType = STATIC_ONLY;
     
     // change potential dynamic accesses in loop2
     optimizeLoop(forall, staticCond, dynamicCond, /* isStatic= */ false);
+    forall->optInfo.cloneType = STATIC_AND_DYNAMIC;
   }
 
   // add `(staticChecksX || .. || staticChecksZ)` part

@@ -33,7 +33,8 @@ ForallOptimizationInfo::ForallOptimizationInfo():
   iterCall(NULL),
   iterCallTmp(NULL),
   autoLocalAccessChecked(false),
-  confirmedFastFollower(false)
+  confirmedFastFollower(false),
+  cloneType(NOT_CLONE)
 {
 }
 

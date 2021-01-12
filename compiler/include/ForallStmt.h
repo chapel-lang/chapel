@@ -23,6 +23,13 @@
 
 #include "stmt.h"
 
+enum ForallAutoLocalAccessCloneType {
+  NOT_CLONE,
+  NO_OPTIMIZATION,
+  STATIC_ONLY,
+  STATIC_AND_DYNAMIC
+};
+
 class ForallOptimizationInfo {
   public:
     Symbol *iterSym;
@@ -50,9 +57,9 @@ class ForallOptimizationInfo {
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 
     bool autoLocalAccessChecked;
-
-
     bool confirmedFastFollower;
+
+    ForallAutoLocalAccessCloneType cloneType;
 
     ForallOptimizationInfo();
 };
