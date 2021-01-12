@@ -1170,7 +1170,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Returns a new DefaultRectangular array containing a copy-initialized var of 
+      Returns a new DefaultRectangular array containing a copy of 
       each of the elements contained in this unrolledLinkedList.
 
       :return: A new DefaultRectangular array.
