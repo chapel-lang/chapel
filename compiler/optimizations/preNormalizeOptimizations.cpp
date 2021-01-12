@@ -556,9 +556,6 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
           case STATIC_ONLY:
             std::cout << " [static only ALA clone] ";
             break;
-          default:
-            INT_ASSERT("Logging an unrecognized forall statement");
-            break;
         }
       }
       if (node != NULL) {
