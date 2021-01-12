@@ -122,7 +122,7 @@ class LayeredValueTable
     void addValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned);
     void addGlobalValue(llvm::StringRef name, llvm::Value *value, uint8_t isLVPtr, bool isUnsigned); //, Type* type=NULL);
     void addGlobalValue(llvm::StringRef name, GenRet gend);
-    void addGlobalType(llvm::StringRef name, llvm::Type *type);
+    void addGlobalType(llvm::StringRef name, llvm::Type *type, bool isUnsigned);
     void addGlobalCDecl(clang::NamedDecl* cdecl);
     void addGlobalCDecl(llvm::StringRef name, clang::NamedDecl* cdecl, const char* castToType=NULL);
     void addGlobalVarSymbol(llvm::StringRef name, VarSymbol* var, const char* castToType=NULL);
@@ -130,6 +130,7 @@ class LayeredValueTable
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
     llvm::Type *getType(llvm::StringRef name);
+    bool getIsUnsigned(llvm::StringRef name);
     void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
         clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
         astlocT *astlocOut=NULL);

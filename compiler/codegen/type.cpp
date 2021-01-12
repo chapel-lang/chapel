@@ -93,7 +93,7 @@ void EnumType::codegenDef() {
 
     if(!(type = info->lvt->getType(symbol->cname))) {
       type = ty->codegen().type;
-      info->lvt->addGlobalType(symbol->cname, type);
+      info->lvt->addGlobalType(symbol->cname, type, !is_signed(ty));
 
       // Convert enums to constants with the user-specified immediate,
       // sized appropriately, when it exists.  When it doesn't, give
@@ -436,7 +436,7 @@ void AggregateType::codegenDef() {
   if( !outfile ) {
 #ifdef HAVE_LLVM
     if( ! this->symbol->llvmType ) {
-      info->lvt->addGlobalType(this->symbol->cname, type);
+      info->lvt->addGlobalType(this->symbol->cname, type, false);
       this->symbol->llvmType = type;
     }
 #endif
@@ -459,10 +459,10 @@ void AggregateType::codegenPrototype() {
 
       llvm::StructType* st;
       st = llvm::StructType::create(info->module->getContext(), struct_name);
-      info->lvt->addGlobalType(struct_name, st);
+      info->lvt->addGlobalType(struct_name, st, false);
 
       llvm::PointerType* pt = llvm::PointerType::getUnqual(st);
-      info->lvt->addGlobalType(symbol->cname, pt);
+      info->lvt->addGlobalType(symbol->cname, pt, false);
       symbol->llvmType = pt;
 #endif
     }

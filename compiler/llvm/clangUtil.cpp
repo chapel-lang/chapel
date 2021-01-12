@@ -2489,9 +2489,10 @@ void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
   addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
 }
 
-void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
+void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
   Storage store;
   store.u.type = type;
+  store.isUnsigned = isUnsigned;
   /*fprintf(stderr, "Adding global type %s ", name.str().c_str());
   type->dump();
   fprintf(stderr, "\n");
@@ -2628,10 +2629,19 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
 
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
+      const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
+      store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
       return store->u.type;
     }
   }
   return NULL;
+}
+
+bool LayeredValueTable::getIsUnsigned(StringRef name) {
+  if (Storage *store = get(name)) {
+    return store->isUnsigned;
+  }
+  return false;
 }
 
 // Returns a type or a name decl for a given name

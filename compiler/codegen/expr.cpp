@@ -1339,6 +1339,7 @@ GenRet createTempVar(const char* ctype)
     llvm::Type* llTy = info->lvt->getType(ctype);
     INT_ASSERT(llTy);
     ret.val = createVarLLVM(llTy, name);
+    ret.isUnsigned = info->lvt->getIsUnsigned(ctype);
 #endif
   }
   return ret;
@@ -1368,6 +1369,7 @@ GenRet createTempVar(Type* t)
 #endif
   }
   ret.chplType = t;
+  ret.isUnsigned = !is_signed(t);
   return ret;
 }
 
