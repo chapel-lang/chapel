@@ -52,6 +52,23 @@ static void LOGLN_ALA(BaseAST *node);
 static void LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
 
+static const char *getForallCloneTypeStr(ForallStmt *forall) {
+  switch (forall->optInfo.cloneType) {
+    case STATIC_AND_DYNAMIC:
+      return "[static and dynamic ALA clone]";
+      break;
+    case STATIC_ONLY:
+      return "[static only ALA clone]";
+      break;
+    case NO_OPTIMIZATION:
+      return "[no ALA clone]";
+      break;
+    default:
+      break;
+  }
+  return "";
+}
+
 
 AggregationCandidateInfo::AggregationCandidateInfo():
   candidate(NULL),
@@ -224,27 +241,36 @@ void AggregationCandidateInfo::update() {
     return; // we still need to wait for some of the children's analysis
   }
 
+  std::stringstream message;
+
   if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
-    LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
+    //LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
+    message << "Can't determine if either side is local. Will not use aggregation ";
     this->updateASTForRegularAssignment();
     return;
   }
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
-    LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
+    //LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
+    message << "Both sides are local. Will not use aggregation ";
     this->updateASTForRegularAssignment();
     return;
   }
 
   // TODO we should probably check whether the side we are aggregating is array?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
+    //LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
+    message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
     this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
+    //LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
+    message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
     this->updateASTForAggregation(/*srcAggregation=*/false);
   }
+  message << getForallCloneTypeStr(this->forall);
+
+  LOG_AA(0, message.str().c_str(), this->candidate);
 }
 
 void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
@@ -433,6 +459,7 @@ void doPreNormalizeArrayOptimizations() {
   }
 }
 
+
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
   Expr *ret = NULL;
   if (fAutoLocalAccess) {
@@ -467,12 +494,15 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
       //}
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
       if (aggCandidate != NULL) {
-        if (confirmed) {
-          LOG_AA(0, "Aggregation candidate has confirmed local child", aggCandidate->candidate);
-        }
-        else {
-          LOG_AA(0, "Aggregation candidate has reverted local child", aggCandidate->candidate);
-        }
+
+        std::stringstream message;
+        message << "Aggregation candidate ";
+        message << "has ";
+        message << (confirmed ? "confirmed" : "reverted");
+        message << " local child ";
+        message << getForallCloneTypeStr(aggCandidate->forall);
+        LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
+
         aggCandidate->logicalChildAnalyzed(call, confirmed);
       }
       //else {
@@ -531,6 +561,8 @@ void transformConditionalAggregation(CondStmt *cond) {
     //info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
   //}
 //}
+//
+
 
 static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
   if (flag) {
@@ -555,6 +587,11 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
             break;
           case STATIC_ONLY:
             std::cout << " [static only ALA clone] ";
+            break;
+          case NO_OPTIMIZATION:
+            std::cout << " [no ALA clone] ";
+            break;
+          default:
             break;
         }
       }
