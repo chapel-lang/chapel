@@ -48,6 +48,8 @@ enum importUseProgress {
   IUP_COMPLETED    // We've finished resolving use and import statements
 };
 
+typedef std::pair<Symbol*, const char*> SymAndReferencedName;
+
 // A preliminary version of a class to support the scope resolve pass
 // This is currently a thin wrapping over a previous typedef + functions
 class ResolveScope {
@@ -84,9 +86,7 @@ public:
 
   bool                  extend(VisibilityStmt* stmt);
 
-  Symbol*               lookupForImport(Expr* expr, bool isUse,
-                                        bool* wasTypeWithMethod,
-                                        std::string* typeName)           const;
+  SymAndReferencedName  lookupForImport(Expr* expr, bool isUse)          const;
 
   Symbol*               lookup(Expr*       expr, bool isUse=false)       const;
 

@@ -152,40 +152,39 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
   // 2020/03/02: checkValid() does not currently return on failure, to generate
   // good error messages
   if (checkValid(src) == true) {
-    bool wasTypeWithMethod = false;
-    std::string typeName;
     if (isSymExpr(src)) {
       // We should at least be in the process of resolving the use and import
       // statements for this scope if src is a SymExpr at this point.
       INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, false,
-                                                    &wasTypeWithMethod,
-                                                    &typeName)) {
+    } else {
+      SymAndReferencedName symAndName = scope->lookupForImport(src, false);
       SET_LINENO(this);
 
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        if (wasTypeWithMethod) {
-          // lookupForImport returned the last resolved symbol, but there was
-          // another name at the end of the expression corresponding to a
-          // type with methods defined in that scope.  This type name should be
-          // preserved by adding it to the end of the list of symbols for
-          // unqualified access.
-          this->unqualified.push_back(astr(typeName.c_str()));
+      if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
+        if (symAndName.second[0] != '\0') {
+          // The last name resolved wasn't to a module, so point the import to
+          // the last module and move the last name to the unqualified or
+          // renamed list
+          if (modRename[0] != '\0') {
+            // The user wanted to rename this symbol when bringing it in.
+            // Move the module rename to be the rename for the symbol
+            renamed[modRename] = symAndName.second;
+            modRename = astr("");
+          } else {
+            // We want to only enable unqualified access of this particular
+            // symbol in the module
+            this->unqualified.push_back(symAndName.second);
+          }
         }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
-        updateEnclosingBlock(scope, sym);
+        updateEnclosingBlock(scope, modSym);
 
         validateList();
 
       } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'import' statements must include a module symbol "
-                    "(e.g., 'import <module>;')");
-
-        } else if (sym->name != NULL) {
+        if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
             // We found a symbol that wasn't a module, but the import statement
             // wasn't looking in a path with one or more `.`s in it.  That
@@ -199,46 +198,13 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // this is `B` of `import A.B.{C, D};`).  This symbol is required
             // to be a module
             USR_FATAL(this, "Last symbol prior to `{` in import must be a "
-                      "module, symbol '%s' is not", sym->name);
+                      "module, symbol '%s' is not", symAndName.second);
           }
 
-          if (modRename[0] != '\0') {
-            // The user wanted to rename this symbol when bringing it in.
-            // Move the module rename to be the rename for the symbol
-            renamed[modRename] = sym->name;
-            modRename = astr("");
-          } else {
-            // We want to only enable unqualified access of this particular
-            // symbol in the module
-            this->unqualified.push_back(sym->name);
-          }
-
-          ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
-          if (parentSym == NULL) {
-            INT_ASSERT(sym->defPoint->parentSymbol != NULL);
-            USR_FATAL_CONT(this, "only the last symbol in an 'import' "
-                           "statement's path can be something other than a "
-                           "module");
-            USR_PRINT(this, "'%s' is not a module",
-                      sym->defPoint->parentSymbol->name);
-            USR_STOP();
-          }
-          scope->enclosingModule()->moduleUseAdd(parentSym);
-          updateEnclosingBlock(scope, parentSym);
-
-          validateList();
-
+          INT_FATAL(this, "Cannot find module");
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
         }
-      }
-
-    } else {
-      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module or symbol '%s'",
-                  import->unresolved);
-      } else {
-        INT_FATAL(this, "Cannot find module");
       }
     }
   }

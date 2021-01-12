@@ -161,8 +161,6 @@ bool UseStmt::hasExceptList() const {
 void UseStmt::scopeResolve(ResolveScope* scope) {
   // 2017-05-28: isValid() does not currently return on failure
   if (isValid(src) == true) {
-    bool wasTypeWithMethod = false;
-    std::string typeName;
     // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
       // Alternatively, we could have needed to resolve the use and import
@@ -171,52 +169,37 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
       INT_ASSERT(se->symbol() == rootModule ||
                  scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true,
-                                                    &wasTypeWithMethod,
-                                                    &typeName)) {
+    } else {
+      SymAndReferencedName symAndName = scope->lookupForImport(src, /* isUse */
+                                                               true);
       SET_LINENO(this);
 
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        if (wasTypeWithMethod) {
+      if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
+        if (symAndName.second[0] != '\0') {
           USR_FATAL(this,
                     "'use' of non-module/enum symbol %s",
-                    typeName.c_str());
+                    symAndName.second);
         }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
-        updateEnclosingBlock(scope, sym);
+        updateEnclosingBlock(scope, modSym);
 
         validateList();
 
-      } else if (isEnum(sym) == true) {
-        updateEnclosingBlock(scope, sym);
+      } else if (isEnum(symAndName.first) == true) {
+        updateEnclosingBlock(scope, symAndName.first);
 
         validateList();
 
+      } else if (symAndName.second[0] != '\0') {
+        USR_FATAL(this,
+                  "'use' of non-module/enum symbol %s",
+                  symAndName.second);
+
       } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'use' statements must refer to module or enum symbols "
-                    "(e.g., 'use <module>[.<submodule>]*;')");
-
-        } else if (sym->name != NULL) {
-          USR_FATAL_CONT(this,
-                         "'use' of non-module/enum symbol %s",
-                         sym->name);
-          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-          USR_STOP();
-
-        } else {
-          USR_FATAL(this, "'use' of non-module/enum symbol");
-        }
+        USR_FATAL(this, "'use' of non-module/enum symbol");
       }
 
-    } else {
-      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
-      } else {
-        USR_FATAL(this, "Cannot find module or enum");
-      }
     }
 
   } else {

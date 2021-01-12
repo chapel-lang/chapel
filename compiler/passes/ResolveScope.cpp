@@ -693,9 +693,8 @@ void ResolveScope::firstImportedModuleName(Expr* expr,
   }
 }
 
-Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
-                                      bool* wasTypeWithMethod,
-                                      std::string* typeName) const {
+SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
+                                                   bool isUse) const {
   Symbol* retval = NULL;
 
   const char* stmtType = isUse ? "use" : "import";
@@ -715,6 +714,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
       INT_FATAL("case not handled");
   }
 
+  ModuleSymbol* outerMod = NULL;
+
   if (name != NULL) {
     const ResolveScope* start = relativeScope!=NULL ? relativeScope : this;
     const ResolveScope* ptr = NULL;
@@ -722,6 +723,7 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
     ModuleSymbol* thisMod = enclosingModule();
     for (ptr = start; ptr != NULL && retval == NULL; ptr = ptr->mParent) {
       ModuleSymbol* ptrMod = ptr->enclosingModule();
+      outerMod = ptrMod;
       // Check if the module is defined in this scope
       Symbol* sym = ptr->lookupNameLocallyForImport(name);
       if (ModuleSymbol* mod = toModuleSymbol(sym)) {
@@ -790,7 +792,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
       // certain this is okay to return
       retval = toSymbol(relativeScope->mAstRef);
       INT_ASSERT(retval != NULL);
-      return retval;
+      SymAndReferencedName res(retval, astr(""));
+      return res;
     } else {
       // Something other than just `import super;` was let through the check of
       // the first imported module name
@@ -805,22 +808,21 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
       USR_FATAL(expr, "Cannot find symbol '%s'", name);
   }
 
-  Symbol* modPreType = NULL;
+  std::string symName = "";
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
     if (!isModuleSymbol(retval)) {
       if (retval == NULL) {
         USR_FATAL(call, "cannot make nested %s from non-module '%s'",
-                  stmtType, (*typeName).c_str());
+                  stmtType, symName.c_str());
       } else {
         USR_FATAL(call, "cannot make nested %s from non-module '%s'",
                   stmtType, retval->name);
       }
     }
 
-    Symbol* outer = retval;
-    ModuleSymbol* outerMod = toModuleSymbol(outer);
+    outerMod = toModuleSymbol(retval);
 
     const char* rhsName = getNameFrom(call->get(2));
     INT_ASSERT(rhsName != NULL);
@@ -837,10 +839,8 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
       // We would need to resolve further to know the exact type it is defined
       // on, so for now just clear the symbol being returned and update the
       // return argument to track this
-      modPreType = retval;
       retval = NULL;
-      *wasTypeWithMethod = true;
-      *typeName = rhsName;
+      symName = rhsName;
 
     } else {
       if (scope->progress == IUP_NOT_STARTED) {
@@ -883,10 +883,23 @@ Symbol* ResolveScope::lookupForImport(Expr* expr, bool isUse,
     call = toCallExpr(call->parentExpr);
   }
 
-  if (retval == NULL && modPreType != NULL) {
-    return modPreType;
+  if (retval == NULL) {
+    INT_ASSERT(outerMod != NULL);
+    return SymAndReferencedName(outerMod, astr(symName.c_str()));
+
   } else {
-    return retval;
+    bool isEnum = false;
+    if (TypeSymbol* typeSym = toTypeSymbol(retval)) {
+      isEnum = isEnumType(typeSym->type);
+    }
+
+    if (isModuleSymbol(retval)) {
+      return SymAndReferencedName(retval, astr(""));
+    } else if (isUse && isEnum) {
+      return SymAndReferencedName(retval, astr(""));
+    } else {
+      return SymAndReferencedName(outerMod, astr(retval->name));
+    }
   }
 }
 
