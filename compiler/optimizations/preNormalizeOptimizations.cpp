@@ -166,9 +166,14 @@ void AggregationCandidateInfo::updateASTForRegularAssignment() {
   // we found out that both sides of the assignment is local, or neither can be
   // proved to be local. So, we need all the aggregators we have created to be
   // cleaned up
-  std::cout << "I need to remove shadow variables\n";
-  nprint_view(this->forall);
-  
+  for_shadow_vars_and_defs (svar, def, temp, this->forall) {
+    if (svar == this->srcAggregator) {
+      def->remove();
+    }
+    else if (svar == this->dstAggregator) {
+      def->remove();
+    }
+  }
 }
 
 // called during resolution
@@ -213,24 +218,24 @@ void AggregationCandidateInfo::update() {
   }
 
   if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
-    // TODO we may need to cleanup the info, remove added aggregators etc
+    LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
+    this->updateASTForRegularAssignment();
     return;
   }
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
-    // TODO we may need to cleanup the info, remove added aggregators etc
+    LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
     this->updateASTForRegularAssignment();
     return;
   }
 
   // TODO we should probably check whether the side we are aggregating is array?
-  // what happens if the other side turned out to be local access?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    // we will aggregate the expression on the right
+    LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
     this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    // we will aggregate the expression on the left
+    LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
     this->updateASTForAggregation(/*srcAggregation=*/false);
   }
 }
@@ -326,6 +331,78 @@ static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
+//static bool lhsOrRhsPrimMaybeLocalThis(CallExpr *call, bool lhs) {
+  //INT_ASSERT(call->isNamed("=")); // fyi
+  //if (CallExpr *childCall = toCallExpr(call->get(lhs ? 1 : 2))) {
+    //if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+      //return true;
+    //}
+  //}
+  //return false;
+
+//}
+//static bool lhsPrimMaybeLocalThis(CallExpr *call) {
+  //return lhsOrRhsPrimMaybeLocalThis(call, true);
+//}
+
+//static bool rhsPrimMaybeLocalThis(CallExpr *call) {
+  //return lhsOrRhsPrimMaybeLocalThis(call, false);
+//}
+
+// currently we want both sides to be calls, but we need to relax these to
+// accept symexprs to support foralls over arrays
+static bool callSuitableForAggregation(CallExpr *call) {
+  if (call->isNamed("=")) {
+    if (CallExpr *leftCall = toCallExpr(call->get(1))) {
+      if (CallExpr *rightCall = toCallExpr(call->get(2))) {
+        if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return true;
+        }
+        if (rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
+  INT_ASSERT(aggCandidateCache.count(call) == 0);
+
+  AggregationCandidateInfo *info = new AggregationCandidateInfo(call, forall);
+  aggCandidateCache[call] = info;
+
+  // establish connection between PRIM_MAYBE_LOCAL_THIS and their parent
+  CallExpr *lhsCall = toCallExpr(call->get(1));
+  INT_ASSERT(lhsCall); // enforced by callSuitableForAggregation
+  if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    info->lhsLocalityInfo = PENDING;
+    preNormalizeAggCandidate[lhsCall] = info;
+  }
+  info->lhsLogicalChild = lhsCall;
+
+  CallExpr *rhsCall = toCallExpr(call->get(2));
+  INT_ASSERT(rhsCall); // enforced by callSuitableForAggregation
+  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    info->rhsLocalityInfo = PENDING;
+    preNormalizeAggCandidate[rhsCall] = info;
+  }
+  info->rhsLogicalChild = rhsCall;
+
+  info->tryAddingAggregator();
+}
+
+static void autoAggregation(ForallStmt *forall) {
+  if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
+    if (callSuitableForAggregation(lastCall)) {
+      std::cout << "Post ala check\n";
+      nprint_view(lastCall);
+      insertAggCandidate(lastCall, forall);
+    }
+  }
+}
+
 void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  !fNoFastFollowers;
@@ -338,6 +415,10 @@ void doPreNormalizeArrayOptimizations() {
 
       if (fAutoLocalAccess) {
         autoLocalAccess(forall);
+      }
+
+      if (true) {
+        autoAggregation(forall);
       }
     }
   }
@@ -385,6 +466,10 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
         }
         aggCandidate->logicalChildAnalyzed(call, confirmed);
       }
+      else {
+        std::cout << "No aggregation candidate for this call\n";
+        nprint_view(call);
+      }
     }
   }
   return ret;
@@ -418,24 +503,24 @@ static void insertOrUpdateAggCandidate(CallExpr *candidate,
                                        bool lhs,
                                        CallExpr *otherChild,
                                        ForallStmt *forall) {
-  AggregationCandidateInfo *info;
-  if (aggCandidateCache.count(candidate) == 0) {
-    info = new AggregationCandidateInfo(candidate, forall);
-    aggCandidateCache[candidate] = info;
-  }
-  else {
-    info = aggCandidateCache[candidate];
-  }
+  //AggregationCandidateInfo *info;
+  //if (aggCandidateCache.count(candidate) == 0) {
+    //info = new AggregationCandidateInfo(candidate, forall);
+    //aggCandidateCache[candidate] = info;
+  //}
+  //else {
+    //info = aggCandidateCache[candidate];
+  //}
 
-  // map this child to the info, so that we can pull it up when we resolve the
-  // child
-  preNormalizeAggCandidate[logicalChild] = info;
+  //// map this child to the info, so that we can pull it up when we resolve the
+  //// child
+  //preNormalizeAggCandidate[logicalChild] = info;
 
-  info->registerLogicalChild(logicalChild, lhs, PENDING);
+  //info->registerLogicalChild(logicalChild, lhs, PENDING);
 
-  if (otherChild != NULL) {
-    info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
-  }
+  //if (otherChild != NULL) {
+    //info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
+  //}
 }
 
 static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
@@ -1070,14 +1155,20 @@ static void optimizeLoop(ForallStmt *forall,
         if (isCallACandidateForAutoLocalAccess(otherChild, forall)) {
           // other child is also a auto local access candidate, we don't need to
           // register it to the aggregation candidate. It'll do so itself
+          std::cout << "100\n";
+          nprint_view(parent);
           insertOrUpdateAggCandidate(parent, replacement, lhs,
                                      NULL, forall);
         }
         else {
-          std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
-          if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
+
+          if (Symbol *otherChildCallBase = getCallBase(otherChild)) {
+          //std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
+          //if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
             // other child is not an auto local access candidate, but for now it
             // looks like it might be an array access, record it
+          std::cout << "200\n";
+          nprint_view(parent);
             insertOrUpdateAggCandidate(parent, replacement, lhs,
                                        otherChild, forall);
           }
@@ -1273,9 +1364,9 @@ static void autoLocalAccess(ForallStmt *forall) {
 
     if (accBaseSym == NULL) {
       // if it looks like an array access, record it
-      if (Symbol *aggChildBaseSym = getCallBase(call)) {
-        forall->optInfo.suitableAggChildren.push_back(call);
-      }
+      //if (Symbol *aggChildBaseSym = getCallBase(call)) {
+        //forall->optInfo.suitableAggChildren.push_back(call);
+      //}
       continue;
     }
 
