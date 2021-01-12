@@ -33,6 +33,10 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+// flags to be added to the aggregation markers
+symbolFlag ( FLAG_AGG_MARKER, npr, "aggregation marker", ncm)
+symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "aggregation marker", " this aggreagation is happening in a static only forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "aggregation marker", " this aggreagation is happening in a static and dynamic forall clone")
 
 // Indicates an array implementation class can alias other array implementations
 // e.g. array views

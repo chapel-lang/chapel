@@ -919,7 +919,7 @@ static CondStmt *getAggregationCondStmt(Expr *stmt) {
   // parent is the actual conditional
   if (CondStmt *aggCond = toCondStmt(stmt->parentExpr->parentExpr)) {
     if (SymExpr *condExpr = toSymExpr(aggCond->condExpr)) {
-      if (strcmp(condExpr->symbol()->name, "aggMarker") == 0) {
+      if (condExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
         return aggCond;
       }
     }

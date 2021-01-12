@@ -220,6 +220,17 @@ void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
   // create the conditional with regular assignment on the then block
   // and the aggregated call is on the else block
   Symbol *aggMarker = newTemp("aggMarker", dtBool);
+  aggMarker->addFlag(FLAG_AGG_MARKER);
+  switch (this->forall->optInfo.cloneType) {
+    case STATIC_AND_DYNAMIC:
+      aggMarker->addFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE);
+      break;
+    case STATIC_ONLY:
+      aggMarker->addFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE);
+      break;
+    default:
+      break;
+  }
   this->candidate->insertBefore(new DefExpr(aggMarker));
 
   BlockStmt *thenBlock = new BlockStmt();
@@ -245,14 +256,14 @@ void AggregationCandidateInfo::update() {
 
   if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
     //LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
-    message << "Can't determine if either side is local. Will not use aggregation ";
+    if (true) message << "Can't determine if either side is local. Will not use aggregation ";
     this->updateASTForRegularAssignment();
     return;
   }
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
     //LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
-    message << "Both sides are local. Will not use aggregation ";
+    if (true) message << "Both sides are local. Will not use aggregation ";
     this->updateASTForRegularAssignment();
     return;
   }
@@ -260,17 +271,19 @@ void AggregationCandidateInfo::update() {
   // TODO we should probably check whether the side we are aggregating is array?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
     //LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
-    message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
+    if (true) message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
     this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
     //LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
-    message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
+    if (true) message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
     this->updateASTForAggregation(/*srcAggregation=*/false);
   }
-  message << getForallCloneTypeStr(this->forall);
 
-  LOG_AA(0, message.str().c_str(), this->candidate);
+  if (true) {
+    message << getForallCloneTypeStr(this->forall);
+    LOG_AA(0, message.str().c_str(), this->candidate);
+  }
 }
 
 void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
@@ -495,13 +508,15 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
       if (aggCandidate != NULL) {
 
-        std::stringstream message;
-        message << "Aggregation candidate ";
-        message << "has ";
-        message << (confirmed ? "confirmed" : "reverted");
-        message << " local child ";
-        message << getForallCloneTypeStr(aggCandidate->forall);
-        LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
+        if (true) {
+          std::stringstream message;
+          message << "Aggregation candidate ";
+          message << "has ";
+          message << (confirmed ? "confirmed" : "reverted");
+          message << " local child ";
+          message << getForallCloneTypeStr(aggCandidate->forall);
+          LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
+        }
 
         aggCandidate->logicalChildAnalyzed(call, confirmed);
       }
@@ -525,10 +540,20 @@ void transformConditionalAggregation(CondStmt *cond) {
   
   // remove the defpoint of the aggregation marker
   SymExpr *condExpr = toSymExpr(cond->condExpr);
-
-  LOG_AA(0, "Replaced assignment with aggregation", condExpr);
-
   INT_ASSERT(condExpr);
+
+  if (true) {
+    std::stringstream message;
+    message << "Replaced assignment with aggregation";
+    if (condExpr->symbol()->hasFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE)) {
+      message << " [static and dynamic ALA clone] ";
+    }
+    else if (condExpr->symbol()->hasFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE)) {
+      message << " [static only ALA clone] ";
+    }
+    LOG_AA(0, message.str().c_str(), condExpr);
+  }
+
   condExpr->symbol()->defPoint->remove();
 
   // remove the conditional
