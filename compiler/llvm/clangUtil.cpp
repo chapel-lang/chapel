@@ -2630,7 +2630,9 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
       const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
-      store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
+      if (type != NULL) {
+        store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
+      }
       return store->u.type;
     }
   }
