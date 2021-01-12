@@ -874,8 +874,8 @@ module UnrolledLinkedList {
         }
         else {
           pos += cur!.size;
+          cur = cur!.next;
         }
-        cur = cur!.next;
       }
 
       // shouldn't reach here
