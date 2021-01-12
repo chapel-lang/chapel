@@ -1460,6 +1460,15 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (!fLlvmCodegen)
     clangArgs.push_back("-fsyntax-only");
 
+  /*
+  if( localeUsesGPU() == true && gCodegenGPU == false ) {
+    clangArgs.push_back("-Xclang");
+    clangArgs.push_back("-fcuda-include-gpubinary");
+    clangArgs.push_back("-Xclang");
+    clangArgs.push_back("tmp/chpl_gpu.fatbin");
+  }
+  */
+
   if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangArgs.size(); i++ ) {
       printf("%s ", clangArgs[i]);
@@ -1496,13 +1505,6 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
 
-  if (printSystemCommands && developer) {
-    printf("<internal clang jobs>\n");
-    for(auto command : C->getJobs()){
-      command.Print(llvm::dbgs(), "\n\n", false);
-    }
-  }
-
   clang::driver::Command* job = NULL;
 
   if (localeUsesGPU() == false) {
@@ -1512,19 +1514,19 @@ void setupClang(GenInfo* info, std::string mainFile)
     // CPU+GPU compilation
     //  1st cc1 command is for the GPU
     //  2nd cc1 command is for the CPU
-    for (auto &command : C->getJobs()) {
+    for ( auto &command : C->getJobs() ) {
       bool isCC1 = false;
-      for (auto arg : command.getArguments()) {
-        if (0 == strcmp(arg, "-cc1")) {
+      for ( auto arg : command.getArguments() ) {
+        if ( 0 == strcmp(arg, "-cc1") ) {
           isCC1 = true;
           break;
         }
       }
       if (isCC1) {
 
-        if (gCodegenGPU) {
+        if ( gCodegenGPU ) {
           // For GPU, set j to 1st cc1 command
-          if (job == NULL) job = &command;
+          if ( job == NULL ) job = &command;
         } else {
           // For CPU, set j to last cc1 command
           job = &command;
@@ -1533,8 +1535,35 @@ void setupClang(GenInfo* info, std::string mainFile)
     }
   }
 
+
   if (job == NULL)
     USR_FATAL("Could not find cc1 command from clang driver");
+  /*
+  clang::driver::Command newJob(job->getSource(), job->getCreator(),
+                                 //job->getResponseFileSupport(),
+                                 job->getExecutable(),
+                                 job->getArguments(), 
+                                 job->getInputFilenames());
+                                 //job->getOutputFilenames());
+  */
+
+  if ( gCodegenGPU == false && localeUsesGPU() == true ) {
+    std::string fatbinPath = "";
+    bool isGPUBinaryFlag = false;
+
+    for ( auto a : job->getArguments() ) {
+
+      if ( isGPUBinaryFlag ) {
+        fatbinPath = a;
+        break;
+      }
+
+      if ( 0 == strcmp(a, "-fcuda-include-gpubinary") ){
+        isGPUBinaryFlag = true;
+      }
+    }
+    std::cout << "fatbin path: " << fatbinPath << "\n"; 
+  }
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
