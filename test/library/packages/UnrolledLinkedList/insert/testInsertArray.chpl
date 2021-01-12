@@ -17,7 +17,7 @@ assert(lst.insert(lst.size, arr));
 assert(lst.size == 2 * arr.size);
 
 for i in 0..#testIters do
-  assert(arr[i] == lst[i]);
+  assert(arr[i] == lst[i + testIters]);
 
 assert(!lst.insert(-1, arr));
 
