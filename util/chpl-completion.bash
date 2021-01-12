@@ -255,6 +255,7 @@ _chpl ()
 --prepend-internal-module-dir \
 --prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
+--print-additional-errors \
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
