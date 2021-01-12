@@ -1,3 +1,4 @@
 assignConstDom2.chpl:1: In function 'foo':
 assignConstDom2.chpl:2: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type domain(1,int(64),false)
+  assignConstDom2.chpl:11: called as foo(x: domain(1,int(64),false))

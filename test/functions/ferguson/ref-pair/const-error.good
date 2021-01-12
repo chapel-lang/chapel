@@ -63,3 +63,4 @@ const-error.chpl:20: note: passed as ref here
 const-error.chpl:11: note: to ref formal here
 const-error.chpl:12: note: passed as ref here
 const-error.chpl:12: note: passed as ref here
+  const-error.chpl:46: called as f(array: [domain(1,int(64),false)] int(64))
