@@ -129,8 +129,7 @@ class LayeredValueTable
     void addBlock(llvm::StringRef name, llvm::BasicBlock *block);
     GenRet getValue(llvm::StringRef name);
     llvm::BasicBlock *getBlock(llvm::StringRef name);
-    llvm::Type *getType(llvm::StringRef name);
-    bool getIsUnsigned(llvm::StringRef name);
+    llvm::Type *getType(llvm::StringRef name, bool* isUnsigned=NULL);
     void getCDecl(llvm::StringRef name, clang::TypeDecl** cTypeOut,
         clang::ValueDecl** cValueOut, const char** cCastedToTypeOut=NULL,
         astlocT *astlocOut=NULL);

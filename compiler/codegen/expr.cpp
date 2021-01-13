@@ -1336,10 +1336,11 @@ GenRet createTempVar(const char* ctype)
     ret.c = std::string("&") + name;
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* llTy = info->lvt->getType(ctype);
+    bool isUnsigned;
+    llvm::Type* llTy = info->lvt->getType(ctype, &isUnsigned);
     INT_ASSERT(llTy);
     ret.val = createVarLLVM(llTy, name);
-    ret.isUnsigned = info->lvt->getIsUnsigned(ctype);
+    ret.isUnsigned = isUnsigned;
 #endif
   }
   return ret;

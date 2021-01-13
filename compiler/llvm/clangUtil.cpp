@@ -2616,8 +2616,12 @@ llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
   return NULL;
 }
 
-llvm::Type *LayeredValueTable::getType(StringRef name) {
+llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
   if(Storage *store = get(name)) {
+    if (isUnsigned != NULL) {
+      *isUnsigned = store->isUnsigned;
+    }
+
     if( store->u.type ) {
       INT_ASSERT(isa<llvm::Type>(store->u.type));
       return store->u.type;
@@ -2637,13 +2641,6 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
     }
   }
   return NULL;
-}
-
-bool LayeredValueTable::getIsUnsigned(StringRef name) {
-  if (Storage *store = get(name)) {
-    return store->isUnsigned;
-  }
-  return false;
 }
 
 // Returns a type or a name decl for a given name
