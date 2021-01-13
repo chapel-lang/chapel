@@ -2251,13 +2251,14 @@ module DefaultRectangular {
     use RangeChunk;
 
     type resType = op.generate().type;
-    var res: [dom] resType;
+    var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
     // Take first pass, computing per-task partial scans, stored in 'state'
     var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
     // Take second pass updating result based on the scanned 'state'
     this.chpl__postScan(op, res, numTasks, rngs, state);
+    if isPOD(resType) then res.dsiElementInitializationComplete();
 
     // Clean up and return
     delete op;
