@@ -366,14 +366,18 @@ void AggregationCandidateInfo::update() {
 
   if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
     //LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
-    if (true) message << "Can't determine if either side is local. Will not use aggregation ";
+    if (fReportAutoAggregation) {
+      message << "Can't determine if either side is local. Will not use aggregation ";
+    }
     this->updateASTForRegularAssignment();
     return;
   }
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
     //LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
-    if (true) message << "Both sides are local. Will not use aggregation ";
+    if (fReportAutoAggregation) {
+      message << "Both sides are local. Will not use aggregation ";
+    }
     this->updateASTForRegularAssignment();
     return;
   }
@@ -381,16 +385,20 @@ void AggregationCandidateInfo::update() {
   // TODO we should probably check whether the side we are aggregating is array?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
     //LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
-    if (true) message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
+    if (fReportAutoAggregation) {
+      message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
+    }
     this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
     //LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
-    if (true) message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
+    if (fReportAutoAggregation) {
+      message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
+    }
     this->updateASTForAggregation(/*srcAggregation=*/false);
   }
 
-  if (true) {
+  if (fReportAutoAggregation) {
     message << getForallCloneTypeStr(this->forall);
     LOG_AA(0, message.str().c_str(), this->candidate);
   }
@@ -584,7 +592,7 @@ void doPreNormalizeArrayOptimizations() {
         autoLocalAccess(forall);
       }
 
-      if (true) {
+      if (fReportAutoAggregation) {
         autoAggregation(forall);
       }
     }
@@ -627,7 +635,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
       AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
       if (aggCandidate != NULL) {
 
-        if (true) {
+        if (fReportAutoAggregation) {
           std::stringstream message;
           message << "Aggregation candidate ";
           message << "has ";
@@ -661,7 +669,7 @@ void transformConditionalAggregation(CondStmt *cond) {
   SymExpr *condExpr = toSymExpr(cond->condExpr);
   INT_ASSERT(condExpr);
 
-  if (true) {
+  if (fReportAutoAggregation) {
     std::stringstream message;
     message << "Replaced assignment with aggregation";
     if (condExpr->symbol()->hasFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE)) {

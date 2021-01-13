@@ -1,1 +1,1 @@
--sverboseAggregation=true
+--report-auto-aggregation -sverboseAggregation=true
