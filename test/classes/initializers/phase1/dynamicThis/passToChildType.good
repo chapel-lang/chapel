@@ -1,5 +1,5 @@
 passToChildType.chpl:17: In initializer:
 passToChildType.chpl:19: error: unresolved call 'foobar(borrowed Parent)'
 passToChildType.chpl:23: note: this candidate did not match: foobar(c: borrowed Child)
-passToChildType.chpl:19: note: because call actual argument #1 with type borrowed Parent
+passToChildType.chpl:19: note: because actual argument #1 with type 'borrowed Parent'
 passToChildType.chpl:23: note: is passed to formal 'c: borrowed Child'

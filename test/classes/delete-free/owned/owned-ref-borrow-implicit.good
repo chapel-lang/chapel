@@ -1,5 +1,5 @@
 owned-ref-borrow-implicit.chpl:12: In function 'test':
 owned-ref-borrow-implicit.chpl:15: error: unresolved call 'acceptRef(owned MyClass)'
 owned-ref-borrow-implicit.chpl:7: note: this candidate did not match: acceptRef(ref arg: borrowed MyClass)
-owned-ref-borrow-implicit.chpl:15: note: because call actual argument #1 with type owned MyClass
+owned-ref-borrow-implicit.chpl:15: note: because actual argument #1 with type 'owned MyClass'
 owned-ref-borrow-implicit.chpl:7: note: is passed to formal 'ref arg: borrowed MyClass'

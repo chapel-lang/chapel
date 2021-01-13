@@ -1,5 +1,5 @@
 int-coerce-var.chpl:9: In function 'test':
 int-coerce-var.chpl:12: error: unresolved call 'acceptIntRef(int(8))'
 int-coerce-var.chpl:1: note: this candidate did not match: acceptIntRef(ref arg: int)
-int-coerce-var.chpl:12: note: because call actual argument #1 with type int(8)
+int-coerce-var.chpl:12: note: because actual argument #1 with type 'int(8)'
 int-coerce-var.chpl:1: note: is passed to formal 'ref arg: int(64)'

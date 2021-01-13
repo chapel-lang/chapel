@@ -3,6 +3,6 @@ param-coercions.chpl:21: warning: ab
 param-coercions.chpl:9: In function 'run':
 param-coercions.chpl:19: error: unresolved call 'myadd(c_string, c_string)'
 param-coercions.chpl:5: note: this candidate did not match: myadd(a: string, b: string)
-param-coercions.chpl:19: note: because call actual argument #1 with type c_string
+param-coercions.chpl:19: note: because actual argument #1 with type 'c_string'
 param-coercions.chpl:5: note: is passed to formal 'a: string'
 param-coercions.chpl:1: note: candidates are: myadd(param a: string, param b: string)

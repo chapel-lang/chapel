@@ -1,5 +1,5 @@
 typeAliasError.chpl:13: error: Unable to resolve new-expression with type alias 'Generic(int(64))'
 typeAliasError.chpl:13: error: unresolved call 'Generic.init(eltType=type int(64), "hello")'
 typeAliasError.chpl:5: note: this candidate did not match: Generic.init(type eltType, value: eltType)
-typeAliasError.chpl:13: note: because call actual argument #2 with type string
+typeAliasError.chpl:13: note: because actual argument #2 with type 'string'
 typeAliasError.chpl:5: note: is passed to formal 'value: int(64)'

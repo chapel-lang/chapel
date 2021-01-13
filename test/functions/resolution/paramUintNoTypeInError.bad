@@ -1,4 +1,4 @@
 paramUintNoTypeInError.chpl:7: error: unresolved call 'takesInt(512)'
 paramUintNoTypeInError.chpl:1: note: this candidate did not match: takesInt(param x: int(8))
-paramUintNoTypeInError.chpl:7: note: because call actual argument #1 with type uint(64)
+paramUintNoTypeInError.chpl:7: note: because actual argument #1 with type 'uint(64)'
 paramUintNoTypeInError.chpl:1: note: is passed to formal 'param x: int(8)'

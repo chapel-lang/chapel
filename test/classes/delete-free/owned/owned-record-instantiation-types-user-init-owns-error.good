@@ -1,5 +1,5 @@
 owned-record-instantiation-types-user-init-owns-error.chpl:18: error: unresolved call 'GenericCollection.init(borrowed MyClass)'
 owned-record-instantiation-types-user-init-owns-error.chpl:11: note: this candidate did not match: GenericCollection.init(arg: owned )
-owned-record-instantiation-types-user-init-owns-error.chpl:18: note: because call actual argument #1 with type borrowed MyClass
+owned-record-instantiation-types-user-init-owns-error.chpl:18: note: because actual argument #1 with type 'borrowed MyClass'
 owned-record-instantiation-types-user-init-owns-error.chpl:11: note: is passed to formal 'arg: owned'
 owned-record-instantiation-types-user-init-owns-error.chpl:7: note: candidates are: GenericCollection.init(type t)

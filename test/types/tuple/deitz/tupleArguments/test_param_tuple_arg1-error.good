@@ -1,4 +1,4 @@
 test_param_tuple_arg1-error.chpl:7: error: unresolved call 'foo(3, 2*int(64))'
 test_param_tuple_arg1-error.chpl:1: note: this candidate did not match: foo(param rank: int, x: rank*int)
-test_param_tuple_arg1-error.chpl:7: note: because call actual argument #2 with type 2*int(64)
+test_param_tuple_arg1-error.chpl:7: note: because actual argument #2 with type '2*int(64)'
 test_param_tuple_arg1-error.chpl:1: note: is passed to formal 'x: 3*int(64)'

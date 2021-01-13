@@ -1,5 +1,5 @@
 intUint3.chpl:11: error: unresolved call 'foo(1, 2)'
 intUint3.chpl:1: note: this candidate did not match: foo(x: int, y: uint)
-intUint3.chpl:11: note: because call actual argument #1 with type uint(64)
+intUint3.chpl:11: note: because actual argument #1 with type 'uint(64)'
 intUint3.chpl:1: note: is passed to formal 'x: int(64)'
 intUint3.chpl:5: note: candidates are: foo(x: uint, y: int)

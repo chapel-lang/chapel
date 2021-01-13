@@ -11,7 +11,7 @@ error-with-bang-suggestion.chpl:18: note: is passed to formal 'this: borrowed H5
 error-with-bang-suggestion.chpl:36: note: try to apply the postfix ! operator to method call receiver
 error-with-bang-suggestion.chpl:38: error: unresolved call 'myfun(shared H5File?)'
 error-with-bang-suggestion.chpl:30: note: this candidate did not match: myfun(arg: H5File)
-error-with-bang-suggestion.chpl:38: note: because call actual argument #1 with type shared H5File?
+error-with-bang-suggestion.chpl:38: note: because actual argument #1 with type 'shared H5File?'
 error-with-bang-suggestion.chpl:30: note: is passed to formal 'arg: H5File'
-error-with-bang-suggestion.chpl:38: note: try to apply the postfix ! operator to call actual argument #1
+error-with-bang-suggestion.chpl:38: note: try to apply the postfix ! operator to actual argument #1
   error-with-bang-suggestion.chpl:11: called as writeScalarAttribute(loc: shared H5File?)
