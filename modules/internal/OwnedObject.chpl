@@ -432,7 +432,14 @@ module OwnedObject {
   // Don't print out 'chpl_p' when printing an _owned, just print class pointer
   pragma "no doc"
   proc _owned.readWriteThis(f) throws {
-    f <~> this.chpl_p;
+    if isNonNilableClass(this.chpl_t) {
+      var tmp = this.chpl_p!;
+      f <~> tmp;
+      if tmp == nil then halt("internal error - read nil");
+      this.chpl_p = tmp;
+    } else {
+      f <~> this.chpl_p;
+    }
   }
 
   // cast to owned?, no class downcast
