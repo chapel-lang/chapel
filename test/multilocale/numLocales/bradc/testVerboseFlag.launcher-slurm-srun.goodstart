@@ -1,1 +1,7 @@
-EVARS=vals srun --job-name=CHPL-testVerbos --quiet --nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=N --exclusive --mem=0 --kill-on-bad-exit --partition=P  ./testVerboseFlag_real --verbose -nl 1 EXECOPTS
+#!/bin/sh
+echo "EVARS=vals" \
+     "srun --job-name=CHPL-testVerbos --quiet" \
+     "--nodes=1 --ntasks=1 --ntasks-per-node=1 --cpus-per-task=N" \
+     "--exclusive --mem=0" \
+     "--kill-on-bad-exit${CHPL_LAUNCHER_PARTITION:+ --partition=P} " \
+     "./testVerboseFlag_real --verbose -nl 1${EXECOPTS:+ $EXECOPTS}"
