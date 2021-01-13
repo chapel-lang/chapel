@@ -397,10 +397,23 @@ void ImportStmt::typeWasNamed(Type* t,
   if (!providesUnqualifiedAccess()) {
     return;
   } else {
+    std::string nameToCheck = t->symbol->name;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->instantiatedFrom != NULL) {
+        // Need to check against the generic type's name rather than the
+        // instantiation, since the instantiation name included instantiation
+        // information in it (and that isn't usable in a use/import list, at
+        // least right now)
+        AggregateType* rootType = at->getRootInstantiation();
+        nameToCheck = rootType->symbol->name;
+      }
+    }
+
+    const char* name = astr(nameToCheck.c_str());
     // Otherwise, look through the list of unqualified symbol names to see if
     // this one was listed
     for_vector(const char, toCheck, unqualified) {
-      if (astr(toCheck) == astr(t->symbol->name))
+      if (astr(toCheck) == name)
         namedTypes->insert(astr(toCheck));
     }
 
@@ -408,7 +421,7 @@ void ImportStmt::typeWasNamed(Type* t,
     for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
         it != renamed.end();
         ++it) {
-      if (astr(t->symbol->name) == astr(it->first)) {
+      if (name == astr(it->first)) {
         // Save the original name because we'll be looking in its scope
         namedTypes->insert(astr(it->second));
       }
