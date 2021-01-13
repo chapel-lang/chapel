@@ -112,14 +112,9 @@ static Expr *getBaseExprOfLogicalChild(CallExpr *call) {
 // Because: b[i] is a local access candidate, and both sides of = will be
 // visited as such. Currently, that's not handled properly
 void AggregationCandidateInfo::tryAddingAggregator() {
-  if (srcAggregator != NULL && dstAggregator != NULL) {
+  if (srcAggregator != NULL && dstAggregator != NULL) { // assert?
     return; // we have already enough
   }
-
-  //if (lhsLogicalChild == NULL || rhsLogicalChild == NULL) {
-    //return; // we need to have both children to be able to determine what type
-            //// of aggregator to use
-  //}
 
   // we have a lhs that waits analysis, and a rhs that we can't know about
   if (srcAggregator == NULL &&
@@ -143,7 +138,7 @@ void AggregationCandidateInfo::tryAddingAggregator() {
       this->srcAggregator = aggregator;
     }
   }
-  //
+  
   // we have a rhs that waits analysis
   if (dstAggregator == NULL &&
       rhsLocalityInfo == PENDING &&
@@ -166,14 +161,6 @@ void AggregationCandidateInfo::tryAddingAggregator() {
     }
   }
 
-  //// we have added both children who are candidates for localAccess 
-  //else if (lhsLocalityInfo == PENDING && rhsLocalityInfo == PENDING) {
-    //std::cout << "Both children are candidates\n";
-  //}
-  //else {
-    //std::cout << "this is weird\n";
-
-  //}
 }
 
 // called during resolution
@@ -401,11 +388,17 @@ static bool callSuitableForAggregation(CallExpr *call) {
   if (call->isNamed("=")) {
     if (CallExpr *leftCall = toCallExpr(call->get(1))) {
       if (CallExpr *rightCall = toCallExpr(call->get(2))) {
-        if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-          return true;
-        }
-        if (rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-          return true;
+        // we want either side to be PRIM_MAYBE_LOCAL_THIS
+        if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+            rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          // we want the side that's not to have a baseExpr that's a SymExpr
+          // this avoid function calls
+          if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+            return isSymExpr(leftCall->baseExpr);
+          }
+          else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+            return isSymExpr(rightCall->baseExpr);
+          }
         }
       }
     }
