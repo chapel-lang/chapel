@@ -442,8 +442,8 @@ static void moveInitializeVarArgsTuple(FnSymbol* fn, ArgSymbol* formal,
   block->insertAtTail(init);
 
   // Now we finish up by moving the formals into the tuple.
-  for (int i = 0; i < formals.size(); i++) {
-    int fieldIdx = i + 2;
+  for (size_t i = 0; i < formals.size(); i++) {
+    size_t fieldIdx = i + 2;
     CallExpr* to = new CallExpr(PRIM_FIELD_NUM_TO_NAME, var,
                                 new_IntSymbol(fieldIdx));
     Symbol* from = formals[i];
