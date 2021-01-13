@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -127,7 +127,7 @@ public:
   // Loads/stores to/from loop local stack variables should not be considered
   // for this, so this variable tracks if a pointer must point to something
   // other than a local variable (e.g. an array element, a class field);
-  // or if it points to a value from outside any order indpendent loop.
+  // or if it points to a value from outside any order independent loop.
   bool mustPointOutsideOrderIndependentLoop;
 
   // always set if available

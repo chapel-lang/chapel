@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -21,10 +21,20 @@
 #ifndef _chpl_rt_utils_static_H_
 #define _chpl_rt_utils_static_H_
 #include "stdchplrt.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void chpldev_taskTable_add(chpl_taskID_t taskID, uint32_t lineno, int32_t filename, uint64_t tl_info);
 void chpldev_taskTable_remove(chpl_taskID_t taskID);
 void chpldev_taskTable_set_active(chpl_taskID_t taskID);
 void chpldev_taskTable_set_suspended(chpl_taskID_t taskID);
 uint64_t chpldev_taskTable_get_tl_info(chpl_taskID_t taskID);
 void chpldev_taskTable_print(void);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

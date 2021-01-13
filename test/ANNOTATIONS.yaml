@@ -452,6 +452,9 @@ all:
   09/29/20:
     - text: Do sequential DR assignment if GETs are to be used (#16488)
       config: 16-node-xc, 16-node-cs
+  11/19/20:
+    - Improve the speed of tracking arrays declared over a domain (#16740)
+# End all
 
 AllCompTime: &timecomp-base
   11/09/14:
@@ -682,6 +685,9 @@ create-views:
     - Put param conditionals before others in domain record initialization (#15591)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  10/02/20:
+    - Only reference count a distribution's domains (#16528)
+
 
 cs-resize:
   03/05/19:
@@ -692,10 +698,14 @@ dist-performance.cc:
     - Use workaround to enable lifetime checking for lists of borrowed classes (#15575)
   06/27/20:
     - Revert changes to `list._commonInitFromIterable` (#15943)
+  12/16/20:
+    - Distributed sort improvements (#16871)
 
 dist-performance.ml-perf:
   07/01/20:
     - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+  12/16/20:
+    - Distributed sort improvements (#16871)
 
 distCreate-arrays-deinit.cc-perf: &distCreate-base
   02/12/20:
@@ -1110,7 +1120,7 @@ memleaks:
   08/17/16:
     - Single as record (#4350)
   01/05/17:
-    - Maybe "adding support for params without initializers"(#5075)?
+    - Maybe "adding support for params without initializers"(#5069)?
   01/07/17:
     - new test verifying the user's guide type aliases section (#5075)
   01/17/17:
@@ -1145,6 +1155,7 @@ memleaks:
     - Fix problem with new applied to a borrowed nilable type argument (#16380)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+# End memleaks
 
 memleaksfull:
   07/08/14:
@@ -1348,6 +1359,9 @@ memleaksfull:
     - Close leaks coming from unnamed array types (#16600)
   11/04/20:
     - Deallocate the RTT memory returned from empty for expressions (#16628)
+  11/20/20:
+    - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
+# End memleaksfull
 
 meteor:
   12/18/13:
@@ -1645,7 +1659,7 @@ revcomp: &revcomp-base
     - various qio changes motivated by cygwin failures (#1943)
   10/29/15:
     - Difficult to consistently replicate
-  08/12/16:
+  08/14/16:
     - text: Discontinued performance testing (data invalid) (#4333)
       config: 1-node-xc
   03/10/17:

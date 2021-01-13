@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,7 +47,7 @@ static llvm::MDNode* generateLoopMetadata(bool thisLoopParallelAccess,
   auto &ctx = info->module->getContext();
 
   std::vector<llvm::Metadata*> args;
-  // Reselve operand 0 for the loop id self reference
+  // Resolve operand 0 for the loop id self reference
   auto tmpNode        = llvm::MDNode::getTemporary(ctx, llvm::None);
   args.push_back(tmpNode.get());
 

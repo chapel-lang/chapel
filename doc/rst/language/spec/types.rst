@@ -629,7 +629,7 @@ functionality is particularly useful when doing generic programming
    ``f()`` be evaluated for side effects?
 
    At first it might seem that ``f()`` should never be evaluated for side
-   effects. However, it must be evaluated for side effects if ``f()`` an
+   effects. However, it must be evaluated for side effects if ``f()`` returns an
    array or domain type, as these have a runtime component (see
    :ref:`Types_with_Runtime_Components`). As a result, should ``f()`` in
    such a setting always be evaluated for side effects?  The answer to
@@ -660,17 +660,17 @@ function (see :ref:`Formal_Type_Arguments`).
 The :mod:`Types` module provides many functions to query properties of
 types.
 
-The language provides :proc:`isCoercible <UtilMisc_forDocs.isCoercible>`,
-:proc:`isSubtype <UtilMisc_forDocs.isSubtype>`, and
-:proc:`isProperSubtype <UtilMisc_forDocs.isProperSubtype>` for comparing types.
+The language provides :proc:`isCoercible <Types.isCoercible>`,
+:proc:`isSubtype <Types.isSubtype>`, and
+:proc:`isProperSubtype <Types.isProperSubtype>` for comparing types.
 The normal comparison operators are also available to compare types:
 
  * ``==`` checks if two types are equivalent
  * ``!=`` checks if two types are different
  * ``<`` and ``>`` check if one type is a proper subtype of another (see
-   :proc:`< <UtilMisc_forDocs.<>`)
+   :proc:`< <Types.<>`)
  * ``<=`` and ``>=`` check if one type is a subtype of another (see
-   :proc:`<= <UtilMisc_forDocs.<=>`)
+   :proc:`<= <Types.<=>`)
 
 It is possible to cast a type to a ``param`` string. This allows a type
 to be printed out.

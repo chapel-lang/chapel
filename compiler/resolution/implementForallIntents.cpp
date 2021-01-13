@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,31 +31,6 @@
 // needsShadowVar() and helpers
 //
 
-// Is 'sym' defined outside 'block'?
-static bool isOuterVarNew(Symbol* sym, BlockStmt* block) {
-  DefExpr*  defPt = sym->defPoint;
-  Expr* parentExp = defPt->parentExpr;
-
-  while (true) {
-    if (!parentExp) {
-      Symbol* parentSym = defPt->parentSymbol;
-      if (isModuleSymbol(parentSym))
-        // We reached the outermost level and did not come across 'block'.
-        return true;
-
-      defPt     = parentSym->defPoint;
-      parentExp = defPt->parentExpr;
-      continue;
-    }
-    if (parentExp == block)
-      return false;
-
-    parentExp = parentExp->parentExpr;
-  }
-  INT_ASSERT(false);
-  return false; // dummy
-}
-
 // Is 'sym' an index variable of 'fs' ?
 static bool isFsIndexVar(ForallStmt* fs, Symbol* sym)
 {
@@ -84,7 +59,7 @@ static bool needsShadowVar(ForallStmt* fs, BlockStmt* block, Symbol* sym) {
     !sym->hasFlag(FLAG_TEMP)     && // not a temp
     !isFsIndexVar(fs, sym)       && // not fs's index var
     !isFsShadowVar(fs, sym)      && // not fs's shadow var
-    isOuterVarNew(sym, block);      // it must be an outer variable
+    isOuterVarLoop(sym, block);     // it must be an outer variable
 }
 
 /////////////////////////////////////////////////////////////////////////////

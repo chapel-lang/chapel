@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -32,6 +32,10 @@
 #include "chpl-comm-locales.h"
 #include "chpl-mem-desc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Shared interface (implemented in chpl-comm.c)
 //
@@ -41,6 +45,14 @@ extern c_nodeid_t chpl_nodeID; // unique ID for each node: 0, 1, 2, ...
 // the current task is running.
 // Note also that this value is set only in chpl_comm_init to a value which is
 // (hopefully) unique to the running image, and never changed again.
+
+//
+// Helper function for Chapel to get the value of chpl_nodeID
+//
+static inline c_nodeid_t get_chpl_nodeID(void) {
+  return chpl_nodeID;
+}
+
 extern int32_t chpl_numNodes; // number of nodes
 
 size_t chpl_comm_getenvMaxHeapSize(void);
@@ -128,6 +140,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
 // Returns nonzero iff the handle has already been waited for and has
 // been cleared out in a call to chpl_comm_{wait,try}_some.
+// This function must not call chpl_task_yield.
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h);
 
 // Wait on handles created by chpl_comm_start_....  ignores completed handles.
@@ -541,6 +554,9 @@ void* chpl_get_global_serialize_table(int64_t idx);
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
 
+#ifdef __cplusplus
+}
+#endif
 
 #else // LAUNCHER
 

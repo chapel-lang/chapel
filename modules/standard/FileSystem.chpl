@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -508,7 +508,8 @@ proc copyMode(out error: syserr, src: string, dest: string) {
 }
 
 /* Will recursively copy the tree which lives under `src` into `dst`,
-   including all contents, permissions, and metadata.  `dst` must not
+   including all contents and permissions. Metadata such as file creation and
+   modification times, uid, and gid will not be preserved.  `dst` must not
    previously exist, this function assumes it can create it and any missing
    parent directories. If `copySymbolically` is `true`, symlinks will be
    copied as symlinks, otherwise their contents and metadata will be copied
@@ -559,7 +560,7 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
     } else {
       // Either we didn't find a link, or copy symbolically is false, which
       // means we want the contents of the linked file, not a link itself.
-      try copy(fileSrcName, fileDestName, metadata=true);
+      try copy(fileSrcName, fileDestName, metadata=false);
     }
   }
 

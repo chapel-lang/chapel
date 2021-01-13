@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2311,7 +2311,7 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
 
   Type* indexType = call->get(3)->getValType();
 
-  if (!is_int_type(indexType) && !is_uint_type(indexType))
+  if (!is_int_type(indexType) && !is_uint_type(indexType) && !is_bool_type(indexType))
     USR_FATAL(call, "tuple indexing expression is not of integral type");
 
   AggregateType* baseType = toAggregateType(baseVar->getValType());
@@ -2329,6 +2329,12 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
       error = true;
     }
   } else if (get_uint(call->get(3), &uindex)) {
+    sprintf(field, "x%" PRIu64, uindex);
+    if (uindex >= (unsigned long)baseType->fields.length-1) {
+      USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);
+      error = true;
+    }
+  } else if (get_bool(call->get(3), &uindex)) {
     sprintf(field, "x%" PRIu64, uindex);
     if (uindex >= (unsigned long)baseType->fields.length-1) {
       USR_FATAL_CONT(call, "tuple index %" PRIu64 " is out of bounds", uindex);

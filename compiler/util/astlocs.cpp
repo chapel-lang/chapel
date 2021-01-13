@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,9 +67,13 @@ astlocMarker::~astlocMarker() {
 //   task function in an inlined function
 //     in non-user modules
 //     (unless preserveInlinedLineNumbers==true)
-//   not in a function in beginning with chpl__
+//   not in a function beginning with chpl__
 //     (unless developer==true or preserveInlinedLineNumbers==true)
 // to use for line number reporting.
+//
+// Note that "inlined" here refers to FLAG_INLINED_FN.
+// It does not mean the same as the 'inline'
+// keyword and it may only apply to task functions.
 Expr* findLocationIgnoringInternalInlining(Expr* cur) {
 
   while (true) {

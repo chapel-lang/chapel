@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -772,9 +772,11 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
   // ArgSymbols appear only in formal parameter lists.
   if (defPoint) {
-    FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol);
-    INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->formals));
+    if (FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol)) {
+      INT_ASSERT(defPoint->list == &(pfs->formals));
+    } else {
+      INT_ASSERT(isTiMark(this));
+    }
   }
   if (intentsResolved) {
     if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -957,6 +959,22 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
     visitor->exitArgSym(this);
   }
+}
+
+std::string ArgSymbol::demungeVarArgName(std::string* num) {
+  std::string name = this->name;
+  if (!this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
+  }
+  std::string mynum = name;
+  mynum.erase(0, 2); // remove _e
+  std::string n = mynum; // ##_name
+  mynum.resize(mynum.find('_')); // ##
+  n.erase(0, n.find('_')+1); // name
+  if (num != NULL) {
+    *num = mynum;
+  }
+  return n;
 }
 
 /******************************** | *********************************

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1352,6 +1352,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
       arrSection = _to_nonnil(myLocArr);
 
     local {
+      use CPtr; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):(arrSection.type?);
       ref myElems = _to_nonnil(narrowArrSection).myElems;
@@ -1890,15 +1891,15 @@ proc StencilArr.dsiPrivatize(privatizeData) {
 }
 
 
-proc StencilArr.dsiTargetLocales() {
+proc StencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc StencilDom.dsiTargetLocales() {
+proc StencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Stencil.dsiTargetLocales() {
+proc Stencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

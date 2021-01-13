@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -866,7 +866,7 @@ proc DimensionalDom._dsiSetIndicesHelper(newRanges: rank * rangeT): void {
   // could omit this warning if the intersection between the old and the new
   // domains is empty; could change it to halt("unimplemented")
   if dom1.dsiSetIndicesUnimplementedCase||dom2.dsiSetIndicesUnimplementedCase
-    then if _arrs.size > 0 then
+    then if _arrs_containing_dom > 0 then
       stderr.writeln("warning: array resizing will not preserve array contents upon change in dimension stride with 1-d BlockCyclic distribution");
 
   coforall (locId, locDD) in zip(targetIds, localDdescs) do

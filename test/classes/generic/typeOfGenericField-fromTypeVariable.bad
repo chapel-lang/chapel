@@ -1,7 +1,7 @@
 typeOfGenericField-fromTypeVariable.chpl:12: error: unresolved call 'type [BlockDom(1,int(64),false,unmanaged DefaultDist)] int(64)._instance'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:992: note: this candidate did not match: _distribution._instance
-typeOfGenericField-fromTypeVariable.chpl:12: note: because type method call receiver
-$CHPL_HOME/modules/internal/ChapelArray.chpl:992: note: is passed to non-type formal 'ref this: _distribution'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:1126: note: candidates are: _domain._instance
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2417: note:                 []._instance
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1048: note: this candidate did not match: _distribution._instance
+typeOfGenericField-fromTypeVariable.chpl:12: note: because method call receiver is a type
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1048: note: but is passed to non-type formal 'ref this: _distribution'
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1187: note: candidates are: _domain._instance
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2465: note:                 []._instance
 note: and 2 other candidates, use --print-all-candidates to see them

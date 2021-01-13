@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1152,7 +1152,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this distribution was declared.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
   }  // record _distribution
@@ -1814,20 +1814,6 @@ module ChapelArray {
       return contains(i);
     }
 
-    pragma "no doc"
-    inline proc member(i: rank*_value.idxType) {
-      compilerWarning("domain.member is deprecated - " +
-                      "please use domain.contains instead");
-      return this.contains(i);
-    }
-
-    /* Deprecated - please use :proc:`contains`. */
-    inline proc member(i: _value.idxType ...rank) {
-      compilerWarning("domain.member is deprecated - " +
-                      "please use domain.contains instead");
-      return this.contains(i);
-    }
-
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {
@@ -2191,7 +2177,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this domain has been distributed.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       return _value.dsiTargetLocales();
     }
 
@@ -3171,7 +3157,7 @@ module ChapelArray {
     /*
        Return an array of locales over which this array has been distributed.
     */
-    proc targetLocales() {
+    proc targetLocales() const ref {
       //
       // TODO: Is it really appropriate that the array should provide
       // this dsi routine rather than having this call forward to the
@@ -3220,12 +3206,6 @@ module ChapelArray {
       return isRectangularArr(this) &&
              this.rank == 1 &&
              !this._value.stridable;
-    }
-
-    inline proc chpl__assertSingleArrayDomain(fnName: string) {
-      if this.domain._value._arrs.size != 1 then
-        halt("cannot call " + fnName +
-             " on an array defined over a domain with multiple arrays");
     }
 
     /* The following methods are intended to provide a list or vector style

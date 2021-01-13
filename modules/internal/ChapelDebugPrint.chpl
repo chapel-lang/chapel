@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,17 +28,15 @@
 
 module ChapelDebugPrint {
   private use ChapelStandard, SysCTypes;
-  private use IO;
+  private use ChapelIOStringifyHelper;
 
   proc chpl_debug_stringify(args...) : string {
     var str = "";
     for param i in 0..args.size-1 {
       var tmp = args(i);
       if _can_stringify_direct(tmp) {
-        // Call stringify from IO.chpl. Note that stringify
-        // is also called on halt, and so needs to handle
-        // being resolved before IO.chpl is completely resolved.
-        str += stringify(tmp);
+        // Call stringify_simple from ChapelIOStringifyHelper.chpl
+        str += stringify_simple(tmp);
       } else {
         str += "?";
       }

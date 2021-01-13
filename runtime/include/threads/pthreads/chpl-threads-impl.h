@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include <pthread.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // This is the type used to communicate thread identifiers between the
 // threading layer and its users.  Thread identifiers are 64-bit ints
@@ -36,7 +40,15 @@ typedef int64_t chpl_thread_id_t;
 
 typedef pthread_mutex_t chpl_thread_mutex_t;
 
+#ifdef __cplusplus
+}
+#endif
+
 #include "chpl-thread-local-storage.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern CHPL_TLS_DECL(chpl_thread_id_t,chpl_thread_id);
 extern CHPL_TLS_DECL(void*, chpl_thread_data);
@@ -60,5 +72,9 @@ static inline
 void chpl_thread_setPrivateData(void* p) {
   CHPL_TLS_SET(chpl_thread_data, p);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _threads_pthreads_h_

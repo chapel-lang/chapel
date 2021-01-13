@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -105,6 +105,8 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
+
+void print_clang(clang::Decl* d);
 
 #endif // HAVE_LLVM
 

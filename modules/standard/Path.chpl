@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,14 +70,30 @@ use SysError, IO;
 use Sys, SysBasic;
 use CPtr;
 
-/* Represents generally the current directory. This starts as the directory
-   where the program is being executed from.
+/* 
+   Represents generally the current directory. This starts as the directory
+   where the program is being executed from. On all the platforms that Chapel
+   supports this parameter is set to ".".
 */
-const curDir = ".";
-/* Represents generally the parent directory. */
-const parentDir = "..";
-/* Denotes the separator between a directory and its child. */
-const pathSep = "/";
+param curDir;
+
+/* 
+   Represents generally the parent directory. On all the platforms that Chapel
+   supports this parameter is set to "..".
+*/
+param parentDir;
+
+/* 
+   Denotes the separator between a directory and its child.  On all the
+   platforms that Chapel supports this parameter is set to "/"
+*/
+param pathSep;
+
+// these can be set within a param `if`, in case we start to support platforms
+// where these are not the right values (e.g. Windows)
+curDir = ".";
+parentDir = "..";
+pathSep = "/";
 
 /*
    Localizes and unescapes string to create a bytes to be used for obtaining a
@@ -148,14 +164,14 @@ proc file.absPath(): string throws {
   return try Path.absPath(this.path);
 }
 
-/* Returns the basename of the file name provided.  For instance:
+/* Returns the file name portion of the path provided.  For instance:
 
    .. code-block:: Chapel
 
       writeln(basename("/foo/bar/baz")); // Prints "baz"
       writeln(basename("/foo/bar/")); // Prints "", because of the empty string
 
-   Note that this is different from the Unix basename function.
+   Note that this is different from the Unix ``basename`` function.
 
    :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.
@@ -314,12 +330,14 @@ proc commonPath(paths: []): string {
   return result;
 }
 
-/* Returns the parent directory of the file name provided.  For instance:
+/* Returns the parent directory portion of the path provided.  For instance:
 
    .. code-block:: Chapel
 
       writeln(dirname("/foo/bar/baz")); // Prints "/foo/bar"
       writeln(dirname("/foo/bar/")); // Also prints "/foo/bar"
+
+   Note that this is different from the Unix ``dirname`` function.
 
    :arg name: A string file name.  Note that this string does not have to be
               a valid file name, as the file itself will not be affected.

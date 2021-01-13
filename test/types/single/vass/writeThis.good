@@ -1,1 +1,2 @@
+$CHPL_HOME/modules/standard/IO.chpl:: In function '_write_one_internal':
 $CHPL_HOME/modules/standard/IO.chpl:: error: single variables cannot currently be written - apply readFF() to those variables first

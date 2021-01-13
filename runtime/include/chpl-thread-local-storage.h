@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -22,6 +22,10 @@
 #define _chpl_thread_local_storage_h_
 
 #include <pthread.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #ifdef __GNUC__
 // For GCC and CLANG, where we know there is __thread, use it instead
@@ -66,5 +70,8 @@ static inline void chpl_tlschk(int got, int expect)
 # define CHPL_TLS_DELETE(name)          chpl_tlschk(pthread_key_delete(name), 0)
 #endif // ifdef CHPL_TLS
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

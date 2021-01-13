@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -138,7 +138,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
 // 2: entering/exiting call
 // 3: information about call
 //
-// during resolution, the output is much more straighforward, and depth 0 is
+// during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG(int depth, const char *msg, BaseAST *node) {
   if (fReportAutoLocalAccess) {

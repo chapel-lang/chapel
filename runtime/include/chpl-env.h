@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include "chpltypes.h"
 
 #include <inttypes.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Returns the string value of a CHPL_RT_* environment variable, with
@@ -72,5 +76,9 @@ size_t chpl_env_rt_get_size(const char* ev, size_t dflt) {
 
 void chpl_env_set(const char*, const char*, int);
 void chpl_env_set_uint(const char*, uint64_t, int);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

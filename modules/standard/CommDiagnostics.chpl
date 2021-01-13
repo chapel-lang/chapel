@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -237,6 +237,11 @@ module CommDiagnostics
       non-blocking remote executions
      */
     var execute_on_nb: uint(64);
+
+    var cache_get_hits: uint(64);
+    var cache_get_misses: uint(64);
+    var cache_put_hits: uint(64);
+    var cache_put_misses: uint(64);
 
     proc writeThis(c) throws {
       use Reflection;

@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,7 +39,8 @@ module LocaleModelHelpSetup {
 
   config param debugLocaleModel = false;
 
-  extern var chpl_nodeID: chpl_nodeID_t;
+  pragma "fn synchronization free"
+  extern "get_chpl_nodeID" proc chpl_nodeID: chpl_nodeID_t;
 
   record chpl_root_locale_accum {
     var nPUsPhysAcc: atomic int;
@@ -101,6 +102,19 @@ module LocaleModelHelpSetup {
 
     root_accum.setRootLocaleValues(dst);
     here.runningTaskCntSet(0);  // locale init parallelism mis-sets this
+  }
+
+  proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
+    var root_accum:chpl_root_locale_accum;
+
+    forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
+      chpl_task_setSubloc(c_sublocid_any);
+      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
+      dst.myLocales[locIdx] = node;
+      root_accum.accum(node);
+    }
+
+    root_accum.setRootLocaleValues(dst);
   }
 
   // gasnet-smp and gasnet-udp w/ GASNET_SPAWNFN=L are local spawns
@@ -205,6 +219,23 @@ module LocaleModelHelpSetup {
     chpl_task_setSubloc(1:chpl_sublocID_t);
 
     dst.GPU = new unmanaged GPULocale(1:chpl_sublocID_t, dst);
+    chpl_task_setSubloc(origSubloc);
+  }
+
+  proc helpSetupLocaleGPU(dst: borrowed LocaleModel, out local_name:string,
+      numSublocales: int, type CPULocale, type GPULocale){
+
+    var childSpace = {0..#numSublocales};
+
+    const origSubloc = chpl_task_getRequestedSubloc();
+
+    for i in childSpace {
+      chpl_task_setSubloc(i:chpl_sublocID_t);
+      if i == 0 then
+        dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
+      else
+        dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+    }
     chpl_task_setSubloc(origSubloc);
   }
 }

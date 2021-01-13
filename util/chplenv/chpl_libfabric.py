@@ -28,7 +28,7 @@ def get():
         libfabric_val = 'none'
 
     if libfabric_val == 'libfabric':
-        sys.stdout.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
+        sys.stderr.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
                          "Use CHPL_LIBFABRIC=bundled instead.\n")
         libfabric_val = 'bundled'
 
@@ -77,7 +77,7 @@ def get_compile_args(libfabric=get()):
 @memoize
 def get_link_args(libfabric=get()):
     libs = []
-    if libfabric == 'libfabric':
+    if libfabric == 'bundled':
         return third_party_utils.default_get_link_args('libfabric',
                                                        ucp=get_uniq_cfg_path(),
                                                        libs=['libfabric.la'],

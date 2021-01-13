@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,7 @@
   .. note:: 
 
     This package relies on Chapel ``extern`` code blocks and so requires that
-    ``CHPL_LLVM=llvm`` or ``CHPL_LLVM=system`` and that the Chapel compiler is
+    ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=system`` and that the Chapel compiler is
     built with LLVM enabled. As well, currently only ``CHPL_TARGET_ARCH=x86_64``
     is supported as we make use of the x86-64 instruction: CMPXCHG16B_.
 

@@ -1,0 +1,16 @@
+bug: I/O on class hierarchies seems broken
+
+#7118
+
+In this test, I would expect the 'child' class to inherit the 'parent'
+class's writeThis() routine, as with any other inherited method.  Or,
+if we decided that compiler-generated writeThis() routines should
+occur for child classes, that it would call into the parent class
+writeThis() as part of its definition.  In either case, I would expect
+the halt to be reached when printing out a child class, where it is
+not here.
+
+While I understand the current behavior, it seems inconsistent with
+the behavior in classIOinHierarchy-override.chpl for static type C,
+dynamic type E, in which D's writeThis() _is_ called.  I can't
+explain this.

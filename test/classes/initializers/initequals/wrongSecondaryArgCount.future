@@ -1,0 +1,5 @@
+bug: secondary init=() with 0 or 2 args isn't an error
+#15963
+
+These cases should be reported as compiler errors, as they are when
+defined as primary init=().

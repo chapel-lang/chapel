@@ -276,6 +276,7 @@ proc testArray(truth : [?Dom] ?t, check : [Dom] t, src : string) {
 
 
 proc testEighHelper(mat0 : [?Dom]?t, true0, eig0) {
+  use IO; // for string.format
 
   param nBits = if isComplexType(t) then numBits(t)/2 else numBits(t);
   var one = eye(Dom, eltType=real(nBits));

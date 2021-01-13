@@ -1663,15 +1663,15 @@ proc AccumStencilArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
-proc AccumStencilArr.dsiTargetLocales() {
+proc AccumStencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc AccumStencilDom.dsiTargetLocales() {
+proc AccumStencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc AccumStencil.dsiTargetLocales() {
+proc AccumStencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -6652,7 +6652,8 @@ void resolveInitVar(CallExpr* call) {
   if (srcExpr && srcExpr->symbol() == gNoInit) {
     if (call->numActuals() < 3) {
       // no init needs a type, cannot infer from gNoInit.
-      INT_FATAL(call, "bad no init call");
+      USR_FATAL(call, "cannot use noinit on the variable '%s' "
+                      "declared without a type", dst->name);
     }
 
     SymExpr* targetTypeExpr = toSymExpr(call->get(3)->remove());
@@ -6660,7 +6661,8 @@ void resolveInitVar(CallExpr* call) {
 
     if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
       // no init needs a concrete type, cannot infer from gNoInit.
-      INT_FATAL(call, "bad no init call");
+      USR_FATAL(call, "cannot use noinit on the variable '%s' "
+                      "declared with generic type", dst->name);
     }
 
     // Since we are not initializing, just set the variable's type
@@ -9160,12 +9162,13 @@ static void resolveExports() {
       continue;
     }
 
-    if (fn->hasFlag(FLAG_EXPORT) == true) {
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
       SET_LINENO(fn);
 
       resolveSignatureAndFunction(fn);
 
-      exps.push_back(fn);
+      if (fn->hasFlag(FLAG_EXPORT))
+        exps.push_back(fn);
     }
   }
 

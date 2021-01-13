@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -332,7 +332,7 @@ module ArrayViewRankChange {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       //
       // BLC: there's a bit of a question in my mind about whether
       // rank-change slices (and regular slices for that matter) ought

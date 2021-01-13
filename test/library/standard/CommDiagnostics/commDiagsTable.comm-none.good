@@ -18,23 +18,23 @@
 | -----: |
 |      0 |
 
-| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
-| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
-|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb | cache_get_hits | cache_get_misses | cache_put_hits | cache_put_misses |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: | -------------: | ---------------: | -------------: | ---------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |              0 |                0 |              0 |                0 |
 
-| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
-| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
-|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb | cache_get_hits | cache_get_misses | cache_put_hits | cache_put_misses |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: | -------------: | ---------------: | -------------: | ---------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |              0 |                0 |              0 |                0 |
 
-| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
-| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
-|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb | cache_get_hits | cache_get_misses | cache_put_hits | cache_put_misses |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: | -------------: | ---------------: | -------------: | ---------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |              0 |                0 |              0 |                0 |
 
-| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
-| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
-|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb | cache_get_hits | cache_get_misses | cache_put_hits | cache_put_misses |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: | -------------: | ---------------: | -------------: | ---------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |              0 |                0 |              0 |                0 |
 
-| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb |
-| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: |
-|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |
+| locale | get | get_nb | put | put_nb | test_nb | wait_nb | try_nb |      amo | execute_on | execute_on_fast | execute_on_nb | cache_get_hits | cache_get_misses | cache_put_hits | cache_put_misses |
+| -----: | --: | -----: | --: | -----: | ------: | ------: | -----: | -------: | ---------: | --------------: | ------------: | -------------: | ---------------: | -------------: | ---------------: |
+|      0 |   0 |      0 |   0 |      0 |       0 |       0 |      0 | unstable |          0 |               0 |             0 |              0 |                0 |              0 |                0 |
 

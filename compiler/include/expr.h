@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -360,6 +360,7 @@ static inline Symbol* symbolForActual(Expr* actual) {
 }
 
 
+bool get_bool(Expr* e, uint64_t *i); // false is failure
 bool get_int(Expr* e, int64_t* i); // false is failure
 bool get_uint(Expr *e, uint64_t *i); // false is failure
 bool get_string(Expr *e, const char **s); // false is failure

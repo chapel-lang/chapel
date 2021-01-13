@@ -1,4 +1,5 @@
 $CHPL_HOME/modules/standard/IO.chpl:n: warning: printing _ddata class
+$CHPL_HOME/modules/standard/IO.chpl:n: In function '_write_one_internal':
 Distribution Representation
 
 boundingBox = {1..4, 1..4}

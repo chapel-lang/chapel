@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,6 +70,7 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
+void print_llvm(llvm::Module* m);
 
 #endif //HAVE_LLVM
 

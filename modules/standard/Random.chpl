@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -65,7 +65,7 @@ module Random {
   public use NPBRandom;
   public use PCGRandom;
   import Set.set;
-
+  private use IO;
 
 
   /* Select between different supported RNG algorithms.
@@ -772,7 +772,7 @@ module Random {
   module PCGRandom {
 
     use super.RandomSupport;
-    private use Random;
+    private use Random, IO;
     private use PCGRandomLib;
     use ChapelLocks;
 
@@ -2474,6 +2474,7 @@ module Random {
 
     use super.RandomSupport;
     use ChapelLocks;
+    private use IO;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level

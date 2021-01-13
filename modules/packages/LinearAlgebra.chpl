@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1512,7 +1512,7 @@ proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
    Compute a vector ``x`` such that the 2-norm ``|b - A x|`` is minimized.
 
    ``cond`` is the cut-off threshold such that singular values will be
-   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the treshold will
+   considered 0.0. If ``cond < 0.0`` (defaults to ``-1.0``), the threshold will
    be set to ``max((...A.shape)) * epsilon``, where ``epsilon`` is the machine
    precision for ``A.eltType``.
 
@@ -1538,6 +1538,7 @@ proc leastSquares(A: [] ?t, b: [] t, cond = -1.0) throws
   where usingLAPACK && isLAPACKType(t)
 {
   use SysCTypes;
+  use IO; // for string.format
   import LAPACK;
   require LAPACK.header;
 

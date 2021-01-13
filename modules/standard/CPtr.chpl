@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -287,13 +287,12 @@ module CPtr {
   pragma "no doc"
   inline proc _cast(type t:_anyManagementAnyNilable, x:c_void_ptr) {
     if isUnmanagedClass(t) || isBorrowedClass(t) {
-      compilerWarning("cast from c_void_ptr to "+ t:string +" is deprecated");
-      compilerWarning("cast to "+ _to_nilable(t):string +" instead");
-      return __primitive("cast", t, x);
+      compilerError("invalid cast from c_void_ptr to "+ t:string +
+                    " - cast to "+ _to_nilable(t):string +" instead");
     } else {
-      compilerWarning("invalid cast from c_void_ptr to managed type " +
-                      t:string);
+      compilerError("invalid cast from c_void_ptr to managed type " + t:string);
     }
+    return __primitive("cast", t, x);
   }
 
   pragma "no doc"

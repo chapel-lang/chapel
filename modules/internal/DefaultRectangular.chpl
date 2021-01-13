@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -689,8 +689,8 @@ module DefaultRectangular {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
 
-    proc dsiTargetLocales() {
-      return [this.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -1514,8 +1514,8 @@ module DefaultRectangular {
       return rad;
     }
 
-    proc dsiTargetLocales() {
-      return [this.data.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -1720,7 +1720,7 @@ module DefaultRectangular {
 
     if false && !f.writing && !f.binary() &&
        rank == 1 && dom.dsiDim(0).stride == 1 &&
-       dom._arrs.size == 1 {
+       dom._arrs_containing_dom == 1 {
 
       // resize-on-read implementation, disabled right now
       // until we decide how it should work.
@@ -2252,13 +2252,14 @@ module DefaultRectangular {
     use RangeChunk;
 
     type resType = op.generate().type;
-    var res: [dom] resType;
+    var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
     // Take first pass, computing per-task partial scans, stored in 'state'
     var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
     // Take second pass updating result based on the scanned 'state'
     this.chpl__postScan(op, res, numTasks, rngs, state);
+    if isPOD(resType) then res.dsiElementInitializationComplete();
 
     // Clean up and return
     delete op;

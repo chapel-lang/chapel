@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -157,7 +157,7 @@ void computeHasToplevelYields(BaseAST* ast, bool& result) {
   if (result)
     return;
   else if (CallExpr* call = toCallExpr(ast))
-    result = call->isPrimitive(PRIM_YIELD); // do not dig futher
+    result = call->isPrimitive(PRIM_YIELD); // do not dig further
   else if (isSymbol(ast) || isForallStmt(ast))
     ; // do not descend into these
   else
@@ -926,7 +926,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 
   // Mark exported symbols and module init/deinit functions as visible.
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT))
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
       pruneVisit(fn, fns, types);
 
   // Mark well-known functions as visible

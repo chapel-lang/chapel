@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -657,56 +657,4 @@ module ChapelHashtable {
       rehash(newSizeNum, newSize);
     }
   }
-
-
-  // This is a simple set implementation for internal usage. It's a thin
-  // wrapper over chpl__hashtable. It is not parallel safe and is expected to
-  // be called on the node that owns it (so uses will likely wrap with
-  // locks/on-stmts).
-  record chpl__simpleSet {
-    type eltType;
-    var table: chpl__hashtable(eltType, nothing);
-
-    inline proc size {
-      return table.tableNumFullSlots;
-    }
-
-    proc add(elem) {
-      var (isFullSlot, idx) = table.findAvailableSlot(elem);
-      assert(!isFullSlot);
-      table.fillSlot(idx, elem, none);
-    }
-
-    proc remove(elem) {
-      var (hasFoundSlot, idx) = table.findFullSlot(elem);
-      // note that this is a noop if the element isn't in the set
-      if hasFoundSlot {
-        var key: eltType, val: nothing;
-        table.clearSlot(idx, key, val);
-        table.maybeShrinkAfterRemove();
-      }
-    }
-
-    pragma "order independent yielding loops"
-    iter these() {
-      for slot in table.allSlots() do
-        if table.isSlotFull(slot) then
-          yield table.table[slot].key;
-    }
-
-    proc writeThis(f) throws {
-      var count = 1;
-      f <~> "{";
-      for e in this {
-        if count <= (size - 1) {
-          count += 1;
-          f <~> e <~> ", ";
-        } else {
-          f <~> e;
-        }
-      }
-      f <~> "}";
-    }
-  }
-
 }

@@ -39,11 +39,13 @@ fi
 # Address program output variations peculiar to the various configuation
 # settings.
 
-# On Cray CS and X* systems, compute node system names aren't meaningful.
+# On Cray CS, X*, and HPE Cray EX systems, compute node system names
+# aren't meaningful.
 case $target in
-  cray-cs|cray-x*) sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
-                       < $2 > $2.tmp &&
-                   mv $2.tmp $2;;
+  cray-cs|cray-x*|hpe-cray-ex)
+     sed "s/\(executing on node 0 of 1 node(s): \).*/\1$uname/" \
+         < $2 > $2.tmp &&
+     mv $2.tmp $2;;
 esac
 
 # With Qthreads, -v results in some lines of QTHREADS info we don't need.
@@ -75,7 +77,4 @@ case $launcher in
 esac
 
 sed -e "s;`pwd`;.;" $2 > $2.tmp
-cat $2.tmp
-echo ---
-cat $2
 mv $2.tmp $2

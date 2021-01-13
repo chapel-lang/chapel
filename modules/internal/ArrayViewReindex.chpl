@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -271,7 +271,7 @@ module ArrayViewReindex {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       return downdom.dsiTargetLocales();
     }
 

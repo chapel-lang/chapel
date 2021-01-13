@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -470,7 +470,7 @@ module Spawn {
           var env_c_str:c_string;
           var env_str:string;
           if sys_getenv(c"PE_PRODUCT_LIST", env_c_str)==1 {
-            env_str = env_c_str;
+            env_str = createStringWithNewBuffer(env_c_str);
             if env_str.count("HUGETLB") > 0 then
               throw SystemError.fromSyserr(
                   EINVAL,

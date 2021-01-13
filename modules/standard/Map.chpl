@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -555,7 +555,7 @@ module Map {
      :type k: keyType
 
      :arg v: The value that maps to ``k``
-     :type k: valueType
+     :type v: valueType
 
      :returns: `true` if `k` was not in the map and added with value `v`.
                `false` otherwise.

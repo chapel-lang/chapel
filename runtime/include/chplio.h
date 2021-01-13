@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -34,15 +34,19 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+#include "chpl-string.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define _default_string_length             256
 #define _default_format_read_string       "%255s"   
 
 typedef FILE* _cfile;
 
-
 static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 
-#include "chpl-string.h"
 // These should be moved to chpl-string.h and eventually go away.
 // These return the Chapel idea of a (narrow) string.
 chpl_string chpl_refToString(void* ref);
@@ -53,5 +57,8 @@ static inline c_file chpl_cstdin(void) { return stdin; }
 static inline c_file chpl_cstdout(void) { return stdout; }
 static inline c_file chpl_cstderr(void) { return stderr; }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

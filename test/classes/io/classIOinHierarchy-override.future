@@ -1,0 +1,17 @@
+bug: I/O on class hierarchies seems broken
+
+#7118
+
+In this test, I would expect:
+
+* objects of dynamic type C to always use the compiler-generated writeThis()
+* objects of dynamic type D to always use the user-supplied override
+* objects of dynamic type E to always use D.writeThis() by virtue of the
+  user having overridden D.writeThis() yet not E.writeThis()
+
+However, what I'm finding is that when the static type is C:
+
+* when the dynamic type is D, it uses the compiler-generated C.writeThis()
+* when the dynamic type is E, it uses the compiler-generated E.writeThis()
+
+But I can't explain why.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -27,6 +27,10 @@
 #include "qbuffer.h"
 #include "qio_style.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Clients of this routine must call qbytes_release() if the returned value
 // is not retained.
 // The initial value is 1, reflecting the assumption that it will be retained
@@ -37,5 +41,8 @@ qioerr bulk_put_buffer(int64_t dst_locale, void* dst_addr, int64_t dst_len,
                       qbuffer_t* buf, qbuffer_iter_t start, qbuffer_iter_t end);
 
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

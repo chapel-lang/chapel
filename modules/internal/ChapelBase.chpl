@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -793,52 +793,6 @@ module ChapelBase {
   //
   inline proc _i2r(a: imag(?w)) return __primitive("cast", real(w), a);
   inline proc _r2i(a: real(?w)) return __primitive("cast", imag(w), a);
-
-  //
-  // min and max
-  //
-  inline proc min(x: int(?w), y: int(w)) return if x < y then x else y;
-  inline proc max(x: int(?w), y: int(w)) return if x > y then x else y;
-
-  inline proc min(x: uint(?w), y: uint(w)) return if x < y then x else y;
-  inline proc max(x: uint(?w), y: uint(w)) return if x > y then x else y;
-
-  inline proc min(x: real(?w), y: real(w)) return if (x < y) | isnan(x) then x else y;
-  inline proc max(x: real(?w), y: real(w)) return if (x > y) | isnan(x) then x else y;
-
-  inline proc min(x, y) return if x < y then x else y;
-  inline proc max(x, y) return if x > y then x else y;
-
-  inline proc min(x, y, z...?k) return min(min(x, y), (...z));
-  inline proc max(x, y, z...?k) return max(max(x, y), (...z));
-
-  inline proc min(param x: int(?w), param y: int(w)) param
-    return if x < y then x else y;
-  inline proc max(param x: int(?w), param y: int(w)) param
-    return if x > y then x else y;
-
-  inline proc min(param x: uint(?w), param y: uint(w)) param
-    return if x < y then x else y;
-  inline proc max(param x: uint(?w), param y: uint(w)) param
-    return if x > y then x else y;
-
-  inline proc min(param x: real(?w), param y: real(w)) param
-    return if x < y then x else y;
-  inline proc max(param x: real(?w), param y: real(w)) param
-    return if x > y then x else y;
-
-  inline proc min(param x: imag(?w), param y: imag(w)) param
-    return if x < y then x else y;
-  inline proc max(param x: imag(?w), param y: imag(w)) param
-    return if x > y then x else y;
-
-  inline proc min(x, y) where isAtomic(x) || isAtomic(y) {
-    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-  }
-
-  inline proc max(x, y) where isAtomic(x) || isAtomic(y) {
-    compilerError("min() and max() are not supported for atomic arguments - apply read() to those arguments first");
-  }
 
   //
   // More primitive funs
@@ -2249,12 +2203,6 @@ module ChapelBase {
   proc isBorrowedOrUnmanagedClassType(type t:unmanaged) param return true;
   proc isBorrowedOrUnmanagedClassType(type t:borrowed) param return true;
   proc isBorrowedOrUnmanagedClassType(type t) param return false;
-
-  // Former support for --legacy-classes, to be removed after 1.21.
-  proc chpl_legacyClasses param {
-    compilerWarning("'chpl_legacyClasses' is deprecated and will be removed in the next release; it is now always false");
-    return false;
-  }
 
   proc isRecordType(type t) param {
     if __primitive("is record type", t) == false then

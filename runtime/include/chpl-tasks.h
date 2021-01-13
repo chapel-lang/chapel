@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,6 +28,10 @@
 #include "chpltypes.h"
 #include "chpl-comm-task-decls.h"
 #include "chpl-tasks-impl.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // This holds per-runtime-task information the tasking layer maintains
@@ -68,6 +72,10 @@ typedef struct chpl_task_bundle {
 } chpl_task_bundle_t;
 
 typedef chpl_task_bundle_t* chpl_task_bundle_p;
+
+#ifdef __cplusplus
+}
+#endif
 
 //
 // Interface functions

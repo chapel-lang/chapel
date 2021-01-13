@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -156,6 +156,8 @@ module ChapelRange {
   use ChapelBase, SysBasic, HaltWrappers;
 
   use Math, DSIUtil;
+
+  private use ChapelDebugPrint only chpl_debug_writeln;
 
   // Turns on range iterator debugging.
   pragma "no doc"
@@ -769,20 +771,6 @@ module ChapelRange {
         then return _containsHelp(this, other);
     }
     return other == this(other);
-  }
-
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(ind: idxType) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(ind);
-  }
-
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(other: range(?)) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(other);
   }
 
   // Negate one of the two args' strides before comparison.

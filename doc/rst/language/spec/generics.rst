@@ -1050,7 +1050,8 @@ continue after encountering a ``compilerWarning``.
       }
 
       proc foo(x) {
-        compilerWarning("1-argument version of foo called");
+        compilerWarning("1-argument version of foo called with type: ",
+                        x.type:string);
         writeln("In generic foo!");
       }
 
@@ -1081,17 +1082,17 @@ continue after encountering a ``compilerWarning``.
 
    .. code-block:: bash
 
-      foo.chpl:1: warning: 1-argument version of foo called with type: real
+      foo.chpl:1: warning: 1-argument version of foo called with type: real(64)
       foo.chpl:2: warning: 1-argument version of foo called with type: string
-      foo.chpl:6: error: foo() called with non-matching types: int != real
+      foo.chpl:6: error: foo() called with non-matching types: int(64) != real(64)
 
    
 
    .. BLOCK-test-chapeloutput
 
-      compilerDiagnostics.chpl:14: warning: 1-argument version of foo called
-      compilerDiagnostics.chpl:15: warning: 1-argument version of foo called
-      compilerDiagnostics.chpl:19: error: foo() called with non-matching types: int(64) != real(64)
+      compilerDiagnostics.chpl:15: warning: 1-argument version of foo called with type: real(64)
+      compilerDiagnostics.chpl:16: warning: 1-argument version of foo called with type: string
+      compilerDiagnostics.chpl:20: error: foo() called with non-matching types: int(64) != real(64)
 
 .. _Creating_General_and_Specialized_Versions_of_a_Function:
 
@@ -1150,7 +1151,7 @@ concrete method to be selected when applicable. For example:
 
    
 
-   ::
+   .. code-block:: chapel
 
       record MyNode {
         var field;  // since no type is specified here, MyNode is a generic type
@@ -1167,26 +1168,6 @@ concrete method to be selected when applicable. For example:
       myRealNode.foo(); // outputs "in generic MyNode.foo()"
       var myIntNode = new MyNode(1);
       myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
-
-   .. BLOCK-test-chapelnoprint
-
-      record MyNode {
-        var field;  // since no type is specified here, MyNode is a generic type
-      }
-
-      proc MyNode.foo() {
-        writeln("in generic MyNode.foo()");
-      }
-      proc (MyNode(int)).foo() {
-        writeln("in specific MyNode(int).foo()");
-      }
-
-      var myRealNode = new MyNode(1.0);
-      myRealNode.foo(); // outputs "in generic MyNode.foo()"
-      var myIntNode = new MyNode(1);
-      myIntNode.foo(); // outputs "in specific MyNode(int).foo()"
-
-
 
    .. BLOCK-test-chapeloutput
 

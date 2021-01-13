@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +23,10 @@
 
 #include "dirent.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef DIR* DIRptr;
 
 typedef struct dirent* direntptr;
@@ -37,5 +41,8 @@ const char* chpl_rt_direntptr_getname(direntptr d) {
 // see the readdir() man page for notes
 //
 // #define chpl_rt_direntptr_isDir(x)   ((x)->d_type == DT_DIR)
+#ifdef __cplusplus
+}
+#endif
 
 #endif

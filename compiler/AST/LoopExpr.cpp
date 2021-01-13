@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -198,7 +198,11 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   if (node->getStmtExpr() == NULL) {
     // Don't touch LoopExprs in DefExprs, they should be copied later into
     // BlockStmts.
-    INT_ASSERT(isDefExpr(node->parentExpr));
+
+    // While this works for correct codes, it results in assertion errors
+    // for incorrect codes that don't generate errors until resolution:
+    //
+    //    INT_ASSERT(isDefExpr(node->parentExpr));
   } else {
     SET_LINENO(node);
 
@@ -535,14 +539,15 @@ static bool isGlobalVar(Symbol* sym) {
 //
 // Is this symbol defined outside 'enclosingExpr'?
 //
-static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
+bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr) {
   Symbol* enclosingSym = enclosingExpr->parentSymbol;
   Expr* curr = sym->defPoint;
   Symbol* currParentSym = curr->parentSymbol;
 
   // See if we are even in the same function.
   while (currParentSym != enclosingSym) {
-    if (currParentSym == NULL || currParentSym == rootModule)
+    if (isModuleSymbol(currParentSym))
+      // we made it all the way to the top without crossing enclosingSym, so
       return true; // 'sym' is defined outside 'enclosingSym', so it is outer
 
     curr = currParentSym->defPoint;
@@ -554,6 +559,8 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
     if (curr == NULL) {
       // 'sym' better not be defined under a Symbol
       // that is adjacent to 'enclosingExpr'.
+      // 2020-11 the assert below means we do not enter the above while-loop,
+      // meaning that we do not encounter symbols with nested symbols.
       INT_ASSERT(currParentSym == sym->defPoint->parentSymbol);
       return true;
     }
@@ -562,9 +569,6 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
 
     curr = curr->parentExpr;
   }
-
-  INT_ASSERT(false); // should not get here
-  return false;
 }
 
 static bool considerForOuter(Symbol* sym) {
@@ -599,7 +603,7 @@ static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
 
   for_vector(SymExpr, se, uses) {
     Symbol* sym = se->symbol();
-    if (considerForOuter(sym) && isOuterVar(sym, loopExpr))
+    if (considerForOuter(sym) && isOuterVarLoop(sym, loopExpr))
         outerVars.insert(sym);
   }
 }

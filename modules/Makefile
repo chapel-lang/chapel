@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -38,7 +38,9 @@ SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
 MODULE_SPHINX=${CHPL_MAKE_HOME}/modules/sphinx
-DOC=${CHPL_MAKE_HOME}/doc/rst
+DOC_BUILD=${CHPL_MAKE_HOME}/build/doc
+DOC_RST=${CHPL_MAKE_HOME}/doc/rst
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 default: all
 
@@ -71,6 +73,8 @@ MODULES_TO_DOCUMENT = \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/Builtins.chpl \
+	standard/ChapelEnv.chpl \
+	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
@@ -95,6 +99,7 @@ MODULES_TO_DOCUMENT = \
 	standard/SysError.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
+	standard/VectorizingIterator.chpl \
 	standard/Version.chpl \
 	$(SYS_CTYPES_MODULE_DOC)
 
@@ -157,39 +162,44 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelError.chpl             \
-	internal/ChapelIO.chpl                \
-	internal/ChapelIteratorSupport.chpl   \
 	internal/ChapelLocale.chpl            \
-	internal/UtilMisc_forDocs.chpl 	      \
 	internal/ChapelRange.chpl             \
 	internal/Bytes.chpl                   \
 	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
-	internal/ChapelEnv.chpl               \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)
 	@echo "Generating module documentation with chpldoc"
-	export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
-	$(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
+	@export CHPLDOC_AUTHOR='Hewlett Packard Enterprise Development LP' && \
+	  $(CHPLDOC) --save-sphinx ${MODULE_SPHINX} --no-html $(MODULES_TO_DOCUMENT) $(DISTS_TO_DOCUMENT) $(PACKAGES_TO_DOCUMENT) $(INTERNAL_MODULES_TO_DOCUMENT)
 	@echo "Running post-processing scripts"
-	./internal/fixInternalDocs.sh ${MODULE_SPHINX}
-	./dists/fixDistDocs.perl      ${MODULE_SPHINX}
-	@echo "Copying generated module documentation to ${DOC}"
-	mkdir -p ${DOC}/modules
-	mkdir -p ${DOC}/builtins
-	cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC}/modules
-	cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC}/builtins
-	@echo "Removing generated files and directories"
-	rm -rf ./docs
-	rm -rf ${MODULE_SPHINX}
-	rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
+	@./internal/fixInternalDocs.sh ${MODULE_SPHINX}
+	@./dists/fixDistDocs.perl      ${MODULE_SPHINX}
+	@echo "Copying generated module documentation to ${DOC_BUILD}"
+	@rm -rf {DOC_BUILD}/modules
+	@rm -rf {DOC_BUILD}/builtins
+	@mkdir -p ${DOC_BUILD}/modules
+	@mkdir -p ${DOC_BUILD}/builtins
+	@cp -rf ${MODULE_SPHINX}/source/modules/standard   ${DOC_BUILD}/modules
+	@cp -rf ${MODULE_SPHINX}/source/modules/packages   ${DOC_BUILD}/modules
+	@cp -rf ${MODULE_SPHINX}/source/modules/dists      ${DOC_BUILD}/modules
+	@cp -rf ${MODULE_SPHINX}/source/modules/layouts    ${DOC_BUILD}/modules
+	@cp -rf ${DOC_RST}/meta/modules/* ${DOC_BUILD}/modules
+	@cp -rf ${MODULE_SPHINX}/source/modules/internal/* ${DOC_BUILD}/builtins
+	@cp -rf ${DOC_RST}/meta/builtins/* ${DOC_BUILD}/builtins
+	@echo "Updating generated module documentation in ${DOC_RST}"
+	@mkdir -p ${DOC_RST}/modules
+	@mkdir -p ${DOC_RST}/builtins
+	@${COPY_IF_DIFFERENT} ${DOC_BUILD}/modules ${DOC_RST}/modules
+	@${COPY_IF_DIFFERENT} ${DOC_BUILD}/builtins ${DOC_RST}/builtins
+	@echo "Removing generated files and directories in modules/"
+	@rm -rf ./docs
+	@rm -rf ${MODULE_SPHINX}
+	@rm -f ${CHPL_MAKE_HOME}/modules/$(SYS_CTYPES_MODULE_DOC)
 
 clean-documentation:
 	rm -rf ./docs

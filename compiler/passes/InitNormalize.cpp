@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -348,7 +348,7 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -419,7 +419,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       insertBefore->insertBefore(fieldSet);
 
     } else {
-      VarSymbol* tmp      = newTemp("tmp");
+      VarSymbol* tmp      = newTemp(field->sym->name);
       DefExpr*   tmpDefn  = new DefExpr(tmp);
       PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
       CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -463,7 +463,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       }
     }
 
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
     CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -505,7 +505,7 @@ Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -546,7 +546,7 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
   } else {
     // Do not set type of 'tmp' so that resolution will infer it later
-    VarSymbol* tmp       = newTemp("tmp");
+    VarSymbol* tmp       = newTemp(field->sym->name);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
     Expr*      checkType = NULL;
 
@@ -603,7 +603,7 @@ Expr* InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(fieldSet);
 
   } else {
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
 
