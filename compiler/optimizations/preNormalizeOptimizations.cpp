@@ -458,7 +458,8 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
 static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall);
+static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
+                                        bool checkArgs);
 static Symbol *getCallBase(CallExpr *call);
 static void generateDynamicCheckForAccess(CallExpr *access,
                                           ForallStmt *forall,
@@ -507,7 +508,7 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
 // currently we want both sides to be calls, but we need to relax these to
 // accept symexprs to support foralls over arrays
-static bool callSuitableForAggregation(CallExpr *call) {
+static bool callSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
   if (call->isNamed("=")) {
     if (CallExpr *leftCall = toCallExpr(call->get(1))) {
       if (CallExpr *rightCall = toCallExpr(call->get(2))) {
@@ -517,10 +518,12 @@ static bool callSuitableForAggregation(CallExpr *call) {
           // we want the side that's not to have a baseExpr that's a SymExpr
           // this avoid function calls
           if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-            return isSymExpr(leftCall->baseExpr);
+            return getCallBaseSymIfSuitable(leftCall, forall,
+                                            /*checkArgs=*/false) != NULL;
           }
           else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-            return isSymExpr(rightCall->baseExpr);
+            return getCallBaseSymIfSuitable(rightCall, forall,
+                                            /*checkArgs=*/false) != NULL;
           }
         }
       }
@@ -558,7 +561,7 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
 static void autoAggregation(ForallStmt *forall) {
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
-    if (callSuitableForAggregation(lastCall)) {
+    if (callSuitableForAggregation(lastCall, forall)) {
       LOG_AA(1, "Found an aggregation candidate", lastCall);
       insertAggCandidate(lastCall, forall);
     }
@@ -1100,7 +1103,8 @@ static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
 // Bunch of checks to see if `call` is a candidate for optimization within
 // `forall`. Returns the symbol of the `baseExpr` of the `call` if it is
 // suitable. NULL otherwise
-static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
+static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
+                                        bool checkArgs) {
   
   // TODO see if you can use getCallBase
   SymExpr *baseSE = toSymExpr(call->baseExpr);
@@ -1114,7 +1118,7 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall) {
     }
 
     // give up if the access uses a different symbol
-    if (!callHasSymArguments(call, forall->optInfo.multiDIndices)) { return NULL; }
+    if (checkArgs && !callHasSymArguments(call, forall->optInfo.multiDIndices)) { return NULL; }
 
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
@@ -1553,7 +1557,7 @@ static void autoLocalAccess(ForallStmt *forall) {
   collectCallExprs(forall->loopBody(), allCallExprs);
 
   for_vector(CallExpr, call, allCallExprs) {
-    Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall);
+    Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall, /*checkArgs=*/true);
 
     if (accBaseSym == NULL) {
       // if it looks like an array access, record it
