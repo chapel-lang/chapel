@@ -406,9 +406,14 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 * to find its methods.                                                        *
 *                                                                             *
 ************************************** | *************************************/
-bool UseStmt::typeWasNamed(Type* t) const {
+std::set<const char*> UseStmt::typeWasNamed(Type* t) const {
+  std::set<const char*> namedTypes;
   INT_FATAL("Not implemented");
-  return false;
+  return namedTypes;
+}
+
+void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
+  INT_FATAL("Not implemented");
 }
 
 /************************************* | **************************************

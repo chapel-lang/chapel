@@ -383,17 +383,25 @@ void ImportStmt::validateUnqualified() {
 * to find its methods.                                                        *
 *                                                                             *
 ************************************** | *************************************/
-bool ImportStmt::typeWasNamed(Type* t) const {
+std::set<const char*> ImportStmt::typeWasNamed(Type* t) const {
+  std::set<const char*> namedTypes;
+
+  typeWasNamed(t, &namedTypes);
+  return namedTypes;
+}
+
+void ImportStmt::typeWasNamed(Type* t,
+                              std::set<const char*>* namedTypes) const {
   // We don't define any symbols for unqualified access, so the type was not
   // listed
   if (!providesUnqualifiedAccess()) {
-    return false;
+    return;
   } else {
     // Otherwise, look through the list of unqualified symbol names to see if
     // this one was listed
     for_vector(const char, toCheck, unqualified) {
-      if (toCheck == t->symbol->name)
-        return true;
+      if (astr(toCheck) == astr(t->symbol->name))
+        namedTypes->insert(astr(toCheck));
     }
 
     // Including if it was renamed
@@ -401,20 +409,17 @@ bool ImportStmt::typeWasNamed(Type* t) const {
         it != renamed.end();
         ++it) {
       if (astr(t->symbol->name) == astr(it->first)) {
-        return true;
+        // Save the original name because we'll be looking in its scope
+        namedTypes->insert(astr(it->second));
       }
     }
 
     // If a parent type was named, we want to traverse this import statement
     if (AggregateType* at = toAggregateType(t)) {
       forv_Vec(AggregateType, pt, at->dispatchParents) {
-        if (typeWasNamed(pt) == true) {
-          return true;
-        }
+        typeWasNamed(pt, namedTypes);
       }
     }
-
-    return false;
   }
 }
 

@@ -59,7 +59,7 @@ public:
   UseStmt*        applyOuterUse(const UseStmt* outer);
   ImportStmt*     applyOuterImport(const ImportStmt* outer);
 
-  bool            typeWasNamed(Type* t) const;
+  std::set<const char*> typeWasNamed(Type* t) const;
 
   bool            skipSymbolSearch(const char* name)                     const;
 
@@ -84,6 +84,8 @@ private:
   bool            matchedNameOrRename(const char* name)             const;
 
   void            noRepeats()                                            const;
+
+  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
 
 public:
   std::vector<const char*>           named;

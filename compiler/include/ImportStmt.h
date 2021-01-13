@@ -52,7 +52,7 @@ class ImportStmt: public VisibilityStmt {
 
   virtual BaseAST* getSearchScope() const;
 
-  bool typeWasNamed(Type* t) const;
+  std::set<const char*> typeWasNamed(Type* t) const;
 
   bool skipSymbolSearch(const char* name) const;
 
@@ -71,6 +71,8 @@ class ImportStmt: public VisibilityStmt {
   void validateList();
   void validateUnqualified();
   void noRepeats() const;
+
+  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
 
  public:
   std::vector<const char*> unqualified;

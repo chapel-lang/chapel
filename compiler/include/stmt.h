@@ -69,7 +69,7 @@ class VisibilityStmt: public Stmt {
   const char* getRename() const;
   const char* getRenamedSym(const char* name) const;
 
-  virtual bool typeWasNamed(Type* t) const = 0;
+  virtual std::set<const char*> typeWasNamed(Type* t) const = 0;
 
   virtual bool skipSymbolSearch(const char* name) const = 0;
 
