@@ -1,5 +1,5 @@
 callMethodOnClass.chpl:23: In function 'main':
 callMethodOnClass.chpl:25: error: unresolved call 'type D.start'
 callMethodOnClass.chpl:14: note: this candidate did not match: D.start
-callMethodOnClass.chpl:25: note: because type method call receiver
-callMethodOnClass.chpl:14: note: is passed to non-type formal 'this: borrowed D'
+callMethodOnClass.chpl:25: note: because method call receiver is a type
+callMethodOnClass.chpl:14: note: but is passed to non-type formal 'this: borrowed D'

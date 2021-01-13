@@ -1162,14 +1162,9 @@ static std::string argToString(FnSymbol* concreteFn,
 
   std::string ret = "";
   std::string name = concreteArg->name;
-  if (genericArg && genericArg->hasFlag(FLAG_EXPANDED_VARARGS) &&
-      name[0] == '_' && name[1] == 'e') {
-    // change _e##_name into name(##)
-    std::string num = name;
-    num.erase(0, 2); // remove _e
-    std::string n = num; // ##_name
-    num.resize(num.find('_')); // ##
-    n.erase(0, n.find('_')+1); // name
+  if (genericArg && genericArg->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    std::string num;
+    std::string n = genericArg->demungeVarArgName(&num);
     name = n + "(" + num + ")";
   }
 
