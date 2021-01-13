@@ -1030,7 +1030,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
   if (failingActualIsReceiver)
     failingActualDesc = astr("method call receiver");
   else
-    failingActualDesc = astr("call actual argument #",
+    failingActualDesc = astr("actual argument #",
                              istr(failingActualUserIndex));
 
   if (fnIsMethod && !callIsMethod) {
@@ -1048,7 +1048,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TYPE_RELATED:
     case RESOLUTION_CANDIDATE_TYPE_SAME_CATEGORY:
     case RESOLUTION_CANDIDATE_UNRELATED_TYPE:
-      USR_PRINT(call, "because %s with type %s",
+      USR_PRINT(call, "because %s with type '%s'",
                     failingActualDesc,
                     toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to formal '%s'",
