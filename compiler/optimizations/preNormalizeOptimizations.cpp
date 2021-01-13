@@ -146,7 +146,7 @@ void cleanupRemainingAggCondStmts() {
                 Symbol *prevRhsSym = toSymExpr(prevCall->get(2))->symbol();
                 CallExpr *aggGenCall = toCallExpr(prevCall->prev);
                 INT_ASSERT(aggGenCall);
-                INT_ASSERT(aggGenCall->isNamed("chpl_srcAggregatorForArr"));
+                INT_ASSERT(aggGenCall->theFnSymbol()->hasFlag(FLAG_AGG_GENERATOR));
                 INT_ASSERT(toSymExpr(aggGenCall->get(2))->symbol() == prevRhsSym);
 
                 parentCall->remove();
