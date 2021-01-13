@@ -1,0 +1,6 @@
+feature request: support split initialization via tuple destructuring
+
+#16937
+
+In this test, it seems as though the tuple assignment should cause
+split initialization to fire, yet it doesn't.
