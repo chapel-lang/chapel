@@ -52,6 +52,13 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
+
+static void removeUnusedFunction(FnSymbol* unusedFn) {
+  // remove the function
+  unusedFn->defPoint->remove();
+}
+
+
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
@@ -89,8 +96,8 @@ static void removeUnusedFunctions() {
           }
 
           clearDefaultInitFns(fn);
+          removeUnusedFunction(fn);
 
-          fn->defPoint->remove();
         } else if (fn->isResolved() && fn->retTag == RET_TYPE) {
           // BHARSH TODO: This is a way to work around the cleanup logic that
           // removes generic types from the tree. If the function was left
@@ -104,7 +111,7 @@ static void removeUnusedFunctions() {
           if (type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
               type->symbol->hasFlag(FLAG_EXTERN) == false &&
               fatalErrorsEncountered() == false) {
-            fn->defPoint->remove();
+            removeUnusedFunction(fn);
           }
         }
       }
@@ -640,14 +647,14 @@ static void removeWhereClausesAndReturnTypeBlocks() {
 
 static void removeMootFields() {
   // Remove type fields and parameter fields
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
-      if (AggregateType* ct = toAggregateType(type->type)) {
-        for_fields(field, ct) {
-          if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-              field->isParameter())
-            field->defPoint->remove();
-        }
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      for_fields(field, at) {
+        if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+            field->isParameter())
+          field->defPoint->remove();
       }
+    }
   }
 }
 
@@ -687,15 +694,15 @@ static void removeSymbolsWithRemovedTypes() {
 // to ensure they are not looked at again.
 static void cleanupAfterRemoves() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->instantiatedFrom != NULL)
+    if (fn->instantiatedFrom != NULL) {
       fn->addFlag(FLAG_INSTANTIATED_GENERIC);
-    fn->instantiatedFrom = NULL;
-    fn->setInstantiationPoint(NULL);
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      if (e->value && !e->value->inTree()) {
-        e->value = NULL;
-      }
+
+      // Clear instantiatedFrom since it would refer to a deleted AST node
+      fn->instantiatedFrom = NULL;
     }
+
+    fn->setInstantiationPoint(NULL);
+
     // How about basicBlocks, calledBy ?
   }
 
@@ -712,6 +719,8 @@ static void cleanupAfterRemoves() {
       arg->addFlag(FLAG_INSTANTIATED_GENERIC);
     arg->instantiatedFrom = NULL;
   }
+
+  cleanupAfterTypeRemoval();
 }
 
 static bool isVoidOrVoidTupleType(Type* type) {
@@ -907,6 +916,67 @@ static void cleanupVoidVarsAndFields() {
   }
 }
 
+void saveGenericSubstitutions() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->substitutions.n > 0) {
+
+      // Generate substitutionsPostResolve which should not be generated yet
+      INT_ASSERT(fn->substitutionsPostResolve.size() == 0);
+
+      if (FnSymbol* genericFn = fn->instantiatedFrom) {
+        // Construct substitutionsPostResolve
+        for_formals(genericFormal, genericFn) {
+          if (genericFormal->type != dtMethodToken) {
+            Symbol* value = fn->substitutions.get(genericFormal);
+            NameAndSymbol ns;
+            ns.name = genericFormal->name;
+            ns.value = value;
+            ns.isParam = genericFormal->isParameter();
+            ns.isType = (genericFormal->originalIntent == INTENT_TYPE);
+            fn->substitutionsPostResolve.push_back(ns);
+          }
+        }
+
+      } else {
+        // This case is a workaround for patterns that
+        // come up with compiler-generated tuple functions
+        INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
+        form_Map(SymbolMapElem, e, fn->substitutions) {
+          NameAndSymbol ns;
+          ns.name = e->key->name;
+          ns.value = e->value;
+          ns.isParam = false;
+          ns.isType = false;
+          fn->substitutionsPostResolve.push_back(ns);
+        }
+      }
+
+      // Clear substitutions since keys might refer to deleted AST nodes
+      fn->substitutions.clear();
+    }
+  }
+
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      if (at->substitutions.n > 0) {
+        // Generate substitutionsPostResolve which should not be generated yet
+        INT_ASSERT(at->substitutionsPostResolve.size() == 0);
+        for_fields(field, at) {
+          if (Symbol* value = at->getSubstitutionWithName(field->name)) {
+            NameAndSymbol ns;
+            ns.name = field->name;
+            ns.value = value;
+            ns.isParam = field->isParameter();
+            ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+            at->substitutionsPostResolve.push_back(ns);
+          }
+        }
+        // Clear substitutions since keys might refer to deleted AST nodes
+        at->substitutions.clear();
+      }
+    }
+  }
+}
 
 void pruneResolvedTree() {
   removeInterfaceCode();
@@ -947,7 +1017,7 @@ void pruneResolvedTree() {
 
   expandInitFieldPrims();
 
-  cleanupAfterRemoves();
-
   cleanupVoidVarsAndFields();
+
+  cleanupAfterRemoves();
 }

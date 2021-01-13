@@ -9051,6 +9051,8 @@ void resolve() {
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
 
+  saveGenericSubstitutions();
+
   pruneResolvedTree();
 
   resolveForallStmts2();
@@ -10010,8 +10012,8 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
           }
 
           FnSymbol* instFn = fn;
-          if (fn->instantiatedFrom) {
-            instFn = fn->instantiatedFrom;
+          if (FnSymbol* gfn = fn->instantiatedFrom) {
+            instFn = gfn;
           }
           if (printLocalMultiples || 0 == alreadySeenLocally.count(instFn)) {
             alreadySeenLocally.insert(instFn);

@@ -1,7 +1,7 @@
 bug_array_of_arrays.chpl:24: In method 'pass_arrayofarrays':
 bug_array_of_arrays.chpl:24: error: unresolved call 'chpl__buildArrayRuntimeType(nil, type int(64))'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:453: note: this candidate did not match: chpl__buildArrayRuntimeType(dom: domain, type eltType)
+$CHPL_HOME/modules/internal/ChapelArray.chpl:460: note: this candidate did not match: chpl__buildArrayRuntimeType(dom: domain, type eltType)
 bug_array_of_arrays.chpl:24: note: because actual argument #1 with type 'nil'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:453: note: is passed to formal 'dom: _domain'
-  bug_array_of_arrays.chpl:14: called as borrowed tst(int(64),3).pass_arrayofarrays(d: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)) from method 'run_test'
-  bug_array_of_arrays.chpl:31: called as borrowed tst(int(64),3).run_test()
+$CHPL_HOME/modules/internal/ChapelArray.chpl:460: note: is passed to formal 'dom: _domain'
+  bug_array_of_arrays.chpl:14: called as (tst(int(64),3)).pass_arrayofarrays(d: [domain(1,int(64),false)] [domain(1,int(64),false)] int(64)) from method 'run_test'
+  bug_array_of_arrays.chpl:31: called as (tst(int(64),3)).run_test()

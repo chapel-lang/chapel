@@ -393,14 +393,19 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       bool hideErrFn = false;
       bool hideInFn = false;
       if (developer == false && fPrintCallStackOnError == false) {
-        hideErrFn = isHiddenFunction(errFn);
+        // don't print 'from function' if the call site is internal
         hideInFn = isInternalFunction(inFn);
+        // don't print out callstack entry at all if the function is chpl_
+        // or it is internal and not the "In function" call
+        hideErrFn = isHiddenFunction(errFn) ||
+                    (prevFn != NULL && isInternalFunction(errFn));
       }
 
       // Continue printing stack frames until not generic;
       // or, with --print-callstack-on-error, module/main is reached
       bool recurse = (inFn->instantiatedFrom != NULL ||
                       inFn->hasFlag(FLAG_INSTANTIATED_GENERIC) ||
+                      hideErrFn || hideInFn ||
                       fPrintCallStackOnError);
 
       if (hideErrFn == false) {
@@ -449,10 +454,17 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
 // error changing err_fn is printed.
 static void printCallstackForLastError() {
   if (err_fn_header_printed && err_fn) {
+    // Clear out err_fn to avoid infinite loop if an error
+    // is encountered when printing the call stack.
+    // Clearing it is also helpful in case err_fn is deleted
+    // in a future pass and then an error is reported.
+    FnSymbol* fn = err_fn;
+    err_fn = NULL;
+
     bool printStack = false;
     if (fAutoPrintCallStackOnError)
-      printStack = (err_fn->instantiatedFrom != NULL ||
-                    err_fn->hasFlag(FLAG_INSTANTIATED_GENERIC));
+      printStack = (fn->instantiatedFrom != NULL ||
+                    fn->hasFlag(FLAG_INSTANTIATED_GENERIC));
     else
       printStack = fPrintCallStackOnError;
 
@@ -460,15 +472,12 @@ static void printCallstackForLastError() {
       std::set<FnSymbol*> currentFns;
       bool printedUnderline = false;
       bool lastHidden = false;
-      printCallstack(err_fn, NULL, currentFns,
-                             printedUnderline, lastHidden);
+      printCallstack(fn, NULL, currentFns,
+                     printedUnderline, lastHidden);
       if (printedUnderline)
         USR_PRINT("generic instantiations are underlined in the above callstack");
     }
   }
-
-  // Clear this variable in case e.g. err_fn is deleted in a future pass
-  err_fn = NULL;
 }
 
 static bool printErrorHeader(BaseAST* ast, astlocT astloc) {

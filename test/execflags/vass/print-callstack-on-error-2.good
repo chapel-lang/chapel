@@ -1,4 +1,4 @@
 print-callstack-on-error-2.chpl:4: In iterator 'these':
 print-callstack-on-error-2.chpl:5: error: error from myiter1.these(), depth=0
-  $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:: called as borrowed myiter.these() from function '_getIterator'
+  $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:: called as myiter.these() from function '_getIterator'
   print-callstack-on-error-2.chpl:11: called as _getIterator(x: borrowed myiter1) from module 'print-callstack-on-error-2'

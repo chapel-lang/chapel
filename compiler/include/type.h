@@ -85,6 +85,12 @@ public:
   FnSymbol*              getDestructor()                                 const;
   void                   setDestructor(FnSymbol* fn);
 
+  Symbol*                getSubstitutionWithName(const char* name)       const;
+  void                   setSubstitutionWithName(const char* name,
+                                                 Symbol* value);
+
+
+
   TypeSymbol*            symbol;
 
   // pointer to references for non-reference types
@@ -103,6 +109,7 @@ public:
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;
+  SymbolNameVec          substitutionsPostResolve;
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -543,6 +550,9 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 bool isPOD(Type* t);
 
 bool isNumericParamDefaultType(Type* type);
+
+TypeSymbol* getDataClassType(TypeSymbol* ts);
+void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

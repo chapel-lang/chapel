@@ -1,3 +1,3 @@
 returnWrongSize.chpl:1: In function 'foo':
 returnWrongSize.chpl:3: error: cannot return '2*int(64)' when the declared return type is '3*int(64)'
-  returnWrongSize.chpl:8: called as foo(param small = 1)
+  returnWrongSize.chpl:8: called as foo(param small = true)

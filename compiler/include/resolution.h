@@ -318,6 +318,7 @@ void removeCopyFns(Type* t);
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
+void saveGenericSubstitutions();
 void pruneResolvedTree();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);

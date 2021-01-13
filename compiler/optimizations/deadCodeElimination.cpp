@@ -484,6 +484,8 @@ void deadCodeElimination() {
 
     if (fReportDeadModules)
       printf("Removed %d dead modules.\n", deadModuleCount);
+
+    cleanupAfterTypeRemoval();
   }
 }
 

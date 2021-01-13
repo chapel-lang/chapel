@@ -201,6 +201,8 @@ bool givesType(Symbol* sym);
 Symbol* getSvecSymbol(CallExpr* call);
 void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 
+void cleanupAfterTypeRemoval();
+
 void convertToQualifiedRefs();
 
 #endif

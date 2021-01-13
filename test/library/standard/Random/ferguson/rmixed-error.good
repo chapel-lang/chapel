@@ -1,5 +1,5 @@
 $CHPL_HOME/modules/standard/Random.chpl:: In function 'randlc':
 $CHPL_HOME/modules/standard/Random.chpl:: error: PCGRandomStream cannot produce complex(128) (requiring 128 bits) from a stream configured for 64 bits of output
   $CHPL_HOME/modules/standard/Random.chpl:: called as randlc(type resultType = complex(128), states: 2*pcg_setseq_64_xsh_rr_32_rng) from method 'PCGRandomStreamPrivate_getNext_noLock'
-  $CHPL_HOME/modules/standard/Random.chpl:: called as borrowed PCGRandomStream(real(64),false).PCGRandomStreamPrivate_getNext_noLock(type resultType = complex(128)) from method 'getNext'
-  rmixed-error.chpl:: called as borrowed PCGRandomStream(real(64),false).getNext(type resultType = complex(128))
+  $CHPL_HOME/modules/standard/Random.chpl:: called as (PCGRandomStream(real(64),false)).PCGRandomStreamPrivate_getNext_noLock(type resultType = complex(128)) from method 'getNext'
+  rmixed-error.chpl:: called as (PCGRandomStream(real(64),false)).getNext(type resultType = complex(128))

@@ -1,5 +1,5 @@
 hashed-dist-with-mapper.chpl:50: In method 'indexToLocaleIndex':
 hashed-dist-with-mapper.chpl:51: error: success
-  hashed-dist-with-mapper.chpl:48: called as borrowed HashedDomain(MyMapper).indexToLocaleIndex(elm: string) from method 'dsiAdd'
-  hashed-dist-with-mapper.chpl:39: called as borrowed HashedDomain(MyMapper).dsiAdd(elm: string) from function 'add'
+  hashed-dist-with-mapper.chpl:48: called as (HashedDomain(MyMapper)).indexToLocaleIndex(elm: string) from method 'dsiAdd'
+  hashed-dist-with-mapper.chpl:39: called as (HashedDomain(MyMapper)).dsiAdd(elm: string) from function 'add'
   hashed-dist-with-mapper.chpl:32: called as add(D: owned HashedDomain(MyMapper), elm: string)
