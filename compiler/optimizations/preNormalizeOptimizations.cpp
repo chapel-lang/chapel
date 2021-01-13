@@ -69,6 +69,38 @@ static const char *getForallCloneTypeStr(ForallStmt *forall) {
   return "";
 }
 
+void cleanupRemainingAggCondStmts() {
+
+  forv_Vec(CondStmt, condStmt, gCondStmts) {
+    if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
+      //std::cout << "100\n";
+      if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+        std::cout << "200\n";
+        // this is a conditional that wasn't modified by the unordered
+        // optimization, so we need to remove it and the aggregator associated
+        // with it
+
+        // note that the else block will be inlined and will be a big mess, we
+        // need to find the compiler-generated aggregator
+        std::vector<SymExpr *> symExprs;
+        collectSymExprs(condStmt->elseStmt, symExprs);
+
+        Symbol *aggregatorToRemove = NULL;
+        for_vector(SymExpr, symExpr, symExprs) {
+          Symbol *sym = symExpr->symbol();
+          if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+            aggregatorToRemove = sym;
+          }
+        }
+
+        if (aggregatorToRemove != NULL) {
+          std::cout << "Found a stray aggregator\n";
+          nprint_view(aggregatorToRemove);
+        }
+      }
+    }
+  }
+}
 
 AggregationCandidateInfo::AggregationCandidateInfo():
   candidate(NULL),

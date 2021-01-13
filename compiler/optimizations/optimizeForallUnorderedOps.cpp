@@ -1060,4 +1060,6 @@ void optimizeForallUnorderedOps() {
   for_vector(Expr, assign, assignsToOptimize) {
     transformAssignStmt(assign);
   }
+
+  cleanupRemainingAggCondStmts();
 }

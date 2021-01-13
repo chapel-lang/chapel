@@ -77,5 +77,6 @@ void updateAggregationCandidates();
 
 // interface for licm
 void transformConditionalAggregation(CondStmt *cond);
+void cleanupRemainingAggCondStmts();
 
 #endif
