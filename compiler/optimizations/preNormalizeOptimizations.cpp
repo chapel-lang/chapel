@@ -72,117 +72,119 @@ static const char *getForallCloneTypeStr(ForallStmt *forall) {
 void cleanupRemainingAggCondStmts() {
 
   forv_Vec(CondStmt, condStmt, gCondStmts) {
-    if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
-      //std::cout << "100\n";
-      if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
-        // this is a conditional that wasn't modified by the unordered
-        // optimization, so we need to remove it and the aggregator associated
-        // with it
+    if (condStmt->inTree()) {
+      if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
+        //std::cout << "100\n";
+        if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+          // this is a conditional that wasn't modified by the unordered
+          // optimization, so we need to remove it and the aggregator associated
+          // with it
 
-        // find the aggregator symbol within the else block
-        // note that the else block will be inlined and will be a big mess, we
-        // need to find the compiler-generated aggregator in that mess
-        std::vector<SymExpr *> symExprs;
-        collectSymExprs(condStmt->elseStmt, symExprs);
+          // find the aggregator symbol within the else block
+          // note that the else block will be inlined and will be a big mess, we
+          // need to find the compiler-generated aggregator in that mess
+          std::vector<SymExpr *> symExprs;
+          collectSymExprs(condStmt->elseStmt, symExprs);
 
-        Symbol *aggregatorToRemove = NULL;
-        FnSymbol *parentFn = NULL;
-        for_vector(SymExpr, symExpr, symExprs) {
-          Symbol *sym = symExpr->symbol();
-          if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
-            aggregatorToRemove = sym;
-            parentFn = toFnSymbol(symExpr->parentSymbol);
-            break;
+          Symbol *aggregatorToRemove = NULL;
+          FnSymbol *parentFn = NULL;
+          for_vector(SymExpr, symExpr, symExprs) {
+            Symbol *sym = symExpr->symbol();
+            if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+              aggregatorToRemove = sym;
+              parentFn = toFnSymbol(symExpr->parentSymbol);
+              break;
+            }
           }
-        }
 
-        INT_ASSERT(aggregatorToRemove != NULL);
-        INT_ASSERT(parentFn != NULL);
+          INT_ASSERT(aggregatorToRemove != NULL);
+          INT_ASSERT(parentFn != NULL);
 
-        // put the nodes in the then block right before the conditional
-        for_alist(expr, condStmt->thenStmt->body) {
-          condStmt->insertBefore(expr->remove());
-        }
+          // put the nodes in the then block right before the conditional
+          for_alist(expr, condStmt->thenStmt->body) {
+            condStmt->insertBefore(expr->remove());
+          }
 
-        // remove the remaining conditional
-        condStmt->remove();
+          // remove the remaining conditional
+          condStmt->remove();
 
-        // remove the defPoint of the aggregator
-        aggregatorToRemove->defPoint->remove();
+          // remove the defPoint of the aggregator
+          aggregatorToRemove->defPoint->remove();
 
-        // search for the aggregator in the parent function and scrub it clean.
-        // We expect 3 occurances of the symbol after the else block is gone
-        symExprs.clear();
-        collectSymExprs(parentFn->body, symExprs);
+          // search for the aggregator in the parent function and scrub it clean.
+          // We expect 3 occurances of the symbol after the else block is gone
+          symExprs.clear();
+          collectSymExprs(parentFn->body, symExprs);
 
-        for_vector(SymExpr, symExpr, symExprs) {
-          Symbol *sym = symExpr->symbol();
-          if (sym == aggregatorToRemove) {
-            CallExpr *parentCall = toCallExpr(symExpr->parentExpr);
-            INT_ASSERT(parentCall != NULL);
+          for_vector(SymExpr, symExpr, symExprs) {
+            Symbol *sym = symExpr->symbol();
+            if (sym == aggregatorToRemove) {
+              CallExpr *parentCall = toCallExpr(symExpr->parentExpr);
+              INT_ASSERT(parentCall != NULL);
 
-            if (parentCall->isPrimitive(PRIM_MOVE)) {
-              /* Here's what we expect to see in the AST with associated
-                 variable names in the following snippet
+              if (parentCall->isPrimitive(PRIM_MOVE)) {
+                /* Here's what we expect to see in the AST with associated
+                   variable names in the following snippet
 
-                (def aggregator)
-                (def rhsSym)
-                (def prevRhsSym)
-                (call chpl_srcAggregatorForArr someArrSym, prevRhsSym)  `aggGenCall`
-                (call move call_tmp prevRhsSym)      `prevCall`
-                (call move aggregator rhsSym)   `parentCall`
+                  (def aggregator)
+                  (def rhsSym)
+                  (def prevRhsSym)
+                  (call chpl_srcAggregatorForArr someArrSym, prevRhsSym)  `aggGenCall`
+                  (call move call_tmp prevRhsSym)      `prevCall`
+                  (call move aggregator rhsSym)   `parentCall`
 
-                At this point we only have a handle on the last expression. We
-                walk back up from that.
-              */
-              INT_ASSERT(toSymExpr(parentCall->get(1))->symbol() == aggregatorToRemove);
+                  At this point we only have a handle on the last expression. We
+                  walk back up from that.
+                */
+                INT_ASSERT(toSymExpr(parentCall->get(1))->symbol() == aggregatorToRemove);
 
-              Symbol *rhsSym = toSymExpr(parentCall->get(2))->symbol();
-              CallExpr *prevCall = toCallExpr(parentCall->prev);
-              INT_ASSERT(prevCall);
-              INT_ASSERT(toSymExpr(prevCall->get(1))->symbol() == rhsSym);
+                Symbol *rhsSym = toSymExpr(parentCall->get(2))->symbol();
+                CallExpr *prevCall = toCallExpr(parentCall->prev);
+                INT_ASSERT(prevCall);
+                INT_ASSERT(toSymExpr(prevCall->get(1))->symbol() == rhsSym);
 
-              Symbol *prevRhsSym = toSymExpr(prevCall->get(2))->symbol();
-              CallExpr *aggGenCall = toCallExpr(prevCall->prev);
-              INT_ASSERT(aggGenCall);
-              INT_ASSERT(aggGenCall->isNamed("chpl_srcAggregatorForArr"));
-              INT_ASSERT(toSymExpr(aggGenCall->get(2))->symbol() == prevRhsSym);
+                Symbol *prevRhsSym = toSymExpr(prevCall->get(2))->symbol();
+                CallExpr *aggGenCall = toCallExpr(prevCall->prev);
+                INT_ASSERT(aggGenCall);
+                INT_ASSERT(aggGenCall->isNamed("chpl_srcAggregatorForArr"));
+                INT_ASSERT(toSymExpr(aggGenCall->get(2))->symbol() == prevRhsSym);
 
-              parentCall->remove();
-              prevCall->remove();
-              aggGenCall->remove();
-              rhsSym->defPoint->remove();
-              prevRhsSym->defPoint->remove();
-            }
-            else if (parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
-              /* Here's what we expect to see in the AST with associated
-                 variable names in the following snippet
+                parentCall->remove();
+                prevCall->remove();
+                aggGenCall->remove();
+                rhsSym->defPoint->remove();
+                prevRhsSym->defPoint->remove();
+              }
+              else if (parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
+                /* Here's what we expect to see in the AST with associated
+                   variable names in the following snippet
 
-                 (def lhsSym)
-                 (move lhsSym (`set reference` aggregator))  `moveCall`
-                 (deinit lhsSym)
+                   (def lhsSym)
+                   (move lhsSym (`set reference` aggregator))  `moveCall`
+                   (deinit lhsSym)
 
-                At this point we only have a handle on the `set reference` call.
-                We detect other expressions starting from that.
-              */
-              CallExpr *moveCall = toCallExpr(parentCall->parentExpr);
-              INT_ASSERT(moveCall);
-              INT_ASSERT(moveCall->isPrimitive(PRIM_MOVE));
+                  At this point we only have a handle on the `set reference` call.
+                  We detect other expressions starting from that.
+                */
+                CallExpr *moveCall = toCallExpr(parentCall->parentExpr);
+                INT_ASSERT(moveCall);
+                INT_ASSERT(moveCall->isPrimitive(PRIM_MOVE));
 
-              Symbol *lhsSym = toSymExpr(moveCall->get(1))->symbol();
-              INT_ASSERT(lhsSym->defPoint == moveCall->prev);
-              
-              CallExpr *deinitCall = toCallExpr(moveCall->next);
-              INT_ASSERT(deinitCall);
-              INT_ASSERT(deinitCall->theFnSymbol()->hasFlag(FLAG_DESTRUCTOR));
-              INT_ASSERT(toSymExpr(deinitCall->get(1))->symbol() == lhsSym);
+                Symbol *lhsSym = toSymExpr(moveCall->get(1))->symbol();
+                INT_ASSERT(lhsSym->defPoint == moveCall->prev);
+                
+                CallExpr *deinitCall = toCallExpr(moveCall->next);
+                INT_ASSERT(deinitCall);
+                INT_ASSERT(deinitCall->theFnSymbol()->hasFlag(FLAG_DESTRUCTOR));
+                INT_ASSERT(toSymExpr(deinitCall->get(1))->symbol() == lhsSym);
 
-              moveCall->remove();
-              lhsSym->defPoint->remove();
-              deinitCall->remove();
-            }
-            else {
-              INT_FATAL("Auto-aggregator is in an unexpected expression");
+                moveCall->remove();
+                lhsSym->defPoint->remove();
+                deinitCall->remove();
+              }
+              else {
+                INT_FATAL("Auto-aggregator is in an unexpected expression");
+              }
             }
           }
         }
