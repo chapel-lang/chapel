@@ -395,6 +395,8 @@ public:
   std::string     getPythonDefaultValue();
   std::string     getPythonArgTranslation();
 
+  std::string     demungeVarArgName(std::string* num=NULL);
+
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.

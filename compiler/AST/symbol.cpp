@@ -961,6 +961,22 @@ void ArgSymbol::accept(AstVisitor* visitor) {
   }
 }
 
+std::string ArgSymbol::demungeVarArgName(std::string* num) {
+  std::string name = this->name;
+  if (!this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
+  }
+  std::string mynum = name;
+  mynum.erase(0, 2); // remove _e
+  std::string n = mynum; // ##_name
+  mynum.resize(mynum.find('_')); // ##
+  n.erase(0, n.find('_')+1); // name
+  if (num != NULL) {
+    *num = mynum;
+  }
+  return n;
+}
+
 /******************************** | *********************************
 *                                                                   *
 *                                                                   *
