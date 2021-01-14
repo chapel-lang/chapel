@@ -50,6 +50,8 @@ for mgmt in false..true {
   writeln(dynamicTypeAsString(c12, mgmt));
 }
 
+delete c11;
+
 proc dynamicTypeAsString(expr, printClassMgmt = true) {
   var ret: string;
   
