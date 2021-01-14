@@ -1,3 +1,1 @@
-inheritance-subclassListed1a.chpl:32: In function 'main':
-inheritance-subclassListed1a.chpl:34: error: unresolved call 'owned Child.tertiaryMethod()'
-inheritance-subclassListed1a.chpl:34: note: because no functions named tertiaryMethod found in scope
+inheritance-subclassListed1a.chpl:30: error: Cannot find symbol 'Child' in module 'definesTertiary'

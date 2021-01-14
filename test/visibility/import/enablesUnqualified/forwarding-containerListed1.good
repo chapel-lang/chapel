@@ -1,3 +1,1 @@
-forwarding-containerListed1.chpl:29: In function 'main':
-forwarding-containerListed1.chpl:31: error: unresolved call 'Container.tertiaryMethod()'
-forwarding-containerListed1.chpl:31: note: because no functions named tertiaryMethod found in scope
+forwarding-containerListed1.chpl:27: error: Cannot find symbol 'Container' in module 'definesTertiary'
