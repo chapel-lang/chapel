@@ -1317,7 +1317,7 @@ def parser_setup():
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
     # mem leaks
-    parser.add_argument("-memleaks", "-memleaks", "-memLeaks", "--memLeaks",
+    parser.add_argument("-memleaks", "--memleaks", "-memLeaks", "--memLeaks",
             action="store_true", dest="mem_leaks", help="run with --memLeaks")
     # mem leaks log
     parser.add_argument("-memleakslog", "--memleakslog", "-memLeaksLog",
