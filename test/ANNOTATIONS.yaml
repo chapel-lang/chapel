@@ -1361,6 +1361,10 @@ memleaksfull:
     - Deallocate the RTT memory returned from empty for expressions (#16628)
   11/20/20:
     - Fix memory leak in reduceLoopOfPromoted.chpl (#16691)
+  01/09/21:
+    - Add tests and futures looking at I/O on class hierarchies (#16920)
+  01/15/21:
+    - Fix memory leak for classes/io/classToString (#16949)
 # End memleaksfull
 
 meteor:
@@ -1699,10 +1703,16 @@ sad:
 scanPerf:
   03/05/19:
     - Support optionally parallel 1D scans on default rectangular (#12469)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
 
 scanPerf.ml-time:
   03/06/19:
     - First good draft of parallel Block-distributed scan (#12481)
+  01/12/21:
+    - Increase the problem size for the multi-locale scan performance test (#16918)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
 
 search:
   04/20/17:
@@ -2044,6 +2054,12 @@ arkouda: &arkouda-base
       config: 16-node-cs, 16-node-xc
   10/21/20:
     - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
+  01/08/21:
+    - Benchmark improvements (mhmerrill/arkouda/#616)
+  01/14/21:
+    - Optimize scans by using noinit for the result array (#16919)
+  01/15/21:
+    - Optimize int64 prod reduce (mhmerrill/arkouda/#628)
 
 
 arkouda-comp:
