@@ -3846,6 +3846,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc =(ref a: [], b:[]) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -3964,6 +3965,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
 
     var done = false;
