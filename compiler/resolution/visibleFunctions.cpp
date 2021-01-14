@@ -615,7 +615,7 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
         continue;
       if (call->numActuals() >= 2) {
         Expr* thisArg = call->get(2);
-        Type* thisType = thisArg->typeInfo();
+        Type* thisType = thisArg->getValType();
         namedTypes = import->typeWasNamed(thisType);
       }
       if (import->skipSymbolSearch(name) && namedTypes.size() == 0)
