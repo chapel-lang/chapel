@@ -549,8 +549,22 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
         // this
         if (fn->isMethod()) {
           INT_ASSERT(typeNames.size() > 0);
+          std::string nameToCheck = fn->_this->type->symbol->name;
+          if (fn->_this->getValType() == dtUnknown) {
+            ArgSymbol* _this = toArgSymbol(fn->_this);
+            INT_ASSERT(_this);
+            BlockStmt* typeExpr = _this->typeExpr;
+            // The `this` arg doesn't know its type yet.  It could be a call
+            // that needs to be resolved (in which case we throw up our hands
+            // for now) or it could be a generic instantiation.
+            if (CallExpr* thisTypeCall = toCallExpr(typeExpr->body.tail)) {
+              if (SymExpr* callBase = toSymExpr(thisTypeCall->baseExpr)) {
+                nameToCheck = callBase->symbol()->name;
+              }
+            }
+          }
           std::set<const char*>::iterator it =
-            typeNames.find(astr(fn->_this->type->symbol->name));
+            typeNames.find(astr(nameToCheck.c_str()));
           if (it != typeNames.end()) {
             // This method is defined on a type that is in the filter list.
             // That means we should consider it a candidate.
