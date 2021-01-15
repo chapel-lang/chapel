@@ -904,11 +904,11 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, true);
+  LOG_help(depth, msg, node, fReportAutoAggregation);
 }
 
 static void LOGLN_AA(BaseAST *node) {
-  LOGLN_help(node, true);
+  LOGLN_help(node, fReportAutoAggregation);
 }
 
 static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
