@@ -127,6 +127,22 @@ static Expr* skipIgnoredStmts(Expr* last) {
   return last;
 }
 
+static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
+  if (cond->elseStmt == NULL) {
+    return false;
+  }
+  // if this conditional was generated for aggregation, the else block has all
+  // the aggregation code, and as such, there is no applicable "last statement"
+  // within that block
+  if (SymExpr *condSymExpr = toSymExpr(cond->condExpr)) {
+    if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (last == NULL)
@@ -136,7 +152,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (CondStmt* cond = toCondStmt(last)) {
     helpGetLastStmts(cond->thenStmt->body.last(), stmts);
-    if (cond->elseStmt)
+    if (shouldCheckElseStmtForLastStmts(cond))
       helpGetLastStmts(cond->elseStmt->body.last(), stmts);
     return;
   }
@@ -179,6 +195,10 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
       //nprint_view(call);
     //}
   //}
+  //
+
+  //std::cout << "Found a last statement\n";
+  //nprint_view(last);
   stmts.push_back(last);
 }
 
@@ -214,6 +234,9 @@ bool symbolOutlivesLoop(BlockStmt* loop, Symbol* sym,
 static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
+  if (lastStmt->id == 203728) {
+    gdbShouldBreakHere();
+  }
   if (CallExpr* call = toCallExpr(lastStmt)) {
     if (call->isPrimitive(PRIM_ASSIGN) || call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
@@ -315,8 +338,10 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
     if (numLastStmts == -1)
       numLastStmts = numThisLoop;
-    else if (numLastStmts != numThisLoop)
+    else if (numLastStmts != numThisLoop) {
+      std::cout << "Didn't like the loop in " << forall->stringLoc() << std::endl;
       return; // Give up on optimizing it
+    }
   }
 
   // Consider the last statements
@@ -1030,6 +1055,10 @@ void optimizeForallUnorderedOps() {
     if (block->isLoopStmt()) {
       LoopStmt* loop = toLoopStmt(block);
 
+      if (loop->id == 2743477) {
+        gdbShouldBreakHere();
+      }
+
       {
         std::vector<Expr*> lastStmts;
         getLastStmts(loop, lastStmts);
@@ -1039,6 +1068,7 @@ void optimizeForallUnorderedOps() {
           }
           else if (isOptimizableAssignStmt(lastStmt, loop)) {
             if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
+              std::cout << "100\n";
               aggCondsToTransform.push_back(aggCond);
             }
             else {
@@ -1055,6 +1085,7 @@ void optimizeForallUnorderedOps() {
     transformAtomicStmt(atomic);
   }
   for_vector(CondStmt, cond, aggCondsToTransform) {
+    std::cout << "200\n";
     transformConditionalAggregation(cond);
   }
   for_vector(Expr, assign, assignsToOptimize) {

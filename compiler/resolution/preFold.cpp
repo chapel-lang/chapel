@@ -575,6 +575,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
     break;
 
+  case PRIM_MAYBE_LOCAL_ARR_ELEM:
+    retval = preFoldMaybeLocalArrElem(call);
+    call->replace(retval);
+    break;
+
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES:

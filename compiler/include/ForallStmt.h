@@ -32,6 +32,8 @@ enum ForallAutoLocalAccessCloneType {
 
 class ForallOptimizationInfo {
   public:
+    bool infoGathered;
+
     Symbol *iterSym;
     Expr *dotDomIterExpr;
     Symbol *dotDomIterSym;

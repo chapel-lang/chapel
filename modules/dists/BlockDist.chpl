@@ -1001,6 +1001,10 @@ override proc BlockArr.dsiDisplayRepresentation() {
 
 override proc BlockArr.dsiGetBaseDom() return dom;
 
+override proc BlockArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 //
 // NOTE: Each locale's myElems array must be initialized prior to
 // setting up the RAD cache.

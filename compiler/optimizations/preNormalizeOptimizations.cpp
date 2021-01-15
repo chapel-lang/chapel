@@ -352,6 +352,9 @@ void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
   thenBlock->insertAtTail(this->candidate->remove());
   elseBlock->insertAtTail(this->aggCall);
 
+  std::cout << "aggregation call\n";
+  nprint_view(aggCall);
+
   // we are post-normalize, so we have to normalize the new call
   normalize(this->aggCall);
 }
@@ -516,23 +519,23 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
 // currently we want both sides to be calls, but we need to relax these to
 // accept symexprs to support foralls over arrays
-static bool callSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
-  if (call->isNamed("=")) {
-    if (CallExpr *leftCall = toCallExpr(call->get(1))) {
-      if (CallExpr *rightCall = toCallExpr(call->get(2))) {
-        // we want either side to be PRIM_MAYBE_LOCAL_THIS
-        if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-            rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-          // we want the side that's not to have a baseExpr that's a SymExpr
-          // this avoid function calls
-          if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-            return getCallBaseSymIfSuitable(leftCall, forall,
-                                            /*checkArgs=*/false) != NULL;
-          }
-          else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-            return getCallBaseSymIfSuitable(rightCall, forall,
-                                            /*checkArgs=*/false) != NULL;
-          }
+static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
+  INT_ASSERT(call->isNamed("="));
+
+  if (CallExpr *leftCall = toCallExpr(call->get(1))) {
+    if (CallExpr *rightCall = toCallExpr(call->get(2))) {
+      // we want either side to be PRIM_MAYBE_LOCAL_THIS
+      if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+          rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+        // we want the side that's not to have a baseExpr that's a SymExpr
+        // this avoid function calls
+        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return getCallBaseSymIfSuitable(leftCall, forall,
+                                          /*checkArgs=*/false) != NULL;
+        }
+        else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return getCallBaseSymIfSuitable(rightCall, forall,
+                                          /*checkArgs=*/false) != NULL;
         }
       }
     }
@@ -549,7 +552,8 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   // establish connection between PRIM_MAYBE_LOCAL_THIS and their parent
   CallExpr *lhsCall = toCallExpr(call->get(1));
   INT_ASSERT(lhsCall); // enforced by callSuitableForAggregation
-  if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+  if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+      lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     info->lhsLocalityInfo = PENDING;
     preNormalizeAggCandidate[lhsCall] = info;
   }
@@ -557,7 +561,8 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
 
   CallExpr *rhsCall = toCallExpr(call->get(2));
   INT_ASSERT(rhsCall); // enforced by callSuitableForAggregation
-  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+      rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     info->rhsLocalityInfo = PENDING;
     preNormalizeAggCandidate[rhsCall] = info;
   }
@@ -566,12 +571,100 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   info->tryAddingAggregator();
 }
 
+static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
+                                                   ForallStmt *forall) {
+  SET_LINENO(call);
+
+  INT_ASSERT(call->isNamed("="));
+
+  if (call->id == 203728) {
+    gdbShouldBreakHere();
+  }
+
+  if (!forall->optInfo.infoGathered) {
+    gatherForallInfo(forall);
+  }
+
+  Symbol *maybeArrSym = forall->optInfo.iterSym;
+  Symbol *maybeArrElemSym = forall->optInfo.multiDIndices[0];
+
+  // stop here if you don't know what I am talking about
+  if (maybeArrSym == NULL || maybeArrElemSym == NULL) return false;
+
+  bool lhsMaybeArrSym = false;
+  bool rhsMaybeArrSym = false;
+
+  SymExpr *lhsSymExpr = toSymExpr(call->get(1));
+  SymExpr *rhsSymExpr = toSymExpr(call->get(2));
+
+  if (lhsSymExpr) {
+    lhsMaybeArrSym = (lhsSymExpr->symbol() == maybeArrElemSym);
+  }
+  if (rhsSymExpr) {
+    rhsMaybeArrSym = (rhsSymExpr->symbol() == maybeArrElemSym);
+  }
+
+  // just to be sure, stop if someone's doing `a=a`;
+  if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
+
+  Expr *otherChild = lhsMaybeArrSym ? call->get(2) : call->get(1);
+
+  bool otherChildIsSuitable = false;
+  if (CallExpr *otherCall = toCallExpr(otherChild)) {
+    if (otherCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+      otherChildIsSuitable = true;
+    }
+    else {
+      otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
+                                                       forall,
+                                                       /*checkArgs=*/false) != NULL);
+    }
+  }
+
+  if (!otherChildIsSuitable) return false;
+
+  SymExpr *symExprToReplace = lhsMaybeArrSym ? lhsSymExpr : rhsSymExpr;
+
+  // add the check symbol
+  VarSymbol *checkSym = new VarSymbol("chpl__yieldedArrayElemIsAligned");
+  checkSym->addFlag(FLAG_PARAM);
+
+  CallExpr *checkCall = new CallExpr("chpl__arrayIteratorYieldsLocalElements");
+  checkCall->insertAtTail(maybeArrSym);
+
+  DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
+  forall->insertBefore(checkSymDef);
+
+  // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
+  CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
+                                    new SymExpr(maybeArrElemSym),
+                                    new SymExpr(checkSym));
+  symExprToReplace->replace(primCall);
+
+  return true;
+}
+
 static void autoAggregation(ForallStmt *forall) {
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
+
+  if (forall->id == 203732) {
+    gdbShouldBreakHere();
+  }
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
-    if (callSuitableForAggregation(lastCall, forall)) {
-      LOG_AA(1, "Found an aggregation candidate", lastCall);
-      insertAggCandidate(lastCall, forall);
+
+    if (lastCall->isNamed("=")) {
+      // no need to do anything if it is array access
+      if (assignmentSuitableForAggregation(lastCall, forall)) {
+        LOG_AA(1, "Found an aggregation candidate", lastCall);
+
+        insertAggCandidate(lastCall, forall);
+      }
+      // we need special handling if it is a symbol that is an array element
+      else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
+        LOG_AA(1, "Found an aggregation candidate", lastCall);
+
+        insertAggCandidate(lastCall, forall);
+      }
     }
   }
   LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
@@ -592,13 +685,44 @@ void doPreNormalizeArrayOptimizations() {
         autoLocalAccess(forall);
       }
 
-      if (fReportAutoAggregation) {
+      if (true) {
         autoAggregation(forall);
       }
     }
   }
 }
 
+Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
+
+  // (call "may be local arr elem" sym, paramFlag)
+
+  SymExpr *maybeArrSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(maybeArrSymExpr);
+
+  SymExpr *controlSymExp = toSymExpr(call->get(2));
+  INT_ASSERT(controlSymExp);
+
+  bool confirmed = (controlSymExp->symbol() == gTrue);
+
+  AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
+  if (aggCandidate != NULL) {
+
+    if (fReportAutoAggregation) {
+      std::stringstream message;
+      message << "Aggregation candidate ";
+      message << "has ";
+      message << (confirmed ? "confirmed" : "reverted");
+      message << " local child ";
+      message << getForallCloneTypeStr(aggCandidate->forall);
+      LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
+    }
+
+    aggCandidate->logicalChildAnalyzed(call, confirmed);
+  }
+
+
+  return maybeArrSymExpr->remove();
+}
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
   Expr *ret = NULL;
@@ -721,7 +845,7 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
 
-    const bool veryVerbose = false;
+    const bool veryVerbose = true;
     if (verbose) {
       curLogDepth = depth;
       if (curLogDepth > 0) {
@@ -1088,6 +1212,7 @@ static void gatherForallInfo(ForallStmt *forall) {
       forall->optInfo.multiDIndices.push_back(loopIdxSym);
     }
   }
+  forall->optInfo.infoGathered = true;
 }
 
 static bool loopHasValidInductionVariables(ForallStmt *forall) {

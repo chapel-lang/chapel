@@ -822,6 +822,10 @@ module ChapelDistribution {
     proc decEltCountsIfNeeded() {
       // degenerate so it can be overridden
     }
+
+    proc dsiIteratorYieldsLocalElements() param {
+      return false;
+    }
   }
 
   /* This subclass is created to allow eltType to be defined in one place

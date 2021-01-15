@@ -3301,6 +3301,10 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    proc iteratorYieldsLocalElements() param {
+      return _value.dsiIteratorYieldsLocalElements();
+    }
+
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from

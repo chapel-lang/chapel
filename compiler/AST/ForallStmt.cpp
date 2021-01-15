@@ -26,6 +26,7 @@
 #include "stringutil.h"
 
 ForallOptimizationInfo::ForallOptimizationInfo():
+  infoGathered(false),
   iterSym(NULL),
   dotDomIterExpr(NULL),
   dotDomIterSym(NULL),
