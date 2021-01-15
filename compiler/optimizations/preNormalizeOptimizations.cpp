@@ -706,11 +706,16 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 }
 
 static void autoAggregation(ForallStmt *forall) {
+
+  // if auto-local-access was on (that's the default case), we don't need to
+  // look into the loop in detail, but if that optimization was off, we still
+  // need to check what is local and what is not for aggregation.
+  if (forall->optInfo.autoLocalAccessChecked == false) {
+    autoLocalAccess(forall);
+  }
+
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
-  if (forall->id == 203732) {
-    gdbShouldBreakHere();
-  }
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
 
     if (lastCall->isNamed("=")) {
@@ -734,6 +739,7 @@ static void autoAggregation(ForallStmt *forall) {
 
 void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
+                                 fAutoAggregation ||
                                  !fNoFastFollowers;
 
   if (anyAnalysisNeeded) {
@@ -746,7 +752,7 @@ void doPreNormalizeArrayOptimizations() {
         autoLocalAccess(forall);
       }
 
-      if (true) {
+      if (fAutoAggregation) {
         autoAggregation(forall);
       }
     }
@@ -788,55 +794,51 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
   Expr *ret = NULL;
+  bool confirmed = false;
+
+  // PRIM_MAYBE_LOCAL_THIS looks like
+  //
+  //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
+  //                              paramControlFlag, paramStaticallyDetermined)
+  //
+  // we need to check the second argument from last to determine whether we
+  // are confirming this to be a local access or not
+  if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
+    if (controlSE->symbol() == gTrue) {
+      confirmed = true;
+    }
+  }
+  else {
+    INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
+  }
+
   if (fAutoLocalAccess) {
-    bool confirmed = false;
-    // PRIM_MAYBE_LOCAL_THIS looks like
-    //
-    //  (call "may be local access" arrSymbol, idxSym0, ... ,idxSymN,
-    //                              paramControlFlag, paramStaticallyDetermined)
-    //
-    // we need to check the second argument from last to determine whether we
-    // are confirming this to be a local access or not
-    if (SymExpr *controlSE = toSymExpr(call->get(call->argList.length-1))) {
-      if (controlSE->symbol() == gTrue) {
-        ret = confirmAccess(call);
-        confirmed = true;
-      }
-      else {
-        ret = revertAccess(call);
-        confirmed = false;
-      }
-    }
-    else {
-      INT_FATAL("Misconfigured PRIM_MAYBE_LOCAL_THIS");
-    }
+    ret = confirmed ? confirmAccess(call) : revertAccess(call);
+  }
+  else {
+    // maybe we have automatic aggregation but no automatic local access? In
+    // that case we may have generated one of this primitive, for aggregation
+    // detection, now we just remove it silently
+    ret = revertAccess(call);
+  }
 
-    if (ret != NULL) {
-      //if (confirmed) {
-        //std::cout << "Confirmed a local access with parent\n";
-      //}
-      //else {
-        //std::cout << "Reverted a local access with parent\n";
-      //}
-      AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
-      if (aggCandidate != NULL) {
+  INT_ASSERT(ret);
 
-        if (fReportAutoAggregation) {
-          std::stringstream message;
-          message << "Aggregation candidate ";
-          message << "has ";
-          message << (confirmed ? "confirmed" : "reverted");
-          message << " local child ";
-          message << getForallCloneTypeStr(aggCandidate->forall);
-          LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
-        }
+  if (fAutoAggregation) {
+    AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
+    if (aggCandidate != NULL) {
 
-        aggCandidate->logicalChildAnalyzed(call, confirmed);
+      if (fReportAutoAggregation) {
+        std::stringstream message;
+        message << "Aggregation candidate ";
+        message << "has ";
+        message << (confirmed ? "confirmed" : "reverted");
+        message << " local child ";
+        message << getForallCloneTypeStr(aggCandidate->forall);
+        LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
       }
-      //else {
-        //std::cout << "No aggregation candidate for this call\n";
-        //nprint_view(call);
-      //}
+
+      aggCandidate->logicalChildAnalyzed(call, confirmed);
     }
   }
   return ret;
@@ -969,19 +971,19 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fReportAutoAggregation);
+  LOG_help(depth, msg, node, fAutoAggregation && fReportAutoAggregation);
 }
 
 static void LOGLN_AA(BaseAST *node) {
-  LOGLN_help(node, fReportAutoAggregation);
+  LOGLN_help(node, fAutoAggregation && fReportAutoAggregation);
 }
 
 static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fReportAutoLocalAccess);
+  LOG_help(depth, msg, node, fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
 static void LOGLN_ALA(BaseAST *node) {
-  LOGLN_help(node, fReportAutoLocalAccess);
+  LOGLN_help(node, fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
 //

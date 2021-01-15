@@ -60,6 +60,7 @@ extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
+extern bool fAutoAggregation;
 extern bool fReportAutoAggregation;
 
 extern bool fNoRemoteValueForwarding;
