@@ -136,6 +136,7 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
+std::string ggpuFatbinPath;
 
 // forward declare
 class CCodeGenConsumer;
@@ -1548,13 +1549,27 @@ void setupClang(GenInfo* info, std::string mainFile)
   */
 
   if ( gCodegenGPU == false && localeUsesGPU() == true ) {
-    std::string fatbinPath = "";
     bool isGPUBinaryFlag = false;
 
     for ( auto a : job->getArguments() ) {
 
       if ( isGPUBinaryFlag ) {
-        fatbinPath = a;
+        ggpuFatbinPath = a;
+
+        //std::string catFatbinaryBefore = "head -n 5 " + ggpuFatbinPath;
+        //mysystem(catFatbinaryBefore.c_str(), "first 5 lines of fatbin before copy");
+
+        
+        std::string copyFatbinaryCmd = "cp tmp/chpl_gpu.fatbin " + ggpuFatbinPath;
+        mysystem(copyFatbinaryCmd.c_str(), "copy fatbinry");
+
+        //std::string catFatbinary = "head -n 5 " + ggpuFatbinPath;
+        //mysystem(catFatbinary.c_str(), "first 5 lines of fatbin");
+        
+        //std::string copyFatbinaryCmd1 = "cp tmp/chpl_gpu.fatbin tmp/test.fatbin";
+        //mysystem(copyFatbinaryCmd1.c_str(), "copy fatbinry to test fatbin");
+
+
         break;
       }
 
@@ -1562,7 +1577,7 @@ void setupClang(GenInfo* info, std::string mainFile)
         isGPUBinaryFlag = true;
       }
     }
-    std::cout << "fatbin path: " << fatbinPath << "\n"; 
+    std::cout << "fatbin path: " << ggpuFatbinPath << "\n"; 
   }
 
   if( printSystemCommands && developer ) {
@@ -3577,18 +3592,19 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      std::string ptx_cmd = "/usr/local/cuda/bin/ptxas -m64 --gpu-name "
+      std::string ptxCmd = "/usr/local/cuda/bin/ptxas -m64 --gpu-name "
                             "sm_61 --output-file tmp/chpl_gpu_ptx.o "
                             "tmp/chpl__gpu_ptx.s";
 
-      mysystem(ptx_cmd.c_str(), "PTX to  object file");
+      mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-      std::string fatbinary_cmd = "/usr/local/cuda/bin/fatbinary -64 "
+      std::string fatbinaryCmd = "/usr/local/cuda/bin/fatbinary -64 "
                                   "--create tmp/chpl_gpu.fatbin "
                                   "--image=profile=sm_61,file=tmp/chpl_gpu_ptx.o "
                                   "--image=profile=compute_61,file=tmp/chpl__gpu_ptx.s";
       
-      mysystem(fatbinary_cmd.c_str(), "object file to fatbinary");
+      mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
+
  
     }
   }

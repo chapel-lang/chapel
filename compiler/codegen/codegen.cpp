@@ -49,6 +49,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/ErrorOr.h"
+#include "llvm/Support/MemoryBuffer.h"
+#include "llvm/Support/MemoryBuffer.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -2406,7 +2409,7 @@ static void codegenPartOne() {
   uniquify_names(cnames, types, functions, globals);
 }
 
-// Do this for CPU and then do for GPU
+// Do this for GPU and then do for CPU
 static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
@@ -2505,6 +2508,37 @@ static void codegenPartTwo() {
   // This dumps the generated sources into the build directory.
   info->cfile = hdrfile.fptr;
   codegen_header(cnames, types, functions, globals);
+  
+#ifdef HAVE_LLVM
+  if(localeUsesGPU() and gCodegenGPU == false){
+
+   llvm::IntegerType *IntTy;
+   llvm::PointerType *VoidPtrTy;
+
+   IntTy = llvm::IntegerType::getInt32Ty(info->module->getContext());
+   VoidPtrTy = llvm::Type::getInt8PtrTy(info->module->getContext(), 0);
+   llvm::StructType *FatbinWrapperTy =
+     llvm::StructType::get(IntTy, IntTy, VoidPtrTy, VoidPtrTy);
+
+     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
+        llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fabin");
+    //llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
+     //    llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fatbin");
+
+    llvm::Constant *Values[] = {
+      llvm::ConstantInt::get(IntTy, 0x466243b1), // Fatbin wrapper magic.
+      llvm::ConstantInt::get(IntTy, 1),          // Fatbin version.
+      //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
+      llvm::ConstantPointerNull::get(VoidPtrTy)}; // Unused in fatbin v1.
+    llvm::GlobalVariable *FatbinWrapper = new llvm::GlobalVariable(
+      *info->module, FatbinWrapperTy, true, llvm::GlobalValue::InternalLinkage,
+      llvm::ConstantStruct::get(FatbinWrapperTy, Values),
+       "__cuda_fatbin_wrapper");
+     // NVIDIA's cuobjdump looks for fatbins in this section.
+    FatbinWrapper->setSection(".nvFatBinSegment");
+  }
+#endif
+
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
   // currently in codegen_header.
