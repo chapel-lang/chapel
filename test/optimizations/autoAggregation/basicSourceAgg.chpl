@@ -13,14 +13,17 @@ forall i in a.domain {
 
 writeln(a);
 
+b = 0;
+
 forall i in a.domain {
   a[i] = b[10-i];
   b[10-i] = 5; // should thwart the optimization
 }
 
-//forall (aElem,i) in zip(a, 0..10) {
-  //aElem = b[10-i];
-//}
+writeln(a);
+
+forall (aElem,i) in zip(a, 0..10) {
+  aElem = b[10-i];
+}
 
 writeln(a);
-writeln(b);
