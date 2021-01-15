@@ -216,14 +216,42 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   dstAggregator(NULL),
   aggCall(NULL) { }
 
-static Expr *getBaseExprOfLogicalChild(CallExpr *call) {
-  if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    return call->get(1);
+//static Expr *getArrSymFromLogicalChild(CallExpr *call) {
+  //if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    //return call->get(1);
+  //}
+  //else if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    //return call->get(2);
+  //}
+  //else {
+    //return call->baseExpr;
+  //}
+//}
+
+static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
+  const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
+                                           "chpl_dstAggregatorForArr";
+  SET_LINENO(child);
+
+  if (child->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    if (SymExpr *arrSymExpr = toSymExpr(child->get(1))) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+    }
+  }
+  else if (child->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    if (SymExpr *arrSymExpr = toSymExpr(child->get(2))) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+                          //new CallExpr(PRIM_TYPEOF, elemSymExpr->symbol()));
+    }
   }
   else {
-    return call->baseExpr;
+    if (SymExpr *arrSymExpr = toSymExpr(child->baseExpr)) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+    }
   }
+  return NULL;
 }
+
 // currently we only support one aggregator at normalize time, however, we
 // should relax that limitation a bit. Normalize should be able to add both
 // aggregators for
@@ -243,15 +271,17 @@ void AggregationCandidateInfo::tryAddingAggregator() {
   if (srcAggregator == NULL &&
       lhsLocalityInfo == PENDING &&
       rhsLogicalChild != NULL) {
-    if (SymExpr *otherChildBaseSE = toSymExpr(getBaseExprOfLogicalChild(rhsLogicalChild))) {
+    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(rhsLogicalChild))) {
+    if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
       SET_LINENO(this->forall);
 
-      Symbol *otherChildBase = otherChildBaseSE->symbol();
+      //Symbol *otherChildBase = otherChildBaseSE->symbol();
       ShadowVarSymbol *aggregator =
         ShadowVarSymbol::buildForPrefix(SVP_VAR,
             new UnresolvedSymExpr("chpl_src_auto_agg"),
             NULL, // type expr for shadow var
-            new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
+            //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
+            genCall);
 
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
@@ -266,14 +296,16 @@ void AggregationCandidateInfo::tryAddingAggregator() {
   if (dstAggregator == NULL &&
       rhsLocalityInfo == PENDING &&
       lhsLogicalChild != NULL) {
-    if (SymExpr *otherChildBaseSE = toSymExpr(getBaseExprOfLogicalChild(lhsLogicalChild))) {
+    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(lhsLogicalChild))) {
+    if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
       SET_LINENO(this->forall);
 
-      Symbol *otherChildBase = otherChildBaseSE->symbol();
+      //Symbol *otherChildBase = otherChildBaseSE->symbol();
       ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
             new UnresolvedSymExpr("chpl_dst_auto_agg"),
             NULL, // type expr for shadow var
-            new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
+            //new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
+            genCall);
 
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
@@ -354,6 +386,14 @@ void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
 
   // we are post-normalize, so we have to normalize the new call
   normalize(this->aggCall);
+
+  // remove the other aggregator if there was any
+  if (srcAggregation && dstAggregator) {
+    dstAggregator->defPoint->remove();
+  }
+  else if (!srcAggregation && srcAggregator) {
+    srcAggregator->defPoint->remove();
+  }
 }
 
 // called during resolution
@@ -364,8 +404,15 @@ void AggregationCandidateInfo::update() {
 
   std::stringstream message;
 
+  if (lhsLocalityInfo == UNAGGREGATABLE || rhsLocalityInfo == UNAGGREGATABLE) {
+    if (fReportAutoAggregation) {
+      message << "One side is neither local nor aggregatable. Will not use aggregation ";
+    }
+    this->updateASTForRegularAssignment();
+    return;
+  }
+
   if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
-    //LOG_AA(0, "Can't determine if either side is local. Will not use aggregation", this->candidate);
     if (fReportAutoAggregation) {
       message << "Can't determine if either side is local. Will not use aggregation ";
     }
@@ -374,7 +421,6 @@ void AggregationCandidateInfo::update() {
   }
 
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
-    //LOG_AA(0, "Both sides are local. Will not use aggregation", this->candidate);
     if (fReportAutoAggregation) {
       message << "Both sides are local. Will not use aggregation ";
     }
@@ -382,16 +428,13 @@ void AggregationCandidateInfo::update() {
     return;
   }
 
-  // TODO we should probably check whether the side we are aggregating is array?
   if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    //LOG_AA(0, "LHS is local, RHS is nonlocal. Will use source aggregation", this->candidate);
     if (fReportAutoAggregation) {
       message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
     }
     this->updateASTForAggregation(/*srcAggregation=*/true);
   }
   else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    //LOG_AA(0, "LHS is nonlocal, RHS is local. Will use destination aggregation", this->candidate);
     if (fReportAutoAggregation) {
       message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
     }
@@ -407,6 +450,10 @@ void AggregationCandidateInfo::update() {
 void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
                                                     bool lhs,
                                                     LocalityInfo locInfo) {
+
+  std::cout << "registering logical child " << lhs << " " << locInfo << "\n";
+  nprint_view(logicalChild);
+
   if (lhs) {
     this->lhsLocalityInfo = locInfo;
     this->lhsLogicalChild = logicalChild;
@@ -422,6 +469,16 @@ void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
 
 void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
   LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
+  
+  if (!confirmed) {
+    // this primitive was added in case this was a symbol yielded by the leader
+    // that was an array that yields local elements. If this wasn't the case,
+    // then this symbol is simply unaggregatable for now.
+    if (logicalChild->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      newInfo = UNAGGREGATABLE;
+    }
+  }
+
   if (this->lhsLogicalChild == logicalChild) {
     this->lhsLocalityInfo = newInfo;
   }
@@ -638,6 +695,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
   CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
                                     new SymExpr(maybeArrElemSym),
+                                    new SymExpr(maybeArrSym),
                                     new SymExpr(checkSym));
   symExprToReplace->replace(primCall);
 
@@ -694,12 +752,13 @@ void doPreNormalizeArrayOptimizations() {
 
 Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
-  // (call "may be local arr elem" sym, paramFlag)
+  // (call "may be local arr elem" elem, arr, paramFlag)
+  // we don't really care about the second argument here, it is used elsewhere
 
-  SymExpr *maybeArrSymExpr = toSymExpr(call->get(1));
-  INT_ASSERT(maybeArrSymExpr);
+  SymExpr *maybeArrElemSymExpr = toSymExpr(call->get(1));
+  INT_ASSERT(maybeArrElemSymExpr);
 
-  SymExpr *controlSymExp = toSymExpr(call->get(2));
+  SymExpr *controlSymExp = toSymExpr(call->get(3));
   INT_ASSERT(controlSymExp);
 
   bool confirmed = (controlSymExp->symbol() == gTrue);
@@ -721,7 +780,7 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
   }
 
 
-  return maybeArrSymExpr->remove();
+  return maybeArrElemSymExpr->remove();
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {

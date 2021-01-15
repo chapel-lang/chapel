@@ -25,9 +25,10 @@
 #include "symbol.h"
 
 enum LocalityInfo { 
-  UNKNOWN, // analysis cannot understand the idiom
-  PENDING, // we will make a decision later
-  LOCAL    // we know this is local
+  UNKNOWN,  // it may be anything
+  PENDING,  // we will make a decision later
+  LOCAL,    // we know this is local
+  UNAGGREGATABLE  // neither local, nor aggregatable
 };
 
 class AggregationCandidateInfo {

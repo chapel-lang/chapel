@@ -2,14 +2,35 @@ module ChapelAutoAggregation {
   use CommAggregation;
 
   pragma "aggregator generator"
-  proc chpl_srcAggregatorForArr(arr) {
+  proc chpl_srcAggregatorForArr(arr: []) {
     return newSrcAggregator(arr.eltType);
   }
 
   pragma "aggregator generator"
-  proc chpl_dstAggregatorForArr(arr) {
+  proc chpl_srcAggregatorForArr(type t) {
+    return newSrcAggregator(t);
+  }
+
+  pragma "aggregator generator"
+  proc chpl_srcAggregatorForArr(arr) {
+    return false;
+  }
+
+  pragma "aggregator generator"
+  proc chpl_dstAggregatorForArr(arr: []) {
     return newDstAggregator(arr.eltType);
   }
+
+  pragma "aggregator generator"
+  proc chpl_dstAggregatorForArr(type t) {
+    return newDstAggregator(t);
+  }
+
+  pragma "aggregator generator"
+  proc chpl_dstAggregatorForArr(arr) {
+    return false;
+  }
+
 
   proc chpl__arrayIteratorYieldsLocalElements(a) param {
     if isArray(a) {
