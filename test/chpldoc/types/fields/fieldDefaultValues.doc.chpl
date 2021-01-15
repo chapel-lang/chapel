@@ -2,8 +2,13 @@ module fieldDefaultValues {
 
   var x, y, z: int;
 
-  class C {}
+  class C { var aField: int; }
   var c: C?;
+
+  record R0 {}
+  record R1 { param a: int; }
+  record R2 { param a,b: int; }
+  record R3 { param a,b,c: int; }
 
   record R {
 
@@ -58,6 +63,8 @@ module fieldDefaultValues {
 
     var dotTypeDefault = x.type;
 
+    var dotFieldDefault = c!.aField;
+
     var ternaryDefault = if x then y else z;
 
     proc f0() {}
@@ -69,5 +76,15 @@ module fieldDefaultValues {
     var oneArgFuncDefault = f1(x);
     var twoArgFuncDefault = f2(x,y);
     var threeArgFuncDefault = f3(x,y,z);
+
+    var R0TypedArgNoDefault:R0;
+    var R1TypedArgNoDefault:R1(1);
+    var R2TypedArgNoDefault:R2(1,2);
+    var R3TypedArgNoDefault:R3(1,2,3);
+
+    var R0TypedArgDefault:R0 = new R0();
+    var R1TypedArgDefault:R1(1) = new R1(1);
+    var R2TypedArgDefault:R2(1,2) = new R2(1,2);
+    var R3TypedArgDefault:R3(1,2,3) = new R3(1,2,3);
   }
 }

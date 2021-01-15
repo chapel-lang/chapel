@@ -19,7 +19,9 @@ or
 
 .. class:: C
 
-.. data:: var c: nilable C
+   .. attribute:: var aField: int
+
+.. data:: var c: unmanaged nilable C
 
 .. function:: proc noArgs()
 
@@ -93,6 +95,8 @@ or
 
 .. function:: proc dotTypeDefault(arg = x.type )
 
+.. function:: proc dotFieldDefault(arg = c!.aField)
+
 .. function:: proc ternaryDefault(arg = if x then y else z)
 
 .. function:: proc f0()
@@ -114,4 +118,40 @@ or
 .. function:: proc twoArgsWithDefaults(arg1 = x+y, arg2 = x-y)
 
 .. function:: proc threeArgsWithDefaults(arg1 = x*y, arg2 = x/y, arg3 = x**y)
+
+.. record:: R0
+
+.. record:: R1
+
+   .. attribute:: param a: int
+
+.. record:: R2
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+.. record:: R3
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+   .. attribute:: param c: b.type 
+
+.. function:: proc R0TypedArgNoDefault(arg: R0)
+
+.. function:: proc R1TypedArgNoDefault(arg: R1(1))
+
+.. function:: proc R2TypedArgNoDefault(arg: R2(1, 2))
+
+.. function:: proc R3TypedArgNoDefault(arg: R3(1, 2, 3))
+
+.. function:: proc R0TypedArgDefault(arg: R0 = new R0())
+
+.. function:: proc R1TypedArgDefault(arg: R1(1) = new R1(1))
+
+.. function:: proc R2TypedArgDefault(arg: R2(1, 2) = new R2(1, 2))
+
+.. function:: proc R3TypedArgDefault(arg: R3(1, 2, 3) = new R3(1, 2, 3))
 

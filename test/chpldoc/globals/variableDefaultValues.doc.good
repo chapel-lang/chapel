@@ -19,7 +19,9 @@ or
 
 .. class:: C
 
-.. data:: var c: nilable C
+   .. attribute:: var aField: int
+
+.. data:: var c: unmanaged nilable C
 
 .. data:: var literalDefault = 42
 
@@ -91,6 +93,8 @@ or
 
 .. data:: var dotTypeDefault = x.type 
 
+.. data:: var dotFieldDefault = c!.aField
+
 .. data:: var ternaryDefault = if x then y else z
 
 .. function:: proc f0()
@@ -108,4 +112,40 @@ or
 .. data:: var twoArgFuncDefault = f2(x, y)
 
 .. data:: var threeArgFuncDefault = f3(x, y, z)
+
+.. record:: R0
+
+.. record:: R1
+
+   .. attribute:: param a: int
+
+.. record:: R2
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+.. record:: R3
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+   .. attribute:: param c: b.type 
+
+.. data:: var R0TypedArgNoDefault: R0
+
+.. data:: var R1TypedArgNoDefault: R1(1)
+
+.. data:: var R2TypedArgNoDefault: R2(1, 2)
+
+.. data:: var R3TypedArgNoDefault: R3(1, 2, 3)
+
+.. data:: var R0TypedArgDefault: R0 = new R0()
+
+.. data:: var R1TypedArgDefault: R1(1) = new R1(1)
+
+.. data:: var R2TypedArgDefault: R2(1, 2) = new R2(1, 2)
+
+.. data:: var R3TypedArgDefault: R3(1, 2, 3) = new R3(1, 2, 3)
 
