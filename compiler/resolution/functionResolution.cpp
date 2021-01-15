@@ -4228,6 +4228,24 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
   return result;
 }
 
+static bool obviousMisMatch(CallExpr* call, FnSymbol* fn) {
+  bool isMethod = isMethodPreResolve(call);
+  //  USR_PRINT(call, "considering this call");
+  if (isMethod) {
+    if (fn->_this == NULL) {
+      //      USR_PRINT(fn, "call is method, but fn is not\n");
+      return true;
+    }
+    return false;
+  } else {
+    if (fn->_this != NULL) {
+      //      USR_PRINT(fn, "call is not method, but fn is\n");
+      return true;
+    }
+    return false;
+  }
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
@@ -4296,8 +4314,15 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       explainCandidateRejection(info, fn);
     }
 
-    i = 0;
+    Vec<FnSymbol*> filteredFns;
     forv_Vec(FnSymbol, fn, visibleFns) {
+      if (!obviousMisMatch(call, fn)) {
+        filteredFns.add(fn);
+      }
+    }
+    
+    i = 0;
+    forv_Vec(FnSymbol, fn, filteredFns) {
       i++;
 
       if (i <= nPrintDetails)
@@ -4305,7 +4330,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
       if (fPrintAllCandidates == false && i > nPrint) {
         USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
-                  visibleFns.n - (i-1));
+                  filteredFns.n - (i-1));
         break;
       }
 
