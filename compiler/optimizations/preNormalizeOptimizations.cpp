@@ -352,9 +352,6 @@ void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
   thenBlock->insertAtTail(this->candidate->remove());
   elseBlock->insertAtTail(this->aggCall);
 
-  std::cout << "aggregation call\n";
-  nprint_view(aggCall);
-
   // we are post-normalize, so we have to normalize the new call
   normalize(this->aggCall);
 }
@@ -845,7 +842,7 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
 
-    const bool veryVerbose = true;
+    const bool veryVerbose = false;
     if (verbose) {
       curLogDepth = depth;
       if (curLogDepth > 0) {

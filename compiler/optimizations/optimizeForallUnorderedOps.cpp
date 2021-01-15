@@ -1068,7 +1068,6 @@ void optimizeForallUnorderedOps() {
           }
           else if (isOptimizableAssignStmt(lastStmt, loop)) {
             if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
-              std::cout << "100\n";
               aggCondsToTransform.push_back(aggCond);
             }
             else {
@@ -1085,7 +1084,6 @@ void optimizeForallUnorderedOps() {
     transformAtomicStmt(atomic);
   }
   for_vector(CondStmt, cond, aggCondsToTransform) {
-    std::cout << "200\n";
     transformConditionalAggregation(cond);
   }
   for_vector(Expr, assign, assignsToOptimize) {
