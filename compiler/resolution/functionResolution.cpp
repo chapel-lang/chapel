@@ -4304,8 +4304,43 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     int nPrintDetails = 1;
     int nPrint = 3;
 
+
+    // If there is more than one visible function and we haven't been
+    // asked to print all candidates, let's try to eliminate "worse"
+    // matches (e.g., method call / standalone function call
+    // mismatches).
+    Vec<FnSymbol*> filteredFns;
+    if (visibleFns.n > 1 && fPrintAllCandidates == false) {
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        if (!obviousMisMatch(call, fn)) {
+          filteredFns.add(fn);
+        }
+      }
+    }
+
+    // If the filtered functions list is empty (because we skipped the
+    // previous conditional or everything was an obvious mismatch),
+    // then we'll use all the visible functions when printing
+    // candidates in order to avoid suggesting that there are no other
+    // candidates.
+    if (filteredFns.n == 0) {
+      filteredFns = visibleFns;
+    }/* else if (filteredFns.n == 1) {
+      // If there is just one filtered function, then let's add the
+      // other candidates to the end of the list, just to avoid
+      // suggesting that there aren't any other possibilities (but to
+      // still prioritize the single filtered function in the
+      // explanation).
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        if (fn != filteredFns.v[0]) {
+          filteredFns.add(fn);
+        }
+      }
+      }*/
+    
+
     int i = 0;
-    forv_Vec(FnSymbol, fn, visibleFns) {
+    forv_Vec(FnSymbol, fn, filteredFns) {
       i++;
 
       if (i > nPrintDetails)
@@ -4313,14 +4348,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
       explainCandidateRejection(info, fn);
     }
-
-    Vec<FnSymbol*> filteredFns;
-    forv_Vec(FnSymbol, fn, visibleFns) {
-      if (!obviousMisMatch(call, fn)) {
-        filteredFns.add(fn);
-      }
-    }
-    
     i = 0;
     forv_Vec(FnSymbol, fn, filteredFns) {
       i++;
@@ -4330,17 +4357,23 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
       if (fPrintAllCandidates == false && i > nPrint) {
         USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
-                  filteredFns.n - (i-1));
+                  visibleFns.n - (i-1));
         break;
       }
 
       if (printedOne == false) {
-        USR_PRINT(fn, "candidates are: %s", toString(fn));
+        USR_PRINT(call, "other candidates include:");
+        //        USR_PRINT("other candidates include:");
         printedOne = true;
-
-      } else {
-        USR_PRINT(fn, "                %s", toString(fn));
       }
+      USR_PRINT(fn, "%s", toString(fn));
+    }
+    if (fPrintAllCandidates == false && i <= nPrint && visibleFns.n > filteredFns.n) {
+      int numRemaining = visibleFns.n - i;
+      USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see them",
+                (printedOne ? "and" : "there are also"),
+                numRemaining,
+                ((numRemaining == 1) ? "" : "s"));
     }
   } else {
     USR_PRINT(call, "because no functions named %s found in scope", info.name);

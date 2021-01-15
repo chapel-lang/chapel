@@ -6,4 +6,4 @@ testBadCallCandidates.chpl:32: note: is passed to formal 'this: borrowed D'
 testBadCallCandidates.chpl:85: note: other candidates include:
 testBadCallCandidates.chpl:8: note: C.bar(x: string)
 testBadCallCandidates.chpl:11: note: C.bar(x: D)
-note: and 1 other candidate, use --print-all-candidates to see them
+testBadCallCandidates.chpl:65: note: bar(x: D)

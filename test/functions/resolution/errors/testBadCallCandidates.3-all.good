@@ -5,4 +5,5 @@ testBadCallCandidates.chpl:82: note: because call actual argument #1 with type i
 testBadCallCandidates.chpl:59: note: is passed to formal 'x: C'
 testBadCallCandidates.chpl:82: note: other candidates include:
 testBadCallCandidates.chpl:62: note: foo(x: D)
-note: and 2 other candidates, use --print-all-candidates to see them
+testBadCallCandidates.chpl:5: note: C.foo(x: string)
+testBadCallCandidates.chpl:33: note: D.foo(x: C)

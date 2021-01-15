@@ -5,4 +5,5 @@ testBadCallCandidates.chpl:79: note: because method call receiver with type owne
 testBadCallCandidates.chpl:4: note: is passed to formal 'this: borrowed C'
 testBadCallCandidates.chpl:79: note: other candidates include:
 testBadCallCandidates.chpl:33: note: D.foo(x: C)
-note: and 2 other candidates, use --print-all-candidates to see them
+testBadCallCandidates.chpl:59: note: foo(x: C)
+testBadCallCandidates.chpl:62: note: foo(x: D)
