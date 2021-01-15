@@ -13,9 +13,10 @@ forall i in a.domain {
 
 writeln(b);
 
-forall i in a.domain {
+var dummy = 0;
+forall i in a.domain with (ref dummy) {
   b[10-i] = a[i];
-  a[10-i] = 5; // should thwart the optimization at normalize
+  dummy = b[10-i]; // should thwart the optimization at normalize
 }
 
 writeln(b);
