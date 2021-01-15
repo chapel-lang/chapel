@@ -1,0 +1,7 @@
+testBadCallCandidates.chpl:45: In function 'main':
+testBadCallCandidates.chpl:65: error: unresolved call 'bar("hi")'
+testBadCallCandidates.chpl:39: note: this candidate did not match: bar(x: D)
+testBadCallCandidates.chpl:65: note: because call actual argument #1 with type string
+testBadCallCandidates.chpl:39: note: is passed to formal 'x: D'
+testBadCallCandidates.chpl:7: note: candidates are: C.bar(x: string)
+testBadCallCandidates.chpl:20: note:                 D.type bar(x: int)
