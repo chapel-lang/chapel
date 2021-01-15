@@ -408,12 +408,51 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 ************************************** | *************************************/
 std::set<const char*> UseStmt::typeWasNamed(Type* t) const {
   std::set<const char*> namedTypes;
-  INT_FATAL("Not implemented");
+
+  typeWasNamed(t, &namedTypes);
   return namedTypes;
 }
 
 void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
-  INT_FATAL("Not implemented");
+  if (isPlainUse() == true) {
+    // We don't limit the use in any way, so we don't need special handling to
+    // find methods
+    return;
+
+  } else {
+    std::string nameToCheck = t->symbol->name;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->instantiatedFrom != NULL) {
+        // Need to check against the generic type's name rather than the
+        // instantiation, since the instantiation name included instantiation
+        // information in it (and that isn't usable in a use/import list, at
+        // least right now)
+        AggregateType* rootType = at->getRootInstantiation();
+        nameToCheck = rootType->symbol->name;
+      }
+    }
+    const char* name = astr(nameToCheck.c_str());
+
+    if (except == true) {
+      // For use statements with except clauses, we want to store related type
+      // names that *weren't* in the except clause
+      if (matchedNameOrRename(name) == false) {
+        namedTypes->insert(name);
+      }
+    } else {
+      // For use statements with only lists, we want to store related type names
+      // that *were* in the only list
+      if (matchedNameOrRename(name) == true) {
+        namedTypes->insert(name);
+      }
+    }
+
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, pt, at->dispatchParents) {
+        typeWasNamed(pt, namedTypes);
+      }
+    }
+  }
 }
 
 /************************************* | **************************************

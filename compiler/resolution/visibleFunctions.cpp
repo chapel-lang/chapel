@@ -621,7 +621,12 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
     if (UseStmt* use = toUseStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, use->isPrivate))
         continue;
-      if (use->skipSymbolSearch(name))
+      if (call->numActuals() >= 2) {
+        Expr* thisArg = call->get(2);
+        Type* thisType = thisArg->getValType();
+        namedTypes = use->typeWasNamed(thisType);
+      }
+      if (use->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;
       se = toSymExpr(use->src);
     } else if (ImportStmt* import = toImportStmt(expr)) {
