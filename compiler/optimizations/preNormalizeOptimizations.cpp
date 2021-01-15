@@ -601,6 +601,9 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     rhsMaybeArrSym = (rhsSymExpr->symbol() == maybeArrElemSym);
   }
 
+  // stop if neither can be an array element symbol
+  if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
+
   // just to be sure, stop if someone's doing `a=a`;
   if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
 
