@@ -880,11 +880,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 
 static bool looksLikeInfixOperator(const char *fnName)
 {
-  if (fnName == astrInitEquals)
-    return true;
-
-  // Otherwise it looks like an operator if it doesn't look like an
-  // identifier.
+  // It looks like an operator if it doesn't look like an identifier.
   bool looksLikeIdentifier = isalpha(fnName[0]) || fnName[0] == '_';
 
   return !looksLikeIdentifier;
