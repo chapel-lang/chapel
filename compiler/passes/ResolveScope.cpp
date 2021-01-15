@@ -898,7 +898,16 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
     } else if (isUse && isEnum) {
       return SymAndReferencedName(retval, astr(""));
     } else {
-      return SymAndReferencedName(outerMod, astr(retval->name));
+      // Retval is not a module symbol.  We expect to store the module where
+      // retval is defined (even if it is not outerMod, as may be the case when
+      // retval is a re-exported symbol), so that we can properly resolve
+      // references to retval later.
+      ModuleSymbol* retvalParent =
+        toModuleSymbol(retval->defPoint->parentSymbol);
+      // If the parent symbol of retval is not a module, something has gone
+      // wrong with lookupForImport
+      INT_ASSERT(retvalParent);
+      return SymAndReferencedName(retvalParent, astr(retval->name));
     }
   }
 }
