@@ -339,7 +339,6 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     if (numLastStmts == -1)
       numLastStmts = numThisLoop;
     else if (numLastStmts != numThisLoop) {
-      std::cout << "Didn't like the loop in " << forall->stringLoc() << std::endl;
       return; // Give up on optimizing it
     }
   }

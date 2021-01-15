@@ -640,7 +640,10 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   }
 
   Symbol *maybeArrSym = forall->optInfo.iterSym;
-  Symbol *maybeArrElemSym = forall->optInfo.multiDIndices[0];
+  Symbol *maybeArrElemSym = NULL;
+  if (forall->optInfo.multiDIndices.size() > 0) {
+    maybeArrElemSym = forall->optInfo.multiDIndices[0];
+  }
 
   // stop here if you don't know what I am talking about
   if (maybeArrSym == NULL || maybeArrElemSym == NULL) return false;

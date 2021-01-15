@@ -348,7 +348,7 @@ public:
       } else if (calledFn == gChplPropagateError) {
         handleChplPropagateErrorCall(node);
       } else if (AggregationCandidateInfo *info = aggCandidateCache[node]) {
-        std::cout << "Visiting a candidate\n";
+        //std::cout << "Visiting a candidate\n";
       }
     }
     // There shouldn't be anything interesting inside the call.
