@@ -19,4 +19,10 @@ module ChapelAutoAggregation {
     }
     return false;
   }
+
+  // make sure to resolve this, so that we can give a more meaningful error
+  // message
+  proc chpl__arrayIteratorYieldsLocalElements(type a) param {
+    return false;
+  }
 }
