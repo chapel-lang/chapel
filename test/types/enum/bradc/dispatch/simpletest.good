@@ -1,4 +1,4 @@
 simpletest.chpl:7: error: unresolved call 'int8works(numeral)'
 simpletest.chpl:9: note: this candidate did not match: int8works(x: int(8))
-simpletest.chpl:7: note: because call actual argument #1 with type numeral
+simpletest.chpl:7: note: because actual argument #1 with type 'numeral'
 simpletest.chpl:9: note: is passed to formal 'x: int(8)'

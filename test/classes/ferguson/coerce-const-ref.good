@@ -1,4 +1,4 @@
 coerce-const-ref.chpl:16: error: unresolved call 'test(unmanaged SubClass)'
 coerce-const-ref.chpl:10: note: this candidate did not match: test(const ref arg: unmanaged MyClass)
-coerce-const-ref.chpl:16: note: because call actual argument #1 with type unmanaged SubClass
+coerce-const-ref.chpl:16: note: because actual argument #1 with type 'unmanaged SubClass'
 coerce-const-ref.chpl:10: note: is passed to formal 'const ref arg: unmanaged MyClass'

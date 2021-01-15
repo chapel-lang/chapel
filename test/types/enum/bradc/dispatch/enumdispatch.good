@@ -1,5 +1,5 @@
 enumdispatch.chpl:17: error: unresolved call 'foo(color, color)'
 enumdispatch.chpl:7: note: this candidate did not match: foo(x: int(32), y: int(32))
-enumdispatch.chpl:17: note: because call actual argument #1 with type color
+enumdispatch.chpl:17: note: because actual argument #1 with type 'color'
 enumdispatch.chpl:7: note: is passed to formal 'x: int(32)'
 enumdispatch.chpl:12: note: candidates are: foo(x: int(64), y: int(64))

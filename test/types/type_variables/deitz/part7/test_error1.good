@@ -1,4 +1,4 @@
 test_error1.chpl:14: error: unresolved call 'foo(borrowed C(int(64)))'
 test_error1.chpl:10: note: this candidate did not match: foo(i: int)
-test_error1.chpl:14: note: because call actual argument #1 with type borrowed C(int(64))
+test_error1.chpl:14: note: because actual argument #1 with type 'borrowed C(int(64))'
 test_error1.chpl:10: note: is passed to formal 'i: int(64)'

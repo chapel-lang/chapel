@@ -1,4 +1,4 @@
 syncAsClass.chpl:7: error: unresolved call 'foo(sync int(64))'
 syncAsClass.chpl:1: note: this candidate did not match: foo(o: object)
-syncAsClass.chpl:7: note: because call actual argument #1 with type sync int(64)
+syncAsClass.chpl:7: note: because actual argument #1 with type 'sync int(64)'
 syncAsClass.chpl:1: note: is passed to formal 'o: object'

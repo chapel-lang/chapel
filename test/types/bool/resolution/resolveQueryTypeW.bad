@@ -1,6 +1,6 @@
 resolveQueryTypeW.chpl:6: error: unresolved call 'bar(bool)'
 resolveQueryTypeW.chpl:1: note: this candidate did not match: bar(x: bool(8))
-resolveQueryTypeW.chpl:6: note: because call actual argument #1 with type bool
+resolveQueryTypeW.chpl:6: note: because actual argument #1 with type 'bool'
 resolveQueryTypeW.chpl:1: note: is passed to formal 'const ref x: bool(8)'
 resolveQueryTypeW.chpl:1: note: candidates are: bar(x: bool(16))
 resolveQueryTypeW.chpl:1: note:                 bar(x: bool(32))
