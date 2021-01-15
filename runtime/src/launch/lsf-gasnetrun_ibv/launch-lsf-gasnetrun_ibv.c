@@ -23,11 +23,11 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include "chplcgfns.h"
+#include "chpl-env.h"
 #include "chpllaunch.h"
 #include "chpl-mem.h"
 #include "error.h"
 
-// from ../gasnetrun_ibv/launch-gasnetrun_ibv.c:
 #define WRAP_TO_STR(x) TO_STR(x)
 #define TO_STR(x) #x
 
@@ -39,11 +39,6 @@
 //  -R span[ptile=1]   seems to request just 1 process per node
 //  -n NN              request NN processors (i.e. nodes?)
 //  -Ip                requests an interactive session with a pseudo-terminal
-//
-// bsub other options:
-//  -K  wait for job completion - could use instead of -Ip,
-//      but stdin/out/err are disconnected (use -i/-o/-e to direct to files)
-//  there does not seem to be a "quiet" option
 //
 
 static char _nlbuf[16];
@@ -72,6 +67,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
 
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales) {
+  chpl_env_set("BSUB_QUIET", "1", 0);
   return chpl_launch_using_exec("bsub",
                                 chpl_launch_create_argv(argc, argv, numLocales),
                                 argv[0]);
