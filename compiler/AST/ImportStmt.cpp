@@ -163,6 +163,15 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
       if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
         if (symAndName.second[0] != '\0') {
+          if (providesUnqualifiedAccess()) {
+            // We already have listed unqualified access for this import, which
+            // means this is the last symbol prior to the curly braces (e.g.
+            // this is `B` of `import A.B.{C, D};`).  This symbol is required
+            // to be a module
+            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not", symAndName.second);
+          }
+
           // The last name resolved wasn't to a module, so point the import to
           // the last module and move the last name to the unqualified or
           // renamed list
@@ -190,15 +199,6 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             // wasn't looking in a path with one or more `.`s in it.  That
             // means this symbol is already available for unqualified access
             USR_FATAL(this, "Can't 'import' without naming a module");
-          }
-
-          if (providesUnqualifiedAccess()) {
-            // We already have listed unqualified access for this import, which
-            // means this is the last symbol prior to the curly braces (e.g.
-            // this is `B` of `import A.B.{C, D};`).  This symbol is required
-            // to be a module
-            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
-                      "module, symbol '%s' is not", symAndName.second);
           }
 
           INT_FATAL(this, "Cannot find module");
