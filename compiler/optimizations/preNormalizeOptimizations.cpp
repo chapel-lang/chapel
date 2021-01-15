@@ -904,7 +904,8 @@ void transformConditionalAggregation(CondStmt *cond) {
 //
 
 
-static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
+static void LOG_help(int depth, const char *msg, BaseAST *node,
+                     bool forallDetails, bool flag) {
   if (flag) {
     bool verbose = (node->getModule()->modTag != MOD_INTERNAL &&
                     node->getModule()->modTag != MOD_STANDARD);
@@ -920,19 +921,21 @@ static void LOG_help(int depth, const char *msg, BaseAST *node, bool flag) {
         std::cout << " ";
       }
       std::cout << msg;
-      if (ForallStmt *forall = toForallStmt(node)) {
-        switch (forall->optInfo.cloneType) {
-          case STATIC_AND_DYNAMIC:
-            std::cout << " [static and dynamic ALA clone] ";
-            break;
-          case STATIC_ONLY:
-            std::cout << " [static only ALA clone] ";
-            break;
-          case NO_OPTIMIZATION:
-            std::cout << " [no ALA clone] ";
-            break;
-          default:
-            break;
+      if (forallDetails) {
+        if (ForallStmt *forall = toForallStmt(node)) {
+          switch (forall->optInfo.cloneType) {
+            case STATIC_AND_DYNAMIC:
+              std::cout << " [static and dynamic ALA clone] ";
+              break;
+            case STATIC_ONLY:
+              std::cout << " [static only ALA clone] ";
+              break;
+            case NO_OPTIMIZATION:
+              std::cout << " [no ALA clone] ";
+              break;
+            default:
+              break;
+          }
         }
       }
       if (node != NULL) {
@@ -971,7 +974,8 @@ static void LOGLN_help(BaseAST *node, bool flag) {
 // during resolution, the output is much more straightforward, and depth 0 is
 // used always
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fAutoAggregation && fReportAutoAggregation);
+  LOG_help(depth, msg, node, /*forallDetails=*/true,
+           fAutoAggregation && fReportAutoAggregation);
 }
 
 static void LOGLN_AA(BaseAST *node) {
@@ -979,7 +983,8 @@ static void LOGLN_AA(BaseAST *node) {
 }
 
 static void LOG_ALA(int depth, const char *msg, BaseAST *node) {
-  LOG_help(depth, msg, node, fAutoLocalAccess && fReportAutoLocalAccess);
+  LOG_help(depth, msg, node, /*forallDetails=*/false,
+           fAutoLocalAccess && fReportAutoLocalAccess);
 }
 
 static void LOGLN_ALA(BaseAST *node) {
