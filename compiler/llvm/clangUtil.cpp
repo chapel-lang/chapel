@@ -72,6 +72,8 @@
 
 #if HAVE_LLVM_VER >= 90
 #include "llvm/Support/CodeGen.h"
+#include "llvm/Support/ErrorOr.h"
+#include "llvm/Support/MemoryBuffer.h"
 #endif
 
 #ifdef HAVE_LLVM_RV
@@ -118,6 +120,7 @@ void cleanupExternC(void) {
 
 using namespace clang;
 using namespace llvm;
+using namespace CodeGen;
 
 #define GLOBAL_PTR_SPACE 100
 #define WIDE_PTR_SPACE 101
@@ -1577,8 +1580,75 @@ void setupClang(GenInfo* info, std::string mainFile)
         isGPUBinaryFlag = true;
       }
     }
-    std::cout << "fatbin path: " << ggpuFatbinPath << "\n"; 
+    std::cout << "fatbin path: " << ggpuFatbinPath << "\n";
+
+    //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
+/*
+    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
+      llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fabin");
+
+    const std::string &Str = GpuBinaryOrErr.get()->getBuffer();
+    StringRef StrWithNull(Str.c_str(), Str.size() + 1);
+    clang::CharUnits Alignment =
+      clangInfo->Ctx->getAlignOfGlobalVarInChars(clangInfo->Ctx->CharTy);
+    llvm::Constant *C =
+      llvm::ConstantDataArray::getString(info->module->getContext(), StrWithNull, false);
+    const char GlobalName = ".str";
+    unsigned AddrSpace = clangInfo->Ctx->getTargetAddressSpace(
+       gGenInfo->clangInfo->cCodeGen->CGM().getStringLiteralAddressSpace());
+    llvm::Module &M = info->module;
+   // Create a global variable for this string
+   auto *GV = new llvm::GlobalVariable(
+       info->module, C->getType(), info->module..getLangOpts().WritableStrings, llvm::GlobalValue::PrivateLinkage, C, GlobalName,
+       nullptr, llvm::GlobalVariable::NotThreadLocal, AddrSpace);
+   GV->setAlignment(Alignment.getAsAlign());
+   GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+   if (GV->isWeakForLinker()) {
+     assert(info->module->supportsCOMDAT() && "Only COFF uses weak string literals");
+     GV->setComdat(M.getOrInsertComdat(GV->getName()));
+   }
+   info->module->setDSOLocal(GV);
+    //auto GV = GenerateStringLiteral(C, llvm::GlobalValue::PrivateLinkage, info->module, GlobalName, Alignment);
+    */
   }
+
+/*
+#ifdef HAVE_LLVM
+  if(localeUsesGPU() && gCodegenGPU == false){
+
+   llvm::IntegerType *IntTy;
+   llvm::PointerType *VoidPtrTy;
+
+   IntTy = llvm::IntegerType::getInt32Ty(info->module->getContext());
+   VoidPtrTy = llvm::Type::getInt8PtrTy(info->module->getContext(), 0);
+   //SizeTy = info->module->getContext().getSizeType();
+
+   llvm::StructType *FatbinWrapperTy =
+     llvm::StructType::get(IntTy, IntTy, VoidPtrTy, VoidPtrTy);
+
+     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
+        llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fabin");
+    //llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
+     //    llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fatbin");
+
+
+    //const std::string &Name = "";
+    //clang::CodeGen::CodeGenModule& CGM = gGenInfo->clangInfo->cCodeGen->CGM();
+    //auto ConstStr = CGM.GetAddrOfConstantCString(GpuBinaryOrErr.get()->getBuffer(), Name.c_str());
+    llvm::Constant *Values[] = {
+      llvm::ConstantInt::get(IntTy, 0x466243b1), // Fatbin wrapper magic.
+      llvm::ConstantInt::get(IntTy, 1),          // Fatbin version.
+      //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
+      llvm::ConstantPointerNull::get(VoidPtrTy)}; // Unused in fatbin v1.
+    llvm::GlobalVariable *FatbinWrapper = new llvm::GlobalVariable(
+      *info->module, FatbinWrapperTy, true, llvm::GlobalValue::InternalLinkage,
+      llvm::ConstantStruct::get(FatbinWrapperTy, Values),
+       "__cuda_fatbin_wrapper");
+     // NVIDIA's cuobjdump looks for fatbins in this section.
+    FatbinWrapper->setSection(".nvFatBinSegment");
+  }
+#endif
+*/
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
