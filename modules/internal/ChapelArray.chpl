@@ -1885,13 +1885,17 @@ module ChapelArray {
        :arg order: Order for which the corresponding index in the domain
                     has to be found.
 
-       :returns: Returns a tuple of size ``domain.rank``  of type ``domain.idxType``
+       :returns: Returns the `ith` index in the domain counting from 0. 
+                  For example, ``{2..10 by 2}.orderToIndex(2)`` would return ``6``.
+                  The order of a multidimensional domain follows its serial iterator. 
+                  For example, ``{1..3, 1..2}.orderToIndex(3)`` would return ``(2, 2)``.
     */
-    proc orderToIndex(in order) where (isRectangularDom(this) && isNumericType(this.idxType)){
+    proc orderToIndex(order: int) where (isRectangularDom(this) && isNumericType(this.idxType)){
       
       if boundsChecking then
         checkOrderBounds(order);
       
+      var rankOrder = order;
       var idx: (rank*_value.idxType);
       var div = this.size;
 
@@ -1901,19 +1905,22 @@ module ChapelArray {
           const lo = currDim.alignedLow;
           const hi = currDim.alignedHigh;
           const stride = currDim.stride;
-          const zeroInd = order/div;
+          const zeroInd = rankOrder/div;
           var currInd = zeroInd*stride;
           if stride < 0 then
             currInd+=hi;
           else
             currInd+=lo;
           idx[i] = currInd;
-          order = order%div;
+          rankOrder = rankOrder%div;
       }
-      return idx;
+      if(this.rank==1) then
+        return idx[0];
+      else
+        return idx;
     }
 
-    proc checkOrderBounds(in order){
+    proc checkOrderBounds(order: int){
       if order >= this.size || order < 0 then
         halt("Order out of bounds. Order must lie in 0..",this.size-1);
     }
