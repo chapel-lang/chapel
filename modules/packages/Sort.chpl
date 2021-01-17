@@ -796,6 +796,111 @@ module BinaryInsertionSort {
   }
 }
 
+pragma "no doc" 
+module TimSort {
+  private use Sort;
+
+    /*
+    Sort the 1D array `Data` using a parallel tim sort algorithm.
+
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg SIZE: use :proc: `insertionSort` on blocks of `SIZE`
+    :type SIZE: `integral`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+       data is sorted.
+
+   */
+
+  proc timSort(Data: [?Dom] ?eltType, SIZE=16, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("mergeSort() requires 1-D array");
+    }
+
+    _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, SIZE, comparator);
+  }
+
+  private proc _TimSort(Data: [?Dom], lo:int, hi:int, SIZE=16, comparator:?rec=defaultComparator) {
+    import Sort.InsertionSort;
+
+    /*Parallely apply insertion sort on each block of size `SIZE`
+     using forall loop*/
+
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    var size = (hi - lo) / stride + 1;
+    var chunks:int = (size + SIZE - 1) / SIZE;
+    
+    forall i in 0..#chunks {
+      InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * SIZE) * stride, min(hi, lo + ((i + 1) * SIZE * stride) - stride));
+    }
+
+    /* apply merge operations on each block
+    *as the merges at a level are independent of each other
+    *they can be applied parallely 
+    */
+
+    var num_size = SIZE;
+    while(num_size < size) {
+      forall i in 0..(size - 1) by 2 * num_size {
+
+        var l = lo + i * stride;
+        var mid = lo + (i + num_size - 1) * stride;
+        var r = min(lo + (i + 2 * num_size - 1) * stride, hi);
+
+        _Merge(Data, l, mid, r, comparator=comparator);
+      }
+
+      num_size = num_size * 2;
+
+    }
+  }
+
+  private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
+     * Dom is unstrided.  So specify the latter explicitly when possible. */
+    if mid >= hi {
+      return;
+    }
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const a1max = mid;
+
+    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2max = hi;
+
+    var A1 = Dst[a1range];
+    var A2 = Dst[a2range];
+
+    var a1 = a1range.first;
+    var a2 = a2range.first;
+    var i = lo;
+    while ((a1 <= a1max) && (a2 <= a2max)) {
+      if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
+        Dst[i] = A1[a1];
+        a1 += stride;
+        i += stride;
+      } else {
+        Dst[i] = A2[a2];
+        a2 += stride;
+        i += stride;
+      }
+    }
+    while (a1 <= a1max) {
+      Dst[i] = A1[a1];
+      a1 += stride;
+      i += stride;
+    }
+    while (a2 <= a2max) {
+      Dst[i] = A2[a2];
+      a2 += stride;
+      i += stride;
+    }
+  }
+}
+
+
 pragma "no doc"
 module MergeSort {
   private use Sort;
