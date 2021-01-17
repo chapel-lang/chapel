@@ -1913,6 +1913,11 @@ module ChapelArray {
       return idx;
     }
 
+    proc checkOrderBounds(in order){
+      if order >= this.size || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+    }
+
     pragma "no doc"
     proc position(i) {
       var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
