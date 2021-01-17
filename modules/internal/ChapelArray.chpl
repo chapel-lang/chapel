@@ -1874,6 +1874,45 @@ module ChapelArray {
     pragma "no doc"
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
 
+    /*
+       Returns domain index for a given order in the domain
+
+       .. note::
+
+         Right now, this method supports only dense rectangular domains with
+         numeric indices
+
+       :arg order: Order for which the corresponding index in the domain
+                    has to be found.
+
+       :returns: Returns a tuple of size ``domain.rank``  of type ``domain.idxType``
+    */
+    proc orderToIndex(in order) where (isRectangularDom(this) && isNumericType(this.idxType)){
+      
+      if boundsChecking then
+        checkOrderBounds(order);
+      
+      var idx: (rank*_value.idxType);
+      var div = this.size;
+
+      for param i in 0..<rank {
+          var currDim = this.dim(i);
+          div /= currDim.size;
+          const lo = currDim.alignedLow;
+          const hi = currDim.alignedHigh;
+          const stride = currDim.stride;
+          const zeroInd = order/div;
+          var currInd = zeroInd*stride;
+          if stride < 0 then
+            currInd+=hi;
+          else
+            currInd+=lo;
+          idx[i] = currInd;
+          order = order%div;
+      }
+      return idx;
+    }
+
     pragma "no doc"
     proc position(i) {
       var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;
