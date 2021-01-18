@@ -1,8 +1,9 @@
 default
-Time taken to sort 64 bytes (8 int(64)s)
-quickSort (seconds): x.xxx
-heapSort (seconds): x.xxx
-insertionSort (seconds): x.xxx
-binaryInsertionSort (seconds): x.xxx
-mergeSort (seconds): x.xxx
-selectionSort (seconds): x.xxx
+Time taken to sort 131072 bytes (16384 int(64)s)
+quickSort (seconds): 0.009392
+heapSort (seconds): 0.032162
+insertionSort (seconds): 4.80689
+binaryInsertionSort (seconds): 3.13414
+mergeSort (seconds): 0.014262
+selectionSort (seconds): 6.30825
+timSort (seconds): 0.009363
