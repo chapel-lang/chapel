@@ -293,6 +293,8 @@ module UnrolledLinkedList {
       var start = p.size/2;
       for i in start..p.size-1 {
         node.append(p.data[i]);
+        if isSharedClass(this.eltType) then
+          p.data[i].clear();
       }
       p.size -= node.size;
       if _sanityChecks then
