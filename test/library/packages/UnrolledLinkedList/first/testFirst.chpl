@@ -13,3 +13,4 @@ ref elem = lst.first();
 
 assert(elem == 1);
 
+writeln(lst);
