@@ -1,0 +1,153 @@
+.. default-domain:: chpl
+
+.. module:: fieldDefaultValues
+
+fieldDefaultValues
+==================
+**Usage**
+
+.. code-block:: chapel
+
+   use fieldDefaultValues;
+
+
+or
+
+.. code-block:: chapel
+
+   import fieldDefaultValues;
+
+.. class:: C
+
+   .. attribute:: var aField: int
+
+.. data:: var c: nilable C
+
+.. record:: R0
+
+.. record:: R1
+
+   .. attribute:: param a: int
+
+.. record:: R2
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+.. record:: R3
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+   .. attribute:: param c: b.type 
+
+.. record:: R
+
+   .. attribute:: var literalDefault = 42
+
+   .. attribute:: var varDefault = x
+
+   .. attribute:: var notDefault = !x
+
+   .. attribute:: var negDefault = -x
+
+   .. attribute:: var bitwiseNegDefault = ~x
+
+   .. attribute:: var notNilDefault = c!
+
+   .. attribute:: var plusDefault = x+y
+
+   .. attribute:: var minusDefault = x-y
+
+   .. attribute:: var multDefault = x*y
+
+   .. attribute:: var divDefault = x/y
+
+   .. attribute:: var modDefault = x%y
+
+   .. attribute:: var orDefault = x||y
+
+   .. attribute:: var binOrDefault = x|y
+
+   .. attribute:: var andDefault = x&&y
+
+   .. attribute:: var binAndDefault = x&y
+
+   .. attribute:: var binXorDefault = x^y
+
+   .. attribute:: var threeOrDefault = x||y||z
+
+   .. attribute:: var threeBinOrDefault = x|y|z
+
+   .. attribute:: var threeAndDefault = x&&y&&z
+
+   .. attribute:: var threeBinAndDefault = x&y&z
+
+   .. attribute:: var powDefault = x**y
+
+   .. attribute:: var lshiftDefault = x<<y
+
+   .. attribute:: var rshiftDefault = x>>y
+
+   .. attribute:: var eqDefault = x==y
+
+   .. attribute:: var neqDefault = x!=y
+
+   .. attribute:: var lessDefault = x<y
+
+   .. attribute:: var gtDefault = x>y
+
+   .. attribute:: var lessEqDefault = x<=y
+
+   .. attribute:: var gtEqDefault = x>=y
+
+   .. attribute:: var minDefault = min(int)
+
+   .. attribute:: var maxDefault = max(int)
+
+   .. attribute:: var castDefault = x: int(32)
+
+   .. attribute:: var tuple2Default = (x, y)
+
+   .. attribute:: var tuple3Default = (x, y, z)
+
+   .. attribute:: var dotTypeDefault = x.type 
+
+   .. attribute:: var dotFieldDefault = c!.aField
+
+   .. attribute:: var ternaryDefault = if x then y else z
+
+   .. method:: proc f0()
+
+   .. method:: proc f1(x)
+
+   .. method:: proc f2(x, y)
+
+   .. method:: proc f3(x, y, z)
+
+   .. attribute:: var noArgFuncDefault = f0()
+
+   .. attribute:: var oneArgFuncDefault = f1(x)
+
+   .. attribute:: var twoArgFuncDefault = f2(x, y)
+
+   .. attribute:: var threeArgFuncDefault = f3(x, y, z)
+
+   .. attribute:: var R0TypedArgNoDefault: R0
+
+   .. attribute:: var R1TypedArgNoDefault: R1(1)
+
+   .. attribute:: var R2TypedArgNoDefault: R2(1, 2)
+
+   .. attribute:: var R3TypedArgNoDefault: R3(1, 2, 3)
+
+   .. attribute:: var R0TypedArgDefault: R0 = new R0()
+
+   .. attribute:: var R1TypedArgDefault: R1(1) = new R1(1)
+
+   .. attribute:: var R2TypedArgDefault: R2(1, 2) = new R2(1, 2)
+
+   .. attribute:: var R3TypedArgDefault: R3(1, 2, 3) = new R3(1, 2, 3)
+
