@@ -178,8 +178,6 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
     else if (CallExpr *prevCall = toCallExpr(call->prev)) {
       if (AggregationCandidateInfo *info = aggCandidateCache[prevCall]) {
         if (info->aggCall == call) {
-          //std::cout << "Skipping over the potential aggregation call\n";
-          //nprint_view(call);
           last = last->prev;
         }
       }
@@ -187,18 +185,6 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
   }
 
   last = skipIgnoredStmts(last);
-
-  //if (CallExpr *call = toCallExpr(last)) {
-    //AggregationCandidateInfo *info = aggCandidateCache[call];
-    //if (info != NULL) {
-      //std::cout << "Found an aggregation candidate last statement\n";
-      //nprint_view(call);
-    //}
-  //}
-  //
-
-  //std::cout << "Found a last statement\n";
-  //nprint_view(last);
   stmts.push_back(last);
 }
 
@@ -234,9 +220,6 @@ bool symbolOutlivesLoop(BlockStmt* loop, Symbol* sym,
 static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
-  if (lastStmt->id == 203728) {
-    gdbShouldBreakHere();
-  }
   if (CallExpr* call = toCallExpr(lastStmt)) {
     if (call->isPrimitive(PRIM_ASSIGN) || call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
@@ -275,10 +258,7 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
     } else if (shadow->isTaskPrivate()) {
       // task private variable could include arbitrary init expr
       // effectively computing a task id
-      //if (strcmp(shadow->name, "chpl_src_auto_agg") == 0) {
       if (shadow->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
-        //std::cout << "Ignoring the shadow variable\n";
-        //nprint_view(shadow);
         continue;
       }
       return false;
@@ -338,9 +318,8 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
     int numThisLoop = (int) lastStatementsPerBody[loopNum].size();
     if (numLastStmts == -1)
       numLastStmts = numThisLoop;
-    else if (numLastStmts != numThisLoop) {
+    else if (numLastStmts != numThisLoop)
       return; // Give up on optimizing it
-    }
   }
 
   // Consider the last statements
@@ -925,9 +904,6 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
 }
 
 static CondStmt *getAggregationCondStmt(Expr *stmt) {
-  if (stmt->id == 3069977) {
-    gdbShouldBreakHere();
-  }
 
   // if this was an aggregatable assignment, it must be inside a then block of
   // an:
@@ -1053,10 +1029,6 @@ void optimizeForallUnorderedOps() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (block->isLoopStmt()) {
       LoopStmt* loop = toLoopStmt(block);
-
-      if (loop->id == 2743477) {
-        gdbShouldBreakHere();
-      }
 
       {
         std::vector<Expr*> lastStmts;

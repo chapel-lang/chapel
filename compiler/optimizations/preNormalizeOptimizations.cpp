@@ -216,18 +216,6 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   dstAggregator(NULL),
   aggCall(NULL) { }
 
-//static Expr *getArrSymFromLogicalChild(CallExpr *call) {
-  //if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    //return call->get(1);
-  //}
-  //else if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    //return call->get(2);
-  //}
-  //else {
-    //return call->baseExpr;
-  //}
-//}
-
 static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
   const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
                                            "chpl_dstAggregatorForArr";
@@ -331,15 +319,6 @@ void AggregationCandidateInfo::updateASTForRegularAssignment() {
       def->remove();
     }
   }
-
-  //if (CondStmt *aggCond = toCondStmt(this->forall->loopBody()->body.last())) {
-    //if (SymExpr *condSE = toSymExpr(aggCond->condExpr)) {
-      //if (strcmp(condSE->symbol()->name, "aggMarker")) {
-        //std::cout << "Need to remove this conditional\n";
-        //nprint_view(aggCond);
-      //}
-    //}
-  //}
 }
 
 // called during resolution
@@ -451,9 +430,6 @@ void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
                                                     bool lhs,
                                                     LocalityInfo locInfo) {
 
-  std::cout << "registering logical child " << lhs << " " << locInfo << "\n";
-  nprint_view(logicalChild);
-
   if (lhs) {
     this->lhsLocalityInfo = locInfo;
     this->lhsLogicalChild = logicalChild;
@@ -552,24 +528,6 @@ static CallExpr *revertAccess(CallExpr *call);
 static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
-
-//static bool lhsOrRhsPrimMaybeLocalThis(CallExpr *call, bool lhs) {
-  //INT_ASSERT(call->isNamed("=")); // fyi
-  //if (CallExpr *childCall = toCallExpr(call->get(lhs ? 1 : 2))) {
-    //if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-      //return true;
-    //}
-  //}
-  //return false;
-
-//}
-//static bool lhsPrimMaybeLocalThis(CallExpr *call) {
-  //return lhsOrRhsPrimMaybeLocalThis(call, true);
-//}
-
-//static bool rhsPrimMaybeLocalThis(CallExpr *call) {
-  //return lhsOrRhsPrimMaybeLocalThis(call, false);
-//}
 
 // currently we want both sides to be calls, but we need to relax these to
 // accept symexprs to support foralls over arrays
@@ -874,34 +832,6 @@ void transformConditionalAggregation(CondStmt *cond) {
   // remove the conditional
   cond->remove();
 }
-
-// if the otherChild is not null, it means that we won't visit it as an
-// automatic local access candidate. So, `candidate` is registering it.
-//static void insertOrUpdateAggCandidate(CallExpr *candidate,
-                                       //CallExpr *logicalChild,
-                                       //bool lhs,
-                                       //CallExpr *otherChild,
-                                       //ForallStmt *forall) {
-  //AggregationCandidateInfo *info;
-  //if (aggCandidateCache.count(candidate) == 0) {
-    //info = new AggregationCandidateInfo(candidate, forall);
-    //aggCandidateCache[candidate] = info;
-  //}
-  //else {
-    //info = aggCandidateCache[candidate];
-  //}
-
-  //// map this child to the info, so that we can pull it up when we resolve the
-  //// child
-  //preNormalizeAggCandidate[logicalChild] = info;
-
-  //info->registerLogicalChild(logicalChild, lhs, PENDING);
-
-  //if (otherChild != NULL) {
-    //info->registerLogicalChild(otherChild, !lhs, UNKNOWN);
-  //}
-//}
-//
 
 
 static void LOG_help(int depth, const char *msg, BaseAST *node,
@@ -1456,8 +1386,8 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
 
 // replace a candidate CallExpr with the corresponding PRIM_MAYBE_LOCAL_THIS
 static CallExpr* replaceCandidate(CallExpr *candidate,
-                             Symbol *staticCheckSym,
-                             bool doStatic) {
+                                  Symbol *staticCheckSym,
+                                  bool doStatic) {
   SET_LINENO(candidate);
 
   Symbol *callBase = getCallBase(candidate);
@@ -1479,25 +1409,6 @@ static CallExpr* replaceCandidate(CallExpr *candidate,
   return repl;
 }
 
-//static void analyzeCandidateForAggregation(CallExpr *candidate) {
-//}
-
-//static bool isCallACandidateForAutoLocalAccess(CallExpr *call,
-                                               //ForallStmt *forall) {
-  //if (call->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    //return true; // we have already replaced the child with the primitive
-  //}
-  //else {
-    //// it maybe something that's still in the candidates list
-    //return std::count(forall->optInfo.staticCandidates.begin(),
-                      //forall->optInfo.staticCandidates.end(),
-                      //call) > 0 ||
-           //std::count(forall->optInfo.dynamicCandidates.begin(),
-                      //forall->optInfo.dynamicCandidates.end(),
-                      //call) > 0;
-  //}
-//}
-
 // replace all the candidates in the loop with PRIM_MAYBE_LOCAL_THIS
 // while doing that, also builds up static and dynamic conditions
 static void optimizeLoop(ForallStmt *forall,
@@ -1507,8 +1418,6 @@ static void optimizeLoop(ForallStmt *forall,
   std::vector<CallExpr *> candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
-
-  //std::set<CallExpr *> aggregationCandidates;
 
   for_vector(CallExpr, candidate, candidates) {
 
@@ -1523,55 +1432,11 @@ static void optimizeLoop(ForallStmt *forall,
                                     dynamicCond);
     }
 
-    //if (strcmp(candidate->fname(), "unorderedTest.chpl") == 0) {
-      //gdbShouldBreakHere();
-    //}
-
     // capture the parent before replacing
     //CallExpr *parent = toCallExpr(candidate->parentExpr);
 
     //CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
     replaceCandidate(candidate, checkSym, doStatic);
-
-    // associate the parent assignment with the newly added
-    // PRIM_MAYBE_LOCAL_ACCESS. Currently, we only care about this only if the
-    // assignment is the very last statement in the loop body. This is because
-    // the subsequent analysis to check whether we can postpone this assignment
-    // only looks at the last statement and doesn't do a full alias analysis on
-    // the forall body
-    //if (parent == forall->loopBody()->body.last()) {
-      //// there's no PRIM_ASSIGN at the moment
-      //if (parent != NULL && parent->isNamed("=")) {
-        //bool lhs = (parent->get(1) == replacement);
-        ////std::cout << "Prenormalize candidate\n";
-        ////nprint_view(candidate);
-        ////nprint_view(replacement);
-
-        //CallExpr *otherChild = toCallExpr(parent->get(lhs ? 2 : 1));
-        //if (isCallACandidateForAutoLocalAccess(otherChild, forall)) {
-          //// other child is also a auto local access candidate, we don't need to
-          //// register it to the aggregation candidate. It'll do so itself
-          //insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                     //NULL, forall);
-        //}
-        //else {
-
-          //if (Symbol *otherChildCallBase = getCallBase(otherChild)) {
-          ////std::vector<CallExpr *>& suitableAggs = forall->optInfo.suitableAggChildren;
-          ////if (std::count(suitableAggs.begin(), suitableAggs.end(), otherChild)) {
-            //// other child is not an auto local access candidate, but for now it
-            //// looks like it might be an array access, record it
-          //std::cout << "200\n";
-          //nprint_view(parent);
-            //insertOrUpdateAggCandidate(parent, replacement, lhs,
-                                       //otherChild, forall);
-          //}
-          //else {
-            //// other child is not a well-known pattern, can't do aggregation
-          //}
-        //}
-      //}
-    //}
   }
 }
 

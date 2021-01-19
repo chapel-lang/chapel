@@ -25,7 +25,6 @@
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "passes.h"
-#include "preNormalizeOptimizations.h"
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
@@ -347,8 +346,6 @@ public:
         expandTaskFn(this, node, calledFn);
       } else if (calledFn == gChplPropagateError) {
         handleChplPropagateErrorCall(node);
-      } else if (AggregationCandidateInfo *info = aggCandidateCache[node]) {
-        //std::cout << "Visiting a candidate\n";
       }
     }
     // There shouldn't be anything interesting inside the call.
