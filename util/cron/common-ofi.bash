@@ -7,6 +7,7 @@ if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
 fi
 
 export CHPL_COMM=ofi
+export CHPL_LIBFABRIC=bundled
 
 # Select a launcher and out-of-band support.  If we're on a Cray XC
 # system this will just fall out automatically.  On a slurm-based system
