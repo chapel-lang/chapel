@@ -493,6 +493,7 @@ module UnrolledLinkedList {
     pragma "no doc"
     inline proc ref _extendGeneric(collection) {
       on this {
+        // TODO: Maybe we can allocate space at one time and append.
         for item in collection {
           _append(item);
         }
