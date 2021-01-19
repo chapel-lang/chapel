@@ -170,7 +170,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes a unrolledLinkedList containing elements that are copy initialized from
+      Initializes an unrolledLinkedList containing elements that are copy initialized from
       the elements contained in a list.
 
       Used in new expressions.
@@ -194,7 +194,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes a unrolledLinkedList containing elements that are copy 
+      Initializes an unrolledLinkedList containing elements that are copy 
       initialized from the elements contained in an array.
 
       Used in new expressions.
@@ -219,7 +219,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Initializes a unrolledLinkedList containing elements that are copy 
+      Initializes an unrolledLinkedList containing elements that are copy 
       initialized from the elements contained in another unrolledLinkedlist.
 
       :arg other: The list to initialize from.
@@ -244,7 +244,7 @@ module UnrolledLinkedList {
         append(x);
     }
 
-    // A helper function for getting a reference to a unrolledLinkedList element.
+    // A helper function for getting a reference to an unrolledLinkedList element.
     //
     pragma "no doc"
     inline proc const ref _getRef(idx: int) ref {
@@ -517,9 +517,9 @@ module UnrolledLinkedList {
 
     /*
       Extend this unrolledLinkedList by appending a copy of each element 
-      contained in a unrolledLinkedList.
+      contained in an unrolledLinkedList.
 
-      :arg other: A unrolledLinkedList containing elements of the same type as 
+      :arg other: an unrolledLinkedList containing elements of the same type as 
         those contained in this unrolledLinkedList.
       :type other: `unrolledLinkedList(eltType)`
     */
@@ -553,7 +553,7 @@ module UnrolledLinkedList {
 
       .. note::
 
-        Attempting to initialize a unrolledLinkedList from an unbounded range 
+        Attempting to initialize an unrolledLinkedList from an unbounded range 
         will trigger a compiler error.
 
       :arg other: The range to initialize from.
