@@ -696,7 +696,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert an array of elements `arr` into this unrolledLinkedList at index 
+      Insert elements of an array `arr` into this unrolledLinkedList at index 
       `idx`, shifting all elements at and following the index `arr.size` 
       positions to the right. 
 
@@ -731,7 +731,7 @@ module UnrolledLinkedList {
     }
 
     /*
-      Insert a list of elements `lst` into this unrolledLinkedList at index 
+      Insert elements of a list `lst` into this unrolledLinkedList at index 
       `idx`, shifting all elements at and following the index `lst.size` 
       positions to the right.
 
