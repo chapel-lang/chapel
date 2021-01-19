@@ -4371,7 +4371,9 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     if (fPrintAllCandidates == false && i <= nPrint && visibleFns.n > filteredFns.n) {
       int numRemaining = visibleFns.n - i;
       USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see them",
-                (printedOne ? "and" : "there are also"),
+                (printedOne ? "and" : ((numRemaining == 1) ?
+                                       "there is also" :
+                                       "there are also")),
                 numRemaining,
                 ((numRemaining == 1) ? "" : "s"));
     }
