@@ -625,6 +625,12 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
         Expr* thisArg = call->get(2);
         Type* thisType = thisArg->getValType();
         namedTypes = use->typeWasNamed(thisType);
+        if (use->hasExceptList() && namedTypes.size() == 0) {
+          // The intersection of symbols allowed by the except list and this
+          // type's name or inherited names was empty.  We should not traverse
+          // this use statement.
+          continue;
+        }
       }
       if (use->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;
