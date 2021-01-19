@@ -457,47 +457,50 @@ bool ResolveScope::extend(VisibilityStmt* stmt) {
 // If the new function is a method, track the type on which it is defined, if
 // we can.
 void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
-  if (newFn->_this != NULL && newFn->hasFlag(FLAG_PRIVATE) == false) {
-    ArgSymbol* _this = toArgSymbol(newFn->_this);
-    INT_ASSERT(_this);
-    // New function is a method.  The type on which this method is defined might
-    // be listed in a limitation clause on a use or import statement, so we
-    // should track the type on which it is defined, if we can and it isn't
-    // private
-    if (_this->typeInfo() != dtUnknown) {
-      // The type is already known, so just use that information
-      mMethodsOnTypeName.insert(astr(_this->typeInfo()->symbol->name));
+  if (newFn != NULL) {
+    if (newFn->_this != NULL && newFn->hasFlag(FLAG_PRIVATE) == false) {
+      ArgSymbol* _this = toArgSymbol(newFn->_this);
+      INT_ASSERT(_this);
+      // New function is a method.  The type on which this method is defined
+      // might be listed in a limitation clause on a use or import statement, so
+      // we should track the type on which it is defined, if we can and it isn't
+      // private
+      if (_this->typeInfo() != dtUnknown) {
+        // The type is already known, so just use that information
+        mMethodsOnTypeName.insert(astr(_this->typeInfo()->symbol->name));
 
-    } else {
-      // The type is not already known, so determine it
-      BlockStmt* typeExpr = _this->typeExpr;
-      INT_ASSERT(typeExpr); // Shouldn't be NULL at this point but just in case
-
-      if (SymExpr* sType = toSymExpr(typeExpr->body.tail)) {
-        // The typeExpr was just a simple name, so store that name
-        mMethodsOnTypeName.insert(astr(sType->symbol()->name));
-
-      } else if (UnresolvedSymExpr* uType =
-                 toUnresolvedSymExpr(typeExpr->body.tail)) {
-        // The typeExpr was just a simple name, so store that name
-        mMethodsOnTypeName.insert(astr(uType->unresolved));
-
-      } else if (CallExpr* cType = toCallExpr(typeExpr->body.tail)) {
-        // The typeExpr was slightly more complicated.  Our best guess right now
-        // is the name used in the call because it could be a generic
-        // instantiation.
-        if (!cType->isPrimitive()) {
-          // Throw up our hands if the call is actually a primitive.  Otherwise,
-          // save the name.
-          if (UnresolvedSymExpr* typeName =
-              toUnresolvedSymExpr(cType->baseExpr)) {
-            mMethodsOnTypeName.insert(astr(typeName->unresolved));
-          }
-        }
       } else {
-        // Lydia NOTE 01/06/2021: might have just forgotten to test a scenario
-        // We will need to do something in that case, to avoid missing matches
-        INT_FATAL("Unanticipated structure for argument typeExpr");
+        // The type is not already known, so determine it
+        BlockStmt* typeExpr = _this->typeExpr;
+        // Shouldn't be NULL at this point but just in case
+        INT_ASSERT(typeExpr);
+
+        if (SymExpr* sType = toSymExpr(typeExpr->body.tail)) {
+          // The typeExpr was just a simple name, so store that name
+          mMethodsOnTypeName.insert(astr(sType->symbol()->name));
+
+        } else if (UnresolvedSymExpr* uType =
+                   toUnresolvedSymExpr(typeExpr->body.tail)) {
+          // The typeExpr was just a simple name, so store that name
+          mMethodsOnTypeName.insert(astr(uType->unresolved));
+
+        } else if (CallExpr* cType = toCallExpr(typeExpr->body.tail)) {
+          // The typeExpr was slightly more complicated.  Our best guess right
+          // now is the name used in the call because it could be a generic
+          // instantiation.
+          if (!cType->isPrimitive()) {
+            // Throw up our hands if the call is actually a primitive.
+            // Otherwise, save the name.
+            if (UnresolvedSymExpr* typeName =
+                toUnresolvedSymExpr(cType->baseExpr)) {
+              mMethodsOnTypeName.insert(astr(typeName->unresolved));
+            }
+          }
+        } else {
+          // Lydia NOTE 01/06/2021: might have just forgotten to test a scenario
+          // We will need to do something in that case, to avoid missing matches
+          INT_FATAL("Unanticipated structure for argument typeExpr");
+        }
       }
     }
   }
