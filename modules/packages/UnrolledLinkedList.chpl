@@ -225,11 +225,11 @@ module UnrolledLinkedList {
       :arg other: The list to initialize from.
     */
     proc init=(other: unrolledLinkedList(this.type.eltType, ?p)) {
+      _checkType(this.type.eltType);
+      _checkNodeCapacity(other.nodeCapacity);
       if !isCopyableType(this.type.eltType) then
         compilerError("Cannot construct unrolledLinkedList from list with " +
         "element type that cannot be copied");
-      _checkType(this.type.eltType);
-      _checkNodeCapacity(other.nodeCapacity);
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
@@ -1146,7 +1146,8 @@ module UnrolledLinkedList {
     }
 
     /*
-      The current number of elements contained in this unrolledLinkedList.
+      The current number of elements contained in this unrolledLinkedList. Returns 
+      in O(1).
     */
     inline proc const size {
       var result = 0;
