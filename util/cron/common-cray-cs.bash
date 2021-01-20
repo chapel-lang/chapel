@@ -19,7 +19,6 @@ if module avail craype- 2>&1 | grep -q craype- ; then
   export CHPL_HOST_PLATFORM=cray-cs
   export CHPL_TEST_LAUNCHCMD=\$CHPL_HOME/util/test/chpl_launchcmd.py
   loadCSModule gcc/8.1.0
-  loadCSModule python/2.7.6
   loadCSModule cray-fftw
 else
   [ "$1" == y ] && log_info "Expected Cray CS, but does not seem to be one."

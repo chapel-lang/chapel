@@ -1,4 +1,4 @@
 no-instance-for-arg-type.chpl:5: error: unresolved call 'proc1(nil)'
 no-instance-for-arg-type.chpl:4: note: this candidate did not match: proc1(arg: Monkey1?)
-no-instance-for-arg-type.chpl:5: note: because call actual argument #1 with type nil
+no-instance-for-arg-type.chpl:5: note: because actual argument #1 with type 'nil'
 no-instance-for-arg-type.chpl:4: note: is passed to formal 'arg: Monkey1?'

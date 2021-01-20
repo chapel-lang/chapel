@@ -1,7 +1,7 @@
 match-param.chpl:6: In function 'foo':
 match-param.chpl:6: error: unresolved call '==("hello", 100)'
 $CHPL_HOME/modules/internal/String.chpl:408: note: this candidate did not match: ==(x: byteIndex, y: byteIndex)
-match-param.chpl:6: note: because call actual argument #1 with type string
+match-param.chpl:6: note: because actual argument #1 with type 'string'
 $CHPL_HOME/modules/internal/String.chpl:408: note: is passed to formal 'x: byteIndex'
 match-param.chpl:6: note: other candidates include:
 $CHPL_HOME/modules/internal/String.chpl:409: note: ==(x: codepointIndex, y: codepointIndex)

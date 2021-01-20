@@ -1,4 +1,4 @@
 error-message-when-not-applicable.chpl:7: error: unresolved call 'type int(64).typeMethod()'
 error-message-when-not-applicable.chpl:2: note: this candidate did not match: C.type typeMethod()
-error-message-when-not-applicable.chpl:7: note: because method call receiver with type int(64)
+error-message-when-not-applicable.chpl:7: note: because method call receiver with type 'int(64)'
 error-message-when-not-applicable.chpl:1: note: is passed to formal 'this: C'

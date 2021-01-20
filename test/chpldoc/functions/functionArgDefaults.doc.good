@@ -1,0 +1,157 @@
+.. default-domain:: chpl
+
+.. module:: functionArgDefaults.doc
+
+functionArgDefaults.doc
+=======================
+**Usage**
+
+.. code-block:: chapel
+
+   use functionArgDefaults.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import functionArgDefaults.doc;
+
+.. class:: C
+
+   .. attribute:: var aField: int
+
+.. data:: var c: unmanaged nilable C
+
+.. function:: proc noArgs()
+
+.. function:: proc literalDefault(arg = 42)
+
+.. function:: proc varDefault(arg = x)
+
+.. function:: proc notDefault(arg = !x)
+
+.. function:: proc negDefault(arg = -x)
+
+.. function:: proc bitwiseNegDefault(arg = ~x)
+
+.. function:: proc notNilDefault(arg = c!)
+
+.. function:: proc plusDefault(arg = x+y)
+
+.. function:: proc minusDefault(arg = x-y)
+
+.. function:: proc multDefault(arg = x*y)
+
+.. function:: proc divDefault(arg = x/y)
+
+.. function:: proc modDefault(arg = x%y)
+
+.. function:: proc orDefault(arg = x||y)
+
+.. function:: proc binOrDefault(arg = x|y)
+
+.. function:: proc andDefault(arg = x&&y)
+
+.. function:: proc binAndDefault(arg = x&y)
+
+.. function:: proc binXorDefault(arg = x^y)
+
+.. function:: proc threeOrDefault(arg = x||y||z)
+
+.. function:: proc threeBinOrDefault(arg = x|y|z)
+
+.. function:: proc threeAndDefault(arg = x&&y&&z)
+
+.. function:: proc threeBinAndDefault(arg = x&y&z)
+
+.. function:: proc powDefault(arg = x**y)
+
+.. function:: proc lshiftDefault(arg = x<<y)
+
+.. function:: proc rshiftDefault(arg = x>>y)
+
+.. function:: proc eqDefault(arg = x==y)
+
+.. function:: proc neqDefault(arg = x!=y)
+
+.. function:: proc lessDefault(arg = x<y)
+
+.. function:: proc gtDefault(arg = x>y)
+
+.. function:: proc lessEqDefault(arg = x<=y)
+
+.. function:: proc gtEqDefault(arg = x>=y)
+
+.. function:: proc minDefault(arg = min(int))
+
+.. function:: proc maxDefault(arg = max(int))
+
+.. function:: proc castDefault(arg = x: int(32))
+
+.. function:: proc tuple2Default(arg = (x, y))
+
+.. function:: proc tuple3Default(arg = (x, y, z))
+
+.. function:: proc dotTypeDefault(arg = x.type )
+
+.. function:: proc dotFieldDefault(arg = c!.aField)
+
+.. function:: proc ternaryDefault(arg = if x then y else z)
+
+.. function:: proc f0()
+
+.. function:: proc f1(x)
+
+.. function:: proc f2(x, y)
+
+.. function:: proc f3(x, y, z)
+
+.. function:: proc noArgFuncDefault(arg = f0())
+
+.. function:: proc oneArgFuncDefault(arg = f1(x))
+
+.. function:: proc twoArgFuncDefault(arg = f2(x, y))
+
+.. function:: proc threeArgFuncDefault(arg = f3(x, y, z))
+
+.. function:: proc twoArgsWithDefaults(arg1 = x+y, arg2 = x-y)
+
+.. function:: proc threeArgsWithDefaults(arg1 = x*y, arg2 = x/y, arg3 = x**y)
+
+.. record:: R0
+
+.. record:: R1
+
+   .. attribute:: param a: int
+
+.. record:: R2
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+.. record:: R3
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+   .. attribute:: param c: b.type 
+
+.. function:: proc R0TypedArgNoDefault(arg: R0)
+
+.. function:: proc R1TypedArgNoDefault(arg: R1(1))
+
+.. function:: proc R2TypedArgNoDefault(arg: R2(1, 2))
+
+.. function:: proc R3TypedArgNoDefault(arg: R3(1, 2, 3))
+
+.. function:: proc R0TypedArgDefault(arg: R0 = new R0())
+
+.. function:: proc R1TypedArgDefault(arg: R1(1) = new R1(1))
+
+.. function:: proc R2TypedArgDefault(arg: R2(1, 2) = new R2(1, 2))
+
+.. function:: proc R3TypedArgDefault(arg: R3(1, 2, 3) = new R3(1, 2, 3))
+

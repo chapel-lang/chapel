@@ -1,0 +1,151 @@
+.. default-domain:: chpl
+
+.. module:: variableDefaultValues
+
+variableDefaultValues
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use variableDefaultValues;
+
+
+or
+
+.. code-block:: chapel
+
+   import variableDefaultValues;
+
+.. class:: C
+
+   .. attribute:: var aField: int
+
+.. data:: var c: unmanaged nilable C
+
+.. data:: var literalDefault = 42
+
+.. data:: var varDefault = x
+
+.. data:: var notDefault = !x
+
+.. data:: var negDefault = -x
+
+.. data:: var bitwiseNegDefault = ~x
+
+.. data:: var notNilDefault = c!
+
+.. data:: var plusDefault = x+y
+
+.. data:: var minusDefault = x-y
+
+.. data:: var multDefault = x*y
+
+.. data:: var divDefault = x/y
+
+.. data:: var modDefault = x%y
+
+.. data:: var orDefault = x||y
+
+.. data:: var binOrDefault = x|y
+
+.. data:: var andDefault = x&&y
+
+.. data:: var binAndDefault = x&y
+
+.. data:: var binXorDefault = x^y
+
+.. data:: var threeOrDefault = x||y||z
+
+.. data:: var threeBinOrDefault = x|y|z
+
+.. data:: var threeAndDefault = x&&y&&z
+
+.. data:: var threeBinAndDefault = x&y&z
+
+.. data:: var powDefault = x**y
+
+.. data:: var lshiftDefault = x<<y
+
+.. data:: var rshiftDefault = x>>y
+
+.. data:: var eqDefault = x==y
+
+.. data:: var neqDefault = x!=y
+
+.. data:: var lessDefault = x<y
+
+.. data:: var gtDefault = x>y
+
+.. data:: var lessEqDefault = x<=y
+
+.. data:: var gtEqDefault = x>=y
+
+.. data:: var minDefault = min(int)
+
+.. data:: var maxDefault = max(int)
+
+.. data:: var castDefault = x: int(32)
+
+.. data:: var tuple2Default = (x, y)
+
+.. data:: var tuple3Default = (x, y, z)
+
+.. data:: var dotTypeDefault = x.type 
+
+.. data:: var dotFieldDefault = c!.aField
+
+.. data:: var ternaryDefault = if x then y else z
+
+.. function:: proc f0()
+
+.. function:: proc f1(x)
+
+.. function:: proc f2(x, y)
+
+.. function:: proc f3(x, y, z)
+
+.. data:: var noArgFuncDefault = f0()
+
+.. data:: var oneArgFuncDefault = f1(x)
+
+.. data:: var twoArgFuncDefault = f2(x, y)
+
+.. data:: var threeArgFuncDefault = f3(x, y, z)
+
+.. record:: R0
+
+.. record:: R1
+
+   .. attribute:: param a: int
+
+.. record:: R2
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+.. record:: R3
+
+   .. attribute:: param a: int
+
+   .. attribute:: param b: a.type 
+
+   .. attribute:: param c: b.type 
+
+.. data:: var R0TypedArgNoDefault: R0
+
+.. data:: var R1TypedArgNoDefault: R1(1)
+
+.. data:: var R2TypedArgNoDefault: R2(1, 2)
+
+.. data:: var R3TypedArgNoDefault: R3(1, 2, 3)
+
+.. data:: var R0TypedArgDefault: R0 = new R0()
+
+.. data:: var R1TypedArgDefault: R1(1) = new R1(1)
+
+.. data:: var R2TypedArgDefault: R2(1, 2) = new R2(1, 2)
+
+.. data:: var R3TypedArgDefault: R3(1, 2, 3) = new R3(1, 2, 3)
+

@@ -2042,7 +2042,7 @@ arkouda: &arkouda-base
     - text: Optimize DstAggregator by caching remote allocations (mhmerrill/arkouda#485)
       config: 16-node-cs, 16-node-xc
   10/02/20:
-    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda/#503)
+    - text: Optimize SrcAggregator by caching remote allocations (mhmerrill/arkouda#503)
       config: 16-node-cs
   10/03/20:
     - text: Enable SrcAggregator under ugni (mhmerrill/arkouda#507)
@@ -2050,16 +2050,16 @@ arkouda: &arkouda-base
     - text: Move XC testing from elogin back to login node
       config: 16-node-xc
   10/06/20:
-    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda/#509)
+    - text: Optimize aggregators by yielding more often (mhmerrill/arkouda#509)
       config: 16-node-cs, 16-node-xc
   10/21/20:
     - Upgrade Arkouda release testing from 1.22 to 1.23 (#16599)
   01/08/21:
-    - Benchmark improvements (mhmerrill/arkouda/#616)
+    - Benchmark improvements (mhmerrill/arkouda#616)
   01/14/21:
     - Optimize scans by using noinit for the result array (#16919)
   01/15/21:
-    - Optimize int64 prod reduce (mhmerrill/arkouda/#628)
+    - Optimize int64 prod reduce (mhmerrill/arkouda#628)
 
 
 arkouda-comp:

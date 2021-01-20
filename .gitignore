@@ -99,8 +99,6 @@ tags
 /test/**/compperfdat
 /test/**/perfdat
 
-testDatetime
-
 /test/arrays/vass/setter-assigned-to-a-var.exec.out.tmp.save
 
 /test/chpldoc/**/docs
