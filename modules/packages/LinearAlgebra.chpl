@@ -192,7 +192,6 @@ use LAPACK only lapack_memory_order, isLAPACKType;
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
 private param usingLAPACK = LAPACK.header != '';
-
 // TODO: compilerError if matrices are distributed
 
 //
@@ -1301,6 +1300,11 @@ private proc _lu (in A: [?Adom] ?eltType) {
 
   `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
+
+  .. note::
+
+    This procedure depends on the :mod:`LAPACK` module. To use
+    this procedure without `LAPACK`, set `lapackImpl=off`
 */
 proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1311,6 +1315,28 @@ proc lu (A: [?Adom] ?eltType) {
 
   var (LU, ipiv, numSwap) = _lu(A);
   return (LU,ipiv);
+}
+
+
+proc lu (A: [?Adom] ?t) where (usingLAPACK && isLAPACKType(t)){
+
+  if Adom.rank != 2 then
+    halt("Wrong rank for LU factorization");
+
+  if isDistributed(A) then
+    compilerError("LU factorization does not support distributed vectors/matrices");
+  
+  use SysCTypes;
+  use LAPACK;
+  var A_clone = A;
+
+  var rows = Adom.shape[0];
+  var cols = Adom.shape[1];
+  var ipiv: [{1..rows}] c_int;
+  var info = getrf(lapack_memory_order.row_major,A_clone,ipiv);
+  var U = triu(A_clone);
+  var L = A_clone-U+eye(A.domain);
+  return(L[1..rows,1..rows],U,ipiv);
 }
 
 /* Return a new array as the permuted form of `A` according to
