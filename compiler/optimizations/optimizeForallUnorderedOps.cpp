@@ -221,7 +221,7 @@ static
 bool exprIsOptimizable(BlockStmt* loop, Expr* lastStmt,
                         LifetimeInformation* lifetimeInfo) {
   if (CallExpr* call = toCallExpr(lastStmt)) {
-    if (call->isPrimitive(PRIM_ASSIGN) || call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
       Symbol* lhs = toSymExpr(call->get(1))->symbol();
       Expr* rhs = call->get(2);
       if (lhs->getValType() == rhs->getValType()) // same type
