@@ -5467,6 +5467,13 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          i,
                            int                          j,
                            DisambiguationState&         DS) {
+
+  // Give up early for out intent arguments
+  // (these don't impact candidate selection)
+  if (formal1->originalIntent == INTENT_OUT ||
+      formal2->originalIntent == INTENT_OUT)
+    return;
+
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.
   Type* f1Type          = formal1->type->getValType();

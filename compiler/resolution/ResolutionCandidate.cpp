@@ -877,7 +877,8 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
                              fn,
                              &promotes,
                              NULL,
-                             formalIsParam) == false) {
+                             formalIsParam) == false &&
+                 formal->originalIntent != INTENT_OUT) {
         failingArgument = actual;
         reason = classifyTypeMismatch(actual->type, formal->type);
         return false;
