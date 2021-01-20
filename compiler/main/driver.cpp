@@ -1448,6 +1448,8 @@ static void postStaticLink() {
 
 static void postLocal() {
   if (!fUserSetLocal) fLocal = !strcmp(CHPL_COMM, "none");
+
+  if (fLocal) fAutoAggregation = false;
 }
 
 static void postVectorize() {
