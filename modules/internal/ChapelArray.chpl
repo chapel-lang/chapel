@@ -1875,7 +1875,11 @@ module ChapelArray {
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
 
     /*
-       Returns domain index for a given order in the domain
+       Returns the `ith` index in the domain counting from 0. 
+        For example, ``{2..10 by 2}.orderToIndex(2)`` would return ``6``.
+
+      The order of a multidimensional domain follows its serial iterator. 
+        For example, ``{1..3, 1..2}.orderToIndex(3)`` would return ``(2, 2)``.
 
        .. note::
 
@@ -1885,10 +1889,7 @@ module ChapelArray {
        :arg order: Order for which the corresponding index in the domain
                     has to be found.
 
-       :returns: Returns the `ith` index in the domain counting from 0. 
-                  For example, ``{2..10 by 2}.orderToIndex(2)`` would return ``6``.
-                  The order of a multidimensional domain follows its serial iterator. 
-                  For example, ``{1..3, 1..2}.orderToIndex(3)`` would return ``(2, 2)``.
+       :returns: Domain index for a given order in the domain.
     */
     proc orderToIndex(order: int) where (isRectangularDom(this) && isNumericType(this.idxType)){
       
