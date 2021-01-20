@@ -1614,10 +1614,6 @@ static void autoLocalAccess(ForallStmt *forall) {
     Symbol *accBaseSym = getCallBaseSymIfSuitable(call, forall, /*checkArgs=*/true);
 
     if (accBaseSym == NULL) {
-      // if it looks like an array access, record it
-      //if (Symbol *aggChildBaseSym = getCallBase(call)) {
-        //forall->optInfo.suitableAggChildren.push_back(call);
-      //}
       continue;
     }
 
