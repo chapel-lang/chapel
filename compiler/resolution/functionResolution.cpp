@@ -4230,16 +4230,13 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
 
 static bool obviousMisMatch(CallExpr* call, FnSymbol* fn) {
   bool isMethod = isMethodPreResolve(call);
-  //  USR_PRINT(call, "considering this call");
   if (isMethod) {
     if (fn->_this == NULL) {
-      //      USR_PRINT(fn, "call is method, but fn is not\n");
       return true;
     }
     return false;
   } else {
     if (fn->_this != NULL) {
-      //      USR_PRINT(fn, "call is not method, but fn is\n");
       return true;
     }
     return false;
@@ -4325,18 +4322,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     // candidates.
     if (filteredFns.n == 0) {
       filteredFns = visibleFns;
-    }/* else if (filteredFns.n == 1) {
-      // If there is just one filtered function, then let's add the
-      // other candidates to the end of the list, just to avoid
-      // suggesting that there aren't any other possibilities (but to
-      // still prioritize the single filtered function in the
-      // explanation).
-      forv_Vec(FnSymbol, fn, visibleFns) {
-        if (fn != filteredFns.v[0]) {
-          filteredFns.add(fn);
-        }
-      }
-      }*/
+    }
     
 
     int i = 0;
@@ -4363,7 +4349,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
       if (printedOne == false) {
         USR_PRINT(call, "other candidates include:");
-        //        USR_PRINT("other candidates include:");
         printedOne = true;
       }
       USR_PRINT(fn, "%s", toString(fn));
