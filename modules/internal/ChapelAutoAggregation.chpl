@@ -8,12 +8,12 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(arr: []) {
-    return newSrcAggregator(arr.eltType);
+    return new SrcAggregator(arr.eltType);
   }
 
   pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(type t) {
-    return newSrcAggregator(t);
+    return new SrcAggregator(t);
   }
 
   pragma "aggregator generator"
@@ -23,12 +23,12 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorForArr(arr: []) {
-    return newDstAggregator(arr.eltType);
+    return new DstAggregator(arr.eltType);
   }
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorForArr(type t) {
-    return newDstAggregator(t);
+    return new DstAggregator(t);
   }
 
   pragma "aggregator generator"
@@ -54,26 +54,7 @@ module ChapelAutoAggregation {
   module CommAggregation {
     use SysCTypes;
     use CPtr;
-    use UnorderedCopy;
     use CommPrimitives;
-
-    /* Creates a new destination aggregator (dst/lhs will be remote). */
-    proc newDstAggregator(type elemType, param useUnorderedCopy=false) {
-      if CHPL_COMM == "none" || useUnorderedCopy {
-        return new DstUnorderedAggregator(elemType);
-      } else {
-        return new DstAggregator(elemType);
-      }
-    }
-
-    /* Creates a new source aggregator (src/rhs will be remote). */
-    proc newSrcAggregator(type elemType, param useUnorderedCopy=false) {
-      if CHPL_COMM == "none" || useUnorderedCopy {
-        return new SrcUnorderedAggregator(elemType);
-      } else {
-        return new SrcAggregator(elemType);
-      }
-    }
 
     /*
      * Aggregates copy(ref dst, src). Optimized for when src is local.
@@ -161,25 +142,6 @@ module ChapelAutoAggregation {
         bufferIdx = 0;
       }
     }
-
-
-
-    /* "Aggregator" that uses unordered copy instead of actually aggregating */
-    pragma "no doc"
-    record DstUnorderedAggregator {
-      type elemType;
-
-      proc deinit() {
-        flush();
-      }
-      proc flush() {
-        unorderedCopyTaskFence();
-      }
-      inline proc copy(ref dst: elemType, const in srcVal: elemType) {
-        unorderedCopyWrapper(dst, srcVal);
-      }
-    }
-
 
     /*
      * Aggregates copy(ref dst, const ref src). Only works when dst is local.
@@ -286,24 +248,6 @@ module ChapelAutoAggregation {
       }
     }
 
-    /* "Aggregator" that uses unordered copy instead of actually aggregating */
-    pragma "no doc"
-    record SrcUnorderedAggregator {
-      type elemType;
-
-      proc deinit() {
-        flush();
-      }
-      proc flush() {
-        unorderedCopyTaskFence();
-      }
-      inline proc copy(ref dst: elemType, const ref src: elemType) {
-        assert(dst.locale.id == here.id);
-        unorderedCopyWrapper(dst, src);
-      }
-    }
-
-
     // A remote buffer with lazy allocation
     record remoteBuffer {
       type elemType;
@@ -391,34 +335,6 @@ module ChapelAutoAggregation {
           markFreed();
         }
       }
-    }
-
-    //
-    // Helper routines
-    //
-
-    // Unordered copy wrapper that also supports tuples. In 1.20 this will call
-    // unorderedCopy for each tuple element, but in 1.21 it is a single call.
-    private inline proc unorderedCopyWrapper(ref dst, const ref src): void {
-      use Reflection;
-      // Always resolves in 1.21, only resolves for numeric/bool types in 1.20
-      if canResolve("unorderedCopy", dst, src) {
-        unorderedCopy(dst, src);
-      } else if isTuple(dst) && isTuple(src) {
-        for param i in 1..dst.size {
-          unorderedCopyWrapper(dst(i), src(i));
-        }
-      } else {
-        compilerWarning("Missing optimized unorderedCopy for " + dst.type:string);
-        dst = src;
-      }
-    }
-
-    private proc getEnvInt(name: string, default: int): int {
-      extern proc getenv(name : c_string) : c_string;
-      var strval = getenv(name.localize().c_str()): string;
-      if strval.isEmpty() { return default; }
-      return try! strval: int;
     }
   }
 
