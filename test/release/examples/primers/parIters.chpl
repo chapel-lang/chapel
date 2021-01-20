@@ -420,20 +420,28 @@ Closing notes
 //
 // Definitions of functions used above:
 //
-// This is a poor-man's partitioning algorithm.  It gives
-// ``floor(numElements/NumChunks)`` work items to the first ``numChunks-1``
-// chunks and the remainder to the last chunk.  For simplicity it only
-// works for non-strided, default index type ranges.  More work would
-// be required to generalize it for strided or unbounded ranges.
-//
+// This is an optimal partitioning algorithm for unweighted problem.
+// The absolute difference between the size of ranges assigned to any two
+// tasks is atmost 1 (either 0 or 1). If the value of remainder ``rem`` is
+// equal to 0, then each of the tasks would be assigned with ``elemsPerChunk``,
+// equal to ``floor(numElements/NumChunks)`` work items. But if the ``rem`` is
+// not equal to 0, then the first rem tasks(from task id 0 to rem-1) get
+// (``elemsPerChunk``+ 1) work items and the rest of the tasks(for task id rem
+// to ``numTasks``-1) get ``elemsPerChunk`` tasks assigned. For simplicity it
+// only works for default index type ranges.  More work would be required
+// to generalize it for strided or unbounded ranges.
+// 
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   const numElems = r.size;
-  const elemsPerChunk = numElems/numChunks;
-  const mylow = r.low + elemsPerChunk*myChunk;
-  if (myChunk != numChunks - 1) {
-    return mylow..#elemsPerChunk;
-  } else {
-    return mylow..r.high;
+  const elemsperChunk= numElems/numChunks;
+  const rem= numElems%numChunks;
+  var mylow= r.low;
+  if(myChunk<rem){
+    mylow+=(elemsperChunk+1)*myChunk;
+    return mylow..#(elemsperChunk + 1);
+  } else{
+    mylow+=((elemsperChunk+1)*rem + (elemsperChunk)*(myChunk-rem));
+    return mylow..#elemsperChunk;
   }
 }
 
