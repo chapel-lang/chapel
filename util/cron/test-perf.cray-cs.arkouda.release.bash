@@ -17,6 +17,9 @@ module list
 source $CWD/common-cray-cs.bash
 source $CWD/common-perf-cray-cs.bash
 
+# python2 required for chapel 1.23, will not be required with 1.24+
+source ~/.setup_python2.bash
+
 module list
 
 export GASNET_PHYSMEM_MAX=83G
