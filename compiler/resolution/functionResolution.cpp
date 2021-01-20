@@ -9036,8 +9036,6 @@ void resolve() {
     stmt->modRefsClear();
   }
 
-  updateAggregationCandidates();
-
   resolved = true;
 }
 
