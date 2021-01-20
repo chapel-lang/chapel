@@ -27,7 +27,10 @@ elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] ; then
     srunDir=$(which srun)
     sLibDir=${srunDir%/bin/srun}/lib64
     if [[ -d $sLibDir ]] ; then
-      export CHPL_LD_FLAGS="${CHPL_LD_FLAGS:+$CHPL_LD_FLAGS }-L$sLibDir -Wl,-rpath,$sLibDir"
+      # Set CHPL_LD_FLAGS to slurm pmi, if pmi isn't already in system lib dir
+      if ! ldconfig -p | grep -q libpmi2.so; then
+        export CHPL_LD_FLAGS="${CHPL_LD_FLAGS:+$CHPL_LD_FLAGS }-L$sLibDir -Wl,-rpath,$sLibDir"
+      fi
       export SLURM_MPI_TYPE=pmi2
       lchOK=y
     fi
