@@ -12,8 +12,8 @@ proc getLU(A: [?Adom]) {
 proc verifyLU(A, L, U, pivots) {
     var Arecon = dot(L,U);
     Arecon = permute(pivots,Arecon);
-    var compareMatrix = & reduce(Arecon==A);
-    return compareMatrix;
+    var isSame = & reduce(Arecon==A);
+    return isSame;
 }
 
 proc printLU(L, U) {
