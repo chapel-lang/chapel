@@ -195,17 +195,6 @@ void cleanupRemainingAggCondStmts() {
   }
 }
 
-AggregationCandidateInfo::AggregationCandidateInfo():
-  candidate(NULL),
-  forall(NULL),
-  lhsLocalityInfo(UNKNOWN),
-  rhsLocalityInfo(UNKNOWN),
-  lhsLogicalChild(NULL),
-  rhsLogicalChild(NULL),
-  srcAggregator(NULL),
-  dstAggregator(NULL),
-  aggCall(NULL) { }
-
 AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
                                                    ForallStmt *forall):
   candidate(candidate),
@@ -252,7 +241,7 @@ static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
 //
 // Because: b[i] is a local access candidate, and both sides of = will be
 // visited as such. Currently, that's not handled properly
-void AggregationCandidateInfo::tryAddingAggregator() {
+void AggregationCandidateInfo::addAggregators() {
   if (srcAggregator != NULL && dstAggregator != NULL) { // assert?
     return; // we have already enough
   }
@@ -428,23 +417,6 @@ void AggregationCandidateInfo::update() {
   }
 }
 
-void AggregationCandidateInfo::registerLogicalChild(CallExpr *logicalChild,
-                                                    bool lhs,
-                                                    LocalityInfo locInfo) {
-
-  if (lhs) {
-    this->lhsLocalityInfo = locInfo;
-    this->lhsLogicalChild = logicalChild;
-  }
-  else {
-    this->rhsLocalityInfo = locInfo;
-    this->rhsLogicalChild = logicalChild;
-  }
-
-  // we registered a new child, do we need to add an aggregator to forall?
-  this->tryAddingAggregator();
-}
-
 void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
   LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
   
@@ -563,7 +535,7 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   }
   info->rhsLogicalChild = rhsCall;
 
-  info->tryAddingAggregator();
+  info->addAggregators();
 }
 
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call,

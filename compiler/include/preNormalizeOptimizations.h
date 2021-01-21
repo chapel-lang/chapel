@@ -52,16 +52,12 @@ class AggregationCandidateInfo {
     // ... and that's why we have a single aggregated alternative.
     CallExpr *aggCall;
 
-    AggregationCandidateInfo();
     AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
 
     void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
-    void registerLogicalChild(CallExpr *logicalChild, bool lhs, LocalityInfo locInfo);
-    void tryAddingAggregator();
-
-    void update();
-
+    void addAggregators();
   private:
+    void update();
     void updateASTForAggregation(bool srcAggregation);
     void updateASTForRegularAssignment();
 };
