@@ -420,7 +420,7 @@ void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
     return;
 
   } else {
-    std::string nameToCheck = t->symbol->name;
+    const char* name = t->symbol->name;
     if (AggregateType* at = toAggregateType(t)) {
       if (at->instantiatedFrom != NULL) {
         // Need to check against the generic type's name rather than the
@@ -428,10 +428,9 @@ void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
         // information in it (and that isn't usable in a use/import list, at
         // least right now)
         AggregateType* rootType = at->getRootInstantiation();
-        nameToCheck = rootType->symbol->name;
+        name = rootType->symbol->name;
       }
     }
-    const char* name = astr(nameToCheck.c_str());
 
     if (except == true) {
       // For use statements with except clauses, we want to store related type

@@ -549,7 +549,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
         // this
         if (fn->isMethod()) {
           INT_ASSERT(typeNames.size() > 0);
-          std::string nameToCheck = fn->_this->type->symbol->name;
+          const char* nameToCheck = fn->_this->type->symbol->name;
           if (fn->_this->getValType() == dtUnknown) {
             ArgSymbol* _this = toArgSymbol(fn->_this);
             INT_ASSERT(_this);
@@ -564,7 +564,7 @@ static void getVisibleMethodsFirstVisitFiltered(const char* name,
             }
           }
           std::set<const char*>::iterator it =
-            typeNames.find(astr(nameToCheck.c_str()));
+            typeNames.find(nameToCheck);
           if (it != typeNames.end()) {
             // This method is defined on a type that is in the filter list.
             // That means we should consider it a candidate.

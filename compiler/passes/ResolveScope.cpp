@@ -345,17 +345,6 @@ int ResolveScope::numBindings() const {
   return retval;
 }
 
-int ResolveScope::numTypesWithMethods() const {
-  std::set<const char*>::const_iterator it;
-  int retval = 0;
-
-  for (it = mMethodsOnTypeName.begin(); it != mMethodsOnTypeName.end(); it++) {
-    retval += 1;
-  }
-
-  return retval;
-}
-
 BlockStmt* ResolveScope::asBlockStmt() const {
   BlockStmt* retval = NULL;
 
@@ -467,7 +456,7 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
       // private
       if (_this->typeInfo() != dtUnknown) {
         // The type is already known, so just use that information
-        mMethodsOnTypeName.insert(astr(_this->typeInfo()->symbol->name));
+        mMethodsOnTypeName.insert(_this->typeInfo()->symbol->name);
 
       } else {
         // The type is not already known, so determine it
@@ -477,12 +466,12 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
 
         if (SymExpr* sType = toSymExpr(typeExpr->body.tail)) {
           // The typeExpr was just a simple name, so store that name
-          mMethodsOnTypeName.insert(astr(sType->symbol()->name));
+          mMethodsOnTypeName.insert(sType->symbol()->name);
 
         } else if (UnresolvedSymExpr* uType =
                    toUnresolvedSymExpr(typeExpr->body.tail)) {
           // The typeExpr was just a simple name, so store that name
-          mMethodsOnTypeName.insert(astr(uType->unresolved));
+          mMethodsOnTypeName.insert(uType->unresolved);
 
         } else if (CallExpr* cType = toCallExpr(typeExpr->body.tail)) {
           // The typeExpr was slightly more complicated.  Our best guess right
@@ -493,7 +482,7 @@ void ResolveScope::extendMethodTracking(FnSymbol* newFn) {
             // Otherwise, save the name.
             if (UnresolvedSymExpr* typeName =
                 toUnresolvedSymExpr(cType->baseExpr)) {
-              mMethodsOnTypeName.insert(astr(typeName->unresolved));
+              mMethodsOnTypeName.insert(typeName->unresolved);
             }
           }
         } else {
@@ -811,14 +800,14 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       USR_FATAL(expr, "Cannot find symbol '%s'", name);
   }
 
-  std::string symName = "";
+  const char* symName = "";
   // Process further portions of import starting from call
   while (call != NULL) {
     INT_ASSERT(call->isNamedAstr(astrSdot));
     if (!isModuleSymbol(retval)) {
       if (retval == NULL) {
         USR_FATAL(call, "cannot make nested %s from non-module '%s'",
-                  stmtType, symName.c_str());
+                  stmtType, symName);
       } else {
         USR_FATAL(call, "cannot make nested %s from non-module '%s'",
                   stmtType, retval->name);
@@ -888,7 +877,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
 
   if (retval == NULL) {
     INT_ASSERT(outerMod != NULL);
-    return SymAndReferencedName(outerMod, astr(symName.c_str()));
+    return SymAndReferencedName(outerMod, symName);
 
   } else {
     bool isEnum = false;
@@ -910,7 +899,7 @@ SymAndReferencedName ResolveScope::lookupForImport(Expr* expr,
       // If the parent symbol of retval is not a module, something has gone
       // wrong with lookupForImport
       INT_ASSERT(retvalParent);
-      return SymAndReferencedName(retvalParent, astr(retval->name));
+      return SymAndReferencedName(retvalParent, retval->name);
     }
   }
 }

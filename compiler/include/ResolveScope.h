@@ -76,7 +76,6 @@ public:
   int                   depth()                                          const;
 
   int                   numBindings()                                    const;
-  int                   numTypesWithMethods()                            const;
 
   BlockStmt*            asBlockStmt()                                    const;
 
