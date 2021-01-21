@@ -1244,49 +1244,38 @@ proc trace(A: [?D] ?eltType) {
 }
 
 private proc _lu (in A: [?Adom] ?eltType) {
-  const n = Adom.shape(0);
-  const LUDom = {1..n, 1..n};
+  const (n,m) = Adom.shape;
 
   // TODO: Reduce memory usage
-  var L, U, LU: [LUDom] eltType;
-
+  var L, LU: [Adom] eltType;
+  var U = A;
   var ipiv: [{1..n}] int = [i in {1..n}] i;
-
   var numSwap: int = 0;
 
   for i in 1..n {
 
-    var max = A[i,i], swaprow = i;
+    var max = U[i,i], swaprow = i;
     for row in (i+1)..n {
-      if (abs(A[row,i]) > abs(max)) {
-        max = A[row,i];
+      if (abs(U[row,i]) > abs(max)) {
+        max = U[row,i];
         swaprow = row;
       }
     }
     if (swaprow != i) {
-      A[i,..] <=> A[swaprow,..];
       L[i,..] <=> L[swaprow,..];
+      U[i,..] <=> U[swaprow,..];
       ipiv[i] <=> ipiv[swaprow];
       numSwap+=1;
     }
 
-    forall k in i..n {
-      var sum = + reduce (L[i,..] * U[..,k]);
-      U[i,k] = A[i,k] - sum;
-    }
-
-    L[i,i] = 1;
-
-    forall k in (i+1)..n {
-      var sum = + reduce (L[k,..] * U[..,i]);
-      L[k,i] = (A[k,i] - sum) / U[i,i];
+    if(max>0){
+      forall k in (i+1)..n {
+      L[k,i] = U[k,i] / U[i,i];
+      U[k,..] = U[k,..]-(L[k,i]*U[i,..]);
+      }
     }
   }
-
   LU = L + U;
-  forall i in 1..n {
-    LU(i,i) = U(i,i);
-  }
 
   return (LU,ipiv,numSwap);
 }
@@ -1306,8 +1295,6 @@ proc lu (A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for LU factorization");
 
-  if Adom.shape(0) != Adom.shape(1) then
-    halt("LU factorization only supports square matrices");
 
   var (LU, ipiv, numSwap) = _lu(A);
   return (LU,ipiv);
@@ -1315,7 +1302,7 @@ proc lu (A: [?Adom] ?eltType) {
 
 /* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
-private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
+proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(0);
   var B: [Adom] eltType;
 
