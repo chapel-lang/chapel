@@ -32,12 +32,6 @@ deinit 20
 yes2b
 init 200
 init 200
-init (default)
-init (default)
-= 0 200
-= 0 200
-deinit 200
-deinit 200
 (x = 200, ptr = {}) (x = 200, ptr = {})
 deinit 200
 deinit 200
