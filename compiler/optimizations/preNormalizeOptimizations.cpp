@@ -470,7 +470,6 @@ void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool
 // maps a potential local access to an AggregationCandidate
 std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 
-// map from actual aggregation candidates to their info to avoid duplicates
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
