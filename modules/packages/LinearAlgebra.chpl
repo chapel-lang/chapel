@@ -192,6 +192,7 @@ use LAPACK only lapack_memory_order, isLAPACKType;
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
 private param usingLAPACK = LAPACK.header != '';
+
 // TODO: compilerError if matrices are distributed
 
 //
