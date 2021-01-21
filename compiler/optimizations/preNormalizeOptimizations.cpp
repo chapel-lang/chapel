@@ -31,19 +31,17 @@
 #include "view.h"
 
 // This file contains analysis and transformation logic that need to happen
-// before normalization. There are two non-static functions:
+// before normalization. These transformations help the following optimizations:
 //
-//   - doPreNormalizeOptimizations
+// - symbolic fast follower check: Avoids dynamic costs for checking for fast
+//                                followers in cases where the follower can be
+//                                proven to be aligned with the leader. e.g.
+//                                `zip(A, A.domain)`
+// - automatic local access: Use `localAccess` instead of `this` for array
+//                           accesses that can be proven to be local
 //
-//     - Does an analysis on foralls to override dynamic checking for fast
-//       followers.
-//     - Does an analysis on foralls to check if regular array accesses can be
-//       replaced with localAccess
-//
-//   - preFoldMaybeLocalThis
-//
-//     - Replaces `PRIM_MAYBE_LOCAL_THIS` with a regular array access or
-//     localAccess during resolution
+// - automatic aggregation: Use aggregation instead of regular assignments for
+//                          applicable last statements within `forall` bodies
 
 static int curLogDepth = 0;
 static void LOG_ALA(int depth, const char *msg, BaseAST *node);
@@ -51,396 +49,6 @@ static void LOGLN_ALA(BaseAST *node);
 
 static void LOG_AA(int depth, const char *msg, BaseAST *node);
 static void LOGLN_AA(BaseAST *node);
-
-static const char *getForallCloneTypeStr(ForallStmt *forall) {
-  switch (forall->optInfo.cloneType) {
-    case STATIC_AND_DYNAMIC:
-      return "[static and dynamic ALA clone]";
-      break;
-    case STATIC_ONLY:
-      return "[static only ALA clone]";
-      break;
-    case NO_OPTIMIZATION:
-      return "[no ALA clone]";
-      break;
-    default:
-      break;
-  }
-  return "";
-}
-
-// called after unordered forall optimization to remove aggregation code (by
-// choosing non-aggregated version)
-void cleanupRemainingAggCondStmts() {
-
-  forv_Vec(CondStmt, condStmt, gCondStmts) {
-    if (condStmt->inTree()) {
-      if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
-        //std::cout << "100\n";
-        if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
-          // this is a conditional that wasn't modified by the unordered
-          // optimization, so we need to remove it and the aggregator associated
-          // with it
-
-          // find the aggregator symbol within the else block
-          // note that the else block will be inlined and will be a big mess, we
-          // need to find the compiler-generated aggregator in that mess
-          std::vector<SymExpr *> symExprs;
-          collectSymExprs(condStmt->elseStmt, symExprs);
-
-          Symbol *aggregatorToRemove = NULL;
-          FnSymbol *parentFn = NULL;
-          for_vector(SymExpr, symExpr, symExprs) {
-            Symbol *sym = symExpr->symbol();
-            if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
-              aggregatorToRemove = sym;
-              parentFn = toFnSymbol(symExpr->parentSymbol);
-              break;
-            }
-          }
-
-          INT_ASSERT(aggregatorToRemove != NULL);
-          INT_ASSERT(parentFn != NULL);
-
-          // put the nodes in the then block right before the conditional
-          for_alist(expr, condStmt->thenStmt->body) {
-            condStmt->insertBefore(expr->remove());
-          }
-
-          // remove the remaining conditional
-          condStmt->remove();
-
-          // remove the defPoint of the aggregator
-          aggregatorToRemove->defPoint->remove();
-
-          // search for the aggregator in the parent function and scrub it clean.
-          // We expect 3 occurances of the symbol after the else block is gone
-          symExprs.clear();
-          collectSymExprs(parentFn->body, symExprs);
-
-          for_vector(SymExpr, symExpr, symExprs) {
-            Symbol *sym = symExpr->symbol();
-            if (sym == aggregatorToRemove) {
-              CallExpr *parentCall = toCallExpr(symExpr->parentExpr);
-              INT_ASSERT(parentCall != NULL);
-
-              if (parentCall->isPrimitive(PRIM_MOVE)) {
-                /* Here's what we expect to see in the AST with associated
-                   variable names in the following snippet
-
-                  (def aggregator)
-                  (def rhsSym)
-                  (def prevRhsSym)
-                  (call chpl_srcAggregatorForArr someArrSym, prevRhsSym)  `aggGenCall`
-                  (call move call_tmp prevRhsSym)      `prevCall`
-                  (call move aggregator rhsSym)   `parentCall`
-
-                  At this point we only have a handle on the last expression. We
-                  walk back up from that.
-                */
-                INT_ASSERT(toSymExpr(parentCall->get(1))->symbol() == aggregatorToRemove);
-
-                Symbol *rhsSym = toSymExpr(parentCall->get(2))->symbol();
-                CallExpr *prevCall = toCallExpr(parentCall->prev);
-                INT_ASSERT(prevCall);
-                INT_ASSERT(toSymExpr(prevCall->get(1))->symbol() == rhsSym);
-
-                Symbol *prevRhsSym = toSymExpr(prevCall->get(2))->symbol();
-                CallExpr *aggGenCall = toCallExpr(prevCall->prev);
-                INT_ASSERT(aggGenCall);
-                INT_ASSERT(aggGenCall->theFnSymbol()->hasFlag(FLAG_AGG_GENERATOR));
-                INT_ASSERT(toSymExpr(aggGenCall->get(2))->symbol() == prevRhsSym);
-
-                parentCall->remove();
-                prevCall->remove();
-                aggGenCall->remove();
-                rhsSym->defPoint->remove();
-                prevRhsSym->defPoint->remove();
-              }
-              else if (parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
-                /* Here's what we expect to see in the AST with associated
-                   variable names in the following snippet
-
-                   (def lhsSym)
-                   (move lhsSym (`set reference` aggregator))  `moveCall`
-                   (deinit lhsSym)
-
-                  At this point we only have a handle on the `set reference` call.
-                  We detect other expressions starting from that.
-                */
-                CallExpr *moveCall = toCallExpr(parentCall->parentExpr);
-                INT_ASSERT(moveCall);
-                INT_ASSERT(moveCall->isPrimitive(PRIM_MOVE));
-
-                Symbol *lhsSym = toSymExpr(moveCall->get(1))->symbol();
-                INT_ASSERT(lhsSym->defPoint == moveCall->prev);
-                
-                CallExpr *deinitCall = toCallExpr(moveCall->next);
-                INT_ASSERT(deinitCall);
-                INT_ASSERT(deinitCall->theFnSymbol()->hasFlag(FLAG_DESTRUCTOR));
-                INT_ASSERT(toSymExpr(deinitCall->get(1))->symbol() == lhsSym);
-
-                moveCall->remove();
-                lhsSym->defPoint->remove();
-                deinitCall->remove();
-              }
-              else {
-                INT_FATAL("Auto-aggregator is in an unexpected expression");
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
-                                                   ForallStmt *forall):
-  candidate(candidate),
-  forall(forall),
-  lhsLocalityInfo(UNKNOWN),
-  rhsLocalityInfo(UNKNOWN),
-  lhsLogicalChild(NULL),
-  rhsLogicalChild(NULL),
-  srcAggregator(NULL),
-  dstAggregator(NULL),
-  aggCall(NULL) { }
-
-static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
-  const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
-                                           "chpl_dstAggregatorForArr";
-  SET_LINENO(child);
-
-  if (child->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    if (SymExpr *arrSymExpr = toSymExpr(child->get(1))) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-    }
-  }
-  else if (child->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    if (SymExpr *arrSymExpr = toSymExpr(child->get(2))) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-                          //new CallExpr(PRIM_TYPEOF, elemSymExpr->symbol()));
-    }
-  }
-  else {
-    if (SymExpr *arrSymExpr = toSymExpr(child->baseExpr)) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-    }
-  }
-  return NULL;
-}
-
-// currently we only support one aggregator at normalize time, however, we
-// should relax that limitation a bit. Normalize should be able to add both
-// aggregators for
-//
-// forall i in a.domain {
-//   a[i] = b[i];
-// }
-//
-// Because: b[i] is a local access candidate, and both sides of = will be
-// visited as such. Currently, that's not handled properly
-void AggregationCandidateInfo::addAggregators() {
-  if (srcAggregator != NULL && dstAggregator != NULL) { // assert?
-    return; // we have already enough
-  }
-
-  // we have a lhs that waits analysis, and a rhs that we can't know about
-  if (srcAggregator == NULL &&
-      lhsLocalityInfo == PENDING &&
-      rhsLogicalChild != NULL) {
-    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(rhsLogicalChild))) {
-    if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
-      SET_LINENO(this->forall);
-
-      //Symbol *otherChildBase = otherChildBaseSE->symbol();
-      ShadowVarSymbol *aggregator =
-        ShadowVarSymbol::buildForPrefix(SVP_VAR,
-            new UnresolvedSymExpr("chpl_src_auto_agg"),
-            NULL, // type expr for shadow var
-            //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
-            genCall);
-
-      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
-      forall->shadowVariables().insertAtTail(aggregator->defPoint);
-
-      LOG_AA(2, "Potential source aggregation", this->candidate);
-
-      this->srcAggregator = aggregator;
-    }
-  }
-  
-  // we have a rhs that waits analysis
-  if (dstAggregator == NULL &&
-      rhsLocalityInfo == PENDING &&
-      lhsLogicalChild != NULL) {
-    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(lhsLogicalChild))) {
-    if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
-      SET_LINENO(this->forall);
-
-      //Symbol *otherChildBase = otherChildBaseSE->symbol();
-      ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
-            new UnresolvedSymExpr("chpl_dst_auto_agg"),
-            NULL, // type expr for shadow var
-            //new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
-            genCall);
-
-      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
-      forall->shadowVariables().insertAtTail(aggregator->defPoint);
-
-      LOG_AA(2, "Potential destination aggregation", this->candidate);
-
-      this->dstAggregator = aggregator;
-    }
-  }
-
-}
-
-// called during resolution
-void AggregationCandidateInfo::updateASTForRegularAssignment() {
-  // we found out that both sides of the assignment is local, or neither can be
-  // proved to be local. So, we need all the aggregators we have created to be
-  // cleaned up
-  for_shadow_vars_and_defs (svar, def, temp, this->forall) {
-    if (svar == this->srcAggregator) {
-      def->remove();
-    }
-    else if (svar == this->dstAggregator) {
-      def->remove();
-    }
-  }
-}
-
-// called during resolution
-void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
-  // the candidate assignment must have been normalized, so, we expect symexpr
-  // on both sides
-  SymExpr *lhsSE = toSymExpr(candidate->get(1));
-  SymExpr *rhsSE = toSymExpr(candidate->get(2));
-  INT_ASSERT(lhsSE != NULL && rhsSE != NULL);
-
-  SET_LINENO(this->candidate);
-
-  // generate the aggregated call
-  Symbol *aggregator = srcAggregation ? this->srcAggregator : this->dstAggregator;
-  INT_ASSERT(aggregator != NULL);
-
-  Expr *callBase = buildDotExpr(aggregator, "copy");
-  this->aggCall = new CallExpr(callBase, lhsSE->copy(), rhsSE->copy());
-
-  // create the conditional with regular assignment on the then block
-  // and the aggregated call is on the else block
-  Symbol *aggMarker = newTemp("aggMarker", dtBool);
-  aggMarker->addFlag(FLAG_AGG_MARKER);
-  switch (this->forall->optInfo.cloneType) {
-    case STATIC_AND_DYNAMIC:
-      aggMarker->addFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE);
-      break;
-    case STATIC_ONLY:
-      aggMarker->addFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE);
-      break;
-    default:
-      break;
-  }
-  this->candidate->insertBefore(new DefExpr(aggMarker));
-
-  BlockStmt *thenBlock = new BlockStmt();
-  BlockStmt *elseBlock = new BlockStmt();
-
-  this->candidate->insertAfter(new CondStmt(new SymExpr(aggMarker),
-                                            thenBlock,
-                                            elseBlock));
-  thenBlock->insertAtTail(this->candidate->remove());
-  elseBlock->insertAtTail(this->aggCall);
-
-  // we are post-normalize, so we have to normalize the new call
-  normalize(this->aggCall);
-
-  // remove the other aggregator if there was any
-  if (srcAggregation && dstAggregator) {
-    dstAggregator->defPoint->remove();
-  }
-  else if (!srcAggregation && srcAggregator) {
-    srcAggregator->defPoint->remove();
-  }
-}
-
-// called during resolution
-void AggregationCandidateInfo::update() {
-  if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
-    return; // we still need to wait for some of the children's analysis
-  }
-
-  std::stringstream message;
-
-  if (lhsLocalityInfo == UNAGGREGATABLE || rhsLocalityInfo == UNAGGREGATABLE) {
-    if (fReportAutoAggregation) {
-      message << "One side is neither local nor aggregatable. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
-    if (fReportAutoAggregation) {
-      message << "Can't determine if either side is local. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
-    if (fReportAutoAggregation) {
-      message << "Both sides are local. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    if (fReportAutoAggregation) {
-      message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
-    }
-    this->updateASTForAggregation(/*srcAggregation=*/true);
-  }
-  else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    if (fReportAutoAggregation) {
-      message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
-    }
-    this->updateASTForAggregation(/*srcAggregation=*/false);
-  }
-
-  if (fReportAutoAggregation) {
-    message << getForallCloneTypeStr(this->forall);
-    LOG_AA(0, message.str().c_str(), this->candidate);
-  }
-}
-
-void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
-  LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
-  
-  if (!confirmed) {
-    // this primitive was added in case this was a symbol yielded by the leader
-    // that was an array that yields local elements. If this wasn't the case,
-    // then this symbol is simply unaggregatable for now.
-    if (logicalChild->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      newInfo = UNAGGREGATABLE;
-    }
-  }
-
-  if (this->lhsLogicalChild == logicalChild) {
-    this->lhsLocalityInfo = newInfo;
-  }
-  else {
-    this->rhsLocalityInfo = newInfo;
-  }
-
-  update();
-}
-
-// maps a potential local access to an AggregationCandidate
-std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
@@ -486,175 +94,20 @@ static CallExpr *revertAccess(CallExpr *call);
 static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
-
-// currently we want both sides to be calls, but we need to relax these to
-// accept symexprs to support foralls over arrays
-static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
-  INT_ASSERT(call->isNamed("="));
-
-  if (CallExpr *leftCall = toCallExpr(call->get(1))) {
-    if (CallExpr *rightCall = toCallExpr(call->get(2))) {
-      // we want either side to be PRIM_MAYBE_LOCAL_THIS
-      if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-          rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-        // we want the side that's not to have a baseExpr that's a SymExpr
-        // this avoid function calls
-        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-          return getCallBaseSymIfSuitable(leftCall, forall,
-                                          /*checkArgs=*/false) != NULL;
-        }
-        else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-          return getCallBaseSymIfSuitable(rightCall, forall,
-                                          /*checkArgs=*/false) != NULL;
-        }
-      }
-    }
-  }
-  return false;
-}
-
-static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
-  AggregationCandidateInfo *info = new AggregationCandidateInfo(call, forall);
-
-  // establish connection between PRIM_MAYBE_LOCAL_THIS and their parent
-  CallExpr *lhsCall = toCallExpr(call->get(1));
-  INT_ASSERT(lhsCall); // enforced by callSuitableForAggregation
-  if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-      lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    info->lhsLocalityInfo = PENDING;
-    preNormalizeAggCandidate[lhsCall] = info;
-  }
-  info->lhsLogicalChild = lhsCall;
-
-  CallExpr *rhsCall = toCallExpr(call->get(2));
-  INT_ASSERT(rhsCall); // enforced by callSuitableForAggregation
-  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-      rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    info->rhsLocalityInfo = PENDING;
-    preNormalizeAggCandidate[rhsCall] = info;
-  }
-  info->rhsLogicalChild = rhsCall;
-
-  info->addAggregators();
-}
-
-static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
-                                                   ForallStmt *forall) {
-  SET_LINENO(call);
-
-  INT_ASSERT(call->isNamed("="));
-
-  if (call->id == 203728) {
-    gdbShouldBreakHere();
-  }
-
-  if (!forall->optInfo.infoGathered) {
-    gatherForallInfo(forall);
-  }
-
-  Symbol *maybeArrSym = forall->optInfo.iterSym;
-  Symbol *maybeArrElemSym = NULL;
-  if (forall->optInfo.multiDIndices.size() > 0) {
-    maybeArrElemSym = forall->optInfo.multiDIndices[0];
-  }
-
-  // stop here if you don't know what I am talking about
-  if (maybeArrSym == NULL || maybeArrElemSym == NULL) return false;
-
-  bool lhsMaybeArrSym = false;
-  bool rhsMaybeArrSym = false;
-
-  SymExpr *lhsSymExpr = toSymExpr(call->get(1));
-  SymExpr *rhsSymExpr = toSymExpr(call->get(2));
-
-  if (lhsSymExpr) {
-    lhsMaybeArrSym = (lhsSymExpr->symbol() == maybeArrElemSym);
-  }
-  if (rhsSymExpr) {
-    rhsMaybeArrSym = (rhsSymExpr->symbol() == maybeArrElemSym);
-  }
-
-  // stop if neither can be an array element symbol
-  if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
-
-  // just to be sure, stop if someone's doing `a=a`;
-  if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
-
-  Expr *otherChild = lhsMaybeArrSym ? call->get(2) : call->get(1);
-
-  bool otherChildIsSuitable = false;
-  if (CallExpr *otherCall = toCallExpr(otherChild)) {
-    if (otherCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-      otherChildIsSuitable = true;
-    }
-    else {
-      otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
-                                                       forall,
-                                                       /*checkArgs=*/false) != NULL);
-    }
-  }
-
-  if (!otherChildIsSuitable) return false;
-
-  SymExpr *symExprToReplace = lhsMaybeArrSym ? lhsSymExpr : rhsSymExpr;
-
-  // add the check symbol
-  VarSymbol *checkSym = new VarSymbol("chpl__yieldedArrayElemIsAligned");
-  checkSym->addFlag(FLAG_PARAM);
-
-  CallExpr *checkCall = new CallExpr("chpl__arrayIteratorYieldsLocalElements");
-  checkCall->insertAtTail(maybeArrSym);
-
-  DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
-  forall->insertBefore(checkSymDef);
-
-  // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
-  CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
-                                    new SymExpr(maybeArrElemSym),
-                                    new SymExpr(maybeArrSym),
-                                    new SymExpr(checkSym));
-  symExprToReplace->replace(primCall);
-
-  return true;
-}
-
-static void autoAggregation(ForallStmt *forall) {
-
-  // if auto-local-access was on (that's the default case), we don't need to
-  // look into the loop in detail, but if that optimization was off, we still
-  // need to check what is local and what is not for aggregation.
-  if (forall->optInfo.autoLocalAccessChecked == false) {
-    autoLocalAccess(forall);
-  }
-
-  LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
-
-  if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
-
-    if (lastCall->isNamed("=")) {
-      // no need to do anything if it is array access
-      if (assignmentSuitableForAggregation(lastCall, forall)) {
-        LOG_AA(1, "Found an aggregation candidate", lastCall);
-
-        insertAggCandidate(lastCall, forall);
-      }
-      // we need special handling if it is a symbol that is an array element
-      else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
-        LOG_AA(1, "Found an aggregation candidate", lastCall);
-
-        insertAggCandidate(lastCall, forall);
-      }
-    }
-  }
-  LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
-  LOGLN_AA(forall);
-}
+//
+// maps a potential local access to an AggregationCandidate
+std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
+static const char *getForallCloneTypeStr(ForallStmt *forall);
+static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
+static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
+static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
+static bool handleYieldedArrayElementsInAssignment(CallExpr *call, ForallStmt *forall);
+static void autoAggregation(ForallStmt *forall);
 
 void doPreNormalizeArrayOptimizations() {
   const bool anyAnalysisNeeded = fAutoLocalAccess ||
                                  fAutoAggregation ||
                                  !fNoFastFollowers;
-
   if (anyAnalysisNeeded) {
     forv_Vec(ForallStmt, forall, gForallStmts) {
       if (!fNoFastFollowers) {
@@ -788,7 +241,140 @@ void transformConditionalAggregation(CondStmt *cond) {
   cond->remove();
 }
 
+// called after unordered forall optimization to remove aggregation code (by
+// choosing non-aggregated version)
+void cleanupRemainingAggCondStmts() {
+  forv_Vec(CondStmt, condStmt, gCondStmts) {
+    if (condStmt->inTree()) {
+      if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
+        //std::cout << "100\n";
+        if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+          // this is a conditional that wasn't modified by the unordered
+          // optimization, so we need to remove it and the aggregator associated
+          // with it
 
+          // find the aggregator symbol within the else block
+          // note that the else block will be inlined and will be a big mess, we
+          // need to find the compiler-generated aggregator in that mess
+          std::vector<SymExpr *> symExprs;
+          collectSymExprs(condStmt->elseStmt, symExprs);
+
+          Symbol *aggregatorToRemove = NULL;
+          FnSymbol *parentFn = NULL;
+          for_vector(SymExpr, symExpr, symExprs) {
+            Symbol *sym = symExpr->symbol();
+            if(sym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+              aggregatorToRemove = sym;
+              parentFn = toFnSymbol(symExpr->parentSymbol);
+              break;
+            }
+          }
+
+          INT_ASSERT(aggregatorToRemove != NULL);
+          INT_ASSERT(parentFn != NULL);
+
+          // put the nodes in the then block right before the conditional
+          for_alist(expr, condStmt->thenStmt->body) {
+            condStmt->insertBefore(expr->remove());
+          }
+
+          // remove the remaining conditional
+          condStmt->remove();
+
+          // remove the defPoint of the aggregator
+          aggregatorToRemove->defPoint->remove();
+
+          // search for the aggregator in the parent function and scrub it clean.
+          // We expect 3 occurances of the symbol after the else block is gone
+          symExprs.clear();
+          collectSymExprs(parentFn->body, symExprs);
+
+          for_vector(SymExpr, symExpr, symExprs) {
+            Symbol *sym = symExpr->symbol();
+            if (sym == aggregatorToRemove) {
+              CallExpr *parentCall = toCallExpr(symExpr->parentExpr);
+              INT_ASSERT(parentCall != NULL);
+
+              if (parentCall->isPrimitive(PRIM_MOVE)) {
+                /* Here's what we expect to see in the AST with associated
+                   variable names in the following snippet
+
+                  (def aggregator)
+                  (def rhsSym)
+                  (def prevRhsSym)
+                  (call chpl_srcAggregatorForArr someArrSym, prevRhsSym)  `aggGenCall`
+                  (call move call_tmp prevRhsSym)      `prevCall`
+                  (call move aggregator rhsSym)   `parentCall`
+
+                  At this point we only have a handle on the last expression. We
+                  walk back up from that.
+                */
+                INT_ASSERT(toSymExpr(parentCall->get(1))->symbol() == aggregatorToRemove);
+
+                Symbol *rhsSym = toSymExpr(parentCall->get(2))->symbol();
+                CallExpr *prevCall = toCallExpr(parentCall->prev);
+                INT_ASSERT(prevCall);
+                INT_ASSERT(toSymExpr(prevCall->get(1))->symbol() == rhsSym);
+
+                Symbol *prevRhsSym = toSymExpr(prevCall->get(2))->symbol();
+                CallExpr *aggGenCall = toCallExpr(prevCall->prev);
+                INT_ASSERT(aggGenCall);
+                INT_ASSERT(aggGenCall->theFnSymbol()->hasFlag(FLAG_AGG_GENERATOR));
+                INT_ASSERT(toSymExpr(aggGenCall->get(2))->symbol() == prevRhsSym);
+
+                parentCall->remove();
+                prevCall->remove();
+                aggGenCall->remove();
+                rhsSym->defPoint->remove();
+                prevRhsSym->defPoint->remove();
+              }
+              else if (parentCall->isPrimitive(PRIM_SET_REFERENCE)) {
+                /* Here's what we expect to see in the AST with associated
+                   variable names in the following snippet
+
+                   (def lhsSym)
+                   (move lhsSym (`set reference` aggregator))  `moveCall`
+                   (deinit lhsSym)
+
+                  At this point we only have a handle on the `set reference` call.
+                  We detect other expressions starting from that.
+                */
+                CallExpr *moveCall = toCallExpr(parentCall->parentExpr);
+                INT_ASSERT(moveCall);
+                INT_ASSERT(moveCall->isPrimitive(PRIM_MOVE));
+
+                Symbol *lhsSym = toSymExpr(moveCall->get(1))->symbol();
+                INT_ASSERT(lhsSym->defPoint == moveCall->prev);
+                
+                CallExpr *deinitCall = toCallExpr(moveCall->next);
+                INT_ASSERT(deinitCall);
+                INT_ASSERT(deinitCall->theFnSymbol()->hasFlag(FLAG_DESTRUCTOR));
+                INT_ASSERT(toSymExpr(deinitCall->get(1))->symbol() == lhsSym);
+
+                moveCall->remove();
+                lhsSym->defPoint->remove();
+                deinitCall->remove();
+              }
+              else {
+                INT_FATAL("Auto-aggregator is in an unexpected expression");
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+//
+// logging support for --report-auto-local-access and --report-auto-aggregation
+// during the first analysis phase depth is used roughly in the following way
+// 0: entering/exiting forall
+// 1: information about the forall
+// 2: entering/exiting call
+// 3: information about call
+//
+// during resolution, the output is much more straightforward, and depth 0 is
+// used always
 static void LOG_help(int depth, const char *msg, BaseAST *node,
                      bool forallDetails, bool flag) {
   if (flag) {
@@ -849,15 +435,6 @@ static void LOGLN_help(BaseAST *node, bool flag) {
   }
 }
 
-// logging support for --report-auto-local-access
-// during the first analysis phase depth is used roughly in the following way
-// 0: entering/exiting forall
-// 1: information about the forall
-// 2: entering/exiting call
-// 3: information about call
-//
-// during resolution, the output is much more straightforward, and depth 0 is
-// used always
 static void LOG_AA(int depth, const char *msg, BaseAST *node) {
   LOG_help(depth, msg, node, /*forallDetails=*/true,
            fAutoAggregation && fReportAutoAggregation);
@@ -1387,10 +964,6 @@ static void optimizeLoop(ForallStmt *forall,
                                     dynamicCond);
     }
 
-    // capture the parent before replacing
-    //CallExpr *parent = toCallExpr(candidate->parentExpr);
-
-    //CallExpr *replacement = replaceCandidate(candidate, checkSym, doStatic);
     replaceCandidate(candidate, checkSym, doStatic);
   }
 }
@@ -1510,7 +1083,6 @@ static void generateOptimizedLoops(ForallStmt *forall) {
   ForallStmt *noDyn = NULL;
   Expr *staticCond = NULL;
   CallExpr *dynamicCond = NULL;
-
 
   // copy the forall to have: `noOpt` == loop0, `forall` == loop1
   noOpt = cloneLoop(forall);
@@ -1750,5 +1322,432 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
     }
   }
   forall->optInfo.confirmedFastFollower = confirm;
+}
+
+//
+// Support for automatic aggregation
+
+static void autoAggregation(ForallStmt *forall) {
+
+  // if auto-local-access was on (that's the default case), we don't need to
+  // look into the loop in detail, but if that optimization was off, we still
+  // need to check what is local and what is not for aggregation.
+  if (forall->optInfo.autoLocalAccessChecked == false) {
+    autoLocalAccess(forall);
+  }
+
+  LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
+
+  if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
+
+    if (lastCall->isNamed("=")) {
+      // no need to do anything if it is array access
+      if (assignmentSuitableForAggregation(lastCall, forall)) {
+        LOG_AA(1, "Found an aggregation candidate", lastCall);
+
+        insertAggCandidate(lastCall, forall);
+      }
+      // we need special handling if it is a symbol that is an array element
+      else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
+        LOG_AA(1, "Found an aggregation candidate", lastCall);
+
+        insertAggCandidate(lastCall, forall);
+      }
+    }
+  }
+  LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
+  LOGLN_AA(forall);
+}
+
+AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
+                                                   ForallStmt *forall):
+  candidate(candidate),
+  forall(forall),
+  lhsLocalityInfo(UNKNOWN),
+  rhsLocalityInfo(UNKNOWN),
+  lhsLogicalChild(NULL),
+  rhsLogicalChild(NULL),
+  srcAggregator(NULL),
+  dstAggregator(NULL),
+  aggCall(NULL) { }
+
+// called during resolution
+void AggregationCandidateInfo::updateASTForRegularAssignment() {
+  // we found out that both sides of the assignment is local, or neither can be
+  // proved to be local. So, we need all the aggregators we have created to be
+  // cleaned up
+  for_shadow_vars_and_defs (svar, def, temp, this->forall) {
+    if (svar == this->srcAggregator) {
+      def->remove();
+    }
+    else if (svar == this->dstAggregator) {
+      def->remove();
+    }
+  }
+}
+
+// called during resolution
+void AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation) {
+  // the candidate assignment must have been normalized, so, we expect symexpr
+  // on both sides
+  SymExpr *lhsSE = toSymExpr(candidate->get(1));
+  SymExpr *rhsSE = toSymExpr(candidate->get(2));
+  INT_ASSERT(lhsSE != NULL && rhsSE != NULL);
+
+  SET_LINENO(this->candidate);
+
+  // generate the aggregated call
+  Symbol *aggregator = srcAggregation ? this->srcAggregator : this->dstAggregator;
+  INT_ASSERT(aggregator != NULL);
+
+  Expr *callBase = buildDotExpr(aggregator, "copy");
+  this->aggCall = new CallExpr(callBase, lhsSE->copy(), rhsSE->copy());
+
+  // create the conditional with regular assignment on the then block
+  // and the aggregated call is on the else block
+  Symbol *aggMarker = newTemp("aggMarker", dtBool);
+  aggMarker->addFlag(FLAG_AGG_MARKER);
+  switch (this->forall->optInfo.cloneType) {
+    case STATIC_AND_DYNAMIC:
+      aggMarker->addFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE);
+      break;
+    case STATIC_ONLY:
+      aggMarker->addFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE);
+      break;
+    default:
+      break;
+  }
+  this->candidate->insertBefore(new DefExpr(aggMarker));
+
+  BlockStmt *thenBlock = new BlockStmt();
+  BlockStmt *elseBlock = new BlockStmt();
+
+  this->candidate->insertAfter(new CondStmt(new SymExpr(aggMarker),
+                                            thenBlock,
+                                            elseBlock));
+  thenBlock->insertAtTail(this->candidate->remove());
+  elseBlock->insertAtTail(this->aggCall);
+
+  // we are post-normalize, so we have to normalize the new call
+  normalize(this->aggCall);
+
+  // remove the other aggregator if there was any
+  if (srcAggregation && dstAggregator) {
+    dstAggregator->defPoint->remove();
+  }
+  else if (!srcAggregation && srcAggregator) {
+    srcAggregator->defPoint->remove();
+  }
+}
+
+// called during resolution
+void AggregationCandidateInfo::update() {
+  if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
+    return; // we still need to wait for some of the children's analysis
+  }
+
+  std::stringstream message;
+
+  if (lhsLocalityInfo == UNAGGREGATABLE || rhsLocalityInfo == UNAGGREGATABLE) {
+    if (fReportAutoAggregation) {
+      message << "One side is neither local nor aggregatable. Will not use aggregation ";
+    }
+    this->updateASTForRegularAssignment();
+    return;
+  }
+
+  if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
+    if (fReportAutoAggregation) {
+      message << "Can't determine if either side is local. Will not use aggregation ";
+    }
+    this->updateASTForRegularAssignment();
+    return;
+  }
+
+  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
+    if (fReportAutoAggregation) {
+      message << "Both sides are local. Will not use aggregation ";
+    }
+    this->updateASTForRegularAssignment();
+    return;
+  }
+
+  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
+    if (fReportAutoAggregation) {
+      message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
+    }
+    this->updateASTForAggregation(/*srcAggregation=*/true);
+  }
+  else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
+    if (fReportAutoAggregation) {
+      message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
+    }
+    this->updateASTForAggregation(/*srcAggregation=*/false);
+  }
+
+  if (fReportAutoAggregation) {
+    message << getForallCloneTypeStr(this->forall);
+    LOG_AA(0, message.str().c_str(), this->candidate);
+  }
+}
+
+void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
+  LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
+  
+  if (!confirmed) {
+    // this primitive was added in case this was a symbol yielded by the leader
+    // that was an array that yields local elements. If this wasn't the case,
+    // then this symbol is simply unaggregatable for now.
+    if (logicalChild->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      newInfo = UNAGGREGATABLE;
+    }
+  }
+
+  if (this->lhsLogicalChild == logicalChild) {
+    this->lhsLocalityInfo = newInfo;
+  }
+  else {
+    this->rhsLocalityInfo = newInfo;
+  }
+
+  update();
+}
+
+// currently we only support one aggregator at normalize time, however, we
+// should relax that limitation a bit. Normalize should be able to add both
+// aggregators for
+//
+// forall i in a.domain {
+//   a[i] = b[i];
+// }
+//
+// Because: b[i] is a local access candidate, and both sides of = will be
+// visited as such. Currently, that's not handled properly
+void AggregationCandidateInfo::addAggregators() {
+  if (srcAggregator != NULL && dstAggregator != NULL) { // assert?
+    return; // we have already enough
+  }
+
+  // we have a lhs that waits analysis, and a rhs that we can't know about
+  if (srcAggregator == NULL &&
+      lhsLocalityInfo == PENDING &&
+      rhsLogicalChild != NULL) {
+    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(rhsLogicalChild))) {
+    if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
+      SET_LINENO(this->forall);
+
+      //Symbol *otherChildBase = otherChildBaseSE->symbol();
+      ShadowVarSymbol *aggregator =
+        ShadowVarSymbol::buildForPrefix(SVP_VAR,
+            new UnresolvedSymExpr("chpl_src_auto_agg"),
+            NULL, // type expr for shadow var
+            //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
+            genCall);
+
+      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+      forall->shadowVariables().insertAtTail(aggregator->defPoint);
+
+      LOG_AA(2, "Potential source aggregation", this->candidate);
+
+      this->srcAggregator = aggregator;
+    }
+  }
+  
+  // we have a rhs that waits analysis
+  if (dstAggregator == NULL &&
+      rhsLocalityInfo == PENDING &&
+      lhsLogicalChild != NULL) {
+    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(lhsLogicalChild))) {
+    if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
+      SET_LINENO(this->forall);
+
+      //Symbol *otherChildBase = otherChildBaseSE->symbol();
+      ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
+            new UnresolvedSymExpr("chpl_dst_auto_agg"),
+            NULL, // type expr for shadow var
+            //new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
+            genCall);
+
+      aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+      forall->shadowVariables().insertAtTail(aggregator->defPoint);
+
+      LOG_AA(2, "Potential destination aggregation", this->candidate);
+
+      this->dstAggregator = aggregator;
+    }
+  }
+
+}
+
+static const char *getForallCloneTypeStr(ForallStmt *forall) {
+  switch (forall->optInfo.cloneType) {
+    case STATIC_AND_DYNAMIC:
+      return "[static and dynamic ALA clone]";
+      break;
+    case STATIC_ONLY:
+      return "[static only ALA clone]";
+      break;
+    case NO_OPTIMIZATION:
+      return "[no ALA clone]";
+      break;
+    default:
+      break;
+  }
+  return "";
+}
+
+static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
+  const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
+                                           "chpl_dstAggregatorForArr";
+  SET_LINENO(child);
+
+  if (child->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+    if (SymExpr *arrSymExpr = toSymExpr(child->get(1))) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+    }
+  }
+  else if (child->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    if (SymExpr *arrSymExpr = toSymExpr(child->get(2))) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+                          //new CallExpr(PRIM_TYPEOF, elemSymExpr->symbol()));
+    }
+  }
+  else {
+    if (SymExpr *arrSymExpr = toSymExpr(child->baseExpr)) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+    }
+  }
+  return NULL;
+}
+
+// currently we want both sides to be calls, but we need to relax these to
+// accept symexprs to support foralls over arrays
+static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
+  INT_ASSERT(call->isNamed("="));
+
+  if (CallExpr *leftCall = toCallExpr(call->get(1))) {
+    if (CallExpr *rightCall = toCallExpr(call->get(2))) {
+      // we want either side to be PRIM_MAYBE_LOCAL_THIS
+      if (leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+          rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+        // we want the side that's not to have a baseExpr that's a SymExpr
+        // this avoid function calls
+        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return getCallBaseSymIfSuitable(leftCall, forall,
+                                          /*checkArgs=*/false) != NULL;
+        }
+        else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return getCallBaseSymIfSuitable(rightCall, forall,
+                                          /*checkArgs=*/false) != NULL;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
+  AggregationCandidateInfo *info = new AggregationCandidateInfo(call, forall);
+
+  // establish connection between PRIM_MAYBE_LOCAL_THIS and their parent
+  CallExpr *lhsCall = toCallExpr(call->get(1));
+  INT_ASSERT(lhsCall); // enforced by callSuitableForAggregation
+  if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+      lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    info->lhsLocalityInfo = PENDING;
+    preNormalizeAggCandidate[lhsCall] = info;
+  }
+  info->lhsLogicalChild = lhsCall;
+
+  CallExpr *rhsCall = toCallExpr(call->get(2));
+  INT_ASSERT(rhsCall); // enforced by callSuitableForAggregation
+  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+      rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    info->rhsLocalityInfo = PENDING;
+    preNormalizeAggCandidate[rhsCall] = info;
+  }
+  info->rhsLogicalChild = rhsCall;
+
+  info->addAggregators();
+}
+
+static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
+                                                   ForallStmt *forall) {
+  SET_LINENO(call);
+
+  INT_ASSERT(call->isNamed("="));
+
+  if (call->id == 203728) {
+    gdbShouldBreakHere();
+  }
+
+  if (!forall->optInfo.infoGathered) {
+    gatherForallInfo(forall);
+  }
+
+  Symbol *maybeArrSym = forall->optInfo.iterSym;
+  Symbol *maybeArrElemSym = NULL;
+  if (forall->optInfo.multiDIndices.size() > 0) {
+    maybeArrElemSym = forall->optInfo.multiDIndices[0];
+  }
+
+  // stop here if you don't know what I am talking about
+  if (maybeArrSym == NULL || maybeArrElemSym == NULL) return false;
+
+  bool lhsMaybeArrSym = false;
+  bool rhsMaybeArrSym = false;
+
+  SymExpr *lhsSymExpr = toSymExpr(call->get(1));
+  SymExpr *rhsSymExpr = toSymExpr(call->get(2));
+
+  if (lhsSymExpr) {
+    lhsMaybeArrSym = (lhsSymExpr->symbol() == maybeArrElemSym);
+  }
+  if (rhsSymExpr) {
+    rhsMaybeArrSym = (rhsSymExpr->symbol() == maybeArrElemSym);
+  }
+
+  // stop if neither can be an array element symbol
+  if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
+
+  // just to be sure, stop if someone's doing `a=a`;
+  if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
+
+  Expr *otherChild = lhsMaybeArrSym ? call->get(2) : call->get(1);
+
+  bool otherChildIsSuitable = false;
+  if (CallExpr *otherCall = toCallExpr(otherChild)) {
+    if (otherCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+      otherChildIsSuitable = true;
+    }
+    else {
+      otherChildIsSuitable = (getCallBaseSymIfSuitable(otherCall,
+                                                       forall,
+                                                       /*checkArgs=*/false) != NULL);
+    }
+  }
+
+  if (!otherChildIsSuitable) return false;
+
+  SymExpr *symExprToReplace = lhsMaybeArrSym ? lhsSymExpr : rhsSymExpr;
+
+  // add the check symbol
+  VarSymbol *checkSym = new VarSymbol("chpl__yieldedArrayElemIsAligned");
+  checkSym->addFlag(FLAG_PARAM);
+
+  CallExpr *checkCall = new CallExpr("chpl__arrayIteratorYieldsLocalElements");
+  checkCall->insertAtTail(maybeArrSym);
+
+  DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
+  forall->insertBefore(checkSymDef);
+
+  // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
+  CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
+                                    new SymExpr(maybeArrElemSym),
+                                    new SymExpr(maybeArrSym),
+                                    new SymExpr(checkSym));
+  symExprToReplace->replace(primCall);
+
+  return true;
 }
 
