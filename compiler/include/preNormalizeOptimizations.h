@@ -66,8 +66,6 @@ class AggregationCandidateInfo {
     void updateASTForRegularAssignment();
 };
 
-extern std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
-
 // interface for normalize
 void doPreNormalizeArrayOptimizations();
 Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);

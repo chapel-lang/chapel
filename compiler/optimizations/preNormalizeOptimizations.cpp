@@ -69,6 +69,8 @@ static const char *getForallCloneTypeStr(ForallStmt *forall) {
   return "";
 }
 
+// called after unordered forall optimization to remove aggregation code (by
+// choosing non-aggregated version)
 void cleanupRemainingAggCondStmts() {
 
   forv_Vec(CondStmt, condStmt, gCondStmts) {
@@ -469,8 +471,6 @@ void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool
 std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 
 // map from actual aggregation candidates to their info to avoid duplicates
-std::map<CallExpr *, AggregationCandidateInfo *> aggCandidateCache;
-
 static bool callHasSymArguments(CallExpr *ce, const std::vector<Symbol *> &syms);
 static Symbol *getDotDomBaseSym(Expr *expr);
 static Expr *getDomExprFromTypeExprOrQuery(Expr *e);
@@ -543,10 +543,7 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
 }
 
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
-  INT_ASSERT(aggCandidateCache.count(call) == 0);
-
   AggregationCandidateInfo *info = new AggregationCandidateInfo(call, forall);
-  aggCandidateCache[call] = info;
 
   // establish connection between PRIM_MAYBE_LOCAL_THIS and their parent
   CallExpr *lhsCall = toCallExpr(call->get(1));

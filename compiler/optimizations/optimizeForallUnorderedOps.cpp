@@ -174,13 +174,6 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
           last = last->prev;
       }
     }
-    else if (CallExpr *prevCall = toCallExpr(call->prev)) {
-      if (AggregationCandidateInfo *info = aggCandidateCache[prevCall]) {
-        if (info->aggCall == call) {
-          last = last->prev;
-        }
-      }
-    }
   }
 
   last = skipIgnoredStmts(last);
