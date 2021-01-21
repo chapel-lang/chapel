@@ -796,44 +796,46 @@ module BinaryInsertionSort {
   }
 }
 
-pragma "no doc" 
+pragma "no doc"
 module TimSort {
   private use Sort;
 
     /*
     Sort the 1D array `Data` using a parallel timSort algorithm.
+    For more information on timSort, follow the link.
+      https://github.com/python/cpython/blob/master/Objects/listsort.txt
 
     :arg Data: The array to be sorted
     :type Data: [] `eltType`
-    :arg SIZE: use :proc: `insertionSort` on blocks of `SIZE`
-    :type SIZE: `integral`
+    :arg blockSize: use :proc: `insertionSort` on blocks of `blockSize`
+    :type blockSize: `integral`
     :arg comparator: :ref:`Comparator <comparators>` record that defines how the
        data is sorted.
 
    */
 
-  proc timSort(Data: [?Dom] ?eltType, SIZE=16, comparator:?rec=defaultComparator) {
+  proc timSort(Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
       compilerError("timSort() requires 1-D array");
     }
 
-    _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, SIZE, comparator);
+    _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, blockSize, comparator);
   }
 
-  private proc _TimSort(Data: [?Dom], lo:int, hi:int, SIZE=16, comparator:?rec=defaultComparator) {
+  private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
-    /*Parallely apply insertionSort on each block of size `SIZE`
+    /*Parallely apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
     var size = (hi - lo) / stride + 1;
-    var chunks:int = (size + SIZE - 1) / SIZE;
+    var chunks = (size + blockSize - 1) / blockSize;
     
     forall i in 0..#chunks {
-      InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * SIZE) * stride, min(hi, lo + ((i + 1) * SIZE * stride) - stride));
+      InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
     }
 
     /* apply merge operations on each block
@@ -841,18 +843,18 @@ module TimSort {
     *they can be applied parallely 
     */
 
-    var num_size = SIZE;
-    while(num_size < size) {
-      forall i in 0..(size - 1) by 2 * num_size {
+    var numSize = blockSize;
+    while(numSize < size) {
+      forall i in 0..(size - 1) by 2 * numSize {
 
         var l = lo + i * stride;
-        var mid = lo + (i + num_size - 1) * stride;
-        var r = min(lo + (i + 2 * num_size - 1) * stride, hi);
+        var mid = lo + (i + numSize - 1) * stride;
+        var r = min(lo + (i + 2 * numSize - 1) * stride, hi);
 
         _Merge(Data, l, mid, r, comparator=comparator);
       }
 
-      num_size = num_size * 2;
+      numSize = numSize * 2;
 
     }
   }
