@@ -873,6 +873,10 @@ class BlockCyclicArr: BaseRectangularArr {
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
+override proc BlockCyclicArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 override proc BlockCyclicArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
