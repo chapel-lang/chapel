@@ -746,7 +746,6 @@ static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
                                          typeNames);
   }
 
-  // TODO: double check this is right
   if (firstVisit && block->modRefs != NULL) {
     for_actuals(expr, block->modRefs) {
       SymExpr* se = toSymExpr(expr);
