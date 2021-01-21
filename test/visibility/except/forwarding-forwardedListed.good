@@ -1,0 +1,3 @@
+forwarding-forwardedListed.chpl:27: In function 'main':
+forwarding-forwardedListed.chpl:29: error: unresolved call 'Container.tertiaryMethod()'
+forwarding-forwardedListed.chpl:29: note: because no functions named tertiaryMethod found in scope
