@@ -859,6 +859,12 @@ module TimSort {
     }
   }
 
+  /*
+   This TimSort._Merge() differs from MergeSort._Merge() in the following way:
+   MergeSort._Merge() alternates the storage of segments in the original memory and the copied memory. 
+   TimSort._Merge() creates a copy of the segments to be merged and 
+   stores the results back into the original memory.
+  */
   private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
     /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
      * Dom is unstrided.  So specify the latter explicitly when possible. */
