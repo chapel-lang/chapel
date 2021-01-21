@@ -1353,7 +1353,10 @@ static std::string argToString(FnSymbol* fn,
       if (imm->const_kind == NUM_KIND_BOOL) {
         value = imm->bool_value() ? "true" : "false";
       } else if (imm->const_kind == CONST_KIND_STRING) {
-        value = '"';
+        value = "";
+        if (t == dtBytes)
+          value += "b";
+        value += '"';
         value += imm->string_value();
         value += '"';
       } else {
@@ -1379,7 +1382,7 @@ static std::string argToString(FnSymbol* fn,
 
     // Add the type if it's not default
     if (isNumericParamDefaultType(t) == false &&
-        t != dtUnknown && t != dtString &&
+        t != dtUnknown && t != dtString && t != dtBytes &&
         enumSym == NULL) {
       ret += ": ";
       ret += type;
