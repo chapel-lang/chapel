@@ -418,31 +418,33 @@ Closing notes
 // of changes planned for it such as interface improvements and better
 // error checking.  We'll update this primer as we improve these features.
 //
-// Definitions of functions used above:
+// **Definition of helper function used above:**
 //
-// This is an optimal partitioning algorithm for unweighted problem.
-// The absolute difference between the size of ranges assigned to any two
-// tasks is atmost 1 (either 0 or 1). If the value of remainder ``rem`` is
-// equal to 0, then each of the tasks would be assigned with ``elemsPerChunk``,
-// equal to ``floor(numElements/NumChunks)`` work items. But if the ``rem`` is
-// not equal to 0, then the first rem tasks(from task id 0 to rem-1) get
-// (``elemsPerChunk``+ 1) work items and the rest of the tasks(for task id rem
-// to ``numTasks``-1) get ``elemsPerChunk`` tasks assigned. For simplicity it
-// only works for default index type ranges.  More work would be required
-// to generalize it for strided or unbounded ranges.
+// The following utility function partitions a range into
+// ``numChunks`` sub-ranges and returns a range representing the
+// indices for sub-range ``myChunk`` (counting from 0).  The absolute
+// difference between the size of the ranges returned is at most 1
+// (either 0 or 1). If the value of remainder ``rem`` is equal to 0,
+// then each sub-range contains ``elemsPerChunk`` indices, equal to
+// ``floor(numElements/numChunks)`` work items. But if ``rem`` is not
+// equal to 0, then the first ``rem`` sub-ranges get
+// (``elemsPerChunk+ 1``) indices and the rest (chunks ``rem`` to
+// ``numChunks-1``) get ``elemsPerChunk`` indices. For simplicity, this
+// routine works only for unstrided ranges with the default index type
+// of ``int``.  These contraints could be relaxed with more effort.
 // 
 proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
   const numElems = r.size;
-  const elemsperChunk= numElems/numChunks;
-  const rem= numElems%numChunks;
-  var mylow= r.low;
-  if(myChunk<rem){
-    mylow+=(elemsperChunk+1)*myChunk;
+  const elemsperChunk = numElems/numChunks;
+  const rem = numElems%numChunks;
+  var mylow = r.low;
+  if myChunk < rem {
+    mylow += (elemsperChunk+1)*myChunk;
     return mylow..#(elemsperChunk + 1);
-  } else{
-    mylow+=((elemsperChunk+1)*rem + (elemsperChunk)*(myChunk-rem));
+  } else {
+    mylow += ((elemsperChunk+1)*rem + (elemsperChunk)*(myChunk-rem));
     return mylow..#elemsperChunk;
   }
 }
 
-// .. _User-Defined Parallel Zippered Iterators in Chapel: http://pgas11.rice.edu/papers/ChamberlainEtAl-Chapel-Iterators-PGAS11.pdf 
+// .. _User-Defined Parallel Zippered Iterators in Chapel: http://pgas11.rice.edu/papers/ChamberlainEtAl-Chapel-Iterators-PGAS11.pdf
