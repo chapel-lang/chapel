@@ -4348,19 +4348,20 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       }
 
       if (printedOne == false) {
-        USR_PRINT(call, "other candidates include:");
+        USR_PRINT(call, "other candidates are:");
         printedOne = true;
       }
-      USR_PRINT(fn, "%s", toString(fn));
+      USR_PRINT(fn, "  %s", toString(fn));
     }
     if (fPrintAllCandidates == false && i <= nPrint && visibleFns.n > filteredFns.n) {
       int numRemaining = visibleFns.n - i;
-      USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see them",
+      USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
                 (printedOne ? "and" : ((numRemaining == 1) ?
                                        "there is also" :
                                        "there are also")),
                 numRemaining,
-                ((numRemaining == 1) ? "" : "s"));
+                ((numRemaining == 1) ? "" : "s"),
+                ((numRemaining == 1) ? "it" : "them"));
     }
   } else {
     USR_PRINT(call, "because no functions named %s found in scope", info.name);
