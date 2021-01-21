@@ -801,7 +801,7 @@ module TimSort {
   private use Sort;
 
     /*
-    Sort the 1D array `Data` using a parallel tim sort algorithm.
+    Sort the 1D array `Data` using a parallel timSort algorithm.
 
     :arg Data: The array to be sorted
     :type Data: [] `eltType`
@@ -816,7 +816,7 @@ module TimSort {
     chpl_check_comparator(comparator, eltType);
 
     if Dom.rank != 1 {
-      compilerError("mergeSort() requires 1-D array");
+      compilerError("timSort() requires 1-D array");
     }
 
     _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, SIZE, comparator);
@@ -825,7 +825,7 @@ module TimSort {
   private proc _TimSort(Data: [?Dom], lo:int, hi:int, SIZE=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
-    /*Parallely apply insertion sort on each block of size `SIZE`
+    /*Parallely apply insertionSort on each block of size `SIZE`
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
