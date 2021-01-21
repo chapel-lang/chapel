@@ -1921,7 +1921,8 @@ module ChapelArray {
         return idx;
     }
 
-    private proc checkOrderBounds(order: int){
+    pragma "no doc"
+    proc checkOrderBounds(order: int){
       if order >= this.size || order < 0 then
         halt("Order out of bounds. Order must lie in 0..",this.size-1);
     }
