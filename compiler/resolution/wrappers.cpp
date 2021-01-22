@@ -406,12 +406,6 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
     return;
   }
 
-  if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-    // leave it for out intent processing
-    actual->setSymbol(gTypeDefaultToken);
-    return;
-  }
-
   // Create a Block to store the default values
   // We'll flatten this back out again in a minute.
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
@@ -1824,23 +1818,6 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
         // update it to infer the type from the called function.
         if (actualSe->symbol()->type == dtSplitInitType)
           actualSe->symbol()->type = formalType;
-
-        // For untyped out formals with runtime types, pass the type
-        // as the previous argument.
-        if (formal->typeExpr == NULL &&
-            inout == false &&
-            formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          const char* dummyName = astr("_formal_type_tmp_", formal->name);
-          VarSymbol* typeTmp = newTemp(dummyName, formalType);
-          typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
-
-          anchor->insertBefore(new DefExpr(typeTmp));
-
-          SymExpr* prevActual = toSymExpr(currActual->prev);
-          INT_ASSERT(prevActual != NULL && j > 0);
-          prevActual->setSymbol(typeTmp);
-        }
 
         VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),
                                  formal->getValType());

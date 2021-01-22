@@ -275,8 +275,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           }
         }
 
-        if (formalIdxToActual[j] == NULL &&
-            !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+        if (formalIdxToActual[j] == NULL) {
           match                = true;
           actualIdxToFormal[i] = formal;
           formalIdxToActual[j] = info.actuals.v[i];
@@ -313,8 +312,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   // Make sure that any remaining formals are matched by name
   // or have a default value.
   while (formal) {
-    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
-        !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
+    if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
       if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
                                          formal->hasFlag(FLAG_ARG_THIS))) {
       // Operator calls are allowed to skip matching the method token and "this"
@@ -1107,9 +1105,6 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       // This only happens when no actual exists for this formal,
       // so no point in trying to find one.
     }
-
-    if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
-      continue;
 
     if (formal->type == dtMethodToken)
       fnIsMethod = true;

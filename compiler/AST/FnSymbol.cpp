@@ -1541,8 +1541,7 @@ std::string FnSymbol::nameAndArgsToString(const char* sep,
     // Skip method token
     // Ignore arguments added by the compiler
     if (formal && (formal->type == dtMethodToken ||
-                   formal->hasFlag(FLAG_RETARG) ||
-                   formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))) {
+                   formal->hasFlag(FLAG_RETARG))) {
       formalNames[i] = NULL;
       formal = NULL;
       substitution = NULL;

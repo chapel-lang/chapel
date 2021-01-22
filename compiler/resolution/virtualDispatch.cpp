@@ -284,9 +284,7 @@ static int getNumUserFormals(FnSymbol* fn) {
   int fnN = fn->numFormals();
   int count = 0;
   for (int i = 3; i <= fnN; i++) {
-    ArgSymbol* fa = fn->getFormal(i);
-    if (!fa->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
-      count++;
+    count++;
   }
   return count;
 }
@@ -298,8 +296,7 @@ static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
   int count = 0;
   for (int i = 3; i <= fnN; i++) {
     ArgSymbol* fa = fn->getFormal(i);
-    if (!fa->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))
-      count++;
+    count++;
     if (count == idx)
       return fa;
   }
