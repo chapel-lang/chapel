@@ -1,6 +1,21 @@
+#!/usr/bin/env python3
+
+import os
+
+# This blob of compopts never changes...
+compoptsBlob = """
 -sdistType=DistType.default # array-initialization-patterns-dists.default.good
 -sdistType=DistType.block   # array-initialization-patterns-dists.block.good
 -sdistType=DistType.cyclic  # array-initialization-patterns-dists.cyclic.good
 -sdistType=DistType.blockcyclic -smakeAHidesInit=false # array-initialization-patterns-dists.blockcyclic.good
--sdistType=DistType.replicated # array-initialization-patterns-dists.replicated.good
 -sdistType=DistType.stencil # array-initialization-patterns-dists.stencil.good
+"""
+
+print(compoptsBlob)
+
+# The output for ReplicatedDist depends on if we have comms or not.
+hasComm = os.environ.get('CHPL_COMM') != 'none'
+replicatedExt = '.replicated-comm' if hasComm else '.replicated-no-comm'
+fileName = 'array-initialization-patterns-dists' + replicatedExt + '.good'
+print('-sdistType=DistType.replicated', '#', fileName)
+
