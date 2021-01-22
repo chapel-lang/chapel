@@ -1,0 +1,6 @@
+error-concrete-arg.chpl:14: In function 'cgFun':
+error-concrete-arg.chpl:16: error: unresolved call 'reqFun(Q, 1.5)'
+error-concrete-arg.chpl:8: note: this candidate did not match: reqFun(cgFormal: Q, formal2: int(64))
+error-concrete-arg.chpl:16: note: because actual argument #2 with type 'real(64)'
+error-concrete-arg.chpl:8: note: is passed to formal 'formal2: int(64)'
+error-concrete-arg.chpl:20: note: candidates are: reqFun(arg1: real, arg2: int)

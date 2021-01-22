@@ -1,4 +1,4 @@
 test_arrayops.chpl:10: error: unresolved call 'maxIndex(promoted expression)'
 test_arrayops.chpl:12: note: this candidate did not match: maxIndex(A: [?D] )
-test_arrayops.chpl:10: note: because call actual argument #1 with type iterator
+test_arrayops.chpl:10: note: because actual argument #1 with type 'iterator'
 test_arrayops.chpl:12: note: is passed to formal 'A: []'

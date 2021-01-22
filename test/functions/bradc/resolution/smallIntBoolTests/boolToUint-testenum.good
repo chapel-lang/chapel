@@ -1,4 +1,4 @@
 boolToUint.chpl:17: error: unresolved call 'foo(mybool)'
 boolToUint.chpl:6: note: this candidate did not match: foo(b: uint)
-boolToUint.chpl:17: note: because call actual argument #1 with type mybool
+boolToUint.chpl:17: note: because actual argument #1 with type 'mybool'
 boolToUint.chpl:6: note: is passed to formal 'b: uint(64)'

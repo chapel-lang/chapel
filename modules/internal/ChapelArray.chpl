@@ -1878,6 +1878,59 @@ module ChapelArray {
     pragma "no doc"
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
 
+    /*
+      Returns the `ith` index in the domain counting from 0. 
+      For example, ``{2..10 by 2}.orderToIndex(2)`` would return ``6``.
+
+      The order of a multidimensional domain follows its serial iterator. 
+      For example, ``{1..3, 1..2}.orderToIndex(3)`` would return ``(2, 2)``.
+
+      .. note::
+
+        Right now, this method supports only dense rectangular domains with
+        numeric indices
+
+      :arg order: Order for which the corresponding index in the domain
+                  has to be found.
+
+      :returns: Domain index for a given order in the domain.
+    */
+    proc orderToIndex(order: int) where (isRectangularDom(this) && isNumericType(this.idxType)){
+      
+      if boundsChecking then
+        checkOrderBounds(order);
+      
+      var rankOrder = order;
+      var idx: (rank*_value.idxType);
+      var div = this.size;
+
+      for param i in 0..<rank {
+          var currDim = this.dim(i);
+          div /= currDim.size;
+          const lo = currDim.alignedLow;
+          const hi = currDim.alignedHigh;
+          const stride = currDim.stride;
+          const zeroInd = rankOrder/div;
+          var currInd = zeroInd*stride;
+          if stride < 0 then
+            currInd+=hi;
+          else
+            currInd+=lo;
+          idx[i] = currInd;
+          rankOrder = rankOrder%div;
+      }
+      if(this.rank==1) then
+        return idx[0];
+      else
+        return idx;
+    }
+
+    pragma "no doc"
+    proc checkOrderBounds(order: int){
+      if order >= this.size || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+    }
+
     pragma "no doc"
     proc position(i) {
       var ind = _makeIndexTuple(rank, i), pos: rank*intIdxType;

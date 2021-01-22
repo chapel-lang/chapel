@@ -1,6 +1,6 @@
 err-in-insn.chpl:5: In function 'f':
 err-in-insn.chpl:6: error: unresolved call 'myadd(MyRecord, OtherRecord)'
 err-in-insn.chpl:1: note: this candidate did not match: myadd(a: int, b: int)
-err-in-insn.chpl:6: note: because call actual argument #1 with type MyRecord
+err-in-insn.chpl:6: note: because actual argument #1 with type 'MyRecord'
 err-in-insn.chpl:1: note: is passed to formal 'a: int(64)'
   err-in-insn.chpl:16: called as f(x: MyRecord, y: OtherRecord, param p = 1, type t = real(64))

@@ -1,4 +1,4 @@
 passBadFnsToCChapel.chpl:19: error: unresolved call 'bar(shared chpl__fcf_type_void_void)'
 passBadFnsToCChapel.chpl:10: note: this candidate did not match: bar(f: c_fn_ptr)
-passBadFnsToCChapel.chpl:19: note: because call actual argument #1 with type shared chpl__fcf_type_void_void
+passBadFnsToCChapel.chpl:19: note: because actual argument #1 with type 'shared chpl__fcf_type_void_void'
 passBadFnsToCChapel.chpl:10: note: is passed to formal 'f: c_fn_ptr'

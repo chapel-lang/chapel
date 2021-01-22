@@ -7,6 +7,7 @@ if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-* ]] ; then
 fi
 
 export CHPL_COMM=ofi
+export CHPL_LIBFABRIC=bundled
 
 # Select a launcher and out-of-band support.  If we're on a Cray XC
 # system this will just fall out automatically.  On a slurm-based system
@@ -26,7 +27,10 @@ elif [[ "$($CHPL_HOME/util/chplenv/chpl_launcher.py)" == slurm-srun ]] ; then
     srunDir=$(which srun)
     sLibDir=${srunDir%/bin/srun}/lib64
     if [[ -d $sLibDir ]] ; then
-      export CHPL_LD_FLAGS="${CHPL_LD_FLAGS:+$CHPL_LD_FLAGS }-L$sLibDir -Wl,-rpath,$sLibDir"
+      # Set CHPL_LD_FLAGS to slurm pmi, if pmi isn't already in system lib dir
+      if ! ldconfig -p | grep -q libpmi2.so; then
+        export CHPL_LD_FLAGS="${CHPL_LD_FLAGS:+$CHPL_LD_FLAGS }-L$sLibDir -Wl,-rpath,$sLibDir"
+      fi
       export SLURM_MPI_TYPE=pmi2
       lchOK=y
     fi

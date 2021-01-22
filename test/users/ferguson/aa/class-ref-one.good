@@ -1,5 +1,5 @@
 class-ref-one.chpl:25: In function 'doit':
 class-ref-one.chpl:32: error: unresolved call 'foo(10, borrowed CC, borrowed CC)'
 class-ref-one.chpl:12: note: this candidate did not match: foo(n: int, ref p: borrowed CC, ref q: borrowed C)
-class-ref-one.chpl:32: note: because call actual argument #3 with type borrowed CC
+class-ref-one.chpl:32: note: because actual argument #3 with type 'borrowed CC'
 class-ref-one.chpl:12: note: is passed to formal 'ref q: borrowed C'

@@ -392,6 +392,13 @@ static void updateReexportEntry(VisibleFunctionBlock* vfb, const char* name,
 *                                                                             *
 ************************************** | *************************************/
 
+static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
+                                      BlockStmt* block, VisibilityInfo* visInfo,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>& visibleFns,
+                                      bool inUseChain,
+                                      std::set<const char*> typeNames);
+
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,
                                   BlockStmt*            block,
                                   VisibilityInfo*       visInfo,
@@ -516,7 +523,74 @@ static void getVisibleMethodsFirstVisit(const char* name, CallExpr* call,
   }
 }
 
+static void getVisibleMethodsFirstVisitFiltered(const char* name,
+                                                CallExpr* call,
+                                                BlockStmt* block,
+                                                VisibilityInfo* visInfo,
+                                                std::set<BlockStmt*>& visited,
+                                                Vec<FnSymbol*>& visibleFns,
+                                                std::set<const char*> typeNames)
+{
+  // Why does the following statement apply to all blocks,
+  // and not just module or function blocks?
+  //
+  // e.g. in associative.chpl primer, instantiation occurs in a
+  // block that isn't a fn or module block.
+  visited.insert(block);
+  if (visInfo != NULL)
+    visInfo->visitedScopes.push_back(block);
+
+  if (VisibleFunctionBlock* vfb = visibleFunctionMap.get(block)) {
+    // the block defines functions
+
+    if (Vec<FnSymbol*>* fns = vfb->visibleFunctions.get(name)) {
+      forv_Vec(FnSymbol, fn, *fns) {
+        // When private methods and fields are supported, we'll need to extend
+        // this
+        if (fn->isMethod()) {
+          INT_ASSERT(typeNames.size() > 0);
+          const char* nameToCheck = fn->_this->type->symbol->name;
+          if (fn->_this->getValType() == dtUnknown) {
+            ArgSymbol* _this = toArgSymbol(fn->_this);
+            INT_ASSERT(_this);
+            BlockStmt* typeExpr = _this->typeExpr;
+            // The `this` arg doesn't know its type yet.  It could be a call
+            // that needs to be resolved (in which case we throw up our hands
+            // for now) or it could be a generic instantiation.
+            if (CallExpr* thisTypeCall = toCallExpr(typeExpr->body.tail)) {
+              if (SymExpr* callBase = toSymExpr(thisTypeCall->baseExpr)) {
+                nameToCheck = callBase->symbol()->name;
+              }
+            }
+          }
+          std::set<const char*>::iterator it =
+            typeNames.find(nameToCheck);
+          if (it != typeNames.end()) {
+            // This method is defined on a type that is in the filter list.
+            // That means we should consider it a candidate.
+            visibleFns.add(fn);
+          }
+        } else {
+          visibleFns.add(fn);
+        }
+      }
+    }
+  }
+}
+
 static bool needToTraverseUse(bool firstVisit, bool inUseChain, bool isPrivate);
+static void getVisibleMethodsFromUseListFiltered(const char* name,
+                                                 CallExpr* call,
+                                                 BlockStmt* block,
+                                                 VisibilityInfo* visInfo,
+                                                 std::set<BlockStmt*>& visited,
+                                                 Vec<FnSymbol*>& visibleFns,
+                                                 bool inUseChain,
+                                                 bool firstVisit,
+                                                 std::set<const char*> filter);
+static void mergeFilters(std::set<const char*> outer,
+                         std::set<const char*> inner,
+                         std::set<const char*>* merged);
 
 static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
                                          BlockStmt* block,
@@ -524,19 +598,52 @@ static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
                                          std::set<BlockStmt*>& visited,
                                          Vec<FnSymbol*>& visibleFns,
                                          bool inUseChain, bool firstVisit) {
+  std::set<const char*> filter;
+  getVisibleMethodsFromUseListFiltered(name, call, block, visInfo, visited,
+                                       visibleFns, inUseChain, firstVisit,
+                                       filter);
+}
+
+static void getVisibleMethodsFromUseListFiltered(const char* name,
+                                                 CallExpr* call,
+                                                 BlockStmt* block,
+                                                 VisibilityInfo* visInfo,
+                                                 std::set<BlockStmt*>& visited,
+                                                 Vec<FnSymbol*>& visibleFns,
+                                                 bool inUseChain,
+                                                 bool firstVisit,
+                                                 std::set<const char*> filter) {
   // the block uses other modules
   for_actuals(expr, block->useList) {
     SymExpr* se = NULL;
+    std::set<const char*> namedTypes;
+
     if (UseStmt* use = toUseStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, use->isPrivate))
         continue;
-      if (use->skipSymbolSearch(name))
+      if (call->numActuals() >= 2) {
+        Expr* thisArg = call->get(2);
+        Type* thisType = thisArg->getValType();
+        namedTypes = use->typeWasNamed(thisType);
+        if (use->hasExceptList() && namedTypes.size() == 0) {
+          // The intersection of symbols allowed by the except list and this
+          // type's name or inherited names was empty.  We should not traverse
+          // this use statement.
+          continue;
+        }
+      }
+      if (use->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;
       se = toSymExpr(use->src);
     } else if (ImportStmt* import = toImportStmt(expr)) {
       if (!needToTraverseUse(firstVisit, inUseChain, import->isPrivate))
         continue;
-      if (import->skipSymbolSearch(name))
+      if (call->numActuals() >= 2) {
+        Expr* thisArg = call->get(2);
+        Type* thisType = thisArg->getValType();
+        namedTypes = import->typeWasNamed(thisType);
+      }
+      if (import->skipSymbolSearch(name) && namedTypes.size() == 0)
         continue;
 
       se = toSymExpr(import->src);
@@ -548,13 +655,131 @@ static void getVisibleMethodsFromUseList(const char* name, CallExpr* call,
     // modules can define functions.
     if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
       if (mod->isVisible(call)) {
-        getVisibleMethodsImpl(name, call, mod->block, visInfo, visited,
-                              visibleFns, true);
+        if (filter.size() > 0 && namedTypes.size() > 0) {
+          std::set<const char*> intersection;
+          mergeFilters(filter, namedTypes, &intersection);
+          // should we call namedTypes.clear() for space concerns?
+
+          if (intersection.size() > 0) {
+            // We should only traverse this use or import if there is some
+            // overlap between the filter we were already provided and our new
+            // limitations.
+            getVisibleMethodsFiltered(name, call, mod->block, visInfo, visited,
+                                      visibleFns, true, intersection);
+          }
+
+        } else if (filter.size() > 0) {
+          getVisibleMethodsFiltered(name, call, mod->block, visInfo, visited,
+                                    visibleFns, true, filter);
+
+        } else if (namedTypes.size() > 0) {
+          getVisibleMethodsFiltered(name, call, mod->block, visInfo, visited,
+                                    visibleFns, true, namedTypes);
+        } else {
+          getVisibleMethodsImpl(name, call, mod->block, visInfo, visited,
+                                visibleFns, true);
+        }
       }
     }
   }
 }
 
+// This function returns a set containing the intersection of outer and inner.
+// Any symbol that is solely in one list and not the other is not valid and
+// should not be returned.
+static void mergeFilters(std::set<const char*> outer,
+                         std::set<const char*> inner,
+                         std::set<const char*>* merged) {
+  INT_ASSERT(outer.size() > 0 && inner.size() > 0);
+  std::set<const char*>::iterator it;
+
+  for (it = outer.begin(); it != outer.end(); ++it) {
+    if (inner.find(*it) != inner.end()) {
+      merged->insert(*it);
+    }
+  }
+}
+
+static void getVisibleMethodsFiltered(const char* name, CallExpr* call,
+                                      BlockStmt* block, VisibilityInfo* visInfo,
+                                      std::set<BlockStmt*>& visited,
+                                      Vec<FnSymbol*>& visibleFns,
+                                      bool inUseChain,
+                                      std::set<const char*> typeNames) {
+  if (block == rootBlock) return; // nothing there
+  //
+  // avoid infinite recursion due to modules with mutual uses
+  //
+  const bool firstVisit = (visited.find(block) == visited.end());
+  if (!firstVisit && inUseChain) {
+    // inUseChain tracks how we are currently finding the scope.  There's
+    // three scenarios:
+    // - found the scope the first time by traversing a use/import
+    //   - found the scope again by also traversing a use/import (which causes
+    //      us to enter this if branch)
+    //   - found the scope again by going up in scope from the call site (this
+    //     case will *not* cause us to enter this if branch)
+    // - found the scope the first time by going up in scope from the call site
+    //   and again by traversing a use/import (this case will also cause us to
+    //   enter this if branch)
+
+    // We don't want to traverse private use/import statements unless we found
+    // the scope with the use/import statement by going up in scope from the
+    // call site.
+    return;
+  }
+
+  BlockStmt* instantiationPt = getVisibleFnsInstantiationPt(block);
+
+  // print tracking information
+  if (call->id == breakOnResolveID) {
+    getVisibleFnsShowBlock("methods", block, instantiationPt);
+  }
+
+  if (firstVisit)
+    getVisibleMethodsFirstVisitFiltered(name, call, block, visInfo, visited,
+                                        visibleFns, typeNames);
+
+  if (block->useList != NULL) {
+    getVisibleMethodsFromUseListFiltered(name, call, block, visInfo, visited,
+                                         visibleFns, inUseChain, firstVisit,
+                                         typeNames);
+  }
+
+  if (firstVisit && block->modRefs != NULL) {
+    for_actuals(expr, block->modRefs) {
+      SymExpr* se = toSymExpr(expr);
+      INT_ASSERT(se);
+      if (ModuleSymbol* mod = toModuleSymbol(se->symbol())) {
+        if (mod->isVisible(call)) {
+          // Treat following a module reference as though it was a use statement
+          // for the purpose of determining whether we can follow private uses
+          // and imports
+          getVisibleMethodsFiltered(name, call, mod->block, visInfo, visited,
+                                    visibleFns, true, typeNames);
+        }
+      }
+    }
+  }
+
+  // Recurse in the enclosing block
+  BlockStmt* next  = getVisibilityScopeNoParentModule(block);
+  getVisibleMethodsFiltered(name, call, next, visInfo, visited, visibleFns,
+                            inUseChain, typeNames);
+
+  if (instantiationPt != NULL) {
+    // Also look at the instantiation point
+    if (visInfo == NULL)
+      getVisibleMethodsFiltered(name, call,   // visit all POIs right away
+                                instantiationPt, NULL, visited, visibleFns,
+                                inUseChain, typeNames);
+    else {
+      // I'm concerned that coming back to it later won't allow the filtering
+      // to be maintained.
+      visInfo->nextPOI = instantiationPt; // come back to it later
+    }
+  }
+}
 
 
 static void getVisibleMethodsImpl(const char* name, CallExpr* call,

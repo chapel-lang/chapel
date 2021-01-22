@@ -62,7 +62,9 @@ fi
 
 # Install Arkouda and python dependencies to a python-deps subdir
 export PYTHONUSERBASE=$ARKOUDA_HOME/python-deps
-if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir -e .[dev] --user ; then
+# If Arkouda deps use any of our test deps, try to use the versions we want
+AK_PIP_CONTRAINTS="--constraint $CHPL_HOME/third-party/chpl-venv/test-requirements.txt"
+if ! python3 -m pip install --force-reinstall --upgrade --no-cache-dir $AK_PIP_CONTRAINTS -e .[dev] --user ; then
   log_fatal_error "installing arkouda"
 fi
 

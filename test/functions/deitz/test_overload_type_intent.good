@@ -1,5 +1,5 @@
 test_overload_type_intent.chpl:13: error: unresolved call 'foo(3.0)'
 test_overload_type_intent.chpl:7: note: this candidate did not match: foo(x: int)
-test_overload_type_intent.chpl:13: note: because call actual argument #1 with type real(64)
+test_overload_type_intent.chpl:13: note: because actual argument #1 with type 'real(64)'
 test_overload_type_intent.chpl:7: note: is passed to formal 'x: int(64)'
 test_overload_type_intent.chpl:1: note: candidates are: foo(type t)

@@ -1,4 +1,4 @@
 out-subclass.chpl:14: error: unresolved call 'procOutC(borrowed D?)'
 out-subclass.chpl:6: note: this candidate did not match: procOutC(out arg: C?)
-out-subclass.chpl:14: note: because call actual argument #1 with type borrowed D?
+out-subclass.chpl:14: note: because actual argument #1 with type 'borrowed D?'
 out-subclass.chpl:6: note: is passed to formal 'out arg: borrowed C?'

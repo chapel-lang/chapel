@@ -1,4 +1,4 @@
 arrArgRef-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
 arrArgRef-promote.chpl:1: note: this candidate did not match: writeArr(ref X: [] real)
-arrArgRef-promote.chpl:8: note: because call actual argument #1 with type iterator
+arrArgRef-promote.chpl:8: note: because actual argument #1 with type 'iterator'
 arrArgRef-promote.chpl:1: note: is passed to formal 'ref X: []'

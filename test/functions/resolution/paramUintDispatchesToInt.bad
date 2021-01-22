@@ -1,8 +1,8 @@
 paramUintDispatchesToInt.chpl:11: error: unresolved call 'takesNonParamInt(42)'
 paramUintDispatchesToInt.chpl:1: note: this candidate did not match: takesNonParamInt(x: int)
-paramUintDispatchesToInt.chpl:11: note: because call actual argument #1 with type uint(64)
+paramUintDispatchesToInt.chpl:11: note: because actual argument #1 with type 'uint(64)'
 paramUintDispatchesToInt.chpl:1: note: is passed to formal 'x: int(64)'
 paramUintDispatchesToInt.chpl:12: error: unresolved call 'takesInt(42)'
 paramUintDispatchesToInt.chpl:5: note: this candidate did not match: takesInt(param x: int)
-paramUintDispatchesToInt.chpl:12: note: because call actual argument #1 with type uint(64)
+paramUintDispatchesToInt.chpl:12: note: because actual argument #1 with type 'uint(64)'
 paramUintDispatchesToInt.chpl:5: note: is passed to formal 'param x: int(64)'

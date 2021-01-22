@@ -9,5 +9,5 @@ multiple-errors.chpl:16: note: because method call receiver with type borrowed C
 multiple-errors.chpl:5: note: is passed to formal 'this: borrowed C'
 multiple-errors.chpl:18: error: unresolved call 'baz(borrowed C?)'
 multiple-errors.chpl:7: note: this candidate did not match: baz(arg: C)
-multiple-errors.chpl:18: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:18: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:7: note: is passed to formal 'arg: C'

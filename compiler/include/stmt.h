@@ -69,6 +69,8 @@ class VisibilityStmt: public Stmt {
   const char* getRename() const;
   const char* getRenamedSym(const char* name) const;
 
+  virtual std::set<const char*> typeWasNamed(Type* t) const = 0;
+
   virtual bool skipSymbolSearch(const char* name) const = 0;
 
   virtual BaseAST* getSearchScope() const = 0;
@@ -268,6 +270,49 @@ class GotoStmt : public Stmt {
   LabelSymbol*        gotoTarget()                                     const;
 };
 
+/************************************* | **************************************
+*                                                                             *
+* An ImplementsStmt states that an interface is implemented by given type(s). *
+* Syntactically it is similar to an interface constraint (see IfcConstraint), *
+* and also allows a block statement, ex.                                      *
+*   implements InterfaceName(actualType...);                                  *
+*   actualType implements InterfaceName;                                      *
+*   actualType implements InterfaceName { proc defaultImplementation... }     *
+*                                                                             *
+************************************** | *************************************/
+
+class ImplementsStmt : public Stmt {
+public:
+  static ImplementsStmt* build(const char* name, CallExpr* actuals,
+                               BlockStmt* body);
+  ImplementsStmt(IfcConstraint* con, BlockStmt* body);
+
+  DECLARE_COPY(ImplementsStmt);
+  virtual GenRet      codegen();
+  virtual void        verify();
+  virtual void        accept(AstVisitor* visitor);
+
+  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*       getFirstExpr();
+  virtual Expr*       getNextExpr(Expr* expr);
+
+  int                 numActuals() const { return iConstraint->numActuals(); }
+
+  // the constraint being implemented, always non-null
+  IfcConstraint* iConstraint;
+
+  // (possibly empty) body of this statement, always non-null
+  BlockStmt* implBody;
+
+  // mapping: required interface function -> its implementation
+  SymbolMap witnesses;
+};
+
+// support for implements wrapper functions
+const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
+const char*     interfaceNameForWrapperFn(FnSymbol* fn);
+ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn);
+FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************
 *                                                                             *
@@ -292,7 +337,6 @@ public:
   // Local interface
   const char*         c_code;
 };
-
 
 /************************************* | **************************************
 *                                                                             *

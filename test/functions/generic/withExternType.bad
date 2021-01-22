@@ -16,5 +16,5 @@ withExternType.chpl:27: warning: t5==t6 false
 withExternType.chpl:27: In function 'main':
 withExternType.chpl:52: error: unresolved call 'callAB(atomic_bool)'
 withExternType.chpl:19: note: this candidate did not match: callAB(arg: makeAB(int))
-withExternType.chpl:52: note: because call actual argument #1 with type atomic_bool
+withExternType.chpl:52: note: because actual argument #1 with type 'atomic_bool'
 withExternType.chpl:19: note: is passed to formal 'arg: atomic_bool'

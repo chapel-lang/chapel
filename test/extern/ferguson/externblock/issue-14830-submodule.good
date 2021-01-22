@@ -1,0 +1,4 @@
+in tryMe obj.a is 0
+C.tryMe() 4
+C.foo(3)  4
+C.obj.a   0

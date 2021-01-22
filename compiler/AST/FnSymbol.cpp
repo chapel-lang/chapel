@@ -56,6 +56,7 @@ FnSymbol::FnSymbol(const char* initName)
   iteratorInfo       = NULL;
   iteratorGroup      = NULL;
   cacheInfo          = NULL;
+  interfaceInfo      = NULL;
   _this              = NULL;
   instantiatedFrom   = NULL;
   _instantiationPoint = NULL;
@@ -116,6 +117,21 @@ void FnSymbol::verify() {
 
   if (lifetimeConstraints && lifetimeConstraints->parentSymbol != this) {
     INT_FATAL(this, "Bad FnSymbol::lifetimeConstraints::parentSymbol");
+  }
+
+  if (InterfaceInfo* ifcInfo = interfaceInfo) {
+    // constrainedTypes: AList of DefExpr of ConstrainedType
+    INT_ASSERT(ifcInfo->constrainedTypes.parent == this);
+    for_alist(ctExpr, ifcInfo->constrainedTypes) {
+      Symbol* ctSym = toDefExpr(ctExpr)->sym;
+      Type*  ctType = toTypeSymbol(ctSym)->type;
+      INT_ASSERT(isConstrainedType(ctType));
+    }
+
+    // interfaceConstraints: AList of IfcConstraint
+    INT_ASSERT(ifcInfo->interfaceConstraints.parent == this);
+    for_alist(ic, ifcInfo->interfaceConstraints)
+      INT_ASSERT(isIfcConstraint(ic));
   }
 
   if (retExprType && retExprType->parentSymbol != this) {
@@ -185,6 +201,16 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
 
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
+  }
+
+  if (InterfaceInfo* ifcInfoOld = this->interfaceInfo) {
+    InterfaceInfo* ifcInfoNew = new InterfaceInfo(newFn);
+
+    for_alist(ct, ifcInfoOld->constrainedTypes)
+      ifcInfoNew->addConstrainedType(toDefExpr(COPY_INT(ct)));
+
+    for_alist(icon, ifcInfoOld->interfaceConstraints)
+      ifcInfoNew->addInterfaceConstraint(toIfcConstraint(COPY_INT(icon)));
   }
 
   // Copy members that are needed by both copyInner and partialCopy.
@@ -694,6 +720,25 @@ CallExpr* FnSymbol::singleInvocation() const {
 
 
 //
+// Support for constrained generics.
+//
+
+InterfaceInfo::InterfaceInfo(FnSymbol* parentFn) {
+  parentFn->interfaceInfo = this;
+  constrainedTypes.parent = parentFn;
+  interfaceConstraints.parent = parentFn;
+}
+
+void InterfaceInfo::addConstrainedType(DefExpr* def) {
+  constrainedTypes.insertAtTail(def);
+}
+
+void InterfaceInfo::addInterfaceConstraint(IfcConstraint* icon) {
+  interfaceConstraints.insertAtTail(icon);
+}
+
+
+//
 // Labels this function as generic or non-generic.
 // Returns:
 // * TGR_NEWLY_TAGGED - if this function has not been labeled before,
@@ -780,6 +825,11 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
+    } else if (isConstrainedType(formal->type)) {
+      if (isConstrainedGeneric())
+        isGeneric = true;
+      // otherwise it is a required function in an 'interface' declaration
+
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;
       if (map != NULL && formal->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -861,6 +911,14 @@ void FnSymbol::accept(AstVisitor* visitor) {
 
     if (lifetimeConstraints)
       lifetimeConstraints->accept(visitor);
+
+    if (InterfaceInfo* ifcInfo = interfaceInfo) {
+      for_alist(ct, ifcInfo->constrainedTypes)
+        ct->accept(visitor);
+
+      for_alist(icon, ifcInfo->interfaceConstraints)
+        icon->accept(visitor);
+    }
 
     if (retExprType) {
       retExprType->accept(visitor);
@@ -1090,12 +1148,12 @@ bool FnSymbol::throwsError() const {
   return _throwsError;
 }
 
-bool FnSymbol::isGeneric() {
+bool FnSymbol::isGeneric() const {
   INT_ASSERT(mIsGenericIsValid);
   return mIsGeneric;
 }
 
-bool FnSymbol::isGenericIsValid() {
+bool FnSymbol::isGenericIsValid() const {
   return mIsGenericIsValid;
 }
 
@@ -1106,6 +1164,25 @@ void FnSymbol::setGeneric(bool generic) {
 
 void FnSymbol::clearGeneric() {
   mIsGeneric = mIsGenericIsValid = false;
+}
+
+bool FnSymbol::isConstrainedGeneric() const {
+  return interfaceInfo != NULL;
+}
+
+InterfaceInfo* FnSymbol::ensureInterfaceInfo() {
+  if (interfaceInfo == NULL)
+    interfaceInfo = new InterfaceInfo(this);
+
+  return interfaceInfo;
+}
+
+void FnSymbol::addConstrainedType(DefExpr* def) {
+  ensureInterfaceInfo()->addConstrainedType(def);
+}
+
+void FnSymbol::addInterfaceConstraint(IfcConstraint* icon) {
+  ensureInterfaceInfo()->addInterfaceConstraint(icon);
 }
 
 bool FnSymbol::retExprDefinesNonVoid() const {

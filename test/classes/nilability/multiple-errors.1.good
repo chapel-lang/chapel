@@ -1,39 +1,39 @@
 multiple-errors.chpl:39: In function 'main':
 multiple-errors.chpl:41: error: unresolved call 'borrowed C?.foo()'
 multiple-errors.chpl:14: note: this candidate did not match: C.foo()
-multiple-errors.chpl:41: note: because method call receiver with type borrowed C?
+multiple-errors.chpl:41: note: because method call receiver with type 'borrowed C?'
 multiple-errors.chpl:14: note: is passed to formal 'this: borrowed C'
 multiple-errors.chpl:41: note: try to apply the postfix ! operator to method call receiver
 multiple-errors.chpl:42: error: unresolved call 'borrowed C?.bar()'
 multiple-errors.chpl:17: note: this candidate did not match: C.bar()
-multiple-errors.chpl:42: note: because method call receiver with type borrowed C?
+multiple-errors.chpl:42: note: because method call receiver with type 'borrowed C?'
 multiple-errors.chpl:17: note: is passed to formal 'this: borrowed C'
 multiple-errors.chpl:42: note: try to apply the postfix ! operator to method call receiver
 multiple-errors.chpl:24: note: candidates are: bar()
 multiple-errors.chpl:43: error: unresolved call 'baz(borrowed C?)'
 multiple-errors.chpl:20: note: this candidate did not match: baz(arg: C)
-multiple-errors.chpl:43: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:43: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:20: note: is passed to formal 'arg: C'
-multiple-errors.chpl:43: note: try to apply the postfix ! operator to call actual argument #1
+multiple-errors.chpl:43: note: try to apply the postfix ! operator to actual argument #1
 multiple-errors.chpl:29: In function 'testInit':
 multiple-errors.chpl:32: error: unresolved call 'R.init(borrowed C?)'
 multiple-errors.chpl:6: note: this candidate did not match: R.init(c: borrowed C)
-multiple-errors.chpl:32: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:32: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:7: note: is passed to formal 'in c: borrowed C'
-multiple-errors.chpl:32: note: try to apply the postfix ! operator to call actual argument #1
+multiple-errors.chpl:32: note: try to apply the postfix ! operator to actual argument #1
 multiple-errors.chpl:33: error: unresolved call 'R.init(borrowed C?)'
 multiple-errors.chpl:6: note: this candidate did not match: R.init(c: borrowed C)
-multiple-errors.chpl:33: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:33: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:7: note: is passed to formal 'in c: borrowed C'
-multiple-errors.chpl:33: note: try to apply the postfix ! operator to call actual argument #1
+multiple-errors.chpl:33: note: try to apply the postfix ! operator to actual argument #1
 multiple-errors.chpl:34: error: unresolved call 'R.init(borrowed C?)'
 multiple-errors.chpl:6: note: this candidate did not match: R.init(c: borrowed C)
-multiple-errors.chpl:34: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:34: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:7: note: is passed to formal 'in c: borrowed C'
-multiple-errors.chpl:34: note: try to apply the postfix ! operator to call actual argument #1
+multiple-errors.chpl:34: note: try to apply the postfix ! operator to actual argument #1
 multiple-errors.chpl:24: In function 'bar':
 multiple-errors.chpl:26: error: unresolved call 'R.init(borrowed C?)'
 multiple-errors.chpl:6: note: this candidate did not match: R.init(c: borrowed C)
-multiple-errors.chpl:26: note: because call actual argument #1 with type borrowed C?
+multiple-errors.chpl:26: note: because actual argument #1 with type 'borrowed C?'
 multiple-errors.chpl:7: note: is passed to formal 'in c: borrowed C'
-multiple-errors.chpl:26: note: try to apply the postfix ! operator to call actual argument #1
+multiple-errors.chpl:26: note: try to apply the postfix ! operator to actual argument #1

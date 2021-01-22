@@ -2257,8 +2257,11 @@ module DefaultRectangular {
     // Take first pass, computing per-task partial scans, stored in 'state'
     var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
-    // Take second pass updating result based on the scanned 'state'
-    this.chpl__postScan(op, res, numTasks, rngs, state);
+    // Take second pass updating result based on the scanned 'state' if there
+    // are multiple tasks
+    if numTasks > 1 {
+      this.chpl__postScan(op, res, numTasks, rngs, state);
+    }
     if isPOD(resType) then res.dsiElementInitializationComplete();
 
     // Clean up and return
