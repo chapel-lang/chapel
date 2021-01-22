@@ -352,8 +352,12 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
   int nIgnored = 0;
   int i = 1;
   for_formals(formal, fn) {
-    if (formal->intent                              == INTENT_PARAM ||
-        formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
+    // Don't compute substitutions for out intent arguments
+    // since the type comes from the function body rather than the call site.
+    // Do compute substitutions for param or generic typed formals.
+    if (formal->originalIntent != INTENT_OUT &&
+        (formal->intent == INTENT_PARAM ||
+         formal->type->symbol->hasFlag(FLAG_GENERIC))) {
 
       if (Symbol* actual = formalIdxToActual[i - 1]) {
         computeSubstitution(formal, actual, ctx);

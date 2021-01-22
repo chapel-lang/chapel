@@ -145,6 +145,7 @@ void normalize(FnSymbol* fn);
 void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
+void normalizeVariableDefinition(DefExpr* defExpr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

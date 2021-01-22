@@ -10653,7 +10653,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     INT_ASSERT(false);
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
-    primInitHaltForUnacceptableGeneric(call, type, val);
+    // ignore this case for now
 
   // These types default to nil
   } else if (isClassLikeOrPtr(type) || type == dtNil) {

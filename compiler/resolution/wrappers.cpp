@@ -1786,6 +1786,19 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
   Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
 
+  bool anyOut = false;
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_OUT ||
+        formal->originalIntent == INTENT_OUT)
+      anyOut = true;
+  }
+  if (anyOut) {
+    // resolve out functions now, to infer any types of out arguments,
+    // so that the call-site temporaries have proper types.
+    resolveFunction(fn, call);
+  }
+
+ 
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;

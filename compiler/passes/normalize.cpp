@@ -107,7 +107,6 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur);
 
 static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
-static void        normalizeVariableDefinition(DefExpr* defExpr);
 
 static void        emitRefVarInit(Expr* after, Symbol* var, Expr* init);
 static void        normRefVar(DefExpr* defExpr);
@@ -2723,7 +2722,7 @@ static void           normVarNoinit(DefExpr* defExpr);
 static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var);
 static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
 
-static void normalizeVariableDefinition(DefExpr* defExpr) {
+void normalizeVariableDefinition(DefExpr* defExpr) {
   SET_LINENO(defExpr);
 
   VarSymbol* var  = toVarSymbol(defExpr->sym);
