@@ -831,8 +831,8 @@ module TimSort {
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
-    var size = (hi - lo) / stride + 1;
-    var chunks = (size + blockSize - 1) / blockSize;
+    const size = (hi - lo) / stride + 1;
+    const chunks = (size + blockSize - 1) / blockSize;
     
     forall i in 0..#chunks {
       InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
@@ -845,11 +845,11 @@ module TimSort {
 
     var numSize = blockSize;
     while(numSize < size) {
-      forall i in 0..(size - 1) by 2 * numSize {
+      forall i in 0..<size by 2 * numSize {
 
-        var l = lo + i * stride;
-        var mid = lo + (i + numSize - 1) * stride;
-        var r = min(lo + (i + 2 * numSize - 1) * stride, hi);
+        const l = lo + i * stride;
+        const mid = lo + (i + numSize - 1) * stride;
+        const r = min(lo + (i + 2 * numSize - 1) * stride, hi);
 
         _Merge(Data, l, mid, r, comparator=comparator);
       }
