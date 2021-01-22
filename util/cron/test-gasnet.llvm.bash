@@ -9,4 +9,8 @@ source $CWD/common-llvm.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.llvm"
 
-$CWD/nightly -cron -examples ${nightly_args}
+# common-llvm sets this to a single test directory, but we want a wider test
+# distribution for this configuration.
+unset CHPL_NIGHTLY_TEST_DIRS
+
+$CWD/nightly -cron -multilocale ${nightly_args}
