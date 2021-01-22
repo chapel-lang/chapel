@@ -693,18 +693,8 @@ static void removeSymbolsWithRemovedTypes() {
 // Zero out such pointers whether or not their targets are live,
 // to ensure they are not looked at again.
 static void cleanupAfterRemoves() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->instantiatedFrom != NULL) {
-      fn->addFlag(FLAG_INSTANTIATED_GENERIC);
 
-      // Clear instantiatedFrom since it would refer to a deleted AST node
-      fn->instantiatedFrom = NULL;
-    }
-
-    fn->setInstantiationPoint(NULL);
-
-    // How about basicBlocks, calledBy ?
-  }
+  // Note: some pointers are already zero'd in saveGenericSubstitutions
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
@@ -954,6 +944,16 @@ void saveGenericSubstitutions() {
       // Clear substitutions since keys might refer to deleted AST nodes
       fn->substitutions.clear();
     }
+
+    // Clear instantiatedFrom since it would refer to a deleted AST node
+    if (fn->instantiatedFrom != NULL) {
+      fn->addFlag(FLAG_INSTANTIATED_GENERIC);
+
+      // Clear instantiatedFrom since it would refer to a deleted AST node
+      fn->instantiatedFrom = NULL;
+    }
+
+    fn->setInstantiationPoint(NULL);
   }
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
@@ -973,6 +973,13 @@ void saveGenericSubstitutions() {
         }
         // Clear substitutions since keys might refer to deleted AST nodes
         at->substitutions.clear();
+      }
+
+      if (at->instantiatedFrom != NULL) {
+        // Clear instantiatedFrom since it would refer to a deleted AST node
+        at->instantiatedFrom = NULL;
+
+        ts->addFlag(FLAG_INSTANTIATED_GENERIC);
       }
     }
   }
