@@ -171,51 +171,52 @@ void AggregateType::markAsGenericWithDefaults() {
 void AggregateType::verify() {
   Type::verify();
 
-  if (astTag != E_AggregateType) {
+  if (astTag != E_AggregateType)
     INT_FATAL(this, "Bad AggregateType::astTag");
 
-  } else if (aggregateTag != AGGREGATE_CLASS  &&
-             aggregateTag != AGGREGATE_RECORD &&
-             aggregateTag != AGGREGATE_UNION) {
+  if (aggregateTag != AGGREGATE_CLASS  &&
+      aggregateTag != AGGREGATE_RECORD &&
+      aggregateTag != AGGREGATE_UNION)
     INT_FATAL(this, "Bad AggregateType::aggregateTag");
 
-  } else if (fields.parent != this || inherits.parent != this) {
+  if (fields.parent != this || inherits.parent != this)
     INT_FATAL(this, "Bad AList::parent in AggregateType");
 
-  } else {
-    for_alist(expr, fields) {
-      if (expr->parentSymbol != symbol) {
-        INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
-      }
+  for_alist(expr, fields) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
     }
+  }
 
-    for_alist(expr, inherits) {
-      if (expr->parentSymbol != symbol) {
-        INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
-      }
+  for_alist(expr, inherits) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
     }
+  }
 
-    for_alist(expr, forwardingTo) {
-      if (expr->parentSymbol != symbol)
-        INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
-    }
+  for_alist(expr, forwardingTo) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
+  }
 
-    // check substitutions
-    form_Map(SymbolMapElem, e, this->substitutions) {
-      if (!e->key->inTree())
-        INT_FATAL(this, "Substitution key not in tree");
-      if (!e->value->inTree())
+  if (this->instantiatedFrom && !this->instantiatedFrom->inTree())
+    INT_FATAL(this, "instantiatedFrom not in tree");
+
+  // check substitutions
+  form_Map(SymbolMapElem, e, this->substitutions) {
+    if (e->key && !e->key->inTree())
+      INT_FATAL(this, "Substitution key not in tree");
+    if (e->value && !e->value->inTree())
+      INT_FATAL(this, "Substitution value not in tree");
+  }
+
+  // check substitutionsPostResolve
+  {
+    size_t n = this->substitutionsPostResolve.size();
+    for (size_t i = 0; i < n; i++) {
+      const NameAndSymbol& ns = this->substitutionsPostResolve[i];
+      if (ns.value && !ns.value->inTree())
         INT_FATAL(this, "Substitution value not in tree");
-    }
-
-    // check substitutionsPostResolve
-    {
-      size_t n = this->substitutionsPostResolve.size();
-      for (size_t i = 0; i < n; i++) {
-        const NameAndSymbol& ns = this->substitutionsPostResolve[i];
-        if (!ns.value->inTree())
-          INT_FATAL(this, "Substitution value not in tree");
-      }
     }
   }
 }

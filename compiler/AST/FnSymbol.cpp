@@ -149,11 +149,14 @@ void FnSymbol::verify() {
     INT_ASSERT(isArgSymbol(argDef->sym));
   }
 
+  if (this->instantiatedFrom && !this->instantiatedFrom->inTree())
+    INT_FATAL(this, "instantiatedFrom not in tree");
+
   // check substitutions
   form_Map(SymbolMapElem, e, this->substitutions) {
-    if (!e->key->inTree())
+    if (e->key && !e->key->inTree())
       INT_FATAL(this, "Substitution key not in tree");
-    if (!e->value->inTree())
+    if (e->value && !e->value->inTree())
       INT_FATAL(this, "Substitution value not in tree");
   }
 
@@ -162,7 +165,7 @@ void FnSymbol::verify() {
     size_t n = this->substitutionsPostResolve.size();
     for (size_t i = 0; i < n; i++) {
       const NameAndSymbol& ns = this->substitutionsPostResolve[i];
-      if (ns.value != NULL && !ns.value->inTree())
+      if (ns.value && !ns.value->inTree())
         INT_FATAL(this, "Substitution value not in tree");
     }
   }
