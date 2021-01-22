@@ -341,7 +341,7 @@ void instantiateBody(FnSymbol* fn) {
  *
  * \param fn   Generic function to instantiate
  * \param subs Type substitutions to be made during instantiation
- * \param call Call that is being resolved
+ * \param visInfo Contains the call that is being resolved
  */
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,

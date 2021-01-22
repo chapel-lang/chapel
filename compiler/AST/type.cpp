@@ -380,6 +380,46 @@ void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
 
+
+ConstrainedType::ConstrainedType() :
+  Type(E_ConstrainedType, NULL)
+{
+  gConstrainedTypes.add(this);
+}
+
+
+ConstrainedType* ConstrainedType::copyInner(SymbolMap* map) {
+  return new ConstrainedType();
+}
+
+
+void ConstrainedType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in ConstrainedType::replaceChild");
+}
+
+
+void ConstrainedType::verify() {
+  Type::verify();
+  INT_ASSERT(astTag == E_ConstrainedType);
+}
+
+
+void ConstrainedType::printDocs(std::ostream *file, unsigned int tabs) {
+  return;  // not to be printed
+}
+
+
+void ConstrainedType::accept(AstVisitor* visitor) {
+  visitor->visitConstrainedType(this);
+}
+
+
+TypeSymbol* ConstrainedType::build(const char* name) {
+  Type* ct = new ConstrainedType();
+  return new TypeSymbol(name, ct);
+}
+
+
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
   constants(), integerType(NULL),
@@ -794,6 +834,7 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
+  CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
 

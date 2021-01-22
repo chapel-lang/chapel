@@ -43,7 +43,7 @@ public:
 
   virtual bool   enterEnumType       (EnumType*          node);
   virtual void   exitEnumType        (EnumType*          node);
-
+  virtual void   visitConstrainedType(ConstrainedType*   node);
   virtual void   visitPrimType       (PrimitiveType*     node);
 
   //
@@ -56,6 +56,9 @@ public:
 
   virtual bool   enterFnSym          (FnSymbol*          node);
   virtual void   exitFnSym           (FnSymbol*          node);
+
+  virtual bool   enterInterfaceSym   (InterfaceSymbol*   node);
+  virtual void   exitInterfaceSym    (InterfaceSymbol*   node);
 
   virtual void   visitLabelSym       (LabelSymbol*       node);
 
@@ -81,6 +84,9 @@ public:
 
   virtual bool   enterNamedExpr      (NamedExpr*         node);
   virtual void   exitNamedExpr       (NamedExpr*         node);
+
+  virtual bool   enterIfcConstraint  (IfcConstraint*     node);
+  virtual void   exitIfcConstraint   (IfcConstraint*     node);
 
   virtual bool   enterIfExpr         (IfExpr*            node);
   virtual void   exitIfExpr          (IfExpr*            node);
@@ -136,6 +142,9 @@ public:
 
   virtual bool   enterCatchStmt      (CatchStmt*         node);
   virtual void   exitCatchStmt       (CatchStmt*         node);
+
+  virtual bool   enterImplementsStmt (ImplementsStmt*    node);
+  virtual void   exitImplementsStmt  (ImplementsStmt*    node);
 
 protected:
   bool outputVector (FILE* fp, std::vector<const char*> vec);

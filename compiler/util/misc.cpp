@@ -314,6 +314,9 @@ static const char* fnKindAndName(FnSymbol* fn) {
   if (strcmp(fn->name, "init") == 0)
     return astr("initializer");
 
+  if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER))
+    return astr("'implements ", interfaceNameForWrapperFn(fn), "' statement");
+
   if (fn->isIterator())
     return astr("iterator ", "'", fn->name, "'");
   else if (fn->isMethod())
