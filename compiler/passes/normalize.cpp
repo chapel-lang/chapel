@@ -2743,11 +2743,26 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
-  if (foundSplitInit == false)
-    errorIfSplitInitializationRequired(defExpr, prevent);
+  //if (foundSplitInit == false)
+  //  errorIfSplitInitializationRequired(defExpr, prevent);
 
-  if ((init != NULL && !requestedSplitInit) ||
-      foundSplitInit == false) {
+  if (requestedSplitInit && foundSplitInit == false) {
+    // Create a dummy DEFAULT_INIT_VAR to sort out later in resolution
+    // to support a pattern like
+    //
+    //   var x;
+    //   fReturningOut(x);
+    //
+    // in which case the type of x is inferred from the out
+    // argument of the function.
+    CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
+                                  var,
+                                  new SymExpr(dtSplitInitType->symbol));
+    defExpr->init->remove();
+    defExpr->insertAfter(init);
+
+  } else if ((init != NULL && !requestedSplitInit) ||
+              foundSplitInit == false) {
     // handle non-split initialization
 
     // handle ref variables

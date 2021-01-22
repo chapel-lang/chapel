@@ -1818,9 +1818,15 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
       Symbol* assignFrom = NULL;
 
       if (out) {
+        Type* formalType = formal->type->getValType();
+
+        // If the actual argument has type dtSplitInitType,
+        // update it to infer the type from the called function.
+        if (actualSe->symbol()->type == dtSplitInitType)
+          actualSe->symbol()->type = formalType;
+
         // For untyped out formals with runtime types, pass the type
         // as the previous argument.
-        Type* formalType = formal->type->getValType();
         if (formal->typeExpr == NULL &&
             inout == false &&
             formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {

@@ -459,6 +459,7 @@ TYPE_EXTERN PrimitiveType*    dtMethodToken;
 TYPE_EXTERN PrimitiveType*    dtDummyRef;
 TYPE_EXTERN PrimitiveType*    dtTypeDefaultToken;
 TYPE_EXTERN PrimitiveType*    dtModuleToken;
+TYPE_EXTERN PrimitiveType*    dtSplitInitType;
 
 // primitive types
 // Anything declared as PrimitiveType* can now also be declared as Type*

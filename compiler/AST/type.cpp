@@ -903,19 +903,19 @@ void initPrimitiveTypes() {
 
 
   dtMethodToken = createInternalType ("_MT", "_MT");
-  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
-
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+
+  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
   CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
-
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
 
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
-
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
+
+  dtSplitInitType = createInternalType("_splitInitType", "_splitInitType");
 
   dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
 

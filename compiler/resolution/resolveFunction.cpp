@@ -1189,6 +1189,9 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
 
     bool isOutFormal = sym->hasFlag(FLAG_FORMAL_TEMP_OUT);
 
+    SymExpr* typeSe = toSymExpr(call->get(2));
+    bool requireSplitInit = (typeSe->symbol() == dtSplitInitType->symbol);
+
     // Don't allow an out-formal to be split-init after a return because
     // that would leave the out-formal uninitialized.
     bool allowReturns = !isOutFormal;
@@ -1199,17 +1202,32 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     // here are type-independent. In that case, the type should
     // also have an init= function accepting the different RHS type.
 
+    if (requireSplitInit && !foundSplitInit) {
+      USR_FATAL(call, "variable '%s' is not initialized and has no type",
+                sym->name);
+    }
+
     if (foundSplitInit) {
       // Change the PRIM_DEFAULT_INIT_VAR to PRIM_INIT_VAR_SPLIT_DECL
       call->primitive = primitives[PRIM_INIT_VAR_SPLIT_DECL];
-      SymExpr* typeSe = toSymExpr(call->get(2));
-      Symbol* type = typeSe->symbol();
+
+      Symbol* type = NULL;
+
+      // remove dummy dtSplitInitType argument if present
+      if (typeSe->symbol() == dtSplitInitType->symbol)
+        typeSe->remove();
+      else
+        type = typeSe->symbol();
 
       // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
       for_vector(CallExpr, assign, initAssigns) {
         SET_LINENO(assign);
         Expr* rhs = assign->get(2)->remove();
-        CallExpr* init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
+        CallExpr* init = NULL;
+        if (type)
+          init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
+        else
+          init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs);
         assign->replace(init);
         resolveInitVar(init);
       }
