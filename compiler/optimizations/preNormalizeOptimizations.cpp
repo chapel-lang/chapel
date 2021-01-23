@@ -268,8 +268,6 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
           }
         }
       }
-
-
     }
   }
   return ret;
@@ -1709,7 +1707,6 @@ Expr *AggregationCandidateInfo::transformPrimitive(CallExpr *call) {
   Expr *lhs = call->get(1)->remove();
 
   CallExpr *assign = new CallExpr("=", lhs, rhs);
-  //call->replace(assign);
   AggregationCandidateInfo *info = new AggregationCandidateInfo(assign, NULL);
 
   SymExpr *srcAggregatorSE = toSymExpr(call->get(2)->remove());
@@ -1750,36 +1747,22 @@ Expr *AggregationCandidateInfo::transformPrimitive(CallExpr *call) {
 
     //return info->updateASTForAggregation(srcAggregation, aggMarkerSE);
     CondStmt *aggCond = info->updateASTForAggregation(srcAggregation, aggMarkerSE);
-    call->insertAfter(aggCond);
-    normalize(aggCond);
 
     return aggCond;
   }
   else {
     aggMarkerSE->symbol()->defPoint->remove();
     if (info->srcAggregator != gNil) {
-      std::cout << "Removing aggregator\n";
-      nprint_view(info->srcAggregator);
       info->srcAggregator->defPoint->remove();
     }
     if (info->dstAggregator != gNil) {
-      std::cout << "Removing aggregator\n";
-      nprint_view(info->dstAggregator);
       info->dstAggregator->defPoint->remove();
     }
-    call->insertAfter(assign);
     return assign;
   }
 }
 
 Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
-  SET_LINENO(call);
-  std::cout << "Prefolding maybe aggregate assign\n";
-  nprint_view(call);
-  //Expr *rhs = call->get(2)->remove();
-  //Expr *lhs = call->get(1)->remove();
-  //CallExpr *assign = new CallExpr("=", lhs, rhs);
-  //
   return AggregationCandidateInfo::transformPrimitive(call);
 }
 
