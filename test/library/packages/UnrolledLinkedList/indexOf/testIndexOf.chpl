@@ -7,6 +7,9 @@ var idx = 0;
 
 for i in 1..testIters {
   lst.append(i);
+}
+
+for i in 1..testIters {
   idx = lst.indexOf(i);
   assert(idx == i-1);
 }
