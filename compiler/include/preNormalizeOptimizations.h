@@ -56,9 +56,12 @@ class AggregationCandidateInfo {
 
     void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
     void addAggregators();
+    void transformCandidate();
+
+    static Expr *transformPrimitive(CallExpr *call);
   private:
     void update();
-    void updateASTForAggregation(bool srcAggregation);
+    CondStmt *updateASTForAggregation(bool srcAggregation, SymExpr *aggMarkerSE);
     void updateASTForRegularAssignment();
 };
 
@@ -69,6 +72,7 @@ Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
 // interface for resolution
 Expr *preFoldMaybeLocalThis(CallExpr *call);
 Expr *preFoldMaybeLocalArrElem(CallExpr *call);
+Expr *preFoldMaybeAggregateAssign(CallExpr *call);
 
 // interface for licm
 void transformConditionalAggregation(CondStmt *cond);

@@ -580,6 +580,15 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     call->replace(retval);
     break;
 
+  case PRIM_MAYBE_AGGREGATE_ASSIGN: {
+    //Expr *aggReplacement = preFoldMaybeAggregateAssign(call);
+    preFoldMaybeAggregateAssign(call);
+    //call->insertAfter(aggReplacement);
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+    break;
+  }
+
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:
   case PRIM_METHOD_CALL_RESOLVES:
