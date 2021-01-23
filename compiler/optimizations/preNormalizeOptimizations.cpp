@@ -99,6 +99,7 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 // maps a potential local access to an AggregationCandidate
 std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
 static const char *getForallCloneTypeStr(ForallStmt *forall);
+static const char *getForallCloneTypeStr(Symbol *aggMarker);
 static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
@@ -140,27 +141,9 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
   bool confirmed = (controlSymExp->symbol() == gTrue);
 
-  AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
-  if (aggCandidate != NULL) {
-
-    if (fReportAutoAggregation) {
-      std::stringstream message;
-      message << "Aggregation candidate ";
-      message << "has ";
-      message << (confirmed ? "confirmed" : "reverted");
-      message << " local child ";
-      message << getForallCloneTypeStr(aggCandidate->forall);
-      LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
-    }
-
-    aggCandidate->logicalChildAnalyzed(call, confirmed);
-  }
-  else {
-    std::cout << "Prefolded maybe localAccess with no aggregation candidate\n";
-    nprint_view(call->parentExpr);
+  if (fAutoAggregation) {
     findAndUpdateMaybeAggAssign(call, confirmed);
   }
-
 
   return maybeArrElemSymExpr->remove();
 }
@@ -186,9 +169,6 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
 }
 
 static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
-  std::cout << "Prefolded maybe localAccess with no aggregation candidate\n";
-  nprint_view(call->parentExpr);
-
   bool unaggregatable = false;
   if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     if (!confirmed) {
@@ -213,6 +193,22 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
 
   if (tmpSym) {
     if (CallExpr *maybeAggAssign = findMaybeAggAssignInBlock(call->getScopeBlock())) {
+
+
+      if (fReportAutoAggregation) {
+        std::stringstream message;
+
+        SymExpr *aggMarkerSE = toSymExpr(maybeAggAssign->get(7));
+        INT_ASSERT(aggMarkerSE);
+
+        message << "Aggregation candidate ";
+        message << "has ";
+        message << (confirmed ? "confirmed" : "reverted");
+        message << " local child ";
+        message << getForallCloneTypeStr(aggMarkerSE->symbol());
+        LOG_AA(0, message.str().c_str(), call);
+      }
+
       if (unaggregatable) {
         // remove aggregators, set flags to false.
         SymExpr *dstAggregatorSE = toSymExpr(maybeAggAssign->get(3));
@@ -234,6 +230,8 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
         }
       }
       else {
+        // TODO: if we have added an aggregator for this side, and confirming it
+        // to be local here, we should remove the added aggregator
         SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
         INT_ASSERT(lhsSE);
 
@@ -289,25 +287,9 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
   INT_ASSERT(ret);
 
   if (fAutoAggregation) {
-    AggregationCandidateInfo *aggCandidate = preNormalizeAggCandidate[call];
-    if (aggCandidate != NULL) {
-
-      if (fReportAutoAggregation) {
-        std::stringstream message;
-        message << "Aggregation candidate ";
-        message << "has ";
-        message << (confirmed ? "confirmed" : "reverted");
-        message << " local child ";
-        message << getForallCloneTypeStr(aggCandidate->forall);
-        LOG_AA(0, message.str().c_str(), aggCandidate->candidate);
-      }
-
-      aggCandidate->logicalChildAnalyzed(call, confirmed);
-    }
-    else {
-      findAndUpdateMaybeAggAssign(call, confirmed);
-    }
+    findAndUpdateMaybeAggAssign(call, confirmed);
   }
+
   return ret;
 }
 
@@ -1661,6 +1643,16 @@ void AggregationCandidateInfo::addAggregators() {
 
 }
 
+static const char *getForallCloneTypeStr(Symbol *aggMarker) {
+  if (aggMarker->hasFlag(FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE)) {
+    return "[static and dynamic ALA clone]";
+  }
+  if (aggMarker->hasFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE)) {
+    return "[static only ALA clone]";
+  }
+  return "";
+}
+
 static const char *getForallCloneTypeStr(ForallStmt *forall) {
   switch (forall->optInfo.cloneType) {
     case STATIC_AND_DYNAMIC:
@@ -1760,13 +1752,26 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
 
     Symbol *aggregator = NULL;
 
+    std::stringstream message;
+
     if (lhsLocal) {
       INT_ASSERT(srcAggregator != gNil);
+      if (fReportAutoAggregation) {
+        message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
+      }
       aggregator = srcAggregator;
     }
     else {
       INT_ASSERT(dstAggregator != gNil);
+      if (fReportAutoAggregation) {
+        message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
+      }
       aggregator = dstAggregator;
+    }
+
+    if (fReportAutoAggregation) {
+      message << getForallCloneTypeStr(aggMarkerSE->symbol());
+      LOG_AA(0, message.str().c_str(), call);
     }
 
     return createAggCond(assign, aggregator, aggMarkerSE);
