@@ -3,11 +3,11 @@ private use List;
 
 config const testIters = 8;
 
-var lst1: list(int, true);
+var lst1: list(int, false);
 for i in 1..testIters do
   lst1.append(i);
 
-var lst2: unrolledLinkedList(int, true);
+var lst2: unrolledLinkedList(int, false);
 
 lst2.extend(lst1);
 

@@ -23,7 +23,11 @@
 
   An unrolled linked list is a linked list of small arrays, all of the same size 
   where each is so small that the insertion or deletion is fast and quick, but 
-  large enough to fill the cache line. 
+  large enough to fill the cache line. The list tends to keep each node half full.
+
+  Given a list with size N and nodeCapacity M, indexing is O(N/M). And insertion or 
+  deletion at a given place is O(N/M + M), which contains a indexing operation.
+  Appending operation, which doesn't need to index, is O(M).
 */
 module UnrolledLinkedList {
   import ChapelLocks;
