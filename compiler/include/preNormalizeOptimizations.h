@@ -58,7 +58,6 @@ class AggregationCandidateInfo {
     void addAggregators();
     void transformCandidate();
 
-    static Expr *transformPrimitive(CallExpr *call);
   private:
     void update();
     CondStmt *updateASTForAggregation(bool srcAggregation, SymExpr *aggMarkerSE);

@@ -103,6 +103,7 @@ static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call, ForallStmt *forall);
+static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed);
 static void autoAggregation(ForallStmt *forall);
 
 void doPreNormalizeArrayOptimizations() {
@@ -154,6 +155,11 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
     aggCandidate->logicalChildAnalyzed(call, confirmed);
   }
+  else {
+    std::cout << "Prefolded maybe localAccess with no aggregation candidate\n";
+    nprint_view(call->parentExpr);
+    findAndUpdateMaybeAggAssign(call, confirmed);
+  }
 
 
   return maybeArrElemSymExpr->remove();
@@ -177,6 +183,77 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
   }
 
   return NULL;
+}
+
+static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
+  std::cout << "Prefolded maybe localAccess with no aggregation candidate\n";
+  nprint_view(call->parentExpr);
+
+  bool unaggregatable = false;
+  if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    if (!confirmed) {
+      unaggregatable = true;
+    }
+  }
+
+  bool lhsOfMaybeAggAssign = false;
+  bool rhsOfMaybeAggAssign = false;
+  Symbol *tmpSym = NULL;
+  if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      SymExpr *lhsSE = toSymExpr(parentCall->get(1));
+      INT_ASSERT(lhsSE);
+
+      Symbol *lhsSym = lhsSE->symbol();
+      if (lhsSym->hasFlag(FLAG_EXPR_TEMP)) {
+        tmpSym = lhsSym;
+      }
+    }
+  }
+
+  if (tmpSym) {
+    if (CallExpr *maybeAggAssign = findMaybeAggAssignInBlock(call->getScopeBlock())) {
+      if (unaggregatable) {
+        // remove aggregators, set flags to false.
+        SymExpr *dstAggregatorSE = toSymExpr(maybeAggAssign->get(3));
+        INT_ASSERT(dstAggregatorSE);
+
+        SymExpr *srcAggregatorSE = toSymExpr(maybeAggAssign->get(4));
+        INT_ASSERT(srcAggregatorSE);
+
+        Symbol *dstAggregator = dstAggregatorSE->symbol();
+        Symbol *srcAggregator = srcAggregatorSE->symbol();
+
+        if (dstAggregator != gNil) {
+          dstAggregator->defPoint->remove();
+          dstAggregatorSE->replace(new SymExpr(gNil));
+        }
+        if (srcAggregator != gNil) {
+          srcAggregator->defPoint->remove();
+          srcAggregatorSE->replace(new SymExpr(gNil));
+        }
+      }
+      else {
+        SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
+        INT_ASSERT(lhsSE);
+
+        SymExpr *rhsSE = toSymExpr(maybeAggAssign->get(2));
+        INT_ASSERT(rhsSE);
+
+        lhsOfMaybeAggAssign = (lhsSE->symbol() == tmpSym);
+        rhsOfMaybeAggAssign = (rhsSE->symbol() == tmpSym);
+
+        if (lhsOfMaybeAggAssign || rhsOfMaybeAggAssign) {
+          // at most one can be true
+          INT_ASSERT(lhsOfMaybeAggAssign != rhsOfMaybeAggAssign);
+
+          int flagIndex = lhsOfMaybeAggAssign ? 5 : 6;
+          SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
+          maybeAggAssign->get(flagIndex)->replace(controlFlag);
+        }
+      }
+    }
+  }
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
@@ -228,46 +305,7 @@ Expr *preFoldMaybeLocalThis(CallExpr *call) {
       aggCandidate->logicalChildAnalyzed(call, confirmed);
     }
     else {
-      std::cout << "Prefolded maybe localAccess with no aggregation candidate\n";
-      nprint_view(call->parentExpr);
-
-      bool lhsOfMaybeAggAssign = false;
-      bool rhsOfMaybeAggAssign = false;
-      Symbol *tmpSym = NULL;
-      if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-        if (parentCall->isPrimitive(PRIM_MOVE)) {
-          SymExpr *lhsSE = toSymExpr(parentCall->get(1));
-          INT_ASSERT(lhsSE);
-
-          Symbol *lhsSym = lhsSE->symbol();
-          if (lhsSym->hasFlag(FLAG_EXPR_TEMP)) {
-            tmpSym = lhsSym;
-          }
-        }
-      }
-
-      if (tmpSym) {
-        if (CallExpr *maybeAggAssign = findMaybeAggAssignInBlock(call->getScopeBlock())) {
-          SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
-          INT_ASSERT(lhsSE);
-
-          SymExpr *rhsSE = toSymExpr(maybeAggAssign->get(2));
-          INT_ASSERT(rhsSE);
-
-          lhsOfMaybeAggAssign = (lhsSE->symbol() == tmpSym);
-          rhsOfMaybeAggAssign = (rhsSE->symbol() == tmpSym);
-
-          if (lhsOfMaybeAggAssign || rhsOfMaybeAggAssign) {
-            // at most one can be true
-            INT_ASSERT(lhsOfMaybeAggAssign != rhsOfMaybeAggAssign);
-
-            int argIndex = lhsOfMaybeAggAssign ? 5 : 6;
-            SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
-            maybeAggAssign->get(argIndex)->replace(controlFlag);
-
-          }
-        }
-      }
+      findAndUpdateMaybeAggAssign(call, confirmed);
     }
   }
   return ret;
@@ -1452,21 +1490,24 @@ void AggregationCandidateInfo::updateASTForRegularAssignment() {
 // called during resolution
 CondStmt *AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation,
                                                             SymExpr *aggMarkerSE) {
+  return NULL;
+}
+
+static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExpr *aggMarkerSE) {
+  INT_ASSERT(aggregator);
   INT_ASSERT(aggMarkerSE);
+
   // the candidate assignment must have been normalized, so, we expect symexpr
   // on both sides
-  SymExpr *lhsSE = toSymExpr(candidate->get(1));
-  SymExpr *rhsSE = toSymExpr(candidate->get(2));
+  SymExpr *lhsSE = toSymExpr(noOptAssign->get(1));
+  SymExpr *rhsSE = toSymExpr(noOptAssign->get(2));
   INT_ASSERT(lhsSE != NULL && rhsSE != NULL);
 
-  SET_LINENO(this->candidate);
+  SET_LINENO(noOptAssign);
 
   // generate the aggregated call
-  Symbol *aggregator = srcAggregation ? this->srcAggregator : this->dstAggregator;
-  INT_ASSERT(aggregator != NULL);
-
   Expr *callBase = buildDotExpr(aggregator, "copy");
-  this->aggCall = new CallExpr(callBase, lhsSE->copy(), rhsSE->copy());
+  CallExpr *aggCall = new CallExpr(callBase, lhsSE->copy(), rhsSE->copy());
 
   // create the conditional with regular assignment on the then block
   // and the aggregated call is on the else block
@@ -1474,22 +1515,9 @@ CondStmt *AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation,
   BlockStmt *elseBlock = new BlockStmt();
 
   CondStmt *aggCond = new CondStmt(aggMarkerSE, thenBlock, elseBlock);
-  //this->candidate->insertAfter(aggCond);
 
-  thenBlock->insertAtTail(this->candidate);
-  elseBlock->insertAtTail(this->aggCall);
-
-  // we are post-normalize, so we have to normalize the new call
-  //normalize(this->aggCall);
-  //preFold(this->aggCall);
-
-  //// remove the other aggregator if there was any
-  //if (srcAggregation && dstAggregator) {
-    //dstAggregator->defPoint->remove();
-  //}
-  //else if (!srcAggregation && srcAggregator) {
-    //srcAggregator->defPoint->remove();
-  //}
+  thenBlock->insertAtTail(noOptAssign);
+  elseBlock->insertAtTail(aggCall);
 
   return aggCond;
 }
@@ -1700,22 +1728,21 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
   return false;
 }
 
-Expr *AggregationCandidateInfo::transformPrimitive(CallExpr *call) {
+Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   INT_ASSERT(call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN));
 
   Expr *rhs = call->get(2)->remove();
   Expr *lhs = call->get(1)->remove();
 
   CallExpr *assign = new CallExpr("=", lhs, rhs);
-  AggregationCandidateInfo *info = new AggregationCandidateInfo(assign, NULL);
 
   SymExpr *srcAggregatorSE = toSymExpr(call->get(2)->remove());
   INT_ASSERT(srcAggregatorSE);
   SymExpr *dstAggregatorSE = toSymExpr(call->get(1)->remove());
   INT_ASSERT(dstAggregatorSE);
 
-  info->srcAggregator = srcAggregatorSE->symbol();
-  info->dstAggregator = dstAggregatorSE->symbol();
+  Symbol *srcAggregator = srcAggregatorSE->symbol();
+  Symbol *dstAggregator = dstAggregatorSE->symbol();
 
   SymExpr *rhsLocalSE = toSymExpr(call->get(2)->remove());
   INT_ASSERT(rhsLocalSE);
@@ -1725,45 +1752,35 @@ Expr *AggregationCandidateInfo::transformPrimitive(CallExpr *call) {
   bool rhsLocal = (rhsLocalSE->symbol() == gTrue);
   bool lhsLocal = (lhsLocalSE->symbol() == gTrue);
 
-  info->lhsLocalityInfo = lhsLocal ? LOCAL : UNKNOWN;
-  info->rhsLocalityInfo = rhsLocal ? LOCAL : UNKNOWN;
-
   SymExpr *aggMarkerSE = toSymExpr(call->get(1)->remove());
   INT_ASSERT(aggMarkerSE);
 
   if (lhsLocal || rhsLocal) {
     INT_ASSERT(lhsLocal != rhsLocal);
 
-    bool srcAggregation;
+    Symbol *aggregator = NULL;
 
     if (lhsLocal) {
-      INT_ASSERT(info->srcAggregator != gNil);
-      srcAggregation = true;
+      INT_ASSERT(srcAggregator != gNil);
+      aggregator = srcAggregator;
     }
     else {
-      INT_ASSERT(info->dstAggregator != gNil);
-      srcAggregation = false;
+      INT_ASSERT(dstAggregator != gNil);
+      aggregator = dstAggregator;
     }
 
-    //return info->updateASTForAggregation(srcAggregation, aggMarkerSE);
-    CondStmt *aggCond = info->updateASTForAggregation(srcAggregation, aggMarkerSE);
-
-    return aggCond;
+    return createAggCond(assign, aggregator, aggMarkerSE);
   }
   else {
     aggMarkerSE->symbol()->defPoint->remove();
-    if (info->srcAggregator != gNil) {
-      info->srcAggregator->defPoint->remove();
+    if (srcAggregator != gNil) {
+      srcAggregator->defPoint->remove();
     }
-    if (info->dstAggregator != gNil) {
-      info->dstAggregator->defPoint->remove();
+    if (dstAggregator != gNil) {
+      dstAggregator->defPoint->remove();
     }
     return assign;
   }
-}
-
-Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
-  return AggregationCandidateInfo::transformPrimitive(call);
 }
 
 void AggregationCandidateInfo::transformCandidate() {
