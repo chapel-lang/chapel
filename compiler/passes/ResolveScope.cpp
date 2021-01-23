@@ -281,6 +281,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNilChecking);
   extend(gOverloadSetsChecks);
   extend(gDivZeroChecking);
+  extend(gCacheRemote);
   extend(gPrivatization);
   extend(gLocal);
   extend(gWarnUnstable);
