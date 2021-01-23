@@ -1,12 +1,10 @@
 // Parallel Iterators
 
 /*
-  Parallel Iterators Primer
-   
   This primer explains how to write parallel iterators in Chapel,
   which can be used to drive parallel ``forall`` loops.  It assumes
   that the reader already knows how to define serial iterators in
-  Chapel, as summarized the `iterators`_ primer, for example.
+  Chapel, as summarized in the iterators primer, for example.
 
   Chapel has two main flavors of parallel iterators: `Standalone`
   parallel iterators are the simplest form and can be used to define
@@ -27,8 +25,8 @@
 */
 
 /*
-Example: count
---------------
+Motivating Example: a `count` iterator
+--------------------------------------
 */
 
 // In this primer, we're going to create a simple iterator named
@@ -38,10 +36,11 @@ Example: count
 // default), and it will yield ``n`` integers starting with ``low``.
 //
 // We'll use the following config const ``numTasks`` to indicate the
-// degree of parallelism that count should use in its forall loops.
-// By default, we've set it to the maximum amount of parallelism
-// expected on the current locale, but this can be overridden on the
-// executable command-line using the ``--numTasks=<n>`` option.
+// degree of parallelism that ``count()`` should use in its forall
+// loops.  By default, we've set it to the maximum amount of
+// parallelism expected on the current locale, but this can be
+// overridden on the executable command-line using the
+// ``--numTasks=<n>`` option.
 //
 config const numTasks = here.maxTaskPar;
 if numTasks < 1 then
@@ -50,14 +49,14 @@ if numTasks < 1 then
 //
 // If compiled with ``verbose`` set to ``true``, the parallel
 // iterators in this primer will print indications of what they're
-// doing under the covers.
+// doing under the surface.
 //
 config param verbose = false;
 
 //
-// Declare a problem size for this test.  By default we use a small
-// problem size to make the output readable.  Of course, to use the
-// parallelism effectively you'd want to use a much larger problem
+// Next, we declare a problem size for this test.  By default we use a
+// small problem size to make the output readable.  Of course, to use
+// the parallelism effectively you'd want to use a much larger problem
 // size (override on the execution command-line using the
 // ``--probSize=<n>`` option).
 //
@@ -68,7 +67,7 @@ var A: [1..probSize] real;
 //
 // To get started, we'll define a traditional serial iterator for
 // ``count``.  In part, this is for purposes of illustration in this
-// primer.  However, it is also a requirement in that Chapel's current
+// primer.  However, it is also a necessity in that Chapel's current
 // implementation of parallel iterators requires there to be a serial
 // overload of the iterator as well, to model the expected signature
 // and yielded type.
@@ -116,25 +115,26 @@ writeln();
 /*
 .. primers-parIters-standalone-parallel
 
-count: standalone parallel
---------------------------
+A standalone parallel `count` iterator
+--------------------------------------
 */
 
 
 // To create a parallel version of ``count``, we will declare a second
 // overload of the iterator with the same signature, but an additional
 // ``param`` argument named ``tag`` of built-in enumerated type
-// ``iterKind`` to distinguish it from the serial version.  The author
-// of a standalone parallel iterator should use a ``where`` clause to
-// distinguish this overload from others.  Specifically, when the
-// Chapel compiler attempts to implement a forall loop like ``forall
-// in in count(...)``, it will attempt to resolve the iterator by
-// passing in ``iterKind.standalone`` as its value, to distinguish it
-// from the serial iterator above.  This argument is what marks this
-// version of the iterator as a parallel iterator.  After this ``tag``
-// argument, the rest of the argument list should match that of the
-// serial iterator exactly.  For the ``count()`` example, this means
-// providing the same ``n`` and ``low`` arguments as before.
+// ``iterKind``, to distinguish it from the serial version.  The
+// author of a standalone parallel iterator should use a ``where``
+// clause to distinguish this overload from others.  Specifically,
+// when the Chapel compiler attempts to implement a forall loop like
+// ``forall i in count(...)``, it will attempt to resolve the iterator
+// by passing in ``iterKind.standalone`` as its value, to distinguish
+// it from the serial iterator above.  This argument is what marks
+// this version of the iterator as a parallel iterator.  After the
+// ``tag`` argument, the rest of the argument list should exactly
+// match that of the serial iterator.  For the ``count()`` example,
+// this means providing the same ``n`` and ``low`` arguments as
+// before.
 //
 // Unlike serial iterators, parallel iterators are allowed to contain
 // ``yield`` statements within parallel constructs like ``coforall``,
@@ -171,16 +171,15 @@ iter count(param tag: iterKind, n: int, low: int = 1)
 /*
 .. primers-parIters-standalone-usage
 
-Standalone parallel count(): usage
-----------------------------------
+Using the standalone parallel 'count' iterator
+----------------------------------------------
 */
 
 // Having defined a standalone parallel iterator, we can execute the
 // same loops as before, but using forall loops to make the execution
-// parallel.  We start with some simple invocations as before.  In
-// these invocations, the ``count()`` standalone parallel iterator is
-// used since it is the only thing being iterated over (``A`` is being
-// randomly accessed within the loop.)
+// parallel.  Since these forall loops are not using zippered
+// iteration, the standalone version of the ``count()`` iterator is
+// used.
 //
 forall i in count(probSize) do
   A[i] = i:real;
