@@ -27,7 +27,7 @@
 #include "ForLoop.h"
 #include "optimizations.h"
 #include "passes.h"
-#include "preNormalizeOptimizations.h"
+#include "forallOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"

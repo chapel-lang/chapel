@@ -26,7 +26,7 @@
 #include "LoopStmt.h"
 #include "passes.h"
 #include "preFold.h"
-#include "preNormalizeOptimizations.h"
+#include "forallOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "view.h"
