@@ -20,11 +20,13 @@
 
 module ChapelAutoAggregation {
   private use CopyAggregation;
+  private use AggregationPrimitives only getEnvInt;
 
   config param verboseAggregation = false;
-  const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
-  const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", 4096);
-  const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", 4096);
+
+  private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);
+  private const dstBuffSize = getEnvInt("CHPL_AGGREGATION_DST_BUFF_SIZE", 4096);
+  private const srcBuffSize = getEnvInt("CHPL_AGGREGATION_SRC_BUFF_SIZE", 4096);
 
   pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(arr: []) {
@@ -69,13 +71,6 @@ module ChapelAutoAggregation {
   // message
   proc chpl__arrayIteratorYieldsLocalElements(type a) param {
     return false;
-  }
-
-  private proc getEnvInt(name: string, default: int): int {
-    extern proc getenv(name : c_string) : c_string;
-    var strval = getenv(name.localize().c_str()): string;
-    if strval.isEmpty() { return default; }
-    return try! strval: int;
   }
 
   module CopyAggregation {
@@ -293,6 +288,13 @@ module ChapelAutoAggregation {
 
     inline proc PUT(addr, node, rAddr, size) {
       __primitive("chpl_comm_put", addr, node, rAddr, size);
+    }
+
+    proc getEnvInt(name: string, default: int): int {
+      extern proc getenv(name : c_string) : c_string;
+      var strval = getenv(name.localize().c_str()): string;
+      if strval.isEmpty() { return default; }
+      return try! strval: int;
     }
 
     record remoteBuffer {

@@ -53,7 +53,7 @@ proc main() {
         unorderedCopy(tmp[i], A[rindex[i]]);
     }
     when Mode.aggregated {
-      use CopyAggregation;
+      use ChapelAutoAggregation.CopyAggregation;
       forall i in D2 with (var agg = new SrcAggregator(int)) do
         agg.copy(tmp[i], A[rindex[i]]);
     }
