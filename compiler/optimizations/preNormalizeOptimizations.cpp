@@ -105,6 +105,8 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call, ForallStmt *forall);
 static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed);
+static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block);
+static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex);
 static void autoAggregation(ForallStmt *forall);
 
 void doPreNormalizeArrayOptimizations() {
@@ -146,112 +148,6 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
   }
 
   return maybeArrElemSymExpr->remove();
-}
-
-static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
-  Expr *cur = block->body.last();
-  
-  // at this point, only skippable call seems like PRIM_END_OF_STATEMENT, so
-  // just skip that and give up after.
-  if (CallExpr *curCall = toCallExpr(cur)) {
-    if (curCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
-      cur = cur->prev;
-    }
-  }
-
-  if (CallExpr *curCall = toCallExpr(cur)) {
-    if (curCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
-      return curCall;
-    }
-  }
-
-  return NULL;
-}
-
-static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
-  bool unaggregatable = false;
-  if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    if (!confirmed) {
-      unaggregatable = true;
-    }
-  }
-
-  bool lhsOfMaybeAggAssign = false;
-  bool rhsOfMaybeAggAssign = false;
-  Symbol *tmpSym = NULL;
-  if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
-    if (parentCall->isPrimitive(PRIM_MOVE)) {
-      SymExpr *lhsSE = toSymExpr(parentCall->get(1));
-      INT_ASSERT(lhsSE);
-
-      Symbol *lhsSym = lhsSE->symbol();
-      if (lhsSym->hasFlag(FLAG_EXPR_TEMP)) {
-        tmpSym = lhsSym;
-      }
-    }
-  }
-
-  if (tmpSym) {
-    if (CallExpr *maybeAggAssign = findMaybeAggAssignInBlock(call->getScopeBlock())) {
-
-
-      if (fReportAutoAggregation) {
-        std::stringstream message;
-
-        SymExpr *aggMarkerSE = toSymExpr(maybeAggAssign->get(7));
-        INT_ASSERT(aggMarkerSE);
-
-        message << "Aggregation candidate ";
-        message << "has ";
-        message << (confirmed ? "confirmed" : "reverted");
-        message << " local child ";
-        message << getForallCloneTypeStr(aggMarkerSE->symbol());
-        LOG_AA(0, message.str().c_str(), call);
-      }
-
-      if (unaggregatable) {
-        // remove aggregators, set flags to false.
-        SymExpr *dstAggregatorSE = toSymExpr(maybeAggAssign->get(3));
-        INT_ASSERT(dstAggregatorSE);
-
-        SymExpr *srcAggregatorSE = toSymExpr(maybeAggAssign->get(4));
-        INT_ASSERT(srcAggregatorSE);
-
-        Symbol *dstAggregator = dstAggregatorSE->symbol();
-        Symbol *srcAggregator = srcAggregatorSE->symbol();
-
-        if (dstAggregator != gNil) {
-          dstAggregator->defPoint->remove();
-          dstAggregatorSE->replace(new SymExpr(gNil));
-        }
-        if (srcAggregator != gNil) {
-          srcAggregator->defPoint->remove();
-          srcAggregatorSE->replace(new SymExpr(gNil));
-        }
-      }
-      else {
-        // TODO: if we have added an aggregator for this side, and confirming it
-        // to be local here, we should remove the added aggregator
-        SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
-        INT_ASSERT(lhsSE);
-
-        SymExpr *rhsSE = toSymExpr(maybeAggAssign->get(2));
-        INT_ASSERT(rhsSE);
-
-        lhsOfMaybeAggAssign = (lhsSE->symbol() == tmpSym);
-        rhsOfMaybeAggAssign = (rhsSE->symbol() == tmpSym);
-
-        if (lhsOfMaybeAggAssign || rhsOfMaybeAggAssign) {
-          // at most one can be true
-          INT_ASSERT(lhsOfMaybeAggAssign != rhsOfMaybeAggAssign);
-
-          int flagIndex = lhsOfMaybeAggAssign ? 5 : 6;
-          SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
-          maybeAggAssign->get(flagIndex)->replace(controlFlag);
-        }
-      }
-    }
-  }
 }
 
 Expr *preFoldMaybeLocalThis(CallExpr *call) {
@@ -1926,5 +1822,110 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   symExprToReplace->replace(primCall);
 
   return true;
+}
+
+static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
+  Expr *cur = block->body.last();
+  
+  // at this point, only skippable call seems like PRIM_END_OF_STATEMENT, so
+  // just skip that and give up after.
+  if (CallExpr *curCall = toCallExpr(cur)) {
+    if (curCall->isPrimitive(PRIM_END_OF_STATEMENT)) {
+      cur = cur->prev;
+    }
+  }
+
+  if (CallExpr *curCall = toCallExpr(cur)) {
+    if (curCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
+      return curCall;
+    }
+  }
+
+  return NULL;
+}
+
+static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex) {
+  INT_ASSERT(call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN));
+
+  SymExpr *aggregatorSE = toSymExpr(call->get(argIndex));
+  INT_ASSERT(aggregatorSE);
+  Symbol *aggregator = aggregatorSE->symbol();
+  if (aggregator != gNil) {
+    aggregator->defPoint->remove();
+    aggregatorSE->replace(new SymExpr(gNil));
+  }
+}
+
+static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
+  bool unaggregatable = false;
+  if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+    if (!confirmed) {
+      unaggregatable = true;
+    }
+  }
+
+  bool lhsOfMaybeAggAssign = false;
+  bool rhsOfMaybeAggAssign = false;
+  Symbol *tmpSym = NULL;
+  if (CallExpr *parentCall = toCallExpr(call->parentExpr)) {
+    if (parentCall->isPrimitive(PRIM_MOVE)) {
+      SymExpr *lhsSE = toSymExpr(parentCall->get(1));
+      INT_ASSERT(lhsSE);
+
+      Symbol *lhsSym = lhsSE->symbol();
+      if (lhsSym->hasFlag(FLAG_EXPR_TEMP)) {
+        tmpSym = lhsSym;
+      }
+    }
+  }
+
+  if (tmpSym) {
+    if (CallExpr *maybeAggAssign = findMaybeAggAssignInBlock(call->getScopeBlock())) {
+
+
+      if (fReportAutoAggregation) {
+        std::stringstream message;
+
+        SymExpr *aggMarkerSE = toSymExpr(maybeAggAssign->get(7));
+        INT_ASSERT(aggMarkerSE);
+
+        message << "Aggregation candidate ";
+        message << "has ";
+        message << (confirmed ? "confirmed" : "reverted");
+        message << " local child ";
+        message << getForallCloneTypeStr(aggMarkerSE->symbol());
+        LOG_AA(0, message.str().c_str(), call);
+      }
+
+      if (unaggregatable) {
+        removeAggregatorFromMaybeAggAssign(maybeAggAssign, 3);
+        removeAggregatorFromMaybeAggAssign(maybeAggAssign, 4);
+      }
+      else {
+        // TODO: if we have added an aggregator for this side, and confirming it
+        // to be local here, we should remove the added aggregator
+        SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
+        INT_ASSERT(lhsSE);
+
+        SymExpr *rhsSE = toSymExpr(maybeAggAssign->get(2));
+        INT_ASSERT(rhsSE);
+
+        lhsOfMaybeAggAssign = (lhsSE->symbol() == tmpSym);
+        rhsOfMaybeAggAssign = (rhsSE->symbol() == tmpSym);
+
+        if (lhsOfMaybeAggAssign || rhsOfMaybeAggAssign) {
+          // at most one can be true
+          INT_ASSERT(lhsOfMaybeAggAssign != rhsOfMaybeAggAssign);
+
+          int flagIndex = lhsOfMaybeAggAssign ? 5 : 6;
+          SymExpr *controlFlag = new SymExpr(confirmed ? gTrue : gFalse);
+          maybeAggAssign->get(flagIndex)->replace(controlFlag);
+
+          int aggToRemoveIndex = lhsOfMaybeAggAssign ? 3 : 4;
+          removeAggregatorFromMaybeAggAssign(maybeAggAssign, aggToRemoveIndex);
+        }
+      }
+    }
+  }
 }
 
