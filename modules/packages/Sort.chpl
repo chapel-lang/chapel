@@ -797,6 +797,119 @@ module BinaryInsertionSort {
 }
 
 pragma "no doc"
+module TimSort {
+  private use Sort;
+
+    /*
+    Sort the 1D array `Data` using a parallel timSort algorithm.
+    For more information on timSort, follow the link.
+      https://github.com/python/cpython/blob/master/Objects/listsort.txt
+
+    :arg Data: The array to be sorted
+    :type Data: [] `eltType`
+    :arg blockSize: use :proc: `insertionSort` on blocks of `blockSize`
+    :type blockSize: `integral`
+    :arg comparator: :ref:`Comparator <comparators>` record that defines how the
+       data is sorted.
+
+   */
+
+  proc timSort(Data: [?Dom] ?eltType, blockSize=16, comparator:?rec=defaultComparator) {
+    chpl_check_comparator(comparator, eltType);
+
+    if Dom.rank != 1 {
+      compilerError("timSort() requires 1-D array");
+    }
+
+    _TimSort(Data, Dom.alignedLow, Dom.alignedHigh, blockSize, comparator);
+  }
+
+  private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
+    import Sort.InsertionSort;
+
+    /*Parallely apply insertionSort on each block of size `blockSize`
+     using forall loop*/
+
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const size = (hi - lo) / stride + 1;
+    const chunks = (size + blockSize - 1) / blockSize;
+    
+    forall i in 0..#chunks {
+      InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
+    }
+
+    /* apply merge operations on each block
+    *as the merges at a level are independent of each other
+    *they can be applied parallely 
+    */
+
+    var numSize = blockSize;
+    while(numSize < size) {
+      forall i in 0..<size by 2 * numSize {
+
+        const l = lo + i * stride;
+        const mid = lo + (i + numSize - 1) * stride;
+        const r = min(lo + (i + 2 * numSize - 1) * stride, hi);
+
+        _Merge(Data, l, mid, r, comparator=comparator);
+      }
+
+      numSize = numSize * 2;
+
+    }
+  }
+
+  /*
+   This TimSort._Merge() differs from MergeSort._Merge() in the following way:
+   MergeSort._Merge() alternates the storage of segments in the original memory and the copied memory. 
+   TimSort._Merge() creates a copy of the segments to be merged and 
+   stores the results back into the original memory.
+  */
+  private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
+    /* Data[lo..mid by stride] is much slower than Data[lo..mid] when
+     * Dom is unstrided.  So specify the latter explicitly when possible. */
+    if mid >= hi {
+      return;
+    }
+    const stride = if Dom.stridable then abs(Dom.stride) else 1;
+    const a1range = if Dom.stridable then lo..mid by stride else lo..mid;
+    const a1max = mid;
+
+    const a2range = if Dom.stridable then (mid+stride)..hi by stride else (mid+1)..hi;
+    const a2max = hi;
+
+    var A1 = Dst[a1range];
+    var A2 = Dst[a2range];
+
+    var a1 = a1range.first;
+    var a2 = a2range.first;
+    var i = lo;
+    while ((a1 <= a1max) && (a2 <= a2max)) {
+      if (chpl_compare(A1(a1), A2(a2), comparator) <= 0) {
+        Dst[i] = A1[a1];
+        a1 += stride;
+        i += stride;
+      } else {
+        Dst[i] = A2[a2];
+        a2 += stride;
+        i += stride;
+      }
+    }
+    while (a1 <= a1max) {
+      Dst[i] = A1[a1];
+      a1 += stride;
+      i += stride;
+    }
+    while (a2 <= a2max) {
+      Dst[i] = A2[a2];
+      a2 += stride;
+      i += stride;
+    }
+  }
+}
+
+
+pragma "no doc"
 module MergeSort {
   private use Sort;
   /*
