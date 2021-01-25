@@ -452,6 +452,7 @@ static void moveInitializeVarArgsTuple(FnSymbol* fn, ArgSymbol* formal,
   }
 
   normalize(block);
+  block->flattenAndRemove();
 }
 
 static void expandVarArgsBody(FnSymbol*      fn,
