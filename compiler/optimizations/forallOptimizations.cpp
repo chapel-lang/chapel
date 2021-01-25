@@ -1522,6 +1522,8 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   SymExpr *aggMarkerSE = toSymExpr(call->get(1)->remove());
   INT_ASSERT(aggMarkerSE);
 
+  Expr *replacement = NULL;
+
   if (lhsLocal || rhsLocal) {
     INT_ASSERT(lhsLocal != rhsLocal);
 
@@ -1529,29 +1531,30 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
 
     std::stringstream message;
 
-    if (lhsLocal) {
-      INT_ASSERT(srcAggregator != gNil);
+    if (lhsLocal && (srcAggregator != gNil)) {
       if (fReportAutoAggregation) {
         message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
       }
       aggregator = srcAggregator;
     }
-    else {
-      INT_ASSERT(dstAggregator != gNil);
+    else if (rhsLocal && (dstAggregator != gNil)) {
       if (fReportAutoAggregation) {
         message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
       }
       aggregator = dstAggregator;
     }
 
-    if (fReportAutoAggregation) {
-      message << getForallCloneTypeStr(aggMarkerSE->symbol());
-      LOG_AA(0, message.str().c_str(), call);
-    }
+    if (aggregator != NULL) {
+      if (fReportAutoAggregation) {
+        message << getForallCloneTypeStr(aggMarkerSE->symbol());
+        LOG_AA(0, message.str().c_str(), call);
+      }
 
-    return createAggCond(assign, aggregator, aggMarkerSE);
+      replacement = createAggCond(assign, aggregator, aggMarkerSE);
+    }
   }
-  else {
+  
+  if (replacement == NULL) {
     aggMarkerSE->symbol()->defPoint->remove();
     if (srcAggregator != gNil) {
       srcAggregator->defPoint->remove();
@@ -1559,8 +1562,10 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
     if (dstAggregator != gNil) {
       dstAggregator->defPoint->remove();
     }
-    return assign;
+    replacement = assign;
   }
+
+  return replacement;
 }
 
 void AggregationCandidateInfo::transformCandidate() {
