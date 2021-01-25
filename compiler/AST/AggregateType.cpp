@@ -171,33 +171,52 @@ void AggregateType::markAsGenericWithDefaults() {
 void AggregateType::verify() {
   Type::verify();
 
-  if (astTag != E_AggregateType) {
+  if (astTag != E_AggregateType)
     INT_FATAL(this, "Bad AggregateType::astTag");
 
-  } else if (aggregateTag != AGGREGATE_CLASS  &&
-             aggregateTag != AGGREGATE_RECORD &&
-             aggregateTag != AGGREGATE_UNION) {
+  if (aggregateTag != AGGREGATE_CLASS  &&
+      aggregateTag != AGGREGATE_RECORD &&
+      aggregateTag != AGGREGATE_UNION)
     INT_FATAL(this, "Bad AggregateType::aggregateTag");
 
-  } else if (fields.parent != this || inherits.parent != this) {
+  if (fields.parent != this || inherits.parent != this)
     INT_FATAL(this, "Bad AList::parent in AggregateType");
 
-  } else {
-    for_alist(expr, fields) {
-      if (expr->parentSymbol != symbol) {
-        INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
-      }
+  for_alist(expr, fields) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::fields::parentSymbol");
     }
+  }
 
-    for_alist(expr, inherits) {
-      if (expr->parentSymbol != symbol) {
-        INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
-      }
+  for_alist(expr, inherits) {
+    if (expr->parentSymbol != symbol) {
+      INT_FATAL(this, "Bad AggregateType::inherits::parentSymbol");
     }
+  }
 
-    for_alist(expr, forwardingTo) {
-      if (expr->parentSymbol != symbol)
-        INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
+  for_alist(expr, forwardingTo) {
+    if (expr->parentSymbol != symbol)
+      INT_FATAL(this, "Bad AggregateType::forwardingTo::parentSymbol");
+  }
+
+  if (this->instantiatedFrom && !this->instantiatedFrom->inTree())
+    INT_FATAL(this, "instantiatedFrom not in tree");
+
+  // check substitutions
+  form_Map(SymbolMapElem, e, this->substitutions) {
+    if (e->key && !e->key->inTree())
+      INT_FATAL(this, "Substitution key not in tree");
+    if (e->value && !e->value->inTree())
+      INT_FATAL(this, "Substitution value not in tree");
+  }
+
+  // check substitutionsPostResolve
+  {
+    size_t n = this->substitutionsPostResolve.size();
+    for (size_t i = 0; i < n; i++) {
+      const NameAndSymbol& ns = this->substitutionsPostResolve[i];
+      if (ns.value && !ns.value->inTree())
+        INT_FATAL(this, "Substitution value not in tree");
     }
   }
 }
@@ -875,6 +894,19 @@ static void resolveConcreteFields(AggregateType* ret, CallExpr* call, const char
   }
 }
 
+static Symbol* substitutionForField(Symbol* field, SymbolMap& subs) {
+  Symbol* retval = NULL;
+
+  form_Map(SymbolMapElem, e, subs) {
+    if (field->name == e->key->name) {
+      retval = e->value;
+      break;
+    }
+  }
+
+  return retval;
+}
+
 AggregateType* AggregateType::generateType(CallExpr* call, const char* callString) {
 
   checkNumArgsErrors(this, call, callString);
@@ -1384,20 +1416,6 @@ AggregateType* AggregateType::instantiationWithParent(AggregateType* parent, Exp
     symbol->defPoint->insertBefore(new DefExpr(retval->symbol));
 
     instantiations.push_back(retval);
-  }
-
-  return retval;
-}
-
-Symbol* AggregateType::substitutionForField(Symbol*    field,
-                                            SymbolMap& subs) const {
-  Symbol* retval = NULL;
-
-  form_Map(SymbolMapElem, e, subs) {
-    if (strcmp(field->name, e->key->name) == 0) {
-      retval = e->value;
-      break;
-    }
   }
 
   return retval;
@@ -2851,18 +2869,14 @@ void AggregateType::addRootType() {
 *                                                                             *
 ************************************** | *************************************/
 
-Symbol* AggregateType::getSubstitution(const char* name) {
-  Vec<Symbol*> keys;
+Symbol* AggregateType::getSubstitution(const char* name) const {
   Symbol*      retval = NULL;
 
-  substitutions.get_keys(keys);
-
-  forv_Vec(Symbol, key, keys) {
-    if (strcmp(name, key->name) == 0) {
-      retval = substitutions.get(key);
-      break;
-    }
+  if (fVerify) {
+    INT_ASSERT(name == astr(name));
   }
+
+  retval = this->getSubstitutionWithName(name);
 
   if (retval == NULL && dispatchParents.n == 1) {
     retval = dispatchParents.v[0]->getSubstitution(name);
@@ -2953,23 +2967,15 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
 }
 
 Type* AggregateType::cArrayElementType() const {
-  TypeSymbol* eltTS = NULL;
   INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
-  form_Map(SymbolMapElem, e, substitutions) {
-    if (TypeSymbol* ets = toTypeSymbol(e->value))
-      eltTS = ets;
-  }
+  TypeSymbol* eltTS = toTypeSymbol(getSubstitutionWithName(astr("eltType")));
   INT_ASSERT(eltTS);
   return eltTS->type;
 }
 
 int64_t AggregateType::cArrayLength() const {
-  VarSymbol* sizeVar = NULL;
   INT_ASSERT(symbol->hasFlag(FLAG_C_ARRAY));
-  form_Map(SymbolMapElem, e, substitutions) {
-    if (VarSymbol* evs = toVarSymbol(e->value))
-      sizeVar = evs;
-  }
+  VarSymbol* sizeVar = toVarSymbol(getSubstitutionWithName(astr("size")));
   INT_ASSERT(sizeVar);
   Immediate* imm = getSymbolImmediate(sizeVar);
   INT_ASSERT(imm);

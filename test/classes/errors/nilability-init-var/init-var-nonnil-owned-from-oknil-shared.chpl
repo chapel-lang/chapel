@@ -7,5 +7,3 @@ class MyClass {
 var rhs: shared MyClass?;
 
 var lhs: owned MyClass = rhs;
-
-compilerError("done");

@@ -1,2 +1,3 @@
 bad-managed-init.chpl:9: In function 'main':
 bad-managed-init.chpl:11: error: cannot coerce 'owned C(real(64),4)' to 'owned C(int(64))' in initialization
+note: An additional error is hidden. Use --print-additional-errors to see it.

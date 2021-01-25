@@ -145,6 +145,15 @@ foreach_ast(decl_gvecs);
 typedef Map<Symbol*,Symbol*>     SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
+typedef struct {
+  const char* name; //key
+  Symbol* value;
+  bool isParam;
+  bool isType;
+} NameAndSymbol;
+
+typedef std::vector<NameAndSymbol> SymbolNameVec;
+
 //
 // enumerated type of all AST node types
 //

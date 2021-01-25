@@ -178,9 +178,9 @@ insertLineNumber(CallExpr* call) {
       FnSymbol* fn = call->resolvedFunction();
 
       INT_ASSERT(fn);
-      INT_ASSERT(fn->substitutions.n);
+      INT_ASSERT(fn->substitutionsPostResolve.size() > 0);
 
-      VarSymbol* var = toVarSymbol(fn->substitutions.v[0].value);
+      VarSymbol* var = toVarSymbol(fn->substitutionsPostResolve[0].value);
 
       INT_ASSERT(var);
       INT_ASSERT(var->immediate);

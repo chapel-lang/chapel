@@ -1,2 +1,3 @@
 borrowed-array.chpl:2: error: cannot make [domain(1,int(64),false)] real(64) into a borrowed class
-borrowed-array.chpl:2: error: cannot make [domain(1,int(64),false)] real(64) into a borrowed class
+borrowed-array.chpl:2: error: type mismatch in assignment of ranges with different boundedType parameters
+note: An additional error is hidden. Use --print-additional-errors to see it.

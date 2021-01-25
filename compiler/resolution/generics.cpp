@@ -596,7 +596,7 @@ FnSymbol* determineRootFunc(FnSymbol* fn) {
   FnSymbol* root = fn;
 
   while (root->instantiatedFrom != NULL &&
-         root->numFormals()     == root->instantiatedFrom->numFormals()) {
+         root->numFormals() == root->instantiatedFrom->numFormals()) {
     root = root->instantiatedFrom;
   }
 

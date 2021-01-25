@@ -1,4 +1,4 @@
 invalid-set-type-again.chpl:7: In method 'init=':
 invalid-set-type-again.chpl:8: error: Cannot replace an instantiated field with another type
 invalid-set-type-again.chpl:8: note: field 'fixed' has type 'real(64)' but is set to 'int(64)'
-  invalid-set-type-again.chpl:24: called as R(real(64),real(64)).init=(rhs: R(int(64),int(64)))
+  invalid-set-type-again.chpl:24: called as (R(real(64),real(64))).init=(rhs: R(int(64),int(64)))
