@@ -846,6 +846,8 @@ recent.
     Packages will be listed regardless of their ``chplVersion`` compatibility.
 
 
+.. _submit-a-package:
+
 Submit a Package
 ================
 
