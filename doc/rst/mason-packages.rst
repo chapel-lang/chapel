@@ -3,9 +3,9 @@
 Mason Packages
 ==============
 
-Community-developed modules are available as Mason packages on the
-`Mason registry repository <https://github.com/chapel-lang/mason-registry/>`_.
-These packages can be downloaded and used through :ref:`Mason <readme-mason>`,
+Community-developed modules are available as mason packages on the
+`mason registry repository <https://github.com/chapel-lang/mason-registry/>`_.
+These packages can be downloaded and used through :ref:`mason <readme-mason>`,
 Chapel's package manager.
 
 Browsing available packages is best done through the ``mason`` command line
