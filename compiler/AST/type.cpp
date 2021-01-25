@@ -941,6 +941,10 @@ void initCompilerGlobals() {
   gDivZeroChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
 
+  gCacheRemote = new VarSymbol("CHPL_CACHE_REMOTE", dtBool);
+  gCacheRemote->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gCacheRemote, fCacheRemote);
+
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
   setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));

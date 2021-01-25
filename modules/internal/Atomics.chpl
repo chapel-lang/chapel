@@ -83,7 +83,7 @@
 pragma "atomic module"
 module Atomics {
 
-  use ChapelBase;             // to get CHPL_CACHE_REMOTE...
+  use ChapelBase;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
 
   pragma "no doc"

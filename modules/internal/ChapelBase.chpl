@@ -39,9 +39,6 @@ module ChapelBase {
   // the default low bound to use for arrays, tuples, etc.
   config param defaultLowBound = 0;
 
-  // Is the cache for remote data enabled at compile time?
-  config param CHPL_CACHE_REMOTE: bool = false;
-
   // minimum buffer size allocated for string/bytes
   config param chpl_stringMinAllocSize = 0;
 
