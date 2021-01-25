@@ -1781,8 +1781,6 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
         removeAggregatorFromMaybeAggAssign(maybeAggAssign, 4);
       }
       else {
-        // TODO: if we have added an aggregator for this side, and confirming it
-        // to be local here, we should remove the added aggregator
         SymExpr *lhsSE = toSymExpr(maybeAggAssign->get(1));
         INT_ASSERT(lhsSE);
 
