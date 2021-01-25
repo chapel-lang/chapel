@@ -2431,7 +2431,6 @@ module Sparse {
     return Y;
   }
 
-  pragma "no doc"
   /* Sparse matrix-matrix multiplication.
 
      Does not assume sorted indices, but preserves sorted indices.
@@ -2444,24 +2443,39 @@ module Sparse {
       https://link.springer.com/article/10.1007/BF02070824
 
   */
-  proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
+  private proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
     type idxType = ADom.idxType;
 
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
+    if K1 != K2 then
+      halt("Mismatched shape in sparse matrix-matrix multiplication");
+
+    //const D = {1..M, 1..N};
+    //var C = CSRMatrix(D, eltType);
+    //if A.size == 0 || B.size == 0 {
+    //  return C;
+    //}
+
+    /* Note on compressed sparse (CS) internals:
+       - startIdx.domain (indPtr) starts on 0
+       - idx.domain (ind) starts on 1
+       - data.domain starts on 1 */
+
     // major axis
+    //var indPtr: [ADom.dim(0).low..(ADom.dim(0).high+1)] idxType;
     var indPtr: [1..M+1] idxType;
 
     pass1(A, B, indPtr);
 
     const nnz = indPtr[indPtr.domain.last];
-    var indices: [1..nnz] idxType;
+    var ind: [1..nnz] idxType;
     var data: [1..nnz] eltType;
 
-    pass2(A, B, indPtr, indices, data);
+    pass2(A, B, indPtr, ind, data);
 
-    var C = CSRMatrix((M, N), data, indices, indPtr);
+    var C = CSRMatrix((M, N), data, ind, indPtr);
 
     if C.domain.sortedIndices {
       sortIndices(C);
@@ -2471,36 +2485,35 @@ module Sparse {
   }
 
 
-  pragma "no doc"
   /* Populate indPtr and total nnz (last element of indPtr) */
-  proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
+  private proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
     // TODO: Parallelize - mask -> atomic ints,
     //                   - Write a scan to compute idxPtr in O(log(n))
 
     /* Aliases for readability */
     proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.indices ref return this.dom.idx;
+    proc _array.ind ref return this.dom.idx;
 
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
     type idxType = ADom.idxType;
-    var mask: [0..<N] idxType;
-    indPtr[1] = 0;
+    var mask: [1..N] idxType;
+    indPtr[1] = 1;
     var nnz = 1: idxType;
 
     // Rows of C
-    for i in 0..<M {
+    for i in 1..M {
       var row_nnz = 0;
-      const Arange = A.indPtr[i]..A.indPtr[i+1];
+      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
       // Row pointers of A
       for jj in Arange {
         // Column index of A
-        const j = A.indices[jj];
-        const Brange = B.indPtr[j]..B.indPtr[j+1];
+        const j = A.ind[jj];
+        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
         // Row pointers of B
         for kk in Brange {
           // Column index of B
-          var k = B.indices[kk];
+          var k = B.ind[kk];
           if mask[k] != i {
             mask[k] = i;
             row_nnz += 1;
@@ -2513,43 +2526,42 @@ module Sparse {
     }
   }
 
-  pragma "no doc"
   /* Populate indices and data */
-  proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref indices, ref data) {
+  private proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
     proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.indices ref return this.dom.idx;
+    proc _array.ind ref return this.dom.idx;
 
     type idxType = ADom.idxType;
 
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
-    const cols = {0..<N};
+    const cols = {1..N};
 
     var next: [cols] idxType = -1,
         sums: [cols] eltType;
 
     var nnz = 1;
 
-    for i in 0..<M {
+    for i in 1..M {
       var head = 0:idxType,
           length = 0:idxType;
 
       // Maps row index (i) -> nnz index of A
-      const Arange = A.indPtr[i]..A.indPtr[i+1];
+      const Arange = A.indPtr[i]..A.indPtr[i+1]-1;
       for jj in Arange {
         // Non-zero column index of A for row i
-        const j = A.indices[jj];
+        const j = A.ind[jj];
         const v = A.data[jj];
 
         // Maps row index (j) -> nnz index of B
-        const Brange = B.indPtr[j]..B.indPtr[j+1];
+        const Brange = B.indPtr[j]..B.indPtr[j+1]-1;
         for kk in Brange {
           // Non-zero column index of B for row j
-          const k = B.indices[kk];
+          const k = B.ind[kk];
 
           sums[k] += v*B.data[kk];
 
@@ -2564,7 +2576,7 @@ module Sparse {
 
       // Recounting is faster than accessing 'nnz in indPtr[i]..indPtr[i+1]-1'
       for 1..length {
-        indices[nnz] = head;
+        ind[nnz] = head;
         data[nnz] = sums[head];
 
         nnz += 1;
@@ -2588,11 +2600,11 @@ module Sparse {
     const (M, N) = A.shape;
 
     proc _array.indPtr ref return this.dom.startIdx;
-    proc _array.indices ref return this.dom.idx;
-    type idxType = A.indices.eltType;
+    proc _array.ind return this.dom.idx;
+    type idxType = A.ind.eltType;
 
-    var temp: [1..A.indices.size] (idxType, eltType);
-    temp = for (idx, datum) in zip(A.indices, A.data) do (idx, datum);
+    var temp: [1..A.ind.size] (idxType, eltType);
+    temp = for (idx, datum) in zip(A.ind, A.data) do (idx, datum);
 
     for i in 1..M {
       const rowStart = A.indPtr[i],
@@ -2603,7 +2615,7 @@ module Sparse {
     }
 
     for i in temp.domain {
-      (A.indices[i], A.data[i]) = temp[i];
+      (A.ind[i], A.data[i]) = temp[i];
     }
   }
 

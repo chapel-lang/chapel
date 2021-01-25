@@ -775,6 +775,7 @@ use IO;
     assertEqual(csrAB, CSRMatrix(AB), "csrA.dot(csrB)");
   }
 
+  /* DEBUG {
   /* dot - matrix-matrix (identity) */
   {
     var A: [Dom] real;
@@ -782,6 +783,7 @@ use IO;
     var AI = dot(A, I);
     assertEqual(AI, A, "dot(A, I)");
   }
+  DEBUG } */
 
 
   /* dot - matrix-vector (identity) */
@@ -847,6 +849,7 @@ use IO;
     assertEqual(A2, C, "dot(2, A)");
   }
 
+  /* DEBUG {
   /* dot - Various matrix-matrix tests */
   {
     var A = eye(3,5);
@@ -873,6 +876,7 @@ use IO;
     var C = eye(100, 20);
     test_CSRdot(C);
   }
+  DEBUG }*/
 
   /* transpose */
   {
@@ -897,6 +901,7 @@ use IO;
   }
 
 
+  /* DEBUG {
   // matPow with sparse matrices
   {
     // Real domains
@@ -940,6 +945,7 @@ use IO;
                                    "Error in matPow with sparse matrices : non-standard domain");
      */
   }
+   DEBUG } */
 
   // Matrix Properties
   {
