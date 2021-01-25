@@ -311,7 +311,7 @@ public:
 // support for implements wrapper functions
 const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
 const char*     interfaceNameForWrapperFn(FnSymbol* fn);
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn);
+ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess);
 FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************

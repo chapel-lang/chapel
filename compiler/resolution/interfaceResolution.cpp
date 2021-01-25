@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -21,6 +20,7 @@
 #include "resolution.h"
 
 #include "callInfo.h"
+#include "driver.h"
 #include "PartialCopyData.h"
 #include "passes.h"
 #include "ResolutionCandidate.h"
@@ -202,6 +202,7 @@ static bool resolveWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
                            SymbolMap& fml2act, BlockStmt* holder,
                            //CG TODO: 'indent' is used only for debug. output
                            const char* indent,
+                           bool reportErrors,
                            FnSymbol* reqFn, Symbol*& implRef) {
   INT_ASSERT(holder->body.empty());
   CallExpr* call = new CallExpr(reqFn->name);
@@ -216,21 +217,25 @@ static bool resolveWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
 
     call->remove();
     if (holder->body.tail != NULL) {
-      USR_FATAL_CONT(istm, "the implementation for the required function %s"
-        " requires implicit conversion(s), which is currently disallowed",
-        reqFn->name);
-      USR_PRINT(target, "the implementation is here");
-      USR_PRINT(reqFn, "the required function in the interface %s is here",
-                       isym->name);
+      if (reportErrors) {
+        USR_FATAL_CONT(istm, "the implementation for the required function %s"
+          " requires implicit conversion(s), which is currently disallowed",
+          reqFn->name);
+        USR_PRINT(target, "the implementation is here");
+        USR_PRINT(reqFn, "the required function in the interface %s is here",
+                         isym->name);
+      }
       target = NULL;
       do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
     }
   } else {
     if (implRef == gDummyWitness) {
-      USR_FATAL_CONT(istm, "the required function %s is not implemented",
-                            reqFn->name);
-      USR_PRINT(reqFn, "the required function in the interface %s is here",
-                       isym->name);
+      if (reportErrors) {
+        USR_FATAL_CONT(istm, "the required function %s is not implemented",
+                              reqFn->name);
+        USR_PRINT(reqFn, "the required function in the interface %s is here",
+                         isym->name);
+      }
     } else {
       SymbolMap fml2actDup = fml2act; // avoid fml2act updates by copy()
       target = toFnSymbol(implRef->copy(&fml2actDup));
@@ -247,22 +252,33 @@ static bool resolveWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
 }
 
 //
-// Ensure this ImplementsStmt indeed implements the interface, ex.
+// Ensures this ImplementsStmt indeed implements the interface, ex.
 // * determine each witness, default or otherwise
 // * resolve each witness
+// Returns false otherwise.
 //
 // CG TODO: 'nested' is used only for debugging output
-static void resolveImplementsStmt(ImplementsStmt* istm, bool nested) {
+static bool resolveImplementsStmt(ImplementsStmt* istm, bool nested,
+                                  bool reportErrors) {
+  if (istm->id == breakOnResolveID) gdbShouldBreakHere();
   IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
   FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
   INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
-  if (wrapFn->isResolved())
-    return; // no need to resolve again
+  if (wrapFn->isResolved()) {
+    INT_ASSERT(reportErrors);
+    return true; // no need to resolve again; we must have succeeded before.
+  }
 
   if (nested) cgprint("    resolving it...\n");
   else cgprint("resolving implements statement%s for ifc %s  %s\n",
                idstring("", istm), symstring(isym), debugLoc(istm));
+
+  // ideally, removing and re-inserting 'istm' would not be needed
+  Expr* anchor = istm->next;
+  istm->remove();
+  resolveFunction(wrapFn);
+  anchor->insertBefore(istm);
 
   SymbolMap fml2act; // isym formal -> istm actual
   buildAndCheckFormals2Actuals(isym, icon, "implements statement", fml2act);
@@ -275,90 +291,241 @@ static void resolveImplementsStmt(ImplementsStmt* istm, bool nested) {
   bool witSuccess = true;
   form_Map(SymbolMapElem, wit, istm->witnesses)
     witSuccess &= resolveWitness(isym, istm, fml2act, holder,
-                                 nested ? "  " : "",
+                                 nested ? "  " : "", reportErrors,
                                  toFnSymbol(wit->key), wit->value);
   holder->remove();
   wrapFn->addFlag(FLAG_RESOLVED);
-  if (! witSuccess) USR_STOP();
+  if (reportErrors && ! witSuccess) USR_STOP();
 
   cgprint(nested ? "    ...done\n" : "\n");
+  return witSuccess;
 }
 
 void resolveImplementsStmt(ImplementsStmt* istm) {
-  resolveImplementsStmt(istm, false);
+  resolveImplementsStmt(istm, false, true);
 }
 
 
 /*********** constraintIsSatisfiedAtCallSite ***********/
 
-static void gatherVisibleWrapperFns(CallExpr* callsite, CallExpr* call2wf,
+// Build a call to the wrapper function.
+static CallExpr* buildCall2wf(InterfaceSymbol* isym, IfcConstraint* constraint,
+                              SymbolMap& substitutions) {
+  CallExpr* call2wf = new CallExpr(implementsStmtWrapperName(isym));
+  for_alist(act, constraint->consActuals)
+    call2wf->insertAtTail(act->copy(&substitutions));
+  return call2wf;
+}
+
+static void gatherVisibleWrapperFns(CallExpr* callsite,
+                                    CallExpr* call2wf,
                                     Vec<FnSymbol*>& visibleFns) {
   callsite->insertBefore(call2wf);
+
   CallInfo info;
   bool infoOK = info.isWellFormed(call2wf);
   INT_ASSERT(infoOK);
 
   findVisibleFunctionsAllPOIs(info, visibleFns);
+
   call2wf->remove();
 }
 
-static ImplementsStmt* bestVisibleImplementsStmt(CallExpr* call2wf,
-                                                 Vec<FnSymbol*>& visibleFns) {
-  ImplementsStmt* bestIstm = NULL;
-  forv_Vec(FnSymbol, wrapFn, visibleFns) {
-    ImplementsStmt* istm = implementsStmtForWrapperFn(wrapFn);
-    bool gotNonMatch = false;
+// Returns the istm within 'wrapFn' if it matches the constraint
+// represented by 'call2wf', i.e. if their arguments are pair-wise equal.
+// Otherwise returns NULL.
+// isSuccess=false when 'wrapFn' is a result of a failed attempt to infer.
+static ImplementsStmt* matchingImplStm(FnSymbol* wrapFn,
+                                       CallExpr* call2wf,
+                                       bool& isSuccess) {
+  ImplementsStmt* istm = implementsStmtForWrapperFn(wrapFn, isSuccess);
 
-    // 'istm' matches the constraint if the constraint arguments
-    // equal the implements arguments.
-    for (Expr *consArg = call2wf->argList.head,
-              *implArg = istm->iConstraint->consActuals.head;
-         consArg != NULL;
-         consArg = consArg->next, implArg = implArg->next)
-    {
-      if (toSymExpr(consArg)->symbol()->type !=
-          toSymExpr(implArg)->symbol()->type) {
-        gotNonMatch = true; break;
-      }
-    }
+  for (Expr *consArg = call2wf->argList.head,
+            *implArg = istm->iConstraint->consActuals.head;
+       consArg != NULL;
+       consArg = consArg->next, implArg = implArg->next)
 
-    if (gotNonMatch)
-      continue;
-
-    // So this istm matches. Have we seen another match before?
-    if (bestIstm == NULL)
-      bestIstm = istm;
-    else
-      // got an ambiguity, meaning that the constraint is not satisfied
-      // CG TODO: issue a warning or an error?
+    if (toSymExpr(consArg)->symbol()->type !=
+        toSymExpr(implArg)->symbol()->type)
+      // istm does not match
       return NULL;
-  }
 
-  return bestIstm;
+  return istm;
 }
 
+static void pickMatchingImplementsStmt(Vec<FnSymbol*>&  visibleFns,
+                                       CallExpr*        call2wf,
+                                       ImplementsStmt*& firstSuccess,
+                                       FnSymbol*&       firstFailure) {
+  forv_Vec(FnSymbol, wrapFn, visibleFns) {
+    bool isSuccess;
+    if (ImplementsStmt* match = matchingImplStm(wrapFn, call2wf, isSuccess)) {
+      if (isSuccess) {
+        firstSuccess = match;
+        return;
+      } else {
+        if (firstFailure == NULL)
+          firstFailure = wrapFn;
+      }
+    }
+  }
+}
+
+// Traverse lexical scopes starting with callsite's.
+// If the scope of 'wrapFn' is found first, return NULL.
+// Otherwise return the parent of 'callsite' within the earliest
+// enclosing scope that contains visible functions or a POI.
+static Expr* closestInterestingScopeAnchor(CallExpr* callsite,
+                                           FnSymbol* wrapFn) {
+  Expr*     currAnchor = callsite->getStmtExpr();
+  BlockStmt* wrapBlock = NULL;
+  if (wrapFn != NULL) {
+    wrapBlock = toBlockStmt(wrapFn->defPoint->parentExpr);
+    INT_ASSERT(wrapBlock != NULL);
+  }
+
+  while (true) {
+    BlockStmt* currBlock = toBlockStmt(currAnchor->parentExpr);
+
+    if (wrapBlock != NULL && wrapBlock == currBlock)
+      return NULL;
+
+    if (currBlock == NULL) {
+      INT_ASSERT(currAnchor->parentExpr == NULL);
+
+      // Check for a POI, like in getInstantiationPoint().
+      Symbol* parentSym = currAnchor->parentSymbol;
+      if (FnSymbol* fn = toFnSymbol(parentSym)) {
+        if (BlockStmt* instantiationPt = fn->instantiationPoint())
+          return instantiationPt;
+      } else if (TypeSymbol* ts = toTypeSymbol(parentSym)) {
+        if (BlockStmt* instantiationPt = ts->instantiationPoint)
+          return instantiationPt;
+      }
+
+      currAnchor = parentSym->defPoint;
+      continue;
+    }
+
+    // This guarantees termination of this loop:
+    // once we get to module scope, it has at least the init function.
+    if (scopeDefinesVisibleFunctions(currBlock))
+      return currAnchor;
+
+    currAnchor = currAnchor->parentExpr;
+    continue;
+  }
+}
+
+// Follows ImplementsStmt::build().
+// Clears 'call2wf'.
+static ImplementsStmt* buildInferredImplStmt(InterfaceSymbol* isym,
+                                             CallExpr* call2wf) {
+  IfcConstraint* icon = new IfcConstraint(new SymExpr(isym));
+  for_alist(actual, call2wf->argList)
+    icon->consActuals.insertAtTail(actual->remove());
+
+ return new ImplementsStmt(icon, new BlockStmt());
+}
+
+static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
+                                             InterfaceSymbol* isym,
+                                             CallExpr* call2wf,
+                                             FnSymbol* failureWrapFn) {
+  if (isym->requiredFns.n == 0)
+    // Do not infer for an empty interface.
+    return NULL;
+
+  Expr* anchor = closestInterestingScopeAnchor(callsite, failureWrapFn);
+
+  if (anchor == NULL)
+    // Closer scopes do not define any functions, so the inference outcome,
+    // if we tried to infer, would be the same, i.e. negative.
+    return NULL;
+
+  // Try to infer as if we are in anchor's scope.
+  // Place the outcome - positive or negative - next to 'anchor'.
+
+  ImplementsStmt* istm = buildInferredImplStmt(isym, call2wf);
+  anchor->insertBefore(istm);
+  FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
+  bool success = resolveImplementsStmt(istm, true, false);
+  if (success) {
+    return istm;
+  } else {
+    markImplStmtWrapFnAsFailure(wrapFn);
+    return NULL;
+  }
+}
+
+/*
+constraintIsSatisfiedAtCallSite() checks if 'constraint' is satisfied.
+Return the corresponding ImplementsStmt if yes, NULL if no.
+
+Semantics:
+- When there is/are matching visible ImplementsStmt(s), use the closest one.
+- Otherwise, infer it:
+ * Create an ImplementsStmt and check if it is correct,
+   see resolveImplementsStmt().
+ * Exception: do not infer for an empty interface (has no required functions).
+
+Efficiency:
+- To reduce the number of ImplementsStmts created to infer the same constraint
+  multiple times:
+ * Store the created ImplementsStmt in the AST
+   just like a user-written one, i.e. in a wrapper function.
+   This way it will be found and reused in subsequent lookups.
+ * Do this even if we found that it is not correct.
+   Mark the wrapper function with PRIM_ERROR to indicate this.
+   This caches the negative outcome of an attempt to infer.
+ * Place the created ImplementsStmt as far out as possible
+   so it can be reused in more cases.
+   Ex. place it in the innermost scope that defines any functions or has POI.
+*/
 ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* callsite,
                                                 IfcConstraint* constraint,
                                                 SymbolMap& substitutions) {
-  // build a call to the wrapper function
-  InterfaceSymbol* isym = constraint->ifcSymbol();
-  CallExpr* call2wf = new CallExpr(implementsStmtWrapperName(isym));
-  for_alist(act, constraint->consActuals)
-    call2wf->insertAtTail(act->copy(&substitutions));
+  if (callsite->id == breakOnResolveID  ||
+      constraint->id == breakOnResolveID ) gdbShouldBreakHere();
 
-  // An earlier version resolved the call completely.
+  InterfaceSymbol* isym = constraint->ifcSymbol();
+
+  // 'call2wf' represents 'constraint' throughout this function
+  // because it contains proiperly instantiated arguments.
+  CallExpr* call2wf = buildCall2wf(isym, constraint, substitutions);
+
+  // An earlier version resolved 'call2wf' completely.
   // That required figuring out whether the wrapper functions
   // were concrete or generic, also needed to avoid instantiating them.
   // An even earlier version checked the wrapper function's where-clause.
-  // Instead, just gather all visible functions and manually check
-  // their applicability.
+  // Both approaches increased code complexity. Instead, just gather
+  // all visible functions and manually check their applicability.
+  //
+  // If semantically allowed, see #16731, we could optimize by breaking out
+  // from gatherVisibleWrapperFns once a successful match is found.
 
   Vec<FnSymbol*> visibleFns;
   gatherVisibleWrapperFns(callsite, call2wf, visibleFns);
 
-  ImplementsStmt* bestIstm = bestVisibleImplementsStmt(call2wf, visibleFns);
+  ImplementsStmt *firstSuccess = NULL,
+                 *bestIstm = NULL;
+  FnSymbol* firstFailure = NULL;
 
-  cgprint("checking constraint for %s  %s\n",
+  pickMatchingImplementsStmt(visibleFns, call2wf,
+                             firstSuccess, firstFailure); // it sets these
+
+  if (firstSuccess != NULL)
+    // yippee, found a satisfying istm
+    bestIstm = firstSuccess;
+
+  else if (fInferImplementsStmts)
+    // We found either a negative outcome of an earlier attempt to infer
+    // in 'firstFailure', or nothing at all.
+    bestIstm = checkInferredImplStmt(callsite, isym, call2wf,  firstFailure);
+
+  call2wf = NULL; // call2wf is cleared in checkInferredImplStmt
+
+  cgprint("checked constraint for %s  %s\n",
           symstring(isym), debugLoc(constraint));
   cgprint("  for call to %s  at %s\n",
           toUnresolvedSymExpr(callsite->baseExpr)->unresolved,
@@ -384,6 +551,9 @@ ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* callsite,
 void cleanupInstantiatedCGfun(FnSymbol* fn,
                               std::vector<ImplementsStmt*>& witnesses)
 {
+  if (fatalErrorsEncountered())
+    return; // got errors, do not proceed
+
   cgprint("considering CG candidate %s%s  %s\n", symstring(fn),
           idstring("  from", fn->instantiatedFrom), debugLoc(fn));
 #ifdef PRINT_CG
@@ -396,13 +566,18 @@ void cleanupInstantiatedCGfun(FnSymbol* fn,
   }
 #endif
 
-  SymbolMap& substitutions = getPartialCopyData(fn)->partialCopyMap;
+  PartialCopyData* pcd = getPartialCopyData(fn);
+  INT_ASSERT((pcd == NULL) == (fn->interfaceInfo == NULL));
+  if (pcd == NULL)
+    return; // this function has been cleaned up already
+
+  SymbolMap& substitutions = pcd->partialCopyMap;
 
   // Resolve ImplementsStmts that haven't been already.
   // Extend 'substitutions'.
   for (int indx = 0; indx < (int)witnesses.size(); indx++) {
     ImplementsStmt* istm = witnesses[indx];
-    resolveImplementsStmt(istm, true);
+    resolveImplementsStmt(istm, true, true);
     SymbolMap& reps = fn->instantiatedFrom->interfaceInfo
                        ->repsForRequiredFns[indx];
     form_Map(SymbolMapElem, elem, reps) {
@@ -415,13 +590,20 @@ void cleanupInstantiatedCGfun(FnSymbol* fn,
     }
   }
 
-  // other cleanups
+  // remove fn->interfaceInfo
 
-  fn->setGeneric(false);
-
+  INT_ASSERT(fn->interfaceInfo->repsForRequiredFns.empty());
   INT_ASSERT(! fn->interfaceInfo->interfaceConstraints.empty());
+  for_alist(expr, fn->interfaceInfo->constrainedTypes)
+    expr->remove();
   for_alist(expr, fn->interfaceInfo->interfaceConstraints)
     expr->remove();
+  delete fn->interfaceInfo;
+  fn->interfaceInfo = NULL;
+
+  // 'fn' is concrete now
+
+  fn->setGeneric(false);
 
   cgprint("\n");
 }
@@ -429,7 +611,9 @@ void cleanupInstantiatedCGfun(FnSymbol* fn,
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {
   if (FnSymbol* fn = toFnSymbol(sym)) {
     if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
-      ImplementsStmt* istm = implementsStmtForWrapperFn(fn);
+      bool isSuccess;
+      ImplementsStmt* istm = implementsStmtForWrapperFn(fn, isSuccess);
+      INT_ASSERT(isSuccess); // remove this if there is a legitimate case
       resolveImplementsStmt(istm);
       return;
     }
