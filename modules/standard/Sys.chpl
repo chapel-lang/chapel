@@ -246,6 +246,16 @@ module Sys {
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
+
+  /*Check if the environment variable `name` is defined or not.
+    If `name` is defined then return 1 and update `string_out` 
+    as the value of environment variable
+    else the function returns 0.
+
+    :arg name: name of environment variable
+    :arg c_string: store the value of `name` environment variable if defined
+    :returns: `int` 1 if `name` is defined and 0 if not
+   */
   extern proc sys_getenv(name:c_string, ref string_out:c_string):c_int;
   extern proc sys_open(pathname:c_string, flags:c_int, mode:mode_t, ref fd_out:fd_t):err_t;
   extern proc sys_close(fd:fd_t):err_t;
