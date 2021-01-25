@@ -40,7 +40,7 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(arr) {
-    return false;
+    return nil;  // return type signals that we shouldn't aggregate
   }
 
   pragma "aggregator generator"
@@ -55,7 +55,7 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorForArr(arr) {
-    return false;
+    return nil;  // return type signals that we shouldn't aggregate
   }
 
   proc chpl__arrayIteratorYieldsLocalElements(a) param {

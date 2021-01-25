@@ -1531,13 +1531,18 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
 
     std::stringstream message;
 
-    if (lhsLocal && (srcAggregator != gNil)) {
+    // aggregator can be nil in two cases:
+    // (1) we couldn't determine what the code looks like statically on one side of
+    //     the assignment, in which case we set this argument to `gNil`.
+    // (2) we may have called an aggregator generator on an unsupported type,
+    //     which returns `nil` in the module code.
+    if (lhsLocal && (srcAggregator->type != dtNil)) {
       if (fReportAutoAggregation) {
         message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
       }
       aggregator = srcAggregator;
     }
-    else if (rhsLocal && (dstAggregator != gNil)) {
+    else if (rhsLocal && (dstAggregator->type != dtNil)) {
       if (fReportAutoAggregation) {
         message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
       }
