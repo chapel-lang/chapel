@@ -1740,8 +1740,19 @@ static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex) {
   INT_ASSERT(aggregatorSE);
   Symbol *aggregator = aggregatorSE->symbol();
   if (aggregator != gNil) {
+    // remove the definition
     aggregator->defPoint->remove();
+
+    // replace the SymExpr in call
     aggregatorSE->replace(new SymExpr(gNil));
+
+    // find and remove other SymExprs within the function
+    std::vector<SymExpr *> symExprsToRemove;
+    Symbol *parentSym = call->parentSymbol;
+    collectSymExprsFor(parentSym, aggregator, symExprsToRemove);
+    for_vector(SymExpr, se, symExprsToRemove) {
+      se->remove();
+    }
   }
 }
 
