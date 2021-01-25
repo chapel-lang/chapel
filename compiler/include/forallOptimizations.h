@@ -31,6 +31,8 @@ enum LocalityInfo {
   UNAGGREGATABLE  // neither local, nor aggregatable
 };
 
+// we use this during normalize when transforming an assignment for potential
+// aggregation
 class AggregationCandidateInfo {
   public:
 
@@ -49,19 +51,10 @@ class AggregationCandidateInfo {
     Symbol *srcAggregator;   // remote rhs
     Symbol *dstAggregator;   // remote lhs
 
-    // ... and that's why we have a single aggregated alternative.
-    CallExpr *aggCall;
-
     AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
 
-    void logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed);
     void addAggregators();
     void transformCandidate();
-
-  private:
-    void update();
-    CondStmt *updateASTForAggregation(bool srcAggregation, SymExpr *aggMarkerSE);
-    void updateASTForRegularAssignment();
 };
 
 // interface for normalize

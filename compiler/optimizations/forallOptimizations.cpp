@@ -98,12 +98,12 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 //
 // maps a potential local access to an AggregationCandidate
 std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
-static const char *getForallCloneTypeStr(ForallStmt *forall);
 static const char *getForallCloneTypeStr(Symbol *aggMarker);
 static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
-static bool handleYieldedArrayElementsInAssignment(CallExpr *call, ForallStmt *forall);
+static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
+                                                   ForallStmt *forall);
 static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed);
 static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block);
 static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex);
@@ -1346,29 +1346,7 @@ AggregationCandidateInfo::AggregationCandidateInfo(CallExpr *candidate,
   lhsLogicalChild(NULL),
   rhsLogicalChild(NULL),
   srcAggregator(NULL),
-  dstAggregator(NULL),
-  aggCall(NULL) { }
-
-// called during resolution
-void AggregationCandidateInfo::updateASTForRegularAssignment() {
-  // we found out that both sides of the assignment is local, or neither can be
-  // proved to be local. So, we need all the aggregators we have created to be
-  // cleaned up
-  for_shadow_vars_and_defs (svar, def, temp, this->forall) {
-    if (svar == this->srcAggregator) {
-      def->remove();
-    }
-    else if (svar == this->dstAggregator) {
-      def->remove();
-    }
-  }
-}
-
-// called during resolution
-CondStmt *AggregationCandidateInfo::updateASTForAggregation(bool srcAggregation,
-                                                            SymExpr *aggMarkerSE) {
-  return NULL;
-}
+  dstAggregator(NULL) { }
 
 static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExpr *aggMarkerSE) {
   INT_ASSERT(aggregator);
@@ -1397,79 +1375,6 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
   elseBlock->insertAtTail(aggCall);
 
   return aggCond;
-}
-
-// called during resolution
-void AggregationCandidateInfo::update() {
-  if (lhsLocalityInfo == PENDING || rhsLocalityInfo == PENDING) {
-    return; // we still need to wait for some of the children's analysis
-  }
-
-  std::stringstream message;
-
-  if (lhsLocalityInfo == UNAGGREGATABLE || rhsLocalityInfo == UNAGGREGATABLE) {
-    if (fReportAutoAggregation) {
-      message << "One side is neither local nor aggregatable. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == UNKNOWN) {
-    if (fReportAutoAggregation) {
-      message << "Can't determine if either side is local. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == LOCAL) {
-    if (fReportAutoAggregation) {
-      message << "Both sides are local. Will not use aggregation ";
-    }
-    this->updateASTForRegularAssignment();
-    return;
-  }
-
-  if (lhsLocalityInfo == LOCAL && rhsLocalityInfo == UNKNOWN) {
-    if (fReportAutoAggregation) {
-      message << "LHS is local, RHS is nonlocal. Will use source aggregation ";
-    }
-    this->updateASTForAggregation(/*srcAggregation=*/true, NULL);
-  }
-  else if (lhsLocalityInfo == UNKNOWN && rhsLocalityInfo == LOCAL) {
-    if (fReportAutoAggregation) {
-      message << "LHS is nonlocal, RHS is local. Will use destination aggregation ";
-    }
-    this->updateASTForAggregation(/*srcAggregation=*/false, NULL);
-  }
-
-  if (fReportAutoAggregation) {
-    message << getForallCloneTypeStr(this->forall);
-    LOG_AA(0, message.str().c_str(), this->candidate);
-  }
-}
-
-void AggregationCandidateInfo::logicalChildAnalyzed(CallExpr *logicalChild, bool confirmed) {
-  LocalityInfo newInfo = confirmed ? LOCAL : UNKNOWN;
-  
-  if (!confirmed) {
-    // this primitive was added in case this was a symbol yielded by the leader
-    // that was an array that yields local elements. If this wasn't the case,
-    // then this symbol is simply unaggregatable for now.
-    if (logicalChild->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      newInfo = UNAGGREGATABLE;
-    }
-  }
-
-  if (this->lhsLogicalChild == logicalChild) {
-    this->lhsLocalityInfo = newInfo;
-  }
-  else {
-    this->rhsLocalityInfo = newInfo;
-  }
-
-  //update();
 }
 
 // currently we only support one aggregator at normalize time, however, we
@@ -1537,23 +1442,6 @@ static const char *getForallCloneTypeStr(Symbol *aggMarker) {
   }
   if (aggMarker->hasFlag(FLAG_AGG_IN_STATIC_ONLY_CLONE)) {
     return "[static only ALA clone]";
-  }
-  return "";
-}
-
-static const char *getForallCloneTypeStr(ForallStmt *forall) {
-  switch (forall->optInfo.cloneType) {
-    case STATIC_AND_DYNAMIC:
-      return "[static and dynamic ALA clone]";
-      break;
-    case STATIC_ONLY:
-      return "[static only ALA clone]";
-      break;
-    case NO_OPTIMIZATION:
-      return "[no ALA clone]";
-      break;
-    default:
-      break;
   }
   return "";
 }
