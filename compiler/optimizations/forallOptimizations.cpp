@@ -95,9 +95,7 @@ static CallExpr *revertAccess(CallExpr *call);
 static CallExpr *confirmAccess(CallExpr *call);
 
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
-//
-// maps a potential local access to an AggregationCandidate
-std::map<CallExpr *, AggregationCandidateInfo *> preNormalizeAggCandidate;
+
 static const char *getForallCloneTypeStr(Symbol *aggMarker);
 static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
@@ -1615,7 +1613,6 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   if (lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
       lhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     info->lhsLocalityInfo = PENDING;
-    preNormalizeAggCandidate[lhsCall] = info;
   }
   info->lhsLogicalChild = lhsCall;
 
@@ -1624,7 +1621,6 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
       rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     info->rhsLocalityInfo = PENDING;
-    preNormalizeAggCandidate[rhsCall] = info;
   }
   info->rhsLogicalChild = rhsCall;
 
