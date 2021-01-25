@@ -39,6 +39,15 @@ extern const int CHPL_CACHE_REMOTE;
 static inline
 int chpl_cache_enabled(void)
 {
+  // The cache is not compatible with address sanitizer
+#if defined(__SANITIZE_ADDRESS__)
+  return 0;
+#endif
+#if defined(__has_feature)
+# if __has_feature(address_sanitizer)
+  return 0;
+# endif
+#endif
   // The remote cache uses thread local storage, so if tasks can migrate
   // between threads we lose out ability to correctly fence.
   return CHPL_CACHE_REMOTE && !chpl_task_canMigrateThreads();
