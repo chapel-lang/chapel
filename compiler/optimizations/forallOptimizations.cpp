@@ -226,13 +226,12 @@ void cleanupRemainingAggCondStmts() {
   forv_Vec(CondStmt, condStmt, gCondStmts) {
     if (condStmt->inTree()) {
       if (SymExpr *condSymExpr = toSymExpr(condStmt->condExpr)) {
-        //std::cout << "100\n";
         if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
           // this is a conditional that wasn't modified by the unordered
-          // optimization, so we need to remove it and the aggregator associated
-          // with it
-
-          // find the aggregator symbol within the else block
+          // optimization, so we need to remove the effects of the
+          // forall intent adding the aggregator
+          
+          // find the aggregator symbol within the else block:
           // note that the else block will be inlined and will be a big mess, we
           // need to find the compiler-generated aggregator in that mess
           std::vector<SymExpr *> symExprs;
@@ -1492,18 +1491,14 @@ void AggregationCandidateInfo::addAggregators() {
   if (srcAggregator == NULL &&
       lhsLocalityInfo == PENDING &&
       rhsLogicalChild != NULL) {
-    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(rhsLogicalChild))) {
     if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
       SET_LINENO(this->forall);
 
-      //Symbol *otherChildBase = otherChildBaseSE->symbol();
-      ShadowVarSymbol *aggregator =
-        ShadowVarSymbol::buildForPrefix(SVP_VAR,
-            new UnresolvedSymExpr("chpl_src_auto_agg"),
-            NULL, // type expr for shadow var
-            //new CallExpr("chpl_srcAggregatorForArr", new SymExpr(otherChildBase)));
-            genCall);
-
+      UnresolvedSymExpr *aggTmp = new UnresolvedSymExpr("chpl_src_auto_agg");
+      ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
+                                                                    aggTmp,
+                                                                    NULL, //type
+                                                                    genCall);
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
@@ -1517,17 +1512,14 @@ void AggregationCandidateInfo::addAggregators() {
   if (dstAggregator == NULL &&
       rhsLocalityInfo == PENDING &&
       lhsLogicalChild != NULL) {
-    //if (SymExpr *otherChildBaseSE = toSymExpr(getArrSymFromLogicalChild(lhsLogicalChild))) {
     if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
       SET_LINENO(this->forall);
 
-      //Symbol *otherChildBase = otherChildBaseSE->symbol();
+      UnresolvedSymExpr *aggTmp = new UnresolvedSymExpr("chpl_dst_auto_agg");
       ShadowVarSymbol *aggregator = ShadowVarSymbol::buildForPrefix(SVP_VAR,
-            new UnresolvedSymExpr("chpl_dst_auto_agg"),
-            NULL, // type expr for shadow var
-            //new CallExpr("chpl_dstAggregatorForArr", new SymExpr(otherChildBase)));
-            genCall);
-
+                                                                    aggTmp,
+                                                                    NULL, //type
+                                                                    genCall);
       aggregator->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
       forall->shadowVariables().insertAtTail(aggregator->defPoint);
 
@@ -1579,7 +1571,6 @@ static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
   else if (child->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
     if (SymExpr *arrSymExpr = toSymExpr(child->get(2))) {
       return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-                          //new CallExpr(PRIM_TYPEOF, elemSymExpr->symbol()));
     }
   }
   else {
