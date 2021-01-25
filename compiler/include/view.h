@@ -36,11 +36,8 @@ Expr*    aidExpr(int id);
 BaseAST* aid(BaseAST* ast);
 Expr*    aidExpr(BaseAST* ast);
 
-void        list_view_noline(const BaseAST* ast);
-void        nprint_view(BaseAST* ast);
-
-// defined in codegen/codegen.cpp
-void        nprint_view(GenRet& gen);
+bool inTree(BaseAST* ast);
+bool inTree(int id);
 
 // These are not used by the compiler but are available for use in GDB
 //
@@ -55,57 +52,67 @@ void        nprint_view(GenRet& gen);
 //    viewFlags
 //    stringLoc
 
-void        print_view(BaseAST* ast);
-void        print_view_noline(BaseAST* ast);
+void print_view(BaseAST* ast);
+void print_view_noline(BaseAST* ast);
 
-void        iprint_view(int id);
+void iprint_view(int id);
 
-void        nprint_view(int id);
-void        nprint_view_noline(BaseAST* ast);
+void nprint_view(int id);
+void nprint_view(BaseAST* ast);
+void nprint_view(GenRet& gen); // defined in codegen/codegen.cpp
+void nprint_view_noline(BaseAST* ast);
 
-void        mark_view(BaseAST* ast, int id);
+void mark_view(BaseAST* ast, int id);
 
-void        list_view(int id);
-void        list_view(const BaseAST* ast);
+void list_view(int id);
+void list_view(const BaseAST* ast);
+void list_view_noline(const BaseAST* ast);
 
-void        astDump_view(int id);
-void        astDump_view(BaseAST* ast);
-void        astDumpToNode_view(int id);
-void        astDumpToNode_view(BaseAST* ast);
+void astDump_view(int id);
+void astDump_view(BaseAST* ast);
+void astDumpToNode_view(int id);
+void astDumpToNode_view(BaseAST* ast);
 
-void        viewFlags(int id);
+void viewFlags(int id);
 
-void        map_view(SymbolMap* map);
-void        map_view(SymbolMap& map);
+void map_view(SymbolMap* map);
+void map_view(SymbolMap& map);
 
-void        set_view(std::set<BlockStmt*>* bss);
-void        set_view(std::set<BlockStmt*>& bss);
+void set_view(std::set<BlockStmt*>* bss);
+void set_view(std::set<BlockStmt*>& bss);
 
-void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
-void        vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
-void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
-void        vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v);
-void        vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v);
-void        vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v);
-void        vec_view(std::vector<Symbol*>* syms);
-void        vec_view(std::vector<Symbol*>& syms);
-void        vec_view(std::vector<FnSymbol*>* syms);
-void        vec_view(std::vector<FnSymbol*>& syms);
-void        vec_view(std::vector<BlockStmt*>* v);
-void        vec_view(std::vector<BlockStmt*>& v);
+void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<Symbol*,   VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<FnSymbol*, VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<SymExpr*,  VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<SymExpr*,  VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<BlockStmt*, VEC_INTEGRAL_SIZE>& v);
+void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>* v);
+void vec_view(Vec<ResolutionCandidate*, VEC_INTEGRAL_SIZE>& v);
+void vec_view(std::vector<Symbol*>* syms);
+void vec_view(std::vector<Symbol*>& syms);
+void vec_view(std::vector<FnSymbol*>* syms);
+void vec_view(std::vector<FnSymbol*>& syms);
+void vec_view(std::vector<SymExpr*>* syms);
+void vec_view(std::vector<SymExpr*>& syms);
+void vec_view(std::vector<BlockStmt*>* v);
+void vec_view(std::vector<BlockStmt*>& v);
 
-void        fnsWithName(const char* name);
-void        fnsWithName(const char* name, Vec<FnSymbol*>& fnVec);
+void typesWithName(const char* name);
+void typesWithName(const char* name, Vec<TypeSymbol*>& tyVec);
 
-void        whocalls(int id);
-void        whocalls(BaseAST* ast);
+void fnsWithName(const char* name);
+void fnsWithName(const char* name, Vec<FnSymbol*>& fnVec);
 
-FnSymbol*   debugGetTheIteratorFn(int id);
-FnSymbol*   debugGetTheIteratorFn(BaseAST* ast);
-FnSymbol*   debugGetTheIteratorFn(Type* type);
-FnSymbol*   debugGetTheIteratorFn(ForLoop* forLoop);
+void whocalls(int id);
+void whocalls(BaseAST* ast);
+
+FnSymbol* debugGetTheIteratorFn(int id);
+FnSymbol* debugGetTheIteratorFn(BaseAST* ast);
+FnSymbol* debugGetTheIteratorFn(Type* type);
+FnSymbol* debugGetTheIteratorFn(ForLoop* forLoop);
 
 // NB these return the same static buffer
 const char* stringLoc(int id);
@@ -117,17 +124,22 @@ const char* shortLoc(BaseAST* ast);
 const char* debugLoc(int id);
 const char* debugLoc(BaseAST* ast);
 
-int debugID(int id);
-int debugID(BaseAST* ast);
-void debugSummary(int id);
-void debugSummary(BaseAST* ast);
-void debugSummary(const char* str);
+int     debugID(int id);
+int     debugID(BaseAST* ast);
+
+void    debugSummary(int id);
+void    debugSummary(BaseAST* ast);
+void    debugSummary(const char* str);
+void    debugSummary(bool b);
+
 Symbol* debugParentSym(int id);
 Symbol* debugParentSym(BaseAST* ast);
-Expr* debugParentExpr(int id);
-Expr* debugParentExpr(BaseAST* ast);
-void blockSummary(int id);
-void blockSummary(BaseAST* ast);
-void blockSummary(BlockStmt* block, Symbol* sym);
+
+Expr*   debugParentExpr(int id);
+Expr*   debugParentExpr(BaseAST* ast);
+
+void    blockSummary(int id);
+void    blockSummary(BaseAST* ast);
+void    blockSummary(BlockStmt* block, Symbol* sym);
 
 #endif
