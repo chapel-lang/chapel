@@ -39,7 +39,8 @@ public:
                                        Expr*      iteratorExpr,
                                        BlockStmt* body,
                                        bool       zippered,
-                                       bool       isForExpr);
+                                       bool       isForExpr,
+                                       bool       makeOrderIndependent=false);
 
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
@@ -60,7 +61,8 @@ private:
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,
-                                         bool       isForExpr);
+                                         bool       isForExpr,
+                                         bool       makeOrderIndependent);
 
 
 

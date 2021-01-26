@@ -418,11 +418,13 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
 
-  sifn->insertAtTail(ForLoop::buildForLoop(indices,
-                                           new SymExpr(sifnIterator),
-                                           new BlockStmt(stmt),
-                                           zippered,
-                                           /*isForExpr*/ true));
+  BlockStmt* loop = ForLoop::buildForLoop(indices, new SymExpr(sifnIterator),
+                                          new BlockStmt(stmt),
+                                          zippered,
+                                          /*isForExpr*/ true,
+                                          /*isOrderIndependent*/ forall);
+
+  sifn->insertAtTail(loop);
 
   return sifn;
 }

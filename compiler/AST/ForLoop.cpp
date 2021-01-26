@@ -153,7 +153,8 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           bool       coforall,
                           bool       zippered,
                           bool       isLoweredForall,
-                          bool       isForExpr)
+                          bool       isForExpr,
+                          bool       makeOrderIndependent)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
@@ -165,6 +166,9 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
   LabelSymbol* continueLabel = new LabelSymbol("_continueLabel");
   LabelSymbol* breakLabel    = new LabelSymbol("_breakLabel");
   BlockStmt*   retval        = new BlockStmt();
+
+  if (makeOrderIndependent)
+    loop->orderIndependentSet(true);
 
   iterator->addFlag(FLAG_EXPR_TEMP);
 
@@ -284,13 +288,15 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  Expr*      iteratorExpr,
                                  BlockStmt* body,
                                  bool       zippered,
-                                 bool       isForExpr)
+                                 bool       isForExpr,
+                                 bool       makeOrderIndependent)
 {
   return doBuildForLoop(indices, iteratorExpr, body,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
-                        isForExpr);
+                        isForExpr,
+                        makeOrderIndependent);
 }
 
 BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
@@ -302,7 +308,8 @@ BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                         /* coforall */ true,
                         zippered,
                         /* isLoweredForall */ false,
-                        /* isForExpr */ false);
+                        /* isForExpr */ false,
+                        /* makeOrderIndependent */ true);
 }
 
 
@@ -315,7 +322,8 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
   return doBuildForLoop(indices, iteratorExpr, body,
                         /* coforall */ false,
                         zippered, /* isLoweredForall */ true,
-                        isForExpr);
+                        isForExpr,
+                        /* makeOrderIndependent */ true);
 }
 
 
