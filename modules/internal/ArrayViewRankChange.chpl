@@ -113,6 +113,10 @@ module ArrayViewRankChange {
     override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
     }
+
+    proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
+      return this.downDist.dsiEqualDMaps(that.downDist);
+    }
   }
 
   private proc downDomType(param rank : int,
