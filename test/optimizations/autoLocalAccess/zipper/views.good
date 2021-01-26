@@ -55,7 +55,6 @@ Static check successful. Using localAccess with dynamic check (views.chpl:42)
 Static check successful. Using localAccess (views.chpl:63)
 Static check successful. Using localAccess with dynamic check (views.chpl:64)
 Static check successful. Using localAccess (views.chpl:63)
-Static check successful. Using localAccess (views.chpl:86)
 Static check successful. Using localAccess (views.chpl:107)
 
 Starting
@@ -80,5 +79,5 @@ Rank change
 0 0 3 0 0 0 0 0 0 0
 0 0 3 0 0 0 0 0 0 0
 
-`this` was called 20 times
-`localAccess` was called 52 times
+`this` was called 30 times
+`localAccess` was called 42 times
