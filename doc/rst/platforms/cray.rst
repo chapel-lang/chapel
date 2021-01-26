@@ -99,7 +99,7 @@ into the module::
   CHPL_ATOMICS: cstdlib
     CHPL_NETWORK_ATOMICS: none, ofi
   CHPL_GMP: none
-  CHPL_HWLOC: hwloc
+  CHPL_HWLOC: bundled
   CHPL_REGEXP: none
   CHPL_LLVM: none
   CHPL_AUX_FILESYS: none

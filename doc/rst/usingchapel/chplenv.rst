@@ -489,7 +489,8 @@ CHPL_GMP
        system   use a system install of GMP
                 (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
-       gmp      use the GMP distribution bundled with Chapel in third-party
+       bundled  use the GMP distribution bundled with Chapel in third-party
+       gmp      deprecated - use bundled instead
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
@@ -500,7 +501,7 @@ CHPL_GMP
        ======= ====================================================
        Value   Description
        ======= ====================================================
-       gmp     if the build was successful
+       bundled if the build was successful
        system  if unsuccessful and :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is cray-x*
        none    otherwise
        ======= ====================================================
@@ -523,10 +524,11 @@ CHPL_HWLOC
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
-       hwloc    use the hwloc distribution bundled with Chapel in third-party
+       bundled  use the hwloc distribution bundled with Chapel in third-party
+       hwloc    deprecated - use bundled instead
        ======== ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if
+   If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
    :ref:`readme-chplenv.CHPL_TASKS` is ``qthreads``.  In all other cases
    it defaults to ``none``.  In the unlikely event the bundled hwloc
    distribution does not build successfully, it should still be possible
@@ -556,10 +558,11 @@ CHPL_HWLOC
           Value    Description
           ======== ==============================================================
           none     do not build or use jemalloc
-          jemalloc use the jemalloc distribution bundled with Chapel in third-party
+          bundled  use the jemalloc distribution bundled with Chapel in third-party
+          jemalloc deprecated - use bundled instead
           ======== ==============================================================
 
-      If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
       defaults to ``none``.
 
@@ -585,10 +588,11 @@ CHPL_HWLOC
           Value     Description
           ========= ==============================================================
           none      do not build or use libfabric
-          libfabric use the libfabric distribution bundled with Chapel in third-party
+          bundled   use the libfabric distribution bundled with Chapel in third-party
+          libfabric deprecated - use bundled instead
           ========= ==============================================================
 
-      If unset, ``CHPL_LIBFABRIC`` defaults to ``libfabric`` if
+      If unset, ``CHPL_LIBFABRIC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
       defaults to ``none``.
 
@@ -659,6 +663,7 @@ CHPL_LLVM
        Value          Description
        ============== ======================================================
        bundled        use the llvm/clang distribution in third-party
+       llvm           deprecated - use bundled instead
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
@@ -697,7 +702,8 @@ CHPL_UNWIND
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       libunwind use the libunwind bundled with Chapel in third-party
+       bundled   use the libunwind bundled with Chapel in third-party
+       libunwind deprecated - use bundled instead
        system    assume libunwind is already installed on the system
        none      don't use an unwind library, disabling stack tracing
        ========= =======================================================
