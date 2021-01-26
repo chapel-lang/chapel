@@ -24,3 +24,9 @@ if module avail craype- 2>&1 | grep -q craype- ; then
 else
   [ "$1" == y ] && log_info "Expected Cray CS, but does not seem to be one."
 fi
+
+# https://github.com/Cray/chapel-private/issues/1601
+export SLURM_CPU_FREQ_REQ=high
+
+# workaround for https://github.com/Cray/chapel-private/issues/1598
+export CHPL_TEST_TIMEOUT=1000
