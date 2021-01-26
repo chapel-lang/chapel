@@ -401,7 +401,6 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   sifn->addFlag(FLAG_ITERATOR_FN);
   if (forall) {
     sifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
-    sifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
   } else {
     sifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
   }
@@ -480,7 +479,6 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
   fifn->addFlag(FLAG_ITERATOR_FN);
   if (forall) {
     fifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
-    fifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
   } else {
     fifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
   }

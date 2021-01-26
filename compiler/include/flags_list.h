@@ -297,10 +297,6 @@ symbolFlag( FLAG_NO_OBJECT , ypr, "no object" , ncm )
 
 symbolFlag( FLAG_NO_PARENS , npr, "no parens" , "function without parentheses" )
 
-// do not warn for an unnecessary FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS
-symbolFlag( FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING , ypr, "no redundant order independent pragma warning" , "do not warn if an 'order independent yielding loops' pragma is unnecessary")
-
-
 symbolFlag( FLAG_NO_REMOTE_MEMORY_FENCE , ypr, "no remote memory fence" , ncm)
 symbolFlag( FLAG_NO_RENAME, npr, "no rename", ncm)
 symbolFlag( FLAG_NO_RVF, npr, "do not RVF", ncm)
