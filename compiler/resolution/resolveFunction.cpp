@@ -573,7 +573,6 @@ static void markIterator(FnSymbol* fn) {
 
   bool allYieldingLoopsJustYield = true;
   bool anyNotMarked = false;
-  bool anyMarked = false;
 
   std::vector<CallExpr*> callExprs;
 
@@ -587,8 +586,7 @@ static void markIterator(FnSymbol* fn) {
           allYieldingLoopsJustYield = allYieldingLoopsJustYield && justYield;
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
-            anyMarked = true;
-          } else {
+          } else if (loop->isOrderIndependent() == false) {
             anyNotMarked = true;
           }
         }
@@ -596,25 +594,6 @@ static void markIterator(FnSymbol* fn) {
     }
   }
 
-  if (fVerify) {
-    ModuleSymbol *mod = toModuleSymbol(fn->getModule());
-    if (mod->modTag != MOD_USER) {
-      if (markOrderIndep && allYieldingLoopsJustYield && anyMarked &&
-          !fn->hasFlag(FLAG_INSTANTIATED_GENERIC) &&
-          !fn->hasFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING)) {
-        // can't do this check for instantiated generics because
-        // other instantiations of the generic might have a different
-        // outcome.
-        USR_WARN(fn, "order independent pragma unnecessary");
-      }
-      if (anyNotMarked &&
-          !fn->hasFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS) &&
-          !isLeaderIterator(fn)) {
-        USR_WARN(fn, "add pragma \"not order independent yielding loops\" "
-                     "or pragma \"order independent yielding loops\"");
-      }
-    }
-  }
   if (anyNotMarked && fReportVectorizedLoops && fExplainVerbose) {
     if (!isLeaderIterator(fn)) {
       ModuleSymbol *mod = toModuleSymbol(fn->getModule());
