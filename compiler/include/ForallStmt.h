@@ -136,6 +136,9 @@ public:
   // indicates a forall expression (vs a forall statement)
   bool isForallExpr() const;
 
+  // 'false' indicates a foreach (vs forall)
+  bool allowsTasks() const;
+
   ForallOptimizationInfo optInfo;
 
 private:

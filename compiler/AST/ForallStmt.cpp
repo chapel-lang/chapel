@@ -92,6 +92,8 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fOverTupleExpand       = fOverTupleExpand;
   _this->fAllowSerialIterator   = fAllowSerialIterator;
   _this->fRequireSerialIterator = fRequireSerialIterator;
+  _this->fAllowTasks = fAllowTasks;
+  _this->fIsOrderIndependent = fIsOrderIndependent;
   _this->fVectorizationHazard   = fVectorizationHazard;
   _this->fIsForallExpr          = fIsForallExpr;
   // todo: fContinueLabel, fErrorHandlerLabel
@@ -687,6 +689,10 @@ void ForallStmt::setHasVectorizationHazard(bool v) {
 
 bool ForallStmt::isForallExpr() const {
   return fIsForallExpr;
+}
+
+bool ForallStmt::allowsTasks() const {
+  return fAllowTasks;
 }
 
 static void gatherFollowerLoopBodies(BlockStmt* block,

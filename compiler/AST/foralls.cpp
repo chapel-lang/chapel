@@ -1219,7 +1219,9 @@ void resolveForallStmts2() {
     if (!fs->inTree() || !fs->getFunction()->isResolved())
       continue;
 
-    if (fs->fromReduce()) continue; // not an error
+    // these cases are not errors
+    if (fs->fromReduce() || !fs->allowsTasks())
+      continue; // not an error
 
     // formerly nonLeaderParCheckInt()
     FnSymbol* parent = fs->getFunction();
