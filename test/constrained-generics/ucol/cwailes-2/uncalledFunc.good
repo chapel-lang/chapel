@@ -1,0 +1,2 @@
+uncalledFunc.chpl:1: In function 'inc':
+uncalledFunc.chpl:2: error: unresolved call 'bar()' [functionResolution.cpp:1801]
