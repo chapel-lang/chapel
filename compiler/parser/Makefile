@@ -57,7 +57,8 @@ parser: FORCE flex_version_check
 
 # Require that the flex version is at least 2.6.0
 flex_version_check:
-	@if python -c "import sys;                                        \
+	@if $(CHPL_MAKE_PYTHON) -c \
+                      "import sys;                                        \
                        from distutils.version import LooseVersion as LV;  \
                        sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
                    `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \

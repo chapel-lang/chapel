@@ -54,6 +54,8 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fOverTupleExpand(false),
   fAllowSerialIterator(false),
   fRequireSerialIterator(false),
+  fAllowTasks(true),
+  fIsOrderIndependent(true),
   fVectorizationHazard(false),
   fIsForallExpr(false),
   fContinueLabel(NULL),
@@ -569,6 +571,9 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
   ForallStmt* fs = new ForallStmt(body);
   fs->fZippered    = zippered;
   fs->fFromForLoop = fromForLoop;
+  fs->fAllowTasks = true;
+  fs->fIsOrderIndependent = true;
+
   body->blockTag   = BLOCK_NORMAL; // do not flatten it in cleanup(), please
 
   // Transfer the DefExprs of the intent variables (ShadowVarSymbols).
@@ -588,7 +593,8 @@ ForallStmt* ForallStmt::buildHelper(Expr* indices, Expr* iterator,
 }
 
 BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
-                             BlockStmt* body, bool zippered, bool serialOK)
+                             BlockStmt* body, bool zippered,
+                             ForallStmtKeyword kw)
 {
   checkControlFlow(body, "forall statement");
 
@@ -598,7 +604,15 @@ BlockStmt* ForallStmt::build(Expr* indices, Expr* iterator, CallExpr* intents,
 
   ForallStmt* fs = ForallStmt::buildHelper(indices, iterator, intents, body,
                                            zippered, false);
-  fs->fAllowSerialIterator = serialOK;
+  fs->fAllowSerialIterator = (kw == BRACKET_LOOP || kw == FOREACH_LOOP);
+  fs->fAllowTasks = (kw != FOREACH_LOOP);
+
+  // For now, 'foreach' always runs serial iterator.
+  // In the future, it probably should have its own iteration variant.
+  if (fs->fAllowTasks == false)
+    fs->fRequireSerialIterator = true;
+
+  fs->fIsOrderIndependent = true;
 
   return buildChapelStmt(fs);
 }

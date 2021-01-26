@@ -9715,7 +9715,7 @@ static void handleStatementLevelIteratorCall(DefExpr* def, VarSymbol* tmp)
 {
   BlockStmt* block = ForallStmt::build(new UnresolvedSymExpr("SLIidx"),
                                        new SymExpr(tmp), NULL,
-                                       new BlockStmt(), false, true);
+                                       new BlockStmt(), false, BRACKET_LOOP);
 
   // We do not actually need the BlockStmt.
   INT_ASSERT(block->length() == 1);

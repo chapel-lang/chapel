@@ -68,6 +68,11 @@ class ForallOptimizationInfo {
 ///////////////////////////////////
     // forall loop statement //
 ///////////////////////////////////
+typedef enum {
+  FORALL_LOOP,
+  BRACKET_LOOP,
+  FOREACH_LOOP,
+} ForallStmtKeyword;
 
 class ForallStmt : public Stmt
 {
@@ -106,7 +111,8 @@ public:
                                  bool zippered, bool fromForLoop);
 
   static BlockStmt*  build(Expr* indices, Expr* iterator, CallExpr* intents,
-                           BlockStmt* body, bool zippered, bool serialOK);
+                           BlockStmt* body, bool zippered,
+                           ForallStmtKeyword kw);
 
   static ForallStmt* fromForLoop(ForLoop* forLoop);
 
@@ -143,6 +149,8 @@ private:
   bool           fOverTupleExpand;
   bool           fAllowSerialIterator;
   bool           fRequireSerialIterator;
+  bool           fAllowTasks;
+  bool           fIsOrderIndependent;
   bool           fVectorizationHazard;
   bool           fIsForallExpr;
 

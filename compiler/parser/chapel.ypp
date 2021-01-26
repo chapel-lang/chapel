@@ -317,7 +317,7 @@
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFALSE TFOR TFORALL TFORWARDING
+%token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
 %token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
 %token TIMPLEMENTS TINTERFACE
@@ -368,7 +368,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
 // %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
@@ -1014,59 +1014,69 @@ loop_stmt:
 | TFOR expr do_stmt                             { $$ = ForLoop::buildForLoop(NULL, $2, $3, false, false); }
 | TFOR zippered_iterator do_stmt                { $$ = ForLoop::buildForLoop(NULL, $2, $3, true, false); }
 | TFOR TPARAM ident_def TIN expr do_stmt        { $$ = buildParamForLoopStmt($3, $5, $6); }
-| TFORALL expr TIN expr                                   do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, false, false); }
-| TFORALL expr TIN expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, false, false); }
-| TFORALL expr TIN zippered_iterator                      do_stmt  { $$ = ForallStmt::build($2,   $4, NULL, $5, true,  false); }
-| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build($2,   $4, $5,   $6, true,  false); }
-| TFORALL          expr                                   do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, false, false); }
-| TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
-| TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
-| TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
+| TFORALL  expr TIN expr                                   do_stmt { $$ = ForallStmt::build($2,   $4, NULL, $5, false, FORALL_LOOP); }
+| TFORALL  expr TIN expr              forall_intent_clause do_stmt { $$ = ForallStmt::build($2,   $4, $5,   $6, false, FORALL_LOOP); }
+| TFORALL  expr TIN zippered_iterator                      do_stmt { $$ = ForallStmt::build($2,   $4, NULL, $5, true,  FORALL_LOOP); }
+| TFORALL  expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = ForallStmt::build($2,   $4, $5,   $6, true,  FORALL_LOOP); }
+| TFORALL           expr                                   do_stmt { $$ = ForallStmt::build(NULL, $2, NULL, $3, false, FORALL_LOOP); }
+| TFORALL           expr              forall_intent_clause do_stmt { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, FORALL_LOOP); }
+| TFORALL           zippered_iterator                      do_stmt { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  FORALL_LOOP); }
+| TFORALL           zippered_iterator forall_intent_clause do_stmt { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  FORALL_LOOP); }
+| TFOREACH expr TIN expr                                   do_stmt { $$ = ForallStmt::build($2,   $4, NULL, $5, false, FOREACH_LOOP); }
+| TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = ForallStmt::build($2,   $4, $5,   $6, false, FOREACH_LOOP); }
+| TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = ForallStmt::build($2,   $4, NULL, $5, true,  FOREACH_LOOP); }
+| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = ForallStmt::build($2,   $4, $5,   $6, true,  FOREACH_LOOP); }
+| TFOREACH          expr                                   do_stmt { $$ = ForallStmt::build(NULL, $2, NULL, $3, false, FOREACH_LOOP); }
+| TFOREACH          expr              forall_intent_clause do_stmt { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, FOREACH_LOOP); }
+| TFOREACH          zippered_iterator                      do_stmt { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  FOREACH_LOOP); }
+| TFOREACH          zippered_iterator forall_intent_clause do_stmt { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  FOREACH_LOOP); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), false, true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), false, BRACKET_LOOP);
     }
 | TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), false, true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), false, BRACKET_LOOP);
     }
 | TLSBR expr_ls TIN zippered_iterator TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true,  true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, NULL, new BlockStmt($6), true,  BRACKET_LOOP);
     }
 | TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length != 1)
         USR_FATAL($4, "invalid index expression");
-      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true,  true);
+      $$ = ForallStmt::build($2->get(1)->remove(), $4, $5,   new BlockStmt($7), true,  BRACKET_LOOP);
     }
 | TLSBR expr_ls TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4), false, true);
+        $$ = ForallStmt::build(NULL, new
+        CallExpr("chpl__ensureDomainExpr", $2), NULL, new BlockStmt($4), false, BRACKET_LOOP);
       else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       NULL, new BlockStmt($4), false, true);
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), NULL, new BlockStmt($4), false, BRACKET_LOOP);
     }
 | TLSBR expr_ls forall_intent_clause TRSBR stmt
     {
       if ($2->argList.length > 1)
-        $$ = ForallStmt::build(NULL, new CallExpr("chpl__ensureDomainExpr", $2), $3, new BlockStmt($5), false, true);
+        $$ = ForallStmt::build(NULL, new
+        CallExpr("chpl__ensureDomainExpr", $2), $3, new BlockStmt($5), false, BRACKET_LOOP);
       else
-        $$ = ForallStmt::build(NULL, $2->get(1)->remove(),                       $3, new BlockStmt($5), false, true);
+        $$ = ForallStmt::build(NULL, $2->get(1)->remove(), $3, new BlockStmt($5), false, BRACKET_LOOP);
     }
 | TLSBR zippered_iterator TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, NULL, new BlockStmt($4), true,  true);
+      $$ = ForallStmt::build(NULL, $2, NULL, new BlockStmt($4), true, BRACKET_LOOP);
     }
 | TLSBR zippered_iterator forall_intent_clause TRSBR stmt
     {
-      $$ = ForallStmt::build(NULL, $2, $3,   new BlockStmt($5), true,  true);
+      $$ = ForallStmt::build(NULL, $2, $3,   new BlockStmt($5), true, BRACKET_LOOP);
     }
 ;
 

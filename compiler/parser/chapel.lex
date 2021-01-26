@@ -150,6 +150,7 @@ extern           return processExtern(yyscanner);
 false            return processToken(yyscanner, TFALSE);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
+foreach          return processToken(yyscanner, TFOREACH);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
