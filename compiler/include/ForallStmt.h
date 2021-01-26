@@ -58,7 +58,7 @@ class ForallOptimizationInfo {
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 
     bool autoLocalAccessChecked;
-    bool confirmedFastFollower;
+    bool hasAlignedFollowers;
 
     ForallAutoLocalAccessCloneType cloneType;
 

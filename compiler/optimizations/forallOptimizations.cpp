@@ -975,7 +975,7 @@ static ForallStmt *cloneLoop(ForallStmt *forall) {
 
   ForallStmt *clone = forall->copy();
   clone->optInfo.autoLocalAccessChecked = forall->optInfo.autoLocalAccessChecked;
-  clone->optInfo.confirmedFastFollower = forall->optInfo.confirmedFastFollower;
+  clone->optInfo.hasAlignedFollowers = forall->optInfo.hasAlignedFollowers;
   return clone;
 }
 
@@ -1297,7 +1297,7 @@ static void symbolicFastFollowerAnalysis(ForallStmt *forall) {
       }
     }
   }
-  forall->optInfo.confirmedFastFollower = confirm;
+  forall->optInfo.hasAlignedFollowers = confirm;
 }
 
 //
@@ -1317,6 +1317,7 @@ static void autoAggregation(ForallStmt *forall) {
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
 
     if (lastCall->isNamed("=")) {
+      if (strcmp(lastCall->fname(), "/Users/ekayraklio/code/chapel/versions/f01/chapel/test/optimizations/autoAggregation/arrElemFromAlignedFollower.chpl") == 0) { gdbShouldBreakHere(); }
       // no need to do anything if it is array access
       if (assignmentSuitableForAggregation(lastCall, forall)) {
         LOG_AA(1, "Found an aggregation candidate", lastCall);
@@ -1629,6 +1630,34 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   info->transformCandidate();
 }
 
+static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall) {
+  AList &iterExprs = forall->iteratedExpressions();
+  AList &indexVars = forall->inductionVariables();
+
+  if (!forall->optInfo.hasAlignedFollowers) {
+    // either not zippered, or followers are not aligned:
+    //   only check if the symbol is the same as the one yielded by the leader
+    if (DefExpr *idxDef = toDefExpr(indexVars.get(1))) {
+      if (sym == idxDef->sym) {
+        return iterExprs.get(1);
+      }
+    }
+  }
+  else {
+    // forall is zippered over what seems to be aligned followers (they have the
+    // same domain that we can prove just by looking at symbols)
+    for (int i = 1 ; i <= indexVars.length ; i++){
+      if (DefExpr *idxDef = toDefExpr(indexVars.get(i))) {
+        if (sym == idxDef->sym) {
+          return iterExprs.get(i);
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
                                                    ForallStmt *forall) {
   SET_LINENO(call);
@@ -1639,26 +1668,33 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     gatherForallInfo(forall);
   }
 
-  Symbol *maybeArrSym = forall->optInfo.iterSym;
-  Symbol *maybeArrElemSym = NULL;
-  if (forall->optInfo.multiDIndices.size() > 0) {
-    maybeArrElemSym = forall->optInfo.multiDIndices[0];
-  }
-
-  // stop here if you don't know what I am talking about
-  if (maybeArrSym == NULL || maybeArrElemSym == NULL) return false;
-
   bool lhsMaybeArrSym = false;
   bool rhsMaybeArrSym = false;
 
   SymExpr *lhsSymExpr = toSymExpr(call->get(1));
   SymExpr *rhsSymExpr = toSymExpr(call->get(2));
 
+  Symbol *maybeArrElemSym = NULL;
+  Expr *maybeArrExpr = NULL;
+
+  // note that if we hit both inner if's below, that would mean we have
+  // something like `a=a`. We check for this case right after and don't continue
+  // with the optimization
   if (lhsSymExpr) {
-    lhsMaybeArrSym = (lhsSymExpr->symbol() == maybeArrElemSym);
+    Symbol *tmpSym = lhsSymExpr->symbol();
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    if (maybeArrExpr != NULL) {
+      lhsMaybeArrSym = true;
+      maybeArrElemSym = tmpSym;
+    }
   }
   if (rhsSymExpr) {
-    rhsMaybeArrSym = (rhsSymExpr->symbol() == maybeArrElemSym);
+    Symbol *tmpSym = rhsSymExpr->symbol();
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    if (maybeArrExpr != NULL) {
+      rhsMaybeArrSym = true;
+      maybeArrElemSym = tmpSym;
+    }
   }
 
   // stop if neither can be an array element symbol
@@ -1666,6 +1702,14 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
   // just to be sure, stop if someone's doing `a=a`;
   if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
+
+
+  // For now, limit maybeArrExpr to be only SymExprs, I think we can relax that
+  Symbol *maybeArrSym = NULL;
+  if (SymExpr *maybeArrExprSE = toSymExpr(maybeArrExpr)) {
+    maybeArrSym = maybeArrExprSE->symbol();
+  }
+
 
   Expr *otherChild = lhsMaybeArrSym ? call->get(2) : call->get(1);
 
