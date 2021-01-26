@@ -1,0 +1,3 @@
+reuse-init-new-instantiation-var.chpl:17: error: this default-initialization is not yet supported
+reuse-init-new-instantiation-var.chpl:5: note: field 'x' is declared with a generic type
+reuse-init-new-instantiation-var.chpl:5: note: consider separately declaraing a type field

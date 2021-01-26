@@ -1,0 +1,4 @@
+generic-field-record-not-inited3.chpl:12: In function 'test1':
+generic-field-record-not-inited3.chpl:13: error: this default-initialization is not yet supported
+generic-field-record-not-inited3.chpl:6: note: field 'f' is declared with a generic type
+generic-field-record-not-inited3.chpl:6: note: consider separately declaraing a type field

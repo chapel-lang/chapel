@@ -1,0 +1,3 @@
+bug-14945.chpl:8: error: this default-initialization is not yet supported
+bug-14945.chpl:2: note: field 'v' is declared with a generic type
+bug-14945.chpl:2: note: consider separately declaraing a type field
