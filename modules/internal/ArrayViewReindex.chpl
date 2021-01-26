@@ -339,6 +339,10 @@ module ArrayViewReindex {
       downdomInst = reprivatizeData(2);
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return true;
+    }
+
   } // end of class ArrayViewReindexDom
 
   private proc buildIndexCacheHelper(arr, dom) {

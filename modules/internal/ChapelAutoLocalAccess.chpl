@@ -25,7 +25,10 @@ module ChapelAutoLocalAccess {
   // sure that we don't do anything with iterators as we cannot optimize such
   // forall's and we don't want to mess up the iterator
   proc chpl__staticAutoLocalCheck(accessBase: [], loopDomain: domain) param {
-    if chpl__isArrayView(accessBase) then return false;
+    //if chpl__isArrayView(accessBase) then return false;
+    //compilerWarning("1: ", (accessBase.domain.type):string, " ",
+        //(loopDomain.type):string);
+    //compilerWarning("2: ", (accessBase.domain.type == loopDomain.type):string);
 
     if accessBase.domain.type == loopDomain.type {
       return loopDomain.supportsAutoLocalAccess();

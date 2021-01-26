@@ -422,6 +422,10 @@ module ArrayViewRankChange {
       downDomInst = reprivatizeData(2);
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return true;
+    }
+
  } // end of class ArrayViewRankChangeDom
 
   private proc buildIndexCacheHelper(arr, dom, collapsedDim, idx) {
