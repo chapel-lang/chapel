@@ -1327,17 +1327,34 @@ private proc getQ(A, tau) {
   }
   return Q;
 }
-/* Need to add docstring
+
+/* Perform a QR factorization on matrix ``A``.  ``A`` must be square.
+   Matrix ``A`` is not modified. The method returns an orthogonal matrix ``Q``
+   and an upper-triangular matrix ``R`` both of which are the same shape
+   as argument ``A``.
+
+    .. note::
+
+      This procedure depends on the modules :mod:`LAPACK` and :mod `BLAS`.
+      It must be compiled with the `-llapacke` and `-lblas` flags.
 */
-proc qr (A: [?Adom] ?eltType) where usingLAPACK && usingBLAS {
+proc qr (A: [?Adom] ?t)
+  where A.rank == 2 && isLAPACKType(t) && usingLAPACK && usingBLAS {
+  if isDistributed(A) then
+    compilerError("qr does not support distributed vectors/matrices");
+  if !isSquare(A) then
+    halt("Matrix passed to QR factorization must be square");
   var Aclone = A;
   var n = Adom.shape[0];
   var tau:[1..n] real;
   var info = LAPACK.geqrf(lapack_memory_order.row_major, Aclone, tau);
+  if info <0 then
+    halt("QR Factorization failed on the input matrix");
   var Q = getQ(Aclone,tau);
   var R = triu(Aclone);
   return (Q,R);
 }
+
 /* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
