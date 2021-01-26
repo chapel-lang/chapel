@@ -1,3 +1,3 @@
 check-instantiations-with-defaults-simple.chpl:1: In function 'f':
 check-instantiations-with-defaults-simple.chpl:2: warning: int(64) int(64)
-  check-instantiations-with-defaults-simple.chpl:25: called as f(arg: int(64), b: _unknown)
+  check-instantiations-with-defaults-simple.chpl:25: called as f(arg: int(64), b: int(64))

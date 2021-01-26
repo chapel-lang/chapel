@@ -24,6 +24,7 @@ _chpl ()
       local devel_opts="\
 --allow-noinit-array-not-pod \
 --atomics \
+--auto-aggregation \
 --auto-local-access \
 --aux-filesys \
 --baseline \
@@ -140,6 +141,7 @@ _chpl ()
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
+--no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \
@@ -223,6 +225,7 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
 --no-scalar-replacement \
@@ -255,6 +258,7 @@ _chpl ()
 --prepend-internal-module-dir \
 --prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
+--print-additional-errors \
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
@@ -283,6 +287,7 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
 --report-dead-blocks \
@@ -336,6 +341,7 @@ _chpl ()
       # non-developer options
       local nodevel_opts="\
 --atomics \
+--auto-aggregation \
 --auto-local-access \
 --aux-filesys \
 --baseline \
@@ -399,6 +405,7 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-aggregation \
 --no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \

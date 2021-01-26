@@ -7,5 +7,3 @@ class MyClass {
 var rhs = new owned MyClass();
 
 var lhs: unmanaged MyClass? = rhs;
-
-compilerError("done");

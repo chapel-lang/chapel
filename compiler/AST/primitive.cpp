@@ -273,15 +273,15 @@ returnInfoArrayIndexValue(CallExpr* call) {
   Type* type = call->get(1)->getValType();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
-  if (!type->substitutions.n)
-    INT_FATAL(call, "bad primitive");
   // Is this conditional necessary?  Can just assume condition is true?
   if (type->symbol->hasFlag(FLAG_DATA_CLASS) ||
       type->symbol->hasFlag(FLAG_C_ARRAY)) {
-    return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, QUAL_VAL);
-  }
-  else {
-    return QualifiedType(toTypeSymbol(type->substitutions.v[0].value)->type, QUAL_VAL);
+    TypeSymbol* eltTypeSymbol = getDataClassType(type->symbol);
+    INT_ASSERT(eltTypeSymbol);
+    return QualifiedType(eltTypeSymbol->type, QUAL_VAL);
+  } else {
+    INT_FATAL("unsupported case");
+    return QualifiedType(NULL);
   }
 }
 
@@ -888,6 +888,8 @@ initPrimitive() {
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
 
   prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
+  prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
+  prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);

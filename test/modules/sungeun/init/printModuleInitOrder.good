@@ -46,6 +46,9 @@ Initializing Modules:
     ChapelUtil
     ChapelError
     ExportWrappers
+    ChapelAutoAggregation
+     CopyAggregation
+      AggregationPrimitives
     Builtins
     AlignedTSupport
    printModuleInitOrder

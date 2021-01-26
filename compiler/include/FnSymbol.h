@@ -96,7 +96,9 @@ public:
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;
+
   SymbolMap                  substitutions;
+  SymbolNameVec              substitutionsPostResolve;
 
   astlocT                    userInstantiationPointLoc;
 
@@ -242,6 +244,8 @@ public:
   bool                       throwsError()                               const;
 
   bool                       retExprDefinesNonVoid()                     const;
+
+  Symbol*                    getSubstitutionWithName(const char* name)   const;
 
   std::string                nameAndArgsToString(const char* sep,
                                                  bool forError,

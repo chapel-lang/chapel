@@ -155,7 +155,7 @@ public:
 
   void                        buildCopyInitializer();
 
-  Symbol*                     getSubstitution(const char* name);
+  Symbol*                     getSubstitution(const char* name)          const;
 
   Type*                       getDecoratedClass(ClassTypeDecorator d);
 
@@ -240,9 +240,6 @@ private:
   void                        renameInstantiation();
 
   AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
-
-  Symbol*                     substitutionForField(Symbol*    field,
-                                                   SymbolMap& subs)      const;
 
   AggregateType*              getCurInstantiation(Symbol* sym, Type* symType);
 

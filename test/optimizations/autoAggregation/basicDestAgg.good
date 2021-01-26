@@ -1,0 +1,63 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:13)
+| Found an aggregation candidate (basicDestAgg.chpl:14)
+|  Potential destination aggregation (basicDestAgg.chpl:14)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:13)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:23)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicDestAgg.chpl:23)
+
+Start analyzing forall for automatic aggregation (basicDestAgg.chpl:33)
+| Found an aggregation candidate (basicDestAgg.chpl:34)
+|  Potential destination aggregation (basicDestAgg.chpl:34)
+End analyzing forall for automatic aggregation (basicDestAgg.chpl:33)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:13)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:13)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:23)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicDestAgg.chpl:23)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (basicDestAgg.chpl:14)
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (basicDestAgg.chpl:14)
+Aggregation candidate has confirmed local child  (basicDestAgg.chpl:34)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (basicDestAgg.chpl:34)
+Aggregation candidate has confirmed local child  (basicDestAgg.chpl:34)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (basicDestAgg.chpl:34)
+Replaced assignment with aggregation (basicDestAgg.chpl:34)
+Replaced assignment with aggregation (basicDestAgg.chpl:34)
+Replaced assignment with aggregation [static only ALA clone]  (basicDestAgg.chpl:14)
+
+Loop 1
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 1
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 2
+End Loop 2
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 3
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 3
+10 9 8 7 6 5 4 3 2 1 0
+

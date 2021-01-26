@@ -1,0 +1,3 @@
+param-compiler-error.chpl:2: In function 'foo':
+param-compiler-error.chpl:3: error: Cannot assign to int(64) from real(64)
+  param-compiler-error.chpl:6: called as foo(param arg = b"a")

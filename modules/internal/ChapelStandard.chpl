@@ -65,6 +65,7 @@ module ChapelStandard {
   public use ChapelTaskData;
   public use ChapelSerializedBroadcast;
   public use ExportWrappers;
+  public use ChapelAutoAggregation;
 
   // Standard modules.
   public use Builtins;

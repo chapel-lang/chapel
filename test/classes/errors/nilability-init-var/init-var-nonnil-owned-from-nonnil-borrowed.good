@@ -1,1 +1,2 @@
+init-var-nonnil-owned-from-nonnil-borrowed.chpl:9: error: invalid copy-initialization
 init-var-nonnil-owned-from-nonnil-borrowed.chpl:9: error: cannot create an owned variable from a borrowed class instance

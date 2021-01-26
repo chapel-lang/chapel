@@ -1,1 +1,2 @@
+init-var-nonnil-shared-from-oknil-borrowed.chpl:9: error: invalid copy-initialization
 init-var-nonnil-shared-from-oknil-borrowed.chpl:9: error: cannot create a shared variable from a borrowed class instance

@@ -807,6 +807,7 @@ extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
 extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
+extern VarSymbol *gCacheRemote;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gWarnUnstable;

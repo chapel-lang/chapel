@@ -1,4 +1,4 @@
 wrongType.chpl:6: In method 'init=':
 wrongType.chpl:7: error: Cannot replace an instantiated field with another type
 wrongType.chpl:7: note: field 'T' has type 'int(64)' but is set to '2*int(64)'
-  wrongType.chpl:13: called as R(int(64)).init=(other: int(64))
+  wrongType.chpl:13: called as (R(int(64))).init=(other: int(64))

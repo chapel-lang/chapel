@@ -7,5 +7,3 @@ class MyClass {
 
 
 var lhs: unmanaged MyClass = nil;
-
-//todo: uncomment this without changing .good:   compilerError("done");

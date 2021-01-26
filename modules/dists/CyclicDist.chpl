@@ -770,6 +770,11 @@ override proc CyclicArr.dsiDisplayRepresentation() {
 
 override proc CyclicArr.dsiGetBaseDom() return dom;
 
+override proc CyclicArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
+
 //
 // NOTE: Each locale's myElems array be initialized prior to setting up
 // the RAD cache.

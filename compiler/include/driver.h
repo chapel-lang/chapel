@@ -60,6 +60,9 @@ extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
+extern bool fAutoAggregation;
+extern bool fReportAutoAggregation;
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;
@@ -250,5 +253,7 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+
+extern bool fPrintAdditionalErrors;
 
 #endif

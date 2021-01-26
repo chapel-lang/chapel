@@ -681,6 +681,10 @@ class UserMapAssocArr: AbsBaseArr {
 
   override proc dsiGetBaseDom() return dom;
 
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
+  }
+
   proc setup(param initElts: bool) {
     coforall localeIdx in dom.dist.targetLocDom {
       on dom.dist.targetLocales(localeIdx) {

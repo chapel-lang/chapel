@@ -1,3 +1,3 @@
 with-runtime-types.chpl:5: In method 'tField':
 with-runtime-types.chpl:5: error: accessing the runtime-type field tField of a class type is currently unsupported
-  with-runtime-types.chpl:12: called as type borrowed CC([domain(1,int(64),false)] locale).tField()
+  with-runtime-types.chpl:12: called as (CC([domain(1,int(64),false)] locale)).tField

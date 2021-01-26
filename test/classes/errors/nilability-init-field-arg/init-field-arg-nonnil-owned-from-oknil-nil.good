@@ -1,3 +1,6 @@
 init-field-arg-nonnil-owned-from-oknil-nil.chpl:9: In initializer:
+init-field-arg-nonnil-owned-from-oknil-nil.chpl:10: error: invalid copy-initialization
 init-field-arg-nonnil-owned-from-oknil-nil.chpl:10: error: Assigning non-nilable owned to nil
+init-field-arg-nonnil-owned-from-oknil-nil.chpl:10: error: mention of non-nilable variable after ownership is transferred out of it
+init-field-arg-nonnil-owned-from-oknil-nil.chpl:10: note: ownership transfer occurred here
   init-field-arg-nonnil-owned-from-oknil-nil.chpl:14: called as MyRecord.init(rhs: nil)
