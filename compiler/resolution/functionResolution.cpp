@@ -10901,9 +10901,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     // initialized. This way avoid emitting confusing errors from within
     // the `_defaultOf` and give other code a chance to emit errors as well.
     //
-    // TODO: Prune/don't generate `_defaultOf` for tuples containing non-
-    // default-initializable elements?
-    //
     if (!hasErrored) {
       CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
       CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
@@ -10913,6 +10910,13 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
       resolveCallAndCallee(defaultCall);
       resolveExpr(move);
+
+    //
+    // Go ahead and convert the call to a NOP to avoid getting errors during
+    // post-resolution checks (these run even if errors have been emitted).
+    //
+    } else {
+      call->convertToNoop();
     }
 
   // other types (sync, single, ...)

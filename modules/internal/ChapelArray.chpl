@@ -458,7 +458,7 @@ module ChapelArray {
   //
   pragma "runtime type init fn"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
-    return dom.buildArray(eltType, true);
+    return dom.buildArray(eltType, false);
   }
 
   pragma "no copy returns owned" // workaround for order of resolution issue
@@ -498,7 +498,7 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( elems ...?k ) {
+  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -507,23 +507,27 @@ module ChapelArray {
     }
 
     // elements of string literals are assumed to be of type string
-    type elemType = _getLiteralType(elems(0).type);
-    pragma "unsafe" // 'elemType' can be non-nilable
-    var A : [arrayLiteralLowBound..#k] elemType;  //This is unfortunate, can't use t here...
+    type eltType = _getLiteralType(elems(0).type);
+    var dom = {arrayLiteralLowBound..#k};
+    var arr = dom.buildArray(eltType, initElts=false);
 
     for param i in 0..k-1 {
       type currType = _getLiteralType(elems(i).type);
 
-      if currType != elemType {
+      if currType != eltType {
         compilerError( "Array literal element " + i:string +
-                       " expected to be of type " + elemType:string +
+                       " expected to be of type " + eltType:string +
                        " but is of type " + currType:string );
       }
 
-      A(i+arrayLiteralLowBound) = elems(i);
+      ref src = elems(i);
+      ref dst = arr(i+arrayLiteralLowBound);
+      __primitive("=", dst, src);
     }
 
-    return A;
+    arr.dsiElementInitializationComplete();
+
+    return arr;
   }
 
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
@@ -3899,6 +3903,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc =(ref a: [], b:[]) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -4017,6 +4022,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
 
     var done = false;
