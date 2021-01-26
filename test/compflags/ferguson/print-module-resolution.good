@@ -166,6 +166,12 @@ ChapelSerializedBroadcast
   from print-module-resolution.ChapelStandard.ChapelSerializedBroadcast
 ExportWrappers
   from print-module-resolution.ChapelStandard.ExportWrappers
+AggregationPrimitives
+  from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation.AggregationPrimitives
+CopyAggregation
+  from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
+ChapelAutoAggregation
+  from print-module-resolution.ChapelStandard.ChapelAutoAggregation
 Builtins
   from print-module-resolution.ChapelStandard.Builtins
 Types

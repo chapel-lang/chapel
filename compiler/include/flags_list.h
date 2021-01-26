@@ -33,6 +33,11 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+// flags to be added to the aggregation markers
+symbolFlag ( FLAG_AGG_MARKER, npr, "aggregation marker", ncm)
+symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggreagation is happening in a static only forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggreagation is happening in a static and dynamic forall clone")
+symbolFlag ( FLAG_AGG_GENERATOR, ypr, "aggregator generator", " this function generates and returns an aggregator")
 
 // Indicates an array implementation class can alias other array implementations
 // e.g. array views
@@ -94,6 +99,7 @@ symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 //    for functions added by the compiler (e.g. with error handling)
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
+symbolFlag( FLAG_COMPILER_ADDED_AGGREGATOR , npr, "compiler added aggregator" , "marks aggregator symbols that the compiler added" )
 
 symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , ncm )
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )

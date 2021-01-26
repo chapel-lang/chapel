@@ -30,7 +30,7 @@
 #include "iterator.h"
 #include "ParamForLoop.h"
 #include "passes.h"
-#include "preNormalizeOptimizations.h"
+#include "forallOptimizations.h"
 #include "resolution.h"
 #include "resolveFunction.h"
 #include "resolveIntents.h"
@@ -574,6 +574,23 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = preFoldMaybeLocalThis(call);
     call->replace(retval);
     break;
+
+  case PRIM_MAYBE_LOCAL_ARR_ELEM:
+    retval = preFoldMaybeLocalArrElem(call);
+    call->replace(retval);
+    break;
+
+  case PRIM_MAYBE_AGGREGATE_ASSIGN: {
+    Expr *aggReplacement = preFoldMaybeAggregateAssign(call);
+    call->insertAfter(aggReplacement);
+    if (isCondStmt(aggReplacement)) {
+      normalize(aggReplacement);
+    }
+
+    retval = new CallExpr(PRIM_NOOP);
+    call->replace(retval);
+    break;
+  }
 
   case PRIM_CALL_RESOLVES:
   case PRIM_CALL_AND_FN_RESOLVES:

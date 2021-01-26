@@ -26,6 +26,7 @@
 #include "stringutil.h"
 
 ForallOptimizationInfo::ForallOptimizationInfo():
+  infoGathered(false),
   iterSym(NULL),
   dotDomIterExpr(NULL),
   dotDomIterSym(NULL),
@@ -33,7 +34,8 @@ ForallOptimizationInfo::ForallOptimizationInfo():
   iterCall(NULL),
   iterCallTmp(NULL),
   autoLocalAccessChecked(false),
-  confirmedFastFollower(false)
+  confirmedFastFollower(false),
+  cloneType(NOT_CLONE)
 {
 }
 

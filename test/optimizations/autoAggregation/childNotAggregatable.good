@@ -1,0 +1,14 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (childNotAggregatable.chpl:10)
+End analyzing forall for automatic aggregation [static only ALA clone]  (childNotAggregatable.chpl:10)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (childNotAggregatable.chpl:19)
+End analyzing forall for automatic aggregation [static only ALA clone]  (childNotAggregatable.chpl:19)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (childNotAggregatable.chpl:10)
+End analyzing forall for automatic aggregation [no ALA clone]  (childNotAggregatable.chpl:10)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (childNotAggregatable.chpl:19)
+End analyzing forall for automatic aggregation [no ALA clone]  (childNotAggregatable.chpl:19)
+
+12 11 10 9 8 7 6 5 4 3 2
+20 18 16 14 12 10 8 6 4 2 0
