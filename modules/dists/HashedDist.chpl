@@ -837,7 +837,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiHasSingleLocalSubdomain() param return false;
 
   iter dsiLocalSubdomains(loc: locale) {
-    for locdom in dom.dsiLocalSubdomains(loc) do
+    foreach locdom in dom.dsiLocalSubdomains(loc) do
       yield locdom;
   }
 

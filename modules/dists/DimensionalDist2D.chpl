@@ -1028,21 +1028,20 @@ proc DimensionalArr.dsiSerialWrite(f): void {
             if this.isAlias then "  (alias)" else "");
   assert(this.rank == 2);
 
-  pragma "order independent yielding loops"
   iter iHelp(param d) {
     if this.isAlias {
        // Go to the original array and invoke the follower iterator on it,
        // giving the alias's entire domain as the index set to follow.
        // (NB dsiFollowerArrayIterator1d's argument is not densified.)
       const dom1d = if d == 0 then this.allocDom.dom1 else this.allocDom.dom2;
-      for l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
+      foreach l_i in dom1d.dsiFollowerArrayIterator1d(this.dom.whole.dim(d)) do
         yield l_i;
 
     } else {
       const alDom = this.dom;
       const dom1d = if d == 0 then alDom.dom1 else alDom.dom2;
-      for (l,r) in dom1d.dsiSerialArrayIterator1d() do
-        for i in r do
+      foreach (l,r) in dom1d.dsiSerialArrayIterator1d() do
+        foreach i in r do
           yield (l,i);
     }
   }
@@ -1247,7 +1246,6 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
           // produce, collectively, all the indices in this dimension.
           // For 'parDim' - only the 'taskid'-th share of all indices.
           //
-          pragma "order independent yielding loops"
           iter iter1d(param dd, dom1d, loc1d) {
             const dummy: followT;
             type resultT = dummy(dd).type;
@@ -1256,16 +1254,15 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               yield loc1d.dsiMyDensifiedRangeForTaskID1d
                 (dom1d, taskid, numTasks) : resultT;
             } else {
-              for r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
+              foreach r in loc1d.dsiMyDensifiedRangeForSingleTask1d(dom1d) do
                 yield r: resultT;
             }
           }
 
           // Bug note: computing 'myDims(dd)' instead of passing 'myDim'
           // would trip an assertion in the compiler.
-          pragma "order independent yielding loops"
           iter iter1dCheck(param dd, dom1d, loc1d, myDim) {
-            for myPiece in iter1d(dd, dom1d, loc1d) {
+            foreach myPiece in iter1d(dd, dom1d, loc1d) {
 
               // ensure we got a subset, if applicable
               if dom1d.dsiStorageUsesUserIndices() then
@@ -1316,7 +1313,6 @@ iter DimensionalDom.these(param tag: iterKind, followThis) where tag == iterKind
 //== serial iterator - array
 
 // note: no 'on' clauses - they not allowed by the compiler
-pragma "order independent yielding loops"
 iter DimensionalArr.these() ref {
   _traceddd(this, ".serial iterator",
             if this.isAlias then "  (alias)" else "");
@@ -1326,7 +1322,7 @@ iter DimensionalArr.these() ref {
      // Go to the original array and invoke the follower iterator on it,
      // giving the alias's entire domain as the index set to follow.
      // (NB dsiFollowerArrayIterator1d's argument is not densified.)
-    for v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
+    foreach v in this._dsiIteratorHelper(this.allocDom, this.dom.whole.dims()) do
       yield v;
 
     return;
@@ -1356,7 +1352,7 @@ iter DimensionalArr.these() ref {
           const locAdesc = this.localAdescs[l1,l2];
           _traceddc(traceDimensionalDistIterators,
                     "  locAdesc", (l1,l2), " on ", locAdesc.locale);
-          for i2 in r2 do
+          foreach i2 in r2 do
             yield locAdesc.myStorageArr(i1, i2);
         }
 }
@@ -1392,7 +1388,6 @@ iter DimensionalArr.these(param tag: iterKind, followThis) ref where tag == iter
 }
 
 // factor our some common code
-pragma "not order independent yielding loops"
 iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // single-element cache of localAdescs[l1,l2]
   var lastl1 = invalidLocID, lastl2 = invalidLocID;
@@ -1405,7 +1400,7 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // more than once? Can we create a more efficient interface?
   //
   for (l1,i1) in alDom.dom1.dsiFollowerArrayIterator1d(f1) do
-    for (l2,i2) in alDom.dom2.dsiFollowerArrayIterator1d(f2) do
+    foreach (l2,i2) in alDom.dom2.dsiFollowerArrayIterator1d(f2) do
       {
         // reuse the cache or index into the array?
         if l1 != lastl1 || l2 != lastl2 {

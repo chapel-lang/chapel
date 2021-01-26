@@ -465,10 +465,9 @@ module Bytes {
 
     :yields: 1-length :mod:`bytes <Bytes>`
    */
-  pragma "order independent yielding loops"
   iter bytes.items(): bytes {
     if this.isEmpty() then return;
-    for i in this.indices do
+    foreach i in this.indices do
       yield this.item[i];
   }
 
@@ -487,9 +486,8 @@ module Bytes {
 
     :yields: uint(8)
   */
-  pragma "order independent yielding loops"
   iter bytes.chpl_bytes(): byteType {
-    for i in this.indices do
+    foreach i in this.indices do
       yield this.byte(i);
   }
 
@@ -639,7 +637,6 @@ module Bytes {
 
     :yields: :mod:`bytes <Bytes>` 
    */
-  pragma "not order independent yielding loops"
   iter bytes.split(maxsplit: int = -1) : bytes {
     for s in doSplitWSNoEnc(this, maxsplit) do yield s;
   }
