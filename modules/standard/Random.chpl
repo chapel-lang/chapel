@@ -1555,14 +1555,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -1573,7 +1572,6 @@ module Random {
     // PCGRandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                                start: int(64)) {
       var cursor = randlc_skipto(resultType, seed, start);
@@ -1590,7 +1588,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter PCGRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {
@@ -2830,14 +2827,13 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    pragma "order independent yielding loops"
     private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
-        for i in ranges(dim) do
+        foreach i in ranges(dim) do
           yield (i,);
       } else if dim + 2 < ranges.size {
-        for i in ranges(dim) do
-          for j in outer(ranges, dim+1) do
+        foreach i in ranges(dim) do
+          foreach j in outer(ranges, dim+1) do
             yield (i, (...j));
       } else {
         yield 0; // 1D case is a noop
@@ -2848,7 +2844,6 @@ module Random {
     // RandomStream iterator implementation
     //
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                          start: int(64)) {
       var cursor = randlc_skipto(seed, start);
@@ -2866,7 +2861,6 @@ module Random {
     }
 
     pragma "no doc"
-    pragma "not order independent yielding loops"
     iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
                  start: int(64), param tag: iterKind, followThis)
           where tag == iterKind.follower {

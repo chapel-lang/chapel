@@ -89,7 +89,6 @@ record LinkedList {
 
     :ytype: eltType
    */
-  pragma "not order independent yielding loops"
   iter these() {
     var tmp = _first;
     while tmp != nil {

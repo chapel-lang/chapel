@@ -827,7 +827,6 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _cpIndexLen(start = 0:byteIndex) {
       const localThis = this.localize();
       var i = _findStartOfNextCodepointFromByte(this, start);
@@ -843,7 +842,6 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _indexLen(start = 0:byteIndex) {
       var localThis: string = this.localize();
 
@@ -950,7 +948,6 @@ module String {
       return "";
     }
 
-    pragma "not order independent yielding loops"
     iter doSplitWSUTF8(maxsplit: int) {
       if !this.isEmpty() {
         const localThis = this.localize();
@@ -1240,7 +1237,6 @@ module String {
       c
       d
    */
-  pragma "not order independent yielding loops"
   iter string.items() : string {
     var localThis: string = this.localize();
 
@@ -1294,11 +1290,10 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
-  pragma "order independent yielding loops"
   iter string.chpl_bytes(): byteType {
     var localThis: string = this.localize();
 
-    for i in 0..#localThis.buffLen {
+    foreach i in 0..#localThis.buffLen {
       yield localThis.buff[i];
     }
   }
@@ -1306,7 +1301,6 @@ module String {
   /*
     Iterates over the string Unicode character by Unicode character.
   */
-  pragma "not order independent yielding loops"
   iter string.codepoints(): int(32) {
     const localThis = this.localize();
     var i = 0;
@@ -1619,7 +1613,6 @@ module String {
     :arg maxsplit: The number of times to split the string, negative values
                    indicate no limit.
    */
-  pragma "not order independent yielding loops"
   iter string.split(maxsplit: int = -1) /* : string */ {
     // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {

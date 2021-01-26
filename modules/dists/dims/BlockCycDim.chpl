@@ -579,7 +579,6 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
-pragma "not order independent yielding loops"
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
@@ -749,7 +748,6 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
       yield result;
 }
 
-pragma "not order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
@@ -801,27 +799,25 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
   compilerWarning("array iterator over stridable block-cyclic-dim arrays is presently not efficient", 4);
 
   // the simplest way out
-  for ind in wholeR do
+  foreach ind in wholeR do
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
-pragma "order independent yielding loops"
 iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out
-    for ix in undensRange do
+    foreach ix in undensRange do
       yield dsiAccess1d(ix);
 
   } else {
-    for (locNo, stoIxs) in _dsiSerialArrayIterator1dUnitstride(undensRange) do
-      for stoIdx in stoIxs do
+    foreach (locNo, stoIxs) in _dsiSerialArrayIterator1dUnitstride(undensRange) do
+      foreach stoIdx in stoIxs do
         yield (locNo, stoIdx);
   }
 }

@@ -188,11 +188,10 @@ module ArrayViewSlice {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
-      for i in privDom.these(tag, followThis) {
+      foreach i in privDom.these(tag, followThis) {
         yield myarr.dsiAccess[i];
       }
     }

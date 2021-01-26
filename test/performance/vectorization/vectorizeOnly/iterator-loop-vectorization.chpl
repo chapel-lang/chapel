@@ -65,10 +65,9 @@ proc vec_testiterz() {
 vec_testiterz();
 
 
-pragma "order independent yielding loops"
 iter testveciter() {
   var cursor : real = 0.0;
-  for i in 1..n {
+  foreach i in 1..n {
     yield i;
   }
 }
@@ -78,11 +77,10 @@ iter testveciter(param tag: iterKind) where tag == iterKind.leader {
     yield block;
 }
 
-pragma "order independent yielding loops"
 iter testveciter(param tag: iterKind, followThis) where tag == iterKind.follower
 {
   var cursor : real = 0.0;
-  for i in (1..n).these(tag=tag, followThis) {
+  foreach i in (1..n).these(tag=tag, followThis) {
     yield i;
   }
 }

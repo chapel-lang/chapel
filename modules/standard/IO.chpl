@@ -4152,7 +4152,6 @@ record ItemReader {
   }
 
   /* iterate through all items of that type read from the channel */
-  pragma "not order independent yielding loops"
   iter these() { // TODO: this should be throws
     while true {
       var x:ItemType;
@@ -7174,7 +7173,6 @@ proc channel.match(re:regexp(?), ref captures ...?k):reMatch throws
    :yields: tuples of :record:`Regexp.reMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-pragma "not order independent yielding loops"
 iter channel.matches(re:regexp(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {

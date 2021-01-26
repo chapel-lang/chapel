@@ -206,18 +206,17 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
-        for i in ranges(d) do
+        foreach i in ranges(d) do
           yield i;
       } else if d == rank - 2 {
-        for i in ranges(d) do
-          for j in these_help(rank-1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(rank-1) do
             yield (i, j);
       } else {
-        for i in ranges(d) do
-          for j in these_help(d+1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(d+1) do
             yield (i, (...j));
       }
     }
@@ -239,18 +238,17 @@ module DefaultRectangular {
     }
 */
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
-        for i in block(d) do
+        foreach i in block(d) do
           yield i;
       } else if d == block.size - 2 {
-        for i in block(d) do
-          for j in these_help(block.size-1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(block.size-1, block) do
             yield (i, j);
       } else {
-        for i in block(d) do
-          for j in these_help(d+1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(d+1, block) do
             yield (i, (...j));
       }
     }
@@ -479,7 +477,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -525,11 +522,11 @@ module DefaultRectangular {
       }
 
       if rank == 1 {
-        for i in zip((...block)) {
+        foreach i in zip((...block)) {
           yield chpl_intToIdx(i);
         }
       } else {
-        for i in these_help(0, block) {
+        foreach i in these_help(0, block) {
           yield chpl_intToIdx(i);
         }
       }
@@ -704,7 +701,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -1127,7 +1123,6 @@ module DefaultRectangular {
       for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1136,7 +1131,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
-      for i in dom.these(tag, tasksPerLocale,
+      foreach i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
         yield dsiAccess(i);
       }
@@ -1157,7 +1152,6 @@ module DefaultRectangular {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1168,7 +1162,7 @@ module DefaultRectangular {
                            followThis);
       }
 
-      for i in dom.these(tag=iterKind.follower, followThis,
+      foreach i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
                          minIndicesPerTask) do
@@ -1529,13 +1523,11 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1560,7 +1552,7 @@ module DefaultRectangular {
         const second = info.getDataIndex(viewDom.chpl_intToIdx(chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices-1) * step;
-        for i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
           yield info.theData(i);
         }
       } else {
@@ -1577,16 +1569,16 @@ module DefaultRectangular {
           last <=> first;
 
         var data = info.theData;
-        for i in first..last by step do
+        foreach i in first..last by step do
           yield data(i);
       }
     } else if useCache {
-      for i in viewDom {
+      foreach i in viewDom {
         const dataIdx = info.getDataIndex(i);
         yield info.getDataElem(dataIdx);
       }
     } else {
-      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+      foreach elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
     }
   }
 
@@ -1594,9 +1586,8 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
-    for i in viewDom {
+    foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
                       else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;

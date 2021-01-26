@@ -364,17 +364,15 @@ module Set {
       
       :yields: A constant reference to an element in this set.
     */
-    pragma "order independent yielding loops"
     iter const these() {
-      for idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter const these(param tag) where tag == iterKind.standalone {
       var space = 0..#_htb.tableSize;
-      for idx in space.these(tag) do
+      foreach idx in space.these(tag) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
@@ -387,10 +385,9 @@ module Set {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter const these(param tag, followThis)
     where tag == iterKind.follower {
-      for idx in followThis(0) do
+      foreach idx in followThis(0) do
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 

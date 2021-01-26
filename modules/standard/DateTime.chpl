@@ -1198,7 +1198,6 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
-    pragma "not order independent yielding loops"
     iter strftok(const ref s: string)
     {
       var per = "";

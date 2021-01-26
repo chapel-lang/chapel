@@ -1483,7 +1483,6 @@ module SampleSortHelp {
       return bk - (if equalBuckets then 2*numBuckets else numBuckets);
     }
     // yields (index, bucket index) for A[start_n..end_n]
-    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       const paramEqualBuckets = equalBuckets;
       const paramLogBuckets = logBuckets;
@@ -1795,7 +1794,6 @@ module RadixSortHelp {
     }
 
     // yields (index, bucket index) for A[start_n..end_n]
-    pragma "not order independent yielding loops"
     iter classify(A, start_n, end_n, criterion, startbit) {
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {
@@ -2135,20 +2133,18 @@ module TwoArrayPartitioning {
       return lastLocaleId - firstLocaleId + 1;
     }
     // yields tuples of (loc, tid) for the locales involved with this bucket
-    pragma "order independent yielding loops"
     iter localeAndIds(A) {
       const ref tgtLocs = A.targetLocales();
-      for tid in firstLocaleId..lastLocaleId {
+      foreach tid in firstLocaleId..lastLocaleId {
         const loc = tgtLocs[tid];
         yield (loc, tid);
       }
     }
     // yield the other ids but do so in an order that depends on myId
     //  myId + 1 will be the first id.
-    pragma "order independent yielding loops"
     iter otherIds(myId) {
       const nIds = lastLocaleId-firstLocaleId+1;
-      for i in 1..#nIds {
+      foreach i in 1..#nIds {
         yield firstLocaleId + ((myId + i) % nIds);
       }
     }
@@ -2187,9 +2183,8 @@ module TwoArrayPartitioning {
     }
     // yield (loc, locId, task) for each non-empty bucket
     // loc is the locale "owning" the bucket.
-    pragma "order independent yielding loops"
     iter localesAndTasks(A) {
-      for t in tasks {
+      foreach t in tasks {
         const locId = t.firstLocaleId;
         const loc = A.targetLocales()[locId];
         yield (loc, locId, t);

@@ -621,7 +621,6 @@ module ChapelLocale {
     // initialize the LocaleModel.  The calling loop body cannot
     // contain any non-local code, since the rootLocale is not yet
     // initialized.
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales() {
       if numLocales > 1 then
         halt("The locales must be initialized in parallel");
@@ -636,7 +635,6 @@ module ChapelLocale {
     // opportunity to initialize any global private variables we
     // either need (e.g., defaultDist) or can do at this point in
     // initialization (e.g., rootLocale).
-    pragma "not order independent yielding loops"
     iter chpl_initOnLocales(param tag: iterKind)
       where tag==iterKind.standalone {
       // Simple locales barrier, see implementation below for notes

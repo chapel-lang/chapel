@@ -1579,15 +1579,13 @@ module List {
 
       :yields: A reference to one of the elements contained in this list.
     */
-    pragma "order independent yielding loops"
     iter these() ref {
       // TODO: We can just iterate through the _ddata directly here.
-      for i in 0..#_size do
+      foreach i in 0..#_size do
         yield _getRef(i);
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
@@ -1598,7 +1596,7 @@ module List {
 
       coforall tid in 0..#numTasks {
         var chunk = _computeChunk(tid, chunkSize, trailing);
-        for i in chunk(0) {
+        foreach i in chunk(0) {
           ref result = _getRef(i);
           yield result;
         }
@@ -1637,14 +1635,13 @@ module List {
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter these(param tag, followThis) ref where tag == iterKind.follower {
 
       //
       // TODO: A faster scheme would access the _ddata directly to avoid
       // the penalty of logarithmic indexing over and over again.
       //
-      for i in followThis(0) do
+      foreach i in followThis(0) do
         yield _getRef(i);
     }
 
