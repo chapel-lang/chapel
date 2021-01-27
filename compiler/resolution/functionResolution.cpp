@@ -11028,7 +11028,7 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
                              "is not yet supported", toString(at));
         USR_PRINT(field, "field '%s' is a generic value",
                          field->name);
-        USR_PRINT(field, "consider separately declaring a type field "
+        USR_PRINT(field, "consider separately declaring a type field for it "
                          "or using a 'new' call");
         USR_STOP();
       }
