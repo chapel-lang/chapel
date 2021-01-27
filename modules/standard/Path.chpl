@@ -140,7 +140,7 @@ pragma "no doc"
 pragma "last resort"
 proc absPath(name: string): string throws {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return absPath(name:path);
+  return absPath(path=name);
 }
 
 /*
@@ -192,7 +192,7 @@ pragma "no doc"
 pragma "last resort"
 proc basename(name: string): string {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return basename(name:path);
+  return basename(path=name);
 }
 
 /* Determines and returns the longest common path prefix of
@@ -365,7 +365,7 @@ pragma "no doc"
 pragma "last resort"
 proc dirname(name: string): string {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return dirname(name:path);
+  return dirname(path=name);
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
@@ -500,7 +500,7 @@ pragma "no doc"
 pragma "last resort"
 proc isAbsPath(name: string): bool {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return isAbsPath(name:path);
+  return isAbsPath(path=name);
 }
 
 /* Build up path components as described in joinPath(). */
@@ -569,7 +569,7 @@ pragma "no doc"
 pragma "last resort"
 private proc normalizeLeadingSlashCount(name: string): int {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return normalizeLeadingSlashCount(name:path);
+  return normalizeLeadingSlashCount(path=name);
 }
 
 /*
@@ -631,7 +631,7 @@ pragma "no doc"
 pragma "last resort"
 proc normPath(name: string): string {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return normPath(name:path);
+  return normPath(path=name);
 }
 
 /* Given a path ``path``, attempts to determine the canonical path referenced.
@@ -662,7 +662,7 @@ pragma "no doc"
 pragma "last resort"
 proc realPath(name: string): string throws {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return realPath(name:path);
+  return realPath(path=name);
 }
 
 
@@ -684,7 +684,7 @@ pragma "no doc"
 pragma "last resort"
 proc realPath(out error: syserr, name: string): string {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return realPath(error,name:path);
+  return realPath(error,path=name);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record
@@ -799,7 +799,7 @@ pragma "no doc"
 pragma "last resort"
 proc relPath(name: string, start:string=curDir): string throws {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return relPath(name:path,start);
+  return relPath(path=name,start);
 }
 
 /*
@@ -887,11 +887,11 @@ proc file.relPath(start:string=curDir): string throws {
      return ("", path);
    }
  }
-}
 
 pragma "no doc"
 pragma "last resort"
  proc splitPath(name: string): (string, string) {
   compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return splitPath(name:path);
+  return splitPath(path=name);
+ }
 }
