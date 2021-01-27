@@ -295,6 +295,7 @@ void makeRefType(Type* type) {
 
   if (type == dtMethodToken ||
       type == dtUnknown ||
+      type == dtSplitInitType ||
       type->symbol->hasFlag(FLAG_REF) ||
       type->symbol->hasFlag(FLAG_GENERIC)) {
 

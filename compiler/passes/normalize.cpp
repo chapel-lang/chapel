@@ -2542,7 +2542,6 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
   bool foundSplitInit = false;
   bool requestedSplitInit = isSplitInitExpr(init);
 
-  // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
   if (foundSplitInit == false)
@@ -2740,11 +2739,12 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
   // all user variables are dead at end of block
   var->addFlag(FLAG_DEAD_END_OF_BLOCK);
 
-  // For now, disable automatic split init on non-user code
   Expr* prevent = NULL;
   foundSplitInit = findInitPoints(defExpr, initAssigns, prevent, true);
-  //if (foundSplitInit == false)
-  //  errorIfSplitInitializationRequired(defExpr, prevent);
+  // Stop now for required split init for value variables since
+  // these might be set by out intent arguments.
+  if (foundSplitInit == false && refVar)
+    errorIfSplitInitializationRequired(defExpr, prevent);
 
   if (requestedSplitInit && foundSplitInit == false) {
     // Create a dummy DEFAULT_INIT_VAR to sort out later in resolution
