@@ -476,12 +476,16 @@ module SharedObject {
   pragma "no doc"
   proc _shared.readWriteThis(f) throws {
     if isNonNilableClass(this.chpl_t) {
-      var tmp = this.chpl_p!;
+      var tmp = this.chpl_p! : borrowed class;
       f <~> tmp;
       if tmp == nil then halt("internal error - read nil");
-      this.chpl_p = tmp;
+      if tmp != this.chpl_p then halt("internal error - read changed ptr");
     } else {
-      f <~> this.chpl_p;
+      var tmp = this.chpl_p : borrowed class?;
+      f <~> tmp;
+      if tmp != this.chpl_p then halt("internal error - read changed ptr");
+      if tmp == nil then
+        this.doClear();
     }
   }
 
