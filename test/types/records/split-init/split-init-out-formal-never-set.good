@@ -1,0 +1,2 @@
+split-init-out-formal-never-set.chpl:1: In function 'genericOut':
+split-init-out-formal-never-set.chpl:1: error: variable 'arg' is not initialized and has no type
