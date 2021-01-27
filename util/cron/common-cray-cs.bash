@@ -29,4 +29,4 @@ fi
 export SLURM_CPU_FREQ_REQ=high
 
 # workaround for https://github.com/Cray/chapel-private/issues/1598
-export CHPL_TEST_TIMEOUT=1000
+export CHPL_TEST_TIMEOUT=2000
