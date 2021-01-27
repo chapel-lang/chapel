@@ -139,11 +139,8 @@ proc absPath(path: string): string throws {
 pragma "no doc"
 pragma "last resort"
 proc absPath(name: string): string throws {
-  use FileSystem;
-
-  if !isAbsPath(name) then
-    return normPath(joinPath(try here.cwd(), name));
-  return normPath(name);
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return absPath(name:path);
 }
 
 /*
@@ -194,7 +191,8 @@ proc basename(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc basename(name: string): string {
-   return splitPath(name)[1];
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return basename(name:path);
 }
 
 /* Determines and returns the longest common path prefix of
@@ -366,7 +364,8 @@ proc dirname(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc dirname(name: string): string {
-  return splitPath(name)[0];
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return dirname(name:path);
 }
 
 /* Expands any environment variables in the path of the form ``$<name>`` or
@@ -500,15 +499,8 @@ proc isAbsPath(path: string): bool {
 pragma "no doc"
 pragma "last resort"
 proc isAbsPath(name: string): bool {
-  if name.isEmpty() {
-    return false;
-  }
-  var str: string = name[0];
-  if (str == '/') {
-    return true;
-  } else {
-    return false;
-  }
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return isAbsPath(name:path);
 }
 
 /* Build up path components as described in joinPath(). */
@@ -576,13 +568,8 @@ private proc normalizeLeadingSlashCount(path: string): int {
 pragma "no doc"
 pragma "last resort"
 private proc normalizeLeadingSlashCount(name: string): int {
-  var result = if name.startsWith(pathSep) then 1 else 0;
-
-  // Two leading slashes has a special meaning in POSIX.
-  if name.startsWith(pathSep * 2) && !name.startsWith(pathSep * 3) then
-    result = 2;
-
-  return result;
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return normalizeLeadingSlashCount(name:path);
 }
 
 /*
@@ -643,37 +630,8 @@ proc normPath(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc normPath(name: string): string {
-  
-  // Python 3.7 implementation:
-  // https://github.com/python/cpython/blob/3.7/Lib/posixpath.py
-
-  if name == "" then
-    return curDir;
-
-  const leadingSlashes = normalizeLeadingSlashCount(name);
-
-  var comps = name.split(pathSep);
-  var outComps = new list(string);
-
-  for comp in comps {
-    if comp == "" || comp == curDir then
-      continue;
-
-    // Second case exists because we cannot go up past the top level.
-    // Third case continues a chain of leading up-levels.
-    if comp != parentDir || (leadingSlashes == 0 && outComps.isEmpty()) ||
-        (!outComps.isEmpty() && outComps[outComps.size-1] == parentDir) then
-      outComps.append(comp);
-    else if !outComps.isEmpty() then
-      try! outComps.pop();
-  }
-
-  var result = pathSep * leadingSlashes + pathSep.join(outComps.these());
-
-  if result == "" then
-    return curDir;
-
-  return result;
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return normPath(name:path);
 }
 
 /* Given a path ``path``, attempts to determine the canonical path referenced.
@@ -703,15 +661,8 @@ proc realPath(path: string): string throws {
 pragma "no doc"
 pragma "last resort"
 proc realPath(name: string): string throws {
-  extern proc chpl_fs_realpath(path: c_string, ref shortened: c_string): syserr;
-
-  var res: c_string;
-  var err = chpl_fs_realpath(unescape(name).c_str(), res);
-  if err then try ioerror(err, "realPath", name);
-  const ret = createStringWithNewBuffer(res, policy=decodePolicy.escape);
-  // res was qio_malloc'd by chpl_fs_realpath, so free it here
-  chpl_free_c_string(res);
-  return ret; 
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return realPath(name:path);
 }
 
 
@@ -732,16 +683,8 @@ proc realPath(out error: syserr, path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc realPath(out error: syserr, name: string): string {
-  compilerWarning("This version of realPath() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return realPath(name);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "";
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return realPath(error,name:path);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record
@@ -855,28 +798,8 @@ proc relPath(path: string, start:string=curDir): string throws {
 pragma "no doc"
 pragma "last resort"
 proc relPath(name: string, start:string=curDir): string throws {
-  const realstart = if start == "" then curDir else start;
-
-  // NOTE: Reliance on locale.cwd() can't be avoided.
-  const startComps = absPath(realstart).split(pathSep, -1, true);
-  const nameComps = absPath(name).split(pathSep, -1, true);
-
-  const prefixLen = commonPrefixLength(startComps, nameComps);
-
-  // Append up-levels until we reach the point where the paths diverge.
-  var outComps = new list(string);
-  for i in 1..(startComps.size - prefixLen) do
-    outComps.append(parentDir);
-
-  // Append the portion of name following the common prefix.
-  if !nameComps.isEmpty() then
-    for x in nameComps[prefixLen..<nameComps.size] do
-      outComps.append(x);
-
-  if outComps.isEmpty() then
-    return curDir;
-
-  return joinPath(outComps.toArray());
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return relPath(name:path,start);
 }
 
 /*
@@ -969,32 +892,6 @@ proc file.relPath(start:string=curDir): string throws {
 pragma "no doc"
 pragma "last resort"
  proc splitPath(name: string): (string, string) {
-   var rLoc, lLoc, prev: byteIndex = name.rfind(pathSep);
-   if (prev != -1) {
-     do {
-       prev = lLoc;
-       lLoc = name.rfind(pathSep, 0:byteIndex..prev-1);
-     } while (lLoc + 1 == prev && lLoc > 0);
-
-     if (prev == 0) {
-       // This happens when the only instance of pathSep in the string is
-       // the first character
-       return (name[prev..rLoc], name[rLoc+1..]);
-     } else if (lLoc == 0 && prev == 1) {
-       // This happens when there is a line of pathSep instances at the
-       // start of the string
-       return (name[..rLoc], name[rLoc+1..]);
-     } else if (prev != rLoc) {
-       // If prev wasn't the first character, then we want to skip all those
-       // duplicate pathSeps
-       return (name[..prev-1], name[rLoc+1..]);
-     } else {
-       // The last instance of pathSep in the string was on its own, so just
-       // snip it out.
-       return (name[..rLoc-1], name[rLoc+1..]);
-     }
-   } else {
-     return ("", name);
-   }
- }
+  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  return splitPath(name:path);
 }
