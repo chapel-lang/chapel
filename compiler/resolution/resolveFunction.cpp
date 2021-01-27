@@ -2174,9 +2174,13 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       }
     }
 
-    if (formal->getValType() != dtNothing) {
-      def = new DefExpr(tmp);
-      start->insertBefore(def);
+    def = new DefExpr(tmp);
+    start->insertBefore(def);
+
+    // Don't do anything complicated for formals of type 'nothing'
+    if (formal->getValType() == dtNothing) {
+      tmp->type = dtNothing;
+      continue;
     }
 
     // This switch adds the extra code inside the current function necessary
@@ -2360,12 +2364,10 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      }
     }
 
-    if (formal->getValType() != dtNothing) {
-      // For inout or out intent, this assigns the modified value back to the
-      // formal at the end of the function body.
-      if (formal->intent == INTENT_OUT) {
-        fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
-      }
+    // For inout or out intent, this assigns the modified value back to the
+    // formal at the end of the function body.
+    if (formal->intent == INTENT_OUT) {
+      fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
     }
   }
 }

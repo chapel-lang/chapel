@@ -1,0 +1,3 @@
+split-init-out-formal-never-set2.chpl:1: In function 'outProc':
+split-init-out-formal-never-set2.chpl:1: error: variable 'outarg' is not initialized and has no type
+split-init-out-formal-never-set2.chpl:2: note: 'outarg' is used here before it is initialized

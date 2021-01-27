@@ -140,11 +140,17 @@ void CallInfo::haltNotWellFormed() const {
 
     if (t == dtSplitInitType) {
 
+      const char* name = sym->name;
+      const char* prefix = "_formal_tmp_";
+      if (startsWith(name, prefix)) {
+        name = &name[strlen(prefix)];
+      }
+
       DefExpr* def = sym->defPoint;
       USR_FATAL_CONT(def, "variable '%s' is not initialized and has no type",
-                          sym->name);
+                          name);
       USR_PRINT(call, "'%s' is used here before it is initialized",
-                      sym->name);
+                      name);
       USR_STOP();
 
     } else if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
