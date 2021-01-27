@@ -2769,7 +2769,7 @@ pragma "no doc"
 
 // Read routines for all primitive types.
 private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
-    out x:?t):syserr where _isIoPrimitiveType(t) {
+    ref x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var err:syserr = ENOERR;
     var got:bool = false;
@@ -2835,8 +2835,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
   return EINVAL;
 }
 
-private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
-    x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _write_text_internal(_channel_internal:qio_channel_ptr_t, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     if x {
       return qio_channel_print_literal(false, _channel_internal, c"true", "true".numBytes:ssize_t);
@@ -2880,7 +2879,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   return EINVAL;
 }
 
-private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, ref x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
@@ -3827,7 +3826,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
 
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-proc channel.readbits(out v:integral, nbits:integral):bool throws {
+proc channel.readbits(ref v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
