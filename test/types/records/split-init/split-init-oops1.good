@@ -1,0 +1,3 @@
+split-init-oops1.chpl:5: In function 'test':
+split-init-oops1.chpl:6: error: variable 'a' is not initialized and has no type
+split-init-oops1.chpl:8: note: 'a' is used here before it is initialized
