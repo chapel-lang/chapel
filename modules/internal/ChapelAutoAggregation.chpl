@@ -35,11 +35,6 @@ module ChapelAutoAggregation {
   }
 
   pragma "aggregator generator"
-  proc chpl_srcAggregatorForArr(type t) {
-    return new SrcAggregator(t);
-  }
-
-  pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(arr) {
     return nil;  // return type signals that we shouldn't aggregate
   }
@@ -53,12 +48,6 @@ module ChapelAutoAggregation {
   pragma "aggregator generator"
   proc chpl_dstAggregatorForLiteral(a) {
     return new DstAggregator(a.eltType);
-  }
-
-
-  pragma "aggregator generator"
-  proc chpl_dstAggregatorForArr(type t) {
-    return new DstAggregator(t);
   }
 
   pragma "aggregator generator"

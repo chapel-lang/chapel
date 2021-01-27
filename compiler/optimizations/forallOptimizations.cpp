@@ -759,39 +759,6 @@ static void gatherForallInfo(ForallStmt *forall) {
   forall->optInfo.infoGathered = true;
 }
 
-//static int isSymbolInDotDomIterSym(Symbol *sym, ForallStmt *forall) {
-  //int idx = 1;
-  //for_vector_allowing_0s(Symbol, tmp, forall->optInfo.dotDomIterSym) {
-    //if (tmp == sym) {
-      //return idx;
-    //}
-    //idx++;
-  //}
-  //return -1;
-//}
-
-//static int isSymbolInDotDomIterSymDom(Symbol *sym, ForallStmt *forall) {
-  //int idx = 1;
-  //for_vector_allowing_0s(Symbol, tmp, forall->optInfo.dotDomIterSymDom) {
-    //if (tmp == sym) {
-      //return idx;
-    //}
-    //idx++;
-  //}
-  //return -1;
-//}
-
-//static int isSymbolInIterSym(Symbol *sym, ForallStmt *forall) {
-  //int idx = 1;
-  //for_vector_allowing_0s(Symbol, tmp, forall->optInfo.iterSym) {
-    //if (tmp == sym) {
-      //return idx;
-    //}
-    //idx++;
-  //}
-  //return -1;
-//}
-
 static bool loopHasValidInductionVariables(ForallStmt *forall) {
   // if we understand the induction variables, then we can still take a look at
   // the loop body for some calls that we can optimize dynamically
@@ -1432,7 +1399,6 @@ static void autoAggregation(ForallStmt *forall) {
   if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
 
     if (lastCall->isNamed("=")) {
-      if (strcmp(lastCall->fname(), "/Users/ekayraklio/code/chapel/versions/f01/chapel/test/optimizations/autoAggregation/arrElemFromAlignedFollower.chpl") == 0) { gdbShouldBreakHere(); }
       // no need to do anything if it is array access
       if (assignmentSuitableForAggregation(lastCall, forall)) {
         LOG_AA(1, "Found an aggregation candidate", lastCall);
@@ -1811,14 +1777,15 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     gatherForallInfo(forall);
   }
 
+  Symbol *maybeArrSym = NULL;
+  Symbol *maybeArrElemSym = NULL;
+  Expr *maybeArrExpr = NULL;
+
   bool lhsMaybeArrSym = false;
   bool rhsMaybeArrSym = false;
 
   SymExpr *lhsSymExpr = toSymExpr(call->get(1));
   SymExpr *rhsSymExpr = toSymExpr(call->get(2));
-
-  Symbol *maybeArrElemSym = NULL;
-  Expr *maybeArrExpr = NULL;
 
   // note that if we hit both inner if's below, that would mean we have
   // something like `a=a`. We check for this case right after and don't continue
@@ -1848,7 +1815,6 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
 
   // For now, limit maybeArrExpr to be only SymExprs, I think we can relax that
-  Symbol *maybeArrSym = NULL;
   if (SymExpr *maybeArrExprSE = toSymExpr(maybeArrExpr)) {
     maybeArrSym = maybeArrExprSE->symbol();
   }
