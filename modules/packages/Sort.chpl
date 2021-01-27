@@ -268,8 +268,10 @@ defaultComparator = new DefaultComparator();
 
 /*
    Instance of :record:`ReverseComparator` that reverses the default comparator.
-   Pass this as the ``comparator=``
-   argument of a sort function to reverse the default sort order.
+
+   Pass this as the ``comparator=`` argument of a sort function to reverse the
+   default sort order.
+
  */
 const reverseComparator: ReverseComparator;
 reverseComparator = new ReverseComparator();
