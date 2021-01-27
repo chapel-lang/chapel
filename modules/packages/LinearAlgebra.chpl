@@ -1335,7 +1335,7 @@ private proc getQ(A, tau) {
 
     .. note::
 
-      This procedure depends on the modules :mod:`LAPACK` and :mod `BLAS`.
+      This procedure depends on the modules :mod:`LAPACK` and :mod:`BLAS`.
       It must be compiled with the `-llapacke` and `-lblas` flags.
 */
 proc qr (A: [?Adom] ?t)
