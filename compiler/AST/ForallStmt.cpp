@@ -27,12 +27,6 @@
 
 ForallOptimizationInfo::ForallOptimizationInfo():
   infoGathered(false),
-  iterSym(NULL),
-  dotDomIterExpr(NULL),
-  dotDomIterSym(NULL),
-  dotDomIterSymDom(NULL),
-  iterCall(NULL),
-  iterCallTmp(NULL),
   autoLocalAccessChecked(false),
   hasAlignedFollowers(false),
   cloneType(NOT_CLONE)
