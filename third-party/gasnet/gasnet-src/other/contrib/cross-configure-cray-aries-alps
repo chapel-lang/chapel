@@ -20,11 +20,11 @@ XTPE_INFO_MESSAGE_OFF=1 ; export XTPE_INFO_MESSAGE_OFF  # magic variable to disa
 # Host C compiler
 # NOTE: you may need to set GCC_EXEC_PREFIX=/usr/bin/
 # to get the correct assembler if gcc is your host compiler
-HOST_CC='/usr/bin/gcc' ; export HOST_CC
+HOST_CC='gcc' ; export HOST_CC
 HOST_CFLAGS='-g -O2' ; export HOST_CFLAGS
 
 # Host C++ compiler - required by Titanium, not required for UPC or GASNet
-HOST_CXX='/usr/bin/g++' ; export HOST_CXX
+HOST_CXX='g++' ; export HOST_CXX
 HOST_CXXFLAGS='' ; export HOST_CXXFLAGS
 
 # Optional additional settings: (see configure --help for complete list)
@@ -46,6 +46,10 @@ fi
 # Work around bug 3480 if a PrgEnv environment module with major version >= 6 is loaded
 if test -n `echo ":$LOADEDMODULES" | grep ':PrgEnv-[a-z]*/[6-9]' 2>/dev/null`; then
 EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-bug3480-workaround"
+fi
+
+if test x"$CRAY_CPU_TARGET" = x"mic-knl" ; then
+  EXTRA_CONFIGURE_ARGS="$EXTRA_CONFIGURE_ARGS --enable-large-pshm"
 fi
 
 # 2. Fill in the canonical target machine type. You can usually obtain this

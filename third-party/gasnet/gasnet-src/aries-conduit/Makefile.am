@@ -41,7 +41,7 @@ CONDUIT_SOURCELIST =          \
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ -DHAVE_PMI_SPAWNER
+CONDUIT_EXTRALIBCFLAGS = @GNI_CFLAGS@ @PMI_SPAWNER_CFLAGS@ -DHAVE_PMI_SPAWNER
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS = 

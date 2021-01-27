@@ -32,7 +32,7 @@
 #define GASNETE_BARRIER_READENV() do { \
     if(GASNETE_ISBARRIER("PSHM")) gasnete_coll_default_barrier_type = GASNETE_COLL_BARRIER_PSHM; \
   } while (0)
-#define GASNETE_BARRIER_INIT(TEAM, TYPE, NODES, SUPERNODES) do { \
+#define GASNETE_BARRIER_INIT(TEAM, TYPE) do { \
     if ((TYPE) == GASNETE_COLL_BARRIER_PSHM &&              \
         (TEAM) == GASNET_TEAM_ALL) {                        \
       gasnete_pshmbarrier_init(TEAM);                       \

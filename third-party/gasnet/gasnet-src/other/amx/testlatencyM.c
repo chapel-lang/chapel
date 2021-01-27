@@ -115,9 +115,9 @@ int main(int argc, char **argv) {
   end = getCurrentTimeMicrosec();
 
   total = end - begin;
-  if (myproc != 0 || numprocs == 1) printf("Slave %i: %i microseconds total, throughput: %i requests/sec (%.3f us / request)\n", 
+  if (myproc != 0 || numprocs == 1) printf("Worker %i: %i microseconds total, throughput: %i requests/sec (%.3f us / request)\n", 
     myproc, (int)total, (int)(((float)1000000)*iters/((int)total)), ((double)total)/iters);
-  else printf("Slave 0 done.\n");
+  else printf("Worker 0 done.\n");
   fflush(stdout);
 
   /* dump stats */

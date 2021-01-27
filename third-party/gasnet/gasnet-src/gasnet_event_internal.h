@@ -170,24 +170,34 @@ void _SET_EVENT_DONE(gasnete_op_t *op, unsigned int idx) {
 #if GASNET_DEBUG
   /* check an in-flight/complete eop */
   #define gasnete_eop_check(eop) do {                                \
-    gasneti_assert_uint(OPTYPE(eop) ,==, OPTYPE_EXPLICIT);           \
-    gasnete_assert_valid_threadid((eop)->threadidx);                 \
+    gasnete_eop_t *_eop = (eop);                                     \
+    gasneti_assert_uint(OPTYPE(_eop) ,==, OPTYPE_EXPLICIT);          \
+    gasnete_assert_valid_threadid(_eop->threadidx);                  \
   } while (0)
+  #define gasnete_iop_check_cnt_(iop,counter) do { \
+    gasnete_op_atomic_val_t _temp = gasnete_op_atomic_read(&((iop)->completed_##counter##_cnt), GASNETI_ATOMIC_RMB_POST); \
+    gasneti_assert_uint((((iop)->initiated_##counter##_cnt - _temp) & GASNETI_ATOMIC_MAX) ,<, (GASNETI_ATOMIC_MAX/2)); \
+  } while (0)
+#if GASNETE_HAVE_LC
+  #define gasnete_iop_check_cnt_alc_(iop) gasnete_iop_check_cnt_(iop,alc)
+#else
+  #define gasnete_iop_check_cnt_alc_(iop) ((void)0)
+#endif
   // TODO-EX: type_free_iop occurs only when called via gasnete_free_threaddata()
   #define gasnete_iop_check(iop) do {                         \
+    gasnete_iop_t *_iop = (iop);                              \
     gasnete_iop_t *_tmp_next;                                 \
-    gasnete_op_atomic_val_t _temp;                            \
-    gasneti_memcheck(iop);                                    \
-    _tmp_next = (iop)->next;                                  \
-    if (_tmp_next != NULL && _tmp_next != (iop))              \
+    gasneti_memcheck(_iop);                                   \
+    _tmp_next = (_iop)->next;                                 \
+    if (_tmp_next != NULL && _tmp_next != _iop)               \
        _gasnete_iop_check(_tmp_next);                         \
-    gasneti_assert(OPTYPE(iop) == gasnete_event_type_iop ||   \
-                   OPTYPE(iop) == gasnete_event_type_free_iop);\
-    gasnete_assert_valid_threadid((iop)->threadidx);          \
-    _temp = gasnete_op_atomic_read(&((iop)->completed_put_cnt), GASNETI_ATOMIC_RMB_POST); \
-    gasneti_assert_uint((((iop)->initiated_put_cnt - _temp) & GASNETI_ATOMIC_MAX) ,<, (GASNETI_ATOMIC_MAX/2)); \
-    _temp = gasnete_op_atomic_read(&((iop)->completed_get_cnt), GASNETI_ATOMIC_RMB_POST); \
-    gasneti_assert_uint((((iop)->initiated_get_cnt - _temp) & GASNETI_ATOMIC_MAX) ,<, (GASNETI_ATOMIC_MAX/2)); \
+    gasneti_assert(OPTYPE(_iop) == gasnete_event_type_iop ||  \
+                   OPTYPE(_iop) == gasnete_event_type_free_iop);\
+    gasnete_assert_valid_threadid(_iop->threadidx);           \
+    gasnete_iop_check_cnt_(_iop,put);                         \
+    gasnete_iop_check_cnt_(_iop,get);                         \
+    gasnete_iop_check_cnt_(_iop,rmw);                         \
+    gasnete_iop_check_cnt_alc_(_iop);                         \
   } while (0)
   extern void _gasnete_iop_check(gasnete_iop_t *iop);
   #define gasnete_event_check(_h) do { \

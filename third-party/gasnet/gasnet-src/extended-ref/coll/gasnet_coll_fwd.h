@@ -20,6 +20,9 @@
 /* stats needed by the COLL reference implementation */
 #ifndef GASNETI_COLL_STATS
   #define GASNETI_COLL_STATS(CNT,VAL,TIME)    \
+        CNT(W, TEAM_NEW_SPLIT, cnt)           \
+        CNT(W, TEAM_NEW_CREATE, cnt)          \
+        CNT(W, TEAM_DESTROY, cnt)             \
         VAL(W, COLL_BROADCAST, sz)            \
         VAL(W, COLL_BROADCAST_NB, sz)         \
         VAL(W, COLL_SCATTER, sz)              \
@@ -32,6 +35,14 @@
         VAL(W, COLL_EXCHANGE_NB, sz)          \
         VAL(W, COLL_REDUCE_NB, cnt)           \
         VAL(W, COLL_REDUCE_ALL_NB, cnt)       \
+        VAL(W, COLL_P2P_ALLOC, bytes)         \
+     /* VAL(W, COLL_P2P_FREE, bytes) unused */\
+        VAL(W, COLL_OP_ALLOC, bytes)          \
+        VAL(W, COLL_OP_FREE, bytes)           \
+        VAL(W, COLL_GDATA_ALLOC, bytes)       \
+        VAL(W, COLL_GDATA_FREE, bytes)        \
+        VAL(W, COLL_EOP_ALLOC, bytes)         \
+        VAL(W, COLL_EOP_FREE, bytes)          \
         /*END*/
 #endif
 

@@ -632,7 +632,8 @@ static int gasnetc_init( gex_Client_t            *client_p,
   /* Retreive the nidlist to construct the gasneti_nodemap[]  */
   { int *nidlist;
     ret = PMI_Get_nidlist_ptr((void**) &nidlist);
-    gasneti_assert(ret == PMI_SUCCESS);
+    gasneti_assert_always(ret == PMI_SUCCESS);
+    gasneti_assert_always(nidlist);
     gasneti_nodemapInit(NULL, nidlist, sizeof(int), sizeof(int));
   }
 

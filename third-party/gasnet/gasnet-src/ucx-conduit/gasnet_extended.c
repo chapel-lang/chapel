@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_extended.c $
  * Description: GASNet Extended API Reference Implementation
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -112,6 +112,7 @@ void gasnetc_ucx_rma_cb(void *request, ucs_status_t status)
   return;
 }
 
+#if GASNETC_PIN_SEGMENT
 extern
 gex_Event_t gasnete_get_nb(
                      gex_TM_t tm,
@@ -250,6 +251,7 @@ int gasnete_put_nbi (gex_TM_t tm, gex_Rank_t rank, void *dest,
   }
   return 0;
 }
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /*
