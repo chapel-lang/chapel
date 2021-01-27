@@ -1,0 +1,5 @@
+error-never-initialized-values-mentioned2.chpl:3: In function 'error':
+error-never-initialized-values-mentioned2.chpl:5: error: Cannot default-initialize b2: borrowed C
+error-never-initialized-values-mentioned2.chpl:7: error: use here prevents split-init
+note: non-nil class types do not support default initialization
+note: Consider using the type borrowed C? instead

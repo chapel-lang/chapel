@@ -1,0 +1,5 @@
+error-never-initialized-values-not-mentioned3.chpl:3: In function 'error':
+error-never-initialized-values-not-mentioned3.chpl:5: error: Cannot default-initialize a variable with generic type
+error-never-initialized-values-not-mentioned3.chpl:5: note: 'c1' has generic type 'C'
+error-never-initialized-values-not-mentioned3.chpl:5: note: 'C' now means non-nilable class with any management
+error-never-initialized-values-not-mentioned3.chpl:5: note: to migrate old code, change it to 'borrowed C'

@@ -1,0 +1,3 @@
+error-never-initialized-values-mentioned1.chpl:3: In function 'error':
+error-never-initialized-values-mentioned1.chpl:5: error: variable 'a2' is not initialized and has no type
+error-never-initialized-values-mentioned1.chpl:7: note: 'a2' is used here before it is initialized

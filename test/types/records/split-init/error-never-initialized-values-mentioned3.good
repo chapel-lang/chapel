@@ -1,0 +1,5 @@
+error-never-initialized-values-mentioned3.chpl:3: In function 'error':
+error-never-initialized-values-mentioned3.chpl:7: error: the type of the actual argument 'c2' is generic
+note: generic actual arguments are not currently supported
+error-never-initialized-values-mentioned3.chpl:7: note: 'C' now means non-nilable class with any management
+error-never-initialized-values-mentioned3.chpl:7: note: to migrate old code, change it to 'borrowed C'

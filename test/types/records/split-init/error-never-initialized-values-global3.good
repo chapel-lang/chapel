@@ -1,0 +1,4 @@
+error-never-initialized-values-global3.chpl:3: error: Cannot default-initialize a variable with generic type
+error-never-initialized-values-global3.chpl:3: note: 'cc' has generic type 'C'
+error-never-initialized-values-global3.chpl:3: note: 'C' now means non-nilable class with any management
+error-never-initialized-values-global3.chpl:3: note: to migrate old code, change it to 'borrowed C'

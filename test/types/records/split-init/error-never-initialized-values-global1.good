@@ -1,0 +1,1 @@
+error-never-initialized-values-global1.chpl:1: error: variable 'b' is not initialized and has no type
