@@ -1253,6 +1253,16 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       appendExpr(expr->get(1), printingType);
       mText += ".type ";
     }
+    else if (expr->isPrimitive(PRIM_TRY_EXPR))
+    {
+      mText += "try ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TRYBANG_EXPR))
+    {
+      mText += "try! ";
+      appendExpr(expr->get(1), printingType);
+    }
     else if (expr->isPrimitive(PRIM_NEW))
     {
       mText += "new ";
@@ -1436,7 +1446,7 @@ void AstToText::appendExpr(LoopExpr* expr, bool printingType)
         appendExpr(expr->indices, printingType);
         mText += " in ";
       }
-      
+
       if(expr->iteratorExpr)
       {
         appendExpr(expr->iteratorExpr, printingType);
@@ -1452,9 +1462,9 @@ void AstToText::appendExpr(LoopExpr* expr, bool printingType)
         {
           mText += "AppendExpr.Loop01";
         }
-      
+
       }
-      
+
       else
       {
         mText += "AppendExpr.Loop02";
@@ -1463,13 +1473,68 @@ void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 
     else
     {
-      mText += "AppendExpr.Loop03";
+      mText += "forall ";
+      if(expr->indices)
+      {
+        appendExpr(expr->indices, printingType);
+        mText += " in ";
+      }
+
+      if(expr->iteratorExpr)
+      {
+        appendExpr(expr->iteratorExpr, printingType);
+        mText += " do";
+
+        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+        {
+          mText += ' ';
+          appendExpr(bs->body.get(1), printingType);
+        }
+
+        else
+        {
+          mText += "AppendExpr.Loop01";
+        }
+
+      }
+
+      else
+      {
+        mText += "AppendExpr.Loop02";
+      }
     }
   }
 
   else
   {
-    mText += "AppendExpr.Loop04";
+    mText += "for ";
+    if(expr->indices)
+    {
+      appendExpr(expr->indices, printingType);
+      mText += " in ";
+    }
+
+    if(expr->iteratorExpr)
+    {
+      appendExpr(expr->iteratorExpr, printingType);
+      mText += " do";
+
+      if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+      {
+        mText += ' ';
+        appendExpr(bs->body.get(1), printingType);
+      }
+
+      else
+      {
+        mText += "AppendExpr.Loop01";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.Loop02";
+    }
   }
 }
 
