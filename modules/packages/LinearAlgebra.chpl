@@ -1328,7 +1328,8 @@ private proc getQ(A, tau) {
   return Q;
 }
 
-/* Perform a QR factorization on matrix ``A``.  ``A`` must be square.
+/* 
+  Perform a QR factorization on matrix ``A``.  ``A`` must be square.
    Matrix ``A`` is not modified. The method returns an orthogonal matrix ``Q``
    and an upper-triangular matrix ``R`` both of which are the same shape
    as argument ``A``.
