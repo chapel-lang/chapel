@@ -1,3 +1,4 @@
 genericFieldDecl-used.chpl:8: In function 'main':
-genericFieldDecl-used.chpl:9: error: this default-initialization is not yet supported
-genericFieldDecl-used.chpl:2: note: field 'x' is declared with a generic type and also a default value
+genericFieldDecl-used.chpl:9: error: default initialization with type 'One()' is not yet supported
+genericFieldDecl-used.chpl:2: note: field 'x' is a generic value
+genericFieldDecl-used.chpl:2: note: consider separately declaring a type field for it or using a 'new' call

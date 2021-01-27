@@ -4265,12 +4265,12 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
     Type* receiverType = info.actuals.v[1]->getValType();
     Type* exprType = info.actuals.v[2]->getValType();
-   
+
     USR_FATAL_CONT(call, "could not find a copy initializer ('%s') "
                          "for type '%s' from type '%s'",
                          astrInitEquals,
                          receiverType->symbol->name,
-                         exprType->symbol->name); 
+                         exprType->symbol->name);
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
@@ -4619,7 +4619,7 @@ static void gatherLastResortCandidates(CallInfo&                  info,
 
   numVisited = ++idx;
 }
-    
+
 static void filterCandidate(CallInfo&                  info,
                             VisibilityInfo&            visInfo,
                             FnSymbol*                  fn,
@@ -6939,7 +6939,7 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
     call = new CallExpr(astr_initCopy, tmpAt,
                         /* definedConst = */gFalse);
-                       
+
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -10343,7 +10343,7 @@ static void lowerRuntimeTypeInit(CallExpr* call,
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
- 
+
   // Add the argument indicating if this is a noinit
   Symbol* isNoInit = noinit ? gTrue : gFalse;
   runtimeTypeToValueCall->insertAtTail(isNoInit);
@@ -11002,23 +11002,36 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       } else {
         appendExpr = new SymExpr(e->value);
       }
-    } else if (isGenericField && hasDefault == false) {
-      // Create a temporary to pass for the fully-generic field (e.g. "var x;")
-      VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-      CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+    } else if (isGenericField) {
 
-      call->insertBefore(new DefExpr(temp));
-      call->insertBefore(tempCall);
-      resolveExpr(tempCall->get(2));
-      resolveExpr(tempCall);
-      appendExpr = new SymExpr(temp);
+      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
 
-    } else if (isGenericField && hasDefault == true) {
-      USR_FATAL_CONT(call, "this default-initialization is not yet supported");
-      USR_PRINT(field, "field '%s' is declared with a generic type "
-                       "and also a default value",
-                       field->name);
-      USR_STOP();
+      if (hasCompilerGeneratedInitializer && hasDefault == false) {
+        // Create a temporary to pass for typeless generic fields
+        // e.g. for
+        //   record R { var x; }
+        //   var myR: R(int);
+        // convert the  default initialization into
+        //   var default_field_tmp: int;
+        //   var myR = new R(x=default_field_tmp)
+        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+
+        call->insertBefore(new DefExpr(temp));
+        call->insertBefore(tempCall);
+        resolveExpr(tempCall->get(2));
+        resolveExpr(tempCall);
+        appendExpr = new SymExpr(temp);
+
+      } else {
+        USR_FATAL_CONT(call, "default initialization with type '%s' "
+                             "is not yet supported", toString(at));
+        USR_PRINT(field, "field '%s' is a generic value",
+                         field->name);
+        USR_PRINT(field, "consider separately declaring a type field for it "
+                         "or using a 'new' call");
+        USR_STOP();
+      }
 
     } else {
       INT_FATAL("Unhandled case for default-init");

@@ -263,13 +263,18 @@ module Sort {
   argument when no comparator is passed to a sort function
 */
 const defaultComparator: DefaultComparator;
+defaultComparator = new DefaultComparator();
 
 
 /*
-   Instance of :record:`ReverseComparator`. Pass this as the ``comparator=``
-   argument of a sort function to reverse the sort order.
+   Instance of :record:`ReverseComparator` that reverses the default comparator.
+
+   Pass this as the ``comparator=`` argument of a sort function to reverse the
+   default sort order.
+
  */
-const reverseComparator: ReverseComparator(DefaultComparator);
+const reverseComparator: ReverseComparator;
+reverseComparator = new ReverseComparator();
 
 /* Private methods */
 
