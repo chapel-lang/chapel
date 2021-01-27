@@ -1543,17 +1543,11 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
         return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
       }
     }
-    else {
-      if (SymExpr *arrSymExpr = toSymExpr(childCall->baseExpr)) {
-        return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-      }
+    else if (SymExpr *arrSymExpr = toSymExpr(childCall->baseExpr)) {
+      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
     }
   }
-  else if (SymExpr *childSymExpr = toSymExpr(child)) {
-    const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForLiteral" :
-                                             "chpl_dstAggregatorForLiteral";
-    return new CallExpr(aggFnName, new SymExpr(childSymExpr->symbol()));
-  }
+
   return NULL;
 }
 
