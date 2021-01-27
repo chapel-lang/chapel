@@ -3087,11 +3087,10 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
     try _ch_ioerror(err, msg);
   }
 }
-
-private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
-                                       param kind:iokind,
-                                       ref x:?t,
-                                       loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
+                                    param kind:iokind,
+                                    ref x:?t,
+                                    loc:locale): syserr throws {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -3117,6 +3116,26 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
     }
   } else {
     e = _read_binary_internal(_channel_internal, kind, x);
+  }
+
+  return e;
+
+}
+
+private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
+                                param kind:iokind,
+                                ref x:?t,
+                                loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+
+  var e:syserr = ENOERR;
+
+  if x.locale == here {
+    e = _read_io_type_internal(_channel_internal, kind, x, loc);
+  } else {
+    // use a temporary to avoid passing a remote wide pointer to a C function
+    var tmp: t;
+    e = _read_io_type_internal(_channel_internal, kind, tmp, loc);
+    x = tmp;
   }
 
   return e;
@@ -3171,7 +3190,34 @@ private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // (it shouldn't release anything since it's a local copy).
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  try x.readThis(reader);
+  if isNilableClassType(t) {
+    // future - write class IDs, have serialization format, handle binary
+    var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    var iolit:ioLiteral;
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      iolit = new ioLiteral("null");
+    } else {
+      iolit = new ioLiteral("nil");
+    }
+    var e:syserr = ENOERR;
+    e = try _read_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
+    if !e {
+      x = nil;
+      return ENOERR;
+    }
+  }
+
+  if isClassType(t) {
+    if x == nil then
+      throw new IllegalArgumentError("cannot read into a nil class");
+
+    var tmp = x!;
+    try tmp.readThis(reader);
+    // the read cannot change the class pointer
+    if tmp != x! then halt ("internal error - class pointer changed");
+  } else {
+    try x.readThis(reader);
+  }
 
   return ENOERR;
 }
@@ -3198,7 +3244,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
     if x == nil {
-      // future - write class IDs, have serialization format
+      // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       var iolit:ioLiteral;
       if st == QIO_AGGREGATE_FORMAT_JSON {
@@ -3531,13 +3577,7 @@ proc channel.read(ref args ...?k):bool throws {
     on this.home {
       try this.lock(); defer { this.unlock(); }
       for param i in 0..k-1 {
-        if args[i].locale == here {
-          _readOne(kind, args[i], origLocale);
-        } else {
-          var tmp = args[i];
-          _readOne(kind, tmp, origLocale);
-          args[i] = tmp;
-        }
+        _readOne(kind, args[i], origLocale);
       }
     }
   } catch err: SystemError {
