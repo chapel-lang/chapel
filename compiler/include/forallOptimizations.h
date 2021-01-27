@@ -43,7 +43,7 @@ class AggregationCandidateInfo {
     LocalityInfo rhsLocalityInfo;
 
     CallExpr *lhsLogicalChild;
-    CallExpr *rhsLogicalChild;
+    Expr *rhsLogicalChild;
 
     // during normalize, we may generate aggregators for both sides of the
     // assignment. However, after resolve we can have at most one aggregator per

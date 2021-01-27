@@ -99,7 +99,7 @@ static CallExpr *confirmAccess(CallExpr *call);
 static void symbolicFastFollowerAnalysis(ForallStmt *forall);
 
 static const char *getForallCloneTypeStr(Symbol *aggMarker);
-static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation);
+static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation);
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall);
 static void insertAggCandidate(CallExpr *call, ForallStmt *forall);
 static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
@@ -1506,9 +1506,10 @@ void AggregationCandidateInfo::addAggregators() {
     return; // we have already enough
   }
 
-  // we have a lhs that waits analysis, and a rhs that we can't know about
+  // we have a lhs that waits analysis or local, and a rhs that we can't know
+  // about
   if (srcAggregator == NULL &&
-      lhsLocalityInfo == PENDING &&
+      (lhsLocalityInfo == PENDING || lhsLocalityInfo == LOCAL) &&
       rhsLogicalChild != NULL) {
     if (CallExpr *genCall = getAggGenCallForChild(rhsLogicalChild, true)) {
       SET_LINENO(this->forall);
@@ -1527,9 +1528,9 @@ void AggregationCandidateInfo::addAggregators() {
     }
   }
   
-  // we have a rhs that waits analysis
+  // we have a rhs that waits analysis or local
   if (dstAggregator == NULL &&
-      rhsLocalityInfo == PENDING &&
+      (rhsLocalityInfo == PENDING || rhsLocalityInfo == LOCAL) &&
       lhsLogicalChild != NULL) {
     if (CallExpr *genCall = getAggGenCallForChild(lhsLogicalChild, false)) {
       SET_LINENO(this->forall);
@@ -1560,25 +1561,32 @@ static const char *getForallCloneTypeStr(Symbol *aggMarker) {
   return "";
 }
 
-static CallExpr *getAggGenCallForChild(CallExpr *child, bool srcAggregation) {
-  const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
-                                           "chpl_dstAggregatorForArr";
+static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
   SET_LINENO(child);
 
-  if (child->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
-    if (SymExpr *arrSymExpr = toSymExpr(child->get(1))) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+  if (CallExpr *childCall = toCallExpr(child)) {
+    const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
+                                             "chpl_dstAggregatorForArr";
+    if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+      if (SymExpr *arrSymExpr = toSymExpr(childCall->get(1))) {
+        return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+      }
+    }
+    else if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      if (SymExpr *arrSymExpr = toSymExpr(childCall->get(2))) {
+        return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+      }
+    }
+    else {
+      if (SymExpr *arrSymExpr = toSymExpr(childCall->baseExpr)) {
+        return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
+      }
     }
   }
-  else if (child->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    if (SymExpr *arrSymExpr = toSymExpr(child->get(2))) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-    }
-  }
-  else {
-    if (SymExpr *arrSymExpr = toSymExpr(child->baseExpr)) {
-      return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-    }
+  else if (SymExpr *childSymExpr = toSymExpr(child)) {
+    const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForLiteral" :
+                                             "chpl_dstAggregatorForLiteral";
+    return new CallExpr(aggFnName, new SymExpr(childSymExpr->symbol()));
   }
   return NULL;
 }
@@ -1602,6 +1610,15 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
         }
         else if (!rightCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
           return getCallBaseSymIfSuitable(rightCall, forall,
+                                          /*checkArgs=*/false,
+                                          NULL) != NULL;
+        }
+      }
+    }
+    else if (SymExpr *rightSymExpr = toSymExpr(call->get(2)))  {
+      if (rightSymExpr->symbol()->isImmediate()) {
+        if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
+          return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
                                           NULL) != NULL;
         }
@@ -1700,8 +1717,13 @@ void AggregationCandidateInfo::transformCandidate() {
   repl->insertAtTail(this->dstAggregator ? this->dstAggregator : gNil);
   repl->insertAtTail(this->srcAggregator ? this->srcAggregator : gNil);
 
-  repl->insertAtTail(new SymExpr(gFalse)); // lhs local?
-  repl->insertAtTail(new SymExpr(gFalse)); // rhs local?
+  // add bool flags that denote whether one side of the assignment is local.
+  // This is happening before normalization, so the only way we can now whether
+  // something is local at this point is if that thing is a literal. And that
+  // can only happen on RHS. However, I am checking for both sides for
+  // completeness
+  repl->insertAtTail(new SymExpr(lhsLocalityInfo == LOCAL ? gTrue : gFalse));
+  repl->insertAtTail(new SymExpr(rhsLocalityInfo == LOCAL ? gTrue : gFalse));
 
   Symbol *aggMarker = newTemp("aggMarker", dtBool);
   aggMarker->addFlag(FLAG_AGG_MARKER);
@@ -1734,13 +1756,17 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   }
   info->lhsLogicalChild = lhsCall;
 
-  CallExpr *rhsCall = toCallExpr(call->get(2));
-  INT_ASSERT(rhsCall); // enforced by callSuitableForAggregation
-  if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
-      rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-    info->rhsLocalityInfo = PENDING;
+  if (CallExpr *rhsCall = toCallExpr(call->get(2))) {
+    if (rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS) ||
+        rhsCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      info->rhsLocalityInfo = PENDING;
+    }
+    info->rhsLogicalChild = rhsCall;
   }
-  info->rhsLogicalChild = rhsCall;
+  else if (SymExpr *rhsSymExpr = toSymExpr(call->get(2))) {
+    info->rhsLocalityInfo = LOCAL;
+    info->rhsLogicalChild = rhsSymExpr;
+  }
 
   info->addAggregators();
 

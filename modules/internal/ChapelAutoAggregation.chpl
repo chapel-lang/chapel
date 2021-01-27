@@ -28,6 +28,12 @@ module ChapelAutoAggregation {
     return new SrcAggregator(arr.eltType);
   }
 
+  // the compiler will pass a literal as argument
+  pragma "aggregator generator"
+  proc chpl_srcAggregatorForLiteral(a) {
+    return new SrcAggregator(a.eltType);
+  }
+
   pragma "aggregator generator"
   proc chpl_srcAggregatorForArr(type t) {
     return new SrcAggregator(t);
@@ -42,6 +48,13 @@ module ChapelAutoAggregation {
   proc chpl_dstAggregatorForArr(arr: []) {
     return new DstAggregator(arr.eltType);
   }
+
+  // the compiler will pass a literal as argument
+  pragma "aggregator generator"
+  proc chpl_dstAggregatorForLiteral(a) {
+    return new DstAggregator(a.eltType);
+  }
+
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorForArr(type t) {
