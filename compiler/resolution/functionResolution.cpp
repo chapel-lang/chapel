@@ -4228,19 +4228,17 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
   return result;
 }
 
-static bool obviousMisMatch(CallExpr* call, FnSymbol* fn) {
-  bool isMethod = isMethodPreResolve(call);
-  if (isMethod) {
-    if (fn->_this == NULL) {
-      return true;
-    }
-    return false;
-  } else {
-    if (fn->_this != NULL) {
-      return true;
-    }
-    return false;
-  }
+// currently, this returns 'true' for cases when a call is a method
+// call (e.g., 'r.foo()' and the function is a standalone function
+// (e.g., 'foo()') or vice-versa.  With additional work, other
+// "obvious" mismatches could be eliminated, such as if the call and
+// function are both methods but in disjoint class hierarchies.
+//
+static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
+  bool isMethodCall = isMethodPreResolve(call);
+  bool isMethodFn = fn->_this != NULL;
+
+  return (isMethodCall != isMethodFn);
 }
 
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
@@ -4309,7 +4307,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     Vec<FnSymbol*> filteredFns;
     if (visibleFns.n > 1 && fPrintAllCandidates == false) {
       forv_Vec(FnSymbol, fn, visibleFns) {
-        if (!obviousMisMatch(call, fn)) {
+        if (!obviousMismatch(call, fn)) {
           filteredFns.add(fn);
         }
       }
