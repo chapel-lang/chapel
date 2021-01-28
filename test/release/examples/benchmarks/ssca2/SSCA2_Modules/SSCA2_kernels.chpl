@@ -355,7 +355,7 @@ module SSCA2_kernels
             // coforall loop.
             const current_distance_c = current_distance;
             pragma "dont disable remote value forwarding"
-            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, out dist_temp) {
+            inline proc f3(BCaux, v, u, current_distance_c, Active_Level, ref dist_temp) {
 
                   // --------------------------------------------
                   // add any unmarked neighbors to the next level
