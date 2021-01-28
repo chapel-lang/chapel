@@ -59,16 +59,33 @@ module.
 To use Chapel with the default settings and confirm it is correctly
 installed, do the following:
 
-1) Load the Chapel module::
+1) Load the Chapel module:
 
-     module load chapel
+   If you are using the Tcl module system, first load these required
+   modules:
 
-   Note that a side effect of loading the chapel module is that these
-   other modules will either be loaded or swapped to, as needed::
+   .. code-block:: sh
 
-     PrgEnv-gnu
-     cray-mpich
-     libfabric
+      PrgEnv-cray or PrgEnv-gnu
+      cray-mpich
+
+   Alternatively, if you are using the Lmod module system and the HPE
+   Cray Programming Environment Lmod Hierarchy, first load these
+   required modules:
+
+   .. code-block:: sh
+
+      craype
+      both cpe-cray and cce, or both cpe-gnu and gcc
+      craype-network-ofi
+      craype-x86-rome
+      cray-mpich
+
+   Then, with either module system, load the Chapel module:
+
+   .. code-block:: sh
+
+      module load chapel
 
 
 2) Compile an example program like this::
@@ -82,27 +99,28 @@ installed, do the following:
 
 
 Currently the number of Chapel configurations available on
-HPE Cray EX systems is quite limited.  Only the following have been built
+HPE Cray EX systems is somewhat limited.  Only the following have been built
 into the module::
 
   CHPL_TARGET_PLATFORM: hpe-cray-ex
-  CHPL_TARGET_COMPILER: cray-prgenv-gnu
+  CHPL_TARGET_COMPILER: cray-prgenv-cray, cray-prgenv-gnu
   CHPL_TARGET_ARCH: x86_64
-  CHPL_TARGET_CPU: sandybridge
+  CHPL_TARGET_CPU: x86-rome
   CHPL_LOCALE_MODEL: flat
   CHPL_COMM: none, ofi
   CHPL_TASKS: qthreads
-  CHPL_LAUNCHER: none
+  CHPL_LAUNCHER: none, pals, slurm-srun
   CHPL_TIMERS: generic
   CHPL_UNWIND: none
   CHPL_MEM: jemalloc
   CHPL_ATOMICS: cstdlib
     CHPL_NETWORK_ATOMICS: none, ofi
-  CHPL_GMP: none
+  CHPL_GMP: bundled
   CHPL_HWLOC: bundled
-  CHPL_REGEXP: none
-  CHPL_LLVM: none
-  CHPL_AUX_FILESYS: none
+  CHPL_REGEXP: re2
+  CHPL_LLVM: bundled
+  CHPL_AUX_FILESYS: none, lustre
+  CHPL_LIB_PIC: none, pic
 
 You may be able to build Chapel from source on an EX system if you do
 not have a module already.  Generally you should be able to follow the

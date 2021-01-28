@@ -1,62 +1,16 @@
-#!/bin/bash
-
-# Generate an RPM spec file for Chapel Cray Module
-# Writes to stdout
-
-set -e
-
-cwd=$( cd $(dirname "${BASH_SOURCE[0]}" ) && pwd )
-source $cwd/../functions.bash
-
-# Accept command line parameters of the form NAME=Value. Or use environment variables.
-
-while test $# -gt 0; do
-    case $1 in ( *=* ) export "$1" ;; esac
-    shift
-done
-
-# Cray-internal-specific shell variables
-
-source $cwd/common.bash
-
-# Generate the first part of the spec file with shell expansion
-
-if [ "$chpl_platform" = hpe-cray-ex ]; then
-    # HPE Cray EX rpm may be relocatable, since all %files start with %prefix.
-    platform_prefix=/opt/cray
-    set_def_subdir=admin-pe/set_default_files
-else
-    # Before HPE Cray EX, rpm is not relocatable.
-    platform_prefix=/opt
-    set_def_subdir=cray/admin-pe/set_default_files
-fi
-
-cat <<PART_1
-%define name chapel-$pkg_version
+%define name chapel-@@{pkg_version}
 %define real_name chapel
-%define version $rpm_version
-%define pkg_version $pkg_version
-%define chpl_home_basename $( basename "$CHPL_HOME" )
-%define pkg_release $rpm_release
-%define build_type $chpl_platform
-%define platform_prefix $platform_prefix
-%define set_def_subdir $set_def_subdir
+%define version @@{rpm_version}
+%define pkg_version @@{pkg_version}
+%define chpl_home_basename @@{basename_of_CHPL_HOME}
+%define pkg_release @@{rpm_release}
+%define build_type @@{chpl_platform}
+%define platform_prefix @@{platform_prefix}
+%define set_def_subdir @@{set_def_subdir}
+%define lmod_prefix @@{lmod_prefix}
+%define lmod_suffix @@{lmod_suffix}
+%define lmod_tgt_compilers @@{lmod_tgt_compilers}
 %define _binary_payload w9.gzdio
-PART_1
-
-# Notes:
-#
-#   "Source: %{chpl_home_basename}.tar.gz" (below) is bogus.
-#   There is no such file. We do not use the usual RPM %setup macro.
-#   Instead, we provide a _builddir (RPM_BUILD_DIR) already
-#   pre-populated, to save the time of tarring/un-tarring the big
-#   compressed tar file.
-#   Rpmbuild uses the given "Source:" filename only to infer the
-#   "basename" of RPM_BUILD_DIR (e.g. chapel-1.17.1).
-
-# Generate the rest of the spec file, without shell expansion
-
-cat <<\PART_2
 Summary: Chapel language compiler and libraries
 Name:    %{name}
 Version: %{version}
@@ -93,6 +47,7 @@ chmod -Rf a+rX,u+w,g-w,o-w .
 
 %install
 
+# Tcl modulefiles, and module itself
 cd          %{_topdir}
 mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}
 cp -p       set_default_%{real_name}_%{pkg_version}     $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}/
@@ -105,6 +60,15 @@ cd          $RPM_BUILD_DIR/%{chpl_home_basename}
 find . -mindepth 1 -maxdepth 1 -exec mv -f {}           $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type} \;
 cd          %{_topdir}
 cp -p       release_info                                $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}
+
+# Lua modulefiles
+for lmod_compiler in %{lmod_tgt_compilers} ; do
+  module_dir=%{lmod_prefix}/$lmod_compiler/%{lmod_suffix}/%{real_name}
+  mkdir -p $RPM_BUILD_ROOT/$module_dir
+  cp -p modulefile-lua-%{pkg_version} \
+        $RPM_BUILD_ROOT/$module_dir/%{pkg_version}.lua
+done
+
 # Clean up *.o files
 #rm -rf     $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/*/*/gen
 rm -rf      $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}/*/compiler/*/gen
@@ -133,7 +97,6 @@ fi
 chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
 
 sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
-
 %postun
 if [ $1 == 1 ]
 then
@@ -156,4 +119,4 @@ fi
 %{prefix}/%{real_name}/%{pkg_version}
 %{prefix}/modulefiles/%{real_name}/%{pkg_version}
 %{prefix}/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
-PART_2
+%{lmod_prefix}/*/*/%{lmod_suffix}/%{real_name}/%{pkg_version}.lua
