@@ -4350,6 +4350,9 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       if (i <= nPrintDetails)
         continue; // already printed it in detail
 
+      if (i > nPrint)
+        break;
+
       if (printedOne == false) {
         USR_PRINT(call, "other candidates are:");
         printedOne = true;
@@ -4358,8 +4361,8 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     }
 
     // Print indication of additional candidates, if any
-    if (i <= nPrint && visibleFns.n > filteredFns.n) {
-      int numRemaining = visibleFns.n - i;
+    int numRemaining = visibleFns.n - (i - 1);
+    if (numRemaining > 0) {
       USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
                 (printedOne ? "and" : ((numRemaining == 1) ?
                                        "there is also" :
