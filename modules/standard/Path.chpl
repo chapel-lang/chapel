@@ -139,7 +139,7 @@ proc absPath(path: string): string throws {
 pragma "no doc"
 pragma "last resort"
 proc absPath(name: string): string throws {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.absPath: Argument 'name' is deprecated - use 'path' instead");
   return absPath(path=name);
 }
 
@@ -191,7 +191,7 @@ proc basename(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc basename(name: string): string {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.basename: Argument 'name' is deprecated - use 'path' instead");
   return basename(path=name);
 }
 
@@ -364,7 +364,7 @@ proc dirname(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc dirname(name: string): string {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.dirname: Argument 'name' is deprecated - use 'path' instead");
   return dirname(path=name);
 }
 
@@ -499,7 +499,7 @@ proc isAbsPath(path: string): bool {
 pragma "no doc"
 pragma "last resort"
 proc isAbsPath(name: string): bool {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.isAbsPath: Argument 'name' is deprecated - use 'path' instead");
   return isAbsPath(path=name);
 }
 
@@ -568,7 +568,7 @@ private proc normalizeLeadingSlashCount(path: string): int {
 pragma "no doc"
 pragma "last resort"
 private proc normalizeLeadingSlashCount(name: string): int {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.normalizeLeadingSlashCount: Argument 'name' is deprecated - use 'path' instead");
   return normalizeLeadingSlashCount(path=name);
 }
 
@@ -630,7 +630,7 @@ proc normPath(path: string): string {
 pragma "no doc"
 pragma "last resort"
 proc normPath(name: string): string {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.normPath: Argument 'name' is deprecated - use 'path' instead");
   return normPath(path=name);
 }
 
@@ -661,30 +661,8 @@ proc realPath(path: string): string throws {
 pragma "no doc"
 pragma "last resort"
 proc realPath(name: string): string throws {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.realPath: Argument 'name' is deprecated - use 'path' instead");
   return realPath(path=name);
-}
-
-
-pragma "no doc"
-proc realPath(out error: syserr, path: string): string {
-  compilerWarning("This version of realPath() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return realPath(path);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "";
-}
-
-pragma "no doc"
-pragma "last resort"
-proc realPath(out error: syserr, name: string): string {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
-  return realPath(error,path=name);
 }
 
 /* Determines the canonical path referenced by the :type:`~IO.file` record
@@ -798,7 +776,7 @@ proc relPath(path: string, start:string=curDir): string throws {
 pragma "no doc"
 pragma "last resort"
 proc relPath(name: string, start:string=curDir): string throws {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.relPath: Argument 'name' is deprecated - use 'path' instead");
   return relPath(path=name,start);
 }
 
@@ -891,7 +869,7 @@ proc file.relPath(start:string=curDir): string throws {
 pragma "no doc"
 pragma "last resort"
  proc splitPath(name: string): (string, string) {
-  compilerWarning('Argument `name` is deprecated - use `path` instead');
+  compilerWarning("Path.splitPath: Argument 'name' is deprecated - use 'path' instead");
   return splitPath(path=name);
  }
 }

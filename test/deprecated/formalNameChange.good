@@ -1,11 +1,8 @@
-formalNameChange.chpl:7: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:8: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:9: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:10: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:11: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:12: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:13: warning: Argument `name` is deprecated - use `path` instead
-$CHPL_HOME/modules/standard/Path.chpl:685: In function 'realPath':
-$CHPL_HOME/modules/standard/Path.chpl:687: warning: This version of realPath() is deprecated; please switch to a throwing version
-formalNameChange.chpl:14: warning: Argument `name` is deprecated - use `path` instead
-formalNameChange.chpl:15: warning: Argument `name` is deprecated - use `path` instead
+formalNameChange.chpl:5: warning: Path.absPath: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:6: warning: Path.basename: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:7: warning: Path.dirname: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:8: warning: Path.isAbsPath: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:9: warning: Path.normPath: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:10: warning: Path.realPath: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:11: warning: Path.relPath: Argument 'name' is deprecated - use 'path' instead
+formalNameChange.chpl:12: warning: Path.splitPath: Argument 'name' is deprecated - use 'path' instead
