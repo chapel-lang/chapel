@@ -1594,7 +1594,8 @@ static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall)
       }
     }
     else if (SymExpr *rightSymExpr = toSymExpr(call->get(2)))  {
-      if (rightSymExpr->symbol()->isImmediate()) {
+      if (rightSymExpr->symbol()->isImmediate() ||
+          rightSymExpr->symbol()->isParameter()) {
         if (!leftCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
           return getCallBaseSymIfSuitable(leftCall, forall,
                                           /*checkArgs=*/false,
