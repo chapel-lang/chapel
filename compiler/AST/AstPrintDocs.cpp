@@ -106,6 +106,12 @@ bool AstPrintDocs::enterFnSym(FnSymbol* node) {
 }
 
 
+bool AstPrintDocs::enterInterfaceSym(InterfaceSymbol* node) {
+  node->printDocs(this->file, this->tabs);
+  return false;
+}
+
+
 bool AstPrintDocs::enterModSym(ModuleSymbol* node) {
   // If a module is not supposed to be documented, do not traverse into it (and
   // skip the documentation).

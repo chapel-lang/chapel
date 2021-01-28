@@ -1,2 +1,3 @@
 gcd.chpl:3: In function 'mygcd':
 gcd.chpl:3: error: control reaches end of function that returns a value
+  gcd.chpl:16: called as mygcd(x: int(64), y: int(64))

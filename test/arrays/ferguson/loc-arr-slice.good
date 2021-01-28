@@ -4,3 +4,4 @@ loc-arr-slice.chpl:6: In function 'badReturnRefConstant':
 loc-arr-slice.chpl:7: error: function cannot return constant by ref
 loc-arr-slice.chpl:15: In function 'badReturnSliceByRef':
 loc-arr-slice.chpl:16: error: illegal expression to return by ref
+  loc-arr-slice.chpl:60: called as badReturnSliceByRef(A: [domain(1,int(64),false)] int(64))

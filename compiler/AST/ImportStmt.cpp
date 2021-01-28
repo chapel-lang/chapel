@@ -142,6 +142,17 @@ void ImportStmt::verify() {
     INT_FATAL(this, "Bad ImportStmt::src");
   }
 
+  for_vector(const char, name, unqualified) {
+    INT_ASSERT(name == astr(name));
+  }
+
+  for (std::map<const char*, const char*>::const_iterator it = renamed.begin();
+       it != renamed.end();
+       ++it) {
+    INT_ASSERT(it->first == astr(it->first));
+    INT_ASSERT(it->second == astr(it->second));
+  }
+
   verifyNotOnList(src);
 }
 
@@ -157,23 +168,43 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
       // statements for this scope if src is a SymExpr at this point.
       INT_ASSERT(scope->progress != IUP_NOT_STARTED);
 
-    } else if (Symbol* sym = scope->lookupForImport(src, false)) {
+    } else {
+      SymAndReferencedName symAndName = scope->lookupForImport(src, false);
       SET_LINENO(this);
 
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
+      if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
+        if (symAndName.second[0] != '\0') {
+          if (providesUnqualifiedAccess()) {
+            // We already have listed unqualified access for this import, which
+            // means this is the last symbol prior to the curly braces (e.g.
+            // this is `B` of `import A.B.{C, D};`).  This symbol is required
+            // to be a module
+            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
+                      "module, symbol '%s' is not", symAndName.second);
+          }
+
+          // The last name resolved wasn't to a module, so point the import to
+          // the last module and move the last name to the unqualified or
+          // renamed list
+          if (modRename[0] != '\0') {
+            // The user wanted to rename this symbol when bringing it in.
+            // Move the module rename to be the rename for the symbol
+            renamed[modRename] = symAndName.second;
+            modRename = astr("");
+          } else {
+            // We want to only enable unqualified access of this particular
+            // symbol in the module
+            this->unqualified.push_back(symAndName.second);
+          }
+        }
         scope->enclosingModule()->moduleUseAdd(modSym);
 
-        updateEnclosingBlock(scope, sym);
+        updateEnclosingBlock(scope, modSym);
 
         validateList();
 
       } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'import' statements must include a module symbol "
-                    "(e.g., 'import <module>;')");
-
-        } else if (sym->name != NULL) {
+        if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
             // We found a symbol that wasn't a module, but the import statement
             // wasn't looking in a path with one or more `.`s in it.  That
@@ -181,51 +212,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
             USR_FATAL(this, "Can't 'import' without naming a module");
           }
 
-          if (providesUnqualifiedAccess()) {
-            // We already have listed unqualified access for this import, which
-            // means this is the last symbol prior to the curly braces (e.g.
-            // this is `B` of `import A.B.{C, D};`).  This symbol is required
-            // to be a module
-            USR_FATAL(this, "Last symbol prior to `{` in import must be a "
-                      "module, symbol '%s' is not", sym->name);
-          }
-
-          if (modRename[0] != '\0') {
-            // The user wanted to rename this symbol when bringing it in.
-            // Move the module rename to be the rename for the symbol
-            renamed[modRename] = sym->name;
-            modRename = astr("");
-          } else {
-            // We want to only enable unqualified access of this particular
-            // symbol in the module
-            this->unqualified.push_back(sym->name);
-          }
-
-          ModuleSymbol* parentSym = toModuleSymbol(sym->defPoint->parentSymbol);
-          if (parentSym == NULL) {
-            INT_ASSERT(sym->defPoint->parentSymbol != NULL);
-            USR_FATAL_CONT(this, "only the last symbol in an 'import' "
-                           "statement's path can be something other than a "
-                           "module");
-            USR_PRINT(this, "'%s' is not a module",
-                      sym->defPoint->parentSymbol->name);
-            USR_STOP();
-          }
-          scope->enclosingModule()->moduleUseAdd(parentSym);
-          updateEnclosingBlock(scope, parentSym);
-
-          validateList();
-
+          INT_FATAL(this, "Cannot find module");
         } else {
           INT_FATAL(this, "'import' of non-module symbol");
         }
-      }
-    } else {
-      if (UnresolvedSymExpr* import = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module or symbol '%s'",
-                  import->unresolved);
-      } else {
-        INT_FATAL(this, "Cannot find module");
       }
     }
   }
@@ -374,12 +364,15 @@ void ImportStmt::validateUnqualified() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
-        SymExpr* srcExpr = toSymExpr(src);
-        INT_ASSERT(srcExpr); // should have been resolved by this point
-        USR_FATAL_CONT(this,
-                       "Bad identifier, no known '%s' defined in '%s'",
-                       name,
-                       srcExpr->symbol()->name);
+        // Could also have been a type with methods defined in that scope
+        if (!scope->matchesTypeWithMethods(name)) {
+          SymExpr* srcExpr = toSymExpr(src);
+          INT_ASSERT(srcExpr); // should have been resolved by this point
+          USR_FATAL_CONT(this,
+                         "Bad identifier, no known '%s' defined in '%s'",
+                         name,
+                         srcExpr->symbol()->name);
+        }
 
       } else {
         for_vector(Symbol, sym, symbols) {
@@ -389,6 +382,65 @@ void ImportStmt::validateUnqualified() {
                            name);
           }
         }
+      }
+    }
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the provided type was named in some form in the import         *
+* statement.  Used for determining if we should traverse the import statement *
+* to find its methods.                                                        *
+*                                                                             *
+************************************** | *************************************/
+std::set<const char*> ImportStmt::typeWasNamed(Type* t) const {
+  std::set<const char*> namedTypes;
+
+  typeWasNamed(t, &namedTypes);
+  return namedTypes;
+}
+
+void ImportStmt::typeWasNamed(Type* t,
+                              std::set<const char*>* namedTypes) const {
+  // We don't define any symbols for unqualified access, so the type was not
+  // listed
+  if (!providesUnqualifiedAccess()) {
+    return;
+  } else {
+    const char* name = t->symbol->name;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->instantiatedFrom != NULL) {
+        // Need to check against the generic type's name rather than the
+        // instantiation, since the instantiation name included instantiation
+        // information in it (and that isn't usable in a use/import list, at
+        // least right now)
+        AggregateType* rootType = at->getRootInstantiation();
+        name = rootType->symbol->name;
+      }
+    }
+
+    // Otherwise, look through the list of unqualified symbol names to see if
+    // this one was listed
+    for_vector(const char, toCheck, unqualified) {
+      if (toCheck == name)
+        namedTypes->insert(toCheck);
+    }
+
+    // Including if it was renamed
+    for(std::map<const char*, const char*>::const_iterator it = renamed.begin();
+        it != renamed.end();
+        ++it) {
+      if (name == it->first) {
+        // Save the original name because we'll be looking in its scope
+        namedTypes->insert(it->second);
+      }
+    }
+
+    // If a parent type was named, we want to traverse this import statement
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, pt, at->dispatchParents) {
+        typeWasNamed(pt, namedTypes);
       }
     }
   }

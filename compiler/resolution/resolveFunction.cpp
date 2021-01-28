@@ -2128,7 +2128,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         if (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isDefaultInit()) {
           tmp->addFlag(FLAG_NO_AUTO_DESTROY);
         } else {
-          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          if (!tmp->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+            tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
         }
       }
       break;

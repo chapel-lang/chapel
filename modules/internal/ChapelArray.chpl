@@ -458,7 +458,7 @@ module ChapelArray {
   //
   pragma "runtime type init fn"
   proc chpl__buildArrayRuntimeType(dom: domain, type eltType) {
-    return dom.buildArray(eltType, true);
+    return dom.buildArray(eltType, false);
   }
 
   pragma "no copy returns owned" // workaround for order of resolution issue
@@ -498,7 +498,7 @@ module ChapelArray {
   config param capturedIteratorLowBound = defaultLowBound;
 
   pragma "ignore transfer errors"
-  proc chpl__buildArrayExpr( elems ...?k ) {
+  proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
     if CHPL_WARN_DOMAIN_LITERAL == "true" && isRange(elems(0)) {
       compilerWarning("Encountered an array literal with range element(s).",
@@ -507,23 +507,27 @@ module ChapelArray {
     }
 
     // elements of string literals are assumed to be of type string
-    type elemType = _getLiteralType(elems(0).type);
-    pragma "unsafe" // 'elemType' can be non-nilable
-    var A : [arrayLiteralLowBound..#k] elemType;  //This is unfortunate, can't use t here...
+    type eltType = _getLiteralType(elems(0).type);
+    var dom = {arrayLiteralLowBound..#k};
+    var arr = dom.buildArray(eltType, initElts=false);
 
     for param i in 0..k-1 {
       type currType = _getLiteralType(elems(i).type);
 
-      if currType != elemType {
+      if currType != eltType {
         compilerError( "Array literal element " + i:string +
-                       " expected to be of type " + elemType:string +
+                       " expected to be of type " + eltType:string +
                        " but is of type " + currType:string );
       }
 
-      A(i+arrayLiteralLowBound) = elems(i);
+      ref src = elems(i);
+      ref dst = arr(i+arrayLiteralLowBound);
+      __primitive("=", dst, src);
     }
 
-    return A;
+    arr.dsiElementInitializationComplete();
+
+    return arr;
   }
 
   proc chpl__buildAssociativeArrayExpr( elems ...?k ) {
@@ -1873,6 +1877,59 @@ module ChapelArray {
     // 1/5/10: do we want to support order() and position()?
     pragma "no doc"
     proc indexOrder(i) return _value.dsiIndexOrder(_makeIndexTuple(rank, i));
+
+    /*
+      Returns the `ith` index in the domain counting from 0. 
+      For example, ``{2..10 by 2}.orderToIndex(2)`` would return ``6``.
+
+      The order of a multidimensional domain follows its serial iterator. 
+      For example, ``{1..3, 1..2}.orderToIndex(3)`` would return ``(2, 2)``.
+
+      .. note::
+
+        Right now, this method supports only dense rectangular domains with
+        numeric indices
+
+      :arg order: Order for which the corresponding index in the domain
+                  has to be found.
+
+      :returns: Domain index for a given order in the domain.
+    */
+    proc orderToIndex(order: int) where (isRectangularDom(this) && isNumericType(this.idxType)){
+      
+      if boundsChecking then
+        checkOrderBounds(order);
+      
+      var rankOrder = order;
+      var idx: (rank*_value.idxType);
+      var div = this.size;
+
+      for param i in 0..<rank {
+          var currDim = this.dim(i);
+          div /= currDim.size;
+          const lo = currDim.alignedLow;
+          const hi = currDim.alignedHigh;
+          const stride = currDim.stride;
+          const zeroInd = rankOrder/div;
+          var currInd = zeroInd*stride;
+          if stride < 0 then
+            currInd+=hi;
+          else
+            currInd+=lo;
+          idx[i] = currInd;
+          rankOrder = rankOrder%div;
+      }
+      if(this.rank==1) then
+        return idx[0];
+      else
+        return idx;
+    }
+
+    pragma "no doc"
+    proc checkOrderBounds(order: int){
+      if order >= this.size || order < 0 then
+        halt("Order out of bounds. Order must lie in 0..",this.size-1);
+    }
 
     pragma "no doc"
     proc position(i) {
@@ -3301,6 +3358,10 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    proc iteratorYieldsLocalElements() param {
+      return _value.dsiIteratorYieldsLocalElements();
+    }
+
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
@@ -3842,6 +3903,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc =(ref a: [], b:[]) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
@@ -3960,6 +4022,7 @@ module ChapelArray {
     }
   }
 
+  pragma "find user line"
   inline proc chpl__uncheckedArrayTransfer(ref a: [], b:[], param kind) {
 
     var done = false;

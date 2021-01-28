@@ -12,5 +12,3 @@ record MyRecord {
 }
 
 var myr = new MyRecord(nil);
-
-compilerError("done");

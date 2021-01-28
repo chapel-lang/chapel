@@ -10,21 +10,33 @@ tupleModifyConstArgElem.chpl:3: note: to formal of type unmanaged C?
 tupleModifyConstArgElem.chpl:11: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type int(64)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*int(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:98: called as run(elem: int(64))
 tupleModifyConstArgElem.chpl:11: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:12: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type uint(64)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*uint(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:101: called as run(elem: uint(64))
 tupleModifyConstArgElem.chpl:15: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type real(64)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*real(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:104: called as run(elem: real(64))
 tupleModifyConstArgElem.chpl:15: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:16: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type imag(64)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*imag(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:107: called as run(elem: imag(64))
 tupleModifyConstArgElem.chpl:19: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:20: error: const actual is passed to 'ref' formal 'a' of =
 note: to formal of type complex(128)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*complex(128)) from function 'run'
+  tupleModifyConstArgElem.chpl:110: called as run(elem: complex(128))
 tupleModifyConstArgElem.chpl:23: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:24: error: const actual is passed to 'ref' formal 'r1' of =
 note: to formal of type range(int(64),bounded,false)
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*range(int(64),bounded,false)) from function 'run'
+  tupleModifyConstArgElem.chpl:113: called as run(elem: range(int(64),bounded,false))
 tupleModifyConstArgElem.chpl:27: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:27: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type owned C?
@@ -37,14 +49,20 @@ tupleModifyConstArgElem.chpl:43: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:43: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type AtomicT(int(64))
 tupleModifyConstArgElem.chpl:44: note: possibly set here
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*AtomicT(int(64))) from function 'run'
+  tupleModifyConstArgElem.chpl:129: called as run(elem: AtomicT(int(64)))
 tupleModifyConstArgElem.chpl:55: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:55: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type string
 tupleModifyConstArgElem.chpl:57: note: possibly set here
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*string) from function 'run'
+  tupleModifyConstArgElem.chpl:140: called as run(elem: string)
 tupleModifyConstArgElem.chpl:55: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:55: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type bytes
 tupleModifyConstArgElem.chpl:57: note: possibly set here
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*bytes) from function 'run'
+  tupleModifyConstArgElem.chpl:143: called as run(elem: bytes)
 tupleModifyConstArgElem.chpl:60: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:60: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type r
@@ -57,7 +75,11 @@ tupleModifyConstArgElem.chpl:72: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:72: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type domain(1,int(64),false)
 tupleModifyConstArgElem.chpl:73: note: possibly set here
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*domain(1,int(64),false)) from function 'run'
+  tupleModifyConstArgElem.chpl:154: called as run(elem: domain(1,int(64),false))
 tupleModifyConstArgElem.chpl:76: In function 'modifyConstArgElement':
 tupleModifyConstArgElem.chpl:76: error: tuple formal 'tup' of 'modifyConstArgElement' is const and cannot be modified
 note: tuple element #0 of type [domain(1,int(64),false)] int(64)
 tupleModifyConstArgElem.chpl:77: note: possibly set here
+  tupleModifyConstArgElem.chpl:83: called as modifyConstArgElement(tup: 1*[domain(1,int(64),false)] int(64)) from function 'run'
+  tupleModifyConstArgElem.chpl:158: called as run(elem: [domain(1,int(64),false)] int(64))

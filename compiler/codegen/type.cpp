@@ -64,6 +64,9 @@ void Type::codegenPrototype() { }
 void PrimitiveType::codegenDef() {
 }
 
+void ConstrainedType::codegenDef() {
+}
+
 void EnumType::codegenDef() {
   GenInfo* info = gGenInfo;
   FILE* outfile = info->cfile;

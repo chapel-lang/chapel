@@ -491,11 +491,6 @@ class LocReplicatedArr {
     // because the RHS could be an arbitrary forall or for expression.
     this.arrLocalRep = this.myDom.domLocalRep.buildArray(eltType,
                                                          initElts=true);
-
-    if initElts == false && !isPODType(eltType) {
-
-      compilerError("ReplicatedDist array initialization is not currently supported for element type " + eltType:string + " - please default-initialize the array");
-    }
   }
 
   proc deinit() {

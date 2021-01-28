@@ -32,6 +32,11 @@ fi
 
 # test against Chapel release (checking our current test/cron directories)
 function test_release() {
+  # Need to use a pre-built test-venv with 1.23 (uses python2 and doesn't build
+  # anymore, so have to use pre-built version)
+  export CHPL_DONT_BUILD_TEST_VENV=yes
+  export CHPL_TEST_VENV_DIR=$CSS_DIR/chapel-python2-test-venv/install/chpl-virtualenv/
+
   export CHPL_TEST_PERF_DESCRIPTION=release
   export CHPL_TEST_PERF_CONFIGS="release:v,nightly"
   currentSha=`git rev-parse HEAD`

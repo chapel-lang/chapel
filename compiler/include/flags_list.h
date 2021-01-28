@@ -33,6 +33,11 @@
 #define npr false /* NO, cannot be set via a pragma */
 #define ncm ""    /* no comment */
 
+// flags to be added to the aggregation markers
+symbolFlag ( FLAG_AGG_MARKER, npr, "aggregation marker", ncm)
+symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggreagation is happening in a static only forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggreagation is happening in a static and dynamic forall clone")
+symbolFlag ( FLAG_AGG_GENERATOR, ypr, "aggregator generator", " this function generates and returns an aggregator")
 
 // Indicates an array implementation class can alias other array implementations
 // e.g. array views
@@ -94,6 +99,7 @@ symbolFlag( FLAG_COMMAND_LINE_SETTING , ypr, "command line setting" , ncm )
 //    for functions added by the compiler (e.g. with error handling)
 symbolFlag( FLAG_COMPILER_GENERATED , ypr, "compiler generated" , "marks functions that are compiler-generated or supplied by an internal module" )
 symbolFlag( FLAG_COMPILER_ADDED_WHERE , npr, "compiler added where" , "marks functions that have a where clause only because compiler added one" )
+symbolFlag( FLAG_COMPILER_ADDED_AGGREGATOR , npr, "compiler added aggregator" , "marks aggregator symbols that the compiler added" )
 
 symbolFlag( FLAG_COMPILER_NESTED_FUNCTION , npr, "compiler nested function" , ncm )
 symbolFlag( FLAG_CONCURRENTLY_ACCESSED , npr, "concurrently accessed" , "local variables accessed by multiple threads" )
@@ -195,12 +201,12 @@ symbolFlag( FLAG_INSTANTIATED_PARAM , npr, "instantiated param" , "this formal i
 symbolFlag( FLAG_INSTANTIATED_GENERIC , npr, "instantiated generic" , "this is an instantiation of a generic" )
 symbolFlag( FLAG_INSTANTIATED_FROM_ANY , npr, "instantiated from any" , "this is an instantiation from any type" )
 symbolFlag( FLAG_INTENT_REF_MAYBE_CONST_FORMAL, ypr, "intent ref maybe const formal", "The intent for this formal is ref if it is modified, const ref otherwise" )
+symbolFlag( FLAG_IMPLEMENTS_WRAPPER, npr, "ImplementsStmt wrapper", ncm)
 symbolFlag( FLAG_INVISIBLE_FN , npr, "invisible fn" , "invisible function (not a candidate for resolution)" )
 symbolFlag( FLAG_ITERATOR_CLASS , npr, "iterator class" , ncm )
 symbolFlag( FLAG_ITERATOR_FN , npr, "iterator fn" , ncm )
 symbolFlag( FLAG_ITERATOR_RECORD , npr, "iterator record" , ncm )
 symbolFlag( FLAG_ITERATOR_WITH_ON , npr, "iterator with on" , "iterator which contains an on block" )
-
 
 symbolFlag( FLAG_ALWAYS_RESOLVE , ypr, "always resolve function" , "keep this function even if it is not called so it can be called during codegen e.g." )
 

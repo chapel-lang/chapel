@@ -1,3 +1,4 @@
 init-field-arg-oknil-shared-from-nonnil-unmanaged.chpl:9: In initializer:
+init-field-arg-oknil-shared-from-nonnil-unmanaged.chpl:10: error: invalid copy-initialization
 init-field-arg-oknil-shared-from-nonnil-unmanaged.chpl:10: error: cannot create a shared variable from an unmanaged class instance
-  init-field-arg-oknil-shared-from-nonnil-unmanaged.chpl:14: called as MyRecord.init(rhs: unmanaged MyClass)
+  init-field-arg-oknil-shared-from-nonnil-unmanaged.chpl:14: called as MyRecord.init(rhs: borrowed MyClass)

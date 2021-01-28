@@ -1,2 +1,4 @@
 $CHPL_HOME/modules/standard/Reflection.chpl:204: In function 'getFieldRef':
 $CHPL_HOME/modules/standard/Reflection.chpl:205: error: illegal expression to return by ref
+  fielderator-generic.chpl:10: called as getFieldRef(x: GenericThing(Thing2), param i = 0) from function 'parse'
+  fielderator-generic.chpl:26: called as parse(data: GenericThing(Thing2))

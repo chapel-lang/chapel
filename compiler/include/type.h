@@ -85,6 +85,12 @@ public:
   FnSymbol*              getDestructor()                                 const;
   void                   setDestructor(FnSymbol* fn);
 
+  Symbol*                getSubstitutionWithName(const char* name)       const;
+  void                   setSubstitutionWithName(const char* name,
+                                                 Symbol* value);
+
+
+
   TypeSymbol*            symbol;
 
   // pointer to references for non-reference types
@@ -103,6 +109,7 @@ public:
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;
+  SymbolNameVec          substitutionsPostResolve;
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -366,6 +373,31 @@ private:
 
 /************************************* | **************************************
 *                                                                             *
+* a ConstrainedType is the type of:                                           *
+* (1) a formal of a CG function if it is subject to interface constraint(s)   *
+*     ex. T in: proc cgFun(arg: ?T) where T implements IFC {....}             *
+* (2) a formal of an InterfaceSymbol                                          *
+*     ex. Q in: interface IFC(Q) {....}                                       *
+*                                                                             *
+************************************** | *************************************/
+
+class ConstrainedType : public Type {
+public:
+  ConstrainedType();
+  void verify();
+  virtual void accept(AstVisitor* visitor);
+  DECLARE_COPY(ConstrainedType);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+  void codegenDef();
+
+  static TypeSymbol* build(const char* name);
+
+  virtual void printDocs(std::ostream *file, unsigned int tabs);
+};
+
+
+/************************************* | **************************************
+*                                                                             *
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
@@ -518,6 +550,9 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 bool isPOD(Type* t);
 
 bool isNumericParamDefaultType(Type* type);
+
+TypeSymbol* getDataClassType(TypeSymbol* ts);
+void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

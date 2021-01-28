@@ -920,6 +920,7 @@ static void addKnownWides() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     // Skip args we removed already in this pass.
     if (!arg->defPoint->parentSymbol) continue;
+
     if (!typeCanBeWide(arg)) continue;
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);

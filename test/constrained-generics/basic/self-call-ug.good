@@ -1,0 +1,7 @@
+self-call-ug.chpl:11: In function 'dfltImpl':
+self-call-ug.chpl:12: warning: string
+self-call-ug.chpl:13: error: unresolved call 'ugFun(type Self)'
+self-call-ug.chpl:24: note: this candidate did not match: ugFun(type arg)
+self-call-ug.chpl:13: note: because actual argument #1 of an interface type Self
+self-call-ug.chpl:24: note: is passed to a generic formal
+self-call-ug.chpl:24: note: passing a constrained-generic formal to a non-constrained-generic function is not allowed

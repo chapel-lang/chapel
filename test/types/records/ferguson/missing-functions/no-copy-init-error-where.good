@@ -1,3 +1,4 @@
 no-copy-init-error-where.chpl:12: In function 'ret':
 no-copy-init-error-where.chpl:12: error: invalid copy-initialization
 no-copy-init-error-where.chpl:1: note: R does not have a valid init=
+  no-copy-init-error-where.chpl:18: called as ret(arg: R)

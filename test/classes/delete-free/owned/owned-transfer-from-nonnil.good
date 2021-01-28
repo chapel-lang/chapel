@@ -43,3 +43,4 @@ owned-transfer-from-nonnil.chpl:225: error: Cannot transfer ownership from this 
 owned-transfer-from-nonnil.chpl:157: In function 'acceptRefButReturn':
 owned-transfer-from-nonnil.chpl:157: error: Cannot transfer ownership from non-nilable class argument
 owned-transfer-from-nonnil.chpl:157: note: 'arg' is set to nil here
+  owned-transfer-from-nonnil.chpl:162: called as acceptRefButReturn(arg: owned MyClass)

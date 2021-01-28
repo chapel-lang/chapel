@@ -176,6 +176,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveForResolutionPoint(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
@@ -790,6 +791,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtAny) {
+    return true;
+  }
+
+  if (isConstrainedType(formalType)) {
+    INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC)); //CG TODO: remove?
     return true;
   }
 
@@ -2606,6 +2612,10 @@ void resolveCall(CallExpr* call) {
       resolveNew(call);
       break;
 
+    case PRIM_RESOLUTION_POINT:
+      resolveForResolutionPoint(call);
+      break;
+
     default:
       break;
     }
@@ -4268,12 +4278,12 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
     Type* receiverType = info.actuals.v[1]->getValType();
     Type* exprType = info.actuals.v[2]->getValType();
-   
+
     USR_FATAL_CONT(call, "could not find a copy initializer ('%s') "
                          "for type '%s' from type '%s'",
                          astrInitEquals,
                          receiverType->symbol->name,
-                         exprType->symbol->name); 
+                         exprType->symbol->name);
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
@@ -4529,6 +4539,8 @@ static void findVisibleFunctionsAndCandidates(
     return;
   }
 
+  // CG TODO: pull all visible interface functions, if within a CG context
+
   // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
   // so that we can revisit them for error reporting.
   // Keep track in 'numVisited*' of where we left off with the previous POI
@@ -4540,6 +4552,7 @@ static void findVisibleFunctionsAndCandidates(
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
 
   do {
+    // CG TODO: no POI for CG functions
     visInfo.poiDepth++;
 
     findVisibleFunctions(info, &visInfo, &visited,
@@ -4646,7 +4659,7 @@ static void gatherLastResortCandidates(CallInfo&                  info,
 
   numVisited = ++idx;
 }
-    
+
 static void filterCandidate(CallInfo&                  info,
                             VisibilityInfo&            visInfo,
                             FnSymbol*                  fn,
@@ -6921,7 +6934,16 @@ void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction(astrInitEquals);
 
+      // If there is an error in that initCopy call,
+      // just mark it for later (rather than raising the error now)
+      // since the initCopy might be removed later in compilation.
+      inTryResolve++;
+      tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
       resolveExpr(call);
+
+      tryResolveStates.pop_back();
+      inTryResolve--;
 
       dst->type = call->resolvedFunction()->_this->getValType();
 
@@ -6957,7 +6979,7 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
     call = new CallExpr(astr_initCopy, tmpAt,
                         /* definedConst = */gFalse);
-                       
+
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -8019,6 +8041,18 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void resolveForResolutionPoint(CallExpr* call) {
+  INT_ASSERT(call->numActuals() == 1);
+  resolveConstrainedGenericSymbol(toSymExpr(call->get(1))->symbol(), true);
+  call->convertToNoop();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
 }
@@ -8384,6 +8418,8 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
+    resolveConstrainedGenericSymbol(def->sym, false);
+
     retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
@@ -8414,6 +8450,10 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
     retval = foldTryCond(postFold(expr));
+
+  } else if (ImplementsStmt* istm = toImplementsStmt(expr)) {
+    resolveImplementsStmt(istm);
+    retval = istm;
 
   } else {
     retval = foldTryCond(postFold(expr));
@@ -9050,6 +9090,8 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  saveGenericSubstitutions();
 
   pruneResolvedTree();
 
@@ -10010,8 +10052,8 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
           }
 
           FnSymbol* instFn = fn;
-          if (fn->instantiatedFrom) {
-            instFn = fn->instantiatedFrom;
+          if (FnSymbol* gfn = fn->instantiatedFrom) {
+            instFn = gfn;
           }
           if (printLocalMultiples || 0 == alreadySeenLocally.count(instFn)) {
             alreadySeenLocally.insert(instFn);
@@ -10341,7 +10383,7 @@ static void lowerRuntimeTypeInit(CallExpr* call,
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
- 
+
   // Add the argument indicating if this is a noinit
   Symbol* isNoInit = noinit ? gTrue : gFalse;
   runtimeTypeToValueCall->insertAtTail(isNoInit);
@@ -10899,9 +10941,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     // initialized. This way avoid emitting confusing errors from within
     // the `_defaultOf` and give other code a chance to emit errors as well.
     //
-    // TODO: Prune/don't generate `_defaultOf` for tuples containing non-
-    // default-initializable elements?
-    //
     if (!hasErrored) {
       CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
       CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
@@ -10911,6 +10950,13 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
       resolveCallAndCallee(defaultCall);
       resolveExpr(move);
+
+    //
+    // Go ahead and convert the call to a NOP to avoid getting errors during
+    // post-resolution checks (these run even if errors have been emitted).
+    //
+    } else {
+      call->convertToNoop();
     }
 
   // other types (sync, single, ...)
@@ -10996,23 +11042,36 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       } else {
         appendExpr = new SymExpr(e->value);
       }
-    } else if (isGenericField && hasDefault == false) {
-      // Create a temporary to pass for the fully-generic field (e.g. "var x;")
-      VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-      CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+    } else if (isGenericField) {
 
-      call->insertBefore(new DefExpr(temp));
-      call->insertBefore(tempCall);
-      resolveExpr(tempCall->get(2));
-      resolveExpr(tempCall);
-      appendExpr = new SymExpr(temp);
+      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
 
-    } else if (isGenericField && hasDefault == true) {
-      USR_FATAL_CONT(call, "this default-initialization is not yet supported");
-      USR_PRINT(field, "field '%s' is declared with a generic type "
-                       "and also a default value",
-                       field->name);
-      USR_STOP();
+      if (hasCompilerGeneratedInitializer && hasDefault == false) {
+        // Create a temporary to pass for typeless generic fields
+        // e.g. for
+        //   record R { var x; }
+        //   var myR: R(int);
+        // convert the  default initialization into
+        //   var default_field_tmp: int;
+        //   var myR = new R(x=default_field_tmp)
+        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+
+        call->insertBefore(new DefExpr(temp));
+        call->insertBefore(tempCall);
+        resolveExpr(tempCall->get(2));
+        resolveExpr(tempCall);
+        appendExpr = new SymExpr(temp);
+
+      } else {
+        USR_FATAL_CONT(call, "default initialization with type '%s' "
+                             "is not yet supported", toString(at));
+        USR_PRINT(field, "field '%s' is a generic value",
+                         field->name);
+        USR_PRINT(field, "consider separately declaring a type field for it "
+                         "or using a 'new' call");
+        USR_STOP();
+      }
 
     } else {
       INT_FATAL("Unhandled case for default-init");

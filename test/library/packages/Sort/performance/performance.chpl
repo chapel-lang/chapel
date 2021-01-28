@@ -11,7 +11,7 @@ use Time;
 
 config const M: int = 6,                    // 2**M bytes
              correctness: bool = true,      // Disables output
-             sorts: string = 'qhimsr';      // Sorts to use (first letter)
+             sorts: string = 'qhimsrt';      // Sorts to use (first letter)
 
 // Array properties
 config type T = int;                // Type of array
@@ -129,6 +129,18 @@ proc gatherTimings(const ref A) {
       writeln('bubbleSort failed to sort data');
     else
       print('bubbleSort (seconds): ', t.elapsed());
+    t.clear();
+  }
+  if sorts.find('t') != -1
+  {
+    var B = A;
+    t.start();
+    TimSort.timSort(B);
+    t.stop();
+    if !isSorted(B) then
+      writeln('timSort failed to sort data');
+    else
+      print('timSort (seconds): ', t.elapsed());
     t.clear();
   }
 }

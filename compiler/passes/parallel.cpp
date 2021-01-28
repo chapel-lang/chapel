@@ -1529,6 +1529,9 @@ Type* getOrMakeRefTypeDuringCodegen(Type* type) {
   // eventually want it when we complete the qualified refs work.
   //
   // if (type->symbol->hasFlag(FLAG_REF)) return type;
+
+  INT_ASSERT(type != dtUnknown);
+
   refType = type->refType;
   if( ! refType ) {
     SET_LINENO(type->symbol);

@@ -126,6 +126,51 @@ void Type::setDestructor(FnSymbol* fn) {
   destructor = fn;
 }
 
+Symbol* Type::getSubstitutionWithName(const char* name) const {
+
+  if (fVerify) {
+    INT_ASSERT(name == astr(name));
+  }
+
+  if (this->substitutions.n > 0) {
+    // should only exist during resolution
+    form_Map(SymbolMapElem, e, this->substitutions) {
+      if (e->key && e->key->name == name)
+        return e->value;
+    }
+  }
+
+  // after resolution (or possibly during)
+  size_t n = this->substitutionsPostResolve.size();
+  for (size_t i = 0; i < n; i++) {
+    const NameAndSymbol& ns = this->substitutionsPostResolve[i];
+    if (ns.name == name)
+      return ns.value;
+  }
+
+  return NULL;
+}
+
+void Type::setSubstitutionWithName(const char* name, Symbol* value) {
+
+  if (fVerify) {
+    INT_ASSERT(name == astr(name));
+  }
+
+  size_t n = this->substitutionsPostResolve.size();
+  for (size_t i = 0; i < n; i++) {
+    NameAndSymbol& ns = this->substitutionsPostResolve[i];
+    if (ns.name == name) {
+      ns.value = value;
+      return;
+    }
+  }
+
+  // if none was found, we could add one, but that functionality
+  // isn't currently used, so error.
+  INT_FATAL("substitution not found");
+}
+
 const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
@@ -209,10 +254,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
 
     if (retval == NULL)
       retval = vt->symbol->name;
-    /* This can be helpful when debugging (and perhaps we should enable it
-       by default?): */
-//    if (developer)
-//      retval = vt->symbol->cname;
 
   } else {
     retval = "null type";
@@ -379,6 +420,46 @@ std::string PrimitiveType::docsDirective() {
 void PrimitiveType::accept(AstVisitor* visitor) {
   visitor->visitPrimType(this);
 }
+
+
+ConstrainedType::ConstrainedType() :
+  Type(E_ConstrainedType, NULL)
+{
+  gConstrainedTypes.add(this);
+}
+
+
+ConstrainedType* ConstrainedType::copyInner(SymbolMap* map) {
+  return new ConstrainedType();
+}
+
+
+void ConstrainedType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
+  INT_FATAL(this, "Unexpected case in ConstrainedType::replaceChild");
+}
+
+
+void ConstrainedType::verify() {
+  Type::verify();
+  INT_ASSERT(astTag == E_ConstrainedType);
+}
+
+
+void ConstrainedType::printDocs(std::ostream *file, unsigned int tabs) {
+  return;  // not to be printed
+}
+
+
+void ConstrainedType::accept(AstVisitor* visitor) {
+  visitor->visitConstrainedType(this);
+}
+
+
+TypeSymbol* ConstrainedType::build(const char* name) {
+  Type* ct = new ConstrainedType();
+  return new TypeSymbol(name, ct);
+}
+
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
@@ -794,6 +875,7 @@ void initPrimitiveTypes() {
 
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
+  CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
 
@@ -899,6 +981,10 @@ void initCompilerGlobals() {
   gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
   gDivZeroChecking->addFlag(FLAG_PARAM);
   setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
+
+  gCacheRemote = new VarSymbol("CHPL_CACHE_REMOTE", dtBool);
+  gCacheRemote->addFlag(FLAG_PARAM);
+  setupBoolGlobal(gCacheRemote, fCacheRemote);
 
   gPrivatization = new VarSymbol("_privatization", dtBool);
   gPrivatization->addFlag(FLAG_PARAM);
@@ -1289,7 +1375,17 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
 
   INT_ASSERT(at);
 
-  Type* borrowType = at->getField("chpl_t")->type;
+  const char* fieldName = astr("chpl_t");
+  Type* borrowType = NULL;
+  Symbol* field = at->getField(fieldName, /*fatal*/ false);
+  if (field) {
+    borrowType = field->type;
+  } else {
+    Symbol* sub = at->getSubstitution(fieldName);
+    borrowType = sub->type;
+  }
+  if (borrowType == NULL)
+    INT_FATAL("Could not determine borrow type");
 
   ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
 
@@ -1769,4 +1865,16 @@ bool isNumericParamDefaultType(Type* t)
     return true;
 
   return false;
+}
+
+TypeSymbol*
+getDataClassType(TypeSymbol* ts) {
+  Symbol* value = ts->type->getSubstitutionWithName(astr("eltType"));
+
+  return toTypeSymbol(value);
+}
+
+void
+setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
+  ts->type->setSubstitutionWithName(astr("eltType"), ets);
 }

@@ -255,10 +255,24 @@ module SharedObject {
     //   var s : shared = ownedThing;
     pragma "no doc"
     proc init=(pragma "nil from arg" in take: owned) {
+      var p = take.release();
+
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(p.type);
+
+      var rc:unmanaged ReferenceCount? = nil;
+
+      if p != nil then
+        rc = new unmanaged ReferenceCount();
+
+      this.chpl_p = p;
+      this.chpl_pn = rc;
+
+      this.complete();
+
       if isNonNilableClass(this.type) && isNilableClass(take) then
         compilerError("cannot create a non-nilable shared variable from a nilable class instance");
-
-      this.init(take);
     }
 
     /*
@@ -267,13 +281,13 @@ module SharedObject {
        These will share responsibility for managing the instance.
      */
     proc init=(pragma "nil from arg" const ref src:_shared) {
-      if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
         compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
 
-      this.chpl_t = this.type.chpl_t;
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
 
@@ -281,23 +295,35 @@ module SharedObject {
 
       if this.chpl_pn != nil then
         this.chpl_pn!.retain();
+
+      if isNonNilableClass(this.type) && isNilableClass(src) then
+        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+
     }
 
     pragma "no doc"
     proc init=(src: borrowed) {
       compilerError("cannot create a shared variable from a borrowed class instance");
-      this.chpl_t = int; //dummy
+
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
     }
 
     pragma "no doc"
     proc init=(src: unmanaged) {
       compilerError("cannot create a shared variable from an unmanaged class instance");
-      this.chpl_t = int; //dummy
+      this.chpl_t = if this.type.chpl_t != ?
+                    then this.type.chpl_t
+                    else _to_borrowed(src.type);
     }
 
     pragma "no doc"
     pragma "leaves this nil"
     proc init=(src : _nilType) {
+      if this.type.chpl_t == ? then
+        compilerError("Cannot establish type of shared when initializing with  nil");
+
       this.init(this.type.chpl_t);
 
       if isNonNilableClass(chpl_t) then
@@ -475,7 +501,18 @@ module SharedObject {
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
   pragma "no doc"
   proc _shared.readWriteThis(f) throws {
-    f <~> this.chpl_p;
+    if isNonNilableClass(this.chpl_t) {
+      var tmp = this.chpl_p! : borrowed class;
+      f <~> tmp;
+      if tmp == nil then halt("internal error - read nil");
+      if tmp != this.chpl_p then halt("internal error - read changed ptr");
+    } else {
+      var tmp = this.chpl_p : borrowed class?;
+      f <~> tmp;
+      if tmp != this.chpl_p then halt("internal error - read changed ptr");
+      if tmp == nil then
+        this.doClear();
+    }
   }
 
   // Note, coercion from _shared -> _shared.chpl_t is sometimes directly

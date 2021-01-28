@@ -67,8 +67,6 @@ Flag pragma2flag(const char* str);
 void initFlags();
 void viewFlags(BaseAST* sym);
 void writeFlags(FILE* fp, Symbol* sym);
-TypeSymbol* getDataClassType(TypeSymbol* ts);
-void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 // For the purposes of gdb support
 bool hasFlag(BaseAST* ast, int flag);

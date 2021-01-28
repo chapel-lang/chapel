@@ -171,6 +171,17 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
+// interface constraints
+void resolveInterfaceSymbol(InterfaceSymbol* isym);
+void resolveImplementsStmt(ImplementsStmt* istm);
+void resolveConstrainedGenericFun(FnSymbol* fn);
+void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
+ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
+                                                IfcConstraint* constraint,
+                                                SymbolMap& substitutions);
+void cleanupInstantiatedCGfun(FnSymbol* fn,
+                              std::vector<ImplementsStmt*>& witnesses);
+
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
                                VisibilityInfo* info);
@@ -307,6 +318,7 @@ void removeCopyFns(Type* t);
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
+void saveGenericSubstitutions();
 void pruneResolvedTree();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);

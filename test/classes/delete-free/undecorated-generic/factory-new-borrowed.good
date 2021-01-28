@@ -10,3 +10,4 @@ factory-new-borrowed.chpl:3: error: Illegal return of dead value
 factory-new-borrowed.chpl:6: note: value is dead due to deinitialization here
 factory-new-borrowed.chpl:6: error: Scoped variable y cannot be returned
 factory-new-borrowed.chpl:4: note: consider result here
+  factory-new-borrowed.chpl:23: called as factory(param case = "borrowed MyClass", type t = borrowed MyClass)

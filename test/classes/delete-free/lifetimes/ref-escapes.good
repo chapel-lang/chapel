@@ -28,6 +28,8 @@ ref-escapes.chpl:69: note: consider scope of y
 ref-escapes.chpl:74: In method 'badBorrow1':
 ref-escapes.chpl:75: error: Reference to scoped variable other cannot be returned
 ref-escapes.chpl:74: note: consider scope of other
+  ref-escapes.chpl:127: called as R.badBorrow1(other: R)
 ref-escapes.chpl:78: In method 'badBorrow2':
 ref-escapes.chpl:80: error: Reference to scoped variable tmp cannot be returned
 ref-escapes.chpl:78: note: consider scope of other
+  ref-escapes.chpl:128: called as R.badBorrow2(other: R)

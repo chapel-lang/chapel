@@ -1,0 +1,6 @@
+in cgFun()
+in reqFun/real(2.3, 4.5, 4.5)
+in IFC.dfltImpl()
+in cgFun()
+in reqFun/MyRecord(23, 45, 45)
+in IFC.dfltImpl()

@@ -320,6 +320,7 @@
 %token TFALSE TFOR TFORALL TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
 %token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIMPLEMENTS TINTERFACE
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
@@ -407,10 +408,8 @@
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
+%type <pch> implements_type_ident implements_type_error_ident
 //%type <pch> opt_string
-
-
-
 
 %type <pblockstmt> program
 %type <pblockstmt> toplevel_stmt_ls
@@ -427,6 +426,10 @@
 %type <pimportstmt> import_expr
 %type <pblockstmt> use_stmt import_stmt import_ls require_stmt
 %type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
+
+%type <pblockstmt> implements_stmt interface_stmt
+%type <pcallexpr>  ifc_formal_ls
+%type <pdefexpr>   ifc_formal
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -485,7 +488,7 @@
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr
+%type <pexpr> query_expr ifc_constraint
 
 %type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
@@ -537,6 +540,8 @@ stmt:
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
+| implements_stmt
+| interface_stmt
 | loop_stmt
 | select_stmt
 | defer_stmt
@@ -1084,6 +1089,85 @@ $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
 ;
 
+interface_stmt:
+  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+  { $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, $4, $6)); }
+| TINTERFACE ident_def                       block_stmt
+  { // mimick ifc_formal_ls for a single formal "Self"
+    DefExpr*  formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
+    CallExpr* ls     = new CallExpr(PRIM_ACTUALS_LIST, formal);
+    $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, ls, $3)); }
+;
+
+ifc_formal_ls:
+  ifc_formal                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| ifc_formal_ls TCOMMA ifc_formal { $1->insertAtTail($3); }
+;
+
+ifc_formal:
+  // implicitly 'type' intent, could specify explicitly - see #16966
+  ident_def  { $$ = InterfaceSymbol::buildFormal($1, INTENT_TYPE); }
+;
+
+// which types are allowed in 'T implements IFC'
+implements_type_ident:
+  TIDENT     { $$ = $1; }
+| TBOOL      { $$ = "bool"; }
+| TINT       { $$ = "int"; }
+| TUINT      { $$ = "uint"; }
+| TREAL      { $$ = "real"; }
+| TIMAG      { $$ = "imag"; }
+| TCOMPLEX   { $$ = "complex"; }
+| TBYTES     { $$ = "bytes"; }
+| TSTRING    { $$ = "string"; }
+| TLOCALE    { $$ = "locale"; }
+| TNOTHING   { $$ = "nothing"; }
+| TVOID      { $$ = "void"; }
+| implements_type_error_ident
+  { $$ = $1;
+    USR_FATAL_CONT("'%s' is not allowed to \"implement\" an interface", $1); }
+;
+
+// these are not allowed as types in 'T implements IFC'
+implements_type_error_ident:
+  TNONE      { $$ = "none"; }
+| TTHIS      { $$ = "this"; }
+| TFALSE     { $$ = "false"; }
+| TTRUE      { $$ = "true"; }
+/* it would be nice to include these, alas they cause shift/reduce conflicts:
+| TSYNC      { $$ = "sync"; }
+| TSINGLE    { $$ = "single"; }
+| TOWNED     { $$ = "owned"; }
+| TSHARED    { $$ = "shared"; }
+| TBORROWED  { $$ = "borrowed"; }
+| TUNMANAGED { $$ = "unmanaged"; }
+*/
+| TDOMAIN    { $$ = "domain"; }
+| TINDEX     { $$ = "index"; }
+;
+
+implements_stmt:
+  TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, NULL)); }
+| implements_type_ident TIMPLEMENTS ident_def TSEMI
+  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
+    $$ = buildChapelStmt(ImplementsStmt::build($3, act, NULL)); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+  { $5->insertAtHead(new UnresolvedSymExpr($1));
+    $$ = buildChapelStmt(ImplementsStmt::build($3, $5, NULL)); }
+;
+
+ifc_constraint:
+  TIMPLEMENTS ident_def TLP actual_ls TRP
+  { $$ = IfcConstraint::build($2, $4); }
+| implements_type_ident TIMPLEMENTS ident_def
+  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
+    $$ = IfcConstraint::build($3, act); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
+  { $5->insertAtHead(new UnresolvedSymExpr($1));
+    $$ = IfcConstraint::build($3, $5); }
+;
+
 defer_stmt:
   TDEFER stmt             { $$ = DeferStmt::build($2); }
 
@@ -1437,6 +1521,8 @@ formal:
     { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
+| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, NULL, $5)); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
@@ -2094,6 +2180,7 @@ expr:
 | lambda_decl_expr
 | new_expr
 | let_expr
+| ifc_constraint
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr

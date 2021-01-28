@@ -60,6 +60,9 @@ extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
 
+extern bool fAutoAggregation;
+extern bool fReportAutoAggregation;
+
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
 extern bool fNoRemoteSerialization;
@@ -165,6 +168,7 @@ extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
 extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
+extern bool fInferImplementsStmts;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -250,5 +254,7 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+
+extern bool fPrintAdditionalErrors;
 
 #endif

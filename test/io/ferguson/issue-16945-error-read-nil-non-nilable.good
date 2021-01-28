@@ -1,0 +1,3 @@
+uncaught BadFormatError: bad format: missing expected literal (while reading ioLiteral "{" with path "unknown" offset -1)
+  issue-16945-error-read-nil-non-nilable.chpl:12: thrown here
+  issue-16945-error-read-nil-non-nilable.chpl:12: uncaught here

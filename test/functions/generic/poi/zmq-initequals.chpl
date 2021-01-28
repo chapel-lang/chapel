@@ -18,5 +18,6 @@ module MyZMQ {
   proc recv(type T) {
     var data, ret: T;
     ret = data;       // need functions visible from the caller scope
+    writeln(data); // avoiding copy elision
   }
 }

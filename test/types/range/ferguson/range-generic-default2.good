@@ -1,3 +1,4 @@
 range-generic-default2.chpl:5: In initializer:
+range-generic-default2.chpl:7: error: invalid copy-initialization
 range-generic-default2.chpl:7: error: cannot initialize a non-stridable range from a stridable range
-  range-generic-default2.chpl:16: called as MyRecord.init(param p = 1, r: range(int(64),bounded,true))
+  range-generic-default2.chpl:16: called as (MyRecord(1)).init(param p = 1, r: range(int(64),bounded,true))

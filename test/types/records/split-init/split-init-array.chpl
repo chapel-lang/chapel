@@ -48,10 +48,12 @@ proc makeArr(arg:int) {
 
 proc testArrays() {
   writeln("testArrays");
+  writeln();
 
   writeln("x (regular init example)");
   var x = makeArr(-1);
   writeln(x);
+  writeln();
 
   {
     writeln("y (assignment example)");
@@ -60,12 +62,16 @@ proc testArrays() {
     writeln(y);
   }
 
+  writeln();
+
   {
     writeln("yes1");
     var yes1;
     yes1 = makeArr(1);
     writeln(yes1);
   }
+
+  writeln();
 
   // uncomment this case after for-expr-owned-bug.chpl is fixed
   /*{
@@ -88,6 +94,8 @@ proc testArrays() {
     writeln(yes2a);
   }
 
+  writeln();
+
   {
     writeln("yes2b");
     var yes2b;
@@ -97,6 +105,8 @@ proc testArrays() {
     }
     writeln(yes2b);
   }
+
+  writeln();
 
   {
     writeln("yes2c");
@@ -108,6 +118,8 @@ proc testArrays() {
     writeln(yes2c.domain);
     writeln(yes2c);
   }
+
+  writeln();
 
   {
     writeln("yes3");
@@ -127,12 +139,16 @@ proc testArrays() {
     }
   }
 
+  writeln();
+
   {
     writeln("yes4");
     var yes4:[1..2] R;
     yes4 = makeArr(4);
     writeln(yes4);
   }
+
+  writeln();
 
   {
     writeln("yes5");
@@ -141,12 +157,16 @@ proc testArrays() {
     writeln(yes5);
   }
 
+  writeln();
+
   {
     writeln("yes6");
     var yes6:[1..2] R;
     yes6 = x;
     writeln(yes6);
   }
+
+  writeln();
 
   {
     writeln("yes7");
@@ -155,6 +175,8 @@ proc testArrays() {
     yes7 = x;
     writeln(yes7);
   }
+
+  writeln();
 
   {
     writeln("yes8");
@@ -174,6 +196,8 @@ proc testArrays() {
     writeln(yes8);
   }
 
+  writeln();
+
   {
     writeln("yes9");
     var yes9;
@@ -183,6 +207,8 @@ proc testArrays() {
     }
     writeln(yes9);
   }
+
+  writeln();
 
   {
     writeln("yes10");
@@ -201,6 +227,8 @@ proc testArrays() {
     writeln(yes10);
   }
 
+  writeln();
+
   {
     writeln("yes11");
     var yes11;
@@ -215,6 +243,8 @@ proc testArrays() {
     }
     writeln(yes11);
   }
+
+  writeln();
 
   {
     writeln("yes12");
@@ -231,6 +261,8 @@ proc testArrays() {
     writeln(yes12);
   }
 
+  writeln();
+
   {
     writeln("yes13");
     var yes13;
@@ -246,6 +278,8 @@ proc testArrays() {
     writeln(yes13);
   }
 
+  writeln();
+
   {
     writeln("yes14");
     var yes14;
@@ -260,6 +294,8 @@ proc testArrays() {
     }
     writeln(yes14);
   }
+
+  writeln();
 
   writeln("ending");
   x;

@@ -315,6 +315,7 @@ static void scopeResolve(ForallStmt*         forall,
       scopeResolveExpr(sdef->init, stmtScope);
   }
 
+  // same as scopeResolve(loopBody, stmtScope)
   scopeResolve(loopBody->body, bodyScope);
 }
 
@@ -398,6 +399,16 @@ static void scopeResolve(TypeSymbol*         typeSym,
   }
 }
 
+static void scopeResolve(InterfaceSymbol*    isym,
+                         const ResolveScope* parent) {
+  ResolveScope* scope = new ResolveScope(isym, parent);
+
+  for_alist(def, isym->ifcFormals)
+    scope->extend(toDefExpr(def)->sym);
+
+  scopeResolve(isym->ifcBody, scope);
+}
+
 static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
   scopeResolve(ife->getThenStmt(), scope);
   scopeResolve(ife->getElseStmt(), scope);
@@ -468,6 +479,9 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
         } else if (TypeSymbol* typeSym = toTypeSymbol(sym))   {
           scopeResolve(typeSym, scope);
+
+        } else if (InterfaceSymbol* isym = toInterfaceSymbol(sym)) {
+          scopeResolve(isym, scope);
         }
       }
 
@@ -2427,7 +2441,7 @@ bool Symbol::isVisible(BaseAST* scope) const {
 
 BaseAST* getScope(BaseAST* ast) {
   if (Expr* expr = toExpr(ast)) {
-    Expr*     parent = expr->parentExpr;
+   if (Expr* parent = expr->parentExpr) {
     BlockStmt* block = toBlockStmt(parent);
 
     // SCOPELESS and TYPE blocks do not define scopes
@@ -2452,14 +2466,17 @@ BaseAST* getScope(BaseAST* ast) {
 
     } else if (parent) {
       return getScope(parent);
-
-    } else if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
+    }
+   } else {
+    if (FnSymbol* fn = toFnSymbol(expr->parentSymbol)) {
       return fn;
 
     } else if (TypeSymbol* ts = toTypeSymbol(expr->parentSymbol)) {
       if (isEnumType(ts->type) || isAggregateType(ts->type)) {
         return ts;
       }
+    } else if (InterfaceSymbol* isym = toInterfaceSymbol(expr->parentSymbol)) {
+      return isym;
     }
 
     if (expr->parentSymbol == rootModule)
@@ -2467,6 +2484,7 @@ BaseAST* getScope(BaseAST* ast) {
 
     else
       return getScope(expr->parentSymbol->defPoint);
+   }
 
   } else if (Symbol* sym = toSymbol(ast)) {
     if (sym == rootModule)
