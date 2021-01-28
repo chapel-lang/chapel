@@ -66,6 +66,9 @@ Expr *preFoldMaybeLocalThis(CallExpr *call);
 Expr *preFoldMaybeLocalArrElem(CallExpr *call);
 Expr *preFoldMaybeAggregateAssign(CallExpr *call);
 
+// interface for lowerForalls
+void removeAggregationFromRecursiveForall(ForallStmt *forall);
+
 // interface for licm
 void transformConditionalAggregation(CondStmt *cond);
 void cleanupRemainingAggCondStmts();

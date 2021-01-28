@@ -107,6 +107,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed);
 static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block);
 static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex);
+static void removeAggregationFromBlock(BlockStmt *block);
 static void autoAggregation(ForallStmt *forall);
 
 void doPreNormalizeArrayOptimizations() {
@@ -218,6 +219,14 @@ void transformConditionalAggregation(CondStmt *cond) {
 
   // remove the conditional
   cond->remove();
+}
+
+// called during forall lowering to remove aggregation where the forall leader
+// is recursive. Foralls with recursive iterators can only have ref shadow
+// variables, and aggregators are non-ref (task-private)
+void removeAggregationFromRecursiveForall(ForallStmt *forall) {
+  LOG_ALA(0, "Reverting aggregation: forall leader is recursive", forall);
+  removeAggregationFromBlock(forall->loopBody());
 }
 
 // called after unordered forall optimization to remove aggregation code (by
@@ -1973,6 +1982,43 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
           removeAggregatorFromMaybeAggAssign(maybeAggAssign, aggToRemoveIndex);
         }
       }
+    }
+  }
+}
+
+static void removeAggregationFromBlock(BlockStmt *block) {
+  for_alist(stmt, block->body) {
+    if (CondStmt *condStmt = toCondStmt(stmt)) {
+      SymExpr *condExpr = toSymExpr(condStmt->condExpr);
+      INT_ASSERT(condExpr);
+
+      Symbol *aggMarkerSym = condExpr->symbol();
+
+      if (aggMarkerSym->hasFlag(FLAG_AGG_MARKER)) {
+
+        CallExpr *assignCall = toCallExpr(condStmt->thenStmt->getFirstExpr()->parentExpr);
+        INT_ASSERT(assignCall);
+        INT_ASSERT(assignCall->isNamed("="));
+
+        CallExpr *aggCall = toCallExpr(condStmt->elseStmt->getFirstExpr()->parentExpr);
+        INT_ASSERT(aggCall);
+        INT_ASSERT(aggCall->isNamed("copy"));
+
+        SymExpr *aggregatorSE = toSymExpr(aggCall->get(1));
+        INT_ASSERT(aggregatorSE);
+
+        Symbol *aggSym = aggregatorSE->symbol();
+        INT_ASSERT(aggSym->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR));
+
+        condStmt->insertBefore(assignCall->remove());
+        condStmt->remove();
+        aggMarkerSym->defPoint->remove();
+        aggSym->defPoint->remove();
+
+      }
+    }
+    else if (BlockStmt *blockStmt = toBlockStmt(stmt)) {
+      removeAggregationFromBlock(blockStmt);
     }
   }
 }
