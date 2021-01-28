@@ -2204,13 +2204,39 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
         defaultExpr = formal->defaultExpr->copy();
-        start->insertBefore(defaultExpr);
+        def->insertBefore(defaultExpr);
       }
 
       if (formal->typeExpr &&
           formalType != dtUnknown && formalType != dtAny) {
         typeExpr = formal->typeExpr->copy();
-        start->insertBefore(typeExpr);
+        def->insertBefore(typeExpr);
+
+        // Check if there is just 1 expression in the typeExpr block
+        Expr* lastExpr = NULL;
+        int nExpr = 0;
+        for_alist(expr, typeExpr->body) {
+          lastExpr = expr;
+          nExpr++;
+        }
+
+        if (nExpr == 1 && isSymExpr(lastExpr)) {
+          // OK; we don't have to introduce a temporary
+        } else {
+          // This pattern comes up for formals with array types, at least
+          // Replace the call at the end of typeExpr with a tmp
+          // set to it and finally a SymExpr referring to the tmp.
+          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
+          typeTmp->addFlag(FLAG_TYPE_VARIABLE);
+          DefExpr* tmpDef = new DefExpr(typeTmp);
+          CallExpr* setType = new CallExpr(PRIM_MOVE,
+                                           typeTmp,
+                                           typeExpr->body.tail->remove());
+          typeExpr->body.tail->insertAfter(tmpDef);
+          tmpDef->insertAfter(setType);
+          setType->insertAfter(new SymExpr(typeTmp));
+        }
+        // last statement in typeExpr will be removed below
       }
 
       // Adjust def->exprType / def->init
