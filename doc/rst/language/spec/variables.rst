@@ -174,7 +174,7 @@ that variable.
 
       no-split-init.chpl:1: In function 'main':
       no-split-init.chpl:2: error: variable 'x' is not initialized and has no type
-      no-split-init.chpl:3: note: 'x' use here prevents split-init from establishing the type
+      no-split-init.chpl:3: note: 'x' is used here before it is initialized
 
 
    *Example (split-cond-blocks-init.chpl)*
