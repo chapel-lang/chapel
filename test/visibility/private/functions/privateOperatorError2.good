@@ -3,6 +3,7 @@ privateOperatorError2.chpl:22: error: unresolved call '+(Foo, Foo)'
 $CHPL_HOME/modules/internal/Bytes.chpl:nnnn: note: this candidate did not match: +(s0: bytes, s1: bytes)
 privateOperatorError2.chpl:22: note: because actual argument #1 with type 'Foo'
 $CHPL_HOME/modules/internal/Bytes.chpl:nnnn: note: is passed to formal 's0: bytes'
-$CHPL_HOME/modules/internal/String.chpl:nnnn: note: candidates are: +(x: byteIndex, y: int)
-$CHPL_HOME/modules/internal/String.chpl:nnnn: note:                 +(x: codepointIndex, y: int)
+privateOperatorError2.chpl:22: note: other candidates are:
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note:   +(x: byteIndex, y: int)
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note:   +(x: codepointIndex, y: int)
 note: and 95 other candidates, use --print-all-candidates to see them

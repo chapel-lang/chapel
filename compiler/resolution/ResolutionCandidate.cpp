@@ -1127,10 +1127,10 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
-      USR_PRINT(call, "because call includes %i arguments",
-                      userActualsCount);
-      USR_PRINT(fn, "but function can only accept %i arguments",
-                    userFormalsCount);
+      USR_PRINT(call, "because call includes %i argument%s",
+                userActualsCount, ((userActualsCount == 1) ? "" : "s"));
+      USR_PRINT(fn, "but function can only accept %i argument%s",
+                userFormalsCount, ((userFormalsCount == 1) ? "" : "s"));
       break;
     case RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS:
       USR_PRINT(call, "because call does not supply enough arguments");

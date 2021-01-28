@@ -2,6 +2,7 @@ paramNon-withenum.chpl:64: error: unresolved call 'plus(mybool, 4)'
 paramNon-withenum.chpl:17: note: this candidate did not match: plus(x: uint(64), param y: int(64))
 paramNon-withenum.chpl:64: note: because actual argument #1 with type 'mybool'
 paramNon-withenum.chpl:17: note: is passed to formal 'x: uint(64)'
-paramNon-withenum.chpl:27: note: candidates are: plus(x: int(64), param y: int(64))
-paramNon-withenum.chpl:39: note:                 plus(x: uint(64), y: int(64))
+paramNon-withenum.chpl:64: note: other candidates are:
+paramNon-withenum.chpl:27: note:   plus(x: int(64), param y: int(64))
+paramNon-withenum.chpl:39: note:   plus(x: uint(64), y: int(64))
 note: and 13 other candidates, use --print-all-candidates to see them

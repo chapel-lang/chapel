@@ -4238,6 +4238,19 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
   return result;
 }
 
+// currently, this returns 'true' for cases when a call is a method
+// call (e.g., 'r.foo()' and the function is a standalone function
+// (e.g., 'foo()') or vice-versa.  With additional work, other
+// "obvious" mismatches could be eliminated, such as if the call and
+// function are both methods but in disjoint class hierarchies.
+//
+static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
+  bool isMethodCall = isMethodPreResolve(call);
+  bool isMethodFn = fn->_this != NULL;
+
+  return (isMethodCall != isMethodFn);
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
@@ -4276,8 +4289,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   }
 
   if (visibleFns.n > 0) {
-    bool printedOne = false;
-
     if (developer == true) {
       for (int i = callStack.n - 1; i >= 0; i--) {
         CallExpr* cs = callStack.v[i];
@@ -4294,38 +4305,67 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     sortExampleCandidates(info, visibleFns);
 
     int nPrintDetails = 1;
-    int nPrint = 3;
+    int nPrint = fPrintAllCandidates ? INT_MAX : 3;
 
-    int i = 0;
-    forv_Vec(FnSymbol, fn, visibleFns) {
-      i++;
 
-      if (i > nPrintDetails)
-        break;
+    Vec<FnSymbol*> filteredFns;
+    if (fPrintAllCandidates || visibleFns.n == 1) {
+      // Don't do any filtering; we're going to print everything
+      filteredFns = visibleFns;
+    } else {
+      // If there is more than one visible function and we haven't
+      // been asked to print all candidates, let's try to eliminate
+      // "worse" matches (e.g., method call / standalone function call
+      // mismatches), copying over the first nPrint functions that
+      // aren't obvious mismatches.
+      int i = 0;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        if (!obviousMismatch(call, fn)) {
+          i++;
+          filteredFns.add(fn);
+          if (i == nPrint) break;
+        }
+      }
 
-      explainCandidateRejection(info, fn);
+      // If the filtered functions list is empty (implying everything
+      // was an obvious mismatch), then let's copy over the first
+      // nPrint visibleFns as our filtered functions, to avoid
+      // suggesting that there are no other candidates.
+      //
+      if (filteredFns.n == 0) {
+        for (int i = 0; i < std::min(nPrint, visibleFns.n); i++) {
+          filteredFns.add(visibleFns.v[i]);
+        }
+      }
     }
 
-    i = 0;
-    forv_Vec(FnSymbol, fn, visibleFns) {
-      i++;
 
-      if (i <= nPrintDetails)
-        continue; // already printed it in detail
-
-      if (fPrintAllCandidates == false && i > nPrint) {
-        USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
-                  visibleFns.n - (i-1));
-        break;
-      }
-
-      if (printedOne == false) {
-        USR_PRINT(fn, "candidates are: %s", toString(fn));
-        printedOne = true;
-
+    // Print our top candidate(s) and why they were rejected
+    int nPrinted = 0; // how many candidates have we printed?
+    bool printedOne = false;  // have we printed one "other candidate"?
+    forv_Vec(FnSymbol, fn, filteredFns) {
+      if (nPrinted < nPrintDetails) {
+        explainCandidateRejection(info, fn);
       } else {
-        USR_PRINT(fn, "                %s", toString(fn));
+        if (printedOne == false) {
+          USR_PRINT(call, "other candidates are:");
+          printedOne = true;
+        }
+        USR_PRINT(fn, "  %s", toString(fn));
       }
+      nPrinted++;
+    }
+
+    // Print indication of additional candidates, if any
+    int numRemaining = visibleFns.n - nPrinted;
+    if (numRemaining > 0) {
+      USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
+                (printedOne ? "and" : ((numRemaining == 1) ?
+                                       "there is also" :
+                                       "there are also")),
+                numRemaining,
+                ((numRemaining == 1) ? "" : "s"),
+                ((numRemaining == 1) ? "it" : "them"));
     }
   } else {
     USR_PRINT(call, "because no functions named %s found in scope", info.name);
