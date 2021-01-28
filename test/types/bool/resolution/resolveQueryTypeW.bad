@@ -5,4 +5,4 @@ resolveQueryTypeW.chpl:1: note: is passed to formal 'const ref x: bool(8)'
 resolveQueryTypeW.chpl:6: note: other candidates are:
 resolveQueryTypeW.chpl:1: note:   bar(x: bool(16))
 resolveQueryTypeW.chpl:1: note:   bar(x: bool(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it

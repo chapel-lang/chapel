@@ -101,7 +101,7 @@ badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:104: note: other candidates are:
 badEnumDispatch.chpl:39: note:   param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:43: note:   param8Or32OrNot(param x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:105: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:35: note: this candidate did not match: param8Or32OrNot(param x: int(8))
 badEnumDispatch.chpl:105: note: because actual argument #1 with type 'sizes'
@@ -109,7 +109,7 @@ badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
 badEnumDispatch.chpl:105: note: other candidates are:
 badEnumDispatch.chpl:39: note:   param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:43: note:   param8Or32OrNot(param x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:106: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:39: note: this candidate did not match: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:106: note: because actual argument #1 with type 'sizes'
@@ -117,7 +117,7 @@ badEnumDispatch.chpl:39: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:106: note: other candidates are:
 badEnumDispatch.chpl:47: note:   param8Or32OrNot(x: int(32))
 badEnumDispatch.chpl:35: note:   param8Or32OrNot(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:107: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:39: note: this candidate did not match: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:107: note: because actual argument #1 with type 'sizes'
@@ -125,7 +125,7 @@ badEnumDispatch.chpl:39: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:107: note: other candidates are:
 badEnumDispatch.chpl:47: note:   param8Or32OrNot(x: int(32))
 badEnumDispatch.chpl:35: note:   param8Or32OrNot(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:111: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:111: note: because actual argument #1 with type 'sizes'
@@ -133,7 +133,7 @@ badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:111: note: other candidates are:
 badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
 badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:112: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:112: note: because actual argument #1 with type 'sizes'
@@ -141,7 +141,7 @@ badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:112: note: other candidates are:
 badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
 badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:113: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:113: note: because actual argument #1 with type 'sizes'
@@ -149,7 +149,7 @@ badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:113: note: other candidates are:
 badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
 badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:114: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:114: note: because actual argument #1 with type 'sizes'
@@ -157,4 +157,4 @@ badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
 badEnumDispatch.chpl:114: note: other candidates are:
 badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
 badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+note: and 1 other candidate, use --print-all-candidates to see it
