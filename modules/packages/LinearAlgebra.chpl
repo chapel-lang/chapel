@@ -1246,8 +1246,9 @@ proc trace(A: [?D] ?eltType) {
 private proc _lu (in A: [?Adom] ?eltType) {
   const (n,m) = Adom.shape;
 
+  var LUDom = {1..n, 1..m};
   // TODO: Reduce memory usage
-  var L, LU: [Adom] eltType;
+  var L, LU: [LUDom] eltType;
   var U = A;
   var ipiv: [{1..n}] int = [i in {1..n}] i;
   var numSwap: int = 0;
