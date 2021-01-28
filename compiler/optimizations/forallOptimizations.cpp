@@ -806,7 +806,11 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       if (parentCall->isPrimitive(PRIM_NEW)) { return NULL; } 
     }
 
-    // give up if the access uses a different symbol
+    // don't analyze further if the call base is a yielded symbol
+    if (accBaseSym->hasFlag(FLAG_INDEX_VAR)) { return NULL; }
+
+    // give up if the access uses a different symbol than the symbols yielded by
+    // one of the iterators
     if (checkArgs) {
       int idx = -1;
       bool found = false;
