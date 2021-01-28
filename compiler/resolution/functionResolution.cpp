@@ -4299,28 +4299,28 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
 
     Vec<FnSymbol*> filteredFns;
-    if (fPrintAllCandidates) {
+    if (fPrintAllCandidates || visibleFns.n == 1) {
+      // Don't do any filtering; we're going to print everything
       filteredFns = visibleFns;
     } else {
-      // If there is more than one visible function and we haven't been
-      // asked to print all candidates, let's try to eliminate "worse"
-      // matches (e.g., method call / standalone function call
-      // mismatches).
-      if (visibleFns.n > 1) {
-        int i = 0;
-        forv_Vec(FnSymbol, fn, visibleFns) {
-          if (!obviousMismatch(call, fn)) {
-            i++;
-            filteredFns.add(fn);
-            if (i == nPrint) break;
-          }
+      // If there is more than one visible function and we haven't
+      // been asked to print all candidates, let's try to eliminate
+      // "worse" matches (e.g., method call / standalone function call
+      // mismatches), copying over the first nPrint functions that
+      // aren't obvious mismatches.
+      int i = 0;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        if (!obviousMismatch(call, fn)) {
+          i++;
+          filteredFns.add(fn);
+          if (i == nPrint) break;
         }
       }
 
-      // If the filtered functions list is empty (because everything was
-      // an obvious mismatch), then let's copy over the first nPrint
-      // visibleFns as our filtered functions, to avoid suggesting that
-      // there are no other candidates.
+      // If the filtered functions list is empty (implying everything
+      // was an obvious mismatch), then let's copy over the first
+      // nPrint visibleFns as our filtered functions, to avoid
+      // suggesting that there are no other candidates.
       //
       if (filteredFns.n == 0) {
         for (int i = 0; i < std::min(nPrint, visibleFns.n); i++) {
@@ -4330,9 +4330,9 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     }
 
 
-    // Print why we rejected top candidate(s)
+    // Print our top candidate(s) and why they were rejected
     int nPrinted = 0; // how many candidates have we printed?
-    bool printedOne = false;
+    bool printedOne = false;  // have we printed one "other candidate"?
     forv_Vec(FnSymbol, fn, filteredFns) {
       if (nPrinted < nPrintDetails) {
         explainCandidateRejection(info, fn);
