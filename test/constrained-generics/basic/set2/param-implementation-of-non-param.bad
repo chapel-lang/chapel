@@ -6,3 +6,4 @@ and we're sorry for the hassle.  We would appreciate your reporting this bug --
 please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
 the filename + line number above may be useful in working around the issue.
 
+  param-implementation-of-non-param.chpl:20: called as cgFun(arg: [domain(1,int(64),false)] locale)
