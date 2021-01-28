@@ -236,10 +236,10 @@ static void removeRandomPrimitives() {
 
 
 static void removeInterfaceCode() {
-  forv_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+  for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
     isym->defPoint->remove();
 
-  forv_Vec(ImplementsStmt, istm, gImplementsStmts) {
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
     FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
     INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
     Expr* wrapFnDef = wrapFn->defPoint;
@@ -249,7 +249,7 @@ static void removeInterfaceCode() {
     wrapFnDef->remove();
   }
 
-  forv_Vec(ConstrainedType, ct, gConstrainedTypes) {
+  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
     ct->symbol->defPoint->remove();
     if (Type* ctRef = ct->refType)
       ctRef->symbol->defPoint->remove();

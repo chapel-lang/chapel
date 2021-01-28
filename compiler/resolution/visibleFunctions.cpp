@@ -112,6 +112,10 @@ bool scopeMayDefineHazard(BlockStmt* scope, const char* fnName) {
   return false;
 }
 
+bool scopeDefinesVisibleFunctions(BlockStmt* scope) {
+  return visibleFunctionMap.get(scope) != NULL;
+}
+
 
 /************************************* | **************************************
 *                                                                             *

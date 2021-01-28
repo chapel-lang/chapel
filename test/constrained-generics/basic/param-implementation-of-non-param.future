@@ -1,0 +1,1 @@
+bug: compiler crashes when non-param req. fun is implemented with a param
