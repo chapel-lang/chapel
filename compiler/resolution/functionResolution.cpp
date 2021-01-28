@@ -4279,8 +4279,6 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   }
 
   if (visibleFns.n > 0) {
-    bool printedOne = false;
-
     if (developer == true) {
       for (int i = callStack.n - 1; i >= 0; i--) {
         CallExpr* cs = callStack.v[i];
@@ -4314,7 +4312,7 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
           if (!obviousMismatch(call, fn)) {
             i++;
             filteredFns.add(fn);
-            if (i > nPrint) break;
+            if (i == nPrint) break;
           }
         }
       }
@@ -4331,37 +4329,25 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
       }
     }
 
+
     // Print why we rejected top candidate(s)
-    int i = 0;
+    int nPrinted = 0; // how many candidates have we printed?
+    bool printedOne = false;
     forv_Vec(FnSymbol, fn, filteredFns) {
-      i++;
-
-      if (i > nPrintDetails)
-        break;
-
-      explainCandidateRejection(info, fn);
-    }
-
-    // Print other candidates we didn't call
-    i = 0;
-    forv_Vec(FnSymbol, fn, filteredFns) {
-      i++;
-
-      if (i <= nPrintDetails)
-        continue; // already printed it in detail
-
-      if (i > nPrint)
-        break;
-
-      if (printedOne == false) {
-        USR_PRINT(call, "other candidates are:");
-        printedOne = true;
+      if (nPrinted < nPrintDetails) {
+        explainCandidateRejection(info, fn);
+      } else {
+        if (printedOne == false) {
+          USR_PRINT(call, "other candidates are:");
+          printedOne = true;
+        }
+        USR_PRINT(fn, "  %s", toString(fn));
       }
-      USR_PRINT(fn, "  %s", toString(fn));
+      nPrinted++;
     }
 
     // Print indication of additional candidates, if any
-    int numRemaining = visibleFns.n - (i - 1);
+    int numRemaining = visibleFns.n - nPrinted;
     if (numRemaining > 0) {
       USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
                 (printedOne ? "and" : ((numRemaining == 1) ?
