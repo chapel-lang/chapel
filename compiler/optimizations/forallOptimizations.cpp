@@ -333,6 +333,11 @@ void cleanupRemainingAggCondStmts() {
                 lhsSym->defPoint->remove();
                 deinitCall->remove();
               }
+              else if (parentCall->resolvedFunction()->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+                // we bump into this case when inlining is disabled, we only
+                // need to remove the call
+                parentCall->remove();
+              }
               else {
                 INT_FATAL("Auto-aggregator is in an unexpected expression");
               }
