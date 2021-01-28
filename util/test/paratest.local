@@ -16,6 +16,7 @@ import sys
 import timeit
 import multiprocessing
 
+os.chdir(os.path.join(os.path.dirname(__file__), '..', '..', 'test'))
 chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
 sys.path.insert(0, os.path.abspath(chplenv_dir))
 
