@@ -89,6 +89,7 @@ _chpl ()
 --ignore-user-errors \
 --incremental \
 --infer-const-refs \
+--infer-implements-decls \
 --infer-local-fields \
 --inline \
 --inline-iterators \
@@ -177,6 +178,7 @@ _chpl ()
 --no-ignore-user-errors \
 --no-incremental \
 --no-infer-const-refs \
+--no-infer-implements-decls \
 --no-infer-local-fields \
 --no-inline \
 --no-inline-iterators \
