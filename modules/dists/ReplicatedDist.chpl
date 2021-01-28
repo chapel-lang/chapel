@@ -563,6 +563,12 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
 proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
       : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type)) {
 
+  // In order to support this, we would have to make copy-initialization
+  // for replicated arrays initialize all replicands.
+  if !isDefaultInitializable(eltType) then
+    compilerError('cannot initialize replicated array because element ',
+                  'type ', eltType:string, ' cannot be copied');
+
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
 
   var result = new unmanaged ReplicatedArr(eltType, _to_unmanaged(this));
