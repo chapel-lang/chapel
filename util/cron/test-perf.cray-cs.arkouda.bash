@@ -24,5 +24,9 @@ export GASNET_ODP_VERBOSE=0
 export CHPL_LAUNCHER=slurm-gasnetrun_ibv
 nightly_args="${nightly_args} -no-buildcheck"
 
+# workaround for https://github.com/Cray/chapel-private/issues/1598
+export CHPL_TEST_TIMEOUT=3000
+export CHPL_TEST_NUM_TRIALS=1
+
 test_nightly
 sync_graphs
