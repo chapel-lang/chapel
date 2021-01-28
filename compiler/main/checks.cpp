@@ -443,8 +443,37 @@ void check_afterEveryPass()
 
 static void check_afterScopeResolve()
 {
-  if (fVerify)
-  {
+  // Check that 'out' arguments are not referred to by later arguments.
+  // An alternative to this code would be to make scopeResolve not find
+  // them at all when processing the other formals.
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    // step 1: skip check if there are no out formals
+    bool anyOutFormals = false;
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT) {
+        anyOutFormals = true;
+        break;
+      }
+    }
+
+    if (anyOutFormals) {
+      // step 2: check each formal for a reference to
+      // a previous out formal.
+      for_formals(formal, fn) {
+        for_formals(earlierFormal, fn) {
+          // stop if we get to the same formal as the above loop
+          if (earlierFormal == formal)
+            break;
+          if (earlierFormal->intent == INTENT_OUT) {
+            // check that earlierFormal is not used in formal's defExpr
+            if (findSymExprFor(formal->defPoint, earlierFormal))
+              USR_FATAL_CONT(formal,
+                             "out formal '%s' is used in later formal '%s'",
+                             earlierFormal->name, formal->name);
+          }
+        }
+      }
+    }
   }
 }
 
