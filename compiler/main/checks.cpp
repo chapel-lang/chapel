@@ -460,6 +460,10 @@ static void check_afterScopeResolve()
       // step 2: check each formal for a reference to
       // a previous out formal.
       for_formals(formal, fn) {
+
+        if (formal->variableExpr != NULL)
+          USR_FATAL_CONT(formal, "out intent varargs are not supported");
+
         for_formals(earlierFormal, fn) {
           // stop if we get to the same formal as the above loop
           if (earlierFormal == formal)
