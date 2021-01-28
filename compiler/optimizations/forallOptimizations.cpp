@@ -1806,18 +1806,19 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     }
   }
 
-  // stop if neither can be an array element symbol
-  if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
-
-  // just to be sure, stop if someone's doing `a=a`;
-  if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
-
-
   // For now, limit maybeArrExpr to be only SymExprs, I think we can relax that
   if (SymExpr *maybeArrExprSE = toSymExpr(maybeArrExpr)) {
     maybeArrSym = maybeArrExprSE->symbol();
   }
 
+  // doesn't look like this is something we can recognize
+  if (maybeArrSym == NULL) return false;
+
+  // stop if neither can be an array element symbol
+  if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
+
+  // just to be sure, stop if someone's doing `a=a`;
+  if (lhsMaybeArrSym && rhsMaybeArrSym) return false;
 
   Expr *otherChild = lhsMaybeArrSym ? call->get(2) : call->get(1);
 
