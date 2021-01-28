@@ -1,6 +1,5 @@
 /*
- * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
- * Copyright 2004-2019 Cray Inc.
+ * Copyright 2021 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -145,10 +144,10 @@ void InterfaceSymbol::printDocs(std::ostream* file, unsigned int tabs) {
 
 IfcConstraint* IfcConstraint::build(const char* name,
                                     CallExpr* actuals) {
-  IfcConstraint* impl = new IfcConstraint(new UnresolvedSymExpr(name));
+  IfcConstraint* icon = new IfcConstraint(new UnresolvedSymExpr(name));
   for_alist(actual, actuals->argList)
-    impl->consActuals.insertAtTail(actual->remove());
-  return impl;
+    icon->consActuals.insertAtTail(actual->remove());
+  return icon;
 }
 
 IfcConstraint::IfcConstraint(Expr* iifc) :
@@ -378,6 +377,10 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
 // An ImplementsStmt wrapper function helps us find an ImplementsStmt
 // for a IfcConstraint interface constraint.
 //
+// If the body of such a wrapper function starts with PRIM_ERROR,
+// it means we tried to infer the corresonding implements statement
+// and did not succeed.
+//
 
 const char* implementsStmtWrapperName(InterfaceSymbol* isym) {
   return astr("|", isym->name);
@@ -387,14 +390,27 @@ const char* interfaceNameForWrapperFn(FnSymbol* fn) {
   return astr(fn->name + 1);
 }
 
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn) {
+// isSuccess=false when 'wrapFn' is a result of a failed attempt to infer.
+ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess) {
   INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
-  AList& body = wrapFn->body->body;
-  if (ImplementsStmt* istm = toImplementsStmt(body.head))
-    return istm;
-  else
-    INT_FATAL(wrapFn, "invalid implements wrapper function");
+  isSuccess = true;
 
+  // wrapFn body can contain computations of the actuals of its implements
+  // stmt, due to normalization and resolution. Skip those.
+  for_alist(expr, wrapFn->body->body) {
+    if (ImplementsStmt* istm = toImplementsStmt(expr))
+      return istm; // found it
+
+    if (CallExpr* call = toCallExpr(expr)) {
+      if (call->isPrimitive(PRIM_ERROR)) {
+        INT_ASSERT(call->numActuals() == 0); // we inserted it
+        isSuccess = false;
+      }
+    }
+  }
+
+  // We should have found the ImplementsStmt.
+  INT_FATAL(wrapFn, "invalid implements wrapper function");
   return NULL; //dummy
 }
 
@@ -402,28 +418,33 @@ FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
   return toFnSymbol(istm->parentSymbol);
 }
 
+void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn) {
+  AList& body = wrapFn->body->body;
+  INT_ASSERT(isImplementsStmt(body.head));
+  body.insertAtHead(new CallExpr(PRIM_ERROR));
+}
+
 // Verify that the above functions work correctly.
 static void verifyWrapImplementsStmt(ImplementsStmt* istm,
-                                     InterfaceSymbol* isym,
                                      FnSymbol* wrapFn) {
+  InterfaceSymbol* isym = istm->iConstraint->ifcSymbol();
+
   INT_ASSERT(wrapFn->name == implementsStmtWrapperName(isym));
   INT_ASSERT(interfaceNameForWrapperFn(wrapFn) == isym->name);
-  INT_ASSERT(implementsStmtForWrapperFn(wrapFn) == istm);
+  bool isSuccess;
+  INT_ASSERT(implementsStmtForWrapperFn(wrapFn, isSuccess) == istm);
   INT_ASSERT(wrapperFnForImplementsStmt(istm) == wrapFn);
 }
 
-static Symbol* computeConActualSym(Expr* conActual) {
-  if (SymExpr* actualSE = toSymExpr(conActual)) {
-    Symbol* actualSym = actualSE->symbol();
-
-    if (actualSym->hasFlag(FLAG_TYPE_VARIABLE) &&
-        ! actualSym->hasFlag(FLAG_TEMP)        )
-      return actualSym;
-  }
-
-  USR_FATAL_CONT(conActual, "actual arguments in an 'implements' statement"
-                 " currently must be type names");
-  return gVoid;
+FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
+  SET_LINENO(istm);
+  InterfaceSymbol* isym = istm->iConstraint->ifcSymbol();
+  FnSymbol* wrapFn = new FnSymbol(implementsStmtWrapperName(isym));
+  wrapFn->addFlag(FLAG_IMPLEMENTS_WRAPPER);
+  istm->insertBefore(new DefExpr(wrapFn));
+  wrapFn->insertAtTail(istm->remove());
+  wrapFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  return wrapFn;
 }
 
 // Stores each 'implements' statement in a wrapper function during normalize().
@@ -431,48 +452,7 @@ static Symbol* computeConActualSym(Expr* conActual) {
 // Currently the wrapper function has a formal for each interface formal.
 void wrapImplementsStatements() {
   forv_Vec(ImplementsStmt, istm, gImplementsStmts) {
-    IfcConstraint*   icon = istm->iConstraint;
-    InterfaceSymbol* isym = icon->ifcSymbol();
-
-    // set up the wrapper function
-    SET_LINENO(istm);
-    FnSymbol* wrapFn = new FnSymbol(implementsStmtWrapperName(isym));
-    wrapFn->addFlag(FLAG_IMPLEMENTS_WRAPPER);
-    istm->insertBefore(new DefExpr(wrapFn));
-    wrapFn->insertAtTail(istm->remove());
-
-    // set up the formals
-    // iterate in parallel over implements actuals and interface formals
-    for (Expr *conActual = icon->consActuals.head,
-              *ifcFormal = isym->ifcFormals.head;
-         conActual != NULL;
-         conActual = conActual->next,
-         ifcFormal = ifcFormal->next)
-    {
-      Symbol* actualSym = computeConActualSym(conActual);
-      Symbol* formalSym = toSymbol(toDefExpr(ifcFormal)->sym);
-      SET_LINENO(conActual);
-
-      //
-      // CG TODO: handle the cases where 'conActual' requires resolving,
-      // for example like this:
-      // * During normalization, set the type of the wrapper function's formal
-      //   ('wrapperFormal' below) to dtAny.
-      // * Detect this case when resolving a call to the wrapper function,
-      //   see constraintIsSatisfiedAtCallSite().
-      // * There, replace wrapperFormal's type with the type of the actual
-      //   of the implements statement, which by then should be resolved.
-      //
-      // No 'param' formals for now.
-      //
-      INT_ASSERT(isTypeSymbol(formalSym));
-
-      ArgSymbol* wrapperFormal = new ArgSymbol(INTENT_BLANK, formalSym->name,
-                                               actualSym->type);
-      wrapperFormal->addFlag(FLAG_TYPE_VARIABLE);
-      wrapFn->insertFormalAtTail(wrapperFormal);
-    }
-
-    if (fVerify) verifyWrapImplementsStmt(istm, isym, wrapFn);
+    FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
+    if (fVerify) verifyWrapImplementsStmt(istm, wrapFn);
   }
 }

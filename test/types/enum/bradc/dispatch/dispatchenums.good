@@ -2,191 +2,222 @@ dispatchenums.chpl:12: error: unresolved call 'int8or32orDefault(numeral, numera
 dispatchenums.chpl:63: note: this candidate did not match: int8or32orDefault(x: int(8), y: int(8))
 dispatchenums.chpl:12: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:63: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:67: note: candidates are: int8or32orDefault(x: int(32), y: int(32))
-dispatchenums.chpl:71: note:                 int8or32orDefault(x: int, y: int)
+dispatchenums.chpl:12: note: other candidates are:
+dispatchenums.chpl:67: note:   int8or32orDefault(x: int(32), y: int(32))
+dispatchenums.chpl:71: note:   int8or32orDefault(x: int, y: int)
 dispatchenums.chpl:16: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:16: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:81: note: candidates are: int8vs32(param x: int(8))
-dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:16: note: other candidates are:
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:17: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:17: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:81: note: candidates are: int8vs32(param x: int(8))
-dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:17: note: other candidates are:
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:18: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:18: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:85: note: candidates are: int8vs32(x: int(32))
-dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:18: note: other candidates are:
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:19: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:19: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:85: note: candidates are: int8vs32(x: int(32))
-dispatchenums.chpl:81: note:                 int8vs32(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:19: note: other candidates are:
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:20: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:20: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:81: note: candidates are: int8vs32(param x: int(8))
-dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:20: note: other candidates are:
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:21: error: unresolved call 'int8vs32(numeral)'
 dispatchenums.chpl:77: note: this candidate did not match: int8vs32(x: int(8))
 dispatchenums.chpl:21: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:77: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:81: note: candidates are: int8vs32(param x: int(8))
-dispatchenums.chpl:85: note:                 int8vs32(x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:21: note: other candidates are:
+dispatchenums.chpl:81: note:   int8vs32(param x: int(8))
+dispatchenums.chpl:85: note:   int8vs32(x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:25: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:25: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:25: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:26: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:26: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:26: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:27: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:27: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:27: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:28: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:28: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:28: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:29: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:29: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:29: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:30: error: unresolved call 'int8paramVsNot(numeral)'
 dispatchenums.chpl:96: note: this candidate did not match: int8paramVsNot(x: int(8))
 dispatchenums.chpl:30: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:96: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:100: note: candidates are: int8paramVsNot(param x: int(8))
+dispatchenums.chpl:30: note: other candidates are:
+dispatchenums.chpl:100: note:   int8paramVsNot(param x: int(8))
 dispatchenums.chpl:34: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:34: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:34: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:35: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:35: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:35: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:36: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:36: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:36: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:37: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:37: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:37: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:38: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:38: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:38: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:39: error: unresolved call 'int16paramVsNot(numeral)'
 dispatchenums.chpl:107: note: this candidate did not match: int16paramVsNot(x: int(16))
 dispatchenums.chpl:39: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:107: note: is passed to formal 'x: int(16)'
-dispatchenums.chpl:111: note: candidates are: int16paramVsNot(param x: int(16))
+dispatchenums.chpl:39: note: other candidates are:
+dispatchenums.chpl:111: note:   int16paramVsNot(param x: int(16))
 dispatchenums.chpl:43: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:43: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:122: note: candidates are: int8vs16(param x: int(8))
-dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:43: note: other candidates are:
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:44: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:44: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:122: note: candidates are: int8vs16(param x: int(8))
-dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:44: note: other candidates are:
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:45: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:45: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:126: note: candidates are: int8vs16(x: int(16))
-dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:45: note: other candidates are:
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:46: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:46: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:126: note: candidates are: int8vs16(x: int(16))
-dispatchenums.chpl:122: note:                 int8vs16(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:46: note: other candidates are:
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:47: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:47: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:122: note: candidates are: int8vs16(param x: int(8))
-dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:47: note: other candidates are:
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:48: error: unresolved call 'int8vs16(numeral)'
 dispatchenums.chpl:118: note: this candidate did not match: int8vs16(x: int(8))
 dispatchenums.chpl:48: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:118: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:122: note: candidates are: int8vs16(param x: int(8))
-dispatchenums.chpl:126: note:                 int8vs16(x: int(16))
-note: and 1 other candidates, use --print-all-candidates to see them
+dispatchenums.chpl:48: note: other candidates are:
+dispatchenums.chpl:122: note:   int8vs16(param x: int(8))
+dispatchenums.chpl:126: note:   int8vs16(x: int(16))
+note: and 1 other candidate, use --print-all-candidates to see it
 dispatchenums.chpl:52: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:52: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:142: note: candidates are: int8vs16vsDefault(param x: int(8))
-dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:52: note: other candidates are:
+dispatchenums.chpl:142: note:   int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
 note: and 3 other candidates, use --print-all-candidates to see them
 dispatchenums.chpl:53: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:53: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:142: note: candidates are: int8vs16vsDefault(param x: int(8))
-dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:53: note: other candidates are:
+dispatchenums.chpl:142: note:   int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
 note: and 3 other candidates, use --print-all-candidates to see them
 dispatchenums.chpl:54: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:54: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:146: note: candidates are: int8vs16vsDefault(x: int(16))
-dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:54: note: other candidates are:
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:154: note:   int8vs16vsDefault(x: int)
 note: and 3 other candidates, use --print-all-candidates to see them
 dispatchenums.chpl:55: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:55: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:146: note: candidates are: int8vs16vsDefault(x: int(16))
-dispatchenums.chpl:154: note:                 int8vs16vsDefault(x: int)
+dispatchenums.chpl:55: note: other candidates are:
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:154: note:   int8vs16vsDefault(x: int)
 note: and 3 other candidates, use --print-all-candidates to see them
 dispatchenums.chpl:56: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:56: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:142: note: candidates are: int8vs16vsDefault(param x: int(8))
-dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:56: note: other candidates are:
+dispatchenums.chpl:142: note:   int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
 note: and 3 other candidates, use --print-all-candidates to see them
 dispatchenums.chpl:57: error: unresolved call 'int8vs16vsDefault(numeral)'
 dispatchenums.chpl:138: note: this candidate did not match: int8vs16vsDefault(x: int(8))
 dispatchenums.chpl:57: note: because actual argument #1 with type 'numeral'
 dispatchenums.chpl:138: note: is passed to formal 'x: int(8)'
-dispatchenums.chpl:142: note: candidates are: int8vs16vsDefault(param x: int(8))
-dispatchenums.chpl:146: note:                 int8vs16vsDefault(x: int(16))
+dispatchenums.chpl:57: note: other candidates are:
+dispatchenums.chpl:142: note:   int8vs16vsDefault(param x: int(8))
+dispatchenums.chpl:146: note:   int8vs16vsDefault(x: int(16))
 note: and 3 other candidates, use --print-all-candidates to see them

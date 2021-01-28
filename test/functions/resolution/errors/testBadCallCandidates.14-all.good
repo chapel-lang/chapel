@@ -1,0 +1,7 @@
+testBadCallCandidates.chpl:14: In method 'test':
+testBadCallCandidates.chpl:24: error: unresolved call 'C.baz(42)'
+testBadCallCandidates.chpl:39: note: this candidate did not match: D.baz(x: C)
+testBadCallCandidates.chpl:24: note: because method call receiver with type 'borrowed C'
+testBadCallCandidates.chpl:32: note: is passed to formal 'this: borrowed D'
+testBadCallCandidates.chpl:24: note: other candidates are:
+testBadCallCandidates.chpl:68: note:   baz(x: C)

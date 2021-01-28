@@ -5439,7 +5439,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
   if (!inited) {
     validByType[FI_INT32]  = computeAtomicValid(FI_INT32);
     validByType[FI_UINT32] = computeAtomicValid(FI_UINT32);
-    validByType[FI_INT32]  = computeAtomicValid(FI_INT64);
+    validByType[FI_INT64]  = computeAtomicValid(FI_INT64);
     validByType[FI_UINT64] = computeAtomicValid(FI_UINT64);
     validByType[FI_FLOAT]  = computeAtomicValid(FI_FLOAT);
     validByType[FI_DOUBLE] = computeAtomicValid(FI_DOUBLE);

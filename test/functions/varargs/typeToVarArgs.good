@@ -2,4 +2,5 @@ typeToVarArgs.chpl:3: error: unresolved call 'writeln("x's type is: ", type int(
 $CHPL_HOME/modules/standard/ChapelIO.chpl:841: note: this candidate did not match: writeln(const args ...?n)
 typeToVarArgs.chpl:3: note: because actual argument #2 is a type
 $CHPL_HOME/modules/standard/ChapelIO.chpl:841: note: but is passed to non-type varargs formal 'args'
-$CHPL_HOME/modules/standard/ChapelIO.chpl:847: note: candidates are: writeln()
+typeToVarArgs.chpl:3: note: other candidates are:
+$CHPL_HOME/modules/standard/ChapelIO.chpl:847: note:   writeln()

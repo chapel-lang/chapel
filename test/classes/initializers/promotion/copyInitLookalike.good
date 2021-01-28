@@ -3,5 +3,6 @@ copyInitLookalike.chpl:43: error: unresolved call 'C.init(borrowed C(real(64)))'
 copyInitLookalike.chpl:26: note: this candidate did not match: C.init(other: borrowed C(int))
 copyInitLookalike.chpl:43: note: because actual argument #1 with type 'borrowed C(real(64))'
 copyInitLookalike.chpl:26: note: is passed to formal 'other: borrowed C(int(64))'
-copyInitLookalike.chpl:14: note: candidates are: C.init(x: int)
-copyInitLookalike.chpl:20: note:                 C.init(r: real)
+copyInitLookalike.chpl:43: note: other candidates are:
+copyInitLookalike.chpl:14: note:   C.init(x: int)
+copyInitLookalike.chpl:20: note:   C.init(r: real)

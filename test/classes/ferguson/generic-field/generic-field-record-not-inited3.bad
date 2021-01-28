@@ -1,0 +1,4 @@
+generic-field-record-not-inited3.chpl:12: In function 'test1':
+generic-field-record-not-inited3.chpl:13: error: default initialization with type 'Wrapper(GenericRecord(int(64)))' is not yet supported
+generic-field-record-not-inited3.chpl:6: note: field 'f' is a generic value
+generic-field-record-not-inited3.chpl:6: note: consider separately declaring a type field for it or using a 'new' call

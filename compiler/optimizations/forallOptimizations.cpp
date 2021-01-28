@@ -1635,10 +1635,6 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 
   INT_ASSERT(call->isNamed("="));
 
-  if (call->id == 203728) {
-    gdbShouldBreakHere();
-  }
-
   if (!forall->optInfo.infoGathered) {
     gatherForallInfo(forall);
   }

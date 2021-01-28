@@ -2,4 +2,5 @@ enumarray.chpl:22: error: unresolved call 'foo(color, color)'
 enumarray.chpl:12: note: this candidate did not match: foo(x: int(32), y: int(32))
 enumarray.chpl:22: note: because actual argument #1 with type 'color'
 enumarray.chpl:12: note: is passed to formal 'x: int(32)'
-enumarray.chpl:17: note: candidates are: foo(x: int(64), y: int(64))
+enumarray.chpl:22: note: other candidates are:
+enumarray.chpl:17: note:   foo(x: int(64), y: int(64))

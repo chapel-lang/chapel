@@ -2,6 +2,7 @@ typeOfGenericField-fromTypeVariable.chpl:12: error: unresolved call 'type [Block
 $CHPL_HOME/modules/internal/ChapelArray.chpl:1048: note: this candidate did not match: _distribution._instance
 typeOfGenericField-fromTypeVariable.chpl:12: note: because method call receiver is a type
 $CHPL_HOME/modules/internal/ChapelArray.chpl:1048: note: but is passed to non-type formal 'ref this: _distribution'
-$CHPL_HOME/modules/internal/ChapelArray.chpl:1187: note: candidates are: _domain._instance
-$CHPL_HOME/modules/internal/ChapelArray.chpl:2465: note:                 []._instance
+typeOfGenericField-fromTypeVariable.chpl:12: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelArray.chpl:1187: note:   _domain._instance
+$CHPL_HOME/modules/internal/ChapelArray.chpl:2465: note:   []._instance
 note: and 2 other candidates, use --print-all-candidates to see them

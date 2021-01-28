@@ -9,7 +9,7 @@ multiple-errors.chpl:17: note: this candidate did not match: C.bar()
 multiple-errors.chpl:42: note: because method call receiver with type 'borrowed C?'
 multiple-errors.chpl:17: note: is passed to formal 'this: borrowed C'
 multiple-errors.chpl:42: note: try to apply the postfix ! operator to method call receiver
-multiple-errors.chpl:24: note: candidates are: bar()
+note: there is also 1 other candidate, use --print-all-candidates to see it
 multiple-errors.chpl:43: error: unresolved call 'baz(borrowed C?)'
 multiple-errors.chpl:20: note: this candidate did not match: baz(arg: C)
 multiple-errors.chpl:43: note: because actual argument #1 with type 'borrowed C?'

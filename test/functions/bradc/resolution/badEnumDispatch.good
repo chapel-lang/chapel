@@ -2,135 +2,159 @@ badEnumDispatch.chpl:76: error: unresolved call 'int8or64(sizes)'
 badEnumDispatch.chpl:3: note: this candidate did not match: int8or64(x: int(8))
 badEnumDispatch.chpl:76: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:3: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:7: note: candidates are: int8or64(x: int(64))
+badEnumDispatch.chpl:76: note: other candidates are:
+badEnumDispatch.chpl:7: note:   int8or64(x: int(64))
 badEnumDispatch.chpl:77: error: unresolved call 'int8or64(sizes)'
 badEnumDispatch.chpl:3: note: this candidate did not match: int8or64(x: int(8))
 badEnumDispatch.chpl:77: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:3: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:7: note: candidates are: int8or64(x: int(64))
+badEnumDispatch.chpl:77: note: other candidates are:
+badEnumDispatch.chpl:7: note:   int8or64(x: int(64))
 badEnumDispatch.chpl:78: error: unresolved call 'int8or64(sizes)'
 badEnumDispatch.chpl:3: note: this candidate did not match: int8or64(x: int(8))
 badEnumDispatch.chpl:78: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:3: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:7: note: candidates are: int8or64(x: int(64))
+badEnumDispatch.chpl:78: note: other candidates are:
+badEnumDispatch.chpl:7: note:   int8or64(x: int(64))
 badEnumDispatch.chpl:79: error: unresolved call 'int8or64(sizes)'
 badEnumDispatch.chpl:3: note: this candidate did not match: int8or64(x: int(8))
 badEnumDispatch.chpl:79: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:3: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:7: note: candidates are: int8or64(x: int(64))
+badEnumDispatch.chpl:79: note: other candidates are:
+badEnumDispatch.chpl:7: note:   int8or64(x: int(64))
 badEnumDispatch.chpl:83: error: unresolved call 'int8or32(sizes)'
 badEnumDispatch.chpl:11: note: this candidate did not match: int8or32(x: int(8))
 badEnumDispatch.chpl:83: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:11: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:15: note: candidates are: int8or32(x: int(32))
+badEnumDispatch.chpl:83: note: other candidates are:
+badEnumDispatch.chpl:15: note:   int8or32(x: int(32))
 badEnumDispatch.chpl:84: error: unresolved call 'int8or32(sizes)'
 badEnumDispatch.chpl:11: note: this candidate did not match: int8or32(x: int(8))
 badEnumDispatch.chpl:84: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:11: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:15: note: candidates are: int8or32(x: int(32))
+badEnumDispatch.chpl:84: note: other candidates are:
+badEnumDispatch.chpl:15: note:   int8or32(x: int(32))
 badEnumDispatch.chpl:85: error: unresolved call 'int8or32(sizes)'
 badEnumDispatch.chpl:11: note: this candidate did not match: int8or32(x: int(8))
 badEnumDispatch.chpl:85: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:11: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:15: note: candidates are: int8or32(x: int(32))
+badEnumDispatch.chpl:85: note: other candidates are:
+badEnumDispatch.chpl:15: note:   int8or32(x: int(32))
 badEnumDispatch.chpl:86: error: unresolved call 'int8or32(sizes)'
 badEnumDispatch.chpl:11: note: this candidate did not match: int8or32(x: int(8))
 badEnumDispatch.chpl:86: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:11: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:15: note: candidates are: int8or32(x: int(32))
+badEnumDispatch.chpl:86: note: other candidates are:
+badEnumDispatch.chpl:15: note:   int8or32(x: int(32))
 badEnumDispatch.chpl:90: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:19: note: this candidate did not match: param64OrNot(param x: int(64))
 badEnumDispatch.chpl:90: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:19: note: is passed to formal 'param x: int(64)'
-badEnumDispatch.chpl:23: note: candidates are: param64OrNot(x: int(64))
+badEnumDispatch.chpl:90: note: other candidates are:
+badEnumDispatch.chpl:23: note:   param64OrNot(x: int(64))
 badEnumDispatch.chpl:91: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:19: note: this candidate did not match: param64OrNot(param x: int(64))
 badEnumDispatch.chpl:91: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:19: note: is passed to formal 'param x: int(64)'
-badEnumDispatch.chpl:23: note: candidates are: param64OrNot(x: int(64))
+badEnumDispatch.chpl:91: note: other candidates are:
+badEnumDispatch.chpl:23: note:   param64OrNot(x: int(64))
 badEnumDispatch.chpl:92: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:23: note: this candidate did not match: param64OrNot(x: int(64))
 badEnumDispatch.chpl:92: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:23: note: is passed to formal 'x: int(64)'
-badEnumDispatch.chpl:19: note: candidates are: param64OrNot(param x: int(64))
+badEnumDispatch.chpl:92: note: other candidates are:
+badEnumDispatch.chpl:19: note:   param64OrNot(param x: int(64))
 badEnumDispatch.chpl:93: error: unresolved call 'param64OrNot(sizes)'
 badEnumDispatch.chpl:23: note: this candidate did not match: param64OrNot(x: int(64))
 badEnumDispatch.chpl:93: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:23: note: is passed to formal 'x: int(64)'
-badEnumDispatch.chpl:19: note: candidates are: param64OrNot(param x: int(64))
+badEnumDispatch.chpl:93: note: other candidates are:
+badEnumDispatch.chpl:19: note:   param64OrNot(param x: int(64))
 badEnumDispatch.chpl:97: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:27: note: this candidate did not match: param8OrNot(param x: int(8))
 badEnumDispatch.chpl:97: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:27: note: is passed to formal 'param x: int(8)'
-badEnumDispatch.chpl:31: note: candidates are: param8OrNot(x: int(8))
+badEnumDispatch.chpl:97: note: other candidates are:
+badEnumDispatch.chpl:31: note:   param8OrNot(x: int(8))
 badEnumDispatch.chpl:98: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:27: note: this candidate did not match: param8OrNot(param x: int(8))
 badEnumDispatch.chpl:98: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:27: note: is passed to formal 'param x: int(8)'
-badEnumDispatch.chpl:31: note: candidates are: param8OrNot(x: int(8))
+badEnumDispatch.chpl:98: note: other candidates are:
+badEnumDispatch.chpl:31: note:   param8OrNot(x: int(8))
 badEnumDispatch.chpl:99: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:31: note: this candidate did not match: param8OrNot(x: int(8))
 badEnumDispatch.chpl:99: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:31: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:27: note: candidates are: param8OrNot(param x: int(8))
+badEnumDispatch.chpl:99: note: other candidates are:
+badEnumDispatch.chpl:27: note:   param8OrNot(param x: int(8))
 badEnumDispatch.chpl:100: error: unresolved call 'param8OrNot(sizes)'
 badEnumDispatch.chpl:31: note: this candidate did not match: param8OrNot(x: int(8))
 badEnumDispatch.chpl:100: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:31: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:27: note: candidates are: param8OrNot(param x: int(8))
+badEnumDispatch.chpl:100: note: other candidates are:
+badEnumDispatch.chpl:27: note:   param8OrNot(param x: int(8))
 badEnumDispatch.chpl:104: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:35: note: this candidate did not match: param8Or32OrNot(param x: int(8))
 badEnumDispatch.chpl:104: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
-badEnumDispatch.chpl:39: note: candidates are: param8Or32OrNot(x: int(8))
-badEnumDispatch.chpl:43: note:                 param8Or32OrNot(param x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:104: note: other candidates are:
+badEnumDispatch.chpl:39: note:   param8Or32OrNot(x: int(8))
+badEnumDispatch.chpl:43: note:   param8Or32OrNot(param x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:105: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:35: note: this candidate did not match: param8Or32OrNot(param x: int(8))
 badEnumDispatch.chpl:105: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:35: note: is passed to formal 'param x: int(8)'
-badEnumDispatch.chpl:39: note: candidates are: param8Or32OrNot(x: int(8))
-badEnumDispatch.chpl:43: note:                 param8Or32OrNot(param x: int(32))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:105: note: other candidates are:
+badEnumDispatch.chpl:39: note:   param8Or32OrNot(x: int(8))
+badEnumDispatch.chpl:43: note:   param8Or32OrNot(param x: int(32))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:106: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:39: note: this candidate did not match: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:106: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:39: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:47: note: candidates are: param8Or32OrNot(x: int(32))
-badEnumDispatch.chpl:35: note:                 param8Or32OrNot(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:106: note: other candidates are:
+badEnumDispatch.chpl:47: note:   param8Or32OrNot(x: int(32))
+badEnumDispatch.chpl:35: note:   param8Or32OrNot(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:107: error: unresolved call 'param8Or32OrNot(sizes)'
 badEnumDispatch.chpl:39: note: this candidate did not match: param8Or32OrNot(x: int(8))
 badEnumDispatch.chpl:107: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:39: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:47: note: candidates are: param8Or32OrNot(x: int(32))
-badEnumDispatch.chpl:35: note:                 param8Or32OrNot(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:107: note: other candidates are:
+badEnumDispatch.chpl:47: note:   param8Or32OrNot(x: int(32))
+badEnumDispatch.chpl:35: note:   param8Or32OrNot(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:111: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:111: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:55: note: candidates are: allSigs(x: int(64))
-badEnumDispatch.chpl:59: note:                 allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:111: note: other candidates are:
+badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
+badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:112: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:112: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:55: note: candidates are: allSigs(x: int(64))
-badEnumDispatch.chpl:59: note:                 allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:112: note: other candidates are:
+badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
+badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:113: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:113: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:55: note: candidates are: allSigs(x: int(64))
-badEnumDispatch.chpl:59: note:                 allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:113: note: other candidates are:
+badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
+badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it
 badEnumDispatch.chpl:114: error: unresolved call 'allSigs(sizes)'
 badEnumDispatch.chpl:51: note: this candidate did not match: allSigs(x: int(8))
 badEnumDispatch.chpl:114: note: because actual argument #1 with type 'sizes'
 badEnumDispatch.chpl:51: note: is passed to formal 'x: int(8)'
-badEnumDispatch.chpl:55: note: candidates are: allSigs(x: int(64))
-badEnumDispatch.chpl:59: note:                 allSigs(param x: int(8))
-note: and 1 other candidates, use --print-all-candidates to see them
+badEnumDispatch.chpl:114: note: other candidates are:
+badEnumDispatch.chpl:55: note:   allSigs(x: int(64))
+badEnumDispatch.chpl:59: note:   allSigs(param x: int(8))
+note: and 1 other candidate, use --print-all-candidates to see it

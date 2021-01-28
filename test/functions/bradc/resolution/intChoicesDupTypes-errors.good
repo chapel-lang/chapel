@@ -2,35 +2,41 @@ intChoicesDupTypes.chpl:60: error: unresolved call 'intOrEnum(color)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:60: note: because actual argument #1 with type 'color'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:60: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))
 intChoicesDupTypes.chpl:61: error: unresolved call 'intOrEnum(color)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:61: note: because actual argument #1 with type 'color'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:61: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))
 intChoicesDupTypes.chpl:72: error: unresolved call 'intOrEnum(sizes)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:72: note: because actual argument #1 with type 'sizes'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:72: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))
 intChoicesDupTypes.chpl:73: error: unresolved call 'intOrEnum(sizes)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:73: note: because actual argument #1 with type 'sizes'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:73: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))
 intChoicesDupTypes.chpl:74: error: unresolved call 'intOrEnum(sizes)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:74: note: because actual argument #1 with type 'sizes'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:74: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))
 intChoicesDupTypes.chpl:75: error: unresolved call 'intOrEnum(sizes)'
 fnOrder1/intChoicesHelp.chpl:43: note: this candidate did not match: intOrEnum(x: color)
 intChoicesDupTypes.chpl:75: note: because actual argument #1 with type 'sizes'
 fnOrder1/intChoicesHelp.chpl:43: note: is passed to formal 'x: color'
-fnOrder1/intChoicesHelp.chpl:47: note: candidates are: intOrEnum(x: sizes)
-fnOrder1/intChoicesHelp.chpl:51: note:                 intOrEnum(x: int(64))
+intChoicesDupTypes.chpl:75: note: other candidates are:
+fnOrder1/intChoicesHelp.chpl:47: note:   intOrEnum(x: sizes)
+fnOrder1/intChoicesHelp.chpl:51: note:   intOrEnum(x: int(64))

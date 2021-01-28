@@ -51,6 +51,7 @@ public:
 };
 
 bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
+bool       scopeDefinesVisibleFunctions(BlockStmt* scope);
 
 void       findVisibleFunctionsAllPOIs(CallInfo&       info,
                                        Vec<FnSymbol*>& visibleFns);
