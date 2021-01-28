@@ -17,5 +17,8 @@ print(compoptsBlob)
 hasComm = os.environ.get('CHPL_COMM') != 'none'
 replicatedExt = '.replicated-comm' if hasComm else '.replicated-no-comm'
 fileName = 'array-initialization-patterns-dists' + replicatedExt + '.good'
-print('-sdistType=DistType.replicated', '#', fileName)
+printDeinit = '-sprintDeinit=false' if hasComm else ''
+fileName = 'array-initialization-patterns-dists' + replicatedExt + '.good'
+
+print('-sdistType=DistType.replicated', printDeinit, '#', fileName)
 
