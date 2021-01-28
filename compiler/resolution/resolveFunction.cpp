@@ -2270,7 +2270,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       }
 
       // run normalizeVariableDefinition to handle split-init
-      normalizeVariableDefinition(def);
+      normalizeVariableDefinition(def, true);
       start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
 
       // clean up temporary blocks we added

@@ -636,7 +636,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
               normalizeConfigVariableDefinition(defExpr);
 
             } else {
-              normalizeVariableDefinition(defExpr);
+              normalizeVariableDefinition(defExpr, false);
             }
 
             updateVariableAutoDestroy(defExpr);
@@ -2497,15 +2497,15 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 *                                                                             *
 ************************************** | *************************************/
 
-static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
+static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init,
+                              bool inResolve) {
 
   // Generate a type constructor call
-  // (but not for tuples today; that happens in another way)
-  if (SymExpr* se = toSymExpr(init))
-    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
-      if (isAggregateType(se->typeInfo()) ||
-          isDecoratedClassType(se->typeInfo()))
-        if (!ts->hasFlag(FLAG_TUPLE))
+  if (inResolve == false)
+    if (SymExpr* se = toSymExpr(init))
+      if (isTypeSymbol(se->symbol()))
+        if (isAggregateType(se->typeInfo()) ||
+            isDecoratedClassType(se->typeInfo()))
           init = new CallExpr(se->symbol());
 
   CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
@@ -2553,7 +2553,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
 
   if ((init != NULL && !requestedSplitInit) || foundSplitInit == false) {
     // handle non-split initialization
-    emitTypeAliasInit(defExpr, var, init->remove());
+    emitTypeAliasInit(defExpr, var, init->remove(), false);
   } else {
     // handle split initialization for type aliases
     var->addFlag(FLAG_SPLIT_INITED);
@@ -2562,7 +2562,7 @@ static void normalizeTypeAlias(DefExpr* defExpr) {
       SET_LINENO(call);
       // Consider the RHS of the '=' call to be the init expr.
       Expr* rhs = call->get(2)->remove();
-      emitTypeAliasInit(call, var, rhs);
+      emitTypeAliasInit(call, var, rhs, false);
       call->remove();
     }
   }
@@ -2722,7 +2722,7 @@ static void           normVarNoinit(DefExpr* defExpr);
 static Expr* prepareShadowVarForNormalize(DefExpr* def, VarSymbol* var);
 static void  restoreShadowVarForNormalize(DefExpr* def, Expr* svarMark);
 
-void normalizeVariableDefinition(DefExpr* defExpr) {
+void normalizeVariableDefinition(DefExpr* defExpr, bool inResolve) {
   SET_LINENO(defExpr);
 
   VarSymbol* var  = toVarSymbol(defExpr->sym);
@@ -2811,7 +2811,7 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
         //   move type_tmp, type-expr
         //   PRIM_INIT_VAR_SPLIT_DECL var type_tmp
         defExpr->insertAfter(new CallExpr(PRIM_INIT_VAR_SPLIT_DECL, var, tt));
-        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove());
+        emitTypeAliasInit(defExpr, tt, defExpr->exprType->remove(), inResolve);
         defExpr->insertAfter(def);
 
         typeTemp = tt;
