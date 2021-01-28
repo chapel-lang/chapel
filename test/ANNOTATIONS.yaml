@@ -991,6 +991,8 @@ jacobi:
     - Catch blocks catch owned, test code throws owned (#12090)
   04/23/19:
     - Denormalize the test in CondStmts (#12867)
+  01/26/21:
+    - Automatically aggregate some communication in foralls (#16965)
 
 knucleotide: &knucleotide-base
   10/17/15:
@@ -1365,6 +1367,8 @@ memleaksfull:
     - Add tests and futures looking at I/O on class hierarchies (#16920)
   01/15/21:
     - Fix memory leak for classes/io/classToString (#16949)
+  01/26/21:
+    - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
 # End memleaksfull
 
 meteor:
