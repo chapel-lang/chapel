@@ -1271,8 +1271,8 @@ private proc _lu (in A: [?Adom] ?eltType) {
 
     if(max>0){
       forall k in (i+1)..n {
-      L[k,i] = U[k,i] / U[i,i];
-      U[k,..] = U[k,..]-(L[k,i]*U[i,..]);
+        L[k,i] = U[k,i] / U[i,i];
+        U[k,..] = U[k,..]-(L[k,i]*U[i,..]);
       }
     }
   }
