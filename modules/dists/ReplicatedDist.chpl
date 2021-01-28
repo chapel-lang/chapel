@@ -636,10 +636,10 @@ override proc ReplicatedArr.dsiElementInitializationComplete() {
 
   // Replicated arrays are weird. If a replicated is created via a coerceCopy,
   // then it was initialized with `initElts=false`. For replicated, this
-  // means that only the replicand on the global array descriptor's locale
-  // will have also been initialized with `initElts=false`. For consistent
-  // behavior, we only call "complete" only affects the replicand on the
-  // locale we're currently on.
+  // means that only the replicand on the same locale as the newly created
+  // array will be initialized with `initElts=false`. For correct behavior,
+  // we only call "complete" for the replicand on the locale we're currently
+  // on (which should be the same locale as the newly created array).
   chpl_myLocArr().arrLocalRep.dsiElementInitializationComplete();
 }
 
