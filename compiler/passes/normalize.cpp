@@ -2500,12 +2500,13 @@ static bool moveMakesTypeAlias(CallExpr* call) {
 static void emitTypeAliasInit(Expr* after, Symbol* var, Expr* init) {
 
   // Generate a type constructor call
-  if (SymExpr* se = toSymExpr(init)) {
-    if (isTypeSymbol(se->symbol()) &&
-        (isAggregateType(se->typeInfo()) || isDecoratedClassType(se->typeInfo()))) {
-      init = new CallExpr(se->symbol());
-    }
-  }
+  // (but not for tuples today; that happens in another way)
+  if (SymExpr* se = toSymExpr(init))
+    if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
+      if (isAggregateType(se->typeInfo()) ||
+          isDecoratedClassType(se->typeInfo()))
+        if (!ts->hasFlag(FLAG_TUPLE))
+          init = new CallExpr(se->symbol());
 
   CallExpr* move = new CallExpr(PRIM_MOVE, var, init->copy());
 
