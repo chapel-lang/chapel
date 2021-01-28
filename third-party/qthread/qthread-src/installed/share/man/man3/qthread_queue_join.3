@@ -1,0 +1,29 @@
+.TH qthread_queue_join 3 "AUGUST 2013" libqthread "libqthread"
+.SH NAME
+.B qthread_queue_join 
+\- enter a queue and block until the queue is released
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I int
+.br
+.B qthread_queue_join
+.RI "(qthread_queue_t " q ");"
+
+.SH DESCRIPTION
+This function causes the calling task to relinqush the processor and be queued up in the specified queue for later release. Effectively, it is similar to a
+.IR qthread_yield ()
+call, but where another task must release the queue before this task executes again.
+
+.SH RETURN VALUES
+.BR qthread_queue_join ()
+returns QTHREAD_SUCCESS if successful, or QTHREAD_BADARGS if
+.I q
+is invalid.
+
+.SH SEE ALSO
+.BR qthread_queue_create (3),
+.BR qthread_queue_destroy (3),
+.BR qthread_queue_length (3),
+.BR qthread_queue_release_all (3),
+.BR qthread_queue_release_one (3)

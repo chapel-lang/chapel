@@ -1,7 +1,7 @@
 #ifndef OMP_DEFINES_H
 #define OMP_DEFINES_H
 
-#include <qthread/macros.h>
+#include "macros.h"
 
 // this file prototypes the OMP calls supplied by the Qthreads implementation
 //   the user is expected to use omp.h from amother implementation, but the

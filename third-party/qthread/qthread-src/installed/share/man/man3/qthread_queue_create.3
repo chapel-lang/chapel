@@ -1,0 +1,60 @@
+.TH qthread_queue_create 3 "AUGUST 2013" libqthread "libqthread"
+.SH NAME
+.B qthread_queue_create 
+\- allocate and/or initialize a synchronization queue
+.SH SYNOPSIS
+.B #include <qthread.h>
+
+.I qthread_queue_t
+.br
+.B qthread_queue_create
+.RI "(uint8_t " flags ,
+.br
+.ti +22
+.RI "aligned_t " length ");"
+.PP
+.I int
+.br
+.B qthread_queue_destroy
+.RI "(qthread_queue_t " q ");"
+
+.SH DESCRIPTION
+These two functions are for allocating and deallocating qthread_queue_t objects. The
+.BR qthread_queue_create ()
+function allocates and initializes a qthread_queue_t object, while the
+.BR qthread_queue_destroy ()
+function deallocates one. These objects are generic synchronization building blocks that are designed specifically for implementing other synchronization objects. They can be used to implement mutexes, FEBs, and even sincs, in a relatively efficient manner, given the requirement to both initialize and destroy the associated bookkeeping structure. The difference, for each of these, is in how the queue is used. 
+.PP
+The creation function takes two arguments:
+.I flags
+and
+.IR length .
+The flags may be any of the following:
+.TP 4
+QTHREAD_QUEUE_NO_SYNC
+This specifies that the queue should employ no synchronization; all synchronization will be done externally, if necessary, to ensure exclusive access to both joining and releasing the queue. The queue may have any number of entries.
+.TP
+QTHREAD_QUEUE_MULTI_JOIN
+This specifies that the queue should expect to have multiple concurrent, asynchronous join operations. These join operations will be safe to execute in parallel, but the release operation is not safe to execute in parallel with the join operations. The queue may have any number of entries.
+.TP
+QTHREAD_QUEUE_MULTI_JOIN_LENGTH
+This specifies that the queue should expect to have multiple concurrent, asynchronous join operations, and should keep track of the length of the queue. These join operations will be safe to execute in parallel, but the release operation is not safe to execute in parallel with the join operations. The queue may have any number of entries.
+.TP
+QTHREAD_QUEUE_CAPPED
+This specifies that the queue should, like the MULTI_JOIN options, be safe to join in parallel, but also that there is a maximum number of elements in the queue. This allows the join operation to be faster (it need not allocate memory).
+.PP
+The
+.I length
+argument is only applicable for QTHREAD_QUEUE_CAPPED, and specifies the fixed length of the queue.
+
+.SH RETURN VALUES
+.BR qthread_queue_create ()
+returns an initialized qthread_queue_t object.
+.BR qthread_queue_destroy ()
+returns QTHREAD_SUCCESS on success, and an error otherwise.
+.SH SEE ALSO
+.BR qthread_queue_destroy (3),
+.BR qthread_queue_join (3),
+.BR qthread_queue_length (3),
+.BR qthread_queue_release_all (3),
+.BR qthread_queue_release_one (3)
