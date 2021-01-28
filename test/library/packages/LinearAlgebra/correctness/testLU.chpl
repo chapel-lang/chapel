@@ -113,3 +113,13 @@ proc printLU(L, U) {
     else
         printLU(L,U);
 }
+{
+    var dom = {1..1,1..10};
+    var A: [dom] real;
+    fillRandom(A);
+     var (L,U,pivots) = getLU(A);
+    if(!verifyLU(A,L,U,pivots)) then
+        writeln("LU decomposition of the matrix has failed");
+    else
+        printLU(L,U);
+}
