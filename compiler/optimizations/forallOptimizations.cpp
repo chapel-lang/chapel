@@ -27,6 +27,7 @@
 #include "passes.h"
 #include "preFold.h"
 #include "forallOptimizations.h"
+#include "optimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "view.h"
@@ -1417,20 +1418,23 @@ static void autoAggregation(ForallStmt *forall) {
 
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
-  if (CallExpr *lastCall = toCallExpr(forall->loopBody()->body.last())) {
+  std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
 
-    if (lastCall->isNamed("=")) {
-      // no need to do anything if it is array access
-      if (assignmentSuitableForAggregation(lastCall, forall)) {
-        LOG_AA(1, "Found an aggregation candidate", lastCall);
+  for_vector(Expr, lastStmt, lastStmts) {
+    if (CallExpr *lastCall = toCallExpr(lastStmt)) {
+      if (lastCall->isNamed("=")) {
+        // no need to do anything if it is array access
+        if (assignmentSuitableForAggregation(lastCall, forall)) {
+          LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-        insertAggCandidate(lastCall, forall);
-      }
-      // we need special handling if it is a symbol that is an array element
-      else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
-        LOG_AA(1, "Found an aggregation candidate", lastCall);
+          insertAggCandidate(lastCall, forall);
+        }
+        // we need special handling if it is a symbol that is an array element
+        else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
+          LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-        insertAggCandidate(lastCall, forall);
+          insertAggCandidate(lastCall, forall);
+        }
       }
     }
   }

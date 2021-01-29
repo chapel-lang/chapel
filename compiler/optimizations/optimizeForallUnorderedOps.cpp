@@ -180,7 +180,13 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
   stmts.push_back(last);
 }
 
-
+std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall) {
+  std::vector<Expr *> lastStmts;
+  for_vector(BlockStmt, block, forall->loopBodies()) {
+    getLastStmts(block, lastStmts);
+  }
+  return lastStmts;
+}
 
 // ---- mark optimizable foralls during lifetime checking
 
