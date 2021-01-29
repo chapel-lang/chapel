@@ -17,7 +17,9 @@ export CHPL_NIGHTLY_TEST_DIRS="release/examples/hello*.chpl localeModels"
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="gasnet.numa"
 
-# TODO: Do we need/want this? (thomasvandoren, 2014-07-01)
 export GASNET_QUIET=Y
+
+# Cache does not work with migratable, quiet warnings about it for testing
+export CHPL_RT_CACHE_QUIET=true
 
 $CWD/nightly -cron -multilocale
