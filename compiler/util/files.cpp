@@ -434,12 +434,14 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     // WE SHOULDN"T TRY TO OPEN .h files, just .c and .chpl and .o
     if (!isCHeader(filename[i])) {
       FILE* testfile = openInputFile(filename[i]);
-      if (fscanf(testfile, "%c", &achar) != 1) {
-        USR_FATAL("source file '%s' is either empty or a directory",
-                  filename[i]);
-      }
+      if(testfile) {
+        if (fscanf(testfile, "%c", &achar) != 1) {
+          USR_FATAL("source file '%s' is either empty or a directory",
+                    filename[i]);
+        }
 
-      closeInputFile(testfile);
+        closeInputFile(testfile);
+      }
     }
 
     //
@@ -799,7 +801,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     const char* loc = "$(CHPL_MAKE_HOME)/runtime/etc/src";
     fprintf(makefile.fptr, "COMP_GEN_MLI_EXTRA_INCLUDES = -I%s\n", loc);
   }
-  
+
   // Build a string out of include directories, for convenience.
   std::string includedirs;
   for_vector(const char, dirName, incDirs) {
@@ -881,10 +883,10 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
     fprintf(makefile.fptr, "\t%s \\\n", splitFiles[i]);
   }
   fprintf(makefile.fptr, "\n");
-  
+
   genCFiles(makefile.fptr);
   genObjFiles(makefile.fptr);
-  
+
   // List libraries/locations needed to compile this deliverable.
   fprintf(makefile.fptr, "\nLIBS =");
   for_vector(const char, dirName, libDirs) {

@@ -123,6 +123,22 @@ static void resolveFormals(FnSymbol* fn) {
       }
     }
 
+    if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      Symbol* ps = formal->defPoint->parentSymbol;
+      if (ps) {
+        if (!ps->hasFlag(FLAG_COMPILER_GENERATED))
+          USR_FATAL(formal,
+                    "Formal '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    formal->name);
+        else if (ps->name == astrInit)
+          USR_FATAL(formal,
+                    "Field '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    formal->name);
+      }
+    }
+
     if (formal->name == astr_chpl_cname) {
       handleParamCNameFormal(fn, formal);
       formal->defPoint->remove();
@@ -2452,7 +2468,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 CallExpr* callCoerceFn = NULL;
                 Symbol *definedConst = to->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
                 if (stealRHS) {
-                  callCoerceFn = new CallExpr(astr_coerceMove, 
+                  callCoerceFn = new CallExpr(astr_coerceMove,
                                               fromType, from, definedConst);
                 } else {
                   callCoerceFn = new CallExpr(astr_coerceCopy,
@@ -2654,4 +2670,3 @@ void ensureInMethodList(FnSymbol* fn) {
     }
   }
 }
-

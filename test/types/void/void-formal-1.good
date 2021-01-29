@@ -1,0 +1,1 @@
+void-formal-1.chpl:1: error: Formal 'x' cannot be declared 'void'. Consider using 'nothing' instead.
