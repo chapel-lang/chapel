@@ -486,11 +486,13 @@ class LocReplicatedArr {
     this.idxType = idxType;
     this.stridable = stridable;
     this.myDom = myDom;
-    // always initialize the elements because in an initialization
-    // context, we won't know which replicand is initialized,
-    // because the RHS could be an arbitrary forall or for expression.
-    this.arrLocalRep = this.myDom.domLocalRep.buildArray(eltType,
-                                                         initElts=true);
+
+    //
+    // Trust that the caller will select the right `initElts` value for this
+    // particular replicand.
+    //
+    this.arrLocalRep = this.myDom.domLocalRep
+          .buildArray(eltType, initElts);
   }
 
   proc deinit() {
@@ -559,15 +561,46 @@ proc ReplicatedArr.dsiPrivatize(privatizeData) {
 
 // create a new array over this domain
 proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
-  : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type))
-{
+      : unmanaged ReplicatedArr(eltType, _to_unmanaged(this.type)) {
+
+  // In order to support this, we would have to make copy-initialization
+  // for replicated arrays initialize all replicands.
+  if !isDefaultInitializable(eltType) then
+    compilerError('cannot initialize replicated array because element ',
+                  'type ', eltType:string, ' cannot be copied');
+
   if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
+
   var result = new unmanaged ReplicatedArr(eltType, _to_unmanaged(this));
+
+  // The locale where the 'dsiBuildArray' call originally takes place. We
+  // need to save this so that we can decide which replicand to build with
+  // `initElts=false` in the loop below.
+  const globalArrayLocale = here;
+
   coforall (loc, locDom, locArr)
-   in zip(dist.targetLocales, localDoms, result.localArrs) do
-    on loc do
-      locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType, stridable,
-                                              locDom!, initElts=initElts);
+      in zip(dist.targetLocales, localDoms, result.localArrs) do on loc {
+
+    //
+    // When a replicated array is initialized with `initElts=false`, only
+    // the replicand on the locale where the global array descriptor is
+    // being built is also initialized with `initElts=false`. All the
+    // other replicands are initialized with `initElts=true`, because they
+    // will be default-initialized.
+    //
+    if here == globalArrayLocale && !initElts {
+      locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType,
+                                              stridable,
+                                              locDom!,
+                                              initElts=false);
+    } else {
+      locArr = new unmanaged LocReplicatedArr(eltType, rank, idxType,
+                                              stridable,
+                                              locDom!,
+                                              initElts=true);
+    }
+  }
+
   return result;
 }
 
@@ -600,6 +633,14 @@ proc chpl_serialReadWriteRectangular(f, arr, dom) where isReplicatedArr(arr) {
 }
 
 override proc ReplicatedArr.dsiElementInitializationComplete() {
+
+  // Replicated arrays are weird. If a replicated is created via a coerceCopy,
+  // then it was initialized with `initElts=false`. For replicated, this
+  // means that only the replicand on the same locale as the newly created
+  // array will be initialized with `initElts=false`. For correct behavior,
+  // we only call "complete" for the replicand on the locale we're currently
+  // on (which should be the same locale as the newly created array).
+  chpl_myLocArr().arrLocalRep.dsiElementInitializationComplete();
 }
 
 override proc ReplicatedArr.dsiElementDeinitializationComplete() {
