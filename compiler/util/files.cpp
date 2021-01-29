@@ -431,15 +431,13 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
     }
-    // WE SHOULDN"T TRY TO OPEN .h files, just .c and .chpl and .o
+    // WE SHOULDN'T TRY TO OPEN .h files, just .c and .chpl and .o
     if (!isCHeader(filename[i])) {
       FILE* testfile = openInputFile(filename[i]);
-      if(testfile) {
-        if (fscanf(testfile, "%c", &achar) != 1) {
+      if (testfile) {
+        if (fscanf(testfile, "%c", &achar) != 1)
           USR_FATAL("source file '%s' is either empty or a directory",
                     filename[i]);
-        }
-
         closeInputFile(testfile);
       }
     }

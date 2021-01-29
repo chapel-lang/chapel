@@ -9035,7 +9035,8 @@ static void resolveObviousGlobals() {
 static void checkNoVoidFields()
 {
   for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
-    // We exclude "no object" aggregates, to allow the Chapel internal 'ref' class
+    // We exclude "no object" aggregates, to allow the Chapel internal '_ref'
+    // class to be instantiated with a 'void' member
     if(!at->symbol->hasFlag(FLAG_NO_OBJECT)) {
       for_fields(field, at) {
         if(field->type == dtVoid)
@@ -9569,6 +9570,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
+    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
     if (fn)
       fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
@@ -10544,6 +10546,12 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   SET_LINENO(call);
 
+  // When --ignore-errors-for-pass is used, earlier errors, such as
+  // compilerError errors, are marked as pending until the end of the
+  // resolution pass, which can cause secondary errors about void
+  // variables here. If the function resolution pass has any pending
+  // fatal errors, we suppress any errors about void variables here,
+  // which might be secondary to the original fatal error.
   if(type == dtVoid && !fatalErrorsEncountered())
     USR_FATAL(call,
               "Variable '%s' cannot be declared 'void'."

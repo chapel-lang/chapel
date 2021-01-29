@@ -123,6 +123,12 @@ static void resolveFormals(FnSymbol* fn) {
       }
     }
 
+    // If the formal has void type, and its parent symbol is not compiler-
+    // generated, then it is an invalid 'void' source-code formal.
+    //
+    // If the formal has void type, and its parent symbol is compiler-
+    // generated, and the parent symbol is astrInit, then it is an aggregate
+    // field intialization, such as new c(); and the field cannot be void.
     if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       Symbol* ps = formal->defPoint->parentSymbol;
       if (ps) {
