@@ -1,0 +1,1 @@
+testPopIndexHaltBadIndex.chpl:10: error: halt reached - out of bounds on unrolledLinkedList
