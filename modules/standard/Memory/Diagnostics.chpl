@@ -19,18 +19,80 @@
  */
 
 /*
-  The :mod:`Memory` module provides submodules that contain operations
-  related to memory usage and memory control.
+  TODO: Fix my links...
 
-  .. warning::
+  The :mod:`Memory` module provides procedures which report information
+  about memory usage.  With one exception, to use these procedures you
+  must enable memory tracking.  Do this by setting one or more of the
+  config vars below, using appropriate ``--configVarName=value`` or
+  ``-sconfigVarName=value`` command line options when you run the
+  program.  If memory tracking is not enabled, calling any procedure
+  described here, other than :proc:`locale.physicalMemory`, will cause
+  the program to halt with an error message.
 
-    In previous releases, the :mod:`Memory` module contained procedures
-    which reported information about memory usage. These procedures are now
-    deprecated - please use the equivalents in the :mod:`~Memory.Diagnostics`
-    submodule instead.
+  ``memTrack``: `bool`:
+    Enable memory tracking.  This causes memory allocations and
+    deallocations to be internally tracked, to support logging them on
+    the fly and/or producing any of several kinds of memory-related
+    reports, described below.
 
+  ``memLeaks``: `bool`:
+    Enable memory tracking and produce detailed information about
+    leaked memory by invoking :proc:`printMemAllocs` implicitly when
+    the program terminates normally. If there are no leaks, nothing is
+    printed.
+
+  ``memLeaksByType``: `bool`:
+    Enable memory tracking and produce summary information about
+    leaked memory by invoking :proc:`printMemAllocsByType` implicitly
+    when the program terminates normally. If there are no leaks,
+    nothing is printed.
+
+  ``memLeaksLog``: `string`:
+    Enable memory tracking and append a report to the named file when
+    the program terminates normally.
+    The report contains the compilation command used to build the
+    program, the execution command used to run it, the summary
+    allocation statistics produced by :proc:`printMemAllocStats`, and the
+    summary information about leaked memory produced by
+    :proc:`printMemAllocsByType`.
+    
+
+  ``memStats``: `bool`:
+    Enable memory tracking and produce summary memory statistics by
+    invoking :proc:`printMemAllocStats` implicitly at normal program
+    termination.  Note that for a multi-locale run, each top-level
+    locale reports its own memory statistics and these reports may
+    appear in any order in the program output (and possibly even
+    interleaved, though we have gone to some effort to avoid that).
+    These statistics can be put in order by sorting the output lines
+    that begin with the string ``memStats:``.
+
+  ``memMax``: `uint`:
+    If the value is greater than 0 (zero), enable memory tracking
+    and use the value as a limit on the number of bytes of memory
+    that can be allocated per top-level (network-connected) locale.
+    If during execution the amount of allocated memory exceeds this
+    limit on any locale, halt the program with a message saying so.
+
+  The following two config variables do not enable memory tracking;
+  they only modify how it is done.
+
+
+  ``memThreshold``: `uint`:
+    If this is set to a value greater than 0 (zero), only allocation
+    requests larger than this are tracked and/or reported.
+
+  ``memLog``: `string`:
+    Memory reporting is written to this file.  By default it is the
+    ``stdout`` associated with the process (not the Chapel channel
+    with the same name).  Setting this config variable to a file path
+    causes the reporting to be written to that named file instead.
+    In multilocale executions each top-level locale produces output
+    to its own file, with a dot ('.') and the locale ID appended to
+    this path.
  */
-module Memory {
+module Diagnostics {
 
 pragma "insert line file info"
 private extern proc chpl_memoryUsed(): uint(64);
@@ -39,21 +101,10 @@ private extern proc chpl_memoryUsed(): uint(64);
   The amount of memory returned by :proc:`locale.physicalMemory` can
   be expressed either as individual bytes or as chunks of 2**10,
   2**20, or 2**30 bytes.
-
-  .. warning::
-
-    This enum is deprecated - please use
-    :enum:`~Memory.Diagnostics.MemUnits`.
-
  */
 enum MemUnits {Bytes, KB, MB, GB};
 
 /*
-  .. warning::
-
-    This method is deprecated - please use
-    :proc:`~Memory.Diagnostics.physicalMemory()`.
-
   How much physical memory is present on this locale?
 
   Note that this is a physical quantity and does not take into account
@@ -72,9 +123,6 @@ enum MemUnits {Bytes, KB, MB, GB};
   :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  compilerWarning('Memory.physicalMemory() is deprecated - please use ',
-                  'Memory.Diagnostics.physicalMemory()');
-
   extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 
   var bytesInLocale: uint(64);
@@ -93,12 +141,6 @@ proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) 
 }
 
 /*
-
-  .. warning::
-
-    This function is deprecated - please use
-    :proc:`Memory.memoryUsed()`.
-
   How much memory is this program currently using on this locale?
 
   This is the amount of memory known to be currently allocated on the
@@ -111,9 +153,6 @@ proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) 
   :rtype: `uint(64)`
  */
 proc memoryUsed() {
-  compilerWarning('Memory.memoryUsed() is deprecated - please use ',
-                  'Memory.Diagnostics.memoryUsed()');
-
   return chpl_memoryUsed();
 }
 
