@@ -1,0 +1,2 @@
+if-var-2-const.chpl:14: In function 'showCs':
+if-var-2-const.chpl:17: error: cannot assign to const variable

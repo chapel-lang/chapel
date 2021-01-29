@@ -2336,6 +2336,18 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc chpl_checkBorrowIfVar(arg) {
+    if isUnmanagedClass(arg) then
+      return arg;  // preserve unmanage-ness
+    else if isClass(arg) then
+      return arg.borrow();
+    else
+      compilerError('"if var/const" construct is available only on classes,',
+                    " here it is invoked on ", arg.type:string);
+  }
+  proc chpl_checkBorrowIfVar(type arg) {
+    compilerError('"if var/const" construct cannot be invoked on a type');
+  }
 
   pragma "no borrow convert"
   inline proc _removed_cast(in x) {
