@@ -2275,6 +2275,10 @@ module ChapelArray {
       return _value.dsiSupportsAutoLocalAccess();
     }
 
+    proc iteratorYieldsLocalElements() param {
+      return _value.dsiIteratorYieldsLocalElements();
+    }
+
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old

@@ -54,6 +54,7 @@ class AggregationCandidateInfo {
     AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
 
     void addAggregators();
+    void removeSideEffectsFromPrimitive();
     void transformCandidate();
 };
 

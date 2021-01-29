@@ -133,13 +133,16 @@ void doPreNormalizeArrayOptimizations() {
 
 Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
-  // (call "may be local arr elem" elem, arr, paramFlag)
-  // we don't really care about the second argument here, it is used elsewhere
+  // This primitive is created with 3 arguments:
+  // (call "may be local arr elem": elem, arr, paramFlag)
+  //
+  // But we remove the second argument right after using it, because it can be
+  // an expression with side effects
 
   SymExpr *maybeArrElemSymExpr = toSymExpr(call->get(1));
   INT_ASSERT(maybeArrElemSymExpr);
 
-  SymExpr *controlSymExp = toSymExpr(call->get(3));
+  SymExpr *controlSymExp = toSymExpr(call->get(2));
   INT_ASSERT(controlSymExp);
 
   bool confirmed = (controlSymExp->symbol() == gTrue);
@@ -1475,6 +1478,24 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
   return aggCond;
 }
 
+
+void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
+  INT_ASSERT(this->candidate->isNamed("="));
+
+  if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
+    if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      childCall->get(2)->remove();
+    }
+  }
+
+  if (CallExpr *childCall = toCallExpr(this->candidate->get(2))) {
+    if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      childCall->get(2)->remove();
+    }
+  }
+
+}
+
 // currently we only support one aggregator at normalize time, however, we
 // should relax that limitation a bit. Normalize should be able to add both
 // aggregators for
@@ -1549,17 +1570,15 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
   SET_LINENO(child);
 
   if (CallExpr *childCall = toCallExpr(child)) {
-    const char *aggFnName = srcAggregation ? "chpl_srcAggregatorForArr" :
-                                             "chpl_dstAggregatorForArr";
+    const char *aggFnName = srcAggregation ? "chpl_srcAggregatorFor" :
+                                             "chpl_dstAggregatorFor";
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_THIS)) {
       if (SymExpr *arrSymExpr = toSymExpr(childCall->get(1))) {
         return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
       }
     }
     else if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      if (SymExpr *arrSymExpr = toSymExpr(childCall->get(2))) {
-        return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
-      }
+      return new CallExpr(aggFnName, childCall->get(2)->remove());
     }
     else if (SymExpr *arrSymExpr = toSymExpr(childCall->baseExpr)) {
       return new CallExpr(aggFnName, new SymExpr(arrSymExpr->symbol()));
@@ -1749,6 +1768,8 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
 
   info->addAggregators();
 
+  info->removeSideEffectsFromPrimitive();
+
   info->transformCandidate();
 }
 
@@ -1790,7 +1811,6 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
     gatherForallInfo(forall);
   }
 
-  Symbol *maybeArrSym = NULL;
   Symbol *maybeArrElemSym = NULL;
   Expr *maybeArrExpr = NULL;
 
@@ -1819,14 +1839,6 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
       maybeArrElemSym = tmpSym;
     }
   }
-
-  // For now, limit maybeArrExpr to be only SymExprs, I think we can relax that
-  if (SymExpr *maybeArrExprSE = toSymExpr(maybeArrExpr)) {
-    maybeArrSym = maybeArrExprSE->symbol();
-  }
-
-  // doesn't look like this is something we can recognize
-  if (maybeArrSym == NULL) return false;
 
   // stop if neither can be an array element symbol
   if (!lhsMaybeArrSym && !rhsMaybeArrSym) return false;
@@ -1857,16 +1869,19 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   VarSymbol *checkSym = new VarSymbol("chpl__yieldedArrayElemIsAligned");
   checkSym->addFlag(FLAG_PARAM);
 
+  // this call is a param call, the copy expression will be removed
   CallExpr *checkCall = new CallExpr("chpl__arrayIteratorYieldsLocalElements");
-  checkCall->insertAtTail(maybeArrSym);
+  checkCall->insertAtTail(maybeArrExpr->copy());
 
   DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
   forall->insertBefore(checkSymDef);
 
   // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
+  // we are adding `maybeArrExpr` that may have side effects, but we'll remove
+  // it before we start normalization
   CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
                                     new SymExpr(maybeArrElemSym),
-                                    new SymExpr(maybeArrSym),
+                                    maybeArrExpr->copy(),
                                     new SymExpr(checkSym));
   symExprToReplace->replace(primCall);
 
