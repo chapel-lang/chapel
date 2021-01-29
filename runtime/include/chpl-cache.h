@@ -52,7 +52,7 @@ extern const int CHPL_CACHE_REMOTE;
 #define CHPL_ASAN 0
 #endif
 
-static
+static inline
 void chpl_cache_warn_if_disabled(void)
 {
   if (CHPL_CACHE_REMOTE && chpl_nodeID == 0 &&
