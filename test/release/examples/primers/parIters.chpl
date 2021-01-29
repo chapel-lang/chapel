@@ -4,10 +4,11 @@
   This primer explains how to write parallel iterators in Chapel,
   which can be used to drive parallel ``forall`` loops.  It assumes
   that the reader already knows how to define serial iterators in
-  Chapel, as summarized in the iterators primer, for example.
+  Chapel, as summarized in the :ref:`iterators primer (iterators.chpl)
+  <primers-iterators>` for example.
 
   Chapel has two main flavors of parallel iterators: `Standalone`
-  parallel iterators are the simplest form and can be used to define
+  parallel iterators are the simpler form and can be used to define
   parallelism for a simple forall loop like ``forall i in
   myIter(...)``.  `Leader-follower` iterators are a more involved form
   that support zippered forall loops, like ``forall (...,i,...) in
@@ -257,7 +258,7 @@ Leader-follower Roles
 // At a high level, the role of a leader iterator is to:
 //
 //   a) create the parallel tasks used to implement the forall loop,
-//   b) associate the parallel tasks with specific locales as required/desired.
+//   b) associate the tasks with specific locales, if desired,
 //   c) assign work (e.g., iterations) to each parallel task
 //
 // The leader typically creates the parallelism using task parallel
