@@ -1478,19 +1478,28 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
   return aggCond;
 }
 
-
+// PRIM_MAYBE_LOCAL_ARR_ELEM has a 2nd argument that is a copy of the expression
+// that we iterare. We add it there when we create the primitive, so that we can
+// generate some checks outside the forall. However, keeping that expression
+// inside the forall body can have bunch of side effects. In some cases we
+// remove it when we use it, but we can also leave some untouched. This
+// function removes that argument if the primitive still has 3 arguments
 void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
   INT_ASSERT(this->candidate->isNamed("="));
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      childCall->get(2)->remove();
+      if (childCall->numActuals() == 3) {
+        childCall->get(2)->remove();
+      }
     }
   }
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(2))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      childCall->get(2)->remove();
+      if (childCall->numActuals() == 3) {
+        childCall->get(2)->remove();
+      }
     }
   }
 
