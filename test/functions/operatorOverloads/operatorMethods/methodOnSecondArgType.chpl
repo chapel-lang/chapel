@@ -3,7 +3,7 @@
 record Rec {
   var x: int;
 
-  proc type +(lhs: int, rhs: Rec) {
+  operator +(lhs: int, rhs: Rec) {
     return lhs + rhs.x;
   }
 }

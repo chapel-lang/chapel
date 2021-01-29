@@ -1,7 +1,7 @@
 record Foo {
   var x: int;
 }
-proc type Foo.+(lhs: Foo, rhs: Foo) {
+operator Foo.+(lhs: Foo, rhs: Foo) {
   writeln("In Foo.+");
   return new Foo(lhs.x + rhs.x);
 }

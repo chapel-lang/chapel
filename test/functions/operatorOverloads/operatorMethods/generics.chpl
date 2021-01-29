@@ -2,7 +2,7 @@ record Foo {
   type t;
   var x: t;
 
-  proc type ==(const ref lhs: Foo, const ref rhs: Foo) {
+  operator ==(const ref lhs: Foo, const ref rhs: Foo) {
     if (lhs.t != rhs.t) {
       return false;
     } else {

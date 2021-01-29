@@ -1,7 +1,7 @@
 record A {
   var x: int;
 
-  proc type +(lhs: A, rhs: B) {
+  operator +(lhs: A, rhs: B) {
     writeln("In A.+");
     return new A(lhs.x + rhs.x);
   }
@@ -10,7 +10,7 @@ record A {
 record B {
   var x: int;
 
-  proc type +(lhs: A, rhs: B) {
+  operator +(lhs: A, rhs: B) {
     writeln("In B.+");
     return new B(lhs.x + rhs.x);
   }

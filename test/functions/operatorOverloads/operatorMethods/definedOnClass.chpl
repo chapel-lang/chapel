@@ -2,7 +2,7 @@ class Foo {
   var x: int;
 }
 
-proc type Foo.+(lhs: Foo, rhs: Foo) {
+operator Foo.+(lhs: Foo, rhs: Foo) {
   return new Foo(lhs.x + rhs.x);
 }
 

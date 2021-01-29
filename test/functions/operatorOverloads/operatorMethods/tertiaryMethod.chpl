@@ -7,7 +7,7 @@ module DefinesFoo {
 module DefinesPlus {
   public use DefinesFoo;
 
-  proc type Foo.+(lhs: Foo, rhs: Foo) {
+  operator Foo.+(lhs: Foo, rhs: Foo) {
     return new Foo(lhs.x + rhs.x);
   }
 

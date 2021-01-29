@@ -1,7 +1,7 @@
 class Parent {
   var x: int;
 
-  proc type <(lhs: Parent, rhs: Parent) {
+  operator <(lhs: Parent, rhs: Parent) {
     return lhs.x < rhs.x;
   }
 }

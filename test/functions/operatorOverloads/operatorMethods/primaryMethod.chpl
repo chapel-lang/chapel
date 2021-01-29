@@ -1,7 +1,7 @@
 record Foo {
   var x: int;
 
-  proc type +(lhs: Foo, rhs: Foo) {
+  operator +(lhs: Foo, rhs: Foo) {
     return new Foo(lhs.x + rhs.x);
   }
 }
