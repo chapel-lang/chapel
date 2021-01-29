@@ -659,6 +659,10 @@ bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
 }
 
+bool isFollowerIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gFollowerTag);
+}
+
 bool isStandaloneIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gStandaloneTag);
 }
