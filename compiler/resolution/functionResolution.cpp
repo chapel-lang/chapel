@@ -10730,7 +10730,6 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   //
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) &&
       val->type->symbol->hasFlag(FLAG_ARRAY)   &&
-      ! val->hasFlag(FLAG_INITIALIZED_LATER)   &&
       ! val->hasFlag(FLAG_UNSAFE)              &&
       ! isInDefaultActualFunction(call)        ) {
     const char* name = NULL;
@@ -10829,11 +10828,8 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   if (val->hasFlag(FLAG_NO_INIT))
     return;
 
-  // Allow default-init assign to work around current compiler oddities.
-  // In a future where init= is always used, we can remove this case.
   // Skip this error for a param - it will get "not of a supported param type"
-  if (val->hasFlag(FLAG_INITIALIZED_LATER) ||
-      val->hasFlag(FLAG_PARAM))
+  if (val->hasFlag(FLAG_PARAM))
     return;
 
   const char* descr = val->name;

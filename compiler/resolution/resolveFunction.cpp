@@ -943,18 +943,10 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     bool allowReturns = !isOutFormal;
     foundSplitInit = findInitPoints(call, initAssigns, prevent, allowReturns);
 
-    if (foundSplitInit) {
-      // If the assignment has a different type RHS we should
-      // still apply split-init because the language rules
-      // here are type-independent. In that case, the type should
-      // also have an init= function accepting the different RHS type.
-
-      // Check that it's not an array init we converted into =
-      // (This is a workaround - the actual solution is to have something
-      //  like init= for arrays)
-      if (sym->hasFlag(FLAG_INITIALIZED_LATER))
-        foundSplitInit = false;
-    }
+    // If the assignment has a different type RHS we should
+    // still apply split-init because the language rules
+    // here are type-independent. In that case, the type should
+    // also have an init= function accepting the different RHS type.
 
     if (foundSplitInit) {
       // Change the PRIM_DEFAULT_INIT_VAR to PRIM_INIT_VAR_SPLIT_DECL
@@ -1183,9 +1175,8 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
         for_formals_actuals(formal, actual, subCall) {
           bool outIntent = (formal->intent == INTENT_OUT ||
                             formal->originalIntent == INTENT_OUT);
-          bool maybeLaterAssign = (i == 1 && fn->name == astrSassign);
 
-          if (outIntent || maybeLaterAssign) {
+          if (outIntent) {
             SymExpr* se = toSymExpr(actual);
             if (NamedExpr* ne = toNamedExpr(actual)) {
               INT_ASSERT(ne->name == formal->name);
@@ -1197,13 +1188,6 @@ static void gatherTempsDeadLastMention(VarSymbol* v,
             if (tmpVar != NULL && tmpVar != v && tmpVar->hasFlag(FLAG_TEMP)) {
               if (outIntent) {
                 // initializing a temp with out intent
-                gatherTempsDeadLastMention(tmpVar, temps);
-              } else if (maybeLaterAssign &&
-                         tmpVar->hasFlag(FLAG_INITIALIZED_LATER)) {
-                // See through default-init/assign pattern generated for arrays
-                // In that pattern, a '=' call sets a init_coerce_tmp variable
-                // marked with FLAG_INITIALIZED_LATER. If that variable is involved
-                // in user variable initialization, we need to find it.
                 gatherTempsDeadLastMention(tmpVar, temps);
               }
             }
@@ -2390,22 +2374,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               }
 
               bool useCoerceCall = involvesRuntimeType;
-              bool useAssign = involvesRuntimeType && !useCoerceCall;
-
-              // Use assign (to get error) if coercion isn't normally
-              // allowed between these types.
-              // Note this also supports some things like syserr = int.
-              if (!canDispatch(from->type, from, lhsType)) {
-                useAssign = true;
-              }
-
-              // Use assign since no cast is available for
-              // sync / single and their value type.
-              if ((isSyncType(from->getValType()) ||
-                   isSingleType(from->getValType()))) {
-                useAssign = true;
-              }
-
 
               // Check that lhsType == the result of coercion
               INT_ASSERT(lhsType == rhsCall->typeInfo());
@@ -2415,7 +2383,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
               // types are the same until runtime (at least without
               // some better smarts in the compiler).
 
-              if (!typesDiffer && !useAssign && !useCoerceCall) {
+              if (!typesDiffer && !useCoerceCall) {
                 // types are the same. remove coerce and
                 // handle reference level adjustments. No cast necessary.
 
@@ -2499,41 +2467,6 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 resolveExpr(callCoerceFn);
                 resolveExpr(move);
 
-                call->remove();
-
-              } else if (useAssign) {
-
-                // Here the types differ and we're expecting some
-                // kind of promotion / iterator-array-conversion to apply.
-
-                // In the future, it would be nice if this could no-init
-                // a LHS array and then move records into it from the RHS.
-
-                // Tell compiler it shouldn't raise errors connected
-                // to default-initializing to since it is actually
-                // set below.
-                to->addFlag(FLAG_INITIALIZED_LATER);
-
-                CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR,
-                                              to, fromType);
-                call->insertBefore(init);
-
-                // Since the initialization pattern normally does not
-                // require adding an auto-destroy for a call-expr-temp,
-                // add FLAG_INSERT_AUTO_DESTROY since we're assigning from
-                // it.
-                from->addFlag(FLAG_INSERT_AUTO_DESTROY);
-
-                CallExpr* assign = new CallExpr("=", to, from);
-
-                call->insertBefore(assign);
-
-                // Resolve each of the new CallExprs They need to be resolved
-                // separately since resolveExpr does not recurse.
-                resolveExpr(init);
-                resolveExpr(assign);
-
-                // We've replaced the move with no-init/assign, so remove it.
                 call->remove();
 
               } else {
