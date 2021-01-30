@@ -1331,8 +1331,7 @@ proc lu (A: [?Adom] ?t) where (usingLAPACK && isLAPACKType(t)){
   use LAPACK;
   var Aclone = A;
 
-  var rows = Adom.shape[0];
-  var cols = Adom.shape[1];
+  const (rows, cols) = Adom.shape;
   var ipiv: [1..rows] c_int;
   var info = getrf(lapack_memory_order.row_major, Aclone, ipiv);
   var U = triu(Aclone);
