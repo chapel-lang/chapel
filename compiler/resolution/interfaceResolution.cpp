@@ -491,7 +491,7 @@ ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* callsite,
   InterfaceSymbol* isym = constraint->ifcSymbol();
 
   // 'call2wf' represents 'constraint' throughout this function
-  // because it contains proiperly instantiated arguments.
+  // because it contains properly instantiated arguments.
   CallExpr* call2wf = buildCall2wf(isym, constraint, substitutions);
 
   // An earlier version resolved 'call2wf' completely.
