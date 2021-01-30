@@ -2744,6 +2744,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 formalname
 gparent
 hashset
+ifvar
 instype
 outervar
 urse
@@ -2752,6 +2753,7 @@ wout
 yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
+ifvar
 itexpr
 pblock
 ppne
@@ -3244,6 +3246,7 @@ FILEID: 8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5
 localt
 
 FILEID: 0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5
+ctxv
 kout
 subslots
 
@@ -3904,6 +3907,7 @@ disubprogram
 dtype
 inalloca
 isinstance
+mynum
 ndarray
 nfor
 optos
@@ -4425,6 +4429,7 @@ newsec
 newsecond
 pytz
 resultp
+strftok
 uspms
 usps
 utcoff
@@ -5095,6 +5100,7 @@ whereami
 
 FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
 ilroy
+listsort
 ninther
 sortit
 
@@ -5351,6 +5357,32 @@ lcudart
 FILEID: fe77e30e-2e9f-11eb-adc5-acbc32c4f96b
 developercertificate
 
+FILEID: 5000dfe8-62e2-11eb-a43d-6f93f4244f4b
+ifor
+istmt
+
+FILEID: 7356b18e-62e2-11eb-a43d-6f93f4244f4b
+logln
+
+FILEID: 94331c44-62e2-11eb-a43d-6f93f4244f4b
+idstring
+impls
+indx
+symstring
+
+FILEID: b89daf54-62e2-11eb-a43d-6f93f4244f4b
+lmod
+
+FILEID: c05642c4-62e2-11eb-a43d-6f93f4244f4b
+cgreen
+creset
+
+FILEID: 69d46c90-62e3-11eb-a43d-6f93f4244f4b
+strval
+
+FILEID: 87c9eef0-62e3-11eb-a43d-6f93f4244f4b
+elemsper
+
 NATURAL:
 aarch
 abcd
@@ -5371,6 +5403,7 @@ addrs
 adjoint
 afaik
 afterwards
+aggregatable
 aggregator
 aggregators
 akash
@@ -5443,6 +5476,7 @@ arounds
 arpa
 arrayness
 arrayview
+asan
 asciiz
 ascontiguousarray
 asenjo
@@ -5575,6 +5609,7 @@ bswap
 bucketize
 bucketized
 bucketizer
+bucketizing
 buettner
 bufcnt
 buffersize
@@ -5631,6 +5666,7 @@ celsius
 certinfo
 cfgfile
 cflags
+cgprint
 chad
 chameneos
 chameneosredux
@@ -5654,6 +5690,7 @@ chikara
 chiki
 childnum
 childstate
+chiuw
 chksum
 chmod
 cholesky
@@ -5831,6 +5868,7 @@ dedent
 deepak
 defexpr
 defn
+defpoint
 defs
 degli
 deinit
@@ -5848,6 +5886,7 @@ delaney
 delhi
 delims
 demangle
+demunge
 denests
 dennis
 denny
@@ -5885,6 +5924,7 @@ destructure
 destructured
 destructures
 destructuring
+desugar
 detupled
 detupling
 devanagari
@@ -6285,6 +6325,7 @@ gettimeofday
 gettimer
 getvalid
 gflop
+gfun
 ghangas
 gilbert
 github
@@ -6426,6 +6467,7 @@ ified
 ifneq
 ignorecase
 igroup
+iifc
 illinois
 imap
 imaps
@@ -6533,11 +6575,13 @@ isopen
 isoweekday
 isowned
 isprint
+isprivate
 isset
 isshared
 isslice
 issubtype
 issuercert
+istm
 istr
 isuid
 isunmanaged
@@ -6548,6 +6592,7 @@ iswlower
 iswprint
 iswspace
 iswupper
+isym
 iten
 iterables
 iterand
@@ -7211,6 +7256,7 @@ paolo
 parallelization
 parallelize
 parallelized
+parallelly
 parameterizable
 parameterization
 parameterized
@@ -7682,6 +7728,7 @@ siterator
 sizeinbase
 skipdirs
 skipif
+skippable
 skylake
 sles
 slicee
@@ -7818,6 +7865,7 @@ subsequence
 substrings
 substrs
 subtable
+subtask
 subtest
 subtime
 subtree
@@ -8008,6 +8056,7 @@ ulong
 ulonglong
 umask
 umontreal
+unaggregatable
 unalias
 unaliasing
 unanchored

@@ -58,6 +58,9 @@
   "ad56c506-780b-11e7-88ba-10ddb1d4c3d5": [
     "compiler/AST/foralls.cpp"
   ],
+  "5000dfe8-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/AST/interfaces.cpp"
+  ],
   "e2d7df7c-1d0c-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/AST/iterator.cpp"
   ],
@@ -175,6 +178,9 @@
   "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/copyPropagation.cpp"
   ],
+  "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/optimizations/forallOptimizations.cpp"
+  ],
   "fcd32732-b78b-11e6-9740-843835579daa": [
     "compiler/optimizations/inferConstRefs.cpp"
   ],
@@ -265,6 +271,9 @@
   "d5351900-d1c0-11e8-954d-10ddb1d4c3d5": [
     "compiler/resolution/initializerResolution.cpp"
   ],
+  "94331c44-62e2-11eb-a43d-6f93f4244f4b": [
+    "compiler/resolution/interfaceResolution.cpp"
+  ],
   "1873381c-2cbe-11e8-aa67-10ddb1d4c3d5": [
     "compiler/resolution/lifetime.cpp"
   ],
@@ -327,6 +336,9 @@
   ],
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
+  ],
+  "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/developer/bestPractices/git.rst"
   ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
     "doc/rst/developer/chips/15.rst"
@@ -413,6 +425,9 @@
   ],
   "3916e364-dfc3-11e6-93be-10ddb1d4c3d5": [
     "doc/rst/platforms/aws.rst"
+  ],
+  "b89daf54-62e2-11eb-a43d-6f93f4244f4b": [
+    "doc/rst/platforms/cray.rst"
   ],
   "a78ba0d8-8220-11e6-b915-843835579daa": [
     "doc/rst/technotes/auxIO.rst"
@@ -528,6 +543,9 @@
   ],
   "5010068a-0c15-11e7-980e-10ddb1d4c3d5": [
     "modules/internal/ChapelArray.chpl"
+  ],
+  "69d46c90-62e3-11eb-a43d-6f93f4244f4b": [
+    "modules/internal/ChapelAutoAggregation.chpl"
   ],
   "ce35097e-8645-11e8-ad82-10ddb1d4c3d5": [
     "modules/internal/ChapelBase.chpl"
@@ -1009,6 +1027,9 @@
   ],
   "5b81c0c6-fd35-11e9-98b5-10ddb1d4c3d5": [
     "test/release/examples/primers/listOps.chpl"
+  ],
+  "87c9eef0-62e3-11eb-a43d-6f93f4244f4b": [
+    "test/release/examples/primers/parIters.chpl"
   ],
   "e8974bb8-8068-11e6-ab60-00a0cc3ee663": [
     "test/release/examples/primers/ranges.chpl"
