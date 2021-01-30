@@ -482,7 +482,8 @@
 %type <pexpr> lifetime_components_expr
 %type <pexpr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
+%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <pexpr> let_expr ifvar
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
 %type <pexpr> opt_try_expr opt_expr
@@ -1079,6 +1080,12 @@ if_stmt:
 | TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+
+| TIF ifvar TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
+| TIF ifvar block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
+| TIF ifvar TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
+| TIF ifvar block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE  {
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6); }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE  {
@@ -1087,6 +1094,11 @@ $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5); }
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
 | TIF expr assignop_ident expr block_stmt TELSE stmt     {
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
+;
+
+ifvar:
+  TVAR   ident_def TASSIGN expr { $$ = buildIfVar($2, $4, false); }
+| TCONST ident_def TASSIGN expr { $$ = buildIfVar($2, $4, true);  }
 ;
 
 interface_stmt:

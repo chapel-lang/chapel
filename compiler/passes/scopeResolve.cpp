@@ -409,6 +409,29 @@ static void scopeResolve(InterfaceSymbol*    isym,
   scopeResolve(isym->ifcBody, scope);
 }
 
+static void scopeResolveCondStmt(CondStmt* cond, ResolveScope* scope) {
+  CallExpr* ifvar = toCallExpr(skip_cond_test(cond->condExpr));
+  if (ifvar != NULL && ! ifvar->isPrimitive(PRIM_IF_VAR))
+    ifvar = NULL;
+
+  if (ifvar == NULL) {
+    scopeResolveExpr(cond->condExpr, scope);
+  } else {
+    // call(PRIM_IF_VAR, DefExpr, RHS expr)
+    scopeResolveExpr(ifvar->get(2), scope);
+  }
+
+  //scopeResolve(cond->thenStmt, scope), with ifvar add-on
+  ResolveScope* thenScope = new ResolveScope(cond->thenStmt, scope);
+  if (ifvar != NULL)
+    thenScope->extend(toDefExpr(ifvar->get(1))->sym);
+  scopeResolve(cond->thenStmt->body, thenScope);
+
+  if (cond->elseStmt != NULL) {
+    scopeResolve(cond->elseStmt, scope);
+  }
+}
+
 static void scopeResolve(IfExpr* ife, ResolveScope* scope) {
   scopeResolve(ife->getThenStmt(), scope);
   scopeResolve(ife->getElseStmt(), scope);
@@ -498,13 +521,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
       }
 
     } else if (CondStmt* cond = toCondStmt(stmt))  {
-      scopeResolveExpr(cond->condExpr, scope);
-
-      scopeResolve(cond->thenStmt, scope);
-
-      if (cond->elseStmt != NULL) {
-        scopeResolve(cond->elseStmt, scope);
-      }
+      scopeResolveCondStmt(cond, scope);
 
     } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
       scopeResolve(tryStmt->_body, scope);
