@@ -1200,6 +1200,9 @@ module Random {
 
         if(!isRectangularArr(arr)) then
           compilerError("permutation does not support non-rectangular arrays");
+        
+        if(!isNumericType(arr)) then
+          compilerError("permutation does not support non-numeric arrays");
 
         _lock();
 
