@@ -49,7 +49,7 @@ static char* debug = NULL;
 static char* walltime = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
-char slurmFilename[FILENAME_MAX];
+char* slurmFilename = NULL;
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -178,8 +178,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
                                         int32_t numLocales) {
   int i;
   int size;
-  char baseCommand[2*FILENAME_MAX];
-  char envProp[2*FILENAME_MAX];
+  char* baseCommand = NULL;
+  char* envProp = NULL;
   char* command;
   FILE* slurmFile;
   char* projectString = getenv(launcherAccountEnvvar);
@@ -233,6 +233,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
+  slurmFilename=(char *)malloc(sizeof(char)*(strlen(baseSBATCHFilename) + 
+                  snprintf(NULL, 0, "%d", (int)mypid) + 1));
+  if(slurmFilename==NULL) {
+    chpl_internal_error("Memory allocation using malloc failed.");
+  }
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
@@ -268,7 +273,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
-
+    baseCommand=(char *)malloc(sizeof(char)*(strlen(slurmFilename) + 9));
+    if(baseCommand==NULL){
+      free(slurmFilename);
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   } else {
     char iCom[2*FILENAME_MAX-10];
@@ -296,7 +305,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, " %s", argv[i]);
     }
-
+    baseCommand=(char *)malloc(sizeof(char)*(len + 10));  //len is size of iCom
+    if(baseCommand==NULL){
+      free(slurmFilename);
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     sprintf(baseCommand, "salloc %s", iCom);
   }
 
@@ -305,7 +318,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   
   sprintf(command, "%s", baseCommand);
-
+  free(baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -330,6 +343,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
             argv[0]);
   chpl_launch_cleanup();
+  free(slurmFilename);
   return retcode;
 }
 

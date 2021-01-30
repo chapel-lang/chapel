@@ -45,7 +45,7 @@ static char* nodelist = NULL;
 static char* partition = NULL;
 static char* exclude = NULL;
 
-char slurmFilename[FILENAME_MAX];
+char* slurmFilename = NULL;
 
 /* copies of binary to run per node */
 #define procsPerNode 1
@@ -142,14 +142,13 @@ static int getCoresPerLocale(int nomultithread) {
 
   return numCores;
 }
-#define MAX_COM_LEN (FILENAME_MAX + 128)
 // create the command that will actually launch the program and 
 // create any files needed for the launch like the batch script 
 static char* chpl_launch_create_command(int argc, char* argv[], 
                                         int32_t numLocales) {
   int i;
   int size;
-  char baseCommand[MAX_COM_LEN];
+  char* baseCommand=NULL;
   char* command;
   FILE* slurmFile;
   char* account = getenv("CHPL_LAUNCHER_ACCOUNT");
@@ -183,9 +182,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   // because they haven't been initialized yet
   char* bufferStdout    = getenv("CHPL_LAUNCHER_SLURM_BUFFER_STDOUT");
   const char* tmpDir    = getTmpDir();
-  char stdoutFile         [MAX_COM_LEN];
-  char stdoutFileNoFmt    [MAX_COM_LEN];
-  char tmpStdoutFileNoFmt [MAX_COM_LEN];
+  char* stdoutFile         = NULL;
+  char* stdoutFileNoFmt    = NULL;
+  char* tmpStdoutFileNoFmt = NULL;
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -244,6 +243,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
   // if were running a batch job 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL || generate_sbatch_script) {
+    slurmFilename=(char *)malloc(sizeof(char)*(strlen(baseSBATCHFilename)
+                  + snprintf(NULL, 0, "%d", (int)mypid) + 1));
+    if(slurmFilename==NULL){
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     // set the sbatch filename
     sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
@@ -305,14 +309,23 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // set the output file name to either the user specified
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
+      stdoutFile=(char *)malloc(sizeof(char)*(strlen(outputfn) + 1));
       sprintf(stdoutFile,      "%s", outputfn);
+      stdoutFileNoFmt=(char *)malloc(sizeof(char)*(strlen(outputfn) + 1));
       sprintf(stdoutFileNoFmt, "%s", outputfn);
     }
     else {
+      stdoutFile=(char *)malloc(sizeof(char)*(strlen(argv[0]) + 9));
       sprintf(stdoutFile,      "%s.%s.out", argv[0], "%j");
+      stdoutFileNoFmt=(char *)malloc(sizeof(char *)*(strlen(argv[0]+ 20)));
       sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
     }
-
+    if(stdoutFile==NULL || stdoutFileNoFmt==NULL){
+      free(stdoutFile);
+      free(stdoutFileNoFmt);
+      free(slurmFilename);
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     // We have slurm use the real output file to capture slurm errors/timeouts
     // We only redirect the program output to the tmp file
     fprintf(slurmFile, "#SBATCH --output=%s\n", stdoutFile);
@@ -324,6 +337,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
+      tmpStdoutFileNoFmt=(char *)malloc(sizeof(char) * (strlen(tmpDir) + strlen(argv[0]) + 20));
+      if(tmpStdoutFileNoFmt==NULL){
+        free(stdoutFile);
+        free(stdoutFileNoFmt);
+        free(slurmFilename);
+        chpl_internal_error("Memory allocation using malloc failed.");
+      }
       sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
@@ -348,6 +368,9 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (bufferStdout != NULL) {
       fprintf(slurmFile, "cat %s >> %s\n", tmpStdoutFileNoFmt, stdoutFileNoFmt);
       fprintf(slurmFile, "rm  %s &> /dev/null\n", tmpStdoutFileNoFmt);
+      //tmpStdoutFileNoFmt is only allocated memory if bufferStdout!=NULL
+      //Hence free up inside this condition.
+      free(tmpStdoutFileNoFmt);
     }
 
     // close the batch file and change permissions 
@@ -360,6 +383,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // the baseCommand is what will call the batch file
     // that was just created 
+    baseCommand=(char *)malloc(sizeof(char)*(strlen(slurmFilename) + 9));
+    if(baseCommand==NULL){
+      free(stdoutFile);
+      free(stdoutFileNoFmt);
+      free(slurmFilename);
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   }
   // else we're running an interactive job 
@@ -431,7 +461,14 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, "%s ", argv[i]);
     }
-   
+
+    baseCommand=(char *)malloc(sizeof(char)*(strlen(iCom) + 8));
+    if(baseCommand==NULL){
+      free(stdoutFile);
+      free(stdoutFileNoFmt);
+      free(slurmFilename);
+      chpl_internal_error("Memory allocation using malloc failed.");
+    }
     // launch the job using srun
     sprintf(baseCommand, "srun %s ", iCom);
   }
@@ -440,6 +477,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   size = strlen(baseCommand) + 1;
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   sprintf(command, "%s", baseCommand);
+  //free dynamically allocated memory
+  free(baseCommand);
+  free(stdoutFile);
+  free(stdoutFileNoFmt);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -460,7 +501,12 @@ static void chpl_launch_cleanup(void) {
     // remove sbatch file unless it was explicitly generated by the user
     if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL && !generate_sbatch_script) {
       if (unlink(slurmFilename)) {
-        char msg[FILENAME_MAX + 128];
+        char* msg=(char *)malloc(sizeof(char)*(strlen(slurmFilename) + 
+                  strlen(strerror(errno)) + 36));
+        if(msg==NULL){
+          free(slurmFilename);
+          chpl_internal_error("Memory allocation using malloc failed.");
+        }
         snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);
@@ -495,6 +541,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   
     chpl_launch_cleanup();
   }
+  free(slurmFilename);
   return retcode;
 }
 

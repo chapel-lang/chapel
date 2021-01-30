@@ -38,9 +38,9 @@
 #define baseExpectFilename ".chpl-expect-"
 #define baseSysFilename ".chpl-sys-"
 
-char pbsFilename[FILENAME_MAX];
-char expectFilename[FILENAME_MAX];
-char sysFilename[FILENAME_MAX];
+char* pbsFilename=NULL;
+char* expectFilename=NULL;
+char* sysFilename=NULL;
 
 /* copies of binary to run per node */
 #define procsPerNode 1  
@@ -170,6 +170,18 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
+  sysFilename=(char *)malloc(size(char)*(strlen(baseSysFilename) + 
+              snprintf(NULL, 0, "%d", (int)mypid +1)));
+  expectFilename=(char *)malloc(size(char)*(strlen(baseExpectFilename) + 
+              snprintf(NULL, 0, "%d", (int)mypid +1)));
+  pbsFilename=(char *)malloc(size(char)*(strlen(basePBSFilename) + 
+              snprintf(NULL, 0, "%d", (int)mypid +1)));
+  if(sysFilename==NULL || expectFilename==NULL || pbsFilename==NULL) {
+    free(sysFilename);
+    free(expectFilename);
+    free(pbsFilename);
+    chpl_internal_error("Memory allocation using malloc failed.");
+  }
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
@@ -235,6 +247,9 @@ static void chpl_launch_cleanup(void) {
   sprintf(command, "rm %s", sysFilename);
   system(command);
 #endif
+  free(pbsFilename);
+  free(expectFilename);
+  free(sysFilename);
 }
 
 

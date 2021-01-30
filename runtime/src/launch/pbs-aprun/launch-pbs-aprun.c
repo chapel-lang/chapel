@@ -50,7 +50,7 @@ static char* walltime = NULL;
 static char* queue = NULL;
 static int generate_qsub_script = 0;
 
-static char expectFilename[FILENAME_MAX];
+static char* expectFilename=NULL;
 
 extern int fileno(FILE *stream);
 
@@ -243,6 +243,10 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   } else {
     mypid = 0;
   }
+  expectFilename=(char *)malloc(sizeof(char)*(strlen(baseExpectFilename) + snprintf(NULL, 0, "%d", (int)mypid) + 1));
+  if(expectFilename==NULL) {
+    chpl_internal_error("Memory allocation using malloc failed.");
+  }
   snprintf(expectFilename, FILENAME_MAX, "%s%d",
            baseExpectFilename, (int)mypid);
 
@@ -393,10 +397,15 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!debug) {
     if (unlink(expectFilename)) {
-      char msg[FILENAME_MAX + 35];
-      snprintf(msg, FILENAME_MAX + 35, "Error removing temporary file '%s': %s",
+      char* msg=(char *)malloc(sizeof(char)*(strlen(expectFilename) + strlen(strerror(errno)) + 36));
+      if(msg==NULL){
+        free(expectFilename);
+        chpl_internal_error("Memory allocation using malloc failed.");
+      }
+      snprintf(msg, FILENAME_MAX + 45, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
+      free(msg);
     }
   }
 }
@@ -416,7 +425,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
                                   argv[0]);
     chpl_launch_cleanup();
   }
-
+  free(expectFilename);
   return retcode;
 }
 
