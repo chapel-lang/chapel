@@ -1329,15 +1329,15 @@ proc lu (A: [?Adom] ?t) where (usingLAPACK && isLAPACKType(t)){
   
   use SysCTypes;
   use LAPACK;
-  var A_clone = A;
+  var Aclone = A;
 
   var rows = Adom.shape[0];
   var cols = Adom.shape[1];
-  var ipiv: [{1..rows}] c_int;
-  var info = getrf(lapack_memory_order.row_major,A_clone,ipiv);
-  var U = triu(A_clone);
-  var L = A_clone-U+eye(A.domain);
-  return(L[1..rows,1..rows],U,ipiv);
+  var ipiv: [1..rows] c_int;
+  var info = getrf(lapack_memory_order.row_major, Aclone, ipiv);
+  var U = triu(Aclone);
+  var L = Aclone - U + eye(A.domain);
+  return(L[1..rows,1..rows], U, ipiv);
 }
 
 /* Return a new array as the permuted form of `A` according to
