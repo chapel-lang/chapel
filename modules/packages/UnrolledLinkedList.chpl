@@ -224,7 +224,7 @@ module UnrolledLinkedList {
 
     /*
       Initializes an unrolledLinkedList containing elements that are copy 
-      initialized from the elements contained in another unrolledLinkedlist.
+      initialized from the elements contained in another unrolledLinkedList.
 
       :arg other: The list to initialize from.
     */
