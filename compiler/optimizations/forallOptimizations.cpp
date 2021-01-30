@@ -261,7 +261,7 @@ void cleanupRemainingAggCondStmts() {
           aggregatorToRemove->defPoint->remove();
 
           // search for the aggregator in the parent function and scrub it clean.
-          // We expect 3 occurances of the symbol after the else block is gone
+          // We expect 3 occurrences of the symbol after the else block is gone
           symExprs.clear();
           collectSymExprs(parentFn->body, symExprs);
 
