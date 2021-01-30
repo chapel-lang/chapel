@@ -1486,6 +1486,11 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
     appendExpr(expr->get(i), printingType);
   }
 
+  // 1-tuples get a trailing "," inside the parens.
+  // Only tuples reach here with fnName == "".
+  if (strlen(fnName) == 0 && expr->numActuals() == 1)
+    mText += ",";
+
   mText += ')';
 }
 
