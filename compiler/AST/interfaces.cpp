@@ -378,7 +378,7 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
 // for a IfcConstraint interface constraint.
 //
 // If the body of such a wrapper function starts with PRIM_ERROR,
-// it means we tried to infer the corresonding implements statement
+// it means we tried to infer the corresponding implements statement
 // and did not succeed.
 //
 
