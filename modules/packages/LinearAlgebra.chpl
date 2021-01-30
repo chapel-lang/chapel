@@ -1315,15 +1315,16 @@ proc lu (A: [?Adom] ?eltType) {
 
 private proc getQ(A, tau) {
   var n = A.domain.shape[0];
-  var Q = eye(A.domain);
+  var I = eye(A.domain);
+  var Q = I;
   for i in 1..n {
     var v: [1..n] real;
     v[1..i-1] = 0;
     v[i] = 1;
     v[i+1..n] = A[(i+1)..n,i];
     var V = Vector(v);
-    var H = eye(A.domain)-(tau[i]*outer(V,V.T));
-    Q = dot(Q,H);
+    var H = I - (tau[i] * outer(V, V.T));
+    Q = dot(Q, H);
   }
   return Q;
 }
@@ -1351,9 +1352,9 @@ proc qr (A: [?Adom] ?t)
   var info = LAPACK.geqrf(lapack_memory_order.row_major, Aclone, tau);
   if info <0 then
     halt("QR Factorization failed on the input matrix");
-  var Q = getQ(Aclone,tau);
+  var Q = getQ(Aclone, tau);
   var R = triu(Aclone);
-  return (Q,R);
+  return (Q, R);
 }
 
 /* Return a new array as the permuted form of `A` according to
