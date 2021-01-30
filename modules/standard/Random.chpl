@@ -1167,17 +1167,11 @@ module Random {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
-      /* Randomly shuffle a 1-D array. */
+      /* Randomly shuffle a rectangular array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
         if(!isRectangularArr(arr)) then
           compilerError("shuffle does not support non-rectangular arrays");
-
-        if D.rank != 1 then
-          compilerError("Shuffle requires 1-D array");
-
-        const low = D.alignedLow,
-              stride = abs(D.stride);
 
         _lock();
 
@@ -1188,19 +1182,9 @@ module Random {
                                  seed, PCGRandomStreamPrivate_count,
                                  0, i);
 
-          var j = i;
-
-          // Strided case
-          if stride > 1 {
-            k *= stride;
-            j *= stride;
-          }
-
-          // Alignment offsets
-          k += low;
-          j += low;
-
-          arr[k] <=> arr[j];
+          var lastInd = D.orderToIndex(i);
+          var randInd = D.orderToIndex(k);
+          arr[lastInd] <=> arr[randInd];
         }
 
         PCGRandomStreamPrivate_count += D.size;
@@ -1208,35 +1192,35 @@ module Random {
         _unlock();
       }
 
-      /* Produce a random permutation, storing it in a 1-D array.
-         The resulting array will include each value from low..high
-         exactly once, where low and high refer to the array's domain.
+      /* Produce a random permutation, storing it in an array.
+         The resulting array will include each value from 1..n
+         exactly once, where n is the array size.
          */
       proc permutation(arr: [] eltType) {
 
         if(!isRectangularArr(arr)) then
           compilerError("permutation does not support non-rectangular arrays");
 
-        var low = arr.domain.dim(0).low;
-        var high = arr.domain.dim(0).high;
-
-        if arr.domain.rank != 1 then
-          compilerError("Permutation requires 1-D array");
-        //if arr.domain.dim(0).stridable then
-        //  compilerError("Permutation requires non-stridable 1-D array");
-
         _lock();
 
-        for i in low..high {
+        for i in 0..(arr.size-1) {
+          var ind = arr.domain.orderToIndex(i);
+          arr[ind] = (i+1);
+        }
+
+        for i in 0..(arr.size-1) by -1 {
           var j = randlc_bounded(arr.domain.idxType,
                                  PCGRandomStreamPrivate_rngs,
                                  seed, PCGRandomStreamPrivate_count,
-                                 low, i);
-          arr[i] = arr[j];
-          arr[j] = i;
+                                 0, i);
+
+          var lastInd = arr.domain.orderToIndex(i);
+          var randInd = arr.domain.orderToIndex(j);
+
+          arr[lastInd] <=> arr[randInd];
         }
 
-        PCGRandomStreamPrivate_count += high-low;
+        PCGRandomStreamPrivate_count += arr.size;
 
         _unlock();
       }
