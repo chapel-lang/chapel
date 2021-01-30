@@ -1,19 +1,19 @@
 .. default-domain:: chpl
 
-.. module:: privateTypeAlias
+.. module:: privateTypeAlias.doc
 
-privateTypeAlias
-================
+privateTypeAlias.doc
+====================
 **Usage**
 
 .. code-block:: chapel
 
-   use privateTypeAlias;
+   use privateTypeAlias.doc;
 
 
 or
 
 .. code-block:: chapel
 
-   import privateTypeAlias;
+   import privateTypeAlias.doc;
 
