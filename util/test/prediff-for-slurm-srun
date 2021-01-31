@@ -19,6 +19,9 @@ msgs = (
 """,
 """slurmstepd: error: .+ \[[0-9]+] .*
 """,
+"""srun: error: spank: /opt/cray/pe/atp/libAtpSLaunch.so: Plugin file not found
+""",
+
 )
 
 outfname = sys.argv[2]
