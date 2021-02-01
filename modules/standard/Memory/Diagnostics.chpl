@@ -19,9 +19,7 @@
  */
 
 /*
-  TODO: Fix my links...
-
-  The :mod:`Memory` module provides procedures which report information
+  The :mod:`Diagnostics` module provides procedures which report information
   about memory usage.  With one exception, to use these procedures you
   must enable memory tracking.  Do this by setting one or more of the
   config vars below, using appropriate ``--configVarName=value`` or
@@ -112,11 +110,11 @@ enum MemUnits {Bytes, KB, MB, GB};
   a larger amount, or system or user limits which might prevent
   allocating so much.
 
-  *Note:* Unlike the other procedures in the :mod:`Memory` module, this
+  *Note:* Unlike the other procedures in the :mod:`Diagnostics` module, this
   one does not require memory tracking to be enabled.
 
   :arg unit: Units in which the returned value is to be expressed.
-  :type unit: :type:`~Memory.MemUnits`
+  :type unit: :type:`~Diagnostics.MemUnits`
   :arg retType: Type of the returned value.  Defaults to `int(64)`.
   :type retType: `type`
   :returns: Size of physical memory on the locale where the call is made.

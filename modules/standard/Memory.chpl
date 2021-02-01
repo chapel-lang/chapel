@@ -20,31 +20,32 @@
 
 /*
   The :mod:`Memory` module provides submodules that contain operations
-  related to memory usage and memory control.
+  related to memory usage and memory initialization.
 
   .. warning::
 
     In previous releases, the :mod:`Memory` module contained procedures
     which reported information about memory usage. These procedures are now
-    deprecated - please use the equivalents in the :mod:`~Memory.Diagnostics`
+    deprecated - please use the equivalents in the :mod:`~Diagnostics`
     submodule instead.
 
  */
 module Memory {
 
+include module Diagnostics;
+
 pragma "insert line file info"
 private extern proc chpl_memoryUsed(): uint(64);
 
 /*
-  The amount of memory returned by :proc:`locale.physicalMemory` can
-  be expressed either as individual bytes or as chunks of 2**10,
-  2**20, or 2**30 bytes.
-
   .. warning::
 
     This enum is deprecated - please use
-    :enum:`~Memory.Diagnostics.MemUnits`.
+    :enum:`~Diagnostics.MemUnits`.
 
+  The amount of memory returned by :proc:`locale.physicalMemory` can
+  be expressed either as individual bytes or as chunks of 2**10,
+  2**20, or 2**30 bytes.
  */
 enum MemUnits {Bytes, KB, MB, GB};
 
@@ -52,7 +53,7 @@ enum MemUnits {Bytes, KB, MB, GB};
   .. warning::
 
     This method is deprecated - please use
-    :proc:`~Memory.Diagnostics.physicalMemory()`.
+    :proc:`~Diagnostics.locale.physicalMemory()`.
 
   How much physical memory is present on this locale?
 
@@ -72,8 +73,8 @@ enum MemUnits {Bytes, KB, MB, GB};
   :rtype: `retType`
  */
 proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) {
-  compilerWarning('Memory.physicalMemory() is deprecated - please use ',
-                  'Memory.Diagnostics.physicalMemory()');
+  compilerWarning('Memory.locale.physicalMemory() is deprecated - ',
+                  'please use Memory.Diagnostics.locale.physicalMemory()');
 
   extern proc chpl_sys_physicalMemoryBytes(): uint(64);
 
@@ -93,11 +94,10 @@ proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) 
 }
 
 /*
-
   .. warning::
 
     This function is deprecated - please use
-    :proc:`Memory.memoryUsed()`.
+    :proc:`~Diagnostics.memoryUsed()`.
 
   How much memory is this program currently using on this locale?
 
@@ -118,6 +118,11 @@ proc memoryUsed() {
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.printMemAllocs()`.
+
   Print detailed information about allocated memory to ``memLog``.
   The report contains a section for each top-level locale, containing
   a table of entries for the allocations made on that locale.  Each
@@ -131,6 +136,9 @@ proc memoryUsed() {
   :type thresh: `int`
 */
 proc printMemAllocs(thresh=0) {
+  compilerWarning('Memory.printMemAllocs() is deprecated - please use ',
+                  'Memory.Diagnostics.printMemAllocs()');
+
   pragma "insert line file info" 
   extern proc chpl_printMemAllocs(thresh);
 
@@ -138,6 +146,11 @@ proc printMemAllocs(thresh=0) {
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.printMemAllocsByType()`.
+
   Print summary information about allocated memory to ``memLog``.  The
   report contains a section for each top-level locale, containing a
   table of entries, one for each different allocation type for which
@@ -147,6 +160,9 @@ proc printMemAllocs(thresh=0) {
   allocations and bytes allocated for that type.
 */
 proc printMemAllocsByType() {
+  compilerWarning('Memory.printMemAllocsByType() is deprecated - ',
+                  'please use Memory.Diagnostics.printMemAllocsByType()');
+
   pragma "insert line file info" 
   extern proc chpl_printMemAllocsByType();
 
@@ -154,6 +170,11 @@ proc printMemAllocsByType() {
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.printMemAllocStats()`.
+
   Print summary memory statistics to ``memLog``.  The report contains
   a section for each top-level locale showing the number of bytes of
   memory currently allocated, the maximum number allocated at any
@@ -161,6 +182,9 @@ proc printMemAllocsByType() {
   sizes of all allocation and deallocation requests.
 */
 proc printMemAllocStats() {
+  compilerWarning('Memory.printMemAllocStats() is deprecated - ',
+                  'please use Memory.Diagnostics.printMemAllocStats()');
+
   pragma "insert line file info"
   extern proc chpl_printMemAllocStats();
 
@@ -168,6 +192,11 @@ proc printMemAllocStats() {
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.startVerboseMem()`.
+
   Start on-the-fly reporting of memory allocations and deallocations
   done on any locale.  Continue reporting until :proc:`stopVerboseMem`
   is called.
@@ -176,20 +205,36 @@ proc printMemAllocStats() {
   memory allocation or deallocation, written to ``memLog``.
  */
 proc startVerboseMem() { 
+  compilerWarning('Memory.startVerboseMem() is deprecated - ',
+                  'please use Memory.Diagnostics.startVerboseMem()');
+
   extern proc chpl_startVerboseMem();
   chpl_startVerboseMem();
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.stopVerboseMem()`.
+
   Stop on-the-fly reporting of memory allocations and deallocations
   done on any locale.
  */
 proc stopVerboseMem() {
+  compilerWarning('Memory.stopVerboseMem() is deprecated - ',
+                  'please use Memory.Diagnostics.stopVerboseMem()');
+
   extern proc chpl_stopVerboseMem();
   chpl_stopVerboseMem();
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.startVerboseMemHere()`.
+
   Start on-the-fly reporting of memory allocations and deallocations
   done on this locale.  Continue reporting until
   :proc:`stopVerboseMemHere` is called.
@@ -198,15 +243,26 @@ proc stopVerboseMem() {
   memory allocation or deallocation, written to ``memLog``.
  */
 proc startVerboseMemHere() {
+  compilerWarning('Memory.startVerboseMemHere() is deprecated - ',
+                  'please use Memory.Diagnostics.startVerboseMemHere()');
+
   extern proc chpl_startVerboseMemHere();
   chpl_startVerboseMemHere();
 }
 
 /*
+  .. warning::
+
+    This function is deprecated - please use
+    :proc:`~Diagnostics.stopVerboseMemHere()`.
+
   Stop on-the-fly reporting of memory allocations and deallocations
   done on this locale.
  */
 proc stopVerboseMemHere() {
+  compilerWarning('Memory.stopVerboseMemHere() is deprecated - ',
+                  'please use Memory.Diagnostics.stopVerboseMemHere()');
+
   extern proc chpl_stopVerboseMemHere();
   chpl_stopVerboseMemHere();
 }
