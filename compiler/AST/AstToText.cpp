@@ -512,7 +512,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
           {
             mText  += ": ";
             appendExpr(moveSrc, true);
-            mText  += ".type ";
+            mText  += ".type";
 
             retval =  true;
           }
@@ -1251,7 +1251,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     if (expr->isPrimitive(PRIM_TYPEOF))
     {
       appendExpr(expr->get(1), printingType);
-      mText += ".type ";
+      mText += ".type";
     }
     else if (expr->isPrimitive(PRIM_NEW))
     {
