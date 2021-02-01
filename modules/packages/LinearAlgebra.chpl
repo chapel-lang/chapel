@@ -874,7 +874,7 @@ private inline proc hasNonStridedIndices(Adom : domain(2)) {
       This procedure depends on the :mod:`LAPACK` module, and will generate a
       compiler error if ``lapackImpl`` is ``off``.
 */
-proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
+proc inv(ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
   if isDistributed(A) then
     compilerError("inv does not support distributed vectors/matrices");
 
@@ -886,7 +886,7 @@ proc inv (ref A: [?Adom] ?eltType, overwrite=false) where usingLAPACK {
     halt("Matrix inverse only supports square matrices");
 
   const n = Adom.shape(0);
-  var ipiv : [1..n] c_int;
+  var ipiv : [0..<n] c_int;
 
   if (!overwrite) {
     var A_clone = A;
@@ -1245,19 +1245,19 @@ proc trace(A: [?D] ?eltType) {
 
 private proc _lu (in A: [?Adom] ?eltType) {
   const n = Adom.shape(0);
-  const LUDom = {1..n, 1..n};
+  const dim = 0..<n;
+  const LUDom = {dim, dim};
 
   // TODO: Reduce memory usage
   var L, U, LU: [LUDom] eltType;
 
-  var ipiv: [{1..n}] int = [i in {1..n}] i;
+  var ipiv: [dim] int = dim;
 
   var numSwap: int = 0;
 
-  for i in 1..n {
-
+  for i in dim {
     var max = A[i,i], swaprow = i;
-    for row in (i+1)..n {
+    for row in (i+1)..<n {
       if (abs(A[row,i]) > abs(max)) {
         max = A[row,i];
         swaprow = row;
@@ -1267,28 +1267,28 @@ private proc _lu (in A: [?Adom] ?eltType) {
       A[i,..] <=> A[swaprow,..];
       L[i,..] <=> L[swaprow,..];
       ipiv[i] <=> ipiv[swaprow];
-      numSwap+=1;
+      numSwap += 1;
     }
 
-    forall k in i..n {
-      var sum = + reduce (L[i,..] * U[..,k]);
+    forall k in i..<n {
+      const sum = + reduce (L[i,..] * U[..,k]);
       U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
-    forall k in (i+1)..n {
-      var sum = + reduce (L[k,..] * U[..,i]);
+    forall k in (i+1)..<n {
+      const sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   }
 
   LU = L + U;
-  forall i in 1..n {
+  forall i in dim {
     LU(i,i) = U(i,i);
   }
 
-  return (LU,ipiv,numSwap);
+  return (LU, ipiv, numSwap);
 }
 
 /*
@@ -1317,28 +1317,29 @@ proc lu (A: [?Adom] ?eltType) {
     permutation array `ipiv`.*/
 private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(0);
+  const dim = 0..<n;
   var B: [Adom] eltType;
 
   if Adom.rank == 1 {
     if transpose {
-      forall (i,pi) in zip(1..n, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) {
         B[i] = A[pi];
       }
     }
     else {
-      forall (i,pi) in zip(1..n, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) {
         B[pi] = A[i];
       }
     }
   }
   else if Adom.rank == 2 {
     if transpose {
-      forall (i,pi) in zip(1..n, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) {
         B[i, ..] = A[pi, ..];
       }
     }
     else {
-      forall (i,pi) in zip(1..n, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) {
         B[pi, ..] = A[i, ..];
       }
     }
@@ -1459,16 +1460,17 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
     within this procedure.
 */
 proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
-                  unit_diag = true) {
+                  unit_diag = true)
+{
   const n = Ldom.shape(0);
   var y = b;
 
-  for i in 1..n {
+  for i in 0..<n {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
 
-    if (i < n) {
-      forall j in (i+1)..n {
+    if (i < n - 1) {
+      forall j in (i+1)..<n {
         y(j) -= L(j,i) * sol;
       }
     }
@@ -1484,12 +1486,12 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const n = Udom.shape(0);
   var y = b;
 
-  for i in 1..n by -1 {
+  for i in 0..<n by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
 
-    if (i > 1) {
-      forall j in 1..(i-1) by -1 {
+    if (i > 0) {
+      forall j in 0..<i by -1 { // TODO not sure about this one..
         y(j) -= U(j,i) * sol;
       }
     }
@@ -1787,7 +1789,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   proc convertToCplx(wr: [] t, wi: [] t) {
     const n = wi.size;
-    var eigVals: [1..n] complex(numBits(t)*2);
+    var eigVals: [0..<n] complex(numBits(t)*2);
     forall (rv, re, im) in zip(eigVals, wr, wi) {
       rv = (re, im): complex(numBits(t)*2);
     }
@@ -1796,10 +1798,11 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   proc flattenCplxEigenVecs(wi: [] t, vec: [] t) {
     const n = wi.size;
-    var cplx: [1..n, 1..n] complex(numBits(t)*2);
+    const dim = 0..<n;
+    var cplx: [dim, dim] complex(numBits(t)*2);
 
     var skipNext = false;
-    for j in 1..n {
+    for j in dim {
       if skipNext {
         skipNext = false;
         continue;
@@ -1823,15 +1826,17 @@ proc eig(A: [] ?t, param left = false, param right = false)
   }
 
   const n = A.domain.dim(0).size;
+  const dim = 0..<n;
+  const dom = {0..<n, 0..<n};
   if !isSquare(A) then
     halt("Matrix passed to eigvals must be square");
   var copy = A;
-  var wr: [1..n] t;
-  var wi: if t == complex then nothing else [1..n] t;
-  var eigVals: if t == complex then [1..n] t else [1..n] complex(numBits(t)*2);
+  var wr: [dim] t;
+  var wi: if t == complex then nothing else [dim] t;
+  var eigVals: if t == complex then [dim] t else [dim] complex(numBits(t)*2);
 
   if !left && !right {
-    var vl, vr: [1..1, 1..n] t;
+    var vl, vr: [0..0, dim] t;
     if t == complex {
       LAPACK.geev(lapack_memory_order.row_major, 'N', 'N', copy, wr, vl, vr);
       eigVals = wr;
@@ -1841,9 +1846,9 @@ proc eig(A: [] ?t, param left = false, param right = false)
     }
     return eigVals;
   } else if left && !right {
-    var vl: [1..n, 1..n] t;
-    var vr: [1..1, 1..n] t;
-    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    var vl: [dom] t;
+    var vr: [0..0, dim] t;
+    var vlcplx: if t == complex then [dom] t else [dom] complex(numBits(t)*2);
     if t == complex {
       LAPACK.geev(lapack_memory_order.row_major, 'V', 'N', copy, wr, vl, vr);
       eigVals = wr;
@@ -1855,9 +1860,9 @@ proc eig(A: [] ?t, param left = false, param right = false)
     }
     return (eigVals, vlcplx);
   } else if right && !left {
-    var vl: [1..1, 1..n] t;
-    var vr: [1..n, 1..n] t;
-    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    var vl: [0..0, dim] t;
+    var vr: [dom] t;
+    var vrcplx: if t == complex then [dom] t else [dom] complex(numBits(t)*2);
     if t == complex {
       LAPACK.geev(lapack_memory_order.row_major, 'N', 'V', copy, wr, vl, vr);
       eigVals = wr;
@@ -1870,10 +1875,10 @@ proc eig(A: [] ?t, param left = false, param right = false)
     return (eigVals, vrcplx);
   } else {
     // left && right
-    var vl: [1..n, 1..n] t;
-    var vr: [1..n, 1..n] t;
-    var vlcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
-    var vrcplx: if t == complex then [1..n, 1..n] t else [1..n, 1..n] complex(numBits(t)*2);
+    var vl: [dom] t;
+    var vr: [dom] t;
+    var vlcplx: if t == complex then [dom] t else [dom] complex(numBits(t)*2);
+    var vrcplx: if t == complex then [dom] t else [dom] complex(numBits(t)*2);
     if t == complex {
       LAPACK.geev(lapack_memory_order.row_major, 'V', 'V', copy, wr, vl, vr);
       eigVals = wr;
@@ -1950,15 +1955,15 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [1..min((...A.shape))] realType;
+  var s: [0..<min((...A.shape))] realType;
   // Unitary matrix, U
-  var u: [1..m, 1..m] t;
+  var u: [0..<m, 0..<m] t;
   // Unitary matrix V^T (or V^H)
-  var vt: [1..n, 1..n] t;
+  var vt: [0..<n, 0..<n] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
-  var superb: [1..min((...A.shape))-1] realType;
+  var superb: [0..#min((...A.shape))] realType;
 
   // TODO: Support option for gesdd (trading memory usage for speed)
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
@@ -1970,7 +1975,6 @@ proc svd(A: [?Adom] ?t) throws
     var msg = 'SVD received an illegal argument in LAPACK.gesvd() argument position: ' + info:string;
     throw new owned LinearAlgebraError(msg);
   }
-
 
   return (u, s, vt);
 }
@@ -2319,11 +2323,11 @@ module Sparse {
     return A;
   }
 
-  // TODO: Update to 0-based indices
   /* Return a CSR domain constructed from internal representation */
   proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
     where indDom.rank == 1 && nnzDom.rank == 1 {
     const (M, N) = shape;
+    // TODO: Update to 0-based indices
     const D = {1..M, 1..N};
     var ADom: sparse subdomain(D) dmapped CS(sortedIndices=false);
 
@@ -2444,10 +2448,12 @@ module Sparse {
       https://link.springer.com/article/10.1007/BF02070824
 
   */
-  private proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
+  private proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType)
+    where isCSArr(A) && isCSArr(B)
+  {
     type idxType = ADom.idxType;
 
-    // TODO: Update to support any 
+    // TODO: Update to 0-based indices here and in helper functions
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
