@@ -108,7 +108,8 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
 static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed);
 static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block);
 static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex);
-static void removeAggregationFromBlock(BlockStmt *block);
+static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent);
+static void removeAggregationFromRecursiveForallHelp(BlockStmt *block);
 static void autoAggregation(ForallStmt *forall);
 
 void doPreNormalizeArrayOptimizations() {
@@ -230,7 +231,7 @@ void transformConditionalAggregation(CondStmt *cond) {
 // variables, and aggregators are non-ref (task-private)
 void removeAggregationFromRecursiveForall(ForallStmt *forall) {
   LOG_ALA(0, "Reverting aggregation: forall leader is recursive", forall);
-  removeAggregationFromBlock(forall->loopBody());
+  removeAggregationFromRecursiveForallHelp(forall->loopBody());
 }
 
 // called after unordered forall optimization to remove aggregation code (by
@@ -1722,11 +1723,15 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   
   if (replacement == NULL) {
     aggMarkerSE->symbol()->defPoint->remove();
+
+    FnSymbol *parentFn = toFnSymbol(call->parentSymbol);
+    INT_ASSERT(parentFn);
+
     if (srcAggregator != gNil) {
-      srcAggregator->defPoint->remove();
+      removeAggregatorFromFunction(srcAggregator, parentFn);
     }
     if (dstAggregator != gNil) {
-      dstAggregator->defPoint->remove();
+      removeAggregatorFromFunction(dstAggregator, parentFn);
     }
     replacement = assign;
   }
@@ -1938,6 +1943,19 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
   return NULL;
 }
 
+// called during resolution when we revert an aggregation
+static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
+  // remove the definition
+  aggregator->defPoint->remove();
+
+  // find and remove other SymExprs within the function
+  std::vector<SymExpr *> symExprsToRemove;
+  collectSymExprsFor(parent, aggregator, symExprsToRemove);
+  for_vector(SymExpr, se, symExprsToRemove) {
+    se->remove();
+  }
+}
+
 static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex) {
   INT_ASSERT(call->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN));
 
@@ -1945,19 +1963,13 @@ static void removeAggregatorFromMaybeAggAssign(CallExpr *call, int argIndex) {
   INT_ASSERT(aggregatorSE);
   Symbol *aggregator = aggregatorSE->symbol();
   if (aggregator != gNil) {
-    // remove the definition
-    aggregator->defPoint->remove();
-
     // replace the SymExpr in call
     aggregatorSE->replace(new SymExpr(gNil));
 
-    // find and remove other SymExprs within the function
-    std::vector<SymExpr *> symExprsToRemove;
-    Symbol *parentSym = call->parentSymbol;
-    collectSymExprsFor(parentSym, aggregator, symExprsToRemove);
-    for_vector(SymExpr, se, symExprsToRemove) {
-      se->remove();
-    }
+    FnSymbol *parentFn = toFnSymbol(call->parentSymbol);
+    INT_ASSERT(parentFn);
+
+    removeAggregatorFromFunction(aggregator, parentFn);
   }
 }
 
@@ -2033,7 +2045,7 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
 }
 
 // the logic here is applicable for lowerForalls
-static void removeAggregationFromBlock(BlockStmt *block) {
+static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
   for_alist(stmt, block->body) {
     if (CondStmt *condStmt = toCondStmt(stmt)) {
       SymExpr *condExpr = toSymExpr(condStmt->condExpr);
@@ -2065,7 +2077,7 @@ static void removeAggregationFromBlock(BlockStmt *block) {
       }
     }
     else if (BlockStmt *blockStmt = toBlockStmt(stmt)) {
-      removeAggregationFromBlock(blockStmt);
+      removeAggregationFromRecursiveForallHelp(blockStmt);
     }
   }
 }
