@@ -16,31 +16,25 @@ var offsetArr: [offsetDom] int;
 ref arrRC1 = arr[1, ..];
 ref arrRC2 = arr[1, ..];
 
-// these all should be equal
-test(arr[1, ..], arr[1, ..]);
-test(arr[1, ..], arr[2, ..]);
-test(arr[.., 9], arr[.., 9]);
-test(arr[.., 8], arr[.., 9]);
+test(arr[1, ..], arr[1, ..]);  // true
+test(arr[1, ..], arr[2, ..]);  // false
+test(arr[.., 9], arr[.., 9]);  // true
+test(arr[.., 8], arr[.., 9]);  // false
 
-// even funky ones should be equal, because all we care is the distribution
-test(arr[1, ..], arr[.., 8]);
+test(arr[1, ..], arr[.., 8]);  // false
 
-// these all should be equal
-test(offsetArr[1, ..], offsetArr[1, ..]);
-test(offsetArr[1, ..], offsetArr[2, ..]);
-test(offsetArr[.., 9], offsetArr[.., 9]);
-test(offsetArr[.., 8], offsetArr[.., 9]);
+test(offsetArr[1, ..], offsetArr[1, ..]);  // true
+test(offsetArr[1, ..], offsetArr[2, ..]);  // false
+test(offsetArr[.., 9], offsetArr[.., 9]);  // true
+test(offsetArr[.., 8], offsetArr[.., 9]);  // false
 
-// even funky ones should be equal, because all we care is the distribution
-test(offsetArr[1, ..], offsetArr[.., 8]);
+test(offsetArr[1, ..], offsetArr[.., 8]);  // false
 
-// these all should be not equal
-test(offsetArr[1, ..], arr[1, ..]);
-test(offsetArr[1, ..], arr[2, ..]);
-test(offsetArr[.., 9], arr[.., 9]);
-test(offsetArr[.., 8], arr[.., 9]);
+test(offsetArr[1, ..], arr[1, ..]);   // false
+test(offsetArr[1, ..], arr[2, ..]);   // false
+test(offsetArr[.., 9], arr[.., 9]);   // false
+test(offsetArr[.., 8], arr[.., 9]);   // false
 
-// even funky ones should be equal, because all we care is the distribution
-test(offsetArr[1, ..], arr[.., 8]);
+test(offsetArr[1, ..], arr[.., 8]);  // false
 
 
