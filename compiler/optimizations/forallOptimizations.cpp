@@ -1686,9 +1686,8 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
 
   Expr *replacement = NULL;
 
-  if (lhsLocal || rhsLocal) {
-    INT_ASSERT(lhsLocal != rhsLocal);
-
+  // either side is local, but not both
+  if (lhsLocal != rhsLocal) {
     Symbol *aggregator = NULL;
 
     std::stringstream message;
