@@ -2032,6 +2032,7 @@ static void findAndUpdateMaybeAggAssign(CallExpr *call, bool confirmed) {
   }
 }
 
+// the logic here is applicable for lowerForalls
 static void removeAggregationFromBlock(BlockStmt *block) {
   for_alist(stmt, block->body) {
     if (CondStmt *condStmt = toCondStmt(stmt)) {

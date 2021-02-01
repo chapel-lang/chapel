@@ -46,7 +46,13 @@ module ChapelAutoAggregation {
 
   pragma "aggregator generator"
   proc chpl_dstAggregatorFor(dom) where isDomain(dom) {
-    return new DstAggregator(dom.eltType); // TODO: this should never be called?
+    // this is only called if the user has:
+    // 
+    // forall i in myDomain { i = foo(); }
+    //
+    // We want that code to fail with proper error message, so we have this
+    // function but return nil from it.
+    return nil;
   }
 
   pragma "aggregator generator"
