@@ -163,7 +163,7 @@ arrays) will work with any other Chapel library that works with arrays.
 **Domain offsets**
 
 All functions that return arrays will inherit their domains from the input
-array if possible.  Otherwise they will return arrays with 1-based indices.
+array if possible.  Otherwise they will return arrays with 0-based indices.
 
 **Row vs Column vectors**
 
@@ -953,15 +953,15 @@ proc cross(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
 
   var C = Vector(Adom, eltType);
 
-  // Reindex to ensure 1-based indices
-  const A1Dom = {1..Adom.size};
+  // Reindex to ensure 0-based indices
+  const A1Dom = {0..<Adom.size};
   ref A1 = A.reindex(A1Dom),
       B1 = B.reindex(A1Dom),
       C1 = C.reindex(A1Dom);
 
-  C1[1] = A1[2]*B1[3] - A1[3]*B1[2];
-  C1[2] = A1[3]*B1[1] - A1[1]*B1[3];
-  C1[3] = A1[1]*B1[2] - A1[2]*B1[1];
+  C1[0] = A1[1]*B1[2] - A1[2]*B1[1];
+  C1[1] = A1[2]*B1[0] - A1[0]*B1[2];
+  C1[2] = A1[0]*B1[1] - A1[1]*B1[0];
 
   return C;
 }
@@ -2038,7 +2038,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   const A1Dom = {0..<rowA, 0..<colA},
         B1Dom = {0..<rowB, 0..<colB};
 
-  // Reindex to ensure 1-based indices
+  // Reindex to ensure 0-based indices
   ref A1 = A.reindex(A1Dom),
       B1 = B.reindex(B1Dom);
 
@@ -2202,7 +2202,7 @@ module Sparse {
   private use LinearAlgebra;
 
   /* Return an empty CSR domain over parent domain:
-     ``{1..rows, 1..rows}``
+     ``{0..<rows, 0..<rows}``
    */
   proc CSRDomain(rows) where isIntegral(rows) {
     if rows <= 0 then halt("Matrix dimensions must be > 0");
@@ -2210,7 +2210,7 @@ module Sparse {
   }
 
 
-  /* Return an empty CSR domain  over parent domain: ``{1..rows, 1..cols}``*/
+  /* Return an empty CSR domain  over parent domain: ``{0..<rows, 0..<cols}``*/
   proc CSRDomain(rows, cols) where isIntegral(rows) && isIntegral(cols) {
     if rows <= 0 || cols <= 0 then halt("Matrix dimensions must be > 0");
     return CSRDomain(0..<rows, 0..<cols);
@@ -2319,6 +2319,7 @@ module Sparse {
     return A;
   }
 
+  // TODO: Update to 0-based indices
   /* Return a CSR domain constructed from internal representation */
   proc CSRDomain(shape: 2*int, indices: [?nnzDom], indptr: [?indDom])
     where indDom.rank == 1 && nnzDom.rank == 1 {
@@ -2446,25 +2447,22 @@ module Sparse {
   private proc _csrmatmatMult(A: [?ADom] ?eltType, B: [?BDom] eltType) where isCSArr(A) && isCSArr(B) {
     type idxType = ADom.idxType;
 
+    // TODO: Update to support any 
     const (M, K1) = A.shape,
           (K2, N) = B.shape;
 
     if K1 != K2 then
       halt("Mismatched shape in sparse matrix-matrix multiplication");
 
-    //const D = {1..M, 1..N};
-    //var C = CSRMatrix(D, eltType);
-    //if A.size == 0 || B.size == 0 {
-    //  return C;
-    //}
+    // TODO: Return empty M x N sparse array if A or B size == 0
 
     /* Note on compressed sparse (CS) internals:
        - startIdx.domain (indPtr) starts on 0
        - idx.domain (ind) starts on 1
-       - data.domain starts on 1 */
+       - data.domain starts on 1
+     */
 
     // major axis
-    //var indPtr: [ADom.dim(0).low..(ADom.dim(0).high+1)] idxType;
     var indPtr: [1..M+1] idxType;
 
     pass1(A, B, indPtr);

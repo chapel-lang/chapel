@@ -27,8 +27,6 @@ use IO;
   var Dom0: sparse subdomain(parentDom0) dmapped CS(sortedIndices=false),
       IDom0: sparse subdomain (parentDom0) dmapped CS(sortedIndices=false);
 
-
-
   // Identity sparse domain
   IDom += [(1,1), (2,2), (3,3)];
   tDom += [(1,1), (2,1), (3,1), (3,4), (3,5)];
