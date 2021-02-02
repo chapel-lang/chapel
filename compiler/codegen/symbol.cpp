@@ -2154,10 +2154,17 @@ void FnSymbol::codegenPrototype() {
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
     if (hasFlag(FLAG_EXPORT))
       linkage = llvm::Function::ExternalLinkage;
+ //   if (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN))
 
+    //  linkage = llvm::Function::WeakAnyLinkage;
     // No other function with the same name exists.
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
+
+    if (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN)) {
+      func->setConvergent();
+      func->setCallingConv(llvm::CallingConv::PTX_Kernel);
+    }
 
     func->setDSOLocal(true);
 
@@ -2170,6 +2177,7 @@ void FnSymbol::codegenPrototype() {
       ai->setName(argNames[argID]);
       argID++;
     }
+
 
 #endif
   }

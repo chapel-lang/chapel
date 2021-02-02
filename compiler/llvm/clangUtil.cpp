@@ -1551,7 +1551,7 @@ void setupClang(GenInfo* info, std::string mainFile)
                                  //job->getOutputFilenames());
   */
 
-  if ( gCodegenGPU == false && localeUsesGPU() == true ) {
+  if ( gCodegenGPU == false && localeUsesGPU() == true && clangInfo->parseOnly == false) {
     bool isGPUBinaryFlag = false;
 
     for ( auto a : job->getArguments() ) {
