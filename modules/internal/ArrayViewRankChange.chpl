@@ -429,7 +429,7 @@ module ArrayViewRankChange {
     }
 
     override proc dsiSupportsAutoLocalAccess() param {
-      return true;
+      return downDomInst!.dsiSupportsAutoLocalAccess();
     }
 
  } // end of class ArrayViewRankChangeDom
