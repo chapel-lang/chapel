@@ -50,7 +50,7 @@ proc create_translate(D: domain(1)) {
   D.translate(1);
 }
 
-use Memory;
+use Memory.Diagnostics;
 proc main() {
   writeln("Calling create_literal():");
   var m1 = memoryUsed();
