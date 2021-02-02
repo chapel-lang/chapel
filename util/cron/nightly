@@ -211,7 +211,7 @@ if ($printusage == 1) {
     print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
-    print "\t-llvm                          : run tests using --llvm\n";
+    print "\t-llvm                          : run tests using llvm backend\n";
     print "\t-mason                         : build mason before running tests\n";
     print "\t-memleaks <log>                : run tests with --memLeaks\n";
     print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
@@ -696,9 +696,6 @@ if ($nolocal == 1) {
 }
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
-}
-if ($llvm == 1) {
-    $testflags = "$testflags -compopts --llvm";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";
