@@ -7,7 +7,6 @@ const vertex_domain = {1..N_VERTICES} ;
 
 record vertex_struct {
 
-  // constructor
   proc init(nd: domain(1)) {
     this.nd = nd;
     vlock$ = true;
