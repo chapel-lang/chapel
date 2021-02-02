@@ -19,14 +19,17 @@ or
 
 .. data:: var a = __primitive("get compiler variable", "CHPL_HOME")
 
-.. data:: var b = if true then 1 else 2
+.. data:: var b = __primitive("get compiler variable", "chpl_lookupFilename", "CHPL_HOME")
 
-.. data:: var c = for i in 1..10 do i
+.. data:: var c = if true then 1 else 2
 
-.. data:: var d = forall i in 1..10 do i
+.. data:: var d = for i in 1..10 do i
 
-.. data:: var e = [i in 1..10] i
+.. data:: var e = forall i in 1..10 do i
 
-.. data:: var f = try! x
+.. data:: var f = [i in 1..10] i
 
-.. data:: var g = try x
+.. data:: var g = try! x
+
+.. data:: var h = try x
+

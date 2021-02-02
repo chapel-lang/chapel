@@ -1336,7 +1336,14 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += expr->primitive->name;
       mText += "\", \"";
       appendExpr(expr->get(1), printingType);
-      mText += "\")";
+      mText += "\"";
+      for (int index = 2; index <= expr->numActuals(); index++)
+        {
+          mText += ", \"";
+          appendExpr(expr->get(index), printingType);
+          mText += "\"";
+        }
+      mText += ")";
     }
     else
     {
