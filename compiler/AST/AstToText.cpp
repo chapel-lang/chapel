@@ -1334,14 +1334,20 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     {
       mText += "__primitive(\"";
       mText += expr->primitive->name;
-      mText += "\", \"";
-      appendExpr(expr->get(1), printingType);
       mText += "\"";
-      for (int index = 2; index <= expr->numActuals(); index++)
+      for (int index = 1; index <= expr->numActuals(); index++)
         {
-          mText += ", \"";
-          appendExpr(expr->get(index), printingType);
-          mText += "\"";
+          mText += ", ";
+          if (!isSymExpr(expr->get(index)))
+          {
+            appendExpr(expr->get(index), printingType);
+          }
+          else
+          {
+            mText += "\"";
+            appendExpr(expr->get(index), printingType);
+            mText += "\"";
+          }
         }
       mText += ")";
     }
@@ -1452,9 +1458,9 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
 void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 {
   std::string start,end;
-  if(expr->forall)
+  if (expr->forall)
   {
-    if(expr->maybeArrayType)
+    if (expr->maybeArrayType)
     {
       start = "[";
       end = "]";
@@ -1474,13 +1480,13 @@ void AstToText::appendExpr(LoopExpr* expr, bool printingType)
   }
   mText += start;
 
-  if(expr->indices)
+  if (expr->indices)
   {
     appendExpr(expr->indices, printingType);
     mText += " in ";
   }
 
-  if(expr->iteratorExpr)
+  if (expr->iteratorExpr)
   {
     appendExpr(expr->iteratorExpr, printingType);
     mText += end;
@@ -1493,14 +1499,14 @@ void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 
     else
     {
-      mText += "AppendExpr.Loop01";
+      mText += " AppendExpr.Loop01";
     }
 
   }
 
   else
   {
-    mText += "AppendExpr.Loop02";
+    mText += " AppendExpr.Loop02";
   }
 }
 
