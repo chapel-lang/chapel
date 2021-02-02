@@ -992,8 +992,18 @@ main ()
 	    default:
 	      modelstr = "zen2";
 	      break;
-	  }
+	    }
+	  break;
+	case 25:		/* Zen 3 */
+	  cpu_64bit = 1, cpu_avx = 1;
+	  modelstr = "zen3";
+	  break;
 	}
+    }
+  else if (strcmp (vendor_string, "HygonGenuine") == 0)
+    {
+      cpu_64bit = 1, cpu_avx = 1;
+      modelstr = "zen";
     }
   else if (strcmp (vendor_string, "CyrixInstead") == 0)
     {

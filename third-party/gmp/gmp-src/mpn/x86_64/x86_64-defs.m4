@@ -93,8 +93,26 @@ define(`PROLOGUE_cpu',
 m4_assert_numargs(1)
 `	GLOBL	$1
 	TYPE($1,`function')
+	COFF_TYPE($1)
 $1:
 ')
+
+
+dnl  Usage: COFF_TYPE(GSYM_PREFIX`'foo)
+dnl
+dnl  Emit COFF style ".def ... .endef" type information for a function, when
+dnl  supported.  The argument should include any GSYM_PREFIX.
+dnl
+dnl  See autoconf macro GMP_ASM_COFF_TYPE for HAVE_COFF_TYPE.
+
+define(COFF_TYPE,
+m4_assert_numargs(1)
+m4_assert_defined(`HAVE_COFF_TYPE')
+`ifelse(HAVE_COFF_TYPE,yes,
+	`.def	$1
+	.scl	2
+	.type	32
+	.endef')')
 
 
 dnl  Usage: ASSERT([cond][,instructions])

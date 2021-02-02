@@ -6,7 +6,7 @@
    SAFE TO REACH THEM THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT THEY WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 1998-2010, 2012, 2013, 2018 Free Software Foundation, Inc.
+Copyright 1998-2010, 2012, 2013, 2018, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -553,9 +553,12 @@ mpn_fft_mul_modF_K (mp_ptr *ap, mp_ptr *bp, mp_size_t n, mp_size_t K)
 	    cc += mpn_add_n (tpn, tpn, a, n) + a[n];
 	  if (cc != 0)
 	    {
-	      /* FIXME: use MPN_INCR_U here, since carry is not expected.  */
 	      cc = mpn_add_1 (tp, tp, n2, cc);
-	      ASSERT (cc == 0);
+	      /* If mpn_add_1 give a carry (cc != 0),
+		 the result (tp) is at most GMP_NUMB_MAX - 1,
+		 so the following addition can't overflow.
+	      */
+	      tp[0] += cc;
 	    }
 	  a[n] = mpn_sub_n (a, tp, tpn, n) && mpn_add_1 (a, a, n, CNST_LIMB(1));
 	}

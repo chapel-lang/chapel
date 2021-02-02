@@ -722,7 +722,7 @@ case $host in
 	gcc_cflags_neon="-mfpu=neon"
 	gcc_cflags_tune="-mtune=cortex-a15 -mtune=cortex-a9"
 	;;
-      armcortexa53 | armcortexa53neon)
+      armcortexa53 | armcortexa53neon | armcortexa55 | armcortexa55neon)
         abilist="64 32"
 	path="arm/neon arm/v7a/cora9 arm/v6t2 arm/v6 arm/v5 arm"
 	path_64="arm64/cora53 arm64"
@@ -1889,7 +1889,7 @@ case $host in
 	x86_have_mulx=yes
 	path_64="x86_64/zen x86_64"
 	;;
-      zen2 | zen2noavx)
+      zen2 | zen2noavx | zen3 | zen3noavx)
 	gcc_cflags_cpu="-mtune=znver2 -mtune=znver1 -mtune=amdfam10 -mtune=k8"
 	gcc_cflags_arch="-march=znver2 -march=znver1 -march=amdfam10 -march=k8"
 	path="x86/k7/mmx x86/k7 x86/mmx x86"
@@ -2011,7 +2011,7 @@ case $host in
 	    # Sun cc.
 	    cc_64_cflags="-xO3 -m64"
 	    ;;
-	  *-*-mingw* | *-*-cygwin)
+	  *-*-mingw* | *-*-msys | *-*-cygwin)
 	    limb_64=longlong
 	    CALLING_CONVENTIONS_OBJS_64=""
 	    AC_DEFINE(HOST_DOS64,1,[Define to 1 for Windos/64])
@@ -2037,7 +2037,7 @@ esac
 # x86s, but allow any CPU here so as to catch "none" too.
 #
 case $host in
-  *-*-mingw*)
+  *-*-mingw* | *-*-msys)
     gcc_cflags_optlist="$gcc_cflags_optlist nocygwin"
     gcc_cflags_nocygwin="-mno-cygwin"
     ;;
@@ -2291,11 +2291,12 @@ case $host in
 	fat_path="x86 x86/fat x86/i486
 		  x86/k6 x86/k6/mmx x86/k6/k62mmx
 		  x86/k7 x86/k7/mmx
-		  x86/k8 x86/k10 x86/bt1
+		  x86/k8 x86/k10 x86/bt1 x86/bd1
 		  x86/pentium x86/pentium/mmx
 		  x86/p6 x86/p6/mmx x86/p6/p3mmx x86/p6/sse2
 		  x86/pentium4 x86/pentium4/mmx x86/pentium4/sse2
 		  x86/core2 x86/coreinhm x86/coreisbr
+		  x86/goldmont x86/silvermont
 		  x86/atom x86/atom/mmx x86/atom/sse2 x86/nano"
       fi
 
@@ -2664,7 +2665,7 @@ AC_LIBTOOL_WIN32_DLL
 
 AC_SUBST(LIBGMP_DLL,0)
 case $host in
-  *-*-cygwin* | *-*-mingw* | *-*-pw32* | *-*-os2*)
+  *-*-cygwin* | *-*-mingw* | *-*-msys | *-*-pw32* | *-*-os2*)
     # By default, build only static.
     if test -z "$enable_shared"; then
       enable_shared=no
@@ -3699,6 +3700,14 @@ if test "$gmp_asm_syntax_testing" != no; then
       case $ABI in
         32)
 	  GMP_INCLUDE_MPN(arm/arm-defs.m4) ;;
+        64)
+	  case $host in
+	    *-*-darwin*)
+	      GMP_INCLUDE_MPN(arm64/darwin.m4) ;;
+	    *)
+	      GMP_INCLUDE_MPN(arm64/arm64-defs.m4) ;;
+          esac
+	  ;;
       esac
       ;;
     hppa*-*-*)
@@ -3774,11 +3783,11 @@ yes
       if test "$x86_have_mulx" = yes; then
         GMP_ASM_X86_MULX
       fi
+      GMP_ASM_COFF_TYPE
       case $ABI in
         32)
           GMP_INCLUDE_MPN(x86/x86-defs.m4)
           AC_DEFINE(HAVE_HOST_CPU_FAMILY_x86)
-          GMP_ASM_COFF_TYPE
           GMP_ASM_X86_GOT_UNDERSCORE
           GMP_ASM_X86_SHLDL_CL
 	  case $enable_profiling in
@@ -3795,7 +3804,7 @@ yes
 	  case $host in
 	    *-*-darwin*)
 	      GMP_INCLUDE_MPN(x86_64/darwin.m4) ;;
-	    *-*-mingw* | *-*-cygwin)
+	    *-*-mingw* | *-*-msys | *-*-cygwin)
 	      GMP_INCLUDE_MPN(x86_64/dos64.m4) ;;
 	    *-openbsd*)
 	      GMP_DEFINE_RAW(["define(<OPENBSD>,1)"]) ;;
