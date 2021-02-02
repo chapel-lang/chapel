@@ -26,14 +26,10 @@ about your environment for using Chapel:
 
   * You have access to gmake or a GNU-compatible version of make.
 
-  * You have access to standard C and C++ compilers. We test our code
+  * You have access to standard C and C++11 compilers. We test our code
     using a range of compilers on a nightly basis; these include
     relatively recent versions of gcc/g++, clang, and compilers from
-    Cray and Intel.
-
-    * Note that you will need a C++11 compiler to build LLVM or regular
-      expression support (i.e.  CHPL_LLVM=bundled or CHPL_REGEXP=re2). If
-      GCC is used, we recommend GCC version 5 or newer for this purpose.
+    Cray and Intel. If using GCC, we recommend GCC version 5 or newer.
 
   * Building GMP requires an M4 macro processor.
 
