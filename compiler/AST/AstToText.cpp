@@ -1330,6 +1330,14 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "nonnilable ";
       appendExpr(expr->get(1), printingType);
     }
+    else if (!expr->isPrimitive(PRIM_UNKNOWN))
+    {
+      mText += "__primitive(\"";
+      mText += expr->primitive->name;
+      mText += "\", \"";
+      appendExpr(expr->get(1), printingType);
+      mText += "\")";
+    }
     else
     {
       // NOAKES 2015/02/05  Debugging support.
@@ -1436,105 +1444,56 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
 
 void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 {
-  if (expr->forall)
+  std::string start,end;
+  if(expr->forall)
   {
-    if (expr->maybeArrayType)
+    if(expr->maybeArrayType)
     {
-      mText += '[';
-      if(expr->indices)
-      {
-        appendExpr(expr->indices, printingType);
-        mText += " in ";
-      }
-
-      if(expr->iteratorExpr)
-      {
-        appendExpr(expr->iteratorExpr, printingType);
-        mText += ']';
-
-        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
-        {
-          mText += ' ';
-          appendExpr(bs->body.get(1), printingType);
-        }
-
-        else
-        {
-          mText += "AppendExpr.Loop01";
-        }
-
-      }
-
-      else
-      {
-        mText += "AppendExpr.Loop02";
-      }
+      start = "[";
+      end = "]";
     }
 
     else
     {
-      mText += "forall ";
-      if(expr->indices)
-      {
-        appendExpr(expr->indices, printingType);
-        mText += " in ";
-      }
-
-      if(expr->iteratorExpr)
-      {
-        appendExpr(expr->iteratorExpr, printingType);
-        mText += " do";
-
-        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
-        {
-          mText += ' ';
-          appendExpr(bs->body.get(1), printingType);
-        }
-
-        else
-        {
-          mText += "AppendExpr.Loop01";
-        }
-
-      }
-
-      else
-      {
-        mText += "AppendExpr.Loop02";
-      }
+      start = "forall ";
+      end = " do";
     }
   }
 
   else
   {
-    mText += "for ";
-    if(expr->indices)
+    start = "for ";
+    end = " do";
+  }
+  mText += start;
+
+  if(expr->indices)
+  {
+    appendExpr(expr->indices, printingType);
+    mText += " in ";
+  }
+
+  if(expr->iteratorExpr)
+  {
+    appendExpr(expr->iteratorExpr, printingType);
+    mText += end;
+
+    if (BlockStmt* bs = toBlockStmt(expr->loopBody))
     {
-      appendExpr(expr->indices, printingType);
-      mText += " in ";
-    }
-
-    if(expr->iteratorExpr)
-    {
-      appendExpr(expr->iteratorExpr, printingType);
-      mText += " do";
-
-      if (BlockStmt* bs = toBlockStmt(expr->loopBody))
-      {
-        mText += ' ';
-        appendExpr(bs->body.get(1), printingType);
-      }
-
-      else
-      {
-        mText += "AppendExpr.Loop01";
-      }
+      mText += ' ';
+      appendExpr(bs->body.get(1), printingType);
     }
 
     else
     {
-      mText += "AppendExpr.Loop02";
+      mText += "AppendExpr.Loop01";
     }
+
+  }
+
+  else
+  {
+    mText += "AppendExpr.Loop02";
   }
 }
 

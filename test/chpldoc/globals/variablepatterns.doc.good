@@ -27,3 +27,6 @@ or
 
 .. data:: var e = [i in 1..10] i
 
+.. data:: var f = try! x
+
+.. data:: var g = try x
