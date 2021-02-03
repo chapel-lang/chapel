@@ -323,7 +323,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
   {
     CallExpr* move = callExprs[i];
 
-    if (move->isPrimitive(PRIM_MOVE) == true)
+    if (move->isPrimitive(PRIM_MOVE) ||
+        move->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhs = toSymExpr(move->get(1));
       SymExpr* rhs = toSymExpr(move->get(2));

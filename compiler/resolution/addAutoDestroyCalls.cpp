@@ -981,7 +981,8 @@ SymExpr* findSourceOfYield(CallExpr* yield) {
   // autoCopy call.
   while (expr != NULL && needle != NULL) {
     if (CallExpr* move = toCallExpr(expr)) {
-      if (move->isPrimitive(PRIM_MOVE) == true) {
+      if (move->isPrimitive(PRIM_MOVE) ||
+          move->isPrimitive(PRIM_ASSIGN)) {
         SymExpr*   lhs    = toSymExpr(move->get(1));
         VarSymbol* lhsVar = toVarSymbol(lhs->symbol());
 
