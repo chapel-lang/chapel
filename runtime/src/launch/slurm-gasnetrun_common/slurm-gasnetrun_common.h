@@ -311,7 +311,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   command = chpl_mem_allocMany(size, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   
   sprintf(command, "%s", baseCommand);
-  free(baseCommand);
+  chpl_mem_free(baseCommand);
   if (strlen(command)+1 > size) {
     chpl_internal_error("buffer overflow");
   }
@@ -336,7 +336,7 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales) {
   retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv, numLocales),
             argv[0]);
   chpl_launch_cleanup();
-  free(slurmFilename);
+  chpl_mem_free(slurmFilename);
   return retcode;
 }
 
