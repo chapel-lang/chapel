@@ -170,18 +170,17 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 #else
   mypid = 0;
 #endif
-  sysFilename=(char *)malloc(size(char)*(strlen(baseSysFilename) + 
-              snprintf(NULL, 0, "%d", (int)mypid +1)));
-  expectFilename=(char *)malloc(size(char)*(strlen(baseExpectFilename) + 
-              snprintf(NULL, 0, "%d", (int)mypid +1)));
-  pbsFilename=(char *)malloc(size(char)*(strlen(basePBSFilename) + 
-              snprintf(NULL, 0, "%d", (int)mypid +1)));
-  if(sysFilename==NULL || expectFilename==NULL || pbsFilename==NULL) {
-    free(sysFilename);
-    free(expectFilename);
-    free(pbsFilename);
-    chpl_internal_error("Memory allocation using malloc failed.");
-  }
+  sysFilename=(char *)chpl_mem_allocMany((strlen(baseSysFilename) + 
+                                      snprintf(NULL, 0, "%d", (int)mypid) + 1), 
+                      sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+  expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
+                                          snprintf(NULL, 0, "%d", (int)mypid) 
+                                          + 1), sizeof(char), 
+                        CHPL_RT_MD_UNKNOWN, -1, 0);
+  pbsFilename=(char *)chpl_mem_allocMany((strlen(basePBSFilename) + 
+                                        snprintf(NULL, 0, "%d", (int)mypid) + 
+                                        1), sizeof(char), CHPL_RT_MD_UNKNOWN, 
+                      -1, 0);
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);
   sprintf(pbsFilename, "%s%d", basePBSFilename, (int)mypid);
@@ -247,9 +246,9 @@ static void chpl_launch_cleanup(void) {
   sprintf(command, "rm %s", sysFilename);
   system(command);
 #endif
-  free(pbsFilename);
-  free(expectFilename);
-  free(sysFilename);
+  chpl_mem_free(pbsFilename);
+  chpl_mem_free(expectFilename);
+  chpl_mem_free(sysFilename);
 }
 
 

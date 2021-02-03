@@ -233,11 +233,10 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   } else {
     mypid = getpid();
   }
-  slurmFilename=(char *)malloc(sizeof(char)*(strlen(baseSBATCHFilename) + 
-                  snprintf(NULL, 0, "%d", (int)mypid) + 1));
-  if(slurmFilename==NULL) {
-    chpl_internal_error("Memory allocation using malloc failed.");
-  }
+  slurmFilename=(char *)chpl_mem_allocMany((strlen(baseSBATCHFilename) + 
+                                          snprintf(NULL, 0, "%d", (int)mypid)
+                                           + 1), sizeof(char), 
+                      CHPL_RT_MD_UNKNOWN, -1, 0);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {
@@ -273,11 +272,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
-    baseCommand=(char *)malloc(sizeof(char)*(strlen(slurmFilename) + 9));
-    if(baseCommand==NULL){
-      free(slurmFilename);
-      chpl_internal_error("Memory allocation using malloc failed.");
-    }
+    baseCommand=(char *)chpl_mem_allocMany((strlen(slurmFilename) + 9), 
+                      sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     sprintf(baseCommand, "sbatch %s\n", slurmFilename);
   } else {
     char iCom[2*FILENAME_MAX-10];
@@ -305,11 +301,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, " %s", argv[i]);
     }
-    baseCommand=(char *)malloc(sizeof(char)*(len + 10));  //len is size of iCom
-    if(baseCommand==NULL){
-      free(slurmFilename);
-      chpl_internal_error("Memory allocation using malloc failed.");
-    }
+    baseCommand=(char *)chpl_mem_allocMany(len + 10), sizeof(char), 
+                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     sprintf(baseCommand, "salloc %s", iCom);
   }
 
