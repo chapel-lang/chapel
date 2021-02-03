@@ -445,14 +445,14 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
               where isDenseMatrix(X) {
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
-    start = 1;
+    start = 0;
     end = D.shape(0) - k;
   }
   else { // lower diagonal
-    start = 1 - k;
+    start = -k;
     end = D.shape(0);
   }
-  forall row in {start..end} {
+  forall row in {start..<end} {
     X(row, row+k) = val;
   }
 }
@@ -1243,7 +1243,8 @@ proc trace(A: [?D] ?eltType) {
   return trace;
 }
 
-private proc _lu (in A: [?Adom] ?eltType) {
+/* LU helper function */
+private proc _lu(in A: [?Adom] ?eltType) {
   const n = Adom.shape(0);
   const dim = 0..<n;
   const LUDom = {dim, dim};
@@ -1302,7 +1303,7 @@ private proc _lu (in A: [?Adom] ?eltType) {
   `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
 */
-proc lu (A: [?Adom] ?eltType) {
+proc lu(A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for LU factorization");
 
@@ -1315,7 +1316,7 @@ proc lu (A: [?Adom] ?eltType) {
 
 /* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
-private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
+private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
   const n = Adom.shape(0);
   const dim = 0..<n;
   var B: [Adom] eltType;
@@ -1357,7 +1358,7 @@ private proc permute (ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
       determinant manually.
 */
 
-proc det (A: [?Adom] ?eltType) {
+proc det(A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
     halt("Wrong rank for computing determinant");
 
@@ -2848,11 +2849,11 @@ module Sparse {
 
       var start, end = 0;
       if (k >= 0) { // upper or main diagonal
-        start = 1;
+        start = 0;
         end = D.shape(0) - k;
       }
       else { // lower diagonal
-        start = 1 - k;
+        start = -k;
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
