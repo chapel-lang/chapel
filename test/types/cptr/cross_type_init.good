@@ -1,0 +1,1 @@
+cross_type_init.chpl:4: error: invalid initialization of 'c_ptr(uint(64))' from 'c_ptr(int(64))'
