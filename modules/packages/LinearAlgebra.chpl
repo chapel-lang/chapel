@@ -433,7 +433,7 @@ proc eye(Dom: domain(2), type eltType=real) {
 //
 
 
-/* Sets the value of a diagonal in a matrix. If the matrix is sparse,
+/* Sets the value of a diagonal in a matrix in-place. If the matrix is sparse,
     indices on the diagonal will be added to its domain
 
     ``k > 0``, represents an upper diagonal starting
@@ -442,7 +442,11 @@ proc eye(Dom: domain(2), type eltType=real) {
     from the ``-k``th row. ``k`` is 0-indexed.
 */
 proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-              where isDenseMatrix(X) {
+              where isDenseMatrix(X)
+{
+  // Switch indexing to 0-based if necessary
+  ref Xref = X.reindex(0..<D.shape(0), 0..<D.shape(1));
+
   var start, end = 0;
   if (k >= 0) { // upper or main diagonal
     start = 0;
@@ -452,8 +456,8 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
     start = -k;
     end = D.shape(0);
   }
-  forall row in {start..<end} {
-    X(row, row+k) = val;
+  forall row in start..<end {
+    Xref[row, row+k] = val;
   }
 }
 
@@ -2142,7 +2146,6 @@ private proc epsilon(type t: real(32)) : real {
 private proc epsilon(type t) param : real {
   return 0.0;
 }
-
 
 /* Linear Algebra Sparse Submodule
 
