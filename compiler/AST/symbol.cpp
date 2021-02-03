@@ -2170,6 +2170,37 @@ const char* toString(ArgSymbol* arg) {
 }
 
 const char* toString(VarSymbol* var) {
+
+  Immediate* imm = getSymbolImmediate(var);
+  if (imm) {
+    Type* t = var->getValType();
+    if (imm->const_kind == NUM_KIND_BOOL) {
+      return astr(imm->bool_value() ? "true" : "false");
+    } else if (imm->const_kind == CONST_KIND_STRING) {
+      std::string value;
+      value = "";
+      if (t == dtBytes)
+        value += "b";
+      value += '"';
+      value += imm->string_value();
+      value += '"';
+      return astr(value.c_str());
+    } else {
+      std::string value;
+      const size_t bufSize = 128;
+      char buf[bufSize];
+      snprint_imm(buf, bufSize, *imm);
+      value = buf;
+      // Add the type if it's not default
+      if (isNumericParamDefaultType(t) == false &&
+          t != dtUnknown && t != dtString && t != dtBytes) {
+        value += ": ";
+        value += toString(t);
+      }
+      return astr(value.c_str());
+    }
+  }
+
   // If it's a compiler temporary, find an assignment
   //  * from a user variable or field
   //  * to a user variable or field
