@@ -1496,7 +1496,7 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
     y(i) = sol;
 
     if (i > 0) {
-      forall j in 0..<i by -1 { // TODO not sure about this one..
+      forall j in 0..<i by -1 {
         y(j) -= U(j,i) * sol;
       }
     }
