@@ -229,7 +229,9 @@ module CPtr {
       lhs[i] = rhs[i];
     }
   }
-  proc =(ref lhs:c_ptr, ref rhs:c_array) where lhs.eltType == rhs.eltType {
+  proc =(ref lhs:c_ptr, ref rhs:c_array) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_array assignment");
     lhs = c_ptrTo(rhs[0]);
   }
 
@@ -239,10 +241,17 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc =(ref a:c_ptr, b:c_ptr) { __primitive("=", a, b); }
+  inline proc =(ref lhs:c_ptr, rhs:c_ptr) {
+    if lhs.eltType != rhs.eltType then
+      compilerError("element type mismatch in c_ptr assignment");
+    __primitive("=", lhs, rhs);
+  }
 
   pragma "no doc"
-  inline proc =(ref a: c_ptr, b: c_void_ptr) { __primitive("=", a, b); }
+  inline proc =(ref lhs:c_ptr, rhs:_nilType) {
+    __primitive("=", lhs, nil);
+  }
+
 
   pragma "no doc"
   inline proc _cast(type t:c_void_ptr, x:c_fn_ptr) {
