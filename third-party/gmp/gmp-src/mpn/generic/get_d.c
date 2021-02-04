@@ -226,7 +226,7 @@ mpn_get_d (mp_srcptr up, mp_size_t size, mp_size_t sign, long exp)
 	      x <<= GMP_NAIL_BITS;
 	      mhi |= x >> nbits >> 11;
 
-	      mlo = x << GMP_LIMB_BITS - nbits - 11;
+	      mlo = x << (GMP_LIMB_BITS - nbits - 11);
 	      nbits = nbits + 11 - GMP_NAIL_BITS;
 	    }
 	  else

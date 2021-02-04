@@ -110,7 +110,7 @@ check_PROGRAMS = reuse$(EXEEXT) t-addsub$(EXEEXT) t-cmp$(EXEEXT) \
 	t-cdiv_ui$(EXEEXT) t-gcd$(EXEEXT) t-gcd_ui$(EXEEXT) \
 	t-lcm$(EXEEXT) t-invert$(EXEEXT) dive$(EXEEXT) \
 	dive_ui$(EXEEXT) t-sqrtrem$(EXEEXT) convert$(EXEEXT) \
-	io$(EXEEXT) t-inp_str$(EXEEXT) logic$(EXEEXT) bit$(EXEEXT) \
+	io$(EXEEXT) t-inp_str$(EXEEXT) logic$(EXEEXT) t-bit$(EXEEXT) \
 	t-powm$(EXEEXT) t-powm_ui$(EXEEXT) t-pow$(EXEEXT) \
 	t-div_2exp$(EXEEXT) t-root$(EXEEXT) t-perfsqr$(EXEEXT) \
 	t-perfpow$(EXEEXT) t-jac$(EXEEXT) t-bin$(EXEEXT) \
@@ -136,20 +136,15 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-bit_SOURCES = bit.c
-bit_OBJECTS = bit.$(OBJEXT)
-bit_LDADD = $(LDADD)
-bit_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
-	$(top_builddir)/libgmp.la
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
 convert_SOURCES = convert.c
 convert_OBJECTS = convert.$(OBJEXT)
 convert_LDADD = $(LDADD)
 convert_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
 	$(top_builddir)/libgmp.la
+AM_V_lt = $(am__v_lt_@AM_V@)
+am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
+am__v_lt_0 = --silent
+am__v_lt_1 = 
 dive_SOURCES = dive.c
 dive_OBJECTS = dive.$(OBJEXT)
 dive_LDADD = $(LDADD)
@@ -189,6 +184,11 @@ t_bin_SOURCES = t-bin.c
 t_bin_OBJECTS = t-bin.$(OBJEXT)
 t_bin_LDADD = $(LDADD)
 t_bin_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
+	$(top_builddir)/libgmp.la
+t_bit_SOURCES = t-bit.c
+t_bit_OBJECTS = t-bit.$(OBJEXT)
+t_bit_LDADD = $(LDADD)
+t_bit_DEPENDENCIES = $(top_builddir)/tests/libtests.la \
 	$(top_builddir)/libgmp.la
 t_cdiv_ui_SOURCES = t-cdiv_ui.c
 t_cdiv_ui_OBJECTS = t-cdiv_ui.$(OBJEXT)
@@ -493,8 +493,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = bit.c convert.c dive.c dive_ui.c io.c logic.c reuse.c \
-	t-addsub.c t-aorsmul.c t-bin.c t-cdiv_ui.c t-cmp.c t-cmp_d.c \
+SOURCES = convert.c dive.c dive_ui.c io.c logic.c reuse.c t-addsub.c \
+	t-aorsmul.c t-bin.c t-bit.c t-cdiv_ui.c t-cmp.c t-cmp_d.c \
 	t-cmp_si.c t-cong.c t-cong_2exp.c t-div_2exp.c t-divis.c \
 	t-divis_2exp.c t-export.c t-fac_ui.c t-fdiv.c t-fdiv_ui.c \
 	t-fib_ui.c t-fits.c t-gcd.c t-gcd_ui.c t-get_d.c \
@@ -505,11 +505,11 @@ SOURCES = bit.c convert.c dive.c dive_ui.c io.c logic.c reuse.c \
 	t-powm.c t-powm_ui.c t-pprime_p.c t-primorial_ui.c t-remove.c \
 	t-root.c t-scan.c t-set_d.c t-set_f.c t-set_si.c t-set_str.c \
 	t-sizeinbase.c t-sqrtrem.c t-tdiv.c t-tdiv_ui.c
-DIST_SOURCES = bit.c convert.c dive.c dive_ui.c io.c logic.c reuse.c \
-	t-addsub.c t-aorsmul.c t-bin.c t-cdiv_ui.c t-cmp.c t-cmp_d.c \
-	t-cmp_si.c t-cong.c t-cong_2exp.c t-div_2exp.c t-divis.c \
-	t-divis_2exp.c t-export.c t-fac_ui.c t-fdiv.c t-fdiv_ui.c \
-	t-fib_ui.c t-fits.c t-gcd.c t-gcd_ui.c t-get_d.c \
+DIST_SOURCES = convert.c dive.c dive_ui.c io.c logic.c reuse.c \
+	t-addsub.c t-aorsmul.c t-bin.c t-bit.c t-cdiv_ui.c t-cmp.c \
+	t-cmp_d.c t-cmp_si.c t-cong.c t-cong_2exp.c t-div_2exp.c \
+	t-divis.c t-divis_2exp.c t-export.c t-fac_ui.c t-fdiv.c \
+	t-fdiv_ui.c t-fib_ui.c t-fits.c t-gcd.c t-gcd_ui.c t-get_d.c \
 	t-get_d_2exp.c t-get_si.c t-hamdist.c t-import.c t-inp_str.c \
 	t-invert.c t-io_raw.c t-jac.c t-lcm.c t-limbs.c t-lucm.c \
 	t-lucnum_ui.c t-mfac_uiui.c t-mul.c t-mul_i.c t-nextprime.c \
@@ -960,10 +960,6 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-bit$(EXEEXT): $(bit_OBJECTS) $(bit_DEPENDENCIES) $(EXTRA_bit_DEPENDENCIES) 
-	@rm -f bit$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(bit_OBJECTS) $(bit_LDADD) $(LIBS)
-
 convert$(EXEEXT): $(convert_OBJECTS) $(convert_DEPENDENCIES) $(EXTRA_convert_DEPENDENCIES) 
 	@rm -f convert$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(convert_OBJECTS) $(convert_LDADD) $(LIBS)
@@ -999,6 +995,10 @@ t-aorsmul$(EXEEXT): $(t_aorsmul_OBJECTS) $(t_aorsmul_DEPENDENCIES) $(EXTRA_t_aor
 t-bin$(EXEEXT): $(t_bin_OBJECTS) $(t_bin_DEPENDENCIES) $(EXTRA_t_bin_DEPENDENCIES) 
 	@rm -f t-bin$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(t_bin_OBJECTS) $(t_bin_LDADD) $(LIBS)
+
+t-bit$(EXEEXT): $(t_bit_OBJECTS) $(t_bit_DEPENDENCIES) $(EXTRA_t_bit_DEPENDENCIES) 
+	@rm -f t-bit$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(t_bit_OBJECTS) $(t_bit_LDADD) $(LIBS)
 
 t-cdiv_ui$(EXEEXT): $(t_cdiv_ui_OBJECTS) $(t_cdiv_ui_DEPENDENCIES) $(EXTRA_t_cdiv_ui_DEPENDENCIES) 
 	@rm -f t-cdiv_ui$(EXEEXT)
@@ -1577,9 +1577,9 @@ logic.log: logic$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-bit.log: bit$(EXEEXT)
-	@p='bit$(EXEEXT)'; \
-	b='bit'; \
+t-bit.log: t-bit$(EXEEXT)
+	@p='t-bit$(EXEEXT)'; \
+	b='t-bit'; \
 	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \

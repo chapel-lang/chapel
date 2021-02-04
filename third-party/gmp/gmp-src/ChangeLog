@@ -1,3 +1,204 @@
+2020-11-13 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* Version 6.2.1 released.
+
+	* gmp-h.in (__GNU_MP_VERSION_PATCHLEVEL): Bump version info.
+	* Makefile.am (LIBGMP_LT_*, LIBGMPXX_LT_*): Bump revision info.
+
+2020-11-10 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* configure.ac (fat_path): Add bd1, goldmont,silvermont for CPUVEC.
+	* mpn/x86_64/fat/fat.c: Add more CPUs.
+	* mpn/x86/fat/fat.c: Add more CPUs.
+
+2020-11-01 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* configure.ac: X86_{,64_}PATTERN: GMP_ASM_COFF_TYPE for all ABIs;
+	* mpn/x86_64/x86_64-defs.m4 (COFF_TYPE): Copy from mpn/x86/x86-defs.m4
+	as suggested by Jeremy Drake.
+
+	* tests/misc/t-locale.c (nl_langinfo): No redefine on __TERMUX__,
+	spotted by Sanselme and Glisse.
+	* configure.ac: Consider *-*-msys as *-*-mingw* (except on arm* |
+	aarch64*), as suggested by Ralph Peterson.
+	* Makefile.am (EXTRA_DIST): Add mini-gmp/ChangeLog.
+
+2020-10-30 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/mpf/t-get_d_2exp.c: Test also the case zero.
+	* tests/mpz/t-get_d.c: Likewise.
+	* tests/mpf/t-trunc.c: Use mpf_size.
+
+	* tests/mpf/t-conv.c: Some more tests on zero.
+
+2020-10-25 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* configfsf.guess: Updated to version 2020-10-22, from gnulib.
+
+2020-10-17 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* tests/devel/Makefile.am: Remove redundancies.
+
+	* tests/mpz/io.c: Test out-of-range bases for mpz_out_str.
+
+2020-10-15  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Recognise zen3.
+	* config.guess: Recognise zen3.
+
+2020-10-14 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* doc/gmp.texi (Number sequences): Remove redundancy. (spotted: TonyMcC)
+
+	* configfsf.sub: Updated to version 2020-10-13, from gnulib.
+	* configfsf.guess: Updated to version 2020-09-19, from gnulib.
+
+2020-10-06  Niels Möller  <nisse@lysator.liu.se>
+
+	* Makefile.am: Better support for make check-mini-gmp on wine or cygwin.
+
+2020-09-22  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tests/mpz/t-mul.c: Print GMP_CHECK_FFT.
+
+	* longlong.h (x86 umul_ppmm): Fix typo.
+
+2020-09-21  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpz/n_pow_ui.c: Detect and report overflow.
+
+2020-07-04  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/arm64/bdiv_q_1.asm: Use LEA_HI/LEA_LO
+	* mpn/arm64/invert_limb.asm: Likewise.
+
+	* mpn/arm64/arm64-defs.m4: New file.
+	* mpn/arm64/darwin.m4: New file.
+	* configure.ac: Use arm64/arm64-defs.m4 and arm64/darwin.m4.
+
+2020-06-20  Torbjörn Granlund  <tg@gmplib.org>
+
+	* longlong.h (add_sssaaaa arm32/arm64): Generalise allowed operands
+	when using adds for sub and subs for add, while disallowing 0.
+	(sub_ddmmss ppc64): Disallow 0 when using addic.  Also disallow
+	constants for register-only middle addic operand.
+	(C add_sssaaaa and sub_ddmmss): Use more temps to make operation more
+	well-defined.
+
+2020-06-18  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tests/devel/gen-test-longlong_h.c: New file.
+	* tests/devel/Makefile.am: Compile and use gen-test-longlong_h.c.
+
+2020-06-10  Torbjörn Granlund  <tg@gmplib.org>
+
+	* configure.ac: Recognise armcortexa55.
+
+2020-05-25  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tests/cxx/t-assign.cc: Use reference parameter for 'catch'.
+	* tests/cxx/t-constr.cc: Likewise.
+	* tests/cxx/t-ops2z.cc: Likewise.
+	* tests/cxx/t-rand.cc: Likewise.
+	* tests/cxx/t-do-exceptions-work-at-all-with-this-compiler.cc: Likewise.
+
+	* tune/speed.c: Undo 2020-05-24 _POSIX_C_SOURCE change, it breaks on
+	many broken systems.
+	* tune/freq.c: Likewise.
+	* tune/time.c: Likewise.
+	* tune/tuneup.c: Likewise.
+
+	* tests/devel/try.c: Revert 2020-05-24 changes.
+
+2020-05-21  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tune/freq.c (_POSIX_C_SOURCE): Define.
+
+	* tune/tuneup.c (print_define_with_speedup): Fall back from snprintf to
+	sprintf for C90.
+	(_POSIX_C_SOURCE): Define.
+	(max_opsize): Set by #define instead of const size_t to please C90.
+	(n_measurements): Likewise.
+	(speed_mpn_pre_set_str): Adhere to C90 declaration rules.
+
+	* tune/tune-gcd-p.c: Back out 2020-01-10 change to comply to C90.
+
+	* tune/time.c (speed_endtime): Cast printf args to right type.
+	(_POSIX_C_SOURCE): Define.
+
+	* tune/speed.h (CACHE_LINE_SIZE): Do #undef before defining.
+	(SPEED_ROUTINE_MPN_GCD_1): Provide dummy first argument for standard
+	compliance.
+	(SPEED_ROUTINE_MPN_HGCD2): Adhere to C90 declaration rules.
+
+	* tune/speed.c (main): Cast printf args to right type.
+	(_POSIX_C_SOURCE): Define.
+
+	* tests/mpz/reuse.c: Avoid using non-standard function fileno().
+	* tests/spinner.c: Likewise.
+
+	* tests/mpz/convert.c (str_casecmp): New function.
+	(main): Use it instead of non-standard strcasecmp.
+
+	* tests/misc.c (tests_start): Fall back from snprintf to sprintf for
+	C90.
+
+	* tests/devel/try.c: Avoid getpagesize and use POSIX sysconf instead.
+	(_POSIX_C_SOURCE): Define.
+
+	* mpn/generic/mod_1_1.c: Don't use C++ comments.
+
+	* mpn/generic/get_d.c: Add clarifying parens.
+
+2020-05-18  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/toom_interpolate_12pts.c (DO_mpn_addlsh_n): Define only
+	when needed.
+	* mpn/generic/toom_interpolate_16pts.c: Likewise.
+
+2020-05-17 Marco Bodrato <bodrato@mail.dm.unipi.it>
+
+	* mpz/cmp.c: Avoid overflow on int even for huge sizes.
+	* mpq/cmp.c: Likewise.
+
+	* mpn/generic/mul_fft.c (mpn_fft_mul_modF_K):
+	Fully handle carry propagation in basecase multiplication.
+
+2020-05-16  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/hgcd2.c (tabp): Combine several undefined tabp
+	variable definitions with a macro.
+
+	* mpn/generic/gcd_22.c: Avoid C99 constructs.
+
+2020-05-12  Torbjörn Granlund  <tg@gmplib.org>
+
+	* mpn/generic/compute_powtab.c: Avoid C99 constructs.
+	* mpn/generic/get_str.c: Likewise.
+	* mpn/generic/set_str.c: Likewise.
+
+	* gmp-impl.h (memset): Move ASSERT to before decls.
+	* tests/refmpn.c: Likewise.
+
+	* mpn/generic/hgcd2.c (tabp): Combine several undefined tabp variable
+	definitions with a macro.
+
+	* mpn/generic/strongfibo.c: Avoid defining helper function when unused.
+
+	* mpn/generic/dcpi1_bdiv_q.c (mpn_dcpi1_bdiv_q_n_itch): Disable unused
+	static function.
+
+	* mpz/mul.c: Add some {} to suppress warning.
+
+	* tests/mpn/t-gcd_11.c: Exit main() properly.
+	* tests/mpn/t-gcd_22.c: Likewise.
+	* tests/mpn/t-gcdext_1.c: Likewise.
+
+2020-04-28  Torbjörn Granlund  <tg@gmplib.org>
+
+	* tests/mpz/reuse.c (realloc_if_reducing): New function.
+	(INVOKE_RRS, etc): Use realloc_if_reducing.
+
 2020-01-17  Torbjörn Granlund  <tg@gmplib.org>
 
 	* Version 6.2.0 released.

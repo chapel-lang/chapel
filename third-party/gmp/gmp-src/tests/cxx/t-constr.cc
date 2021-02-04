@@ -154,7 +154,7 @@ check_mpz (void)
       const char *a = "ABC";
       mpz_class b(a);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -165,7 +165,7 @@ check_mpz (void)
       int base = 16;
       mpz_class b(a, base);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -175,7 +175,7 @@ check_mpz (void)
       string a("abc");
       mpz_class b(a);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -186,7 +186,7 @@ check_mpz (void)
       int base = 8;
       mpz_class b(a, base);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -341,7 +341,7 @@ check_mpq (void)
       const char *a = "abc";
       mpq_class b(a);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -352,7 +352,7 @@ check_mpq (void)
       int base = 16;
       mpq_class b (a, base);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -362,7 +362,7 @@ check_mpq (void)
       string a("abc");
       mpq_class b(a);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -373,7 +373,7 @@ check_mpq (void)
       int base = 8;
       mpq_class b (a, base);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -635,7 +635,7 @@ check_mpf (void)
       const char *a = "abc";
       mpf_class b(a);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -646,7 +646,7 @@ check_mpf (void)
       int prec = 256;
       mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
   {
@@ -655,7 +655,7 @@ check_mpf (void)
       int prec = 64, base = 8;
       mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 262143L);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -665,7 +665,7 @@ check_mpf (void)
       string a("abc");
       mpf_class b(a); ASSERT_ALWAYS(b == 1234567890L);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
@@ -676,7 +676,7 @@ check_mpf (void)
       int prec = 128;
       mpf_class b(a, prec); ASSERT_ALWAYS(b == 1234567890L);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
   {
@@ -685,7 +685,7 @@ check_mpf (void)
       int prec = 256, base = 16;
       mpf_class b(a, prec, base); ASSERT_ALWAYS(b == 65535u);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (invalid_argument) {
+    } catch (invalid_argument&) {
     }
   }
 
