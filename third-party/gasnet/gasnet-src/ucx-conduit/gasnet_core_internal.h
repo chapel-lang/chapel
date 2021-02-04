@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_core_internal.h $
  * Description: GASNet ucx conduit header for internal definitions in Core API
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -139,38 +139,45 @@ extern int gasnetc_exit_running;
 extern gasnete_threadidx_t gasnetc_exit_thread;
 
 #ifdef GASNETC_UCX_THREADS
-#define GASNETC_MY_THREAD_IDX(__threadidx)                                \
-  do {                                                                    \
-    GASNET_BEGIN_FUNCTION();                                              \
-    (__threadidx) = GASNETI_MYTHREAD->threadidx;                          \
-  } while (0)
+#define GASNETC_MY_THREADIDX (GASNETI_MYTHREAD->threadidx)
 
 #define GASNETC_LOCK_UCX()                                                \
   do {                                                                    \
-    gasneti_mutex_lock(&gasneti_ucx_module.ucp_worker_lock);              \
+    if ((gasneti_ucx_module.lock_tid == GASNETE_INVALID_THREADIDX) ||     \
+         gasneti_ucx_module.lock_tid != GASNETC_MY_THREADIDX) {           \
+      gasneti_mutex_lock(&gasneti_ucx_module.ucp_worker_lock);            \
+      gasneti_assert(!gasneti_ucx_module.lock_cnt);                       \
+      gasneti_ucx_module.lock_tid = GASNETC_MY_THREADIDX;                 \
+    } else {                                                              \
+      gasneti_assert(gasneti_ucx_module.lock_cnt);                        \
+    }                                                                     \
+    gasneti_ucx_module.lock_cnt++;                                        \
+    gasneti_assert(gasneti_ucx_module.lock_cnt);                          \
   } while (0)
 
 #define GASNETC_UNLOCK_UCX()                                              \
   do {                                                                    \
-    gasneti_mutex_unlock(&gasneti_ucx_module.ucp_worker_lock);            \
+    gasneti_assert(gasneti_ucx_module.lock_cnt);                          \
+    gasneti_assert(gasneti_ucx_module.lock_tid == GASNETC_MY_THREADIDX);  \
+    gasneti_ucx_module.lock_cnt--;                                        \
+    if (0 == gasneti_ucx_module.lock_cnt) {                               \
+      gasneti_ucx_module.lock_tid = GASNETE_INVALID_THREADIDX;            \
+      gasneti_mutex_unlock(&gasneti_ucx_module.ucp_worker_lock);          \
+    }                                                                     \
   } while (0)
 
 #define GASNETC_LOCK_ACQUIRE_REGULAR()                                    \
   do {                                                                    \
-    gasneti_mutex_lock(&gasneti_ucx_module.ucp_worker_lock);              \
+    GASNETC_LOCK_UCX();                                                   \
     if_pf (gasnetc_exit_running) {                                        \
-      gasnete_threadidx_t threadidx;                                      \
-      GASNETC_MY_THREAD_IDX(threadidx);                                   \
-      if (gasnetc_exit_thread != threadidx) {                             \
-              gasneti_mutex_unlock(&gasneti_ucx_module.ucp_worker_lock);  \
+      if (gasnetc_exit_thread != GASNETC_MY_THREADIDX) {                  \
+              GASNETC_UNLOCK_UCX();                                       \
               gasnetc_exit_threads();                                     \
       }                                                                   \
     }                                                                     \
   } while(0)
-#define GASNETC_LOCK_RELEASE_REGULAR()                          \
-  do {                                                          \
-    gasneti_mutex_unlock(&gasneti_ucx_module.ucp_worker_lock);  \
-  } while(0)
+
+#define GASNETC_LOCK_RELEASE_REGULAR() GASNETC_UNLOCK_UCX()
 
 #define GASNETC_LOCK_ACQUIRE(mode)                              \
   do {                                                          \
@@ -259,11 +266,17 @@ typedef struct _gasneti_ucx_module {
     ucp_worker_h                ucp_worker;
     gasneti_mutex_t             ucp_worker_lock;
     gasnet_ep_info_t          * ep_tbl;
-    gasneti_list_t              send_pool;   /* buffer pool */
-    gasneti_list_t              recv_pool;   /* recv buffer pool */
-    gasneti_list_t              am_req_pool; /* AM requests pool */
-    gasneti_list_t              recv_list;   /* list of completed but not handled requests */
-    gasneti_list_t              send_list;   /* list of pending send requests */
+    size_t                      request_size;
+    gasneti_list_t              sreq_free;    /* AM requests pool */
+    gasneti_list_t              send_queue;   /* list of pending send requests */
+    gasneti_list_t              recv_queue;   /* queue of pending to process reqs */
+#if !GASNETC_PIN_SEGMENT
+    gasneti_list_t              rreq_free;    /* pool of available recv reqs */
+#endif
+#ifdef GASNETC_UCX_THREADS
+    gasnete_threadidx_t         lock_tid;     /* thread id owner */
+    uint32_t                    lock_cnt;     /* lock recursive counter */
+#endif
 } gasneti_ucx_module_t;
 
 typedef struct {
@@ -349,17 +362,14 @@ int gasnetc_AM_ReqRepGeneric(gasnetc_ucx_am_type_t am_type,
                              void *dst_addr
                              GASNETI_THREAD_FARG);
 
-extern void gasnetc_req_list_init(void);
-extern void gasnetc_sreq_list_free(void);
-extern void gasnetc_rreq_list_free(void);
-extern void gasnetc_am_req_pool_alloc(void);
-extern void gasnetc_am_req_pool_free(void);
-extern void gasnetc_buffer_pool_alloc(void);
-extern void gasnetc_buffer_pool_free(void);
-extern int gasnetc_req_poll(gasnetc_lock_mode_t lmode);
-extern void gasnetc_req_poll_rcv(gasnetc_lock_mode_t lmode);
+extern int gasnetc_poll_sndrcv(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG);
+extern void gasnetc_poll_snd(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG);
+
+extern void gasnetc_send_init(void);
+extern void gasnetc_send_fini(void);
 extern void gasnetc_ProcessRecv(void *buf, size_t size);
-extern void gasnetc_send_list_wait(gasnetc_lock_mode_t lmode);
+extern void gasnetc_send_list_wait(gasnetc_lock_mode_t lmode
+                                   GASNETI_THREAD_FARG);
 extern gasnetc_mem_info_t * gasnetc_find_mem_info(void *addr, int nbytes,
                                                   gex_Rank_t rank);
 extern int gasnetc_ucx_putget_inner(int is_put, gex_Rank_t jobrank,
@@ -514,29 +524,17 @@ gasneti_list_item_t *gasneti_list_deq(gasneti_list_t *list)
   return item;
 }
 
-GASNETI_INLINE(gasneti_list_begin)
-gasneti_list_item_t *gasneti_list_begin(gasneti_list_t *list)
+GASNETI_INLINE(gasneti_list_head)
+void *gasneti_list_head(gasneti_list_t *list)
 {
   gasneti_assert(list);
-  gasneti_assert(list->head);
-  return list->head;
-}
-
-GASNETI_INLINE(gasneti_list_end)
-gasneti_list_item_t *gasneti_list_end(gasneti_list_t *list)
-{
-  gasneti_assert(list);
-  gasneti_assert(list->tail);
-  return list->tail;
-}
-
-GASNETI_INLINE(gasneti_list_next)
-gasneti_list_item_t *gasneti_list_next(void *ptr)
-{
-  gasneti_list_item_t *item = (gasneti_list_item_t*)ptr;
-  gasneti_assert(item);
-  GASNETI_DBG_LIST_ITEM_CHECK(item->next);
-  return item->next;
+  gasneti_assert(list->tail->prev);
+  gasneti_assert(list->head->next);
+  if_pf (!list->count) {
+    return NULL;
+  }
+  GASNETI_DBG_LIST_ITEM_CHECK(list->head->next);
+  return list->head->next;
 }
 
 GASNETI_INLINE(gasneti_list_size)

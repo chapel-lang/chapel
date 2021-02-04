@@ -163,7 +163,7 @@ int main(int argc, char **argv) {
 
   total = end - begin;
   if (fullduplex || myproc % 2 == 1 || numprocs == 1) 
-    printf("Slave %i: %i microseconds total, throughput: %8.3f KB/sec\n", 
+    printf("Worker %i: %i microseconds total, throughput: %8.3f KB/sec\n", 
       myproc, (int)total, (float)(((float)1000000)*size*iters/((int)total))/1024.0);
   fflush(stdout);
 

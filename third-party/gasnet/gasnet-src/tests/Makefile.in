@@ -154,7 +154,7 @@ TEST_INOUT=
 
 # default node count
 TEST_NODES=2
-# provide args and node counts for specific tests, user can override with MANUAL_TESTPARAMS
+# provide args, env and node counts for specific tests, user can override with MANUAL_TESTPARAMS
 TEST_PARAMS=                    					\
    testalign_args="$(TEST_INOUT)";   					\
    testam_args="$(TEST_INOUT)";   					\
@@ -172,9 +172,11 @@ TEST_PARAMS=                    					\
    testmpiperf_args="BPFE 1000";					\
    testqueue_args="$(TEST_INOUT) 1 256 262144";				\
    testenv_args='GASNet is \"Global Address Space Networking\"';	\
+   testenv_env='GASNET_DUMMY="GASNet dummy value"'			\
    testvisperf_args="$(TEST_INOUT) -maxdata 131072 -maxcontig 512 10"; 	\
    testslice_args="1024000 10 10";			 		\
    testcollperf_args="-szfactor 4 16384 2 50 0";			\
+   testinternal_env="PMI_MAX_KVS_ENTRIES=$${PMI_MAX_KVS_ENTRIES:-1000000}";\
    $(CONDUIT_TESTPARAMS) dummy=1 ; 					\
    $(MANUAL_TESTPARAMS) dummy=1 ;
 
@@ -249,6 +251,8 @@ run-tests: force
             fi ;                                                                        \
 	    args="$$""$${file}_args" ;                                                  \
 	    args="`eval echo $$args`" ;                                                 \
+	    env="$$""$${file}_env" ;                                                    \
+	    env="`eval echo $$env`" ;                                                   \
 	    nodes="$$\{""$${file}_nodes-$(TEST_NODES)\}" ;                              \
 	    nodes="`eval eval echo $$nodes`" ;                                          \
 	    cwd=`pwd` ;                                          			\
@@ -271,7 +275,7 @@ run-tests: force
 	      faildesc="$(CONDUIT_NAME)-conduit/$$threadmode-$(GASNET_CONFIG_STR)/$$file $$args" ; \
 	    fi;                                                                         \
 	    echo "$$cmd" ;                                                              \
-	    ( eval env GASNET_DUMMY=\"GASNet dummy value\" $(TEST_ENV)                  \
+	    ( eval env $$env $(TEST_ENV)                                                \
 	    $$TIMECMD $$cmd || echo "ERROR: Test exited with failure code=$$?" )        \
                              2>&1 | tee .test-output ;                                  \
             failure=`@PERL@ -ne 'print if ((/ERROR/ || /fatal signal/) && !(/Retrying allocation/ || /GASNET_FREEZE_ON_ERROR/));' .test-output` ; \

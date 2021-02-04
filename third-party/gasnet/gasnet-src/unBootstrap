@@ -32,7 +32,7 @@ rm -f Makefile.in              \
       other/Makefile.in        \
       other/ammpi/Makefile.in  \
       other/amudp/Makefile.in  \
-      other/blcr/Makefile.in \
       other/contrib/Makefile.in \
       other/firehose/Makefile.in \
+      other/valgrind/Makefile.in \
       tests/Makefile

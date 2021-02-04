@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
   end = getCurrentTimeMicrosec();
 
   total = end - begin;
-  printf("Slave %i: %i microseconds total, throughput: %8.3f KB/sec\n", 
+  printf("Worker %i: %i microseconds total, throughput: %8.3f KB/sec\n", 
     myproc, (int)total, (float)(((float)1000000)*AM_MaxLong()*iters/((int)total))/1024.0);
   fflush(stdout);
 

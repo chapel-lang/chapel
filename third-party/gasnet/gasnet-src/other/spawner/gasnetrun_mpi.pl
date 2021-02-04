@@ -604,27 +604,63 @@ if (exists($ENV{'LSB_MCPU_HOSTS'}) && !$is_jsrun) {
 
 if ($is_jsrun) {
   # With jsrun we (attempt to) default to job size if -N was not given.
-  # The "attempt" is a heutistic to exclude the login node which will
-  # appear in LSM_MCPU_HOSTS, based on its CPU count of 1.  In the case
-  # that *all* hosts are listed as single CPUs this code will not result
-  # in any change to $numnode.
-  if (!defined($numnode)) {
+  # The "attempt" is a heuristic to exclude any launch node(s) which will
+  # appear first in LSB_MCPU_HOSTS, based on the CPU count which we are
+  # expecting to differ from that of the compute nodes.
+  # However, if the list contains only one node width, a warning is issued
+  # unless the user passed an explicit node and cpu count.
+  # We also extract the CPU count as that of the widest node.
+  my $cpus = 0;
+  {
     my @tmp = split(" ", $ENV{'LSB_MCPU_HOSTS'});
+    my $first_width = $tmp[1];
     my %tmp;
     while (@tmp) {
       my $h = shift @tmp; # Host
       my $n = shift @tmp; # Numcpus
       $tmp{$h} += $n;
+      $cpus = $n if ($n > $cpus);
     }
-    my $count = grep { $tmp{$_} > 1 } keys %tmp;  # counts hosts w/ >1 CPU
-    if ($count) { $numnode = $count; }
+    my $count = grep { $tmp{$_} != $first_width } keys %tmp;  # counts hosts different than the first
+    if (!$count) { # only one node width observed
+      if (!defined($numnode) || !defined($numcpu)) {
+        warn "WARNING: Unable to distinguish compute nodes from launch nodes.\n";
+        warn "WARNING: Process layout and/or affinity may be unreliable.\n";
+        warn "WARNING: Please pass explicit -N and -c options.\n";
+      }
+      $count = keys %tmp; # total node count
+    }
+    $numnode = $count unless defined($numnode);
   }
-  # The mess required to get our desired layout (uses both nodes and ppn):
+  @numprocargs = ($numproc);
+  ## The mess required to get our desired layout
+  # One Resource Set per node, using all CPUs:
+  push @numprocargs, ('--nrs', $numnode, '--cpu_per_rs', 'ALL_CPUS');
+  # Blocked layout:
   my $ppn = int( ( $numproc + $numnode - 1 ) / $numnode );
-  @numprocargs = ($numproc, '-n', $numnode, '-d', "plane:$ppn");
-  # And the binding:
-  $numcpu = 'ALL_CPUS' unless (defined($numcpu) && $numcpu);
-  push @numprocargs, ('-c', $numcpu, '-b', 'rs');
+  push @numprocargs, ('--launch_distribution', "plane:$ppn");
+  if (defined($numcpu) && !$numcpu) {
+    # User has disabled binding by passing `-c 0`
+    push @numprocargs, ('--bind', 'none');
+  } else {
+    my $user_numcpu = defined($numcpu);
+    $numcpu = int($cpus / $ppn) unless defined($numcpu);
+    if (!$numcpu || ($cpus && ($numcpu > $cpus))) {
+      # We are oversubscribed (OR possibly $cpus == 0 meaning unknown).
+      # So we disable binding in a way that warns of oversubscription:
+      push @numprocargs, ('--bind', 'rs');
+    } else {
+      # Each proc is bound to user-provided number of cpus, or equal disjoint share of the node:
+      push @numprocargs, ('--bind', "packed:$numcpu");
+      my $idle = $cpus % $ppn;
+      if ($idle && !$user_numcpu) {
+        warn "WARNING: $ppn procs/node does not evenly divide $cpus CPUs, leaving $idle CPUs idle\n";
+        warn "WARNING: per node.  Consider using jsrun for more precise control over the\n";
+        warn "WARNING: job layout, passing '-c 0' to disable CPU+process binding, or passing\n";
+        warn "WARNING: '-c $numcpu' to confirm the computed layout (silencing this warning).\n";
+      }
+    }
+  }
   $dashN_ok = 1;
 }
 

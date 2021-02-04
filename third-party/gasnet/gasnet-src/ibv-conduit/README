@@ -33,8 +33,10 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   AIX, Windows and FreeBSD.  However, at this time only Linux and Solaris
   have been confirmed to run GASNet's ibv-conduit.
 
-  While Open Fabrics Verbs also covers iWARP, ibv-conduit does not
-  currently support it.
+  While Open Fabrics Verbs also covers iWARP and RoCE, ibv-conduit does not
+  currently support these networks.  Users interested in contributing the
+  necessary support (primarily use of "rdmacm" for connection setup) are
+  encouraged to contact gasnet-devel@lbl.gov.
 
   While ibv-conduit may work on Intel Omni-Path (OPA) HCAs, we instead
   recommend use of ofi-conduit on such systems.
@@ -1397,36 +1399,36 @@ the internal ones).  This helps avoid interference.
 Then _body calls gasnetc_exit_reduce() to try to perform a collective
 reduce-to-all over the exit codes.  If this completes within a given
 timeout then we know the exit is collective (and "graceful" is set
-non-zero) and skip over the master/slave logic described in the next
+non-zero) and skip over the leader/member logic described in the next
 two paragraphs.
 
 If the reduction does not complete within the timeout, then _body next
-calls gasnetc_get_exit_role() to "elect" a master node for the exit.
+calls gasnetc_get_exit_role() to "elect" a leader node for the exit.
 This is done with an alarm() timer in force.  The use of an "election"
 with a timeout ensures that we will exit, even if node 0 is wedged.
-The election of a master proceeds by sending a system-category AM
+The election of a leader proceeds by sending a system-category AM
 request to node 0, and spinning to wait for a corresponding reply,
-which will indicated if the local node is the "master" or a "slave"
+which will indicated if the local node is the "leader" or a "member"
 in the coordination of the graceful exit.  The logic on node 0
-ensures that the first "candidate" is always made the master, not
-waiting for multiple AMs to arrive.  Additionally the slave nodes
+ensures that the first "candidate" is always made the leader, not
+waiting for multiple AMs to arrive.  Additionally the member nodes
 may, under circumstances described below, know before entering
-gasnetc_get_exit_role() that they are slaves, and will not bother
+gasnetc_get_exit_role() that they are members, and will not bother
 to send an AMRequest to node 0.  In either case gasnetc_get_exit_role()
 indicates to _body which role the local node is to assume.
 
-From _body, the single master node will enter gasnetc_exit_master() and
+From _body, the single leader node will enter gasnetc_exit_leader() and
 will begin sending an remote exit request (system-category AM, so this
-will all work between _init and _attach) to each peer.  Then the master
+will all work between _init and _attach) to each peer.  Then the leader
 waits (with timeout, of course) for a reply from each peer.  This request
 conveys the desired exit code to each node.  It also will wake them out
 of a spin-loop, barrier, or other case where they were not yet aware of
 the need to exit.  In the handler for the exit request, a node will send
-a reply back to the master, so it knows all the nodes are reachable.  It
-will set its role to "slave" and, if no exit is in-progress, it will start
-the exit procedure, as described later.  From _body, the slave nodes all
-call gasnetc_exit_slave(), which simply spins until the remote exit request
-has arrived from the master.
+a reply back to the leader, so it knows all the nodes are reachable.  It
+will set its role to "member" and, if no exit is in-progress, it will start
+the exit procedure, as described later.  From _body, the member nodes all
+call gasnetc_exit_member(), which simply spins until the remote exit request
+has arrived from the leader.
 
 Regardless of whether exit coordination (the reduction, or exit requests
 and replies) completed within their timeouts, _body proceeds to flush
@@ -1510,7 +1512,7 @@ For the non-collective exits, there is both a "best case" and a
 "worst case" to consider:
 
 Best case: one node is way ahead of the others and can win the
-master election and send remote exit requests before the others attempt
+leader election and send remote exit requests before the others attempt
 the election.  In this case the coordinated shutdown needs 1 round-trip
 for the election, followed by (N-1) round-trips for the remote exit
 request/reply, for a total of 2*N AMs sent (not counting those from

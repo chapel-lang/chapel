@@ -1,7 +1,7 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_core.h $
  * Description: GASNet header for ucx conduit core
  * Copyright 2002, Dan Bonachea <bonachea@cs.berkeley.edu>
- * Copyright 2019, Mellanox Technologies LTD. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies LTD. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -128,13 +128,22 @@ size_t gasnetc_AMHeaderSize(void);
 
 #define GASNETC_MAX_MEDIUM_NBRHD    GASNETC_MAX_MED
 
+#define GASNETC_ARGS_SIZE(numargs) (sizeof(gex_AM_Arg_t) * (numargs))
+
 #define GASNETC_MAX_MED_(nargs)                                                \
   (GASNETC_MAX_MED - GASNETI_ALIGNUP_NOASSERT(GASNETC_UCX_HDR_SIZE +           \
-                                              sizeof(gex_AM_Arg_t)*(nargs), 8))
+                                              GASNETC_ARGS_SIZE(nargs), 8))
 
-#define GASNETC_MAX_LONG_(nargs) \
+#define GASNETC_MAX_LONG_(nargs)                                                \
   (GASNETC_MAX_LONG - (GASNETC_UCX_HDR_SIZE +  sizeof(gex_AM_Arg_t)*(nargs) +  \
                                                sizeof(void*)))
+
+#define GASNETC_MAX_ARGS_SIZE (sizeof(gex_AM_Arg_t) * GASNETC_MAX_ARGS)
+
+#define GASNETC_AMMED_PADDING_SIZE(__nargs)                                 \
+  (GASNETI_ALIGNUP(GASNETC_ARGS_SIZE(__nargs) + GASNETC_UCX_HDR_SIZE,       \
+                  GASNETI_MEDBUF_ALIGNMENT) -                               \
+                  (GASNETC_UCX_HDR_SIZE + GASNETC_ARGS_SIZE(__nargs)))
 
 #define gex_AM_MaxArgs()          ((unsigned int)GASNETC_MAX_ARGS)
 #define gex_AM_LUBRequestMedium() (GASNETC_MAX_MED_(GASNETC_MAX_ARGS))

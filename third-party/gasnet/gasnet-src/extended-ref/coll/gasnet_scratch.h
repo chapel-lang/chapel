@@ -87,6 +87,8 @@ void gasnete_coll_scratch_free_req(gasnete_coll_scratch_req_t *scratch_req)
   team->scratch_free_list = scratch_req;
 }
 
+void gasnete_coll_scratch_req_purge(gasnete_coll_team_t team);
+
 // Allocate and free (consecutive) space used for out_sizes and scratchpos
 // For small sizes we use space within the scratch request itself
 // The allocation interfaces are such that one could split the two apart
@@ -120,6 +122,34 @@ void gasnete_coll_scratch_free_inlines(gasnete_coll_scratch_req_t *req)
   }
 }
 
+
+GASNETI_INLINE(gasnete_coll_scratch_base)
+uintptr_t gasnete_coll_scratch_base(gasnete_coll_team_t team, gex_Rank_t rank) {
+  void *addr;
+  if (team->scratch_addrs) {
+    addr = team->scratch_addrs[rank];
+  } else {
+    gex_Rank_t jobrank = team->rel2act_map ? team->rel2act_map[rank] : rank;
+    addr = team->scratch_segs[jobrank].addr;
+  }
+  return (uintptr_t)addr + team->symmetric_scratch_offset;
+}
+
+GASNETI_INLINE(gasnete_coll_scratch_myaddr)
+void* gasnete_coll_scratch_myaddr(gasnete_coll_op_t *op, uintptr_t byte_offset) {
+  const gasnete_coll_team_t team = op->team;
+  return (void *)(byte_offset + op->myscratchpos +
+                  (uintptr_t)team->myscratch);
+}
+
+GASNETI_INLINE(gasnete_coll_scratch_addr)
+void* gasnete_coll_scratch_addr(gasnete_coll_op_t *op, gex_Rank_t rank, int index, uintptr_t byte_offset) {
+  const gasnete_coll_team_t team = op->team;
+  return (void *)(byte_offset + op->scratchpos[index] +
+                  gasnete_coll_scratch_base(team, rank));
+}
+
+
 /* try to allocate scratch space*/
 /* returns 1 on success or zero on failure*/
 int8_t gasnete_coll_scratch_alloc_nb(gasnete_coll_op_t* op GASNETI_THREAD_FARG);
@@ -130,7 +160,7 @@ void gasnete_coll_free_scratch(gasnete_coll_op_t *op);
 
 /* function calls for coll init*/
 void gasnete_coll_alloc_new_scratch_status(gasnete_coll_team_t team);
-void gasnete_coll_free_scratch_status(gasnete_coll_scratch_status_t *in GASNETI_THREAD_FARG);
+void gasnete_coll_free_scratch_status(gasnete_coll_team_t team);
 
 
 #endif

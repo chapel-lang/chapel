@@ -156,28 +156,28 @@ GASNET_GNI_AM_RVOUS_BUFFERS - number of AM rendezvous buffers
   Rendezvous protocol
   The default value is 64, and the minimum is 1.
 
-GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
-  Used only for "Eager" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
-  This determines the maximum volume of AM Requests (in bytes) that can be
-  outstanding between a given pair of peers before flow-control in the Eager AM
-  protocol.  This differs from most other conduits in which the depth is given
-  by a count.  Values smaller than 2 maximum size Medium AMs, or larger than 64
-  maximum sized Medium AMs, will be silently adjusted to that range.
-  The default value is 12K.
-
-GASNET_NETWORKDEPTH_TOTAL - depth of AM Request queue
+GASNET_NETWORKDEPTH_TOTAL - depth of out-going AM Request queue
   This determines the maximum number of AM Requests that can be
   outstanding from one endpoint to all others before flow-control.
   The default value is 64, and the minimum is 1.
 
-GASNET_NETWORKDEPTH - depth of per-peer Rendezvous AM Request queue
-  Used only for "Rendezvous" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+GASNET_NETWORKDEPTH - depth of per-peer AM Request queue
   This determines the number of AM Requests (in messages) that can be
-  outstanding between a given pair of endpoints before flow-control in
-  the Rendezvous AM protocol.
+  outstanding between a given pair of endpoints before flow-control.
   If this value exceeds GASNET_NETWORKDEPTH_TOTAL, it will be reduced to
   the same value (with a warning).
   The default value is 64, and the minimum is 1.
+
+GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
+  Used only for "Eager" AM protocol (see GASNET_GNI_AM_RVOUS_CUTOVER).
+  This determines the maximum volume of AM Requests (in bytes) that can be
+  outstanding between a given pair of peers before flow-control in the Eager
+  AM protocol, even if less than GASNET_NETWORKDEPTH Requests are outstanding.
+  Values smaller than two maximum-size Medium AMs, or larger than 64 maximum-
+  sized Medium AMs, will be silently adjusted to that range.  Additionally,
+  values will be silently rounded down to the product of GASNET_NETWORKDEPTH
+  times a power-of-two.
+  The default value is 16K.
 
 GASNET_LONG_DEPTH - depth of per-peer Long tracking
   This determines the maximum number of AM Long Requests payload transfers
@@ -337,6 +337,28 @@ GASNET_GNI_BTE_MULTI_CHANNEL
   bandwidth for large transfers.
   The default is "1" (enabled).
 
+GASNET_GNI_ROUTING_MODE
+  The "delivery mode" used to control packet routing in the Aries network.
+  The following string values (case insensitive) may be specified for this
+  variable.  The respective meanings are exactly as documented for the
+  MPICH_GNI_ROUTING_MODE variable in Cray's intro_mpi(3) manpage.
+    + "IN_ORDER"
+        Packet order is preserved between any source/destination pair.
+        This does not provide ordering of GASNet-level operations.
+    + "NMIN_HASH"
+        Deterministic routing using non-minimal paths
+    + "MIN_HASH"
+        Deterministic routing using minimal (shortest) paths
+    + "ADAPTIVE_0"
+        Adaptive routing with no bias toward minimal routes
+    + "ADAPTIVE_1"
+        Adaptive routing with bias toward minimal routes increasing at each hop
+    + "ADAPTIVE_2"
+        Adaptive routing with small fixed bias toward minimal routes
+    + "ADAPTIVE_3"
+        Adaptive routing with large fixed bias toward minimal routes
+  The default is "ADAPTIVE_0".
+
 GASNET_PHYSMEM_MAX
   If set, this parameter is used to determine the maximum amount of memory
   the conduit may pin per compute node (each process on a given compute node is
@@ -483,7 +505,7 @@ References:
 
 Cray documentation "Using the GNI and DMAPP APIs" document S-2446-3102/S-2446-5202
 
-http://docs.cray.com/books/S-2446-5202/S-2446-5202.pdf
+https://pubs.cray.com/bundle/S-2446-52
 
 APIs:
 
