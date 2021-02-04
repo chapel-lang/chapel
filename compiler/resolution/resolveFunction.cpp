@@ -2333,6 +2333,8 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
     if (toName == astr("<temporary>") ||
         to->defPoint->getModule()->modTag != MOD_USER)
       toName = "a value";
+    else if (startsWith(toName, "field "))
+      toName = astr("field '", &toName[6], "'");
     else
       toName = astr("'", toName, "'");
   } else {
@@ -2345,6 +2347,9 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
   if (var && getSymbolImmediate(var)) {
     sep = "";
     fromStr = toString(var, true);
+  } else if (fromValType == dtNil) {
+    sep = "";
+    fromStr = "nil";
   } else {
     sep = "a ";
     fromStr = toString(fromValType);
