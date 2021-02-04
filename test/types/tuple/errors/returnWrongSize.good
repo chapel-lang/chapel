@@ -1,3 +1,4 @@
 returnWrongSize.chpl:1: In function 'foo':
-returnWrongSize.chpl:3: error: cannot return '2*int(64)' when the declared return type is '3*int(64)'
+returnWrongSize.chpl:3: error: tuple size mismatch (expected 3, got 2)
+returnWrongSize.chpl:3: error: illegal use of function that does not return a value: '_cast'
   returnWrongSize.chpl:8: called as foo(param small = true)
