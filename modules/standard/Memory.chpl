@@ -26,7 +26,7 @@
 
     In previous releases, the :mod:`Memory` module contained procedures
     which reported information about memory usage. These procedures are now
-    deprecated - please use the equivalents in the :mod:`~Diagnostics`
+    deprecated - please use the equivalents in the :mod:`Diagnostics`
     submodule instead.
 
  */
@@ -41,7 +41,7 @@ private extern proc chpl_memoryUsed(): uint(64);
   .. warning::
 
     This enum is deprecated - please use
-    :enum:`~Diagnostics.MemUnits`.
+    :enum:`Diagnostics.MemUnits`.
 
   The amount of memory returned by :proc:`locale.physicalMemory` can
   be expressed either as individual bytes or as chunks of 2**10,
@@ -53,7 +53,7 @@ enum MemUnits {Bytes, KB, MB, GB};
   .. warning::
 
     This method is deprecated - please use
-    :proc:`~Diagnostics.locale.physicalMemory()`.
+    :proc:`Diagnostics.locale.physicalMemory()`.
 
   How much physical memory is present on this locale?
 
@@ -97,7 +97,7 @@ proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)) 
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.memoryUsed()`.
+    :proc:`Diagnostics.memoryUsed()`.
 
   How much memory is this program currently using on this locale?
 
@@ -121,7 +121,7 @@ proc memoryUsed() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.printMemAllocs()`.
+    :proc:`Diagnostics.printMemAllocs()`.
 
   Print detailed information about allocated memory to ``memLog``.
   The report contains a section for each top-level locale, containing
@@ -149,7 +149,7 @@ proc printMemAllocs(thresh=0) {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.printMemAllocsByType()`.
+    :proc:`Diagnostics.printMemAllocsByType()`.
 
   Print summary information about allocated memory to ``memLog``.  The
   report contains a section for each top-level locale, containing a
@@ -173,7 +173,7 @@ proc printMemAllocsByType() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.printMemAllocStats()`.
+    :proc:`Diagnostics.printMemAllocStats()`.
 
   Print summary memory statistics to ``memLog``.  The report contains
   a section for each top-level locale showing the number of bytes of
@@ -195,7 +195,7 @@ proc printMemAllocStats() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.startVerboseMem()`.
+    :proc:`Diagnostics.startVerboseMem()`.
 
   Start on-the-fly reporting of memory allocations and deallocations
   done on any locale.  Continue reporting until :proc:`stopVerboseMem`
@@ -216,7 +216,7 @@ proc startVerboseMem() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.stopVerboseMem()`.
+    :proc:`Diagnostics.stopVerboseMem()`.
 
   Stop on-the-fly reporting of memory allocations and deallocations
   done on any locale.
@@ -233,7 +233,7 @@ proc stopVerboseMem() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.startVerboseMemHere()`.
+    :proc:`Diagnostics.startVerboseMemHere()`.
 
   Start on-the-fly reporting of memory allocations and deallocations
   done on this locale.  Continue reporting until
@@ -254,7 +254,7 @@ proc startVerboseMemHere() {
   .. warning::
 
     This function is deprecated - please use
-    :proc:`~Diagnostics.stopVerboseMemHere()`.
+    :proc:`Diagnostics.stopVerboseMemHere()`.
 
   Stop on-the-fly reporting of memory allocations and deallocations
   done on this locale.
