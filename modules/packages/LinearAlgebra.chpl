@@ -1464,7 +1464,7 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
     will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
 */
-proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
+proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true)
 {
   const n = Ldom.shape(0);
@@ -1487,7 +1487,7 @@ proc solve_tril (const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
 /* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
 */
-proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
+proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const n = Udom.shape(0);
   var y = b;
 
@@ -1507,7 +1507,7 @@ proc solve_triu (const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve (A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);
