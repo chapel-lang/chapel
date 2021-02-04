@@ -36,14 +36,16 @@ module CPtr {
 
 
   /* A Chapel version of a C NULL pointer. */
-  inline proc c_nil:c_void_ptr {
-    return __primitive("cast", c_void_ptr, nil);
+  inline proc c_nil {
+    // TODO: this routine should be deprecated
+    return nil;
   }
 
   /*
      :returns: true if the passed value is a NULL pointer (ie 0).
    */
   inline proc is_c_nil(x):bool {
+    // TODO: this routine should be deprecated
     return __primitive("cast", c_void_ptr, x) == c_nil;
   }
 
