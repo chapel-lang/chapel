@@ -726,8 +726,8 @@ static void gatherForallInfo(ForallStmt *forall) {
     Symbol *dotDomIterSym = NULL;
     Symbol *dotDomIterSymDom = NULL;
 
-    CallExpr *iterCall;
-    Symbol *iterCallTmp;
+    CallExpr *iterCall = NULL;
+    Symbol *iterCallTmp = NULL;
 
     std::vector<Symbol *> multiDIndices;
 
