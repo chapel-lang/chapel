@@ -246,7 +246,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     slurmFilename=(char *)chpl_mem_allocMany((strlen(baseSBATCHFilename) + 
                                             snprintf(NULL, 0, "%d", (int)mypid)
                                             + 1), sizeof(char), 
-                          CHPL_RT_MD_UNKNOWN, -1, 0);
+                          CHPL_RT_MD_FILENAME, -1, 0);
     // set the sbatch filename
     sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
@@ -309,18 +309,18 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // name or to the binaryName.<jobID>.out if none specified
     if (outputfn != NULL) {
       stdoutFile=(char *)chpl_mem_allocMany((strlen(outputfn) + 1), 
-                        sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       sprintf(stdoutFile,      "%s", outputfn);
       stdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(outputfn) + 1), 
-                              sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                              sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       sprintf(stdoutFileNoFmt, "%s", outputfn);
     }
     else {
       stdoutFile=(char *)chpl_mem_allocMany((strlen(argv[0]) + 9), 
-                          sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                          sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       sprintf(stdoutFile,      "%s.%s.out", argv[0], "%j");
       stdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(argv[0]) + 20), 
-                              sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                              sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
     }
     // We have slurm use the real output file to capture slurm errors/timeouts
@@ -336,7 +336,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     if (bufferStdout != NULL) {
       tmpStdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(tmpDir) + 
                                                     strlen(argv[0]) + 20), 
-                                sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                                sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
     }
 
@@ -486,7 +486,7 @@ static void chpl_launch_cleanup(void) {
       if (unlink(slurmFilename)) {
         char* msg=(char *)chpl_mem_allocMany((strlen(slurmFilename) + 
                                             strlen(strerror(errno)) + 36), 
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
         snprintf(msg, sizeof(msg), "Error removing temporary file '%s': %s",
                  slurmFilename, strerror(errno));
         chpl_warning(msg, 0, 0);

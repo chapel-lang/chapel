@@ -236,7 +236,7 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   slurmFilename=(char *)chpl_mem_allocMany((strlen(baseSBATCHFilename) + 
                                           snprintf(NULL, 0, "%d", (int)mypid)
                                            + 1), sizeof(char), 
-                      CHPL_RT_MD_UNKNOWN, -1, 0);
+                      CHPL_RT_MD_FILENAME, -1, 0);
   sprintf(slurmFilename, "%s%d", baseSBATCHFilename, (int)mypid);
 
   if (getenv("CHPL_LAUNCHER_USE_SBATCH") != NULL) {

@@ -171,15 +171,15 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   mypid = 0;
 #endif
   sysFilename=(char *)chpl_mem_allocMany((strlen(baseSysFilename) + 
-                                      snprintf(NULL, 0, "%d", (int)mypid) + 1), 
-                      sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                                    snprintf(NULL, 0, "%d", (int)mypid) + 1), 
+                      sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
   expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
                                           snprintf(NULL, 0, "%d", (int)mypid) 
                                           + 1), sizeof(char), 
-                        CHPL_RT_MD_UNKNOWN, -1, 0);
+                        CHPL_RT_MD_FILENAME, -1, 0);
   pbsFilename=(char *)chpl_mem_allocMany((strlen(basePBSFilename) + 
                                         snprintf(NULL, 0, "%d", (int)mypid) + 
-                                        1), sizeof(char), CHPL_RT_MD_UNKNOWN, 
+                                        1), sizeof(char), CHPL_RT_MD_FILENAME, 
                       -1, 0);
   sprintf(sysFilename, "%s%d", baseSysFilename, (int)mypid);
   sprintf(expectFilename, "%s%d", baseExpectFilename, (int)mypid);

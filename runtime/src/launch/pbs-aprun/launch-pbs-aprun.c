@@ -246,7 +246,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   expectFilename=(char *)chpl_mem_allocMany((strlen(baseExpectFilename) + 
                                             snprintf(NULL, 0, "%d", (int)mypid)
                                              + 1), 
-                          sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                          sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
   snprintf(expectFilename, FILENAME_MAX, "%s%d",
            baseExpectFilename, (int)mypid);
 
@@ -399,7 +399,7 @@ static void chpl_launch_cleanup(void) {
     if (unlink(expectFilename)) {
       char* msg=(char *)chpl_mem_allocMany((strlen(expectFilename) + 
                                             strlen(strerror(errno)) + 36), 
-                        sizeof(char), CHPL_RT_MD_UNKNOWN, -1, 0);
+                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
       snprintf(msg, FILENAME_MAX + 45, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
