@@ -1968,7 +1968,7 @@ proc svd(A: [?Adom] ?t) throws
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
-  var superb: [0..#min((...A.shape))] realType;
+  var superb: [0..<min((...A.shape))-1] realType;
 
   // TODO: Support option for gesdd (trading memory usage for speed)
   const info = LAPACK.gesvd(lapack_memory_order.row_major, 'A', 'A', Acopy, s, u, vt, superb);
@@ -2054,8 +2054,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
 
   forall (i, j) in A1Dom {
-    const stR = (i)*rowB,
-          stC = (j)*colB;
+    const stR = i*rowB,
+          stC = j*colB;
     for (k, l) in B1Dom {
       C[stR+k, stC+l] = A1[i, j]*B1[k, l];
     }
