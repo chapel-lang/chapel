@@ -48,7 +48,7 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   sprintf(cmd, "%s/%sgasnetrun_ibv", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH));
 
-  const int largc = 13;
+  const int largc = 15;
   char *largv[largc];
   
   sprintf(_nlbuf, "%d", numLocales);
@@ -66,6 +66,8 @@ static char** chpl_launch_create_argv(int argc, char* argv[],
   largv[10] = _nlbuf;
   largv[11] = (char *)"-c";
   largv[12] = (char *)"0";
+  largv[13] = (char*)"-E";
+  largv[14] = chpl_get_enviro_keys(',');
 
   return chpl_bundle_exec_args(argc, argv, largc, largv);
 }
