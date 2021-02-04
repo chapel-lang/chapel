@@ -23,7 +23,7 @@ b = 0;
 writeln("Loop 2");
 forall i in a.domain {
   a[i] = b[10-i];
-  b[10-i] = 5; // should thwart the optimization
+  b[10-i] += 5; // should thwart the optimization
 }
 writeln("End Loop 2");
 

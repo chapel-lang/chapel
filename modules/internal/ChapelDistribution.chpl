@@ -323,6 +323,10 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiIteratorYieldsLocalElements() param {
+      return false;
+    }
+
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 

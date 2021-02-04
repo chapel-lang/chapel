@@ -22,6 +22,7 @@
 #include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "passes.h"
@@ -1140,6 +1141,10 @@ static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
   SET_LINENO(parIterCall);
+
+  // aggregation uses task-private variables, we can't have them with a
+  // recursive iterator
+  removeAggregationFromRecursiveForall(fs);
 
   // Check for non-ref intents.
   SymbolMap sv2ov;

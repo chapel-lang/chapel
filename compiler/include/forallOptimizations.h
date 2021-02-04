@@ -43,7 +43,7 @@ class AggregationCandidateInfo {
     LocalityInfo rhsLocalityInfo;
 
     CallExpr *lhsLogicalChild;
-    CallExpr *rhsLogicalChild;
+    Expr *rhsLogicalChild;
 
     // during normalize, we may generate aggregators for both sides of the
     // assignment. However, after resolve we can have at most one aggregator per
@@ -54,6 +54,7 @@ class AggregationCandidateInfo {
     AggregationCandidateInfo(CallExpr *candidate, ForallStmt *forall);
 
     void addAggregators();
+    void removeSideEffectsFromPrimitive();
     void transformCandidate();
 };
 
@@ -65,6 +66,9 @@ Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
 Expr *preFoldMaybeLocalThis(CallExpr *call);
 Expr *preFoldMaybeLocalArrElem(CallExpr *call);
 Expr *preFoldMaybeAggregateAssign(CallExpr *call);
+
+// interface for lowerForalls
+void removeAggregationFromRecursiveForall(ForallStmt *forall);
 
 // interface for licm
 void transformConditionalAggregation(CondStmt *cond);
