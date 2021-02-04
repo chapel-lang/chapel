@@ -1441,7 +1441,7 @@ static void autoAggregation(ForallStmt *forall) {
 
   for_vector(Expr, lastStmt, lastStmts) {
     if (CallExpr *lastCall = toCallExpr(lastStmt)) {
-      if (lastCall->isNamed("=")) {
+      if (lastCall->isNamedAstr(astrSassign)) {
         // no need to do anything if it is array access
         if (assignmentSuitableForAggregation(lastCall, forall)) {
           LOG_AA(1, "Found an aggregation candidate", lastCall);
@@ -1502,7 +1502,7 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
 }
 
 // PRIM_MAYBE_LOCAL_ARR_ELEM has a 2nd argument that is a copy of the expression
-// that we iterare. We add it there when we create the primitive, so that we can
+// that we iterate. We add it there when we create the primitive, so that we can
 // generate some checks outside the forall. However, keeping that expression
 // inside the forall body can have bunch of side effects. In some cases we
 // remove it when we use it, but we can also leave some untouched. This
@@ -1751,7 +1751,7 @@ void AggregationCandidateInfo::transformCandidate() {
   repl->insertAtTail(this->srcAggregator ? this->srcAggregator : gNil);
 
   // add bool flags that denote whether one side of the assignment is local.
-  // This is happening before normalization, so the only way we can now whether
+  // This is happening before normalization, so the only way we can know whether
   // something is local at this point is if that thing is a literal. And that
   // can only happen on RHS. However, I am checking for both sides for
   // completeness
