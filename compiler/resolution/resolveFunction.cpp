@@ -2541,10 +2541,10 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       insertBefore->insertBefore(initEq);
 
     } else {
-      // for types where init= is not currently possible
-      // to write yet, use PRIM_ASSIGN and PRIM_CAST.
+      // for types where it's not yet possible to write init=,
+      // use PRIM_ASSIGN and PRIM_CAST.
       // This should only be occuring for types that are
-      // either extern or for types when the coercion is legal.
+      // either extern or for non-record types when the coercion is legal.
 
       // (TODO: use tertiary initializers to remove the exception for
       //  extern types)

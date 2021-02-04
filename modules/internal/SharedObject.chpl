@@ -286,7 +286,7 @@ module SharedObject {
                     else _to_borrowed(src.type);
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("Cannot initialize 'owned ", this.type:string, "' from a '", src.type:string, "'");
+        compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
