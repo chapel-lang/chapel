@@ -2326,10 +2326,15 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
 
   Type* fromValType = from->getValType();
 
-  // This code assumes that 'to' already has the (value) type 'toType'
-  // (but 'toType' might be a TypeSymbol)
+  // Adjust and check toType
   {
     Type* toValType = to->getValType();
+    // Use the inferred type of 'to' if the 'toType' is generic.
+    if (toType->type->symbol->hasFlag(FLAG_GENERIC)) {
+      INT_ASSERT(!toValType->symbol->hasFlag(FLAG_GENERIC));
+      toType = toValType->symbol;
+    }
+    // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
   }
 
