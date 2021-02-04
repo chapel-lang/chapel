@@ -2515,33 +2515,35 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
         newCalls.push_back(assign);
         insertBefore->insertBefore(assign);
       } else {
-        const char* immStr = NULL;
-        if (VarSymbol* var = toVarSymbol(from))
-          if (getSymbolImmediate(var))
-            immStr = toString(var);
+        const char* toName = NULL;
+        const char* toTypeStr = NULL;
+        const char* fromStr = NULL;
+        const char* sep = "";
 
-        if (to->hasFlag(FLAG_TEMP)) {
-          if (immStr) {
-            USR_FATAL_CONT(insertBefore,
-                           "Cannot initialize value of type '%s' from '%s'",
-                           toString(toType->type), immStr);
-          } else {
-            USR_FATAL_CONT(insertBefore,
-                           "Cannot initialize value of type '%s' from a '%s'",
-                           toString(toType->type), toString(fromValType));
-          }
+        if (to->hasFlag(FLAG_RVV)) {
+          toName = "return value";
+        } else if (to->hasFlag(FLAG_YVV)) {
+          toName = "yield value";
+        } else if (to->hasFlag(FLAG_TEMP)) {
+          toName = "a value";
         } else {
-          if (immStr) {
-            USR_FATAL_CONT(insertBefore,
-                           "Cannot initialize '%s' of type '%s' from '%s'",
-                           to->name, toString(toType->type), immStr);
-          } else {
-            USR_FATAL_CONT(insertBefore,
-                           "Cannot initialize '%s' of type '%s' from a '%s'",
-                           to->name,
-                           toString(toType->type), toString(fromValType));
-          }
+          toName = astr("'", to->name, "'");
         }
+
+        toTypeStr = toString(toType->type);
+
+        VarSymbol* var = toVarSymbol(from);
+        if (var && getSymbolImmediate(var)) {
+          sep = "";
+          fromStr = toString(var);
+        } else {
+          sep = "a ";
+          fromStr = toString(fromValType);
+        }
+
+        USR_FATAL_CONT(insertBefore,
+                       "Cannot initialize %s of type '%s' from %s'%s'",
+                       toName, toTypeStr, sep, fromStr);
       }
     }
   }
