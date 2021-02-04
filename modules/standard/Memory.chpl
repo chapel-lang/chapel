@@ -57,13 +57,14 @@ enum MemUnits {Bytes, KB, MB, GB};
 
   How much physical memory is present on this locale?
 
-  Note that this is a physical quantity and does not take into account
-  things like virtual memory support which might allow for allocating
-  a larger amount, or system or user limits which might prevent
-  allocating so much.
+  This quantity does not take into account things like virtual memory support
+  which might allow for allocating a larger amount, or system or user limits
+  which might prevent allocating so much.
 
-  *Note:* Unlike the other procedures in the :mod:`Memory` module, this
-  one does not require memory tracking to be enabled.
+  .. note::
+
+    Unlike the other procedures in the :mod:`Memory` module, this
+    one does not require memory tracking to be enabled.
 
   :arg unit: Units in which the returned value is to be expressed.
   :type unit: :type:`~Memory.MemUnits`
