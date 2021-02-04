@@ -2551,7 +2551,8 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
 
       if (toType->type->symbol->hasFlag(FLAG_EXTERN) ||
           fromValType->symbol->hasFlag(FLAG_EXTERN) ||
-          canCoerce(fromValType, from, toType->type, NULL, NULL)) {
+          canCoerce(fromValType, from, toType->type, NULL, NULL) ||
+          (toType->type == dtStringC && fromValType == dtNil)) {
         // Cast and assign
         INT_ASSERT(!typeNeedsCopyInitDeinit(toType->type));
 
