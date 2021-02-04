@@ -1182,10 +1182,10 @@ module Random {
         }
       }
 
-      inline proc _Merge(arr : [?D] ?eltType, start: int, j : int, n : int) {
+      inline proc _Merge(arr: [?D] ?eltType, start: int, mid: int, n: int) {
         var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
         var PCGRandomStreamPrivate_count: int(64) = this.PCGRandomStreamPrivate_count;
-        var i = start;
+        var i = start, j = mid;
         var k: D.idxType;
         const stride = D.stride;
 
@@ -1237,8 +1237,8 @@ module Random {
         var numSize = blockSize * stride;
         while (numSize / stride) < size {
           forall it in lo..hi by (2 * numSize) {
-            var start = it, j = it + numSize, n = min(hi, it + 2 * numSize - stride) + stride;
-            _Merge(arr, start, j, n);
+            var start = it, mid = it + numSize, n = min(hi, it + 2 * numSize - stride) + stride;
+            _Merge(arr, start, mid, n);
           }
           numSize <<= 1;
         }
