@@ -2140,7 +2140,7 @@ VarSymbol* newTempConst(QualifiedType qt) {
   return result;
 }
 
-const char* toString(ArgSymbol* arg) {
+const char* toString(ArgSymbol* arg, bool withType) {
   const char* intent = "";
   switch (arg->intent) {
     case INTENT_BLANK:           intent = "";           break;
@@ -2157,7 +2157,9 @@ const char* toString(ArgSymbol* arg) {
   }
 
   const char* retval = "";
-  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
+  if (arg->getValType() == dtAny ||
+      arg->getValType() == dtUnknown ||
+      withType == false)
     retval = astr(intent, arg->name);
   else
     retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
@@ -2169,7 +2171,7 @@ const char* toString(ArgSymbol* arg) {
   return retval;
 }
 
-const char* toString(VarSymbol* var) {
+const char* toString(VarSymbol* var, bool withType) {
 
   Immediate* imm = getSymbolImmediate(var);
   if (imm) {
@@ -2194,8 +2196,10 @@ const char* toString(VarSymbol* var) {
       // Add the type if it's not default
       if (isNumericParamDefaultType(t) == false &&
           t != dtUnknown && t != dtString && t != dtBytes) {
-        value += ": ";
-        value += toString(t);
+        if (withType) {
+          value += ": ";
+          value += toString(t);
+        }
       }
       return astr(value.c_str());
     }
@@ -2205,8 +2209,12 @@ const char* toString(VarSymbol* var) {
   //  * from a user variable or field
   //  * to a user variable or field
 
-  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP))
-    return astr(var->name, ": ", toString(var->getValType()));
+  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP)) {
+    if (withType)
+      return astr(var->name, ": ", toString(var->getValType()));
+    else
+      return var->name;
+  }
 
   Symbol* sym = var;
   // Compiler temporaries should have a single definition
@@ -2281,10 +2289,14 @@ const char* toString(VarSymbol* var) {
     }
   }
 
-  if (ArgSymbol* arg = toArgSymbol(sym))
-    return toString(arg);
-  else if (name != NULL)
-    return astr(name, ": ", toString(var->getValType()));
-
-  return astr("<temporary>");
+  if (ArgSymbol* arg = toArgSymbol(sym)) {
+    return toString(arg, withType);
+  } else if (name != NULL) {
+    if (withType)
+      return astr(name, ": ", toString(var->getValType()));
+    else
+      return astr(name);
+  } else {
+    return astr("<temporary>");
+  }
 }

@@ -2314,6 +2314,47 @@ Type* arrayElementType(Type* arrayType) {
   return eltType;
 }
 
+static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
+                                     Expr* where) {
+
+  Type* fromValType = from->getValType();
+
+  const char* toName = NULL;
+  const char* toTypeStr = NULL;
+  const char* fromStr = NULL;
+  const char* sep = "";
+
+  if (to->hasFlag(FLAG_RVV)) {
+    toName = "return value";
+  } else if (to->hasFlag(FLAG_YVV)) {
+    toName = "yield value";
+  } else if (VarSymbol* var = toVarSymbol(to)) {
+    toName = toString(var, false);
+    if (toName == astr("<temporary>") ||
+        to->defPoint->getModule()->modTag != MOD_USER)
+      toName = "a value";
+    else
+      toName = astr("'", toName, "'");
+  } else {
+    toName = astr("'", to->name, "'");
+  }
+
+  toTypeStr = toString(toType->type);
+
+  VarSymbol* var = toVarSymbol(from);
+  if (var && getSymbolImmediate(var)) {
+    sep = "";
+    fromStr = toString(var, true);
+  } else {
+    sep = "a ";
+    fromStr = toString(fromValType);
+  }
+
+  USR_FATAL_CONT(where,
+                 "Cannot initialize %s of type '%s' from %s'%s'",
+                 toName, toTypeStr, sep, fromStr);
+}
+
 // Emit an init= or similar pattern to create 'to' of type 'toType' from 'from'
 // (the Symbol toType conveys any runtime type info beyond what to->type is.)
 //
@@ -2506,7 +2547,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       if (toType->type->symbol->hasFlag(FLAG_EXTERN) ||
           fromValType->symbol->hasFlag(FLAG_EXTERN) ||
           canCoerce(fromValType, from, toType->type, NULL, NULL)) {
-
+        // Cast and assign
         INT_ASSERT(!typeNeedsCopyInitDeinit(toType->type));
 
         CallExpr* cast = createCast(from, toType->type->symbol);
@@ -2514,36 +2555,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
         CallExpr* assign = new CallExpr(PRIM_ASSIGN, to, cast);
         newCalls.push_back(assign);
         insertBefore->insertBefore(assign);
+
       } else {
-        const char* toName = NULL;
-        const char* toTypeStr = NULL;
-        const char* fromStr = NULL;
-        const char* sep = "";
-
-        if (to->hasFlag(FLAG_RVV)) {
-          toName = "return value";
-        } else if (to->hasFlag(FLAG_YVV)) {
-          toName = "yield value";
-        } else if (to->hasFlag(FLAG_TEMP)) {
-          toName = "a value";
-        } else {
-          toName = astr("'", to->name, "'");
-        }
-
-        toTypeStr = toString(toType->type);
-
-        VarSymbol* var = toVarSymbol(from);
-        if (var && getSymbolImmediate(var)) {
-          sep = "";
-          fromStr = toString(var);
-        } else {
-          sep = "a ";
-          fromStr = toString(fromValType);
-        }
-
-        USR_FATAL_CONT(insertBefore,
-                       "Cannot initialize %s of type '%s' from %s'%s'",
-                       toName, toTypeStr, sep, fromStr);
+        issueInitConversionError(to, toType, from, insertBefore);
       }
     }
   }

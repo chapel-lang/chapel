@@ -6593,7 +6593,8 @@ static void resolveInitField(CallExpr* call) {
           VarSymbol* srcVar = toVarSymbol(srcParam);
           if (dstVar != NULL && srcVar != NULL)
             USR_PRINT(call, "field '%s' has value '%s' but is set to '%s'",
-                            fs->name, toString(dstVar), toString(srcVar));
+                            fs->name,
+                            toString(dstVar, false), toString(srcVar, false));
           USR_STOP();
         }
       }
@@ -10834,7 +10835,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
 
   const char* descr = val->name;
   if (VarSymbol* v = toVarSymbol(val))
-    descr = toString(v);
+    descr = toString(v, true);
 
   CallExpr* uCall = call;
   if (isTupleComponent(val, call)) {
