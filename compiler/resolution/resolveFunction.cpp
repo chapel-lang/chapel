@@ -2553,14 +2553,15 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
       if (SymExpr* lhs = toSymExpr(call->get(1))) {
         Type* lhsType = lhs->symbol()->type;
 
-        // PRIM_ASSIGN will set a value in the LHS type,
-        // never set what a reference points to.
-        if (call->isPrimitive(PRIM_ASSIGN))
-          lhsType = lhsType->getValType();
-
         if (lhsType != dtUnknown) {
           Expr*     rhs     = call->get(2);
           CallExpr* rhsCall = toCallExpr(rhs);
+
+          // PRIM_ASSIGN will set a value in the LHS type,
+          // never set what a reference points to.
+          // Same for a PRIM_MOVE with a LHS ref and RHS value.
+          if (call->isPrimitive(PRIM_ASSIGN) || rhs->isRef() == false)
+            lhsType = lhsType->getValType();
 
           if (call->id == breakOnResolveID)
             gdbShouldBreakHere();
