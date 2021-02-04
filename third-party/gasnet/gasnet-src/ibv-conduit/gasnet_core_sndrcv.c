@@ -2007,7 +2007,7 @@ static void gasnetc_fh_do_put(gasnetc_sreq_t *sreq GASNETI_THREAD_FARG) {
 }
 
 #define gasnetc_sreq_is_ready(sreq) \
-  gasnetc_atomic_decrement_and_test(&((sreq)->fh_ready), GASNETI_ATOMIC_REL)
+  gasnetc_atomic_decrement_and_test(&((sreq)->fh_ready), GASNETI_ATOMIC_REL|GASNETI_ATOMIC_ACQ)
 
 static void gasnetc_fh_put_cb(void *context, const firehose_request_t *fh_rem, int allLocalHit) {
   gasnetc_sreq_t *sreq = context;
