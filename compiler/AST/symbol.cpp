@@ -2194,9 +2194,8 @@ const char* toString(VarSymbol* var, bool withType) {
       snprint_imm(buf, bufSize, *imm);
       value = buf;
       // Add the type if it's not default
-      if (isNumericParamDefaultType(t) == false &&
-          t != dtUnknown && t != dtString && t != dtBytes) {
-        if (withType) {
+      if (t != dtUnknown && t != dtString && t != dtBytes) {
+        if (withType && isNumericParamDefaultType(t) == false) {
           value += ": ";
           value += toString(t);
         }
