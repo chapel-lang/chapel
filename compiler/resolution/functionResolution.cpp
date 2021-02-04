@@ -6111,6 +6111,11 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                                calleeFn->isCopyInit());
     bool isInitParam = actSym->hasFlag(FLAG_PARAM) && isInit;
 
+    if (isInit && formal->hasFlag(FLAG_ARG_THIS)) {
+      // Ignore lvalue errors for 'this' in initializer calls
+      return;
+    }
+
     bool isAssign = false;
     if (calleeFn && calleeFn->hasFlag(FLAG_ASSIGNOP))
       isAssign = true;
