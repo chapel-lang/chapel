@@ -4,7 +4,7 @@
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not use this file except
+ * Version 2.0 (the "License"); you may not use this file excet
  * in compliance with the License.
  *
  * You may obtain a copy of the License at
@@ -139,7 +139,7 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
-std::string ggpuFatbinPath;
+
 
 // forward declare
 class CCodeGenConsumer;
@@ -1464,15 +1464,6 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (!fLlvmCodegen)
     clangArgs.push_back("-fsyntax-only");
 
-  /*
-  if( localeUsesGPU() == true && gCodegenGPU == false ) {
-    clangArgs.push_back("-Xclang");
-    clangArgs.push_back("-fcuda-include-gpubinary");
-    clangArgs.push_back("-Xclang");
-    clangArgs.push_back("tmp/chpl_gpu.fatbin");
-  }
-  */
-
   if( printSystemCommands && developer ) {
     for( size_t i = 0; i < clangArgs.size(); i++ ) {
       printf("%s ", clangArgs[i]);
@@ -1554,6 +1545,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   if ( gCodegenGPU == false && localeUsesGPU() == true && clangInfo->parseOnly == false) {
     bool isGPUBinaryFlag = false;
 
+    /*
     for ( auto a : job->getArguments() ) {
 
       if ( isGPUBinaryFlag ) {
@@ -1581,7 +1573,7 @@ void setupClang(GenInfo* info, std::string mainFile)
       }
     }
     std::cout << "fatbin path: " << ggpuFatbinPath << "\n";
-
+*/
     //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
 /*
     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
@@ -3405,6 +3397,8 @@ void makeBinaryLLVM(void) {
   std::string opt1Filename;
   std::string opt2Filename;
   std::string asmFilename;
+  std::string ptxObjectFilename;
+  std::string fatbinFilename;
 
   if (gCodegenGPU == false) {
     moduleFilename = genIntermediateFilename("chpl__module.o");
@@ -3417,6 +3411,8 @@ void makeBinaryLLVM(void) {
     opt1Filename = genIntermediateFilename("chpl__gpu_module-opt1.bc");
     opt2Filename = genIntermediateFilename("chpl__gpu_module-opt2.bc");
     asmFilename = genIntermediateFilename("chpl__gpu_ptx.s");
+    ptxObjectFilename = genIntermediateFilename("chpl__gpu_ptx.o");
+    fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   }
 
   if( saveCDir[0] != '\0' ) {
@@ -3670,16 +3666,16 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      std::string ptxCmd = "/usr/local/cuda/bin/ptxas -m64 --gpu-name "
-                            "sm_61 --output-file tmp/chpl_gpu_ptx.o "
-                            "tmp/chpl__gpu_ptx.s";
+      std::string ptxCmd = std::string("/usr/local/cuda/bin/ptxas -m64 --gpu-name ") +
+                           std::string("sm_61 --output-file ") + ptxObjectFilename.c_str() +
+                           " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-      std::string fatbinaryCmd = "/usr/local/cuda/bin/fatbinary -64 "
-                                  "--create tmp/chpl_gpu.fatbin "
-                                  "--image=profile=sm_61,file=tmp/chpl_gpu_ptx.o "
-                                  "--image=profile=compute_61,file=tmp/chpl__gpu_ptx.s";
+      std::string fatbinaryCmd = std::string("/usr/local/cuda/bin/fatbinary -64 ") +
+                                 std::string("--create ") + fatbinFilename.c_str() +
+                                 std::string(" --image=profile=sm_61,file=") + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=compute_61,file=") + asmFilename.c_str();
       
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 

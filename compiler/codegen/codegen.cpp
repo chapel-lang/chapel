@@ -2509,65 +2509,6 @@ static void codegenPartTwo() {
   info->cfile = hdrfile.fptr;
   codegen_header(cnames, types, functions, globals);
 
-#ifdef HAVE_LLVM
-  if(localeUsesGPU() and gCodegenGPU == false){
-
-   llvm::IntegerType *IntTy, *SizeTy;
-   llvm::PointerType *VoidPtrTy;
-
-   IntTy = llvm::IntegerType::getInt32Ty(info->module->getContext());
-   VoidPtrTy = llvm::Type::getInt8PtrTy(info->module->getContext(), 0);
-
-   const llvm::DataLayout& DL = info->module->getDataLayout();
-   SizeTy = DL.getIntPtrType(info->module->getContext(), 0);
-  //SizeTy = info->module->getContext().getSizeType();
-
-   llvm::StructType *FatbinWrapperTy =
-     llvm::StructType::get(IntTy, IntTy, VoidPtrTy, VoidPtrTy);
-
-     const char* GpuBinaryFileName = "tmp/chpl_gpu.fatbin";
-     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
-        llvm::MemoryBuffer::getFileOrSTDIN(GpuBinaryFileName);
-     if (std::error_code EC = GpuBinaryOrErr.getError()) {
-       USR_FATAL("Cannot open file: %s, %s", GpuBinaryFileName, EC.message().c_str());}
-    //llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
-     //    llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fatbin");
-
-
-     //llvm::LLVMContext &VMContext = gGenInfo->llvmContext;
-     //clang::CharUnits Alignment =
-     //getAlignOfGlobalVarInChars(info->module->getContext().CharTy);
-     //Alignment.getQuantity();
-
-    //const std::string &Name = "";
-    //auto ConstStr = *info->module->GetAddrOfConstantCString(GpuBinaryOrErr.get()->getBuffer(), Name.c_str());
-
-     llvm::Constant *Zeros[] = {llvm::ConstantInt::get(SizeTy, 0),
-                               llvm::ConstantInt::get(SizeTy, 0)};
-
-    llvm::GlobalVariable* gpuStr = info->irBuilder->CreateGlobalString(GpuBinaryOrErr.get()->getBuffer());
-    llvm::Constant* gpuConst = llvm::ConstantExpr::getGetElementPtr(gpuStr->getType()->getPointerElementType(), gpuStr, Zeros);
-    gpuStr->setAlignment(llvm::Align(16));
-    gpuStr->setSection(".nv_fatbin");
-    llvm::Constant *Values[] = {
-      llvm::ConstantInt::get(IntTy, 0x466243b1), // Fatbin wrapper magic.
-      llvm::ConstantInt::get(IntTy, 1),          // Fatbin version.
-      gpuConst,
-      //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
-      llvm::ConstantPointerNull::get(VoidPtrTy)}; // Unused in fatbin v1.
-    llvm::GlobalVariable *FatbinWrapper = new llvm::GlobalVariable(
-      *info->module, FatbinWrapperTy, true, llvm::GlobalValue::InternalLinkage,
-      llvm::ConstantStruct::get(FatbinWrapperTy, Values),
-       "__cuda_fatbin_wrapper");
-     // NVIDIA's cuobjdump looks for fatbins in this section.
-    FatbinWrapper->setSection(".nvFatBinSegment");
-
-    //llvm::verifyModule(*info->module, &llvm::errs());
-  }
-
-#endif
-
-
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
   // currently in codegen_header.
