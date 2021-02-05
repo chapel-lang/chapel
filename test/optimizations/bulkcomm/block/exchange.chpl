@@ -70,15 +70,15 @@ proc main() {
     } else {
       const diags = getCommDiagnostics();
 
-      var gets : uint;
+      var gets : int;
       gets += + reduce diags.get;
       gets += + reduce diags.get_nb;
 
-      var puts : uint;
+      var puts : int;
       puts += + reduce diags.put;
       puts += + reduce diags.put_nb;
 
-      var ons : uint;
+      var ons : int;
       ons += + reduce diags.execute_on;
       ons += + reduce diags.execute_on_fast;
       ons += + reduce diags.execute_on_nb;

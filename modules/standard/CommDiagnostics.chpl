@@ -211,53 +211,53 @@ module CommDiagnostics
     /*
       blocking GETs, in which initiator waits for completion
      */
-    var get: uint(64);
+    var get: int(64);
     /*
       non-blocking GETs
      */
-    var get_nb: uint(64);
+    var get_nb: int(64);
     /*
       blocking PUTs, in which initiator waits for completion
      */
-    var put: uint(64);
+    var put: int(64);
     /*
       non-blocking PUTs
      */
-    var put_nb: uint(64);
+    var put_nb: int(64);
     /*
       tests for non-blocking GET/PUT completions
      */
-    var test_nb: uint(64);
+    var test_nb: int(64);
     /*
       blocking waits for non-blocking GET/PUT completions
      */
-    var wait_nb: uint(64);
+    var wait_nb: int(64);
     /*
       non-blocking waits for non-blocking GET/PUT completions
      */
-    var try_nb: uint(64);
+    var try_nb: int(64);
     /*
       atomic memory operations
      */
-    var amo: uint(64);
+    var amo: int(64);
     /*
       blocking remote executions, in which initiator waits for completion
      */
-    var execute_on: uint(64);
+    var execute_on: int(64);
     /*
       blocking remote executions performed by the target locale's
       Active Message handler
      */
-    var execute_on_fast: uint(64);
+    var execute_on_fast: int(64);
     /*
       non-blocking remote executions
      */
-    var execute_on_nb: uint(64);
+    var execute_on_nb: int(64);
 
-    var cache_get_hits: uint(64);
-    var cache_get_misses: uint(64);
-    var cache_put_hits: uint(64);
-    var cache_put_misses: uint(64);
+    var cache_get_hits: int(64);
+    var cache_get_misses: int(64);
+    var cache_put_hits: int(64);
+    var cache_put_misses: int(64);
 
     proc writeThis(c) throws {
       use Reflection;
@@ -438,7 +438,7 @@ module CommDiagnostics
 
       var maxval = 0;
       for locID in LocaleSpace do
-        maxval = max(maxval, getField(CommDiags[locID], fieldID).safeCast(int));
+        maxval = max(maxval, getField(CommDiags[locID], fieldID));
 
       if printEmptyColumns || maxval != 0 {
         const width = if commDiagsPrintUnstable == false && name == "amo"
