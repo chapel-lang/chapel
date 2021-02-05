@@ -43,11 +43,11 @@ class ForallOptimizationInfo {
     std::vector<Symbol *> iterCallTmp; // this is the symbol to use for checks
 
     // even if there are multiple indices we store them in a vector
-    std::vector<std::vector<Symbol *>> multiDIndices;
+    std::vector< std::vector<Symbol *> > multiDIndices;
 
     // calls in the loop that are candidates for optimization
-    std::vector<std::pair<CallExpr *, int>> staticCandidates;
-    std::vector<std::pair<CallExpr *, int>> dynamicCandidates;
+    std::vector< std::pair<CallExpr *, int> > staticCandidates;
+    std::vector< std::pair<CallExpr *, int> > dynamicCandidates;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
