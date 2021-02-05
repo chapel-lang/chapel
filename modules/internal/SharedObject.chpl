@@ -611,6 +611,13 @@ module SharedObject {
     return tmp;
   }
 
+  // cast from owned to shared
+  pragma "no doc"
+  inline proc _cast(type t:_shared, pragma "nil from arg" x:owned) {
+    var tmp:t = x;
+    return tmp;
+  }
+
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {
