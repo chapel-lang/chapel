@@ -85,7 +85,8 @@ public:
                           ResolutionCandidate(FnSymbol* fn);
 
   bool                    isApplicable(CallInfo& info,
-                                       VisibilityInfo* visInfo);
+                                       VisibilityInfo* visInfo,
+                                       bool isOp = false);
 
   FnSymbol*               fn;
   std::vector<Symbol*>    formalIdxToActual;
@@ -98,14 +99,16 @@ private:
                           ResolutionCandidate();
 
   bool                    isApplicableConcrete(CallInfo& info,
-                                               VisibilityInfo* visInfo);
+                                               VisibilityInfo* visInfo,
+                                               bool isOp = false);
 
   bool                    isApplicableGeneric(CallInfo& info,
-                                              VisibilityInfo* visInfo);
+                                              VisibilityInfo* visInfo,
+                                              bool isOp = false);
 
-  bool                    computeAlignment(CallInfo& info);
+  bool                    computeAlignment(CallInfo& info, bool isOp = false);
 
-  bool                    computeSubstitutions(Expr* ctx);
+  bool                    computeSubstitutions(Expr* ctx, bool isOp = false);
 
   bool                    verifyGenericFormal(ArgSymbol* formal)       const;
 

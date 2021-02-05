@@ -67,6 +67,9 @@
 #include <map>
 #include <utility>
 
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals);
+
 static void addDefaultTokensAndReorder(FnSymbol *fn,
                                        CallInfo& info,
                                        std::vector<ArgSymbol*>& actualIdxToFml);
@@ -166,9 +169,14 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
   if (numActuals < retval->numFormals()) {
     // If we don't have the right number of arguments, add placeholders
-    // for defaulted arguments.
+    // for defaulted arguments and for skipped operator arguments.
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
     addDefaultTokensAndReorder(retval, info, actualIdxToFormal);
     anyDefault = true;
+  } else if (numActuals > retval->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+    // If we don't have the right number of arguments, remove unnecessary
+    // actuals for operator calls
+    adjustForOperatorMethod(retval, info, actualIdxToFormal);
   } else {
     // handle reordering only
     if (actualIdxToFormal.size() > 1) {
@@ -273,6 +281,52 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
                                      CallExpr*  call,
                                      BlockStmt* body,
                                      SymbolMap& copyMap);
+
+static void adjustForOperatorMethod(FnSymbol* fn, CallInfo& info,
+                                    std::vector<ArgSymbol*>& actualFormals) {
+  if (fn->hasFlag(FLAG_OPERATOR)) {
+    if (fn->hasFlag(FLAG_METHOD)) {
+      int numFormals = fn->numFormals();
+      if (numFormals >= info.call->numActuals() + 2) {
+        // Insert an arg for "this" and for the method token, in reverse order
+        // because inserting at the start of the call.
+        info.call->insertAtHead(new SymExpr(fn->_this->typeInfo()->symbol));
+        info.call->insertAtHead(new SymExpr(gMethodToken));
+
+        // Update the CallInfo actuals and actualNames fields
+        info.actuals.clear();
+        info.actualNames.clear();
+        for_actuals(actual, info.call) {
+          SymExpr* se = toSymExpr(actual);
+          INT_ASSERT(se);
+          info.actuals.add(se->symbol());
+          info.actualNames.add(NULL);
+        }
+
+        actualFormals.resize(fn->numFormals());
+        int i = 0;
+        for_formals(formal, fn) {
+          actualFormals[i] = formal;
+          i++;
+        }
+      }
+    } else {
+      bool removeNext = false;
+      for_actuals(actual, info.call) {
+        if (actual->typeInfo() == dtMethodToken && !fn->hasFlag(FLAG_METHOD)) {
+          // Remove the method token and tell ourselves to remove the "this"
+          // actual as well if the function being called is just an operator
+          // rather than an operator method
+          actual->remove();
+          removeNext = true;
+        } else if (removeNext) {
+          actual->remove();
+          removeNext = false;
+        }
+      }
+    }
+  }
+}
 
 // info is used to handle out-of-order named arguments
 // if there aren't any out-of-order arguments (as with promotion)
@@ -1955,6 +2009,12 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
 
         INT_ASSERT(actualType);
       }
+
+      // Operator calls are allowed to have actuals for a method token and
+      // "this" argument, even if the best operator match is not a method.
+      // We'll clean it up later and we shouldn't promote based on it.
+      if (formal == NULL && fn->hasFlag(FLAG_OPERATOR))
+        continue;
 
       if (canDispatch(actualType, actual,
                       formal->type, formal, fn, &promotes)) {

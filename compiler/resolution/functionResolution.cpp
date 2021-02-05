@@ -4623,7 +4623,8 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  if (candidate->isApplicable(info, &visInfo)) {
+  bool isOp = fn->hasFlag(FLAG_OPERATOR);
+  if (candidate->isApplicable(info, &visInfo, isOp)) {
     candidates.add(candidate);
   } else {
     delete candidate;
@@ -4933,6 +4934,11 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          j,
                            DisambiguationState&         DS);
 
+static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                             ArgSymbol* formal2, Symbol* actual,
+                             const DisambiguationContext& DC, int i, int j,
+                             DisambiguationState& DS);
+
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info);
@@ -5228,6 +5234,21 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
     ArgSymbol* formal2 = candidate2->actualIdxToFormal[k];
 
     EXPLAIN("\nLooking at argument %d\n", k);
+
+    if (formal1 == NULL || formal2 == NULL) {
+      if (candidate1->fn->hasFlag(FLAG_OPERATOR) &&
+          candidate2->fn->hasFlag(FLAG_OPERATOR)) {
+        EXPLAIN("\nSkipping argument %d because could be in an operator call\n",
+                k);
+        continue;
+      } else {
+        // One of the two candidate functions was not an operator, but one
+        // was so we need to do something special here.
+        testOpArgMapping(candidate1->fn, formal1, candidate2->fn, formal2,
+                         actual, DC, i, j, DS);
+        continue;
+      }
+    }
 
     testArgMapping(candidate1->fn,
                    formal1,
@@ -5587,6 +5608,72 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
     if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
     EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
+  }
+}
+
+static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                             ArgSymbol* formal2, Symbol* actual,
+                             const DisambiguationContext& DC, int i, int j,
+                             DisambiguationState& DS) {
+  // Validate our assumptions in this function - only operator functions should
+  // return a NULL for the formal and they should only do so for method token
+  // and "this" actuals.
+  INT_ASSERT(fn1->hasFlag(FLAG_OPERATOR) == (formal1 == NULL));
+  INT_ASSERT(fn2->hasFlag(FLAG_OPERATOR) == (formal2 == NULL));
+
+  Type* actualType = actual->type->getValType();
+  const char* reason = "potentially optional argument present vs not";
+  const char* level = "weak";
+
+  if (formal1 == NULL) {
+    EXPLAIN("Function 1 did not have a corresponding formal");
+    EXPLAIN("Function 1 is an operator standalone function");
+    INT_ASSERT(formal2 != NULL);
+
+    Type* f2Type = formal2->type->getValType();
+    bool formal2Promotes = false;
+    bool formal2Narrows = false;
+
+    canDispatch(actualType, actual, f2Type, formal2, fn2, &formal2Promotes,
+                &formal2Narrows);
+    DS.fn2Promotes |= formal2Promotes;
+
+    EXPLAIN("Formal 2's type: %s", toString(f2Type));
+    if (formal2Promotes)
+      EXPLAIN(" (promotes)");
+    if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
+      EXPLAIN(" (instantiated param)");
+    if (formal2Narrows)
+      EXPLAIN(" (narrows param)");
+    EXPLAIN("\n");
+
+    DS.fn2WeakPreferred = true;
+    EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
+
+  } else {
+    INT_ASSERT(formal2 == NULL);
+    EXPLAIN("Function 2 did not have a corresponding formal");
+    EXPLAIN("Function 2 is an operator standalone function");
+
+    Type* f1Type = formal1->type->getValType();
+    bool formal1Promotes = false;
+    bool formal1Narrows = false;
+
+    canDispatch(actualType, actual, f1Type, formal1, fn1, &formal1Promotes,
+                &formal1Narrows);
+    DS.fn1Promotes |= formal1Promotes;
+
+    EXPLAIN("Formal 1's type: %s", toString(f1Type));
+    if (formal1Promotes)
+      EXPLAIN(" (promotes)");
+    if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
+      EXPLAIN(" (instantiated param)");
+    if (formal1Narrows)
+      EXPLAIN(" (narrows param)");
+    EXPLAIN("\n");
+
+    DS.fn1WeakPreferred = true;
+    EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
   }
 }
 

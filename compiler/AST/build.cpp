@@ -2626,3 +2626,9 @@ void redefiningReservedWordError(const char* name)
   USR_FATAL_CONT(buildErrorStandin(),
                  "attempt to redefine reserved word '%s'", name);
 }
+
+void badOperatorThisTagError(const char* name) {
+  USR_FATAL_CONT(buildErrorStandin(),
+                 "attempt to declare unsupported this intent tag for operator "
+                 "function '%s'", name);
+}

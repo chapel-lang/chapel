@@ -1337,6 +1337,14 @@ fn_decl_stmt:
       }
       if ($2 == ProcIterOp_OP) {
         fn->addFlag(FLAG_OPERATOR);
+        if (fn->thisTag == INTENT_BLANK) {
+           fn->thisTag = INTENT_TYPE;
+        } else {
+           badOperatorThisTagError(fn->name);
+        }
+        if (fn->_this != NULL) {
+           setupTypeIntentArg(toArgSymbol(fn->_this));
+        }
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
