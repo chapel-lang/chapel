@@ -45,10 +45,6 @@ typedef std::complex<double> _complex128;
 extern "C" {
 #endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 // C types usable from Chapel.
 typedef char c_char;
 typedef signed char c_schar;
