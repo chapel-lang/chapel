@@ -2459,18 +2459,13 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
         stealRHS = true;
     } else {
       // not an iterator, steal if it's a temp
+      // but don't steal if the compile-time type differs
+      // (e.g. arrays with different element types; see nbody_orig_1.chpl)
       stealRHS = from->hasFlag(FLAG_TEMP) &&
                  !from->isRef() &&
                  !from->hasFlag(FLAG_INSERT_AUTO_DESTROY) &&
-                 !from->hasFlag(
-                     FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW);
-
-      // but don't steal for arrays with different element types
-      /*Type* dstEltType = arrayElementType(toType->getValType());
-      Type* srcEltType = arrayElementType(from->getValType());
-
-      if (dstEltType && srcEltType && dstEltType != srcEltType)
-        stealRHS = false;*/
+                 !from->hasFlag(FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW) &&
+                 !typesDiffer;
     }
   }
 
