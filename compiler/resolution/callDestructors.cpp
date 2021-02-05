@@ -1964,6 +1964,15 @@ static void insertAutoDestroyPrimsForLoopExprTemps() {
   }
 }
 
+static void removeZipPrimitives() {
+  forv_Vec(ForallStmt, forall, gForallStmts) {
+    if (CallExpr *prevCall = toCallExpr(forall->prev)) {
+      if (prevCall->isPrimitive(PRIM_ZIP)) {
+        prevCall->remove();
+      }
+    }
+  }
+}
 
 /************************************* | **************************************
 *                                                                             *
@@ -2003,4 +2012,5 @@ void callDestructors() {
 
   removeEndOfStatementMarkersElidedCopyPrims();
   removeElidedOnBlocks();
+  removeZipPrimitives();
 }

@@ -628,6 +628,10 @@ module ChapelIteratorSupport {
     return x._value.dsiStaticFastFollowCheck(lead._value.type);
   }
 
+  proc chpl__staticFastFollowCheckZipNew(x ...?n) param {
+    return chpl__staticFastFollowCheckZip(x);
+  }
+
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
     if !chpl__canHaveFastFollowersZip(x) {
       return false;
@@ -731,6 +735,10 @@ module ChapelIteratorSupport {
     else
       return (_toFollower(x(dim), leaderIndex),
               (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
+  }
+
+  inline proc _toFollowerZipInternalNew(x ..., leaderIndex, param dim: int) {
+    return _toFollowerZipInternal(x, leaderIndex, dim);
   }
 
   pragma "no implicit copy"
