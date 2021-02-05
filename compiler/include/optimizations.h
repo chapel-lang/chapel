@@ -64,6 +64,7 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
                                          LifetimeInformation* lifetimeInfo);
+std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall);
 void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,

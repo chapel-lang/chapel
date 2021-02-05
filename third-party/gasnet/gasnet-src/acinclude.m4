@@ -1415,7 +1415,7 @@ AC_DEFUN([GASNET_TRY_RUNCMD],[
   cat conftest-runcmdout >&5
   cat conftest-runcmderr >&5
   echo gasnet_cmd_result=$gasnet_cmd_result >&5
-  rm -rf conftest*
+  rm -rf conftest-runcmdout conftest-runcmderr
   if test "$gasnet_cmd_result" = "0" ; then 
     if test -z "$gasnet_cmd_stdout$gasnet_cmd_stderr" ; then
       :
@@ -3106,8 +3106,8 @@ pushdef([embedcode],[
  const char *s = $_extractstrembed;
 ])
 pushdef([unpackcode],[
-   _extract_prog='BEGIN{$/="\0";} if (m/\$gasnetextractstr: \(-\(\|(.+?)\|\)-\) \$/) { print "[$]1";}' 
-   cv_prefix[]$2=`$PERL -ne "$_extract_prog" $GASNET_EXAMINE_BIN`
+   _extract_prog='BEGIN{$/="\0";} if (m/\$gasnetextractstr: \(-\(\|(.+?)\|\)-\) \$/) { print "[$]1"; exit 0;}' 
+   cv_prefix[]$2=`$PERL $GASNET_PERL_BYTESFLAG -ne "$_extract_prog" $GASNET_EXAMINE_BIN`
 ])
  GASNET_COMPILE_EXAMINE([$3
    embedcode ],[ printf("%s",s); ],
@@ -3145,8 +3145,8 @@ pushdef([embedcode],[
              ' ','$','\0'};
 ])
 pushdef([unpackcode],[
-   _extract_prog='BEGIN{$/="\$";} if (m/^gasnetextractexpr: ([[ -]]) (.+?) \$/) { map($val=($val<<4)+($_-0x40),unpack("C8",[$]2)); print "-" if ([$]1 eq "-"); print $val;}' 
-   cv_prefix[]$2=`$PERL -ne "$_extract_prog" $GASNET_EXAMINE_BIN`
+   _extract_prog='BEGIN{$/="\$";} if (m/^gasnetextractexpr: ([[ -]]) (.+?) \$/) { map($val=($val<<4)+($_-0x40),unpack("C8",[$]2)); print "-" if ([$]1 eq "-"); print $val; exit 0;}' 
+   cv_prefix[]$2=`$PERL $GASNET_PERL_BYTESFLAG -ne "$_extract_prog" $GASNET_EXAMINE_BIN`
 ])
 dnl Do not remove the "static" from the decl of "p" in GASNET_{COMPILE,LINK}_EXAMINE calls below.
 dnl It prevents (at least) Apple Clang 9.0.0 LTO from optimizing out the char array!

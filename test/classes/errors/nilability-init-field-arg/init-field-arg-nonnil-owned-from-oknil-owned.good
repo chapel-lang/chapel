@@ -1,3 +1,4 @@
 init-field-arg-nonnil-owned-from-oknil-owned.chpl:9: In initializer:
+init-field-arg-nonnil-owned-from-oknil-owned.chpl:10: error: invalid copy-initialization
 init-field-arg-nonnil-owned-from-oknil-owned.chpl:10: error: cannot create a non-nilable owned variable from a nilable class instance
   init-field-arg-nonnil-owned-from-oknil-owned.chpl:14: called as MyRecord.init(rhs: owned MyClass?)

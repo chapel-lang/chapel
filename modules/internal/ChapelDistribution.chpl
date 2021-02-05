@@ -323,6 +323,10 @@ module ChapelDistribution {
       return false;
     }
 
+    proc dsiIteratorYieldsLocalElements() param {
+      return false;
+    }
+
     proc type isDefaultRectangular() param return false;
     proc isDefaultRectangular() param return false;
 
@@ -821,6 +825,10 @@ module ChapelDistribution {
 
     proc decEltCountsIfNeeded() {
       // degenerate so it can be overridden
+    }
+
+    proc dsiIteratorYieldsLocalElements() param {
+      return false;
     }
   }
 

@@ -2,13 +2,22 @@
 GASNet for Chapel release
 =========================
 
-This copy of GASNet-EX 2020.3.0 is being released with Chapel for
+This copy of GASNet-EX 2020.10.0 is being released with Chapel for
 convenience and was obtained from
 
   https://gasnet.lbl.gov/
 
 Any Chapel issues that seem to be related to GASNet should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Chapel modifications to GASNet
+==============================
+The modifications that we have made to the official GASNet release are
+as follows:
+
+* Pulled in an upstream fix for an ibv race on powerpc
+   - https://bitbucket.org/berkeleylab/gasnet/commits/47e230a
 
 
 Upgrading GASNet versions
@@ -19,9 +28,9 @@ un-tarballed GASNet package contents.  Version updates should be done as
 follows, assuming the CWD is $CHPL_HOME/third-party/gasnet/:
 
 1. un-tarball the new package version into the directory it specifies,
-   for example GASNet-2020.3.0
+   for example GASNet-2020.10.0
 2. git rm -r gasnet-src
-3. mv GASNet-2020.3.0 gasnet-src
+3. mv GASNet-2020.10.0 gasnet-src
 4. git add --force gasnet-src
    ('--force' is needed so that the 'git add' ignores our .gitignore)
 5. commit

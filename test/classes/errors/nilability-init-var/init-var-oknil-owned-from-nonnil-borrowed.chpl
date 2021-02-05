@@ -7,5 +7,3 @@ class MyClass {
 var rhs = new borrowed MyClass();
 
 var lhs: owned MyClass? = rhs;
-
-compilerError("done");

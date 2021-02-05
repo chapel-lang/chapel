@@ -85,7 +85,7 @@ public:
   virtual void     exitAggrType        (AggregateType*     node);
 
   virtual bool     enterEnumType       (EnumType*          node);
-
+  virtual void     visitConstrainedType(ConstrainedType*   node);
   virtual void     visitPrimType       (PrimitiveType*     node);
 
   virtual bool     enterArgSym         (ArgSymbol*         node);
@@ -93,6 +93,7 @@ public:
   virtual void     visitEnumSym        (EnumSymbol*        node);
 
   virtual bool     enterFnSym          (FnSymbol*          node);
+  virtual bool     enterInterfaceSym   (InterfaceSymbol*   node);
 
   virtual void     visitLabelSym       (LabelSymbol*       node);
 
@@ -111,6 +112,8 @@ public:
 
   virtual bool     enterNamedExpr      (NamedExpr*         node);
   virtual void     exitNamedExpr       (NamedExpr*         node);
+
+  virtual bool     enterIfcConstraint  (IfcConstraint*     node);
 
   virtual bool     enterIfExpr         (IfExpr*            node);
   virtual void     exitIfExpr          (IfExpr*            node);
@@ -151,6 +154,8 @@ public:
   virtual bool     enterCatchStmt      (CatchStmt*         node);
 
   virtual bool     enterDeferStmt      (DeferStmt*         node);
+
+  virtual bool     enterImplementsStmt (ImplementsStmt*    node);
 
 private:
                    AstDumpToNode();

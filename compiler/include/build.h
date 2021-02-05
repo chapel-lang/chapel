@@ -82,6 +82,7 @@ DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
+CallExpr*  buildIfVar(const char* name, Expr* rhs, bool isConst);
 
 ModuleSymbol* buildModule(const char* name,
                           ModTag      modTag,

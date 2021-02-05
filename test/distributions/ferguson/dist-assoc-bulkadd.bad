@@ -2,6 +2,7 @@ dist-assoc-bulkadd.chpl:7: error: unresolved call 'unmanaged UserMapAssocDom(tru
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:955: note: this candidate did not match: LocRADCache.rank
 $CHPL_HOME/modules/internal/ChapelArray.chpl:1739: note: because method call receiver with type 'unmanaged UserMapAssocDom(true,real(64),DefaultMapper)'
 $CHPL_HOME/modules/internal/DefaultRectangular.chpl:955: note: is passed to formal 'this: LocRADCache'
-$CHPL_HOME/modules/internal/ChapelDistribution.chpl:341: note: candidates are: BaseRectangularDom.rank
-$CHPL_HOME/modules/internal/ChapelDistribution.chpl:562: note:                 BaseSparseDom.rank
+dist-assoc-bulkadd.chpl:7: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:360: note:   BaseRectangularDom.rank
+$CHPL_HOME/modules/internal/ChapelDistribution.chpl:581: note:   BaseSparseDom.rank
 note: and 18 other candidates, use --print-all-candidates to see them

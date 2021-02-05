@@ -1,0 +1,3 @@
+genericInstantiationTertiary.chpl:22: In function 'main':
+genericInstantiationTertiary.chpl:24: error: unresolved call 'GenericRec(2).tertiaryMethod()'
+genericInstantiationTertiary.chpl:24: note: because no functions named tertiaryMethod found in scope

@@ -65,6 +65,7 @@ see https://www.gnu.org/licenses/.  */
 	 64   itanium-2 L1
 	128   itanium-2 L2
 */
+#undef CACHE_LINE_SIZE
 #define CACHE_LINE_SIZE   64 /* bytes */
 
 #define SPEED_TMP_ALLOC_ADJUST_MASK  (CACHE_LINE_SIZE/GMP_LIMB_BYTES - 1)
@@ -2839,7 +2840,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
   }
 
 #define SPEED_ROUTINE_MPN_GCD_1(function)				\
-  SPEED_ROUTINE_MPN_GCD_1_CALL( , function (&px[j-1], 1, py[j-1]))
+  SPEED_ROUTINE_MPN_GCD_1_CALL(do{}while(0) , function (&px[j-1], 1, py[j-1]))
 
 #define SPEED_ROUTINE_MPN_GCD_11(function)				\
   SPEED_ROUTINE_MPN_GCD_1_CALL((px[i] |= 1, py[i] |= 1),		\
@@ -2867,6 +2868,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     unsigned   i, j;							\
     struct hgcd_matrix1 m = {{{0,0},{0,0}}};				\
     double     t;							\
+    mp_limb_t chain;							\
 									\
     speed_operand_src (s, s->xp_block, SPEED_BLOCK_SIZE);		\
     speed_operand_src (s, s->yp_block, SPEED_BLOCK_SIZE);		\
@@ -2874,7 +2876,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 									\
     speed_starttime ();							\
     i = s->reps;							\
-    mp_limb_t chain = 0;						\
+    chain = 0;								\
     do									\
       {									\
 	for (j = 0; j < SPEED_BLOCK_SIZE; j+= 2)			\

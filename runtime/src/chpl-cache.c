@@ -3613,6 +3613,8 @@ void chpl_cache_do_init(void)
 
 void chpl_cache_init(void) {
 
+  chpl_cache_warn_if_disabled();
+
   if( ! chpl_cache_enabled() ) {
     return;
   }

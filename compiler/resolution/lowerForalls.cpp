@@ -22,6 +22,7 @@
 #include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "passes.h"
@@ -493,6 +494,9 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
   currTPV->qual = TPV->qual;
   if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
   if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  if (TPV->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+    currTPV->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+  }
   return currTPV;
 }
 
@@ -1137,6 +1141,10 @@ static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
   SET_LINENO(parIterCall);
+
+  // aggregation uses task-private variables, we can't have them with a
+  // recursive iterator
+  removeAggregationFromRecursiveForall(fs);
 
   // Check for non-ref intents.
   SymbolMap sv2ov;

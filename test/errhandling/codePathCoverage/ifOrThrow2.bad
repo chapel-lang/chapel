@@ -1,3 +1,4 @@
 ifOrThrow2.chpl:5: In function 'testit':
 ifOrThrow2.chpl:13: error: 'dom' is used before it is initialized
 ifOrThrow2.chpl:6: note: 'dom' declared here
+  ifOrThrow2.chpl:16: called as testit(r: range(int(64),boundedLow,false))

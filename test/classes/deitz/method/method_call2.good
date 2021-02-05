@@ -1,6 +1,6 @@
 method_call2.chpl:9: In method 'goo':
 method_call2.chpl:10: error: unresolved call 'bar.foo(2)'
-method_call2.chpl:1: note: this candidate did not match: foo(i: int)
-method_call2.chpl:10: note: because call is written as a method call
-method_call2.chpl:1: note: but candidate function is not a method
-method_call2.chpl:6: note: candidates are: bar.foo()
+method_call2.chpl:6: note: this candidate did not match: bar.foo()
+method_call2.chpl:10: note: because call includes 1 argument
+method_call2.chpl:6: note: but function can only accept 0 arguments
+note: there is also 1 other candidate, use --print-all-candidates to see it

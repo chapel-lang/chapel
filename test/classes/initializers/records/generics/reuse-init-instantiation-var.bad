@@ -1,0 +1,3 @@
+reuse-init-instantiation-var.chpl:12: error: default initialization with type 'Foo(int(64))' is not yet supported
+reuse-init-instantiation-var.chpl:5: note: field 'x' is a generic value
+reuse-init-instantiation-var.chpl:5: note: consider separately declaring a type field for it or using a 'new' call

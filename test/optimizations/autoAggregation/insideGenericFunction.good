@@ -1,0 +1,52 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (insideGenericFunction.chpl:14)
+| Found an aggregation candidate (insideGenericFunction.chpl:15)
+|  Potential source aggregation (insideGenericFunction.chpl:15)
+End analyzing forall for automatic aggregation [static only ALA clone]  (insideGenericFunction.chpl:14)
+
+Start analyzing forall for automatic aggregation (insideGenericFunction.chpl:24)
+| Found an aggregation candidate (insideGenericFunction.chpl:25)
+|  Potential source aggregation (insideGenericFunction.chpl:25)
+End analyzing forall for automatic aggregation (insideGenericFunction.chpl:24)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (insideGenericFunction.chpl:14)
+End analyzing forall for automatic aggregation [no ALA clone]  (insideGenericFunction.chpl:14)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (insideGenericFunction.chpl:15)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (insideGenericFunction.chpl:15)
+Aggregation candidate has confirmed local child  (insideGenericFunction.chpl:25)
+LHS is local, RHS is nonlocal. Will use source aggregation  (insideGenericFunction.chpl:25)
+Aggregation candidate has confirmed local child  (insideGenericFunction.chpl:25)
+LHS is local, RHS is nonlocal. Will use source aggregation  (insideGenericFunction.chpl:25)
+Replaced assignment with aggregation (insideGenericFunction.chpl:25)
+Replaced assignment with aggregation (insideGenericFunction.chpl:25)
+Replaced assignment with aggregation [static only ALA clone]  (insideGenericFunction.chpl:15)
+Loop 1
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 1
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 2
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 2
+2 2 2 2 2 2 2 2 2 2 2
+

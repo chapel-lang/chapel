@@ -23,7 +23,7 @@ void breaker() {
 int xBase::creationCount = 0;
 
 xBase::xBase(char const *m) {
-  strncpy(msg, m, MAX_EXC_MSG);
+  strncpy(msg, m, MAX_EXC_MSG-1);
   msg[MAX_EXC_MSG-1] = '\0';
 
   // done at very end when we know this object will
@@ -33,8 +33,7 @@ xBase::xBase(char const *m) {
 
 
 xBase::xBase(xBase const &obj){
-  strncpy(msg, obj.msg, MAX_EXC_MSG);
-  msg[MAX_EXC_MSG-1] = '\0';
+  strcpy(msg, obj.msg);
   creationCount++;
 }
 
@@ -79,9 +78,9 @@ xSocket::~xSocket()
 {}
 
 void xsocket(SOCKET s, char const *msg) { // creates and throws an xsocket
-  char tmp[MAX_EXC_MSG];
+  char tmp[MAX_EXC_MSG-1];
   int err = errno;
-  sprintf(tmp, "%s (%i:%s)", msg, err, strerror(err));
+  snprintf(tmp, sizeof(tmp), "%s (%i:%s)", msg, err, strerror(err));
   THROW(xSocket(s, tmp));
 }
 

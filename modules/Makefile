@@ -88,6 +88,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/Memory.chpl \
+	standard/Memory/Diagnostics.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
@@ -131,6 +132,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
+	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \

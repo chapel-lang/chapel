@@ -1,0 +1,63 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:13)
+| Found an aggregation candidate (basicSourceAgg.chpl:14)
+|  Potential source aggregation (basicSourceAgg.chpl:14)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:13)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:24)
+End analyzing forall for automatic aggregation [static only ALA clone]  (basicSourceAgg.chpl:24)
+
+Start analyzing forall for automatic aggregation (basicSourceAgg.chpl:34)
+| Found an aggregation candidate (basicSourceAgg.chpl:35)
+|  Potential source aggregation (basicSourceAgg.chpl:35)
+End analyzing forall for automatic aggregation (basicSourceAgg.chpl:34)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:13)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
+End analyzing forall for automatic aggregation [no ALA clone]  (basicSourceAgg.chpl:24)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (basicSourceAgg.chpl:14)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (basicSourceAgg.chpl:14)
+Aggregation candidate has confirmed local child  (basicSourceAgg.chpl:35)
+LHS is local, RHS is nonlocal. Will use source aggregation  (basicSourceAgg.chpl:35)
+Aggregation candidate has confirmed local child  (basicSourceAgg.chpl:35)
+LHS is local, RHS is nonlocal. Will use source aggregation  (basicSourceAgg.chpl:35)
+Replaced assignment with aggregation (basicSourceAgg.chpl:35)
+Replaced assignment with aggregation (basicSourceAgg.chpl:35)
+Replaced assignment with aggregation [static only ALA clone]  (basicSourceAgg.chpl:14)
+
+Loop 1
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 1
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 2
+End Loop 2
+0 0 0 0 0 0 0 0 0 0 0
+
+Loop 3
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 3
+5 5 5 5 5 5 5 5 5 5 5
+

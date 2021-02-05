@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012-2014, 2016 Free Software Foundation, Inc.
+Copyright 2012-2014, 2016, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -155,6 +155,18 @@ testmain (int argc, char **argv)
   if (!tmp)
     fprintf (stderr,
 	     "Failed to create temporary file. Skipping mpz_out_str tests.\n");
+
+  if (mpz_out_str (tmp, 63, a) != 0)
+    {
+      printf ("mpz_out_str did not return 0 (error) with base > 62\n");
+      abort ();
+    }
+
+  if (mpz_out_str (tmp, -37, a) != 0)
+    {
+      printf ("mpz_out_str did not return 0 (error) with base < -37\n");
+      abort ();
+    }
 
   for (i = 0; i < COUNT; i++)
     {

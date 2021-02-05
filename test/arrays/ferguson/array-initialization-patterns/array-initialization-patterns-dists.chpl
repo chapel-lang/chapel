@@ -4,6 +4,7 @@ enum DistType { default, block, cyclic, blockcyclic, replicated, stencil };
 config param distType: DistType = DistType.block;
 
 config param makeAHidesInit = true;
+config param printDeinit = true;
 
 config var printInitDeinit = true;
 
@@ -30,7 +31,14 @@ record R {
     if printInitDeinit then writeln("init= ", other.x, " ", other.ptr.xx);
   }
   proc deinit() {
-    if printInitDeinit then writeln("deinit ", x, " ", ptr.xx);
+
+    // Replicated is the only distribution where a 1 element array will print
+    // out more than one deinit call for the element (on a multilocale run
+    // with N locales, there are N elements, one for each replicand). Deinit
+    // order in such a situation is nondeterministic, so don't bother.
+    if printDeinit && printInitDeinit {
+      if printInitDeinit then writeln("deinit ", x, " ", ptr.xx);
+    }
   }
   proc toString() {
     return "(" + this.x:string + " " + this.ptr.xx:string + ")";

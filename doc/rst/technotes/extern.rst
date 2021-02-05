@@ -733,7 +733,7 @@ Support for Extern Blocks
 
 [Note: The features in this section rely on Chapel to being built with
 llvm/clang enabled.  To do so, set environment variable CHPL_LLVM to
-'llvm' and rebuild your Chapel installation. See :ref:`readme-llvm`.].
+'bundled' and rebuild your Chapel installation. See :ref:`readme-llvm`.].
 
 C code and header files can be included directly within Chapel source
 code using an ``extern block`` as follows:

@@ -89,9 +89,9 @@ bool preserveShadowVar(Symbol* var) {
   return false;
 }
 
-// If an outer var is void, it was probably pruned.
+// If an outer var is nothing, it was probably pruned.
 // Replace it with none.
-void adjustVoidShadowVariables() {
+void adjustNothingShadowVariables() {
   forv_Vec(ShadowVarSymbol, svar, gShadowVarSymbols)
     if (svar->inTree())
       if (Symbol* ovar = svar->outerVarSym())
@@ -299,7 +299,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
 {
   BlockStmt* hld = new BlockStmt(); // "holder"
   fs->insertBefore(hld);
-      
+
   VarSymbol* globalOp = newTemp(astr("globalRP_", fiVarSym->name));
   hld->insertAtTail(new DefExpr(globalOp));
 
@@ -343,7 +343,7 @@ static Symbol* setupRiGlobalOp(ForallStmt* fs, Symbol* fiVarSym,
   hld->flattenAndRemove();
 
   origRiSpec->replace(new SymExpr(globalOp));
-  
+
   return globalOp;
 }
 
@@ -709,7 +709,7 @@ Potential culprits:
 
 //
 // * If 'intent' is abstract, convert it to a concrete intent.
-// * 
+// *
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
@@ -1066,7 +1066,7 @@ static ArgSymbol* createArgForFieldAccess(ArgSymbol* thisArg, FnSymbol* fn,
                                          fieldSym, isConst);
     fnCall->insertAtTail(fieldRef);
   }
-  
+
   return fieldArg;
 }
 
@@ -1115,7 +1115,7 @@ void setupAndResolveShadowVars(ForallStmt* fs)
   collectAndResolveImplicitShadowVars(fs);
 
   //
-  // Resolve the explicit shadow variables i.e. the ones that 
+  // Resolve the explicit shadow variables i.e. the ones that
   // the user wrote explicitly in the with-clause.
   // Remove the ones we want to prune.
   //

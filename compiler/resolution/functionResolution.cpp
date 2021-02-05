@@ -176,6 +176,7 @@ static void resolveSetMember(CallExpr* call);
 static void resolveInitField(CallExpr* call);
 static void resolveMove(CallExpr* call);
 static void resolveNew(CallExpr* call);
+static void resolveForResolutionPoint(CallExpr* call);
 static void resolveCoerce(CallExpr* call);
 static void resolveAutoCopyEtc(AggregateType* at);
 static FnSymbol* autoMemoryFunction(AggregateType* at, const char* fnName);
@@ -790,6 +791,11 @@ bool canInstantiate(Type* actualType, Type* formalType) {
   }
 
   if (formalType == dtAny) {
+    return true;
+  }
+
+  if (isConstrainedType(formalType)) {
+    INT_ASSERT(formalType->symbol->hasFlag(FLAG_GENERIC)); //CG TODO: remove?
     return true;
   }
 
@@ -2606,6 +2612,10 @@ void resolveCall(CallExpr* call) {
       resolveNew(call);
       break;
 
+    case PRIM_RESOLUTION_POINT:
+      resolveForResolutionPoint(call);
+      break;
+
     default:
       break;
     }
@@ -4228,6 +4238,19 @@ static bool isInitEqualsPreResolve(CallExpr* call) {
   return result;
 }
 
+// currently, this returns 'true' for cases when a call is a method
+// call (e.g., 'r.foo()' and the function is a standalone function
+// (e.g., 'foo()') or vice-versa.  With additional work, other
+// "obvious" mismatches could be eliminated, such as if the call and
+// function are both methods but in disjoint class hierarchies.
+//
+static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
+  bool isMethodCall = isMethodPreResolve(call);
+  bool isMethodFn = fn->_this != NULL;
+
+  return (isMethodCall != isMethodFn);
+}
+
 static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
@@ -4255,19 +4278,17 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
     Type* receiverType = info.actuals.v[1]->getValType();
     Type* exprType = info.actuals.v[2]->getValType();
-   
+
     USR_FATAL_CONT(call, "could not find a copy initializer ('%s') "
                          "for type '%s' from type '%s'",
                          astrInitEquals,
                          receiverType->symbol->name,
-                         exprType->symbol->name); 
+                         exprType->symbol->name);
   } else {
     USR_FATAL_CONT(call, "unresolved call '%s'", str);
   }
 
   if (visibleFns.n > 0) {
-    bool printedOne = false;
-
     if (developer == true) {
       for (int i = callStack.n - 1; i >= 0; i--) {
         CallExpr* cs = callStack.v[i];
@@ -4284,38 +4305,67 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
     sortExampleCandidates(info, visibleFns);
 
     int nPrintDetails = 1;
-    int nPrint = 3;
+    int nPrint = fPrintAllCandidates ? INT_MAX : 3;
 
-    int i = 0;
-    forv_Vec(FnSymbol, fn, visibleFns) {
-      i++;
 
-      if (i > nPrintDetails)
-        break;
+    Vec<FnSymbol*> filteredFns;
+    if (fPrintAllCandidates || visibleFns.n == 1) {
+      // Don't do any filtering; we're going to print everything
+      filteredFns = visibleFns;
+    } else {
+      // If there is more than one visible function and we haven't
+      // been asked to print all candidates, let's try to eliminate
+      // "worse" matches (e.g., method call / standalone function call
+      // mismatches), copying over the first nPrint functions that
+      // aren't obvious mismatches.
+      int i = 0;
+      forv_Vec(FnSymbol, fn, visibleFns) {
+        if (!obviousMismatch(call, fn)) {
+          i++;
+          filteredFns.add(fn);
+          if (i == nPrint) break;
+        }
+      }
 
-      explainCandidateRejection(info, fn);
+      // If the filtered functions list is empty (implying everything
+      // was an obvious mismatch), then let's copy over the first
+      // nPrint visibleFns as our filtered functions, to avoid
+      // suggesting that there are no other candidates.
+      //
+      if (filteredFns.n == 0) {
+        for (int i = 0; i < std::min(nPrint, visibleFns.n); i++) {
+          filteredFns.add(visibleFns.v[i]);
+        }
+      }
     }
 
-    i = 0;
-    forv_Vec(FnSymbol, fn, visibleFns) {
-      i++;
 
-      if (i <= nPrintDetails)
-        continue; // already printed it in detail
-
-      if (fPrintAllCandidates == false && i > nPrint) {
-        USR_PRINT("and %i other candidates, use --print-all-candidates to see them",
-                  visibleFns.n - (i-1));
-        break;
-      }
-
-      if (printedOne == false) {
-        USR_PRINT(fn, "candidates are: %s", toString(fn));
-        printedOne = true;
-
+    // Print our top candidate(s) and why they were rejected
+    int nPrinted = 0; // how many candidates have we printed?
+    bool printedOne = false;  // have we printed one "other candidate"?
+    forv_Vec(FnSymbol, fn, filteredFns) {
+      if (nPrinted < nPrintDetails) {
+        explainCandidateRejection(info, fn);
       } else {
-        USR_PRINT(fn, "                %s", toString(fn));
+        if (printedOne == false) {
+          USR_PRINT(call, "other candidates are:");
+          printedOne = true;
+        }
+        USR_PRINT(fn, "  %s", toString(fn));
       }
+      nPrinted++;
+    }
+
+    // Print indication of additional candidates, if any
+    int numRemaining = visibleFns.n - nPrinted;
+    if (numRemaining > 0) {
+      USR_PRINT("%s %i other candidate%s, use --print-all-candidates to see %s",
+                (printedOne ? "and" : ((numRemaining == 1) ?
+                                       "there is also" :
+                                       "there are also")),
+                numRemaining,
+                ((numRemaining == 1) ? "" : "s"),
+                ((numRemaining == 1) ? "it" : "them"));
     }
   } else {
     USR_PRINT(call, "because no functions named %s found in scope", info.name);
@@ -4489,6 +4539,8 @@ static void findVisibleFunctionsAndCandidates(
     return;
   }
 
+  // CG TODO: pull all visible interface functions, if within a CG context
+
   // Keep *all* discovered functions in 'visibleFns' and 'mostApplicable'
   // so that we can revisit them for error reporting.
   // Keep track in 'numVisited*' of where we left off with the previous POI
@@ -4500,6 +4552,7 @@ static void findVisibleFunctionsAndCandidates(
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
 
   do {
+    // CG TODO: no POI for CG functions
     visInfo.poiDepth++;
 
     findVisibleFunctions(info, &visInfo, &visited,
@@ -4606,7 +4659,7 @@ static void gatherLastResortCandidates(CallInfo&                  info,
 
   numVisited = ++idx;
 }
-    
+
 static void filterCandidate(CallInfo&                  info,
                             VisibilityInfo&            visInfo,
                             FnSymbol*                  fn,
@@ -6945,7 +6998,16 @@ void resolveInitVar(CallExpr* call) {
 
       call->setUnresolvedFunction(astrInitEquals);
 
+      // If there is an error in that initCopy call,
+      // just mark it for later (rather than raising the error now)
+      // since the initCopy might be removed later in compilation.
+      inTryResolve++;
+      tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
       resolveExpr(call);
+
+      tryResolveStates.pop_back();
+      inTryResolve--;
 
       dst->type = call->resolvedFunction()->_this->getValType();
 
@@ -6981,7 +7043,7 @@ FnSymbol* findCopyInitFn(AggregateType* at, const char*& err) {
   if (at->symbol->hasFlag(FLAG_TUPLE)) {
     call = new CallExpr(astr_initCopy, tmpAt,
                         /* definedConst = */gFalse);
-                       
+
   } else {
     call = new CallExpr(astrInitEquals, gMethodToken, tmpAt, tmpAt);
   }
@@ -7336,11 +7398,13 @@ static Type* moveDetermineRhsType(CallExpr* call) {
         // `expandExternArrayCalls` can add void assignments when
         // the extern function has an explicit void return type.
         // Let those through by looking for two flags it adds.
-        if (!(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
+        if (!rhsFn->hasFlag(FLAG_INIT_COPY_FN) &&
+            !(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
               rhsFn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG))) {
           const char* rhsName = rhsFn->name;
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
+
           USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",
@@ -8043,6 +8107,18 @@ static SymExpr* resolveNewFindTypeExpr(CallExpr* newExpr) {
 *                                                                             *
 ************************************** | *************************************/
 
+static void resolveForResolutionPoint(CallExpr* call) {
+  INT_ASSERT(call->numActuals() == 1);
+  resolveConstrainedGenericSymbol(toSymExpr(call->get(1))->symbol(), true);
+  call->convertToNoop();
+}
+
+/************************************* | **************************************
+*                                                                             *
+*                                                                             *
+*                                                                             *
+************************************** | *************************************/
+
 static void resolveCoerce(CallExpr* call) {
   resolveGenericActuals(call);
 }
@@ -8408,6 +8484,8 @@ Expr* resolveExpr(Expr* expr) {
     }
 
   } else if (DefExpr* def = toDefExpr(expr)) {
+    resolveConstrainedGenericSymbol(def->sym, false);
+
     retval = foldTryCond(postFold(def));
 
   } else if (SymExpr* se = toSymExpr(expr)) {
@@ -8438,6 +8516,10 @@ Expr* resolveExpr(Expr* expr) {
       }
     }
     retval = foldTryCond(postFold(expr));
+
+  } else if (ImplementsStmt* istm = toImplementsStmt(expr)) {
+    resolveImplementsStmt(istm);
+    retval = istm;
 
   } else {
     retval = foldTryCond(postFold(expr));
@@ -9008,6 +9090,30 @@ static void resolveObviousGlobals() {
 }
 
 
+/************************************* | **************************************
+*                                                                             *
+*  Check for void fields as errors                                            *
+*                                                                             *
+************************************** | *************************************/
+
+static void checkNoVoidFields()
+{
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    // We exclude "no object" aggregates, to allow the Chapel internal '_ref'
+    // class to be instantiated with a 'void' member
+    if(!at->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      for_fields(field, at) {
+        if(field->type == dtVoid)
+          USR_FATAL(field,
+                    "Field '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    field->name);
+      }
+    }
+  }
+}
+
+
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
@@ -9074,6 +9180,10 @@ void resolve() {
 
   if (fPrintUnusedFns || fPrintUnusedInternalFns)
     printUnusedFunctions();
+
+  saveGenericSubstitutions();
+
+  checkNoVoidFields();
 
   pruneResolvedTree();
 
@@ -9524,9 +9634,9 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
-
-    fn->addFlag(FLAG_AUTO_DESTROY_FN);
-
+    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
+    if (fn)
+      fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
   }
 }
@@ -10034,8 +10144,8 @@ static void printCallGraph(FnSymbol* startPoint, int indent, std::set<FnSymbol*>
           }
 
           FnSymbol* instFn = fn;
-          if (fn->instantiatedFrom) {
-            instFn = fn->instantiatedFrom;
+          if (FnSymbol* gfn = fn->instantiatedFrom) {
+            instFn = gfn;
           }
           if (printLocalMultiples || 0 == alreadySeenLocally.count(instFn)) {
             alreadySeenLocally.insert(instFn);
@@ -10365,7 +10475,7 @@ static void lowerRuntimeTypeInit(CallExpr* call,
       runtimeTypeToValueCall->insertAtTail(sub);
     }
   }
- 
+
   // Add the argument indicating if this is a noinit
   Symbol* isNoInit = noinit ? gTrue : gFalse;
   runtimeTypeToValueCall->insertAtTail(isNoInit);
@@ -10472,21 +10582,17 @@ static void resolvePrimInit(CallExpr* call) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       resolvePrimInit(call, val, resolveTypeAlias(se));
-
     } else {
       USR_FATAL(call, "invalid type specification");
     }
-
   } else if (CallExpr* ce = toCallExpr(typeExpr)) {
     if (Symbol* field = resolvePrimInitGetField(ce)) {
       if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         resolvePrimInit(call, val, field->typeInfo());
-
       } else {
         USR_FATAL(call, "invalid type specification");
       }
     }
-
   } else {
     INT_FATAL(call, "Unsupported primInit");
   }
@@ -10496,14 +10602,25 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
-  AggregateType* at     = toAggregateType(type);
-
+  AggregateType* at = toAggregateType(type);
   val->type = type;
 
   // Shouldn't be called with ref types
   INT_ASSERT(at == NULL || at->getValType() == at);
 
   SET_LINENO(call);
+
+  // When --ignore-errors-for-pass is used, earlier errors, such as
+  // compilerError errors, are marked as pending until the end of the
+  // resolution pass, which can cause secondary errors about void
+  // variables here. If the function resolution pass has any pending
+  // fatal errors, we suppress any errors about void variables here,
+  // which might be secondary to the original fatal error.
+  if(type == dtVoid && !fatalErrorsEncountered())
+    USR_FATAL(call,
+              "Variable '%s' cannot be declared 'void'."
+              " Consider using 'nothing' instead.",
+              val->name);
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
     if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
@@ -10514,9 +10631,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
-
     INT_ASSERT(false);
-
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
     primInitHaltForUnacceptableGeneric(call, type, val);
@@ -10537,7 +10652,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // than in lowerPrimInit.
 
     // note: error for bad param initialization checked for in resolving move
-
     if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
       if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         Expr* defaultExpr = NULL;
@@ -10923,9 +11037,6 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
     // initialized. This way avoid emitting confusing errors from within
     // the `_defaultOf` and give other code a chance to emit errors as well.
     //
-    // TODO: Prune/don't generate `_defaultOf` for tuples containing non-
-    // default-initializable elements?
-    //
     if (!hasErrored) {
       CallExpr* defaultCall = new CallExpr("_defaultOf", type->symbol);
       CallExpr* move = new CallExpr(PRIM_MOVE, val, defaultCall);
@@ -10935,6 +11046,13 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
       resolveCallAndCallee(defaultCall);
       resolveExpr(move);
+
+    //
+    // Go ahead and convert the call to a NOP to avoid getting errors during
+    // post-resolution checks (these run even if errors have been emitted).
+    //
+    } else {
+      call->convertToNoop();
     }
 
   // other types (sync, single, ...)
@@ -11020,23 +11138,36 @@ static CallExpr* createGenericRecordVarDefaultInitCall(Symbol* val,
       } else {
         appendExpr = new SymExpr(e->value);
       }
-    } else if (isGenericField && hasDefault == false) {
-      // Create a temporary to pass for the fully-generic field (e.g. "var x;")
-      VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
-      CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+    } else if (isGenericField) {
 
-      call->insertBefore(new DefExpr(temp));
-      call->insertBefore(tempCall);
-      resolveExpr(tempCall->get(2));
-      resolveExpr(tempCall);
-      appendExpr = new SymExpr(temp);
+      bool hasCompilerGeneratedInitializer = root->wantsDefaultInitializer();
 
-    } else if (isGenericField && hasDefault == true) {
-      USR_FATAL_CONT(call, "this default-initialization is not yet supported");
-      USR_PRINT(field, "field '%s' is declared with a generic type "
-                       "and also a default value",
-                       field->name);
-      USR_STOP();
+      if (hasCompilerGeneratedInitializer && hasDefault == false) {
+        // Create a temporary to pass for typeless generic fields
+        // e.g. for
+        //   record R { var x; }
+        //   var myR: R(int);
+        // convert the  default initialization into
+        //   var default_field_tmp: int;
+        //   var myR = new R(x=default_field_tmp)
+        VarSymbol* temp = newTemp("default_field_temp", e->value->typeInfo());
+        CallExpr* tempCall = new CallExpr(PRIM_DEFAULT_INIT_VAR, temp, e->value);
+
+        call->insertBefore(new DefExpr(temp));
+        call->insertBefore(tempCall);
+        resolveExpr(tempCall->get(2));
+        resolveExpr(tempCall);
+        appendExpr = new SymExpr(temp);
+
+      } else {
+        USR_FATAL_CONT(call, "default initialization with type '%s' "
+                             "is not yet supported", toString(at));
+        USR_PRINT(field, "field '%s' is a generic value",
+                         field->name);
+        USR_PRINT(field, "consider separately declaring a type field for it "
+                         "or using a 'new' call");
+        USR_STOP();
+      }
 
     } else {
       INT_FATAL("Unhandled case for default-init");

@@ -1,0 +1,3 @@
+error-infer-disabled.chpl:31: error: unresolved call 'cgFun(11, "#1")'
+error-infer-disabled.chpl:13: note: this candidate did not match: cgFun(cgArg: ?Q, msg: string)
+error-infer-disabled.chpl:13: note: because interface constraint(s) were not satisfied

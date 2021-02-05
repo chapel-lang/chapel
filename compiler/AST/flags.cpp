@@ -220,22 +220,3 @@ void addFlag(BaseAST* ast, Flag flag)    { addFlag(ast, (int)flag); }
 void removeFlag(BaseAST* ast, Flag flag) { removeFlag(ast, (int)flag); }
 
 // end gdb support
-
-
-TypeSymbol*
-getDataClassType(TypeSymbol* ts) {
-  form_Map(SymbolMapElem, e, ts->type->substitutions) {
-    if (TypeSymbol* ets = toTypeSymbol(e->value))
-      return ets;
-  }
-  return NULL;
-}
-
-
-void
-setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
-  form_Map(SymbolMapElem, e, ts->type->substitutions) {
-    if (isTypeSymbol(e->value))
-      e->value = ets;
-  }
-}

@@ -1,0 +1,174 @@
+--[[
+
+    file chapel module
+
+    (C) Copyright 2020 Hewlett Packard Enterprise Development LP
+
+]]--
+
+
+-- reasons to keep module from continuing --
+
+
+-- no need to conflict with chapel Lmod has a one name rule
+conflict("cray-mpich2", "xt-mpich2")
+prereq("craype")
+
+--[[ a hugepages module is required for XC, not required for shasta at present 09/30/2020
+prereq_any(
+            "craype-hugepages2M",
+            "craype-hugepages4M",
+            "craype-hugepages8M",
+            "craype-hugepages16M",
+            "craype-hugepages32M",
+            "craype-hugepages64M",
+            "craype-hugepages128M",
+            "craype-hugepages256M",
+            "craype-hugepages512M",
+            "craype-hugepages1G",
+            "craype-hugepages2G"
+)
+--]]
+
+
+-- local vars: define & assign --
+
+
+-- template variables ----------------------------------------------------------
+local MOD_LEVEL           = "@@{pkg_version}"       -- 1.23.0, e.g.
+local INSTALL_ROOT        = "@@{platform_prefix}"   -- former BASE_INSTALL_DIR
+--------------------------------------------------------------------------------
+
+-- set comm layer
+local CHPL_COMM = os.getenv("CHPL_COMM") or ""
+
+-- set host arch
+local CHPL_HOST_ARCH = os.getenv("CPU") or ""
+if CHPL_HOST_ARCH ~= "aarch64" and CHPL_HOST_ARCH ~= "x86_64" then
+    -- host arch is neither ARM-based CPU nor Cray-XC/HPE Cray EX
+    -- LmodError() will cause this module to exit
+    LmodError("Cannot determine vaild host CPU. CPU found was " .. tostring(CHPL_HOST_ARCH))
+end
+
+-- set host network platform
+local CHPL_HOST_PLATFORM = ""
+local this_module_path = myFileName()
+if string.find(this_module_path, "aries") then
+    CHPL_HOST_PLATFORM = "cray-xc"
+elseif string.find(this_module_path, "ofi") then
+    CHPL_HOST_PLATFORM = "hpe-cray-ex"
+elseif string.find(this_module_path, "slingshot") then
+    CHPL_HOST_PLATFORM = "hpe-cray-ex"
+else
+    -- LmodError() will cause this module to exit
+    LmodError("Cannot determine host network platform. Network found was " .. tostring(CHPL_HOST_PLATFORM))
+end
+
+-- set chapel install location
+local CHPL_LOC = INSTALL_ROOT .. "/" .. myModuleName() .. "/" .. MOD_LEVEL .. "/" ..CHPL_HOST_PLATFORM
+
+-- information variables
+local REL_FILE           = CHPL_LOC .. "/release_info"
+local rel_info           = ""
+if (isFile(REL_FILE)) then
+    local f = io.open(REL_FILE, "r")
+    local data = f:read("*all")
+    f:close()
+    if data ~= nil then rel_info = data end
+end
+
+
+-- standered Lmod functions --
+
+
+help(rel_info .. [[
+
+===================================================================
+To re-display ]] .. myModuleName() .. "/" .. MOD_LEVEL .. [[ release information,
+type:    less ]] .. CHPL_LOC .. [[/release_info
+===================================================================
+
+]])
+
+whatis("This modulefile defines the system paths and environment variables " ..
+       "needed to use the Chapel compiler on Cray systems. This module requires " ..
+       "a PrgEnv environment to be loaded."
+)
+
+
+-- local functions --
+
+
+--[[
+
+    control_family_load
+    Special handling for the loading/unloading of modules in a family that maybe
+    have a family member loaded prior to this module. Function keeps any modules
+    loaded that were loaded prior to this module via a "control" environment variable.
+    Note: the return value of the function myModuleName() is appended to the
+    "control" environment variable. This ensures other modules using this funtion
+    will not mistake thire own "control" environment variable for anothers.
+
+    param   modName
+            string, the name of the module whose load/unload is being controlled.
+            This module will be loaded if they is not already a module loaded
+            within its family.
+
+    param   modFamily
+            string, the name of the module family load/unload is being controlled
+
+    return  lua code chunk, the chunk may be either a function or
+            table of functions.
+
+]]--
+function control_family_load(modName, modFamily)
+    local isFamilyModLoadedEnvVar = modFamily .. "_already_loaded"
+    -- lmod modules can be in a lmod family. by checking the env var Lmod creates
+    -- for a family, this code can determine if a module from a specific family
+    -- is loaded and if one is loaded which one.
+    local familyModLoaded =  os.getenv("LMOD_FAMILY_".. modFamily) or ""
+    if ( mode() == "load") then
+        if (isloaded(familyModLoaded)) then
+            -- track that this mod was loaded before calling module
+            setenv(  isFamilyModLoadedEnvVar,  "1"  )
+        else
+            -- normal load/unload
+            load(modName)
+        end
+    else
+        if (os.getenv(isFamilyModLoadedEnvVar) == "1") then
+            -- keeps module loaded in unload mode
+            always_load(familyModLoaded)
+            -- unset the env var in unload mode
+            setenv(  isFamilyModLoadedEnvVar,  "1"  )
+        else
+            -- normal load/unload (unloads module in unload mode
+            load(modName)
+        end
+    end
+end
+
+
+-- environment modifications --
+
+
+-- MPICH_GNI_DYNAMIC_CONN: mpich will always be loaded but, variable still needed on XC 09/30/2020
+-- setenv       (    "MPICH_GNI_DYNAMIC_CONN",    "disabled"    )
+
+setenv       (    "CHPL_HOME",                 CHPL_LOC      )
+setenv       (    "CHPL_MODULE_HOME",          CHPL_LOC      )
+
+prepend_path (    "PATH",                      CHPL_LOC .. "/bin/" .. CHPL_HOST_PLATFORM .. "-" .. CHPL_HOST_ARCH    )
+prepend_path (    "MANPATH",                   CHPL_LOC .. "/man"                                                    )
+append_path  (    "PE_PRODUCT_LIST",           string.upper(myModuleName())                                          )
+
+-- set hugepages if nessasary. EX systems only 09/30/2020
+-- the default comm layer on cray-x* is ugni, which requires a craype-hugepages
+-- module for performance.  If CHPL_COMM is not set in the environment or is set
+-- to ugni, make sure there is a craype-hugepages module loaded. Use
+-- craype-hugepages16M if a craype-hugepages module is not already loaded.
+if CHPL_COMM == "ugni" or CHPL_HOST_PLATFORM == "cray-xc" then
+    -- hugepages module is required
+    -- load hugepages module if there is not another hugepages module already loaded
+    control_family_load("craype-hugepages16M", "CRAYPE_HUGEPAGES")
+end

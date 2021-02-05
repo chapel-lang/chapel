@@ -1,3 +1,5 @@
 zmq-initequals.chpl:18: In function 'recv':
+zmq-initequals.chpl:20: error: invalid copy-initialization
 zmq-initequals.chpl:20: error: success
+zmq-initequals.chpl:7: note: Foo does not have a valid init=
   zmq-initequals.chpl:13: called as recv(type T = Foo)

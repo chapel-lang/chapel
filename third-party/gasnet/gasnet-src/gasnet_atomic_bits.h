@@ -122,8 +122,7 @@
 
    + Generic atomics:
      The term "generic atomics" is used here and in gasnet_atomicops.h to refer
-     to the implementation of atomic operations via mutexes.  These will be
-     pthread mutexes in GASNet-tools code, and HSLs in a GASNet client.
+     to the implementation of atomic operations via gasnett_mutex_t.
 
    + Hybrid 64-bit atomics:
      With an ABI for which the alignment of 64-bit types is NOT sufficient to
@@ -2668,50 +2667,73 @@
 /* Define configuration-dependent choice of locks for generic atomics (if any) */
 
 #if defined(GASNETI_BUILD_GENERIC_ATOMIC32) || defined(GASNETI_BUILD_GENERIC_ATOMIC64)
-  #if defined(_INCLUDED_GASNETEX_H) && GASNETI_USE_TRUE_MUTEXES
-    /* Case I: Real HSLs in a gasnet client */
-    #define GASNETI_GENATOMIC_LOCK_PREP(ptr) \
-		gex_HSL_t * const _genatomic_lock = gasneti_hsl_atomic_hash_lookup((uintptr_t)ptr)
-    #define GASNETI_GENATOMIC_LOCK()   gex_HSL_Lock(_genatomic_lock)
-    #define GASNETI_GENATOMIC_UNLOCK() gex_HSL_Unlock(_genatomic_lock)
-    #define _gasneti_genatomic_cons(_id) gasneti_hsl_atomic##_id
+  #if GASNETI_USE_TRUE_MUTEXES
+    /* Case I: gasnett_mutex_t in a gasnet client or thread-safe tools client*/
+    #define GASNETI_GENATOMIC_LOCKS 1
+    #if PLATFORM_ARCH_32 || defined(GASNETI_HYBRID_ATOMIC64) || defined(GASNETI_UNALIGNED_ATOMIC64)
+      // Inform gasnet_atomicops.h we need mutex on 64-bit read() to avoid word tearing
+      #define _gasneti_need_genatomic64_read 1
+    #endif
+    // To avoid a header dependence cycle (bug 693), we must declare and define all
+    // bits involving the mutexes (among other things) later.
+    // So, here we just define macros to be expanded in gasnet_tools.{c,h}.
+    #if PLATFORM_ARCH_64
+      #define GASNETI_ATOMIC_LOCK_HASH_64(val)    val ^= (val >> 32)
+    #else
+      #define GASNETI_ATOMIC_LOCK_HASH_64(val)
+    #endif
+    #define GASNETI_ATOMIC_LOCK_TBL_DECLS \
+        typedef struct {                                                  \
+          gasnett_mutex_t _lock;                                          \
+          char _pad[GASNETI_CACHE_PAD(sizeof(gasnett_mutex_t))];          \
+        } gasneti_mutex_atomic_tbl_t;                                     \
+        extern gasneti_mutex_atomic_tbl_t *gasneti_mutex_atomic_tbl;      \
+        extern uintptr_t gasneti_mutex_atomic_tbl_mask;                   \
+        extern void gasneti_mutex_atomic_tbl_init(void);                  \
+        GASNETI_INLINE(gasneti_mutex_atomic_hash_lookup)                  \
+        gasnett_mutex_t * gasneti_mutex_atomic_hash_lookup(uintptr_t _val) { \
+          /* Step 0. Initialization check */                              \
+          if_pf (!gasneti_mutex_atomic_tbl_mask) gasneti_mutex_atomic_tbl_init(); \
+          else gasneti_local_rmb();                                       \
+          /* Step 1.  Mask out the bits within a single cache line */     \
+          _val &= ~(((uintptr_t)1 << GASNETI_CACHE_LINE_SHIFT) - 1);      \
+          /* Step 2. Fold with xor so all bits influence the lowest 8 */  \
+          GASNETI_ATOMIC_LOCK_HASH_64(_val);                              \
+          _val ^= (_val >> 16);                                           \
+          _val ^= (_val >> 8);                                            \
+          /* Step 3. Return the index */                                  \
+          return &((gasneti_mutex_atomic_tbl[_val & gasneti_mutex_atomic_tbl_mask])._lock); \
+        }
+    #define GASNETI_ATOMIC_LOCK_TBL_DEFNS(mallocator) \
+        uintptr_t gasneti_mutex_atomic_tbl_mask = 0;                      \
+        gasneti_mutex_atomic_tbl_t *gasneti_mutex_atomic_tbl = NULL;      \
+        GASNETI_COLD GASNETI_NEVER_INLINE(gasneti_mutex_atomic_tbl_init,  \
+                             extern void gasneti_mutex_atomic_tbl_init(void)) { \
+          static gasnett_mutex_t gasneti_mutex_atomic_tbl_lock = GASNETT_MUTEX_INITIALIZER; \
+          gasnett_mutex_lock(&gasneti_mutex_atomic_tbl_lock);             \
+          if (gasneti_mutex_atomic_tbl_mask == 0) {                       \
+            int gasneti_mutex_atomic_tbl_size =                           \
+              gasnett_getenv_int_withdefault("GASNET_ATOMIC_TABLESZ",256,0); \
+            gasneti_assert_always(GASNETI_POWEROFTWO(gasneti_mutex_atomic_tbl_size)); \
+            /* Over allocate to leave at least a cache line before and after */ \
+            gasneti_mutex_atomic_tbl = mallocator((2 + gasneti_mutex_atomic_tbl_size)  \
+                                                  * sizeof(gasneti_mutex_atomic_tbl_t)); \
+            ++gasneti_mutex_atomic_tbl;                                   \
+            for (int i = 0; i < gasneti_mutex_atomic_tbl_size; ++i) {     \
+              gasnett_mutex_init(&(gasneti_mutex_atomic_tbl[i]._lock));   \
+            }                                                             \
+            gasneti_local_wmb(); /* enforce locks init before mask is written */ \
+            gasneti_mutex_atomic_tbl_mask = (gasneti_mutex_atomic_tbl_size - 1); \
+          }                                                               \
+          gasnett_mutex_unlock(&gasneti_mutex_atomic_tbl_lock);           \
+        }
   #elif defined(_INCLUDED_GASNETEX_H)
-    /* Case II: Empty HSLs in a GASNET_SEQ or GASNET_PARSYNC client w/o conduit-internal threads */
-  #elif GASNETI_USE_TRUE_MUTEXES /* thread-safe tools-only client OR forced true mutexes */
-    /* Case III: a version for pthreads which is independent of GASNet HSL's */
-    #define GASNETI_GENATOMIC_LOCK_PREP(ptr) \
-		gasnett_mutex_t * const _genatomic_lock = gasneti_pthread_atomic_hash_lookup((uintptr_t)ptr)
-    #define GASNETI_GENATOMIC_LOCK()   gasnett_mutex_lock(_genatomic_lock)
-    #define GASNETI_GENATOMIC_UNLOCK() gasnett_mutex_unlock(_genatomic_lock)
-    #define _gasneti_genatomic_cons(_id) gasneti_pthread_atomic##_id
+    /* Case II: Empty mutexes in a GASNET_SEQ or GASNET_PARSYNC client w/o conduit-internal threads */
   #else
-    /* Case IV: Serial gasnet tools client. */
+    /* Case III: Serial gasnet tools client. */
     /* attempt to generate a compile error if pthreads actually are in use */
     #define PTHREAD_MUTEX_INITIALIZER ERROR_include_pthread_h_before_gasnet_tools_h
     extern int pthread_mutex_lock; 
-  #endif
-
-  /* Name shift to avoid link conflicts between hsl and pthread versions */
-  #ifdef _gasneti_genatomic_cons
-    #define gasneti_genatomic32_set                _gasneti_genatomic_cons(32_set)
-    #define gasneti_genatomic32_increment          _gasneti_genatomic_cons(32_increment)
-    #define gasneti_genatomic32_decrement          _gasneti_genatomic_cons(32_decrement)
-    #define gasneti_genatomic32_decrement_and_test _gasneti_genatomic_cons(32_decrement_and_test)
-    #define gasneti_genatomic32_compare_and_swap   _gasneti_genatomic_cons(32_compare_and_swap)
-    #define gasneti_genatomic32_swap               _gasneti_genatomic_cons(32_swap)
-    #define gasneti_genatomic32_addfetch           _gasneti_genatomic_cons(32_addfetch)
-    #define gasneti_genatomic64_set                _gasneti_genatomic_cons(64_set)
-    #define gasneti_genatomic64_increment          _gasneti_genatomic_cons(64_increment)
-    #define gasneti_genatomic64_decrement          _gasneti_genatomic_cons(64_decrement)
-    #define gasneti_genatomic64_decrement_and_test _gasneti_genatomic_cons(64_decrement_and_test)
-    #define gasneti_genatomic64_compare_and_swap   _gasneti_genatomic_cons(64_compare_and_swap)
-    #define gasneti_genatomic64_swap               _gasneti_genatomic_cons(64_swap)
-    #define gasneti_genatomic64_addfetch           _gasneti_genatomic_cons(64_addfetch)
-    #if PLATFORM_ARCH_32 || defined(GASNETI_HYBRID_ATOMIC64) || defined(GASNETI_UNALIGNED_ATOMIC64)
-      /* Need mutex on 64-bit read() to avoid word tearing */
-      /* NOTE: defining gasneti_genatomic_read triggers matching behavior in gasnet_atomicops.h */
-      #define gasneti_genatomic64_read             _gasneti_genatomic_cons(64_read)
-    #endif
   #endif
 
   #ifndef gasneti_genatomic32_align
@@ -2725,64 +2747,6 @@
     #define gasneti_genatomic64_align 4
   #else
     #define gasneti_genatomic64_align 8
-  #endif
-
-  #ifdef GASNETI_GENATOMIC_LOCK
-    /* To avoid a header dependence cycle (bug 693), we must declare and define all
-     * bits involving the lock type later.  Here, we just build the templates.
-     */
-    #if PLATFORM_ARCH_64
-      #define GASNETI_ATOMIC_LOCK_HASH_64(val)    val ^= (val >> 32)
-    #else
-      #define GASNETI_ATOMIC_LOCK_HASH_64(val)
-    #endif
-    #define GASNETI_ATOMIC_LOCK_TBL_DECLS(stem,type)                      \
-        typedef struct {                                                  \
-          type##t _lock;                                                  \
-          char _pad[GASNETI_CACHE_PAD(sizeof(type##t))];                  \
-        } stem##tbl_t;                                                    \
-        extern stem##tbl_t *stem##tbl;                                    \
-        extern uintptr_t stem##tbl_mask;                                  \
-        extern void stem##tbl_init(void);                                 \
-        GASNETI_INLINE(stem##hash_lookup) GASNETI_CONST                   \
-        type##t * stem##hash_lookup(uintptr_t _val) {                     \
-          /* Step 0. Initialization check */                              \
-          if_pf (!stem##tbl_mask) stem##tbl_init();                       \
-          else gasneti_local_rmb();                                       \
-          /* Step 1.  Mask out the bits within a single cache line */     \
-          _val &= ~(((uintptr_t)1 << GASNETI_CACHE_LINE_SHIFT) - 1);      \
-          /* Step 2. Fold with xor so all bits influence the lowest 8 */  \
-          GASNETI_ATOMIC_LOCK_HASH_64(_val);                              \
-          _val ^= (_val >> 16);                                           \
-          _val ^= (_val >> 8);                                            \
-          /* Step 3. Return the index */                                  \
-          return &((stem##tbl[_val & stem##tbl_mask])._lock);             \
-        }                                                                 \
-        GASNETI_CONSTP(stem##hash_lookup)
-    #define GASNETI_ATOMIC_LOCK_TBL_DEFNS(stem,type)                      \
-        uintptr_t stem##tbl_mask = 0;                                     \
-        stem##tbl_t *stem##tbl = NULL;                                    \
-        GASNETI_NEVER_INLINE(stem##tbl_init,                              \
-                             extern void stem##tbl_init(void)) {          \
-          static type##t stem##tbl_lock = _gasneti_atomic_lock_initializer; \
-          _gasneti_atomic_lock_lock(&stem##tbl_lock);                     \
-          if (stem##tbl_mask == 0) {                                      \
-            int i;                                                        \
-            int stem##tbl_size = gasnett_getenv_int_withdefault(          \
-                                         "GASNET_ATOMIC_TABLESZ", 256,0); \
-            gasneti_assert_always(GASNETI_POWEROFTWO(stem##tbl_size));    \
-            /* Over allocate to leave at least a cache line before and after */ \
-            stem##tbl = _gasneti_atomic_lock_malloc((2 + stem##tbl_size)  \
-                                                    * sizeof(stem##tbl_t)); \
-            ++stem##tbl;                                                  \
-            for (i = 0; i < stem##tbl_size; ++i) {                        \
-              _gasneti_atomic_lock_init(&(stem##tbl[i]._lock));           \
-            }                                                             \
-            gasneti_local_wmb(); /* enforce locks init before mask is written */ \
-            stem##tbl_mask = (stem##tbl_size - 1);                        \
-          }                                                               \
-          _gasneti_atomic_lock_unlock(&stem##tbl_lock);                   \
-        }
   #endif
 #endif
 

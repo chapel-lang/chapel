@@ -1,0 +1,3 @@
+default-type-prints.chpl:1: In function 'error':
+default-type-prints.chpl:8: error: Cannot assign to int(64) from real(64)
+  default-type-prints.chpl:11: called as error(a: int(64), b: uint(64), c: bool, d: real(64), e: imag(64), f: complex(128)) from module 'default-type-prints'

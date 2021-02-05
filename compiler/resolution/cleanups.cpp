@@ -52,6 +52,13 @@ static void clearDefaultInitFns(FnSymbol* unusedFn) {
   }
 }
 
+
+static void removeUnusedFunction(FnSymbol* unusedFn) {
+  // remove the function
+  unusedFn->defPoint->remove();
+}
+
+
 static void removeUnusedFunctions() {
   std::set<FnSymbol*> concreteWellKnownFunctionsSet;
 
@@ -89,8 +96,8 @@ static void removeUnusedFunctions() {
           }
 
           clearDefaultInitFns(fn);
+          removeUnusedFunction(fn);
 
-          fn->defPoint->remove();
         } else if (fn->isResolved() && fn->retTag == RET_TYPE) {
           // BHARSH TODO: This is a way to work around the cleanup logic that
           // removes generic types from the tree. If the function was left
@@ -104,7 +111,7 @@ static void removeUnusedFunctions() {
           if (type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&
               type->symbol->hasFlag(FLAG_EXTERN) == false &&
               fatalErrorsEncountered() == false) {
-            fn->defPoint->remove();
+            removeUnusedFunction(fn);
           }
         }
       }
@@ -184,7 +191,7 @@ static void removeRandomPrimitive(CallExpr* call) {
         // Confirm that this is already a correct field Symbol.
         sym = memberSE->symbol();
         // This used to check for type equality, is this wrong?
-        INT_ASSERT(isSubtypeOrInstantiation(baseType, 
+        INT_ASSERT(isSubtypeOrInstantiation(baseType,
                                             sym->defPoint->parentSymbol->type,
                                             call));
 
@@ -225,6 +232,28 @@ static void removeRandomPrimitives() {
   for_alive_in_Vec(CallExpr, call, gCallExprs)
     if (call->isPrimitive())
       removeRandomPrimitive(call);
+}
+
+
+static void removeInterfaceCode() {
+  for_alive_in_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+    isym->defPoint->remove();
+
+  for_alive_in_Vec(ImplementsStmt, istm, gImplementsStmts) {
+    FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
+    INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
+    Expr* wrapFnDef = wrapFn->defPoint;
+    // We will remove istm and wrapFn. Preserve the implementation fns.
+    for_alist(impl, istm->implBody->body)
+      wrapFnDef->insertBefore(impl->remove());
+    wrapFnDef->remove();
+  }
+
+  for_alive_in_Vec(ConstrainedType, ct, gConstrainedTypes) {
+    ct->symbol->defPoint->remove();
+    if (Type* ctRef = ct->refType)
+      ctRef->symbol->defPoint->remove();
+  }
 }
 
 
@@ -618,14 +647,14 @@ static void removeWhereClausesAndReturnTypeBlocks() {
 
 static void removeMootFields() {
   // Remove type fields and parameter fields
-  for_alive_in_Vec(TypeSymbol, type, gTypeSymbols) {
-      if (AggregateType* ct = toAggregateType(type->type)) {
-        for_fields(field, ct) {
-          if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
-              field->isParameter())
-            field->defPoint->remove();
-        }
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      for_fields(field, at) {
+        if (field->hasFlag(FLAG_TYPE_VARIABLE) ||
+            field->isParameter())
+          field->defPoint->remove();
       }
+    }
   }
 }
 
@@ -664,18 +693,8 @@ static void removeSymbolsWithRemovedTypes() {
 // Zero out such pointers whether or not their targets are live,
 // to ensure they are not looked at again.
 static void cleanupAfterRemoves() {
-  forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (fn->instantiatedFrom != NULL)
-      fn->addFlag(FLAG_INSTANTIATED_GENERIC);
-    fn->instantiatedFrom = NULL;
-    fn->setInstantiationPoint(NULL);
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      if (e->value && !e->value->inTree()) {
-        e->value = NULL;
-      }
-    }
-    // How about basicBlocks, calledBy ?
-  }
+
+  // Note: some pointers are already zero'd in saveGenericSubstitutions
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
     // Zero the initFn pointer if the function is now dead. Ditto deinitFn.
@@ -690,9 +709,11 @@ static void cleanupAfterRemoves() {
       arg->addFlag(FLAG_INSTANTIATED_GENERIC);
     arg->instantiatedFrom = NULL;
   }
+
+  cleanupAfterTypeRemoval();
 }
 
-static bool isVoidOrVoidTupleType(Type* type) {
+static bool isNothingType(Type* type) {
   if (type == NULL) {
     return false;
   }
@@ -701,7 +722,7 @@ static bool isVoidOrVoidTupleType(Type* type) {
   }
   if (type->symbol->hasFlag(FLAG_REF)) {
     if (type->getField("_val", false)) {
-      return isVoidOrVoidTupleType(type->getValType());
+      return isNothingType(type->getValType());
     } else {
       // The _val field has already been removed because it is
       // void or tuple of void
@@ -717,16 +738,16 @@ static bool isVoidOrVoidTupleType(Type* type) {
   return false;
 }
 
-static void cleanupVoidVarsAndFields() {
-  // Remove most uses of void variables and fields
+static void cleanupNothingVarsAndFields() {
+  // Remove most uses of nothing variables and fields
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
-      case PRIM_MOVE: {
-        if (isVoidOrVoidTupleType(call->get(2)->typeInfo()) ||
+      case PRIM_MOVE:
+        if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());
-          // Remove moves where the rhs has type void. If the rhs is a
+          // Remove moves where the rhs has type nothing. If the rhs is a
           // call to something other than a few primitives, still make
           // that call, just don't move the result into anything.
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
@@ -744,11 +765,10 @@ static void cleanupVoidVarsAndFields() {
           }
         }
         break;
-      }
-      case PRIM_SET_MEMBER: {
-        if (isVoidOrVoidTupleType(call->get(3)->typeInfo())) {
+      case PRIM_SET_MEMBER:
+        if (isNothingType(call->get(3)->typeInfo())) {
           INT_ASSERT(call->get(2)->typeInfo() == call->get(3)->typeInfo());
-          // Remove set_member(a, void, void) calls
+          // Remove set_member(a, nothing, nothing) calls
           if (CallExpr* rhs = toCallExpr(call->get(2))) {
             Expr* rmRhs = rhs->remove();
             call->insertBefore(rmRhs);
@@ -758,56 +778,40 @@ static void cleanupVoidVarsAndFields() {
           }
         }
         break;
-      }
-      case PRIM_RETURN: {
-        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
+      case PRIM_YIELD:
+      case PRIM_RETURN:
+        if (isNothingType(call->get(1)->typeInfo()) ||
             call->get(1)->typeInfo() == dtNothing->refType) {
-          // Change functions that return void to use the global
-          // void value instead of a local void.
+          // Change functions/iterators that return/yield nothing to use the
+          // global nothing value instead of a local nothing.
           if (SymExpr* ret = toSymExpr(call->get(1))) {
             if (ret->symbol() != gNone) {
               SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_RETURN, gNone));
+              call->replace(new CallExpr(call->primitive->tag, gNone));
             }
           }
         }
         break;
-      }
-      case PRIM_YIELD: {
-        if (isVoidOrVoidTupleType(call->get(1)->typeInfo()) ||
-            call->get(1)->typeInfo() == dtNothing->refType) {
-          // Change iterators that yield void to use the global
-          // void value instead of a local void.
-          if (SymExpr* ret = toSymExpr(call->get(1))) {
-            if (ret->symbol() != gNone) {
-              SET_LINENO(call);
-              call->replace(new CallExpr(PRIM_YIELD, gNone));
-            }
-          }
-        }
-        break;
-      }
-      case PRIM_CALL_DESTRUCTOR: {
-        // Remove calls to destructors for homogeneous tuples of void
-        if (isVoidOrVoidTupleType(call->get(1)->typeInfo())) {
+      case PRIM_CALL_DESTRUCTOR:
+        // Remove calls to destructors for homogeneous tuples of nothing
+        if (isNothingType(call->get(1)->typeInfo())) {
           call->remove();
         }
         break;
-      }
       default:
         break;
       } // switch (call->primitive->tag)
      else
       if (FnSymbol* fn = call->resolvedFunction()) {
-        bool seenVoid = false;
-        // Remove actual arguments that are void from function calls
+        bool seenNothing = false;
+        // Remove actual arguments that are nothing from function calls
         for_actuals(actual, call) {
-          if (isVoidOrVoidTupleType(actual->typeInfo())) {
+          if (isNothingType(actual->typeInfo())) {
             actual->remove();
-            seenVoid = true;
+            seenNothing = true;
           }
         }
-        if (seenVoid && fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+        if (seenNothing && fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
           INT_ASSERT(call->numActuals() == 0);
           // A 0-arg call to autoDestroy would upset later passes.
           call->remove();
@@ -815,11 +819,11 @@ static void cleanupVoidVarsAndFields() {
       }
   }
 
-  // Remove void formal arguments from functions.
-  // Change functions that return ref(void) to just return void.
+  // Remove nothing formal arguments from functions.
+  // Change functions that return ref(nothing) to just return nothing.
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       for_formals(formal, fn) {
-        if (isVoidOrVoidTupleType(formal->type)) {
+        if (isNothingType(formal->type)) {
           if (formal == fn->_this) {
             fn->_this = NULL;
           }
@@ -827,17 +831,17 @@ static void cleanupVoidVarsAndFields() {
         }
       }
       if (fn->retType == dtNothing->refType ||
-          isVoidOrVoidTupleType(fn->retType)) {
+          isNothingType(fn->retType)) {
         fn->retType = dtNothing;
       }
       if (fn->_this) {
-        if (isVoidOrVoidTupleType(fn->_this->type)) {
+        if (isNothingType(fn->_this->type)) {
           fn->_this = NULL;
         }
       }
   }
 
-  // Set for loop index variables that are void to the global void value
+  // Set for loop index variables that are nothing to the global nothing value
   for_alive_in_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* loop = toForLoop(block)) {
       if (loop->indexGet() && loop->indexGet()->typeInfo() == dtNothing) {
@@ -846,10 +850,10 @@ static void cleanupVoidVarsAndFields() {
     }
   }
 
-  // Now that uses of void have been cleaned up, remove the
-  // DefExprs for void variables.
+  // Now that uses of nothing have been cleaned up, remove the
+  // DefExprs for nothing variables.
   for_alive_in_Vec(DefExpr, def, gDefExprs) {
-      if (isVoidOrVoidTupleType(def->sym->type) ||
+      if (isNothingType(def->sym->type) ||
           def->sym->type == dtNothing->refType) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           // Avoid removing the "_val" field from refs
@@ -869,7 +873,7 @@ static void cleanupVoidVarsAndFields() {
       }
   }
 
-  adjustVoidShadowVariables();
+  adjustNothingShadowVariables();
 
   // Problem case introduced by postFoldNormal where a statement-level call
   // returning void can be replaced by a 'none' SymExpr. Such SymExprs will
@@ -885,11 +889,91 @@ static void cleanupVoidVarsAndFields() {
   }
 }
 
+void saveGenericSubstitutions() {
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->substitutions.n > 0) {
+
+      // Generate substitutionsPostResolve which should not be generated yet
+      INT_ASSERT(fn->substitutionsPostResolve.size() == 0);
+
+      if (FnSymbol* genericFn = fn->instantiatedFrom) {
+        // Construct substitutionsPostResolve
+        for_formals(genericFormal, genericFn) {
+          if (genericFormal->type != dtMethodToken) {
+            Symbol* value = fn->substitutions.get(genericFormal);
+            NameAndSymbol ns;
+            ns.name = genericFormal->name;
+            ns.value = value;
+            ns.isParam = genericFormal->isParameter();
+            ns.isType = (genericFormal->originalIntent == INTENT_TYPE);
+            fn->substitutionsPostResolve.push_back(ns);
+          }
+        }
+
+      } else {
+        // This case is a workaround for patterns that
+        // come up with compiler-generated tuple functions
+        INT_ASSERT(fn->hasFlag(FLAG_INIT_TUPLE));
+        form_Map(SymbolMapElem, e, fn->substitutions) {
+          NameAndSymbol ns;
+          ns.name = e->key->name;
+          ns.value = e->value;
+          ns.isParam = false;
+          ns.isType = false;
+          fn->substitutionsPostResolve.push_back(ns);
+        }
+      }
+
+      // Clear substitutions since keys might refer to deleted AST nodes
+      fn->substitutions.clear();
+    }
+
+    // Clear instantiatedFrom since it would refer to a deleted AST node
+    if (fn->instantiatedFrom != NULL) {
+      fn->addFlag(FLAG_INSTANTIATED_GENERIC);
+
+      // Clear instantiatedFrom since it would refer to a deleted AST node
+      fn->instantiatedFrom = NULL;
+    }
+
+    fn->setInstantiationPoint(NULL);
+  }
+
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      if (at->substitutions.n > 0) {
+        // Generate substitutionsPostResolve which should not be generated yet
+        INT_ASSERT(at->substitutionsPostResolve.size() == 0);
+        for_fields(field, at) {
+          if (Symbol* value = at->getSubstitutionWithName(field->name)) {
+            NameAndSymbol ns;
+            ns.name = field->name;
+            ns.value = value;
+            ns.isParam = field->isParameter();
+            ns.isType = field->hasFlag(FLAG_TYPE_VARIABLE);
+            at->substitutionsPostResolve.push_back(ns);
+          }
+        }
+        // Clear substitutions since keys might refer to deleted AST nodes
+        at->substitutions.clear();
+      }
+
+      if (at->instantiatedFrom != NULL) {
+        // Clear instantiatedFrom since it would refer to a deleted AST node
+        at->instantiatedFrom = NULL;
+
+        ts->addFlag(FLAG_INSTANTIATED_GENERIC);
+      }
+    }
+  }
+}
 
 void pruneResolvedTree() {
-  removeUnusedFunctions();
+  removeInterfaceCode();
 
   removeTiMarks();
+
+  removeUnusedFunctions();
 
   if (fRemoveUnreachableBlocks) {
     deadBlockElimination();
@@ -923,7 +1007,7 @@ void pruneResolvedTree() {
 
   expandInitFieldPrims();
 
-  cleanupAfterRemoves();
+  cleanupNothingVarsAndFields();
 
-  cleanupVoidVarsAndFields();
+  cleanupAfterRemoves();
 }

@@ -1,0 +1,9 @@
+testBadCallCandidates.chpl:42: In method 'test':
+testBadCallCandidates.chpl:48: error: unresolved call 'D.bar("hi")'
+testBadCallCandidates.chpl:8: note: this candidate did not match: C.bar(x: string)
+testBadCallCandidates.chpl:48: note: because method call receiver with type 'borrowed D'
+testBadCallCandidates.chpl:4: note: is passed to formal 'this: borrowed C'
+testBadCallCandidates.chpl:48: note: other candidates are:
+testBadCallCandidates.chpl:11: note:   C.bar(x: D)
+testBadCallCandidates.chpl:36: note:   D.bar(x: int)
+note: and 1 other candidate, use --print-all-candidates to see it

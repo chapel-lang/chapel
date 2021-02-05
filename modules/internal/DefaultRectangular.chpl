@@ -1401,16 +1401,17 @@ module DefaultRectangular {
           break;
         }
       }
+
       if !actuallyResizing then
         return;
 
-      if (!isDefaultInitializable(eltType)) {
-        halt("Can't resize domains whose arrays' elements don't have default values");
-      }
-      if (this.locale != here) {
-        halt("internal error: dsiReallocate() can only be called from an array's home locale");
-      }
-      {
+      if !isDefaultInitializable(eltType) {
+        halt("Can't resize domains whose arrays' elements don't " +
+             "have default values");
+      } else if this.locale != here {
+        halt("internal error: dsiReallocate() can only be called " +
+             "from an array's home locale");
+      } else {
         const reallocD = {(...bounds)};
 
         // For now, we'll use realloc for 1D, non-empty arrays when
@@ -1531,6 +1532,10 @@ module DefaultRectangular {
     pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
+    }
+
+    override proc dsiIteratorYieldsLocalElements() param {
+      return true;
     }
   }
 

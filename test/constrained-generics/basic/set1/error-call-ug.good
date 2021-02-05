@@ -1,0 +1,6 @@
+error-call-ug.chpl:16: In function 'cgFun':
+error-call-ug.chpl:18: error: unresolved call 'ugFun(Q)'
+error-call-ug.chpl:21: note: this candidate did not match: ugFun(arg)
+error-call-ug.chpl:18: note: because actual argument #1 of an interface type Q
+error-call-ug.chpl:21: note: is passed to a generic formal
+error-call-ug.chpl:21: note: passing a constrained-generic formal to a non-constrained-generic function is not allowed

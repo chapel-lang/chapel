@@ -203,6 +203,10 @@ class PrivateArr: BaseRectangularArr {
     // data is deinited in dsiDestroyArr if necessary.
 
   }
+
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
+  }
 }
 
 override proc PrivateArr.dsiElementInitializationComplete() {

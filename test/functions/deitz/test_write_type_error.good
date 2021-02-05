@@ -2,4 +2,5 @@ test_write_type_error.chpl:2: error: unresolved call 'writeln(type int(64))'
 $CHPL_HOME/modules/standard/ChapelIO.chpl:: note: this candidate did not match: writeln(const args ...?n)
 test_write_type_error.chpl:: note: because actual argument #1 is a type
 $CHPL_HOME/modules/standard/ChapelIO.chpl:: note: but is passed to non-type varargs formal 'args'
-$CHPL_HOME/modules/standard/ChapelIO.chpl:: note: candidates are: writeln()
+test_write_type_error.chpl:: note: other candidates are:
+$CHPL_HOME/modules/standard/ChapelIO.chpl:: note:   writeln()

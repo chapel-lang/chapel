@@ -12,9 +12,9 @@ use IO;
 //
 
 {
-  const Dom = {1..10},
-        MDom = {1..3, 1..3},
-        MDom2 = {1..4, 1..6};
+  const Dom = {0..<10},
+        MDom = {0..<3, 0..<3},
+        MDom2 = {0..<4, 0..<6};
 
   //
   // Vectors
@@ -28,8 +28,8 @@ use IO;
 
   /* Range */
   {
-    var v = Vector(1..10);
-    assertEqual(v.domain, Dom, "Vector(1..10)");
+    var v = Vector(0..<10);
+    assertEqual(v.domain, Dom, "Vector(0..<10)");
   }
   {
     // 0-based
@@ -80,14 +80,14 @@ use IO;
 
   /* Range */
   {
-    var M = Matrix(1..3);
-    assertEqual(M.domain, MDom, "Matrix(1..3)");
+    var M = Matrix(0..<3);
+    assertEqual(M.domain, MDom, "Matrix(0..<3)");
   }
 
   /* Ranges */
   {
-    var M = Matrix(1..4, 1..6);
-    assertEqual(M.domain, MDom2, "Matrix(1..4, 1..6)");
+    var M = Matrix(0..<4, 0..<6);
+    assertEqual(M.domain, MDom2, "Matrix(0..<4, 0..<6)");
   }
 
   /* Domain */
@@ -144,7 +144,7 @@ use IO;
                    [4,5,6],
                    [7,8,9]);
     assertEqual(M.domain, MDom, "Matrix([1,2,3], [4,5,6], [7,8,9]).domain");
-    assertEqual(M[2,2], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
+    assertEqual(M[1,1], 5, "Matrix([1,2,3], [4,5,6], [7,8,9])[1,1]");
   }
 
   /* Identity - Dimensions */
@@ -338,7 +338,7 @@ use IO;
   v13 = 1;
   M = 1;
 
-  S[1, 1] =  inner(v13[1, ..], v31[.., 1]);
+  S[0, 0] =  inner(v13[0, ..], v31[.., 0]);
 
   // outer-product
   assertEqual(dot(v31, v13), M, "dot(Matrix(3, 1), Matrix(1, 3))");
@@ -351,10 +351,10 @@ use IO;
   var M = Matrix(3, 3);
   M = 1;
 
-  var slice = M[1..3, 1];
+  var slice = M[0..<3, 0];
 
   var result = dot(slice, slice);
-  assertEqual(result, 3, 'dot(M[1..3, 1], M[1..3, 1])');
+  assertEqual(result, 3, 'dot(M[0..<3, 0], M[0..<3, 0])');
 }
 
 /* outer */
@@ -469,19 +469,19 @@ use IO;
   assertEqual([4,5,6], diag(M2, 3),  "diag(M2,3)");
   assertEqual([3],  diag(M3,2),     "diag(M3, 2)");
   assertEqual([4,8,3], diag(M3,-1), "diag(M3,-1)");
-  assertEqual([1, 5], diag(M3,-3),  "diag(M3,-3)"); 
+  assertEqual([1, 5], diag(M3,-3),  "diag(M3,-3)");
 
   // Now let's try with offsets
 
-  ref rM = M.reindex(1..3, 1..3);
-  ref rv = v.reindex(1..3);
-  ref rvMat = vMat.reindex(1..3, 1..3);
-  ref rM1 = M1.reindex(1..3, 1..4);
-  ref rM2 = M2.reindex(1..9 by 4, 1..11 by 2);
-  ref rM3 = M3.reindex(1..21 by 5, 1..9 by 4);
-  ref rv11 = v11.reindex(1..3);
-  ref rv12 = v12.reindex(1..2);
-  ref rv13 = v13.reindex(1..1);
+  ref rM = M.reindex(0..<3, 0..<3);
+  ref rv = v.reindex(0..<3);
+  ref rvMat = vMat.reindex(0..<3, 0..<3);
+  ref rM1 = M1.reindex(0..<3, 0..<4);
+  ref rM2 = M2.reindex(0..<9 by 4, 0..<11 by 2);
+  ref rM3 = M3.reindex(0..<21 by 5, 0..<9 by 4);
+  ref rv11 = v11.reindex(0..<3);
+  ref rv12 = v12.reindex(0..<2);
+  ref rv13 = v13.reindex(0..<1);
 
   assertEqual(rv,   diag(rM),       "diag(M)");
   assertEqual(rvMat,diag(rv),       "diag(v)");
@@ -624,10 +624,13 @@ use IO;
 {
   use LinearAlgebra.Sparse;
 
-  const parentDom = {1..3, 1..3},
-        parentDom2 = {1..4, 1..6},
-        tParentDom = {1..3, 1..5},
-        tParentDomT = {1..5, 1..3};
+  const parentDom = {0..<3, 0..<3},
+        parentDom2 = {0..<4, 0..<6},
+        tParentDom = {0..<3, 0..<5},
+        tParentDomT = {0..<5, 0..<3};
+
+  // 1-based variants
+  const parentDom1 = {1..3, 1..3};
 
   var   Dom: sparse subdomain(parentDom) dmapped CS(sortedIndices=false),
         Dom2: sparse subdomain(parentDom2) dmapped CS(sortedIndices=false),
@@ -635,11 +638,18 @@ use IO;
         tDom: sparse subdomain (tParentDom) dmapped CS(sortedIndices=false),
         tDomT: sparse subdomain (tParentDomT) dmapped CS(sortedIndices=false);
 
+  // 1-based variants
+  var   Dom1: sparse subdomain(parentDom1) dmapped CS(sortedIndices=false),
+        IDom1: sparse subdomain(parentDom1) dmapped CS(sortedIndices=false);
+
 
   // Identity sparse domain
-  IDom += [(1,1), (2,2), (3,3)];
-  tDom += [(1,1), (2,1), (3,1), (3,4), (3,5)];
-  tDomT += [(1,1), (1,2), (1,3), (4,3), (5,3)];
+  IDom += [(0,0), (1,1), (2,2)];
+  tDom += [(0,0), (1,0), (2,0), (2,3), (2,4)];
+  tDomT += [(0,0), (0,1), (0,2), (3,2), (4,2)];
+
+  // 1-based variants
+  IDom1 += [(1,1), (2,2), (3,3)];
 
   /* Rows */
   {
@@ -655,14 +665,14 @@ use IO;
 
   /* Range */
   {
-    var D = CSRDomain(1..3);
+    var D = CSRDomain(0..<3);
     assertEqual(D, Dom, "CSRDomain(0..#3)");
   }
 
   /* Ranges */
   {
-    var D = CSRDomain(1..4, 1..6);
-    assertEqual(D, Dom2, "CSRDomain(1..4, 1..6)");
+    var D = CSRDomain(0..<4, 0..<6);
+    assertEqual(D, Dom2, "CSRDomain(0..<4, 0..<6)");
   }
 
   /* Domain - CSR */
@@ -777,8 +787,8 @@ use IO;
 
   /* dot - matrix-matrix (identity) */
   {
-    var A: [Dom] real;
-    var I: [IDom] real;
+    var A: [Dom1] real;
+    var I: [IDom1] real;
     var AI = dot(A, I);
     assertEqual(AI, A, "dot(A, I)");
   }
@@ -787,16 +797,16 @@ use IO;
   /* dot - matrix-vector (identity) */
   {
     var Asps: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av: [1..3] real = 2;
+    var v: [0..<3] real = 2;
+    var Av: [0..<3] real = 2;
     assertEqual(dot(Asps, v), Av, 'Asps.dot(v)');
   }
 
   /* dot - vector-matrix (identity) */
   {
     var Asps: [IDom] real = 1;
-    var v: [1..3] real = 2;
-    var Av: [1..3] real = 2;
+    var v: [0..<3] real = 2;
+    var Av: [0..<3] real = 2;
     assertEqual(dot(v, Asps), Av, 'v.dot(Asps)');
   }
 
@@ -849,7 +859,7 @@ use IO;
 
   /* dot - Various matrix-matrix tests */
   {
-    var A = eye(3,5);
+    var A = eye({1..3, 1..5});
     // Identity matrix (3x5)
     test_CSRdot(A);
 
@@ -864,13 +874,13 @@ use IO;
     A[1,1] = 0.0;
     test_CSRdot(A);
 
-    var B = Matrix(5, 4);
+    var B = Matrix(1..5, 1..4);
     B[.., 1] =  1.0;
     B[1, ..] =  1.0;
     test_CSRdot(A, B);
 
     // A bigger matrix
-    var C = eye(100, 20);
+    var C = eye({1..100, 1..20});
     test_CSRdot(C);
   }
 
@@ -899,26 +909,28 @@ use IO;
 
   // matPow with sparse matrices
   {
-    // Real domains
-    var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    const dim = 1..3;
+    // Real
+    var D = CSRDomain(dim, dim);
+    for ii in dim do D += (ii,ii);
 
     var A = CSRMatrix(D, real);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in dim do A[ii,ii] = ii;
     var B = matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],(ii**3),
+    for ii in dim do assertEqual(B[ii,ii],(ii**3),
                                    "Error in matPow with sparse matrices : real");
   }
 
   {
-    // Int domains
-    var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    const dim = 1..3;
+    // Int
+    var D = CSRDomain(dim, dim);
+    for ii in dim do D += (ii,ii);
 
     var A = CSRMatrix(D, int);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in dim do A[ii,ii] = ii;
     var B = matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],ii**3,
+    for ii in dim do assertEqual(B[ii,ii],ii**3,
                                    "Error in matPow with sparse matrices : int");
   }
 
@@ -944,7 +956,7 @@ use IO;
   // Matrix Properties
   {
     // Create dense, COO, and CSR domains
-    var domDense: domain(2) = {1..3, 1..3},
+    var domDense: domain(2) = {0..<3, 0..<3},
         domCOO: sparse subdomain(domDense),
         domCSR: sparse subdomain(domDense) dmapped CS();
 

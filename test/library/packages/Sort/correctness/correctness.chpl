@@ -157,6 +157,14 @@ proc main() {
       if !checkSort(arr, cmp) then
         writeln('  for mergeSort() function.\n');
     }
+
+    for param i in 1..tests.size-1 {
+      var (arr, cmp) = tests(i);
+      resetArray(arr, cmp);
+      TimSort.timSort(arr, comparator=cmp);
+      if !checkSort(arr, cmp) then
+        writeln('  for timSort() function.\n');
+    }
   }
 }
 

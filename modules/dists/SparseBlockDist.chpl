@@ -543,6 +543,10 @@ class SparseBlockArr: BaseSparseArr {
 
   override proc dsiGetBaseDom() return dom;
 
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
+  }
+
 }
 
 //

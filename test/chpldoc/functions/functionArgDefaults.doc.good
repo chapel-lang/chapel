@@ -93,7 +93,7 @@ or
 
 .. function:: proc tuple3Default(arg = (x, y, z))
 
-.. function:: proc dotTypeDefault(arg = x.type )
+.. function:: proc dotTypeDefault(arg = x.type)
 
 .. function:: proc dotFieldDefault(arg = c!.aField)
 
@@ -129,15 +129,15 @@ or
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
 .. record:: R3
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
-   .. attribute:: param c: b.type 
+   .. attribute:: param c: b.type
 
 .. function:: proc R0TypedArgNoDefault(arg: R0)
 

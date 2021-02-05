@@ -1,9 +1,10 @@
 match-param.chpl:6: In function 'foo':
 match-param.chpl:6: error: unresolved call '==("hello", 100)'
-$CHPL_HOME/modules/internal/String.chpl:420: note: this candidate did not match: ==(x: byteIndex, y: byteIndex)
+$CHPL_HOME/modules/internal/String.chpl:408: note: this candidate did not match: ==(x: byteIndex, y: byteIndex)
 match-param.chpl:6: note: because actual argument #1 with type 'string'
-$CHPL_HOME/modules/internal/String.chpl:420: note: is passed to formal 'x: byteIndex'
-$CHPL_HOME/modules/internal/String.chpl:421: note: candidates are: ==(x: codepointIndex, y: codepointIndex)
-$CHPL_HOME/modules/internal/String.chpl:423: note:                 ==(x: byteIndex, y: int)
+$CHPL_HOME/modules/internal/String.chpl:408: note: is passed to formal 'x: byteIndex'
+match-param.chpl:6: note: other candidates are:
+$CHPL_HOME/modules/internal/String.chpl:409: note:   ==(x: codepointIndex, y: codepointIndex)
+$CHPL_HOME/modules/internal/String.chpl:411: note:   ==(x: byteIndex, y: int)
 note: and N other candidates, use --print-all-candidates to see them
   match-param.chpl:1: called as foo(x: R(int(64),100))

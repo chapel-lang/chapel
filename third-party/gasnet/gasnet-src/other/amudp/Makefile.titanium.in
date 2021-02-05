@@ -12,7 +12,7 @@ CC = @CC@
 CXX = @TARGET_CXX@
 
 #otherflags := $(otherflags) -pg
-#otherflags := $(otherflags) -DFREEZE_SLAVE=1
+#otherflags := $(otherflags) -DFREEZE_WORKER=1
 #otherflags := $(otherflags) -static
 
 ccdebugflags = @TCBUILD_CFLAGS_COMMON@ @TCBUILD_CFLAGS_DEBUG@ $(otherflags)

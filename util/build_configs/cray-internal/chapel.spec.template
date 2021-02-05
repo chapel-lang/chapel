@@ -1,0 +1,122 @@
+%define name chapel-@@{pkg_version}
+%define real_name chapel
+%define version @@{rpm_version}
+%define pkg_version @@{pkg_version}
+%define chpl_home_basename @@{basename_of_CHPL_HOME}
+%define pkg_release @@{rpm_release}
+%define build_type @@{chpl_platform}
+%define platform_prefix @@{platform_prefix}
+%define set_def_subdir @@{set_def_subdir}
+%define lmod_prefix @@{lmod_prefix}
+%define lmod_suffix @@{lmod_suffix}
+%define lmod_tgt_compilers @@{lmod_tgt_compilers}
+%define _binary_payload w9.gzdio
+Summary: Chapel language compiler and libraries
+Name:    %{name}
+Version: %{version}
+Release: %{pkg_release}
+Prefix:  %{platform_prefix}
+License: Copyright 2021 Hewlett Packard Enterprise Development LP All Rights Reserved.
+Packager: Hewlett Packard Enterprise
+Group:   Development/Languages/Other
+Source:  %{chpl_home_basename}.tar.gz
+AutoReqProv: no
+Requires:   modulefile-utils_1
+Requires:   set_default_2
+Requires:   /usr/bin/env
+Requires:   make
+Requires:   perl
+Requires:   python
+
+%if %{!?buildroot:1}%{?buildroot:0}
+%{error: Missing required command line parameter --buildroot RPM_BUILD_ROOT}
+%{error: Make sure you also have --define "_topdir TOPDIR" (where RPM_BUILD_ROOT is a subdir)}
+%{error: Highly recommended: --define "_tmppath TMPDIR" (where TMPDIR is a subdir of TOPDIR)}
+%quit
+%endif
+
+%description
+Chapel language compiler and libraries
+
+%prep
+
+cd $RPM_BUILD_DIR/%{chpl_home_basename}
+chmod -Rf a+rX,u+w,g-w,o-w .
+
+%build
+
+%install
+
+# Tcl modulefiles, and module itself
+cd          %{_topdir}
+mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}
+cp -p       set_default_%{real_name}_%{pkg_version}     $RPM_BUILD_ROOT/%{prefix}/%{set_def_subdir}/
+mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}
+rm -f                                                   $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}/%{pkg_version}
+cp -p       modulefile-%{pkg_version}                   $RPM_BUILD_ROOT/%{prefix}/modulefiles/%{real_name}/%{pkg_version}
+mkdir -p                                                $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}
+
+cd          $RPM_BUILD_DIR/%{chpl_home_basename}
+find . -mindepth 1 -maxdepth 1 -exec mv -f {}           $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type} \;
+cd          %{_topdir}
+cp -p       release_info                                $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}
+
+# Lua modulefiles
+for lmod_compiler in %{lmod_tgt_compilers} ; do
+  module_dir=%{lmod_prefix}/$lmod_compiler/%{lmod_suffix}/%{real_name}
+  mkdir -p $RPM_BUILD_ROOT/$module_dir
+  cp -p modulefile-lua-%{pkg_version} \
+        $RPM_BUILD_ROOT/$module_dir/%{pkg_version}.lua
+done
+
+# Clean up *.o files
+#rm -rf     $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/*/*/gen
+rm -rf      $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}/*/compiler/*/gen
+rm -rf      $RPM_BUILD_ROOT/%{prefix}/%{real_name}/%{pkg_version}/%{build_type}/*/runtime/*/gen
+
+%clean
+#rm -fr $RPM_BUILD_ROOT/
+
+%post
+cd $RPM_INSTALL_PREFIX/modulefiles/%{real_name}
+if [ ${CRAY_INSTALL_DEFAULT:-0} -eq 1 ]
+then
+/bin/rm -f .version
+fi
+if [ ! -f .version ]
+then
+cat > .version << EOF
+#%Module
+set ModulesVersion "%{pkg_version}"
+EOF
+fi
+if [ -f $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version ]
+then
+chmod 644 $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/.version
+fi
+chmod 755 $RPM_INSTALL_PREFIX/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
+
+sed --in-place "s:\[BASE_INSTALL_DIR\]:$RPM_INSTALL_PREFIX:g" $RPM_INSTALL_PREFIX/modulefiles/%{real_name}/%{pkg_version}
+%postun
+if [ $1 == 1 ]
+then
+exit 0
+fi
+cd $RPM_INSTALL_PREFIX/modulefiles/%{real_name}
+if [ -f .version ]
+then
+dotversion=`grep ModulesVersion .version | cut -f 2 -d'"'`
+if [ "$dotversion" = "%{pkg_version}" ]
+then
+echo "Uninstalled version and .version file match = %{pkg_version}."
+echo "Removing .version file."
+/bin/rm .version
+fi
+fi
+
+%files
+%defattr(-,root,root)
+%{prefix}/%{real_name}/%{pkg_version}
+%{prefix}/modulefiles/%{real_name}/%{pkg_version}
+%{prefix}/%{set_def_subdir}/set_default_%{real_name}_%{pkg_version}
+%{lmod_prefix}/*/*/%{lmod_suffix}/%{real_name}/%{pkg_version}.lua

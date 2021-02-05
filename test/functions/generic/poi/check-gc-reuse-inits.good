@@ -5,7 +5,7 @@ check-gc-reuse-inits.chpl:19: warning: User.workIN
   check-gc-reuse-inits.chpl:41: called as MyRecord.init(param p = 0)
 check-gc-reuse-inits.chpl:20: In method 'init=':
 check-gc-reuse-inits.chpl:20: warning: User.workIE
-  check-gc-reuse-inits.chpl:42: called as MyRecord(0).init=(other: MyRecord(0))
+  check-gc-reuse-inits.chpl:42: called as (MyRecord(0)).init=(other: MyRecord(0))
 check-gc-reuse-inits.chpl:22: In function '=':
 check-gc-reuse-inits.chpl:22: warning: User.workAS
   check-gc-reuse-inits.chpl:43: called as =(lhs: MyRecord(0), rhs: MyRecord(0))
@@ -24,7 +24,7 @@ check-gc-reuse-inits.chpl:60: In function 'u3':
 check-gc-reuse-inits.chpl:69: warning: User.u3
 check-gc-reuse-inits.chpl:20: In method 'init=':
 check-gc-reuse-inits.chpl:20: warning: u3.workIE
-  check-gc-reuse-inits.chpl:72: called as MyRecord(0).init=(other: MyRecord(0))
+  check-gc-reuse-inits.chpl:72: called as (MyRecord(0)).init=(other: MyRecord(0))
 check-gc-reuse-inits.chpl:22: In function '=':
 check-gc-reuse-inits.chpl:22: warning: u3.workAS
   check-gc-reuse-inits.chpl:73: called as =(lhs: MyRecord(0), rhs: MyRecord(0))
@@ -41,7 +41,7 @@ check-gc-reuse-inits.chpl:115: In function 'm1con':
 check-gc-reuse-inits.chpl:116: warning: More1.m1con
 check-gc-reuse-inits.chpl:20: In method 'init=':
 check-gc-reuse-inits.chpl:20: warning: More1.workIE
-  check-gc-reuse-inits.chpl:119: called as MyRecord(0).init=(other: MyRecord(0))
+  check-gc-reuse-inits.chpl:119: called as (MyRecord(0)).init=(other: MyRecord(0))
 check-gc-reuse-inits.chpl:22: In function '=':
 check-gc-reuse-inits.chpl:22: warning: More1.workAS
   check-gc-reuse-inits.chpl:120: called as =(lhs: MyRecord(0), rhs: MyRecord(0))
@@ -67,7 +67,7 @@ check-gc-reuse-inits.chpl:186: warning: Combo2.combo2a
   check-gc-reuse-inits.chpl:168: called as combo2a(param p = 0)
 check-gc-reuse-inits.chpl:20: In method 'init=':
 check-gc-reuse-inits.chpl:20: warning: Combo1.workIE
-  check-gc-reuse-inits.chpl:189: called as MyRecord(0).init=(other: MyRecord(0)) from function 'combo2a'
+  check-gc-reuse-inits.chpl:189: called as (MyRecord(0)).init=(other: MyRecord(0)) from function 'combo2a'
   check-gc-reuse-inits.chpl:168: called as combo2a(param p = 0)
 check-gc-reuse-inits.chpl:22: In function '=':
 check-gc-reuse-inits.chpl:22: warning: Combo1.workAS

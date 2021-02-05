@@ -682,6 +682,10 @@ static int AMMPI_RequestGeneric(ammpi_category_t category,
     for (i = 0; i < numargs; i++) {
       args[i] = (uint32_t)va_arg(argptr, int); /* must be int due to default argument promotion */
     }
+    #if USE_CLEAR_UNUSED_SPACE
+      if (i < AMMPI_MAX_SHORT) args[i] = 0;
+      outgoingbuf->Msg._reserved = 0;
+    #endif
   }
 
   if (isloopback) { /* run handler synchronously */
@@ -790,9 +794,8 @@ static int AMMPI_ReplyGeneric(ammpi_category_t category,
       args[i] = (uint32_t)va_arg(argptr, int); /* must be int due to default argument promotion */
     }
     #if USE_CLEAR_UNUSED_SPACE
-      for ( ; i < AMMPI_MAX_SHORT; i++) {
-        args[i] = 0;
-      }
+      if (i < AMMPI_MAX_SHORT) args[i] = 0;
+      outgoingbuf->Msg._reserved = 0;
     #endif
   }
 

@@ -91,7 +91,7 @@ or
 
 .. data:: var tuple3Default = (x, y, z)
 
-.. data:: var dotTypeDefault = x.type 
+.. data:: var dotTypeDefault = x.type
 
 .. data:: var dotFieldDefault = c!.aField
 
@@ -123,15 +123,15 @@ or
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
 .. record:: R3
 
    .. attribute:: param a: int
 
-   .. attribute:: param b: a.type 
+   .. attribute:: param b: a.type
 
-   .. attribute:: param c: b.type 
+   .. attribute:: param c: b.type
 
 .. data:: var R0TypedArgNoDefault: R0
 

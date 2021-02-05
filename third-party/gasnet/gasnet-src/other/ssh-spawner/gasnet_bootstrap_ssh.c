@@ -44,10 +44,6 @@
 #include <netdb.h>
 #include <limits.h>
 
-#if GASNET_BLCR
-  #include <libcr.h>
-#endif
-
 #ifndef GASNET_SOCKLEN_T
   #error "Don't know socklen_t or equivalent"
 #endif
@@ -133,12 +129,6 @@
    relavent information on to the others via the control sockets).  See
    README for documentation on these variables.
 
-   The following are (conditional on GASNET_BLCR) provided for support
-   of BLCR-based checkpoint, restart and rollback:
-      int PreCheckpoint(int fd);
-      int PostCheckpoint(int fd, int is_restart);
-      int Rollback(const char *dir);
-
    XXX: still to do
    + Group same-node when appears multiple times in list
    + Give master its own rank children too?
@@ -178,10 +168,6 @@ enum {
   BOOTSTRAP_CMD_TRANS1,
   BOOTSTRAP_CMD_SNBCAST0,
   BOOTSTRAP_CMD_SNBCAST1,
-#if GASNET_BLCR
-  BOOTSTRAP_CMD_RSTRT_ARGS,
-  BOOTSTRAP_CMD_ROLLBACK,
-#endif
 };
 
 static const int c_one  = 1;
@@ -211,15 +197,6 @@ static struct child {
   gex_Rank_t       tree_ranks; /* ranks in this sub-tree, including self (1 for rank procs) */
   gex_Rank_t       tree_nodes; /* nodes in this sub-tree, including self (1 for rank procs) */
   char **             nodelist;
-#if GASNET_BLCR
-  cr_restart_handle_t rstrt_handle;
-  char                rstrt_args;
-  enum {
-    RSTRT_STATE_RUNNING = 0,    /* Normal state */
-    RSTRT_STATE_REQUESTED,      /* Restart or rollback request has been issued */
-    /* Nothing else, yet. */
-  }                   rstrt_state;
-#endif
 } *child = NULL;
 static volatile int initialized = 0;
 static int finalized = 0;
@@ -241,28 +218,6 @@ static int mypid;
 static volatile int exit_status = 0;
 static gex_Rank_t nnodes = 0;	/* nodes, as distinct from ranks */
 static int nnodes_set = 0;		/* non-zero if nnodes set explicitly */
-
-#if GASNET_BLCR
-/* BLCR-based checkpoint/restart */
-  static int is_restart = 0;
-
-  static int blcr_rollback(gex_Rank_t rank, const char *dir);
-  static int blcr_restart(gex_Rank_t rank, const char *dir);
-  static int blcr_reap(gex_Rank_t rank, int block);
-
-  static int blcr_max_requests = 8; /* BLCR-TODO: env var to control this arbitrary limit */
-  static int blcr_live_requests = 0;
-
-  #define RSTRT_VERBOSE          (1<<0)
-  #define RSTRT_CMD_RESTART      (1<<1)
-  #define RSTRT_CMD_ROLLBACK     (1<<2)
-
-  #ifdef CR_RSTRT_TARGET_AUTO
-    #define HAVE_BLCR_RSTRT_TARGET 1
-  #endif
-#else
-  #define is_restart 0
-#endif
 
 GASNETI_FORMAT_PRINTF(do_verbose,1,2,
 static void do_verbose(const char *fmt, ...)) {
@@ -856,20 +811,6 @@ static int my_socketpair(int sv[2]) {
     const int domain = PF_UNIX;
   #endif
     int rc = socketpair(domain, SOCK_STREAM, 0, sv);
-  #if GASNET_BLCR
-    if (! rc) {
-      /* POSIX does not require that (sv[0] < sv[1]).
-       * However, restart relies on it so that every rank process has the same "parent" fd.
-       */
-      if (sv[0] > sv[1]) { int tmp=sv[0]; sv[0]=sv[1]; sv[1]=tmp; } /* SWAP */
-    #if GASNET_DEBUG
-      { static int sv0 = -1;
-        if (sv0 < 0) sv0 =  sv[0];
-        else gasneti_assert_always(sv0 == sv[0]);
-      }
-      #endif
-    }
-  #endif
     return rc;
 }
 
@@ -1174,6 +1115,27 @@ static void build_nodelist(void)
     nodelist = parse_nodepipe("scontrol show hostname");
   } else {
     die(1, "No " ENV_PREFIX "SSH_NODEFILE, " ENV_PREFIX "SSH_SERVERS, or " ENV_PREFIX "NODEFILE in environment");
+  }
+
+  if (! gasneti_getenv_yesno_withdefault(ENV_PREFIX "SSH_KEEPDUP", 0) && (nnodes > 1)) {
+    int count = 1;
+    for (int i = 1; i < nnodes; ++i) {
+      char *p = nodelist[i];
+      int j;
+      for (j = 0; j < count; ++j) {
+        if (! strcmp(p, nodelist[j])) break;
+      }
+      if (j == count) { // NOT a dup
+        nodelist[count++] = p;
+      } else {
+        gasneti_free(p);
+      }
+    }
+    if (count != nnodes) {
+      BOOTSTRAP_VERBOSE(("Deduplication reduced node count from %d to %d\n", nnodes, count));
+      nnodes = count;
+      nodelist = gasneti_realloc(nodelist, nnodes * sizeof(char *));
+    }
   }
 }
 
@@ -1565,11 +1527,6 @@ static void spawn_one_control(gex_Rank_t child_id, const char *cmdline, const ch
   pid_t pid;
   int is_local = (GASNETI_BOOTSTRAP_LOCAL_SPAWN && (!host || !strcmp(host, my_host)));
 
-#if GASNET_BLCR
-  /* Avoid issues with BLCR restoring a pty */
-  is_local &= !isatty(STDIN_FILENO);
-#endif
-
   child[child_id].pid = pid = fork();
 
   if (pid < 0) {
@@ -1582,7 +1539,7 @@ static void spawn_one_control(gex_Rank_t child_id, const char *cmdline, const ch
                                       quote_arg(cwd),
                                       (wrapper ? wrapper : ""),
                                       envcmd,
-                                      (is_restart ? 'D' : 'C'),
+                                      'C',
                                       (is_verbose ? "v" : ""), args_delim,
                                       (int)child_id, args_delim,
                                       listen_port, args_delim,
@@ -1664,15 +1621,6 @@ static int do_worker(void) {
 static void spawn_rank(int argc, char **argv) {
   int j;
 
-#if GASNET_BLCR
-  const char *restart_dir = NULL;
-  if (is_restart) {
-    gasneti_assert_always(argc == 2);
-    gasneti_assert_always(argv && argv[1]);
-    restart_dir = argv[1];
-  }
-#endif
-
   for (j = ctrl_children; j < children; ++j) {
     int rc, sv[2];
 
@@ -1686,16 +1634,6 @@ static void spawn_rank(int argc, char **argv) {
     fd_sets_add(sv[1]);
     (void)fcntl_setfd(sv[1], FD_CLOEXEC);
 
-  #if GASNET_BLCR
-    if (is_restart) {
-      rc = blcr_restart(child[j].rank, restart_dir);
-      if (rc < 0) {
-        /* BLCR-TODO: is any recovery possible? */
-        gasneti_fatalerror("cr restart failed!");
-      }
-      /* Don't have the actual pid until the request is reaped */
-    } else
-  #endif
     {
       pid_t pid = fork();
       if (!pid) {
@@ -2202,82 +2140,6 @@ static void cmd_SNBCAST(char cmd, int i) {
   }
 }
 
-#if GASNET_BLCR /* BLCR-specific commands (control and rank merged) */
-
-/* Child restarting from checkpoint is asking parent for its "restart args" */
-static void cmd_rstrt_args(int j, char *args_p) {
-  /* BLCR-TODO: error checking? */
-  if (is_control) {
-    if (child[j].rstrt_args & RSTRT_CMD_RESTART) ++initialized;
-    do_write(child[j].sock, &child[j].rstrt_args, sizeof(child[j].rstrt_args));
-    (void) blcr_reap(child[j].rank, 1); /* BLCR-TODO: error reporting/recovery */
-  } else {
-    char cmd = BOOTSTRAP_CMD_RSTRT_ARGS;
-    do_write(parent, &cmd, sizeof(cmd));
-    do_read(parent, args_p, sizeof(*args_p));
-  }
-}
-
-/* Child is requesting that parent roll it back to the specified context */
-static void cmd_rollback(int j, const char *dir) {
-  /* BLCR-TODO: error checking? */
-  int rc;
-  if (is_control) {
-    dir = do_read_string(child[j].sock);
-  #if HAVE_BLCR_RSTRT_TARGET
-    rc = blcr_rollback(child[j].rank, dir);
-    gasneti_assert_always(!rc); /* BLCR-TODO: proper error checking/recovery */
-  #else
-    /* Must first coordinate exit of the child */
-    {
-      char cmd = BOOTSTRAP_CMD_ROLLBACK;
-      sigset_t child_set, old_set;
-      int status;
-      pid_t pid;
-      sigemptyset(&child_set);
-      sigaddset(&child_set, SIGCHLD);
-      sigprocmask(SIG_BLOCK, &child_set, &old_set);
-      do_write(child[j].sock, &cmd, sizeof(cmd)); /* ACK the rollback command */
-      do {
-        pid = waitpid(child[j].pid, &status, 0);
-      } while ((pid < 0) && (errno == EINTR) && !in_abort);
-      sigprocmask(SIG_SETMASK, &old_set, NULL);
-      if (in_abort) return;
-      gasneti_assert_always(pid == child[j].pid);
-      gasneti_assert_always(WIFEXITED(status) && !WEXITSTATUS(status));
-    }
-    /* Now we can restart, but need a new socket pair */
-    {
-      int sv[2];
-      (void) close(child[j].sock);
-      rc = my_socketpair(sv);
-      if (rc < 0) {
-        /* BLCR-TODO: is any recovery possible? */
-        gasneti_fatalerror("socketpair() failed!");
-      }
-      child[j].sock = sv[1];
-      (void) fcntl_setfd(sv[1], FD_CLOEXEC);
-      blcr_rollback(child[j].rank, dir);
-      gasneti_assert_always(!rc); /* BLCR-TODO: proper error checking/recovery */
-      (void) close(sv[0]);
-    }
-  #endif
-    gasneti_free((void*)dir);
-  } else {
-    char cmd = BOOTSTRAP_CMD_ROLLBACK;
-    do_write(parent, &cmd, sizeof(cmd));
-    do_write_string(parent, dir);
-    do_read(parent, &cmd, sizeof(cmd)); /* block for either the ACK or for rollback */
-  #if HAVE_BLCR_RSTRT_TARGET
-    gasneti_fatalerror("Returned from a rollback request");
-  #else
-    gasneti_assert_always(cmd == BOOTSTRAP_CMD_ROLLBACK);
-    _exit(0);
-  #endif
-  }
-}
-#endif
-
 static void dispatch(char cmd, int k) {
   switch (cmd) {
     case BOOTSTRAP_CMD_FINI0:
@@ -2309,16 +2171,6 @@ static void dispatch(char cmd, int k) {
     case BOOTSTRAP_CMD_SNBCAST1:
       cmd_SNBCAST(cmd, k);
       break;
-
-  #if GASNET_BLCR
-    case BOOTSTRAP_CMD_RSTRT_ARGS:
-      cmd_rstrt_args(k, NULL);
-      break;
-
-    case BOOTSTRAP_CMD_ROLLBACK:
-      cmd_rollback(k, NULL);
-      break;
-  #endif
 
     default:
       fprintf(stderr, "Spawner protocol error\n");
@@ -2370,7 +2222,7 @@ static void event_loop(void)
     wait_for_all();
 
     BOOTSTRAP_VERBOSE(("[%d] Exit with status %d\n", myname, (int)(unsigned char)exit_status));
-    exit (exit_status);
+    _exit (exit_status); // See UPC++ Issue #419
 }
 
 /* rank process wait for a specific command byte from parent */
@@ -2399,9 +2251,6 @@ static void usage(const char *argv0) {
       "      -v        enables verbose output from spawner\n"
       "      -W[arg]   prefix launch of remote ssh processes with [arg]\n"
       "                example: \"-W'env LD_LIBRARY_PATH=/usr/local/lib64'\"\n"
-  #if GASNET_BLCR
-      "      -R        Restart from a checkpoint directory given as [ARGS...]\n"
-  #endif
       , argv0);
 }
 
@@ -2518,10 +2367,6 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
         is_verbose = 1;
       } else if (0 == strncmp(argv[argi], "-W", 2)) {
         wrapper = &argv[argi][2];
-    #if GASNET_BLCR
-      } else if (0 == strcmp(argv[argi], "-R")) {
-        is_restart = 1;
-    #endif
       } else {
         break;
       }
@@ -2554,16 +2399,10 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
     argv[argi-1] = argv[0];
     argc -= argi-1;
     argv += argi-1;
-
-  #if GASNET_BLCR
-    if (is_restart && (argc != 2)) {
-      usage(argv0); /* require exactly one argument */
-    }
-  #endif
   } else {
     /* Format of spawn_args: "fd:N:[M]:[W]"
      *  :   indicates the delimiter character
-     *  fd  is an integer file descriptor to provide he command line
+     *  fd  is an integer file descriptor to provide the command line
      *  N   is the positive integer process count
      *  M   is the positive node count, or empty
      *  W   is the "wrapper" and is everything (possibly empty) after the last delimiter
@@ -2603,14 +2442,13 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
     wrapper = p;
 
     /* Load the command line (if necessary) from argv_fd */
-    if (is_restart || !argv) {
+    if (!argv) {
       size_t len;
       char *q, *cmdline;
       int i;
       { struct stat s;
         if (fstat(argv_fd, &s) < 0) {
-          die(1, "Unable to read the %s from temporary file %d(%s)",
-                 is_restart ? "restart directory" : "command line",
+          die(1, "Unable to read the command line from temporary file %d(%s)",
                  errno, strerror(errno));
         }
         len = s.st_size;
@@ -2636,7 +2474,6 @@ static void do_master(const char *spawn_args, int *argc_p, char ***argv_p) {
   if ((lnproc < 1) || ((long)nranks != lnproc)) { /* Non-positive or Overflow */
     die(1, "Process count %ld is out-of-range of gex_Rank_t", lnproc);
   }
-  /* BLCR-TODO: validate (or overwrite?) nranks when restarting */
 
   if (nnodes_set) {
     nnodes = lnnodes;
@@ -2785,16 +2622,10 @@ extern gasneti_spawnerfn_t const * gasneti_bootstrapInit_ssh(int *argc_p, char *
     spawn_args += (2 + is_verbose);
 
     switch (spawn_cmd) {
-    #if GASNET_BLCR
-      case 'R': is_restart = 1; GASNETI_FALLTHROUGH
-    #endif
       case 'M':  /* The master (root control process) */
         do_master(spawn_args, argc_p, argv_p); /* Does not return */
         break;
 
-    #if GASNET_BLCR
-      case 'D': is_restart = 1; GASNETI_FALLTHROUGH
-    #endif
       case 'C':  /* Non-root control process */
         do_control(spawn_args, argc_p, argv_p);
         break;
@@ -2942,175 +2773,6 @@ static void bootstrapCleanup(void) {
 }
 
 /*----------------------------------------------------------------------------------------------*/
-#if GASNET_BLCR
-/* Optional support for checkpoint/restart via BLCR
- * NOTE: BLCR uses "cr_" as a namespace prefix.  So our use of "blcr_" is safe.
- * TODO: move most (all?) of this to gasnet_blcr.c
- */
-
-/* Returns non-zero if done, 0 if not */
-static int blcr_reap(gex_Rank_t rank, int block) {
-  const int k = ctrl_children + (rank - myrank); /* Index in child[] */
-
-  if (child[k].rstrt_state == RSTRT_STATE_REQUESTED) {
-    struct timeval tv_zero = {0,0};
-    int rc;
-
-    /* NOTE: reap of a rollback returns 0, making use of cr_poll_restart() ambiguous.
-     * So, we will use distinct wait and reap operations.
-     */
-
-    do {
-      rc = cr_wait_restart(&child[k].rstrt_handle, block ? NULL : &tv_zero);
-    } while ((rc < 0) && (errno == EINTR) && !in_abort);
-    if (in_abort) return -1;
-    if (!rc) return 0;
-    if (rc < 0) {
-      fprintf(stderr, "cr_wait_restart(rank %d) failed\n", rank);
-      do_abort(127);
-      return -1;
-    }
-
-    do {
-      rc = cr_reap_restart(&child[k].rstrt_handle);
-    } while ((rc < 0) && (errno == EINTR) && !in_abort);
-    if (in_abort) return -1;
-    if (rc < 0) {
-      fprintf(stderr, "cr_reap_restart(rank %d) failed\n", rank);
-      do_abort(127);
-      return -1;
-    }
-
-    if (! child[k].pid) child[k].pid = (pid_t)rc;
-    child[k].rstrt_state = RSTRT_STATE_RUNNING;
-    blcr_live_requests -= 1;
-  }
-
-  return 1;
-}
-
-static int blcr_rstart_request(gex_Rank_t rank, const char *dir, char rstrt_args) {
-    const int rollback = (rstrt_args & RSTRT_CMD_ROLLBACK);
-    char *filename = sappendf(NULL, "%s/context.%d", dir, rank);
-    cr_restart_args_t args;
-    int j, k;
-    int fd, rc;
-
-    /* Limit the number of concurrent restart requests in-flight */
-    if (blcr_live_requests == blcr_max_requests) {
-      /* First: non-blocking scan of all lower ranks */
-      for (j = myrank; j < rank; ++j) {
-        (void) blcr_reap(j, 0);
-      }
-      /* Second: block for the oldest request that was not already complete */
-      if (blcr_live_requests == blcr_max_requests) {
-        for (j = myrank; j < rank; ++j) {
-          k = ctrl_children + (j - myrank);
-          gasneti_assert_always(child[k].rank == j);
-          if (! child[k].rstrt_handle) continue;
-          (void) blcr_reap(j, 1);
-          break;
-        }
-        gasneti_assert_always(j < rank);
-      }
-      gasneti_assert_always(blcr_live_requests < blcr_max_requests);
-    }
-
-    fd = open(filename, O_RDONLY|O_LARGEFILE);
-    if (fd < 0) {
-      /* BLCR-TODO: error reporting/recovery */
-      fprintf(stderr, "open(%s) failed\n", filename);
-      do_abort(127);
-      return fd;
-    }
-
-    cr_initialize_restart_args_t(&args);
-    args.cr_flags = CR_RSTRT_ASYNC_ERR | CR_RSTRT_RESTORE_PID | CR_RSTRT_RESTORE_PGID;
-    args.cr_fd = fd;
-  #if HAVE_BLCR_RSTRT_TARGET
-    if (rollback) {
-      args.cr_target = CR_RSTRT_TARGET_AUTO;
-      args.cr_scope  = CR_SCOPE_PROC;
-    }
-  #endif
-
-    k = ctrl_children + (rank - myrank);
-    rc = cr_request_restart(&args, &child[k].rstrt_handle);
-    if (rc < 0) {
-      /* BLCR-TODO: error reporting/recovery */
-      fprintf(stderr, "cr_request_restart(%s) failed\n", filename);
-      do_abort(127);
-      return rc;
-    }
-    child[k].rstrt_args = rstrt_args;
-    child[k].rstrt_state = RSTRT_STATE_REQUESTED;
-
-    (void)close(fd);
-    gasneti_free(filename);
-
-    blcr_live_requests += 1;
-
-    BOOTSTRAP_VERBOSE(("[%d] Requested %s of rank %d\n",
-                            myname, rollback?"rollback":"restart", rank));
-
-    return 0; /* This will become (temporarily) the child's pid */
-}
-
-static int blcr_restart(gex_Rank_t rank, const char *dir) {
-    return blcr_rstart_request(rank, dir, RSTRT_CMD_RESTART | (is_verbose?RSTRT_VERBOSE:0));
-}
-
-
-static int blcr_rollback(gex_Rank_t rank, const char *dir) {
-    return blcr_rstart_request(rank, dir, RSTRT_CMD_ROLLBACK | (is_verbose?RSTRT_VERBOSE:0));
-}
-
-static int bootstrapRollback(const char *dir) {
-  if (dir) {
-    (void)fcntl_clrfd(parent, FD_CLOEXEC);
-    cmd_rollback(-1, dir);
-    /* NOT REACHED */
-  }
-  return GASNET_OK;
-}
-
-static int bootstrapPreCheckpoint(int fd) {
-  return GASNET_OK;
-}
-
-static int bootstrapPostCheckpoint(int fd, int restart) {
-  if (restart) {
-    char restart_args;
-    cmd_rstrt_args(-1, &restart_args);
-
-    (void)fcntl_setfd(parent, FD_CLOEXEC);
-
-    is_verbose = (restart_args & RSTRT_VERBOSE);
-    restart_args &= ~RSTRT_VERBOSE;
-
-    switch (restart_args) {
-      case RSTRT_CMD_RESTART:
-        BOOTSTRAP_VERBOSE(("[r%d] Rank proc restarted\n", myrank));
-        break;
-
-      case RSTRT_CMD_ROLLBACK:
-        BOOTSTRAP_VERBOSE(("[r%d] Rank proc rolled-back\n", myrank));
-        break;
-
-      default:
-        fprintf(stderr, "Spawner/restart protocol error\n");
-        do_abort(-1);
-    }
-
-    (void)my_setpgid(0); /* BLCR-TODO: this is almost certainly unnecessary (but harmless) */
-  }
-
-  return GASNET_OK;
-}
-
-#endif /* GASNET_BLCR */
-
-/*----------------------------------------------------------------------------------------------*/
 
 static gasneti_spawnerfn_t const spawnerfn = {
   bootstrapBarrier,
@@ -3121,10 +2783,5 @@ static gasneti_spawnerfn_t const spawnerfn = {
   bootstrapAbort,
   bootstrapCleanup,
   bootstrapFini,
-#if GASNET_BLCR
-  bootstrapPreCheckpoint,
-  bootstrapPostCheckpoint,
-  bootstrapRollback,
-#endif
 };
 

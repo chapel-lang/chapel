@@ -1002,7 +1002,7 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
 // instantiations of a generic
 static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
 {
-  while (fn->instantiatedFrom)
+  while (fn->instantiatedFrom != NULL)
     fn = fn->instantiatedFrom;
   return fn;
 }

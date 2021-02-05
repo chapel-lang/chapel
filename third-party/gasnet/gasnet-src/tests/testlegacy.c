@@ -720,15 +720,15 @@ void doit5(int partner, int *partnerseg) {
 
         for (j=0; j < elems*2; j++) {
           int ok;
-          ok = localpos[j] == val;
           if (sz < 8) ok = !memcmp(&(localpos[j]), &val, sz);
+          else        ok = localpos[j] == val;
           if (!ok) {
               MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")", (sz), j,
                   localpos[j], val);
               success = 0;
           }
-          ok = segpos[j] == val;
           if (sz < 8) ok = !memcmp(&(segpos[j]), &val, sz);
+          else        ok = segpos[j] == val;
           if (!ok) {
               MSG("*** ERROR - FAILED IN-SEG PUT_NB/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")", (sz), j,
                   segpos[j], val);
@@ -788,15 +788,15 @@ void doit5(int partner, int *partnerseg) {
 
         for (j=0; j < elems*2; j++) {
           int ok;
-          ok = localpos[j] == val;
           if (sz < 8) ok = !memcmp(&(localpos[j]), &val, sz);
+          else        ok = localpos[j] == val;
           if (!ok) {
               MSG("*** ERROR - FAILED OUT-OF-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")", (sz), j,
                   localpos[j], val);
               success = 0;
           }
-          ok = segpos[j] == val;
           if (sz < 8) ok = !memcmp(&(segpos[j]), &val, sz);
+          else        ok = segpos[j] == val;
           if (!ok) {
               MSG("*** ERROR - FAILED IN-SEG PUT_NBI/OVERWRITE TEST!!! sz=%i j=%i (got=%016" PRIx64 " expected=%016" PRIx64 ")", (sz), j,
                   segpos[j], val);

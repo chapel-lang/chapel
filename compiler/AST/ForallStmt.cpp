@@ -26,14 +26,10 @@
 #include "stringutil.h"
 
 ForallOptimizationInfo::ForallOptimizationInfo():
-  iterSym(NULL),
-  dotDomIterExpr(NULL),
-  dotDomIterSym(NULL),
-  dotDomIterSymDom(NULL),
-  iterCall(NULL),
-  iterCallTmp(NULL),
+  infoGathered(false),
   autoLocalAccessChecked(false),
-  confirmedFastFollower(false)
+  hasAlignedFollowers(false),
+  cloneType(NOT_CLONE)
 {
 }
 
@@ -68,7 +64,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
 
 
   optInfo.autoLocalAccessChecked = false;
-  optInfo.confirmedFastFollower = false;
+  optInfo.hasAlignedFollowers = false;
 
   gForallStmts.add(this);
 }

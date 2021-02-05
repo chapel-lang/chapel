@@ -113,10 +113,7 @@
   /* this can be used to add conduit-specific 
      statistical collection values (see gasnet_trace.h) */
 #define GASNETC_CONDUIT_STATS(CNT,VAL,TIME)       \
-        CNT(C, SND_AM_SNDRCV, cnt)                \
-        CNT(C, SND_AM_RDMA, cnt)                  \
-        CNT(C, RCV_AM_SNDRCV, cnt)                \
-        CNT(C, RCV_AM_RDMA, cnt)                  \
+        CNT(C, RCV_AM, cnt)                       \
         VAL(C, RDMA_PUT_IN_MOVE, bytes)           \
         VAL(C, RDMA_PUT_INLINE, bytes)            \
         VAL(C, RDMA_PUT_BOUNCE, bytes)            \

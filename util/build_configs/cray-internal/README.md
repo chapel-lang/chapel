@@ -43,10 +43,15 @@ new subdir.
     or for development purposes. Does NOT produce the release_info used in official releases.
   - generate-modulefile.bash: The Cray modulefile, installed by the Chapel RPM.
     Supports "module load chapel" on Cray computers.
-  - generate-rpmspec.bash: The RPM "spec" file read by the rpmbuild tool.
   - generate-set_default.bash: The Cray set_default file, installed by the Chapel RPM.
     A Cray system management tool, this script sets the default Chapel version obtained
     when a user runs `module load chapel` without specifying a specific version.
+
+* template files:
+  - chapel.spec.template: A template for the RPM spec file read by the
+    rpmbuild tool.
+  - process-template.py: This performs textual substitutions on template
+    files to produce what goes into the module.
 
 * setenv-\*-\*.bash:
   Setenv scripts for Chapel Cray RPMs of various types. These setenv scripts are based on

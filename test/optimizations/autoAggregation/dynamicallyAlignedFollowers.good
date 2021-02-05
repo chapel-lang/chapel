@@ -1,0 +1,18 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+| Found an aggregation candidate (dynamicallyAlignedFollowers.chpl:13)
+|  Potential destination aggregation (dynamicallyAlignedFollowers.chpl:13)
+End analyzing forall for automatic aggregation [no ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+| Found an aggregation candidate (dynamicallyAlignedFollowers.chpl:13)
+|  Potential destination aggregation (dynamicallyAlignedFollowers.chpl:13)
+End analyzing forall for automatic aggregation [static only ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
+
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (dynamicallyAlignedFollowers.chpl:13)
+Replaced assignment with aggregation [static only ALA clone]  (dynamicallyAlignedFollowers.chpl:13)
+1 1 1 1 1 1 1 1 1 1 1
+5 5 5 5 5 5 5 5 5 5 5
+

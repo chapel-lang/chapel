@@ -109,7 +109,7 @@ use TestUtils;
   v13 = 1;
   M = 1;
 
-  S[1, 1] =  inner(v13[1, ..], v31[.., 1]);
+  S[0, 0] =  inner(v13[0, ..], v31[.., 0]);
 
   // outer-product
   assertEqual(dot(v31, v13), M, "dot(Matrix(3, 1), Matrix(1, 3))");

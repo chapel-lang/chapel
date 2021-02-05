@@ -76,7 +76,7 @@ Expr* AList::get(int index) const {
   return NULL;
 }
 
-bool AList::empty() {
+bool AList::empty() const {
   return length == 0;
 }
 
