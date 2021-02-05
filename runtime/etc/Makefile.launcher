@@ -47,7 +47,8 @@ all: FORCE
 	echo "#include \"chpl_compilation_config.c\"" >> $(LAUNCHER_SRC_NAME)
 	echo "const char launcher_real_suffix[] = \"$(REAL_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
 	echo "const char launcher_exe_suffix[] = \"$(EXE_SUFFIX)\";" >> $(LAUNCHER_SRC_NAME)
-	echo "const char* launcher_mli_real_name = \"$(REAL_BINARY_NAME)\";" >> $(LAUNCHER_SRC_NAME)
+	# TODO would be nice to provide ABS path to REAL_BINARY_NAME instead of ./
+	echo "const char* launcher_mli_real_name = \"./$(REAL_BINARY_NAME)\";" >> $(LAUNCHER_SRC_NAME)
 ifneq ($(CHPL_MAKE_IS_MLI),1)
 	echo "const int launcher_is_mli = 0;" >> $(LAUNCHER_SRC_NAME)
 else
