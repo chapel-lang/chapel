@@ -537,9 +537,9 @@ var M4 = CSRMatrix(I);              // From a dense matrix
 // Setup some sparse domains and arrays
 { // Operations scope
 
-var Adom = CSRDomain(100, 100),
-    Bdom = CSRDomain(100, 100),
-    Cdom = CSRDomain(100, 100);
+var Adom = CSRDomain(1..100, 1..100),
+    Bdom = CSRDomain(1..100, 1..100),
+    Cdom = CSRDomain(1..100, 1..100);
 
 Adom += (1,1);
 Bdom += (2,2);
