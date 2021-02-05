@@ -847,7 +847,7 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       int idx = -1;
       bool found = false;
 
-      std::vector<std::vector<Symbol *>>::iterator it;
+      std::vector< std::vector<Symbol *> >::iterator it;
       for (it = forall->optInfo.multiDIndices.begin();
            it != forall->optInfo.multiDIndices.end();
            it++) {
@@ -1028,11 +1028,11 @@ static void optimizeLoop(ForallStmt *forall,
                          Expr *&staticCond, CallExpr *&dynamicCond,
                          bool doStatic) {
 
-  std::vector<std::pair<CallExpr *, int>> candidates = doStatic ?
+  std::vector< std::pair<CallExpr *, int> > candidates = doStatic ?
       forall->optInfo.staticCandidates :
       forall->optInfo.dynamicCandidates;
 
-  std::vector<std::pair<CallExpr *, int>>::iterator it;
+  std::vector< std::pair<CallExpr *, int> >::iterator it;
   for(it = candidates.begin() ; it != candidates.end() ; it++) {
     CallExpr *candidate = it->first;
     int iterandIdx = it->second;
@@ -1159,8 +1159,8 @@ static void constructCondStmtFromLoops(Expr *condExpr,
 // be duplicate loops at the end of normalize, but after resolution we expect
 // them to go away.
 static void generateOptimizedLoops(ForallStmt *forall) {
-  std::vector<std::pair<CallExpr *, int>> &sOptCandidates = forall->optInfo.staticCandidates;
-  std::vector<std::pair<CallExpr *, int>> &dOptCandidates = forall->optInfo.dynamicCandidates;
+  std::vector< std::pair<CallExpr *, int> > &sOptCandidates = forall->optInfo.staticCandidates;
+  std::vector< std::pair<CallExpr *, int> > &dOptCandidates = forall->optInfo.dynamicCandidates;
 
   const int totalNumCandidates = sOptCandidates.size() + dOptCandidates.size();
   if (totalNumCandidates == 0) return;
