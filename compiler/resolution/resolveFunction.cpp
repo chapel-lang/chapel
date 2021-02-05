@@ -692,6 +692,18 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     }
   }
 
+  // Don't look for casts to array/domain types
+  // (these should probably be added, right?)
+  if (toType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    checkCast = false;
+  }
+
+  // Don't look for casts or init= to iterators. These don't make sense.
+  if (toType->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    checkCast = false;
+    checkInitEq = false;
+  }
+
   // Since we don't yet have init= on non-records or tertiary records,
   // don't worry about init= yet for non-records or extern types.
   if (!(isRecord(toType) || isUnion(toType)) ||

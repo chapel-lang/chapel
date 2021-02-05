@@ -352,6 +352,11 @@ module Atomics {
 
   }
 
+  proc _cast(type t:AtomicBool, rhs: bool) {
+    var lhs: AtomicBool = rhs; // use init=
+    return lhs;
+  }
+
   pragma "atomic type"
   pragma "ignore noinit"
   record AtomicT {
@@ -677,6 +682,11 @@ module Atomics {
       x <~> read();
     }
 
+  }
+
+  proc _cast(type t:AtomicT(?T), rhs: T) {
+    var lhs: AtomicT(T) = rhs; // use init=
+    return lhs;
   }
 
   //
