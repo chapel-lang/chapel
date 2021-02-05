@@ -671,9 +671,21 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
   // Don't worry about checking for casts among class types
   // (these should be handled by the internal code)
-  if ((isClassLikeOrPtr(toType) || toType == dtNil) &&
-      (isClassLikeOrPtr(fromType) || fromType == dtNil))
+  if (isClassLikeOrPtr(toType) ||
+      isClassLikeOrManaged(toType) ||
+      toType == dtNil) {
+    checkAssign = false;
+    checkInitEq = false;
     checkCast = false;
+
+    // However, don't allow '=' on these types to be defined
+    // outside of the standard/internal modules
+    if (have.assign != NULL &&
+        have.assign->defPoint->getModule()->modTag == MOD_USER) {
+      USR_FATAL_CONT(have.assign->defPoint,
+                     "Can't overload assignments for class types");
+    }
+  }
 
   // Don't worry about checking for 'init=' for tuples or types
   // with runtime type since these do not use 'init=' in the usual way.
