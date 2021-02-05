@@ -39,6 +39,10 @@ proc R.init=(other : this.type.T) {
   this.T = this.type.T;
   this.x = other;
 }
+proc _cast(type t: R, other: t.T) {
+  var tmp: t = other;
+  return tmp;
+}
 
 {
   var A : R(int) = 5;

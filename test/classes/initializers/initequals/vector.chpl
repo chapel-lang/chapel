@@ -42,6 +42,11 @@ proc Vector.init=(data : [] this.type.T) {
   this.A = data;
 }
 
+proc _cast(type t: Vector, data: []) {
+  var tmp: t = data;
+  return tmp;
+}
+
 writeln("----- Initialize Typed Generic from Expr -----");
 {
   var A : Vector(int) = [1, 2, 3];
