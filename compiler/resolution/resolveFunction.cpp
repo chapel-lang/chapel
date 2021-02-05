@@ -51,9 +51,21 @@
 
 #include <set>
 
-static void resolveFormals(FnSymbol* fn);
-
 std::map<ArgSymbol*, std::string> exportedDefaultValues;
+
+struct ConversionsTableValue {
+  FnSymbol* assign;
+  FnSymbol* initEq;
+  FnSymbol* cast;
+  ConversionsTableValue() : assign(NULL), initEq(NULL), cast(NULL) { }
+};
+
+typedef std::pair<Type*,Type*> ConversionsTableKey;
+typedef std::map<ConversionsTableKey, ConversionsTableValue> ConversionsTable;
+
+static ConversionsTable conversionsTable;
+
+static void resolveFormals(FnSymbol* fn);
 
 static void markIterator(FnSymbol* fn);
 
@@ -483,6 +495,7 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 ************************************** | *************************************/
 
 static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
+static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall);
 
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
   if (fn->isResolved() == false) {
@@ -539,6 +552,7 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       if (forCall != NULL) {
         resolveAlsoParallelIterators(fn, forCall);
+        resolveAlsoConversions(fn, forCall);
       }
 
       if (fn->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN))
@@ -573,6 +587,207 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
       t->symbol->addFlag(FLAG_TYPE_CUSTOM_INIT_EQUAL);
   }
 }
+
+static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
+
+  Type* toType = NULL;
+  Type* fromType = NULL;
+
+  if (fn->name == astrSassign) {
+    toType = fn->getFormal(1)->getValType();
+    fromType = fn->getFormal(2)->getValType();
+  } else if (fn->name == astrInitEquals) {
+    // arg 1 is the method token
+    toType = fn->getFormal(2)->getValType();
+    fromType = fn->getFormal(3)->getValType();
+  } else if (fn->name == astr_cast) {
+    toType = fn->getFormal(1)->getValType();
+    fromType = fn->getFormal(2)->getValType();
+  } else {
+    // Nothing to do if it's not one of the above cases.
+    return;
+  }
+
+  // Don't worry about generic types at this point.
+  if (fromType->symbol->hasFlag(FLAG_GENERIC) ||
+      toType->symbol->hasFlag(FLAG_GENERIC))
+    return;
+
+  ConversionsTableValue have;
+
+  // Add whatever we have now to the table
+  {
+    ConversionsTableKey key(fromType, toType);
+    ConversionsTableValue& val = conversionsTable[key]; // adds entry if needed
+
+    if (fn->name == astrSassign)
+      val.assign = fn;
+    else if (fn->name == astrInitEquals)
+      val.initEq = fn;
+    else if (fn->name == astr_cast)
+      val.cast = fn;
+    else
+      INT_FATAL("unexpected case");
+
+    // save a copy of the entry
+    have = val;
+  }
+
+  // resolve also the implied operations if they are not already present.
+
+  // these are the relationships among implicit convert, assign, init=, cast:
+  //
+  // implicit conversion implies assign, initialize, cast
+  // assign implies initialize, cast
+  // initialize implies cast
+  // cast doesn't imply any of the others
+
+  // decide which to check for
+  bool implicitConverts = false;
+  bool checkAssign = false;
+  bool checkInitEq = false;
+  bool checkCast = false;
+
+  if (canCoerce(fromType, NULL, toType, NULL, NULL)) {
+    implicitConverts = true;
+    checkAssign = true;
+    checkInitEq = true;
+    checkCast = true;
+  }
+
+  if (fn->name == astrSassign || have.assign != NULL) {
+    checkInitEq = true;
+    checkCast = true;
+  }
+
+  if (fn->name == astrInitEquals || have.initEq != NULL) {
+    checkCast = true;
+  }
+
+  // Don't worry about checking for casts between the same type
+  // since such casts are moot and would be removed anyway.
+  if (toType == fromType)
+    checkCast = false;
+
+  // Don't worry about checking for casts among class types
+  // (these should be handled by the internal code)
+  if ((isClassLikeOrPtr(toType) || toType == dtNil) &&
+      (isClassLikeOrPtr(fromType) || fromType == dtNil))
+    checkCast = false;
+
+  // Don't worry about checking for 'init=' for tuples or types
+  // with runtime type since these do not use 'init=' in the usual way.
+  if (toType->symbol->hasFlag(FLAG_TUPLE) ||
+      toType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    checkInitEq = false;
+    // However, don't allow '=' on these types to be defined
+    // outside of the standard/internal modules
+    if (have.assign != NULL &&
+        have.assign->defPoint->getModule()->modTag == MOD_USER) {
+      USR_FATAL_CONT(have.assign->defPoint,
+                     "unsupported = overload to '%s' from '%s'",
+                     toString(toType), toString(fromType));
+      USR_PRINT("assignment overloads setting array or tuples "
+                "are not currently supported");
+    }
+  }
+
+  // Since we don't yet have init= on non-records or tertiary records,
+  // don't worry about init= yet for non-records or extern types.
+  if (!(isRecord(toType) || isUnion(toType)) ||
+      toType->symbol->hasFlag(FLAG_EXTERN))
+    checkInitEq = false;
+
+  // add calls to resolve these if not already known
+  if (checkAssign && have.assign == NULL) {
+    // also resolve =
+    BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+    forCall->insertBefore(block);
+
+    VarSymbol* toTmp = newTemp("_check_to", toType);
+    VarSymbol* fromTmp = newTemp("_check_from", fromType);
+    CallExpr* c = new CallExpr(astrSassign, toTmp, fromTmp);
+    block->insertAtTail(new DefExpr(toTmp));
+    block->insertAtTail(new DefExpr(fromTmp));
+    block->insertAtTail(c);
+    tryResolveCall(c);
+    block->remove();
+    // update our local variable
+    // (above resolve call should have updated the map)
+    have.assign = c->resolvedFunction();
+  }
+
+  if (checkInitEq && have.initEq == NULL) {
+    // also resolve init=
+    BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+    forCall->insertBefore(block);
+
+    VarSymbol* toTmp = newTemp("_check_to", toType);
+    VarSymbol* fromTmp = newTemp("_check_from", fromType);
+    CallExpr* c = new CallExpr(astrInitEquals, gMethodToken, toTmp, fromTmp);
+    block->insertAtTail(new DefExpr(toTmp));
+    block->insertAtTail(new DefExpr(fromTmp));
+    block->insertAtTail(c);
+    tryResolveCall(c);
+    block->remove();
+    // update our local variable
+    // (above resolve call should have updated the map)
+    have.initEq = c->resolvedFunction();
+  }
+
+  if (checkCast && have.cast == NULL) {
+    // also resolve cast
+    BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+    forCall->insertBefore(block);
+
+    VarSymbol* fromTmp = newTemp("_check_from", fromType);
+    CallExpr* c = new CallExpr(astr_cast, toType->symbol, fromTmp);
+    block->insertAtTail(new DefExpr(fromTmp));
+    block->insertAtTail(c);
+    tryResolveCall(c);
+    block->remove();
+    // update our local variable
+    // (above resolve call should have updated the map)
+    have.cast = c->resolvedFunction();
+  }
+
+  // Now, error if an implied function was not found.
+  bool error = false;
+  if (checkAssign && have.assign == NULL) {
+    USR_FATAL_CONT(forCall, "an = overload setting '%s' from '%s' is missing",
+                            toString(toType), toString(fromType));
+    error = true;
+  }
+  if (checkInitEq && have.initEq == NULL) {
+    USR_FATAL_CONT(forCall, "an init= initializing '%s' from '%s' is missing",
+                            toString(toType), toString(fromType));
+    error = true;
+  }
+  if (checkCast && have.cast == NULL) {
+    USR_FATAL_CONT(forCall, "a cast creating '%s' from '%s' is missing",
+                            toString(toType), toString(fromType));
+    error = true;
+  }
+
+  if (error) {
+    if (implicitConverts) {
+      USR_PRINT("implicit conversion is available between these two types");
+    }
+    if (have.assign != NULL) {
+      USR_PRINT(have.assign->defPoint,
+                "assignment is defined here between these two types");
+    }
+    if (have.initEq != NULL) {
+      USR_PRINT(have.initEq->defPoint,
+                "init= is defined here between these two types");
+    }
+    if (have.cast != NULL) {
+      USR_PRINT(have.cast->defPoint,
+                "cast is defined here between these two types");
+    }
+  }
+}
+
 
 /************************************* | **************************************
 *                                                                             *

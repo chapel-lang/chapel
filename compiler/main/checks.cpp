@@ -61,7 +61,7 @@ static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
-static void checkDefaultInitEqAndAssign();
+static void checkInitEqAssignCast();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
@@ -150,7 +150,7 @@ void check_resolve()
   check_afterNormalization();
   checkReturnTypesHaveRefTypes();
   checkAutoCopyMap();
-  checkDefaultInitEqAndAssign();
+  checkInitEqAssignCast();
 }
 
 void check_resolveIntents()
@@ -474,7 +474,7 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
-    checkDefaultInitEqAndAssign();
+    checkInitEqAssignCast();
   }
 }
 
@@ -736,8 +736,7 @@ static FnSymbol* findUserAssign(AggregateType* at) {
 }
 
 
-static void
-checkDefaultInitEqAndAssign()
+static void checkInitEqAssignCast()
 {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_EXTERN))

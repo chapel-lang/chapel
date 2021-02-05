@@ -1,0 +1,4 @@
+assign-other-type-no-cast.chpl:27: In function 'main':
+assign-other-type-no-cast.chpl:30: error: a cast creating 'R' from 'int(64)' is missing
+assign-other-type-no-cast.chpl:13: note: assignment is defined here between these two types
+assign-other-type-no-cast.chpl:16: note: init= is defined here between these two types

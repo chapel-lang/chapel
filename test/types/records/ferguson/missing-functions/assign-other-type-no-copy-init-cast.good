@@ -1,0 +1,4 @@
+assign-other-type-no-copy-init-cast.chpl:26: In function 'main':
+assign-other-type-no-copy-init-cast.chpl:29: error: an init= initializing 'R' from 'int(64)' is missing
+assign-other-type-no-copy-init-cast.chpl:29: error: a cast creating 'R' from 'int(64)' is missing
+assign-other-type-no-copy-init-cast.chpl:13: note: assignment is defined here between these two types
