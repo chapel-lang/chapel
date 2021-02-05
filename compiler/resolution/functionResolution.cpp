@@ -5345,6 +5345,43 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 }
 
+// Calls canDispatch and does the initial EXPLAIN calls, which were otherwise
+// duplicated
+static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
+                             Type* fType, Type* actualType, bool actualParam,
+                             bool* formalPromotes, bool* formalNarrows,
+                             const DisambiguationContext& DC,
+                             DisambiguationState& DS,
+                             int fnNum) {
+  canDispatch(actualType, actual, fType, formal, fn, formalPromotes,
+              formalNarrows);
+
+  if (fnNum == 1) {
+    DS.fn1Promotes |= *formalPromotes;
+  } else if (fnNum == 2) {
+    DS.fn2Promotes |= *formalPromotes;
+  } else {
+    INT_FATAL("fnNum should be either 1 or 2");
+  }
+
+  EXPLAIN("Formal %d's type: %s", fnNum, toString(fType));
+  if (*formalPromotes)
+    EXPLAIN(" (promotes)");
+  if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (*formalNarrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
+
+  if (actualType != fType) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal %d\n", fnNum);
+    } else {
+      EXPLAIN("Actual requires coercion to match formal %d\n", fnNum);
+    }
+  }
+}
+
 /** Compare two argument mappings, given a set of actual arguments, and set the
  *  disambiguation state appropriately.
  *
@@ -5409,52 +5446,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  canDispatch(actualType, actual,
-             f1Type, formal1, fn1,
-             &formal1Promotes, &formal1Narrows);
+  testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
+                   &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
-  DS.fn1Promotes |= formal1Promotes;
-
-  EXPLAIN("Formal 1's type: %s", toString(f1Type));
-  if (formal1Promotes)
-    EXPLAIN(" (promotes)");
-  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
-    EXPLAIN(" (instantiated param)");
-  if (formal1Narrows)
-    EXPLAIN(" (narrows param)");
-  EXPLAIN("\n");
-
-  if (actualType != f1Type) {
-    if (actualParam) {
-      EXPLAIN("Actual requires param coercion to match formal 1\n");
-    } else {
-      EXPLAIN("Actual requires coercion to match formal 1\n");
-    }
-  }
-
-  canDispatch(actualType, actual,
-              f2Type, formal1, fn1,
-              &formal2Promotes, &formal2Narrows);
-
-  DS.fn2Promotes |= formal2Promotes;
-
-  EXPLAIN("Formal 2's type: %s", toString(f2Type));
-  if (formal2Promotes)
-    EXPLAIN(" (promotes)");
-  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
-    EXPLAIN(" (instantiated param)");
-  if (formal2Narrows)
-    EXPLAIN(" (narrows param)");
-  EXPLAIN("\n");
-
-  // Adjust number of coercions for f2
-  if (actualType != f2Type) {
-    if (actualParam) {
-      EXPLAIN("Actual requires param coercion to match formal 2\n");
-    } else {
-      EXPLAIN("Actual requires coercion to match formal 2\n");
-    }
-  }
+  testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
+                   &formal2Promotes, &formal2Narrows, DC, DS, 2);
 
   // Figure out scalar type for candidate matching
   if ((formal1Promotes || formal2Promotes) &&
@@ -5622,6 +5618,7 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
   INT_ASSERT(fn2->hasFlag(FLAG_OPERATOR) == (formal2 == NULL));
 
   Type* actualType = actual->type->getValType();
+  bool actualParam = getImmediate(actual) != NULL;
   const char* reason = "potentially optional argument present vs not";
   const char* level = "weak";
 
@@ -5634,18 +5631,8 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     bool formal2Promotes = false;
     bool formal2Narrows = false;
 
-    canDispatch(actualType, actual, f2Type, formal2, fn2, &formal2Promotes,
-                &formal2Narrows);
-    DS.fn2Promotes |= formal2Promotes;
-
-    EXPLAIN("Formal 2's type: %s", toString(f2Type));
-    if (formal2Promotes)
-      EXPLAIN(" (promotes)");
-    if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
-      EXPLAIN(" (instantiated param)");
-    if (formal2Narrows)
-      EXPLAIN(" (narrows param)");
-    EXPLAIN("\n");
+    testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
+                     &formal2Promotes, &formal2Narrows, DC, DS, 2);
 
     DS.fn2WeakPreferred = true;
     EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
@@ -5659,18 +5646,8 @@ static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
     bool formal1Promotes = false;
     bool formal1Narrows = false;
 
-    canDispatch(actualType, actual, f1Type, formal1, fn1, &formal1Promotes,
-                &formal1Narrows);
-    DS.fn1Promotes |= formal1Promotes;
-
-    EXPLAIN("Formal 1's type: %s", toString(f1Type));
-    if (formal1Promotes)
-      EXPLAIN(" (promotes)");
-    if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
-      EXPLAIN(" (instantiated param)");
-    if (formal1Narrows)
-      EXPLAIN(" (narrows param)");
-    EXPLAIN("\n");
+    testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
+                     &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
     DS.fn1WeakPreferred = true;
     EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
