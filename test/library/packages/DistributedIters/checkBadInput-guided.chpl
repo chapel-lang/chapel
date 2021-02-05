@@ -12,6 +12,6 @@ var A:[rng] int=0;
   error.
 */
 writeln("Checking a void...");
-var v:void;
+var v:nothing;
 for i in distributedGuided(v)
 do A[i] = A[i]+1;

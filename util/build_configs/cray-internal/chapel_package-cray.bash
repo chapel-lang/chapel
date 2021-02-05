@@ -221,14 +221,17 @@ log_debug "Generate chapel.spec ..."
 (
     if [ "$chpl_platform" = hpe-cray-ex ]; then
         lmod_network=ofi
+        lmod_mpich_compat_ver=8.0
         platform_prefix=/opt/cray
         set_def_subdir=admin-pe/set_default_files
     else
+        lmod_network=aries
+        lmod_mpich_compat_ver=7.0
         platform_prefix=/opt
         set_def_subdir=cray/admin-pe/set_default_files
     fi
     lmod_prefix=/opt/cray/pe/lmod/modulefiles/mpi
-    lmod_suffix=${lmod_network}/1.0/cray-mpich/8.0
+    lmod_suffix=${lmod_network}/1.0/cray-mpich/${lmod_mpich_compat_ver}
     $cwd/process-template.py basename_of_CHPL_HOME="${CHPL_HOME##*/}" \
                              chpl_platform="$chpl_platform" \
                              lmod_prefix="$lmod_prefix" \

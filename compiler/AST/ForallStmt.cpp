@@ -27,14 +27,8 @@
 
 ForallOptimizationInfo::ForallOptimizationInfo():
   infoGathered(false),
-  iterSym(NULL),
-  dotDomIterExpr(NULL),
-  dotDomIterSym(NULL),
-  dotDomIterSymDom(NULL),
-  iterCall(NULL),
-  iterCallTmp(NULL),
   autoLocalAccessChecked(false),
-  confirmedFastFollower(false),
+  hasAlignedFollowers(false),
   cloneType(NOT_CLONE)
 {
 }
@@ -70,7 +64,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
 
 
   optInfo.autoLocalAccessChecked = false;
-  optInfo.confirmedFastFollower = false;
+  optInfo.hasAlignedFollowers = false;
 
   gForallStmts.add(this);
 }

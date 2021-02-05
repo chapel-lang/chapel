@@ -89,7 +89,7 @@
 
 #define TEST_STARTUP(argc, argv, networkpid, eb, ep, minargs, maxargs, usagestr) do { \
     AMX_VerboseErrors = 1;                                                            \
-    if (AMX_SPMDIsWorker(argv)) { /* slave */                                         \
+    if (AMX_SPMDIsWorker(argv)) { /* worker */                                         \
       AM_Safe(AMX_SPMDStartup(&(argc), &(argv), 0, &(networkpid), &(eb), &(ep)));     \
       if ((argc) < (minargs)+1 || (argc) > (maxargs)+1 ) {                                \
         fprintf(stderr, "Usage: %s %s\n", (argv)[0], (usagestr));                     \

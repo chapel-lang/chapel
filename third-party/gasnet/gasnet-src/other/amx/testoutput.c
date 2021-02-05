@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
   end = getCurrentTimeMicrosec();
 
   total = end - begin;
-  printf("Slave %i: %i microseconds total, throughput: %.3f KB/sec\n", 
+  printf("Worker %i: %i microseconds total, throughput: %.3f KB/sec\n", 
     myproc, (int)total, ((float)iters)*(maxwidth/2)/1024/(total/1.0E6));
 
   AM_Safe(AMX_SPMDBarrier());

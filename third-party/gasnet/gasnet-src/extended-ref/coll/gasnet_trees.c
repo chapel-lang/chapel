@@ -33,32 +33,30 @@ void gasnete_coll_free_tree_type(gasnete_coll_tree_type_t in){
 
 
 static int split_string(char ***split_strs, const char *str, const char *delim) {
-  char *temp;
-  int ret=0;
-  size_t malloc_len = 8;
+  const int max_params = 8;
   static gasneti_mutex_t lock= GASNETI_MUTEX_INITIALIZER;
 
-  /*since the strtok function is desructive we have to
-    create a copy of the string first to preserve the orignal*/
-  char *copy = gasneti_strdup(str);
+  size_t strsz = strlen(str)+1;
 
   gasneti_mutex_lock(&lock);
-  *split_strs = (char **) gasneti_malloc(sizeof(char*) * malloc_len);
-  temp = strtok(copy, delim);
+  char *base = gasneti_malloc(sizeof(char*) * max_params + strsz);
+  *split_strs = (char **) base;
+  // since the strtok function is desructive we have to
+  // create a copy of the string first to preserve the original
+  // store the temp str in the high bytes of the same object to prevent leaks
+  char *copy = base + sizeof(char*) * max_params;
+  strcpy(copy, str);
+  char *temp = strtok(copy, delim);
+  int ret=0;
   while(temp != NULL) {
-    if(ret == malloc_len) {
-      /*we've run out of space so grow the array by another factor*/
-      malloc_len +=malloc_len;
-      *split_strs = (char**) gasneti_realloc(*split_strs, sizeof(char*) * malloc_len);
-      gasneti_fatalerror("more than 8 params not yet supported");
+    if(ret == max_params) 
+        gasneti_fatalerror("more than %i params not yet supported",max_params);
 
-    }
     (*split_strs)[ret] = temp;
     
     ret++;
     temp=strtok(NULL, delim);
   }
-  *split_strs = (char**) gasneti_realloc(*split_strs, sizeof(char*) * ret);
   gasneti_mutex_unlock(&lock);
 
   return ret;
@@ -591,7 +589,7 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_tree_geom_create_local(gasnete_coll
   gasneti_assert(rootrank<team->total_ranks && rootrank >=0);
   gasneti_assert_always(in_type);
   intype_copy = in_type;
-  geom = (gasnete_coll_local_tree_geom_t*)gasneti_malloc(sizeof(gasnete_coll_local_tree_geom_t));
+  geom = (gasnete_coll_local_tree_geom_t*)gasneti_calloc(1,sizeof(gasnete_coll_local_tree_geom_t));
   gasneti_assert_always(in_type==intype_copy);
   
   switch (in_type->tree_class) {
@@ -728,6 +726,14 @@ gasnete_coll_local_tree_geom_t *gasnete_coll_tree_geom_create_local(gasnete_coll
   return geom;
 }
 
+
+void gasnete_coll_tree_geom_free_local(gasnete_coll_local_tree_geom_t *geom)  {
+  gasneti_free(geom->rotation_points);
+  gasneti_free(geom->child_list);
+  gasneti_free(geom->subtree_sizes);
+  gasneti_free(geom->child_offset);
+  gasneti_free(geom);
+}
 
 #if 0
 void gasnete_coll_tree_type_to_str(char *outbuf, gasnete_coll_tree_type_t in) {
@@ -953,6 +959,32 @@ void gasnete_coll_local_tree_geom_release(gasnete_coll_local_tree_geom_t *geom) 
 }
 #endif 
 
+void gasnete_coll_local_tree_geom_purge(gasnete_coll_team_t team) {
+  gasneti_mutex_lock(&team->tree_geom_cache_lock);
+  gasnete_coll_tree_geom_t *temp = team->tree_geom_cache_head;
+  while (temp) {
+    gasnete_coll_tree_geom_t *next = temp->next;
+    for (gex_Rank_t i = 0; i < team->total_ranks; ++i) {
+      if (temp->local_views[i]) {
+        gasnete_coll_tree_geom_free_local(temp->local_views[i]);
+      }
+    }
+    gasneti_free(temp->local_views);
+    gasneti_free(temp);
+    temp = next;
+  }
+  gasneti_mutex_unlock(&team->tree_geom_cache_lock);
+  
+  tree_node_t *allnodes = (tree_node_t*) team->tree_construction_scratch;
+  if (allnodes) {
+    for (gex_Rank_t i = 0; i < team->total_ranks; ++i) {
+      gasneti_free(allnodes[i]->children);
+      gasneti_free(allnodes[i]);
+    }
+  }
+  gasneti_free(allnodes);
+}
+
 /**** Dissemination Stuff ****/
 
 /*figure out if given number is a power of 2*/
@@ -1121,6 +1153,14 @@ gasnete_coll_dissem_info_t *gasnete_coll_build_dissemination(int r, gasnete_coll
   return ret;
 }
 
+void gasnete_coll_free_dissemination(gasnete_coll_dissem_info_t *in)
+{
+  gasneti_free(in->ptr_vec);
+  gasneti_free(in->exchange_out_order);
+  gasneti_free(in->exchange_in_order);
+  gasneti_free(in);
+}
+
 gasnete_coll_dissem_info_t *gasnete_coll_fetch_dissemination(int radix, gasnete_coll_team_t team) {
   /* look through the existing cache for our dissemination order*/
   gasnete_coll_dissem_info_t *temp;
@@ -1154,4 +1194,14 @@ gasnete_coll_dissem_info_t *gasnete_coll_fetch_dissemination(int radix, gasnete_
 
 void gasnete_coll_release_dissemination(gasnete_coll_dissem_info_t *obj, gasnete_coll_team_t team) {
   /* do nothing for now */
+}
+
+void gasnete_coll_purge_dissemination(gasnete_coll_team_t team) {
+  gasnete_coll_dissem_info_t *temp = team->dissem_cache_head;
+  while (temp) {
+    gasnete_coll_dissem_info_t *next = temp->next;
+    gasnete_coll_free_dissemination(temp);
+    temp = next;
+  }
+  team->dissem_cache_head = team->dissem_cache_tail = NULL;
 }

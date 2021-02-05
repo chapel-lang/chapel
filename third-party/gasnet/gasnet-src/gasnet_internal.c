@@ -21,6 +21,7 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <signal.h>
+#include <time.h> /* time, ctime */
 
 #if HAVE_MALLOC_H && !PLATFORM_OS_OPENBSD /* OpenBSD warns that malloc.h is obsolete */
   #include <malloc.h>
@@ -33,17 +34,7 @@ int gasneti_VerboseErrors = 1;
 /* generic atomics support */
 #if defined(GASNETI_BUILD_GENERIC_ATOMIC32) || defined(GASNETI_BUILD_GENERIC_ATOMIC64)
   #ifdef GASNETI_ATOMIC_LOCK_TBL_DEFNS
-    #define _gasneti_atomic_lock_initializer	GEX_HSL_INITIALIZER
-    #define _gasneti_atomic_lock_init(x)	gex_HSL_Init(x)
-    #define _gasneti_atomic_lock_lock(x)	gex_HSL_Lock(x)
-    #define _gasneti_atomic_lock_unlock(x)	gex_HSL_Unlock(x)
-    #define _gasneti_atomic_lock_malloc		gasneti_malloc
-    GASNETI_ATOMIC_LOCK_TBL_DEFNS(gasneti_hsl_atomic_, gex_HSL_)
-    #undef _gasneti_atomic_lock_initializer
-    #undef _gasneti_atomic_lock_init
-    #undef _gasneti_atomic_lock_lock
-    #undef _gasneti_atomic_lock_unlock
-    #undef _gasneti_atomic_lock_malloc
+    GASNETI_ATOMIC_LOCK_TBL_DEFNS(gasneti_malloc)
   #endif
   #ifdef GASNETI_GENATOMIC32_DEFN
     GASNETI_GENATOMIC32_DEFN
@@ -81,6 +72,10 @@ GASNETI_IDENT(gasneti_IdentString_SegConfig, "$GASNetSegment: GASNET_SEGMENT_" G
 
 #if GASNETI_CLIENT_THREADS
   GASNETI_IDENT(gasneti_IdentString_ThreadInfoOpt, "$GASNetThreadInfoOpt: " _STRINGIFY(GASNETI_THREADINFO_OPT) " $");
+#endif
+
+#if GASNETI_SWIZZLE
+  GASNETI_IDENT(gasneti_IdentString_Swizzle, "$GASNetSwizzle: 1 $");
 #endif
 
 /* embed a string with complete configuration info to support versioning checks */
@@ -125,6 +120,7 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES)) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME)) = 1;
 
@@ -431,6 +427,8 @@ gasneti_Client_t gasneti_alloc_client(
   client->_name = gasneti_strdup(name);
   client->_cdata = NULL;
   client->_flags = flags;
+  gasneti_assert_always(sizeof(client->_next_ep_index) >= sizeof(gex_EP_Index_t));
+  gasneti_weakatomic32_set(&client->_next_ep_index, 0, 0);
 #ifdef GASNETI_CLIENT_ALLOC_EXTRA
   GASNETI_CLIENT_ALLOC_EXTRA(client);
 #else
@@ -522,6 +520,7 @@ gex_EP_t gasneti_export_ep(gasneti_EP_t _real_ep) {
 #endif
 
 // TODO-EX: probably need to add to a per-client container of some sort
+// at which time _next_ep_index could be non-atomic, protected by same lock.
 extern gasneti_EP_t gasneti_alloc_ep(
                        gasneti_Client_t client,
                        gex_Flags_t flags,
@@ -536,6 +535,8 @@ extern gasneti_EP_t gasneti_alloc_ep(
   endpoint->_cdata = NULL;
   endpoint->_segment = NULL;
   endpoint->_flags = flags;
+  endpoint->_index = gasneti_weakatomic32_add(&client->_next_ep_index, 1, 0) - 1;
+  gasneti_assert_always_uint(endpoint->_index ,<, GASNET_MAXEPS);
   gasneti_amtbl_init(endpoint->_amtbl);
 #ifdef GASNETI_EP_ALLOC_EXTRA
   GASNETI_EP_ALLOC_EXTRA(endpoint);
@@ -559,6 +560,7 @@ void gasneti_free_ep(gasneti_EP_t endpoint)
 #ifndef _GEX_TM_T
 #ifndef gasneti_import_tm
 gasneti_TM_t gasneti_import_tm(gex_TM_t _tm) {
+  gasneti_assert(_tm != GEX_TM_INVALID);
   const gasneti_TM_t _real_tm = GASNETI_IMPORT_POINTER(gasneti_TM_t,_tm);
   GASNETI_IMPORT_MAGIC(_real_tm, TM);
   return _real_tm;
@@ -587,12 +589,17 @@ extern gasneti_TM_t gasneti_alloc_tm(
   gasneti_assert(ep->_client);
   const int is_tm0 = (ep->_client->_tm0 == NULL);
 
-  // TM0 is aligned to GASNETI_TM0_ALIGN, and all others to half that
   gasneti_TM_t tm;
   if (requested_sz) gasneti_assert_uint(requested_sz ,>=, sizeof(*tm));
+  size_t actual_sz = (requested_sz ? requested_sz : sizeof(*tm));
+
+#if GASNETI_TM0_ALIGN
+  // TM0 is aligned to GASNETI_TM0_ALIGN, and all others to half that
   size_t disalign = (is_tm0 ? 0 : GASNETI_TM0_ALIGN/2);
-  size_t actual_sz = (requested_sz ? requested_sz : sizeof(*tm)) + disalign;
-  tm = (gasneti_TM_t)(disalign + (uintptr_t)gasneti_malloc_aligned(GASNETI_TM0_ALIGN, actual_sz));
+  tm = (gasneti_TM_t)(disalign + (uintptr_t)gasneti_malloc_aligned(GASNETI_TM0_ALIGN, actual_sz + disalign));
+#else
+  tm = gasneti_malloc(actual_sz);
+#endif
 
   GASNETI_INIT_MAGIC(tm, GASNETI_TM_MAGIC);
   tm->_ep = ep;
@@ -604,7 +611,7 @@ extern gasneti_TM_t gasneti_alloc_tm(
 #ifdef GASNETI_TM_ALLOC_EXTRA
   GASNETI_TM_ALLOC_EXTRA(tm);
 #else
-  if (requested_sz) memset(tm + 1, 0, (actual_sz - disalign) - sizeof(*tm));
+  if (requested_sz) memset(tm + 1, 0, actual_sz - sizeof(*tm));
 #endif
   
   if (is_tm0) {
@@ -626,7 +633,7 @@ void gasneti_free_tm(gasneti_TM_t tm)
   GASNETI_TM_FREE_EXTRA(tm);
 #endif
   GASNETI_INIT_MAGIC(tm, GASNETI_TM_BAD_MAGIC);
-  gasneti_free_aligned((void*)((uintptr_t)tm & (GASNETI_TM0_ALIGN-1)));
+  gasneti_free_aligned((void*)((uintptr_t)tm - (GASNETI_TM0_ALIGN/2)));
 }
 #endif // _GEX_TM_T
 
@@ -827,7 +834,7 @@ extern void gasneti_setupGlobalEnvironment(gex_Rank_t numnodes, gex_Rank_t mynod
   uint8_t *myenv; 
   int sz; 
   uint64_t checksum;
-  gasneti_envdesc_t myenvdesc;
+  gasneti_envdesc_t myenvdesc = {0};
   gasneti_envdesc_t *allenvdesc;
 
   gasneti_assert(exchangefn);
@@ -2282,6 +2289,62 @@ extern gasneti_spawnerfn_t const *gasneti_spawnerInit(int *argc_p, char ***argv_
     gasneti_mutex_unlock(&gasneti_memalloc_lock);
   }
 
+  extern void gasneti_heapinfo_dump(const char *filename, int show_live_objects) {
+    static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
+    gasneti_mutex_lock(&lock);
+    FILE *fp = gasneti_open_outputfile(filename, "debugmalloc heap report");
+    if (fp) {
+      time_t ltime;
+      char temp[1024];
+      time(&ltime);
+      strcpy(temp, ctime(&ltime));
+      if (temp[strlen(temp)-1] == '\n') temp[strlen(temp)-1] = '\0';
+
+      gasnett_heapstats_t stats;
+      gasnett_getheapstats(&stats);
+      fprintf(fp, "# GASNet Debug Mallocator Report\n");
+      fprintf(fp, "#\n");
+      fprintf(fp, "# program: %s\n",gasneti_exename);
+      fprintf(fp, "# date:    %s\n",temp);
+      fprintf(fp, "# host:    %s\n",gasnett_gethostname());
+      fprintf(fp, "# pid:     %i\n",(int)getpid());
+      fprintf(fp, "# node:    %i / %i\n", (int)gasneti_mynode, (int)gasneti_nodes);
+      fprintf(fp, "#\n");
+      fprintf(fp, "# Private memory utilization:\n");
+      fprintf(fp, "# ---------------------------\n");
+      fprintf(fp, "#\n");
+      fprintf(fp, "# malloc() space total:        %10"PRIu64" bytes, in %10"PRIu64" objects\n",
+                  stats.allocated_bytes, stats.allocated_objects);
+      fprintf(fp, "# malloc() space in-use:       %10"PRIu64" bytes, in %10"PRIu64" objects\n",
+                  stats.live_bytes, stats.live_objects);
+      fprintf(fp, "# malloc() space freed:        %10"PRIu64" bytes, in %10"PRIu64" objects\n",
+                  stats.freed_bytes, stats.freed_objects);
+      fprintf(fp, "# malloc() space peak usage:   %10"PRIu64" bytes,    %10"PRIu64" objects\n",
+                  stats.live_bytes_max, stats.live_objects_max);
+      fprintf(fp, "# malloc() system overhead: >= %10"PRIu64" bytes\n",
+                  stats.overhead_bytes);
+      fprintf(fp, "#\n");
+    
+      gasneti_memcheck_all(); /* check ring sanity */
+   
+      if (show_live_objects) { 
+        fprintf(fp, "# Live objects\n");
+        fprintf(fp, "# ------------\n");
+        fprintf(fp, "#\n");
+        fprintf(fp, "# Table below shows objects allocated, but not freed.\n");
+        fprintf(fp, "# Note that GASNet does not free most of its internal permanent data structures,\n");
+        fprintf(fp, "# in order to streamline job shutdown.  An asterisk (*) following the size\n");
+        fprintf(fp, "# identifies objects known to correspond to these permanent allocations.\n");
+        fprintf(fp, "#\n");
+        fprintf(fp, "# Object size     Location Allocated\n");
+        fprintf(fp, "# ==================================\n");
+    
+        gasneti_malloc_dump_liveobjects(fp);
+      }
+      if (fp != stdout && fp != stderr) fclose(fp);
+    }
+    gasneti_mutex_unlock(&lock);
+  }
 #endif
 /* extern versions of gasnet malloc fns for use in public headers */
 extern void *_gasneti_extern_malloc(size_t sz GASNETI_CURLOCFARG) {

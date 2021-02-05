@@ -1,0 +1,23 @@
+Start analyzing forall for automatic aggregation (dynamicallyAlignedFollowers.chpl:11)
+| Found an aggregation candidate (dynamicallyAlignedFollowers.chpl:13)
+|  Potential destination aggregation (dynamicallyAlignedFollowers.chpl:13)
+End analyzing forall for automatic aggregation (dynamicallyAlignedFollowers.chpl:11)
+
+LHS is nonlocal, RHS is local. Will use destination aggregation  (dynamicallyAlignedFollowers.chpl:13)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (dynamicallyAlignedFollowers.chpl:13)
+Replaced assignment with aggregation (dynamicallyAlignedFollowers.chpl:13)
+Replaced assignment with aggregation (dynamicallyAlignedFollowers.chpl:13)
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+1 1 1 1 1 1 1 1 1 1 1
+5 5 5 5 5 5 5 5 5 5 5
+

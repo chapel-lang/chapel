@@ -24,40 +24,50 @@ module ChapelAutoAggregation {
   config param verboseAggregation = false;
 
   pragma "aggregator generator"
-  proc chpl_srcAggregatorForArr(arr: []) {
+  proc chpl_srcAggregatorFor(arr: []) {
     return new SrcAggregator(arr.eltType);
   }
 
+  // we can't do dom: domain here, it causes resolution issues
   pragma "aggregator generator"
-  proc chpl_srcAggregatorForArr(type t) {
-    return new SrcAggregator(t);
+  proc chpl_srcAggregatorFor(dom) where isDomain(dom) {
+    return new SrcAggregator(dom.idxType);
   }
 
   pragma "aggregator generator"
-  proc chpl_srcAggregatorForArr(arr) {
+  proc chpl_srcAggregatorFor(arr) {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
   pragma "aggregator generator"
-  proc chpl_dstAggregatorForArr(arr: []) {
+  proc chpl_dstAggregatorFor(arr: []) {
     return new DstAggregator(arr.eltType);
   }
 
   pragma "aggregator generator"
-  proc chpl_dstAggregatorForArr(type t) {
-    return new DstAggregator(t);
+  proc chpl_dstAggregatorFor(dom) where isDomain(dom) {
+    // this is only called if the user has:
+    // 
+    // forall i in myDomain { i = foo(); }
+    //
+    // We want that code to fail with proper error message, so we have this
+    // function but return nil from it.
+    return nil;
   }
 
   pragma "aggregator generator"
-  proc chpl_dstAggregatorForArr(arr) {
+  proc chpl_dstAggregatorFor(arr) {
     return nil;  // return type signals that we shouldn't aggregate
   }
 
-  proc chpl__arrayIteratorYieldsLocalElements(a) param {
-    if isArray(a) {
-      if !isClass(a.eltType) { // I have no idea if we can do this for wide pointers
-        return a.iteratorYieldsLocalElements();
+  proc chpl__arrayIteratorYieldsLocalElements(x) param {
+    if isArray(x) {
+      if !isClass(x.eltType) { // I have no idea if we can do this for wide pointers
+        return x.iteratorYieldsLocalElements();
       }
+    }
+    else if isDomain(x) {
+      return x.iteratorYieldsLocalElements();
     }
     return false;
   }
@@ -316,6 +326,7 @@ module ChapelAutoAggregation {
 
       // Iterate through buffer elements, must be running on loc. data is passed
       // in to avoid communication.
+      pragma "order independent yielding loops"
       iter localIter(data: c_ptr(elemType), size: int) ref : elemType {
         if boundsChecking {
           assert(this.loc == here.id);

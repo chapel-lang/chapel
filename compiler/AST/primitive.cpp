@@ -763,6 +763,10 @@ initPrimitive() {
 
   prim_def(PRIM_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
 
+  // PRIM_IF_VAR: DefExpr of NAME, RHS expr
+  // represents the condition in "if var NAME = RHS then ..."
+  prim_def(PRIM_IF_VAR, "if var", returnInfoVoid);
+
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   // get complex real component

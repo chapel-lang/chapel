@@ -1,0 +1,98 @@
+Start analyzing forall for automatic aggregation (domElemFromAlignedFollower.chpl:16)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:17)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:17)
+End analyzing forall for automatic aggregation (domElemFromAlignedFollower.chpl:16)
+
+Start analyzing forall for automatic aggregation (domElemFromAlignedFollower.chpl:28)
+End analyzing forall for automatic aggregation (domElemFromAlignedFollower.chpl:28)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (domElemFromAlignedFollower.chpl:40)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:41)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:41)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (domElemFromAlignedFollower.chpl:40)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (domElemFromAlignedFollower.chpl:52)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:53)
+|  Potential source aggregation (domElemFromAlignedFollower.chpl:53)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:53)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (domElemFromAlignedFollower.chpl:52)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (domElemFromAlignedFollower.chpl:40)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:41)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:41)
+End analyzing forall for automatic aggregation [no ALA clone]  (domElemFromAlignedFollower.chpl:40)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (domElemFromAlignedFollower.chpl:40)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:41)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:41)
+End analyzing forall for automatic aggregation [static only ALA clone]  (domElemFromAlignedFollower.chpl:40)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (domElemFromAlignedFollower.chpl:52)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:53)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:53)
+End analyzing forall for automatic aggregation [no ALA clone]  (domElemFromAlignedFollower.chpl:52)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (domElemFromAlignedFollower.chpl:52)
+| Found an aggregation candidate (domElemFromAlignedFollower.chpl:53)
+|  Potential destination aggregation (domElemFromAlignedFollower.chpl:53)
+End analyzing forall for automatic aggregation [static only ALA clone]  (domElemFromAlignedFollower.chpl:52)
+
+Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:17)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:17)
+Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:41)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:41)
+Aggregation candidate has confirmed local child  (domElemFromAlignedFollower.chpl:53)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (domElemFromAlignedFollower.chpl:53)
+Replaced assignment with aggregation (domElemFromAlignedFollower.chpl:17)
+Replaced assignment with aggregation (domElemFromAlignedFollower.chpl:41)
+Replaced assignment with aggregation (domElemFromAlignedFollower.chpl:53)
+
+Loop 1 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 1
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 2 -- expecting no aggregation
+End Loop 2
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 3 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 3
+0 1 2 3 4 5 6 7 8 9 10
+
+Loop 4 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 4
+0 1 2 3 4 5 6 7 8 9 10
+

@@ -9,9 +9,6 @@
 #include <gasnet_am.h>
 
 #include <gasnet_event_internal.h> // access to eop and iop
-#if GASNET_BLCR
-#include <gasnet_blcr.h>
-#endif
 
 #include <errno.h>
 #include <unistd.h>
@@ -326,9 +323,7 @@ static void gasnetc_sys_coll_init(void)
 done:
   gasneti_assert(! gasneti_bootstrap_native_coll);
   gasneti_bootstrap_native_coll = 1;
-#if !GASNETC_IBV_SHUTDOWN
-  gasneti_spawner->Cleanup(); /* No futher use of ssh/mpi/pmi collectives */
-#endif
+  gasneti_spawner->Cleanup(); // No use of ssh/mpi/pmi collectives until possible shutdown
 }
 
 static void gasnetc_sys_coll_fini(void)
@@ -1002,7 +997,7 @@ static void gasnetc_init_pin_info(int first_local, int num_local) {
     if (gasneti_mynode == first_local) {
       uintptr_t size = gasnetc_trypin(limit, step);
       if_pf (!size) {
-        gasneti_fatalerror("ERROR: Failure to determine the max pinnable memory.  IBV may be misconfigured.");
+        gasneti_fatalerror("Failure to determine the max pinnable memory.  IBV may be misconfigured.");
       }
       gasnetc_pin_info.memory = size;
     }
@@ -1761,7 +1756,7 @@ static int gasnetc_hca_report(void) {
     GASNETI_TRACE_PRINTF(I,("  HCA vendor id            = 0x%x", (unsigned int)hca->hca_cap.vendor_id));
     GASNETI_TRACE_PRINTF(I,("  HCA vendor part id       = 0x%x", (unsigned int)hca->hca_cap.vendor_part_id));
     GASNETI_TRACE_PRINTF(I,("  HCA hardware version     = 0x%x", (unsigned int)hca->hca_cap.hw_ver));
-    GASNETI_TRACE_PRINTF(I,("  HCA firmware version     = %64s", hca->hca_cap.fw_ver));
+    GASNETI_TRACE_PRINTF(I,("  HCA firmware version     = %.64s", hca->hca_cap.fw_ver));
     GASNETI_TRACE_PRINTF(I,("  max_num_qp               = %u", (unsigned int)hca->hca_cap.max_qp));
     GASNETI_TRACE_PRINTF(I,("  max_qp_ous_wr            = %u", (unsigned int)hca->hca_cap.max_qp_wr));
     GASNETI_TRACE_PRINTF(I,("  max_num_sg_ent           = %u", (unsigned int)hca->hca_cap.max_sge));
@@ -1784,7 +1779,7 @@ static int gasnetc_hca_report(void) {
   
   
     GASNETI_TRACE_PRINTF(I,("  max_mr                   = %u", (unsigned int)hca->hca_cap.max_mr));
-    GASNETI_TRACE_PRINTF(I,("  max_mr_sz                = %u", (unsigned int)hca->hca_cap.max_mr_size));
+    GASNETI_TRACE_PRINTF(I,("  max_mr_sz                = %"PRIu64, (uint64_t)hca->hca_cap.max_mr_size));
 
     /* Vendor/device-specific firmware checks */
     /* NONE OF OUR KNOWN DEFECTS ARE PRESENT IN IBV-CAPABLE FW */
@@ -2520,10 +2515,6 @@ static int gasnetc_init( gex_Client_t            *client_p,
   /* determine Max{Local,GLobal}SegmentSize */
   gasneti_segmentInit(mmap_limit, &gasnetc_bootstrapExchange_ib, flags);
 
-#if GASNET_BLCR
-  gasneti_checkpoint_init(gasneti_bootstrapBroadcast);
-#endif
-
   gasnetc_exit_init();
 
   #if 0
@@ -2974,317 +2965,6 @@ gasnetc_shutdown(void) {
 #endif
 
 /* ------------------------------------------------------------------------------------ */
-/* Checkpoint/restart support code (BLCR) */
-
-#if GASNET_BLCR
-
-/* For open(), stat(), O_CREAT, etc.: */
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-
-/* For time() */
-#include <time.h>
-
-void gasnetc_pre_checkpoint(void) {
-
-  #if GASNETC_USE_RCV_THREAD
-  /* TODO: could pause/resume instead of start/stop */
-  gasnetc_sndrcv_stop_thread(1);
-  #endif
-
-  #if 0
-  /* TODO: this just reports stats - do we want to preserve the info across checkpoints? */
-  gasnetc_connect_fini();
-  #endif
-
-  gasnetc_sndrcv_quiesce();
-
-  if (gasnetc_did_firehose_init) {
-    firehose_fini();
-  }
-
-  gasnetc_shutdown();
-}
-
-void gasnetc_post_checkpoint(int is_restart) {
-  gasnetc_hca_t *hca;
-  int rc, i;
-
-  /* Reopen each HCA by the original name */
-  {
-    struct ibv_device   **hca_list;
-    int                 hca_count;
-
-    hca_list = ibv_get_device_list(&hca_count);
-    if ((hca_list == NULL) || (hca_count == 0)) {
-      gasneti_fatalerror("Unable to find any HCAs");
-    }
-    GASNETC_FOR_ALL_HCA(hca) {
-      for (i = 0; i < hca_count; ++i) {
-        const char *hca_name = ibv_get_device_name(hca_list[i]);
-        if (0 == strcmp(hca_name, hca->hca_id)) {
-          hca->handle = ibv_open_device(hca_list[i]);
-          hca->num_qps = 0;
-          rc = ibv_query_device(hca->handle, &hca->hca_cap);
-          GASNETC_IBV_CHECK(rc, "from ibv_query_device()");
-          break;
-        }
-      }
-      if (i == hca_count) {
-        gasneti_fatalerror("Unable to reopen HCA '%s'", hca->hca_id);
-      }
-    }
-    ibv_free_device_list(hca_list);
-  }
-
-  GASNETC_FOR_ALL_HCA(hca) {
-    hca->pd = ibv_alloc_pd(hca->handle);
-    GASNETC_IBV_CHECK_PTR(hca->pd, "from ibv_alloc_pd()");
-  }
-
-#if GASNET_PSHM
-#error BLCR integration does not YET support PSHM - configure with --disable-blcr or --disable-pshm
-  /* Need to pointer to conduit-specific shared mem for lid table and xrc */
-#endif
-
-  /* Query and exchange new LIDs */
-  if (is_restart) {
-    uint16_t *local_lid, *remote_lid;
-
-    /* Query each port (to obtain the LID) */
-    for (i = 0; i < gasnetc_num_ports; ++i) {
-      gasnetc_port_info_t *this_port = &gasnetc_port_tbl[i];
-      hca = &gasnetc_hca[this_port->hca_index];
-      (void) ibv_query_port(hca->handle, this_port->port_num, &this_port->port);
-    }
-
-    /* Exchange LIDs */
-    local_lid = gasneti_calloc(gasnetc_num_ports, sizeof(uint16_t));
-    remote_lid = gasneti_calloc(gasnetc_num_ports * gasneti_nodes, sizeof(uint16_t));
-    for (i = 0; i < gasnetc_num_ports; ++i) {
-      local_lid[i] = gasnetc_port_tbl[i].port.lid;
-    }
-    gasneti_bootstrapExchange(local_lid, gasnetc_num_ports * sizeof(uint16_t), remote_lid);
-    gasneti_free(local_lid);
-
-    /* transpose remote lids into port_tbl */
-    /* BLCR-TODO: factor this step once PSHM support ready */
-  #if GASNET_PSHM
-    // BLCR-TODO: NOT implemented
-  #else
-    for (i = 0; i < gasnetc_num_ports; ++i) {
-      gex_Rank_t node;
-      for (node = 0; node < gasneti_nodes; ++node) {
-        gasnetc_port_tbl[i].remote_lids[node] = remote_lid[node * gasnetc_num_ports + i];
-      }
-    }
-  #endif
-    gasneti_free(remote_lid);
-  }
-
-#if GASNETC_IBV_XRC && 0 // BLCR integration does not YET include PSHM (and thus XRC)
-  // BLCR-TODO: Skipped for now as we are initially not supporting PSHM */
-  if (gasnetc_use_xrc) {
-    rc = gasnetc_xrc_init(&shared_mem);
-    if (i != GASNET_OK) {
-      gasneti_fatalerror("Failed post-checkpoint call to gasnetc_xrc_init");
-    }
-  }
-#endif
-
-  /* allocate/initialize transport resources */
-  rc = gasnetc_sndrcv_init(gasnetc_ep0);
-  if (rc != GASNET_OK) {
-    gasneti_fatalerror("Failed post-checkpoint call to gasnetc_sndrcv_init");
-  }
-
-  /* Establish static connections and prepare for dynamic ones */
-  rc = gasnetc_connect_init(gasnetc_ep0);
-  if (rc != GASNET_OK) {
-    gasneti_fatalerror("Failed post-checkpoint call to gasnetc_connect_init");
-  }
-
-  /* Now safe to use native collectives again */
-  gasnetc_sys_coll_init();
-
-#if GASNET_DEBUG_VERBOSE
-  gasnetc_bootstrapBarrier_ib();
-  fprintf(stderr, "@%d> AM-based barrier worked!\n", gasneti_mynode);
-#endif
-
-  /* REregister the segment and exchange the new rkeys */
-#if GASNETC_PIN_SEGMENT
-  if (gasnetc_hca[0].rkeys) {
-    gasneti_mutex_lock(&gasnetc_segment_lock);
-    GASNETC_FOR_ALL_HCA(hca) {
-        for (int i = 0; i < gasnetc_segment_count; ++i) {
-          gasnetc_Segment_t seg = gasnetc_segment_table[i];
-          gasnetc_memreg_t *reg = &seg->seg_reg[hca->hca_index];
-          if (0 != gasnetc_pin(hca, (void *)reg->addr, reg->len, gasneti_seg_access_flags, reg)) {
-            gasneti_fatalerror("Unexpected error %s (errno=%d) when (re)registering the segment",
-                               strerror(errno), errno);
-          }
-          seg->seg_lkey[hca->hca_index] = reg->handle->lkey;
-        }
-      // TODO-EX: following is insufficient for multi-segment
-      gasnetc_memreg_t *reg = &gasnetc_segment_table[0]->seg_reg[hca->hca_index];
-      gasneti_assert_int(gasnetc_segment_count ,==, 1);
-      gasnetc_bootstrapExchange_ib(&reg->handle->rkey, sizeof(uint32_t), hca->rkeys);
-    }
-    gasneti_mutex_unlock(&gasnetc_segment_lock);
-  }
-#endif
-
-  /* Per-endpoint attach work */
-  for (i = 0; i < gasneti_nodes; i++) {
-    gasnetc_cep_t *cep = GASNETC_NODE2CEP(gasnetc_ep0, i);
-    if (cep) {
-      gasnetc_sndrcv_attach_peer(i, cep);
-    }
-  }
-
-#if GASNETC_PIN_SEGMENT &&  GASNET_DEBUG_VERBOSE
-  GASNETI_SAFE(gasnet_barrier(0,0));
-  fprintf(stderr, "@%d> native barrier worked!\n", gasneti_mynode);
-#endif
-
-  /* Re-initialize firehose */
-  if (gasnetc_did_firehose_init) {
-    int reg_count;
-    firehose_region_t *prereg = gasnetc_prereg_list(&reg_count);
-
-    firehose_init(gasnetc_firehose_mem, gasnetc_firehose_reg, gasnetc_fh_maxsize,
-                  prereg, reg_count, gasnetc_firehose_flags, &gasnetc_firehose_info);
-  }
-
-#if GASNET_DEBUG_VERBOSE
-  /* Exercise put/get and firehose via out-of-segment xfers
-   * If !SEGMENT_FAST this is also the first test of the native barrier.
-   */
-  {
-    #define THE_TEST_LEN 16384
-  #if GASNET_SEGMENT_EVERYTHING
-    static char buffer0[THE_TEST_LEN];
-  #endif
-    static char buffer1[THE_TEST_LEN];
-    static char buffer2[THE_TEST_LEN];
-    const size_t nbytes = THE_TEST_LEN;
-    void *loc_addr, *rem_addr;
-    #undef THE_TEST_LEN
-
-    gex_Rank_t peer = gasneti_mynode ^ 1;
-    if (peer == gasneti_nodes) peer = gasneti_mynode;
-
-  #if GASNET_SEGMENT_EVERYTHING
-    {
-      void **exchg_tmp = gasneti_malloc(gasneti_nodes * sizeof(void*));
-      loc_addr = buffer0;
-      gasnetc_bootstrapExchange_ib(&loc_addr, sizeof(void*), exchg_tmp);
-      rem_addr = exchg_tmp[peer];
-      gasneti_free(exchg_tmp);
-      for (i=0; i<nbytes; ++i) buffer0[i] = (char)(i ^ gasneti_mynode);
-    }
-  #else
-    loc_addr = gasneti_client_seginfo(gasneti_THUNK_TM, gasneti_mynode)->addr;
-    rem_addr = gasneti_client_seginfo(gasneti_THUNK_TM, peer)->addr;
-  #endif
-
-    GASNETI_MEMCPY(buffer1, loc_addr, nbytes);
-    // TODO-EX: replace or remove:
-    //gasnet_ get(buffer2, peer, rem_addr, nbytes);
-
-    GASNETI_SAFE(gasnet_barrier(0, GASNET_BARRIERFLAG_ANONYMOUS));
-
-    // TODO-EX: replace or remove:
-    //gasnet_ put(peer, rem_addr, buffer2, nbytes);
-
-    GASNETI_SAFE(gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED));
-
-    gasneti_assert_always(memcmp(buffer1, loc_addr, nbytes) == 0);
-
-    GASNETI_SAFE(gasnet_barrier(5551212, 0));
-
-  #if GASNETC_PIN_SEGMENT
-    fprintf(stderr, "@%d> RDMA-based xfers worked!\n", gasneti_mynode);
-  #else
-    fprintf(stderr, "@%d> RDMA-based barriers and xfers worked!\n", gasneti_mynode);
-  #endif
-  }
-#endif
-
-#if GASNETC_USE_RCV_THREAD
-  /* TODO: could pause/resume instead of start/stop */
-  gasnetc_sndrcv_start_thread();
-#endif
-
-  gasnetc_sys_coll_fini();
-}
-
-int gasnet_all_rollback(const char *dir) {
-    /* BLCR-TODO: remove the barrier or use a distinct team? */
-    gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnetc_pre_checkpoint();
-
-    /* BLCR-TODO: error reporting/recovery */
-    if (gasneti_spawner->Rollback) {
-      (void) gasneti_spawner->Rollback(dir);
-      /* BLCR-TODO: error checking */
-    }
-
-    gasnetc_post_checkpoint(1);
-    gasneti_bootstrapBarrier();
-
-    return GASNET_OK;
-}
-#endif /* GASNET_BLCR */
-
-/* PROOF-OF-CONCEPT
- * Collective checkpoint request */
-int gasnet_all_checkpoint(const char *dir_arg) {
-  #if GASNET_BLCR
-    int rc;
-
-    /* BLCR-TODO: remove the barrier or use a distinct team? */
-    gasnet_barrier(0, GASNET_BARRIERFLAG_UNNAMED);
-    gasnetc_pre_checkpoint();
-
-    {
-      const char *dir = gasneti_checkpoint_dir(dir_arg);
-      int fd = fd = gasneti_checkpoint_create(dir);
-      /* BLCR-TODO: error handling (curently _create() dies on error) */
-
-      if (gasneti_spawner->PreCheckpoint) {
-        (void) gasneti_spawner->PreCheckpoint(fd);
-        /* BLCR-TODO: error checking */
-      }
-
-      rc = gasneti_checkpoint_write(fd);
-      if (rc < 0) {
-        gasneti_fatalerror("Checkpoint failed rc=%d errno=%d\n", rc, errno);
-      }
-      /* BLCR-TODO: better error handling/recovery */
-
-      if (gasneti_spawner->PostCheckpoint) {
-        (void) gasneti_spawner->PostCheckpoint(fd, rc);
-        /* BLCR-TODO: error checking */
-      }
-
-      if (!rc) (void)close(fd); /* Continue case */
-      if (!dir_arg) gasneti_free((void*)dir);
-    }
-
-    gasnetc_post_checkpoint(rc);
-    gasneti_bootstrapBarrier();
-
-    return GASNET_OK;
-  #else
-    fprintf(stderr, "WARNING: checkpoint requested but not configured\n");
-    return GASNET_ERR_RESOURCE;
-  #endif
-}
-
-/* ------------------------------------------------------------------------------------ */
 /*
   Exit handling code
 */
@@ -3312,8 +2992,8 @@ extern void gasnetc_fatalsignal_callback(int sig) {
 
 enum {
   GASNETC_EXIT_ROLE_UNKNOWN,
-  GASNETC_EXIT_ROLE_MASTER,
-  GASNETC_EXIT_ROLE_SLAVE
+  GASNETC_EXIT_ROLE_LEADER,
+  GASNETC_EXIT_ROLE_MEMBER
 };
 
 static gasneti_atomic_t gasnetc_exit_role = gasneti_atomic_init(GASNETC_EXIT_ROLE_UNKNOWN);
@@ -3460,7 +3140,7 @@ static void gasnetc_exit_reduce_reqh(gex_Token_t token,
  * gasnetc_exit_role_reqh()
  *
  * This request handler (invoked only on the "root" node) handles the election
- * of a single exit "master", who will coordinate an orderly shutdown.
+ * of a single exit "leader", who will coordinate an orderly shutdown.
  */
 static void gasnetc_exit_role_reqh(gex_Token_t token) {
   gex_Rank_t src = gasnetc_msgsource(token);
@@ -3469,13 +3149,13 @@ static void gasnetc_exit_role_reqh(gex_Token_t token) {
   gasneti_assert(gasneti_mynode == GASNETC_ROOT_NODE);	/* May only send this request to the root node */
 
   
-  /* What role would the local node get if the requester is made the master? */
+  /* What role would the local node get if the requester is made the leader? */
   
-  local_role = (src == GASNETC_ROOT_NODE) ? GASNETC_EXIT_ROLE_MASTER : GASNETC_EXIT_ROLE_SLAVE;
+  local_role = (src == GASNETC_ROOT_NODE) ? GASNETC_EXIT_ROLE_LEADER : GASNETC_EXIT_ROLE_MEMBER;
 
   /* Try atomically to assume the proper role.  Result determines role of requester */
   result = gasneti_atomic_compare_and_swap(&gasnetc_exit_role, GASNETC_EXIT_ROLE_UNKNOWN, local_role, 0)
-                ? GASNETC_EXIT_ROLE_MASTER : GASNETC_EXIT_ROLE_SLAVE;
+                ? GASNETC_EXIT_ROLE_LEADER : GASNETC_EXIT_ROLE_MEMBER;
 
   /* Inform the requester of the outcome. */
   GASNETI_SAFE(gasnetc_ReplySysShort(token, NULL, gasneti_handleridx(gasnetc_exit_role_reph),
@@ -3485,7 +3165,7 @@ static void gasnetc_exit_role_reqh(gex_Token_t token) {
 /*
  * gasnetc_exit_role_reph()
  *
- * This reply handler receives the result of the election of an exit "master".
+ * This reply handler receives the result of the election of an exit "leader".
  * The reply contains the exit "role" this node should assume.
  */
 static void gasnetc_exit_role_reph(gex_Token_t token, gex_AM_Arg_t arg0) {
@@ -3496,7 +3176,7 @@ static void gasnetc_exit_role_reph(gex_Token_t token, gex_AM_Arg_t arg0) {
 
   /* What role has this node been assigned? */
   role = (int)arg0;
-  gasneti_assert((role == GASNETC_EXIT_ROLE_MASTER) || (role == GASNETC_EXIT_ROLE_SLAVE));
+  gasneti_assert((role == GASNETC_EXIT_ROLE_LEADER) || (role == GASNETC_EXIT_ROLE_MEMBER));
 
   /* Set the role if not yet set.  Then assert that the assigned role has been assumed.
    * This way the assertion is checking that if the role was obtained by other means
@@ -3516,7 +3196,7 @@ static void gasnetc_exit_role_reph(gex_Token_t token, gex_AM_Arg_t arg0) {
  * is not responsive.
  *
  * Note that if we get here as a result of a remote exit request then our role has already been
- * set to "slave" and we won't touch the network from inside the request handler.
+ * set to "member" and we won't touch the network from inside the request handler.
  */
 static int gasnetc_get_exit_role(void)
 {
@@ -3622,7 +3302,6 @@ static void gasnetc_exit_sighandler(int sig) {
 
 #if GASNET_DEBUG || GASNETC_IBV_ODP
   // protect until we reach reentrance check
-  GASNETC_EXIT_STATE("in exit sighandler");
   gasneti_reghandler(SIGALRM, _exit);
   gasneti_unblocksig(SIGALRM);
   alarm(30);
@@ -3676,7 +3355,7 @@ static void gasnetc_exit_sighandler(int sig) {
   /* NOT REACHED */
 }
 
-/* gasnetc_exit_master
+/* gasnetc_exit_leader
  *
  * We say a polite goodbye to our peers and then listen for their replies.
  * This forms the root node's portion of a barrier for graceful shutdown.
@@ -3691,7 +3370,7 @@ static void gasnetc_exit_sighandler(int sig) {
  *
  * Returns 0 on success, non-zero on any sort of failure including timeout.
  */
-static int gasnetc_exit_master(int exitcode, int64_t timeout_us) {
+static int gasnetc_exit_leader(int exitcode, int64_t timeout_us) {
   int i, rc;
   gasneti_tick_t start_time;
 
@@ -3721,22 +3400,22 @@ static int gasnetc_exit_master(int exitcode, int64_t timeout_us) {
   return 0;
 }
 
-/* gasnetc_exit_slave
+/* gasnetc_exit_member
  *
- * We wait for a polite goodbye from the exit master.
+ * We wait for a polite goodbye from the exit leader.
  *
  * Takes a timeout in us as an argument
  *
  * Returns 0 on success, non-zero on timeout.
  */
-static int gasnetc_exit_slave(int64_t timeout_us) {
+static int gasnetc_exit_member(int64_t timeout_us) {
   gasneti_tick_t start_time;
 
   gasneti_assert(timeout_us > 0); 
 
   start_time = gasneti_ticks_now();
 
-  /* wait until the exit request is received from the master */
+  /* wait until the exit request is received from the leader */
   while (gasneti_atomic_read(&gasnetc_exit_reqs, 0) == 0) {
     if (gasneti_ticks_to_ns(gasneti_ticks_now() - start_time) / 1000 > timeout_us) return -1;
 
@@ -3759,7 +3438,7 @@ static int gasnetc_exit_slave(int64_t timeout_us) {
  * If the exitcode reduction does not complete within gasnetc_exittimeout seconds, then we
  * assume that this is a NON-collective exit and that additional coordination is needed.  In that
  * case, to coordinate a graceful shutdown gasnetc_get_exit_role() will select one node as
- * the "master".  That master node will then send a remote exit request to each of its peers to
+ * the "leader".  That leader node will then send a remote exit request to each of its peers to
  * ensure they know that it is time to exit.  If we fail to coordinate the shutdown, we ask the
  * bootstrap to shut us down agressively.  Otherwise we return to our caller.  Unless our caller
  * is the at-exit handler, we are typically followed by a call to gasnetc_exit_tail() to perform
@@ -3876,7 +3555,7 @@ static void gasnetc_exit_body(void) {
 
   exitcode = gasneti_atomic_read(&gasnetc_exit_code, GASNETI_ATOMIC_RMB_PRE);
 
-  /* Determine our role (master or slave) in the coordination of this shutdown */
+  /* Determine our role (leader or member) in the coordination of this shutdown */
   GASNETC_EXIT_STATE("performing non-collective exit");
   alarm(10);
   role = gasnetc_get_exit_role();
@@ -3885,14 +3564,14 @@ static void gasnetc_exit_body(void) {
   GASNETC_EXIT_STATE("coordinating shutdown");
   alarm(1 + (int)gasnetc_exittimeout);
   switch (role) {
-  case GASNETC_EXIT_ROLE_MASTER:
+  case GASNETC_EXIT_ROLE_LEADER:
     /* send all the remote exit requests and wait for the replies */
-    graceful = (gasnetc_exit_master(exitcode, timeout_us) == 0);
+    graceful = (gasnetc_exit_leader(exitcode, timeout_us) == 0);
     break;
 
-  case GASNETC_EXIT_ROLE_SLAVE:
+  case GASNETC_EXIT_ROLE_MEMBER:
     /* wait for the exit request and reply before proceeding */
-    graceful = (gasnetc_exit_slave(timeout_us) == 0);
+    graceful = (gasnetc_exit_member(timeout_us) == 0);
     break;
 
   default:
@@ -3965,29 +3644,29 @@ static void gasnetc_exit_body(void) {
  *
  * This is a core AM handler and is therefore available as soon as gasnet_init()
  * returns, even before gasnet_attach().  This handler is responsible for receiving the
- * remote exit requests from the master node and replying.  We call gasnetc_exit_head()
+ * remote exit requests from the leader node and replying.  We call gasnetc_exit_head()
  * with the exitcode seen in the remote exit request.  If this remote request is seen before
  * any local exit requests (normal or signal), then we are also responsible for starting the
  * exit procedure, via gasnetc_exit_{body,tail}().  Additionally, we are responsible for
  * firing off a SIGQUIT to let the user's handler, if any, run before we begin to exit.
  */
 static void gasnetc_exit_reqh(gex_Token_t token, gex_AM_Arg_t arg0) {
-  /* The master will send this AM, but should _never_ receive it */
-  gasneti_assert(gasneti_atomic_read(&gasnetc_exit_role, 0) != GASNETC_EXIT_ROLE_MASTER);
+  /* The leader will send this AM, but should _never_ receive it */
+  gasneti_assert(gasneti_atomic_read(&gasnetc_exit_role, 0) != GASNETC_EXIT_ROLE_LEADER);
 
   /* We should never receive this AM multiple times */
   gasneti_assert(gasneti_atomic_read(&gasnetc_exit_reqs, 0) == 0);
 
-  /* If we didn't already know, we are now certain our role is "slave" */
-  (void)gasneti_atomic_compare_and_swap(&gasnetc_exit_role, GASNETC_EXIT_ROLE_UNKNOWN, GASNETC_EXIT_ROLE_SLAVE, 0);
+  /* If we didn't already know, we are now certain our role is "member" */
+  (void)gasneti_atomic_compare_and_swap(&gasnetc_exit_role, GASNETC_EXIT_ROLE_UNKNOWN, GASNETC_EXIT_ROLE_MEMBER, 0);
 
-  /* Send a reply so the master knows we are reachable */
+  /* Send a reply so the leader knows we are reachable */
   gasnetc_counter_inc(&gasnetc_exit_repl_oust);
   GASNETI_SAFE(gasnetc_ReplySysShort(token, &gasnetc_exit_repl_oust,
 				   gasneti_handleridx(gasnetc_exit_reph), /* no args */ 0));
   gasneti_sync_writes(); /* For non-atomic portion of gasnetc_exit_repl_oust */
 
-  /* Count the exit requests, so gasnetc_exit_slave() knows when to return */
+  /* Count the exit requests, so gasnetc_exit_member() knows when to return */
   gasneti_atomic_increment(&gasnetc_exit_reqs, 0);
 
   /* Initiate an exit IFF this is the first we've heard of it */

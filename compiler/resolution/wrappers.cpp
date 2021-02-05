@@ -1520,7 +1520,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 
   if (result                                   &&
       propagateNotPOD(actualSym->getValType()) &&
-      ! isLeaderIterator(calleeFn)             )
+      isFollowerIterator(calleeFn)             )
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;

@@ -73,9 +73,8 @@ extern gasneti_atomic_t gasnetc_exit_running;
  * However, a least Solaris 11.2 has been seen to eventually begin returning
  * ENOSPC from ibv_create_cq() after a few thousand tests have run.
  * So, we will make a best-effort to at least destroy QPs and CQs.
- * This is also needed for BLCR-based checkpoint/restart suport.
  */
-#if PLATFORM_OS_SOLARIS || GASNET_BLCR || GASNET_DEBUG
+#if PLATFORM_OS_SOLARIS || GASNET_DEBUG
   #define GASNETC_IBV_SHUTDOWN 1
 #endif
 
@@ -244,16 +243,6 @@ typedef union {
  * amount of memory we will pin. */
 #ifndef GASNETC_HONOR_RLIMIT_MEMLOCK
   #define GASNETC_HONOR_RLIMIT_MEMLOCK 1
-#endif
-
-/* Use alloca()?  (e.g. to work-around bug 2079) */
-#ifdef GASNETI_USE_ALLOCA
-  /* Keep defn */
-#elif HAVE_ALLOCA && !PLATFORM_COMPILER_PGI
-  #define GASNETI_USE_ALLOCA 1
-#endif
-#if GASNETI_USE_ALLOCA && HAVE_ALLOC_H
-  #include <alloca.h>
 #endif
 
 /* Can one send a 0-byte payload?
@@ -598,7 +587,6 @@ typedef struct gasnetc_rbuf_s {
   gasnetc_cep_t			*cep;
 
   /* Fields fixed for life of the rbuf as it is reused */
-  int				rr_is_rdma;	/* is AM-over-RMDA? */
   struct ibv_recv_wr        	rr_desc;        /* recv request descriptor */
   struct ibv_sge			rr_sg;          /* single-entry scatter list */
   gasnetc_EP_t                  rr_ep;

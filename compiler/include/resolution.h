@@ -166,7 +166,7 @@ void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 void setupAndResolveShadowVars(ForallStmt* fs);
 bool preserveShadowVar(Symbol* var);
-void adjustVoidShadowVariables();
+void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);

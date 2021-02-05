@@ -70,8 +70,9 @@ mpq_cmp_numden (mpq_srcptr op1, mpz_srcptr num_op2, mpz_srcptr den_op2)
     {
       int cmp;
 
+      /* Cannot use num1_sign - num2_size, may overflow an "int" */
       if (num1_sign != num2_size)
-	return num1_sign - num2_size;
+	return (num1_sign > num2_size) ? 1 : -1;
 
       cmp = mpn_cmp (PTR(NUM(op1)), PTR(num_op2), num1_size);
       return (num1_sign > 0 ? cmp : -cmp);

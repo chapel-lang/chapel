@@ -132,6 +132,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
 	packages/Sort.chpl \
+	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
 	packages/ZMQ.chpl \
 	packages/Collection.chpl \

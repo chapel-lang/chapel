@@ -512,7 +512,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
           {
             mText  += ": ";
             appendExpr(moveSrc, true);
-            mText  += ".type ";
+            mText  += ".type";
 
             retval =  true;
           }
@@ -1251,7 +1251,17 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     if (expr->isPrimitive(PRIM_TYPEOF))
     {
       appendExpr(expr->get(1), printingType);
-      mText += ".type ";
+      mText += ".type";
+    }
+    else if (expr->isPrimitive(PRIM_TRY_EXPR))
+    {
+      mText += "try ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TRYBANG_EXPR))
+    {
+      mText += "try! ";
+      appendExpr(expr->get(1), printingType);
     }
     else if (expr->isPrimitive(PRIM_NEW))
     {
@@ -1319,6 +1329,27 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     {
       mText += "nonnilable ";
       appendExpr(expr->get(1), printingType);
+    }
+    else if (!expr->isPrimitive(PRIM_UNKNOWN))
+    {
+      mText += "__primitive(\"";
+      mText += expr->primitive->name;
+      mText += "\"";
+      for (int index = 1; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          if (!isSymExpr(expr->get(index)))
+          {
+            appendExpr(expr->get(index), printingType);
+          }
+          else
+          {
+            mText += "\"";
+            appendExpr(expr->get(index), printingType);
+            mText += "\"";
+          }
+        }
+      mText += ")";
     }
     else
     {
@@ -1426,50 +1457,56 @@ void AstToText::appendExpr(IfExpr* expr, bool printingType)
 
 void AstToText::appendExpr(LoopExpr* expr, bool printingType)
 {
+  std::string start,end;
   if (expr->forall)
   {
     if (expr->maybeArrayType)
     {
-      mText += '[';
-      if(expr->indices)
-      {
-        appendExpr(expr->indices, printingType);
-        mText += " in ";
-      }
-      
-      if(expr->iteratorExpr)
-      {
-        appendExpr(expr->iteratorExpr, printingType);
-        mText += ']';
-
-        if (BlockStmt* bs = toBlockStmt(expr->loopBody))
-        {
-          mText += ' ';
-          appendExpr(bs->body.get(1), printingType);
-        }
-
-        else
-        {
-          mText += "AppendExpr.Loop01";
-        }
-      
-      }
-      
-      else
-      {
-        mText += "AppendExpr.Loop02";
-      }
+      start = "[";
+      end = "]";
     }
 
     else
     {
-      mText += "AppendExpr.Loop03";
+      start = "forall ";
+      end = " do";
     }
   }
 
   else
   {
-    mText += "AppendExpr.Loop04";
+    start = "for ";
+    end = " do";
+  }
+  mText += start;
+
+  if (expr->indices)
+  {
+    appendExpr(expr->indices, printingType);
+    mText += " in ";
+  }
+
+  if (expr->iteratorExpr)
+  {
+    appendExpr(expr->iteratorExpr, printingType);
+    mText += end;
+
+    if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+    {
+      mText += ' ';
+      appendExpr(bs->body.get(1), printingType);
+    }
+
+    else
+    {
+      mText += " AppendExpr.Loop01";
+    }
+
+  }
+
+  else
+  {
+    mText += " AppendExpr.Loop02";
   }
 }
 
@@ -1485,6 +1522,11 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
 
     appendExpr(expr->get(i), printingType);
   }
+
+  // 1-tuples get a trailing "," inside the parens.
+  // Only tuples reach here with fnName == "".
+  if (strlen(fnName) == 0 && expr->numActuals() == 1)
+    mText += ",";
 
   mText += ')';
 }

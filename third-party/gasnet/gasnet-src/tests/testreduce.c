@@ -241,7 +241,7 @@ void do_test_user(gex_TM_t tm)
     #define BASE_CHAR 'A'
     #define NUM_CHAR  26
     size_t dt_sz = size + 1; // One for '\0' terminator
-    char *InStrings  = test_malloc(Nelem * dt_sz * sizeof(char));
+    char *InStrings  = test_calloc(1, Nelem * dt_sz * sizeof(char));
     char *OutStrings = test_malloc(Nelem * dt_sz * sizeof(char));
     for (size_t i = 0; i < Nelem; ++i) {
       char *p = InStrings + i * dt_sz;

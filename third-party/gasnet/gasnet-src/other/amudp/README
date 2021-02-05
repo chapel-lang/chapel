@@ -68,6 +68,10 @@ AMUDP has a few notable departures from the AM-2 specification:
 
 Change Log
 ----------
+AMUDP 3.17 (10/2020)
+- Remove BLCR support
+- This version breaks compatibility of the amudprun spawner with prior versions
+
 AMUDP 3.16 (03/2020)
 - Improved startup error checking and reporting for DNS misconfigurations
 

@@ -1,8 +1,0 @@
-bug: string:string cast within on-clause gives follower error
-
-While this pattern isn't particularly interesting or useful as written
-here, it seems that it ought to be legal, yet it gives an error:
-"follower iterators accepting a non-POD argument by in-intent are not
-implemented".  The pattern is more interesting/useful in the context
-of a generic function where you want to cast an incoming argument to
-'x' regardless of its type and want it to also work with strings.

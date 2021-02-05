@@ -33,6 +33,7 @@ void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);
 bool  isLeaderIterator(FnSymbol* fn);
+bool  isFollowerIterator(FnSymbol* fn);
 bool  isStandaloneIterator(FnSymbol* fn);
 
 // If yieldType is not NULL, the type yielded by an iterator will

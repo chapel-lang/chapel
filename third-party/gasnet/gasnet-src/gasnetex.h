@@ -248,6 +248,11 @@ GASNETI_BEGIN_NOWARN
   #define GASNET_MAXNODES (0x7FFFFFFFu)
 #endif
 
+#ifndef GASNET_MAXEPS
+  //  an integer representing the max supported number of endpoints per process
+  #define GASNET_MAXEPS (1 << 12)
+#endif
+
 #if !defined(GASNET_ALIGNED_SEGMENTS) || \
     (defined(GASNET_ALIGNED_SEGMENTS) && GASNET_ALIGNED_SEGMENTS != 0 && GASNET_ALIGNED_SEGMENTS != 1)
   /*  defined to be 1 if gasnet_init guarantees that the remote-access memory segment will be aligned  */
@@ -354,7 +359,8 @@ struct gasneti_team_member_internal_s;
   #define GASNETI_CLIENT_COMMON        \
     GASNETI_OBJECT_HEADER              \
     struct gasneti_team_member_internal_s *_tm0; \
-    const char *       _name;
+    const char *       _name;          \
+    gasneti_weakatomic32_t _next_ep_index;
   typedef struct { GASNETI_CLIENT_COMMON } *gasneti_Client_t;
   #if GASNET_DEBUG
     extern gasneti_Client_t gasneti_import_client(gex_Client_t _client);
@@ -397,6 +403,7 @@ struct gasneti_team_member_internal_s;
     GASNETI_OBJECT_HEADER              \
     gasneti_Client_t   _client;        \
     gasneti_Segment_t  _segment;       \
+    gex_Rank_t         _index;         \
     gex_AM_Entry_t     _amtbl[GASNETC_MAX_NUMHANDLERS];
   typedef struct { GASNETI_EP_COMMON } *gasneti_EP_t;
   #if GASNET_DEBUG
@@ -411,6 +418,7 @@ struct gasneti_team_member_internal_s;
   #define gex_EP_QueryClient(ep)               gasneti_export_client(gasneti_import_ep(ep)->_client)
   #define gex_EP_QueryFlags(ep)                ((gex_Flags_t)gasneti_import_ep(ep)->_flags)
   #define gex_EP_QuerySegment(ep)              gasneti_export_segment(gasneti_import_ep(ep)->_segment)
+  #define gex_EP_QueryIndex(ep)                ((gex_EP_Index_t)gasneti_import_ep(ep)->_index)
 #endif
 
 #ifndef _GEX_TM_T
@@ -419,7 +427,9 @@ struct gasneti_team_member_internal_s;
     gasneti_EP_t       _ep;            \
     gex_Rank_t         _rank;          \
     gex_Rank_t         _size;          \
-    void *             _coll_team;
+    void *             _coll_team;     \
+    gex_Rank_t *       _rank_map;      \
+    gex_EP_Index_t *   _index_map;
   #ifdef __cplusplus  // ensure this struct is anonymous to prevent C++ linkage issues
     #define gasneti_team_member_internal_s
   #endif
@@ -828,6 +838,7 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME));
 
@@ -861,6 +872,7 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
+        + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CORE_,GASNET_CORE_NAME))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(EXTENDED_,GASNET_EXTENDED_NAME))
         ;

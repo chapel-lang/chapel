@@ -47,14 +47,6 @@ sub usage
     print "      -k                     keep any temporary files created (implies -v)\n";
     print "      -spawner=(ssh|mpi|pmi) force use of a specific spawner\n";
     print "      --                     ends option parsing\n";
-    if ($ENV{'GASNET_BLCR_ENABLED'}) {
-        print "\n";
-        print "usage: gasnetrun [options] [--] -restart dir\n";
-        print "    options:\n";
-        print "      -v                     be verbose about what is happening\n";
-        print "      -t                     test only, don't execute anything (implies -v)\n";
-        print "      --                     ends option parsing\n";
-    }
     exit 1;
 }
 

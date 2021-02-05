@@ -7334,11 +7334,13 @@ static Type* moveDetermineRhsType(CallExpr* call) {
         // `expandExternArrayCalls` can add void assignments when
         // the extern function has an explicit void return type.
         // Let those through by looking for two flags it adds.
-        if (!(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
+        if (!rhsFn->hasFlag(FLAG_INIT_COPY_FN) &&
+            !(rhsFn->hasFlag(FLAG_VOID_NO_RETURN_VALUE) &&
               rhsFn->hasFlag(FLAG_EXTERN_FN_WITH_ARRAY_ARG))) {
           const char* rhsName = rhsFn->name;
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
+
           USR_FATAL(userCall(call),
                     "illegal use of function that does not "
                     "return a value: '%s'",
@@ -9024,6 +9026,30 @@ static void resolveObviousGlobals() {
 }
 
 
+/************************************* | **************************************
+*                                                                             *
+*  Check for void fields as errors                                            *
+*                                                                             *
+************************************** | *************************************/
+
+static void checkNoVoidFields()
+{
+  for_alive_in_Vec(AggregateType, at, gAggregateTypes) {
+    // We exclude "no object" aggregates, to allow the Chapel internal '_ref'
+    // class to be instantiated with a 'void' member
+    if(!at->symbol->hasFlag(FLAG_NO_OBJECT)) {
+      for_fields(field, at) {
+        if(field->type == dtVoid)
+          USR_FATAL(field,
+                    "Field '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    field->name);
+      }
+    }
+  }
+}
+
+
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
@@ -9092,6 +9118,8 @@ void resolve() {
     printUnusedFunctions();
 
   saveGenericSubstitutions();
+
+  checkNoVoidFields();
 
   pruneResolvedTree();
 
@@ -9542,9 +9570,9 @@ static void resolveAutoCopyEtc(AggregateType* at) {
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
     FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
-
-    fn->addFlag(FLAG_AUTO_DESTROY_FN);
-
+    // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
+    if (fn)
+      fn->addFlag(FLAG_AUTO_DESTROY_FN);
     autoDestroyMap.put(at, fn);
   }
 }
@@ -10490,21 +10518,17 @@ static void resolvePrimInit(CallExpr* call) {
   if (SymExpr* se = toSymExpr(typeExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
       resolvePrimInit(call, val, resolveTypeAlias(se));
-
     } else {
       USR_FATAL(call, "invalid type specification");
     }
-
   } else if (CallExpr* ce = toCallExpr(typeExpr)) {
     if (Symbol* field = resolvePrimInitGetField(ce)) {
       if (field->hasFlag(FLAG_TYPE_VARIABLE) == true) {
         resolvePrimInit(call, val, field->typeInfo());
-
       } else {
         USR_FATAL(call, "invalid type specification");
       }
     }
-
   } else {
     INT_FATAL(call, "Unsupported primInit");
   }
@@ -10514,14 +10538,25 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   if (call->id == breakOnResolveID) gdbShouldBreakHere();
 
-  AggregateType* at     = toAggregateType(type);
-
+  AggregateType* at = toAggregateType(type);
   val->type = type;
 
   // Shouldn't be called with ref types
   INT_ASSERT(at == NULL || at->getValType() == at);
 
   SET_LINENO(call);
+
+  // When --ignore-errors-for-pass is used, earlier errors, such as
+  // compilerError errors, are marked as pending until the end of the
+  // resolution pass, which can cause secondary errors about void
+  // variables here. If the function resolution pass has any pending
+  // fatal errors, we suppress any errors about void variables here,
+  // which might be secondary to the original fatal error.
+  if(type == dtVoid && !fatalErrorsEncountered())
+    USR_FATAL(call,
+              "Variable '%s' cannot be declared 'void'."
+              " Consider using 'nothing' instead.",
+              val->name);
 
   if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE) == true) {
     if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
@@ -10532,9 +10567,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
 
   // Shouldn't be default-initializing iterator records here
   } else if (type->symbol->hasFlag(FLAG_ITERATOR_RECORD)  == true) {
-
     INT_ASSERT(false);
-
   // Generate a more specific USR_FATAL if resolution would fail
   } else if (primInitIsUnacceptableGeneric(call, type)    == true) {
     primInitHaltForUnacceptableGeneric(call, type, val);
@@ -10555,7 +10588,6 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // than in lowerPrimInit.
 
     // note: error for bad param initialization checked for in resolving move
-
     if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
       if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         Expr* defaultExpr = NULL;

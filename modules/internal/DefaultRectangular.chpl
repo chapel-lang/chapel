@@ -1533,6 +1533,10 @@ module DefaultRectangular {
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
+
+    override proc dsiIteratorYieldsLocalElements() param {
+      return true;
+    }
   }
 
   pragma "order independent yielding loops"

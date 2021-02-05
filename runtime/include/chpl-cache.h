@@ -24,7 +24,9 @@
 #include "chpltypes.h"
 #include "chpl-atomics.h"
 #include "chpl-comm.h" // to get HAS_CHPL_CACHE_FNS via chpl-comm-task-decls.h
+#include "chpl-env.h"
 #include "chpl-tasks.h"
+#include "error.h"
 
 #ifdef HAS_CHPL_CACHE_FNS
 // This is a cache for remote data.
@@ -33,16 +35,47 @@
 extern "C" {
 #endif
 
-// Is the cache enabled? (set at compile time)
+// Is the cache supposed to be enabled? (set at compile time)
 extern const int CHPL_CACHE_REMOTE;
+
+#if defined(__SANITIZE_ADDRESS__)
+#define CHPL_ASAN 1
+#endif
+
+#if defined(__has_feature)
+#if __has_feature(address_sanitizer)
+#define CHPL_ASAN 1
+#endif
+#endif
+
+#if !defined(CHPL_ASAN)
+#define CHPL_ASAN 0
+#endif
+
+static inline
+void chpl_cache_warn_if_disabled(void)
+{
+  if (CHPL_CACHE_REMOTE && chpl_nodeID == 0 &&
+      !chpl_env_rt_get_bool("CACHE_QUIET", false)) {
+    if (CHPL_ASAN) {
+      chpl_warning("Disabling --cache-remote due to incompatibility with "
+                   "AddressSanitizer (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
+    } else if (chpl_task_canMigrateThreads()) {
+      chpl_warning("Disabling --cache-remote because tasks can migrate "
+                   "threads (quiet with CHPL_RT_CACHE_QUIET=true)", 0, 0);
+    }
+  }
+}
 
 static inline
 int chpl_cache_enabled(void)
 {
-  // The remote cache uses thread local storage, so if tasks can migrate
-  // between threads we lose out ability to correctly fence.
-  return CHPL_CACHE_REMOTE && !chpl_task_canMigrateThreads();
+  // The remote cache is not compatible with ASan, and it uses thread local
+  // storage, so if tasks can migrate between threads we lose our ability to
+  // correctly fence.
+  return CHPL_CACHE_REMOTE && !CHPL_ASAN && !chpl_task_canMigrateThreads();
 }
+#undef CHPL_ASAN
 
 
 // Initialize the remote data cache layer. 

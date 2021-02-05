@@ -1,0 +1,5 @@
+default init (ptr = {x = 1})
+init= (ptr = {x = 2})
+deinit (ptr = {x = 1})
+deinit (ptr = {x = 0})
+C deinit {x = 0}
