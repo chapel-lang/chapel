@@ -458,7 +458,14 @@ static void checkOperator(FnSymbol* fn) {
         strcmp(fn->name, "*") == 0 || strcmp(fn->name, "/") == 0 ||
         strcmp(fn->name, "<<") == 0 || strcmp(fn->name, ">>") == 0 ||
         strcmp(fn->name, "%") == 0 || strcmp(fn->name, "**") == 0 ||
-        strcmp(fn->name, "!") == 0 || strcmp(fn->name, "<~>") == 0) {
+        strcmp(fn->name, "!") == 0 || strcmp(fn->name, "<~>") == 0 ||
+        strcmp(fn->name, "+=") == 0 || strcmp(fn->name, "-=") == 0 ||
+        strcmp(fn->name, "*=") == 0 || strcmp(fn->name, "/=") == 0 ||
+        strcmp(fn->name, "%=") == 0 || strcmp(fn->name, "**=") == 0 ||
+        strcmp(fn->name, "&=") == 0 || strcmp(fn->name, "|=") == 0 ||
+        strcmp(fn->name, "^=") == 0 || strcmp(fn->name, ">>=") == 0 ||
+        strcmp(fn->name, "<<=") == 0 || strcmp(fn->name, "#") == 0 ||
+        strcmp(fn->name, "by") == 0 || strcmp(fn->name, "align") == 0) {
       // When deprecate non-operator keyword declarations, add deprecation
       // warning here.
       fn->addFlag(FLAG_OPERATOR);
