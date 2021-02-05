@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 config var n: int = 10;
 

@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 config const serially = true;
 

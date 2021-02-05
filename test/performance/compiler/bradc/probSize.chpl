@@ -1,5 +1,5 @@
 module HPCCProblemSize {
-  use Memory, Types;
+  use Memory.Diagnostics, Types;
 
   config const memRatio = 4;
 
