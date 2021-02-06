@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -34,6 +34,10 @@
 #include <limits.h>
 
 #include "chpl-comp-detect-macros.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // chpl_bitops_popcount_*
 // ----------------------
@@ -245,4 +249,9 @@ CHPL_BITOPS_ROTR(64)
 
 #undef CHPL_BITOPS_ROTR
 #undef UI
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif // _chpl_bitops_h_

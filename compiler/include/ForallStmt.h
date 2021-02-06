@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,22 +23,31 @@
 
 #include "stmt.h"
 
+enum ForallAutoLocalAccessCloneType {
+  NOT_CLONE,
+  NO_OPTIMIZATION,
+  STATIC_ONLY,
+  STATIC_AND_DYNAMIC
+};
+
 class ForallOptimizationInfo {
   public:
-    Symbol *iterSym;
-    Expr *dotDomIterExpr;
-    Symbol *dotDomIterSym;
-    Symbol *dotDomIterSymDom;
+    bool infoGathered;
 
-    CallExpr *iterCall;  // refers to the original CallExpr
-    Symbol *iterCallTmp; // this is the symbol to use for checks
+    std::vector<Symbol *> iterSym;
+    std::vector<Expr *> dotDomIterExpr;
+    std::vector<Symbol *> dotDomIterSym;
+    std::vector<Symbol *> dotDomIterSymDom;
+
+    std::vector<CallExpr *> iterCall;  // refers to the original CallExpr
+    std::vector<Symbol *> iterCallTmp; // this is the symbol to use for checks
 
     // even if there are multiple indices we store them in a vector
-    std::vector<Symbol *> multiDIndices;
+    std::vector< std::vector<Symbol *> > multiDIndices;
 
     // calls in the loop that are candidates for optimization
-    std::vector<CallExpr *> staticCandidates;
-    std::vector<CallExpr *> dynamicCandidates;
+    std::vector< std::pair<CallExpr *, int> > staticCandidates;
+    std::vector< std::pair<CallExpr *, int> > dynamicCandidates;
 
     // the static check control symbol added for symbol
     std::map<Symbol *, Symbol *> staticCheckSymForSymMap;
@@ -49,9 +58,9 @@ class ForallOptimizationInfo {
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 
     bool autoLocalAccessChecked;
+    bool hasAlignedFollowers;
 
-
-    bool confirmedFastFollower;
+    ForallAutoLocalAccessCloneType cloneType;
 
     ForallOptimizationInfo();
 };

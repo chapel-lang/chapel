@@ -26,6 +26,7 @@ Chapel Documentation
    modules/standard
    modules/packages
    modules/layoutdist
+   mason-packages
    users-guide/index
 
 .. toctree::

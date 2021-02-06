@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -22,6 +22,10 @@
 #define _CHPL_LAUNCH_H_
 
 #include "chpltypes.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Defined in main_launcher.c
@@ -57,5 +61,9 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales);
 int chpl_launch_handle_arg(int argc, char* argv[], int argNum, 
                            int32_t lineno, int32_t filename);
 void chpl_launch_print_help(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -689,8 +689,8 @@ module DefaultRectangular {
       halt("all dsiLocalSlice calls on DefaultRectangulars should be handled in ChapelArray.chpl");
     }
 
-    proc dsiTargetLocales() {
-      return [this.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -1401,16 +1401,17 @@ module DefaultRectangular {
           break;
         }
       }
+
       if !actuallyResizing then
         return;
 
-      if (!isDefaultInitializable(eltType)) {
-        halt("Can't resize domains whose arrays' elements don't have default values");
-      }
-      if (this.locale != here) {
-        halt("internal error: dsiReallocate() can only be called from an array's home locale");
-      }
-      {
+      if !isDefaultInitializable(eltType) {
+        halt("Can't resize domains whose arrays' elements don't " +
+             "have default values");
+      } else if this.locale != here {
+        halt("internal error: dsiReallocate() can only be called " +
+             "from an array's home locale");
+      } else {
         const reallocD = {(...bounds)};
 
         // For now, we'll use realloc for 1D, non-empty arrays when
@@ -1513,8 +1514,8 @@ module DefaultRectangular {
       return rad;
     }
 
-    proc dsiTargetLocales() {
-      return [this.data.locale, ];
+    proc dsiTargetLocales() const ref {
+      return chpl_getSingletonLocaleArray(this.locale);
     }
 
     proc dsiHasSingleLocalSubdomain() param return true;
@@ -1531,6 +1532,10 @@ module DefaultRectangular {
     pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
+    }
+
+    override proc dsiIteratorYieldsLocalElements() param {
+      return true;
     }
   }
 
@@ -2251,13 +2256,17 @@ module DefaultRectangular {
     use RangeChunk;
 
     type resType = op.generate().type;
-    var res: [dom] resType;
+    var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
     // Take first pass, computing per-task partial scans, stored in 'state'
     var (numTasks, rngs, state, _) = this.chpl__preScan(op, res, dom);
 
-    // Take second pass updating result based on the scanned 'state'
-    this.chpl__postScan(op, res, numTasks, rngs, state);
+    // Take second pass updating result based on the scanned 'state' if there
+    // are multiple tasks
+    if numTasks > 1 {
+      this.chpl__postScan(op, res, numTasks, rngs, state);
+    }
+    if isPOD(resType) then res.dsiElementInitializationComplete();
 
     // Clean up and return
     delete op;

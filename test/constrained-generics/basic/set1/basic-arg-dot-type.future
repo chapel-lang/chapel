@@ -1,0 +1,1 @@
+bug: 'implements IFC(cgArg.type)' crashes the compiler

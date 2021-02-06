@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -106,18 +106,18 @@ void printStatistics(const char* pass) {
 
   int nStmt = nBlockStmt + nCondStmt + nDeferStmt + nGotoStmt + nUseStmt +
     nImportStmt + nExternBlockStmt + nForallStmt + nTryStmt + nForwardingStmt +
-    nCatchStmt;
+    nCatchStmt + nImplementsStmt;
   int kStmt = kBlockStmt + kCondStmt + kDeferStmt + kGotoStmt + kUseStmt +
     kImportStmt + kExternBlockStmt + kForallStmt + kTryStmt + kForwardingStmt +
-    kCatchStmt;
+    kCatchStmt + kImplementsStmt;
   int nExpr = nUnresolvedSymExpr + nSymExpr + nDefExpr + nCallExpr +
-    nContextCallExpr + nLoopExpr + nNamedExpr + nIfExpr;
+    nContextCallExpr + nLoopExpr + nNamedExpr + nIfcConstraint + nIfExpr;
   int kExpr = kUnresolvedSymExpr + kSymExpr + kDefExpr + kCallExpr +
-    kContextCallExpr + kLoopExpr + kNamedExpr + kIfExpr;
-  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nEnumSymbol+nLabelSymbol;
-  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kEnumSymbol+kLabelSymbol;
-  int nType = nPrimitiveType+nEnumType+nAggregateType+nDecoratedClassType;
-  int kType = kPrimitiveType+kEnumType+kAggregateType+kDecoratedClassType;
+    kContextCallExpr + kLoopExpr + kNamedExpr + kIfcConstraint + kIfExpr;
+  int nSymbol = nModuleSymbol+nVarSymbol+nArgSymbol+nShadowVarSymbol+nTypeSymbol+nFnSymbol+nInterfaceSymbol+nEnumSymbol+nLabelSymbol;
+  int kSymbol = kModuleSymbol+kVarSymbol+kArgSymbol+kShadowVarSymbol+kTypeSymbol+kFnSymbol+kInterfaceSymbol+kEnumSymbol+kLabelSymbol;
+  int nType = nPrimitiveType+nConstrainedType+nEnumType+nAggregateType+nDecoratedClassType;
+  int kType = kPrimitiveType+kConstrainedType+kEnumType+kAggregateType+kDecoratedClassType;
 
   fprintf(stderr, "%7d asts (%6dK) %s\n", nStmt+nExpr+nSymbol+nType, kStmt+kExpr+kSymbol+kType, pass);
 
@@ -484,145 +484,54 @@ Type* BaseAST::getWideRefType() {
 }
 
 const char* BaseAST::astTagAsString() const {
-  const char* retval = "BaseAST??";
-
   switch (astTag) {
-    case E_SymExpr:
-      retval = "SymExpr";
-      break;
-
-    case E_UnresolvedSymExpr:
-      retval = "UnresolvedSymExpr";
-      break;
-
-    case E_DefExpr:
-      retval = "DefExpr";
-      break;
-
-    case E_CallExpr:
-      retval = "CallExpr";
-      break;
-
-    case E_ContextCallExpr:
-      retval = "ContextCallExpr";
-      break;
-
-    case E_LoopExpr:
-      retval = "LoopExpr";
-      break;
-
-    case E_NamedExpr:
-      retval = "NamedExpr";
-      break;
-
-    case E_IfExpr:
-      retval = "IfExpr";
-      break;
-
-    case E_UseStmt:
-      retval = "UseStmt";
-      break;
-
-    case E_ImportStmt:
-      retval = "ImportStmt";
-      break;
-
-    case E_BlockStmt:
-      {
+    case E_PrimitiveType:      return "PrimitiveType";
+    case E_ConstrainedType:    return "ConstrainedType";
+    case E_EnumType:           return "EnumType";
+    case E_AggregateType:      return "AggregateType";
+    case E_DecoratedClassType: return "DecoratedClassType";
+    case E_ModuleSymbol:       return "ModuleSymbol";
+    case E_VarSymbol:          return "VarSymbol";
+    case E_ArgSymbol:          return "ArgSymbol";
+    case E_ShadowVarSymbol:    return "ShadowVarSymbol";
+    case E_TypeSymbol:         return "TypeSymbol";
+    case E_FnSymbol:           return "FnSymbol";
+    case E_InterfaceSymbol:    return "InterfaceSymbol";
+    case E_EnumSymbol:         return "EnumSymbol";
+    case E_LabelSymbol:        return "LabelSymbol";
+    case E_SymExpr:            return "SymExpr";
+    case E_UnresolvedSymExpr:  return "UnresolvedSymExpr";
+    case E_DefExpr:            return "DefExpr";
+    case E_CallExpr:           return "CallExpr";
+    case E_ContextCallExpr:    return "ContextCallExpr";
+    case E_LoopExpr:           return "LoopExpr";
+    case E_NamedExpr:          return "NamedExpr";
+    case E_IfcConstraint:      return "IfcConstraint";
+    case E_IfExpr:             return "IfExpr";
+    case E_UseStmt:            return "UseStmt";
+    case E_ImportStmt:         return "ImportStmt";
+    case E_CondStmt:           return "CondStmt";
+    case E_GotoStmt:           return "GotoStmt";
+    case E_DeferStmt:          return "DeferStmt";
+    case E_ForallStmt:         return "ForallStmt";
+    case E_TryStmt:            return "TryStmt";
+    case E_ForwardingStmt:     return "ForwardingStmt";
+    case E_CatchStmt:          return "CatchStmt";
+    case E_ImplementsStmt:     return "ImplementsStmt";
+    case E_ExternBlockStmt:    return "ExternBlockStmt";
+    case E_BlockStmt: {
         // see AST_CHILDREN_CALL
         const BlockStmt* stmt = toConstBlockStmt(this);
-        if (false) retval = "";
-        else if (stmt->isCForLoop())     retval = "CForLoop";
-        else if (stmt->isForLoop())      retval = "ForLoop";
-        else if (stmt->isParamForLoop()) retval = "ParamForLoop";
-        else if (stmt->isWhileDoStmt())  retval = "WhileDoStmt";
-        else if (stmt->isDoWhileStmt())  retval = "DoWhileStmt";
-        else retval = "BlockStmt";
+        if (false) return "";
+        else if (stmt->isCForLoop())     return "CForLoop";
+        else if (stmt->isForLoop())      return "ForLoop";
+        else if (stmt->isParamForLoop()) return "ParamForLoop";
+        else if (stmt->isWhileDoStmt())  return "WhileDoStmt";
+        else if (stmt->isDoWhileStmt())  return "DoWhileStmt";
+        else                             return "BlockStmt";
       }
-      break;
-
-    case E_CondStmt:
-      retval = "CondStmt";
-      break;
-
-    case E_DeferStmt:
-      retval = "DeferStmt";
-      break;
-
-    case E_GotoStmt:
-      retval = "GotoStmt";
-      break;
-
-    case E_ForwardingStmt:
-      retval = "ForwardingStmt";
-      break;
-
-    case E_ForallStmt:
-      retval = "ForallStmt";
-      break;
-
-    case E_ExternBlockStmt:
-      retval = "ExternBlockStmt";
-      break;
-
-    case E_TryStmt:
-      retval = "TryStmt";
-      break;
-
-    case E_CatchStmt:
-      retval = "CatchStmt";
-      break;
-
-    case E_ModuleSymbol:
-      retval = "ModuleSymbol";
-      break;
-
-    case E_VarSymbol:
-      retval = "VarSymbol";
-      break;
-
-    case E_ArgSymbol:
-      retval = "ArgSymbol";
-      break;
-
-    case E_ShadowVarSymbol:
-      retval = "ShadowVarSymbol";
-      break;
-
-    case E_TypeSymbol:
-      retval = "TypeSymbol";
-      break;
-
-    case E_FnSymbol:
-      retval = "FnSymbol";
-      break;
-
-    case E_EnumSymbol:
-      retval = "EnumSymbol";
-      break;
-
-    case E_LabelSymbol:
-      retval = "LabelSymbol";
-      break;
-
-    case E_PrimitiveType:
-      retval = "PrimitiveType";
-      break;
-
-    case E_EnumType:
-      retval = "EnumType";
-      break;
-
-    case E_AggregateType:
-      retval = "AggregateType";
-      break;
-    
-    case E_DecoratedClassType:
-      retval = "DecoratedClassType";
-      break;
   }
-
-  return retval;
+  return "BaseAST??";
 }
 
 

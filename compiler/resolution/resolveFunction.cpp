@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -120,6 +120,28 @@ static void resolveFormals(FnSymbol* fn) {
         resolveBlockStmt(formal->typeExpr);
 
         formal->type = formal->typeExpr->body.tail->getValType();
+      }
+    }
+
+    // If the formal has void type, and its parent symbol is not compiler-
+    // generated, then it is an invalid 'void' source-code formal.
+    //
+    // If the formal has void type, and its parent symbol is compiler-
+    // generated, and the parent symbol is astrInit, then it is an aggregate
+    // field intialization, such as new c(); and the field cannot be void.
+    if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
+      Symbol* ps = formal->defPoint->parentSymbol;
+      if (ps) {
+        if (!ps->hasFlag(FLAG_COMPILER_GENERATED))
+          USR_FATAL(formal,
+                    "Formal '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    formal->name);
+        else if (ps->name == astrInit)
+          USR_FATAL(formal,
+                    "Field '%s' cannot be declared 'void'."
+                    " Consider using 'nothing' instead.",
+                    formal->name);
       }
     }
 
@@ -635,6 +657,10 @@ static void markIterator(FnSymbol* fn) {
 
 bool isLeaderIterator(FnSymbol* fn) {
   return isIteratorOfType(fn, gLeaderTag);
+}
+
+bool isFollowerIterator(FnSymbol* fn) {
+  return isIteratorOfType(fn, gFollowerTag);
 }
 
 bool isStandaloneIterator(FnSymbol* fn) {
@@ -2128,7 +2154,9 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
         if (fn->hasFlag(FLAG_NEW_WRAPPER) || fn->isDefaultInit()) {
           tmp->addFlag(FLAG_NO_AUTO_DESTROY);
         } else {
-          tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          if (!tmp->hasFlag(FLAG_NO_AUTO_DESTROY)) {
+            tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+          }
         }
       }
       break;
@@ -2450,7 +2478,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn, Vec<CallExpr*>& casts) {
                 CallExpr* callCoerceFn = NULL;
                 Symbol *definedConst = to->hasFlag(FLAG_CONST) ?  gTrue : gFalse;
                 if (stealRHS) {
-                  callCoerceFn = new CallExpr(astr_coerceMove, 
+                  callCoerceFn = new CallExpr(astr_coerceMove,
                                               fromType, from, definedConst);
                 } else {
                   callCoerceFn = new CallExpr(astr_coerceCopy,
@@ -2652,4 +2680,3 @@ void ensureInMethodList(FnSymbol* fn) {
     }
   }
 }
-

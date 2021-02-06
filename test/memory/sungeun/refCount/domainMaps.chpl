@@ -27,7 +27,7 @@ proc privatizedUsed():int {
   return total;
 }
 
-use Memory;
+use Memory.Diagnostics;
 
 proc return_domain_map(param dmType: DMType) {
   return myDM(dmType);

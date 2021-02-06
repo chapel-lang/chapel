@@ -145,8 +145,7 @@ OPTIONS
 
     Enables the cache for remote data. This cache can improve communication
     performance for some programs by adding aggregation, write behind, and
-    read ahead. This cache is not enabled by any other optimization
-    *options* such as **--fast**.
+    read ahead.
 
 **--[no-]copy-propagation**
 
@@ -300,6 +299,11 @@ OPTIONS
     `--[no-]auto-local-access`.  This dynamic analysis can result in loop
     duplication that increases executable size and compilation time. There
     may also be execution time overheads independent of loop domain size.
+
+**--[no-]auto-aggregation**
+
+    Enable [disable] optimization of the last statement in forall statements to
+    use aggregated communication. This optimization is disabled by default.
 
 *Run-time Semantic Check Options* 
 
@@ -795,5 +799,5 @@ See $CHPL\_HOME/CONTRIBUTORS.md for a list of contributors to Chapel.
 COPYRIGHT
 ---------
 
-| Copyright 2020 Hewlett Packard Enterprise Development LP
+| Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 | Copyright 2004-2019 Cray Inc.

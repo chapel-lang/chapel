@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -774,6 +774,13 @@ buildLabelStmt(const char* name, Expr* stmt) {
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
+}
+
+CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst) {
+  VarSymbol* var = new VarSymbol(name);
+  if (isConst) var->addFlag(FLAG_CONST);
+  DefExpr* def = new DefExpr(var);
+  return new CallExpr(PRIM_IF_VAR, def, rhs);
 }
 
 BlockStmt*
@@ -2371,7 +2378,13 @@ buildCobeginStmt(CallExpr* byref_vars, BlockStmt* block) {
 
   if (block->blockTag == BLOCK_SCOPELESS) {
     block = toBlockStmt(block->body.only());
-    INT_ASSERT(block);
+    if (block == NULL) {
+      // Though 'block' should be non-NULL in correct programs, in
+      // cobegins containing syntax errors, it may be NULL.  So we'll
+      // just return the original block statement to make progress
+      // until the compiler exits.
+      return outer;
+    }
     block->remove();
   }
 

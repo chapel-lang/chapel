@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -583,4 +583,3 @@ static inline uintptr_t qio_ptr_align(void* ptr, uintptr_t align)
 
 
 #endif
-

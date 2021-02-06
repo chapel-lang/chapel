@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -35,6 +35,9 @@
 #include <rdma/fabric.h>
 #include <rdma/fi_domain.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Debugging
@@ -250,5 +253,9 @@ size_t chpl_comm_ofi_hp_gethugepagesize(void);
 // Other/utility
 //
 double chpl_comm_ofi_time_get(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

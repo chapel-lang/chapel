@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1891,15 +1891,15 @@ proc StencilArr.dsiPrivatize(privatizeData) {
 }
 
 
-proc StencilArr.dsiTargetLocales() {
+proc StencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc StencilDom.dsiTargetLocales() {
+proc StencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Stencil.dsiTargetLocales() {
+proc Stencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

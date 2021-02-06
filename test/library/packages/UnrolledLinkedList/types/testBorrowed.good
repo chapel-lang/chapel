@@ -1,0 +1,4 @@
+$CHPL_HOME/modules/packages/UnrolledLinkedList.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/packages/UnrolledLinkedList.chpl:nnnn: error: unrolledLinkedList element type must be default-initializable
+  ./ListTest.chpl:15: called as unrolledLinkedList.init(type eltType = borrowed T, param parSafe = false, nodeCapacity: int(64)) from function 'testList'
+  testBorrowed.chpl:9: called as testList(type t = borrowed T)

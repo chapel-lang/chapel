@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -365,6 +365,17 @@ GenRet ForwardingStmt::codegen() {
   // Should be lowered in resolution
   INT_FATAL(this, "ForwardingStmt codegen called");
   return ret;
+}
+
+/******************************** | *********************************
+*                                                                   *
+*                                                                   *
+********************************* | ********************************/
+
+GenRet ImplementsStmt::codegen() {
+  INT_FATAL(this, "ImplementsStmt should have been lowered in resolution");
+  GenRet dummy;
+  return dummy;
 }
 
 /******************************** | *********************************

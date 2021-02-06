@@ -1,5 +1,5 @@
 coercions-covariant-ref.chpl:16: In function 'testB':
 coercions-covariant-ref.chpl:18: error: unresolved call 'acceptOwnedMyClassB(owned SubClass)'
 coercions-covariant-ref.chpl:12: note: this candidate did not match: acceptOwnedMyClassB(ref own: owned MyClass)
-coercions-covariant-ref.chpl:18: note: because call actual argument #1 with type owned SubClass
+coercions-covariant-ref.chpl:18: note: because actual argument #1 with type 'owned SubClass'
 coercions-covariant-ref.chpl:12: note: is passed to formal 'ref own: owned MyClass'

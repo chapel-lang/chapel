@@ -3,15 +3,19 @@ class MyClass {
 }
 
 record GenericCollection {
-  var field;
+  type t;
+  var field: t;
   proc init(type t) {
+    this.t = t;
     var default:t;
     field = default;
   }
   proc init(in field:owned) {
+    this.t = field.type;
     this.field = field;
   }
   proc init(field:borrowed) {
+    this.t = field.type;
     this.field = field;
   }
 }

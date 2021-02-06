@@ -1,13 +1,16 @@
 unspecified-formal-order.chpl:4: In function 'setC':
 unspecified-formal-order.chpl:5: error: Setting borrowed formal lhs illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:4: note: consider scope of rhs
+  unspecified-formal-order.chpl:12: called as setC(lhs: borrowed C?, rhs: borrowed C)
 unspecified-formal-order.chpl:19: In function 'swapC':
 unspecified-formal-order.chpl:21: error: Setting borrowed formal rhs illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:19: note: consider scope of lhs
 unspecified-formal-order.chpl:22: error: Setting borrowed formal lhs illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:19: note: consider scope of rhs
+  unspecified-formal-order.chpl:30: called as swapC(lhs: borrowed C?, rhs: borrowed C?)
 unspecified-formal-order.chpl:37: In function 'setA':
 unspecified-formal-order.chpl:38: error: Setting borrowed formal illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:37: note: consider scope of rhs
 unspecified-formal-order.chpl:39: error: Setting borrowed formal illegal without specifying formal lifetime constraint
 unspecified-formal-order.chpl:37: note: consider scope of rhs
+  unspecified-formal-order.chpl:51: called as setA(lhs: [domain(1,int(64),false)] borrowed C?, rhs: [domain(1,int(64),false)] borrowed C?)

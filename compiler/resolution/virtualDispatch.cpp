@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1002,7 +1002,7 @@ static FnSymbol* getOverrideCandidate(FnSymbol* fn) {
 // instantiations of a generic
 static FnSymbol* getOverrideCandidateGenericFn(FnSymbol* fn)
 {
-  while (fn->instantiatedFrom)
+  while (fn->instantiatedFrom != NULL)
     fn = fn->instantiatedFrom;
   return fn;
 }

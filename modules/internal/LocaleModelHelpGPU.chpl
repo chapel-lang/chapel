@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -58,7 +58,7 @@ module LocaleModelHelpGPU {
   //  else
   //         chpl_executeOn / chpl_executeOnFast
   //
-  export
+  pragma "always resolve function"
   proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t // target locale
                              ):bool {
     const dnode =  chpl_nodeFromLocaleID(loc);
@@ -80,7 +80,7 @@ module LocaleModelHelpGPU {
   // regular "on"
   //
   pragma "insert line file info"
-  export
+  pragma "always resolve function"
   proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
@@ -121,7 +121,7 @@ module LocaleModelHelpGPU {
   // in the Active Messages sense)
   //
   pragma "insert line file info"
-  export
+  pragma "always resolve function"
   proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
@@ -150,7 +150,7 @@ module LocaleModelHelpGPU {
   // nonblocking "on" (doesn't wait for completion)
   //
   pragma "insert line file info"
-  export
+  pragma "always resolve function"
   proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args

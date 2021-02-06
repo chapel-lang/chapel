@@ -1,0 +1,2 @@
+cannotSeeSecondaryMethod.chpl:10: error: unresolved call 'owned Foo.newMethod(1)'
+cannotSeeSecondaryMethod.chpl:10: note: because no functions named newMethod found in scope

@@ -492,8 +492,8 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * Linux/x86-Mellanox/gcc/32:     smp, mpi, udp, ibv
     * Linux/x86/IntelC/32:           smp, mpi, udp
     * Linux/x86/PortlandGroupC/32:   smp, mpi, udp
-    * Linux/x86_64-Ethernet/{gcc,clang,PGI,SunC}/{32,64}: smp, mpi, udp, ofi
-    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC,SunC}/64: smp, mpi, udp, ibv
+    * Linux/x86_64-Ethernet/{gcc,clang,PGI}/{32,64}: smp, mpi, udp, ofi
+    * Linux/x86_64-Mellanox/{gcc,clang,PathScale,IntelC}/64: smp, mpi, udp, ibv
     * Linux/x86_64-OmniPath/gcc/64: smp, mpi, udp, ofi
     * Linux/x86_64/x86-Open64/64:   smp, udp, #
 
@@ -508,11 +508,11 @@ Platforms where GASNet and Berkeley UPC have been successfully tested include:
     * OpenBSD/{x86,amd64}/{gcc,clang}/{32,64}: smp, mpi, udp
     * NetBSD/{x86,amd64}/{gcc,clang}/{32,64}:  smp, mpi, udp
 
-    * Solaris10/SPARC/gcc,SunProC/{32,64}: smp, udp, mpi
-    * Solaris10/x86/gcc,SunProC/{32,64}:   smp, udp, mpi
-    * OpenSolaris/x86/gcc,SunStudio12/{32,64}: smp, udp, #
-    * Solaris11Express/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
-    * Solaris11/x86/gcc,SunStudio12/{32,64}: smp, udp, mpi, ibv
+    * Solaris10/SPARC/gcc/{32,64}: smp, udp, mpi
+    * Solaris10/x86/gcc/{32,64}:   smp, udp, mpi
+    * OpenSolaris/x86/gcc/{32,64}: smp, udp, #
+    * Solaris11Express/x86/gcc/{32,64}: smp, udp, mpi, ibv
+    * Solaris11/x86/gcc/{32,64}: smp, udp, mpi, ibv
 
     * MSWindows-Cygwin/{x86,x86_64}/{gcc,clang}/{32,64}: smp, udp, mpi (OpenMPI)
     * MSWindows10-Linux(WSL)/{gcc,clang}/64: smp, udp, mpi
@@ -546,6 +546,11 @@ Other combinations of the platforms above are likely to also work, these are
 just the systems we've personally tested. Several of the systems listed using a
 vendor-specific C compiler can also use gcc as the underlying C compiler,
 although we generally recommend the vendor C compiler for performance reasons.
+
+The following compilers are believed to work on platforms listed above, 
+with the provided minimum version:
+Gnu (gcc 3.0+), LLVM (clang 3.6+), Apple (Xcode 7.1+), Intel (icc 16+), 
+PGI (pgcc 10.9+), IBM XL (xlc 13+), Cray (CCE 8.6+)
 
 Recognized Environment Variables
 ================================
@@ -686,7 +691,6 @@ application-specific support.
 
 * GASNET_BARRIER - select the communication algorithm for use in GASNet barriers.
  The following values are available on all conduits:
-  AMCENTRAL - uses Active Messages to manipulate a single centralized counter.
   AMDISSEM - uses Active Messages to implement the Dissemination barrier
    algorithm as described in section 3.3 of
     John M. Mellor-Crummey and Michael L. Scott. "Algorithms for scalable
@@ -696,6 +700,10 @@ application-specific support.
    The AMDISSEM or RDMADISSEM algorithm is selected automatically based on
    conduit-specific criteria.  In general RDMADISSEM is favored when the GASNet
    Extended API is implemented natively.
+  AMCENTRAL - uses Active Messages to manipulate a single centralized counter.
+   This is an inherently non-scalable barrier which does not honor the setting
+   of GASNET_PSHM_BARRIER_HIER to enable shared-memory optimizations.
+   Therefore, this choice is available only for debugging purposes.
  In addition to those choices, many conduits have additional network-specific
  barrier algorithms documented in the corresponding conduit READMEs.
  The default is DISSEM, unless the conduit README documents another default.
@@ -757,12 +765,14 @@ application-specific support.
  preferred size allocated for the initial team, and is the value returned from
  a query using GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED.
  If the size is set too low, then the performance of collectives may suffer.
+ This parameter must be single-valued (same value on all processes).
  Defaults to 2MB per rank.
 
 * GASNET_COLL_MIN_SCRATCH_SIZE - Specifies the minimum size of the scratch
  space allocated on each rank for internal use in collective communications.
  This is the minimum size permitted for the initial team (or job startup will
  fail), and is the value returned from a query using GEX_FLAG_TM_SCRATCH_SIZE_MIN.
+ This parameter must be single-valued (same value on all processes).
  Defaults to 1KB per rank.
 
 * GASNET_COLL_ENABLE_SEARCH - enable autotuning of collectives
@@ -894,6 +904,7 @@ Optional environment variable settings:
      B - barriers
      L - locks
      A - AM requests/replies (and handler execution, if conduit-supported)
+     X - AMPoll
      I - informational messages about system status or performance alerts
      C - conduit-specific (low-level) messages
      D - Detailed message data for gets/puts/AMreqrep

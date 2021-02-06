@@ -1121,6 +1121,12 @@ def set_up_executables():
         prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm-srun")
         if prediff_for_slurm not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_slurm)
+    elif 'lsf-' in launcher:
+        # With lsf-based launcher, auto-run prediff-for-lsf.
+        prediff_for_lsf = os.path.join(util_dir, "test", "prediff-for-lsf")
+        if prediff_for_lsf not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_lsf)
+
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 
@@ -1317,7 +1323,7 @@ def parser_setup():
     parser.add_argument("-logfile", "--logfile", action="store",
             dest="log_file", help="set alternate log file")
     # mem leaks
-    parser.add_argument("-memleaks", "-memleaks", "-memLeaks", "--memLeaks",
+    parser.add_argument("-memleaks", "--memleaks", "-memLeaks", "--memLeaks",
             action="store_true", dest="mem_leaks", help="run with --memLeaks")
     # mem leaks log
     parser.add_argument("-memleakslog", "--memleakslog", "-memLeaksLog",

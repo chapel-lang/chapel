@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -34,6 +34,9 @@
 #include "chpltypes.h"
 #include "error.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline
 chpl_bool chpl_mem_size_justifies_comm_alloc(size_t size) {
@@ -170,6 +173,10 @@ void chpl_mem_array_free(void* p,
 
   chpl_free(p);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LAUNCHER
 

@@ -211,7 +211,7 @@
       FILE *_fp = NULL;
       double _MHz = 0.0;
       char _fname[128];
-      if (!_dp) gasneti_fatalerror("*** ERROR: Failure in opendir('/proc/device-tree/cpus'): %s",strerror(errno));
+      if (!_dp) gasneti_fatalerror("Failure in opendir('/proc/device-tree/cpus'): %s",strerror(errno));
       do {
         _de = readdir(_dp);
 	if (_de && 
@@ -221,13 +221,13 @@
 	  break;
 	}
       } while (_de);
-      if (!_de) gasneti_fatalerror("*** ERROR: Failure to find a PowerPC CPU in /proc/device-tree/cpus");
+      if (!_de) gasneti_fatalerror("Failure to find a PowerPC CPU in /proc/device-tree/cpus");
       snprintf(_fname, sizeof(_fname), "/proc/device-tree/cpus/%.*s/timebase-frequency", 24, _de->d_name);
       closedir(_dp);
       _fp = fopen(_fname, "r");
-      if (!_fp) gasneti_fatalerror("*** ERROR: Failure in fopen('%s','r'): %s\n",_fname,strerror(errno));
+      if (!_fp) gasneti_fatalerror("Failure in fopen('%s','r'): %s\n",_fname,strerror(errno));
       if (fread((void *)(&_freq), sizeof(uint32_t), 1, _fp) != 1) 
-        gasneti_fatalerror("*** ERROR: Failure to read timebase frequency from '%s': %s", _fname, strerror(errno));
+        gasneti_fatalerror("Failure to read timebase frequency from '%s': %s", _fname, strerror(errno));
     #if PLATFORM_ARCH_LITTLE_ENDIAN /* value is always big-endian */
       _freq = ((_freq & 0x000000ff) << 24) |
              ((_freq & 0x0000ff00) <<  8) |
@@ -238,7 +238,7 @@
       if (_freq == 0) { /* Playstation3 */
         char _input[255];
         _fp = fopen("/proc/cpuinfo", "r");
-        if (!_fp) gasneti_fatalerror("*** ERROR: Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
+        if (!_fp) gasneti_fatalerror("Failure in fopen('/proc/cpuinfo','r')=%s",strerror(errno));
         while (!feof(_fp) && fgets(_input, 255, _fp)) {
           if (strstr(_input,"timebase")) {
             char *_p = strchr(_input,':');

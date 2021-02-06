@@ -1,2 +1,3 @@
 changing-param-field-error1.chpl:30: In function 'main':
 changing-param-field-error1.chpl:34: error: cannot change fixed field in initialization
+note: An additional error is hidden. Use --print-additional-errors to see it.

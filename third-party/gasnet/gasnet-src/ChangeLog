@@ -18,6 +18,90 @@ GASNet-EX ChangeLog
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
 ----------------------------------------------------------------------
+2020-10-30: GASNet-EX 2020.10.0 Release
+
+* General and Misc.
+  - NEW: Improved compatability with heap analysis tools like Valgrind
+    using new configure option --enable-valgrind. GASNet's valgrind
+    suppression file now lives in other/valgrind/gasnet.supp.
+  - GASNet trace/stats now categorize AMPoll calls in tracemask category 'X'
+  - BLCR integration, deprecated since 1.32.0 (July 2018), has been removed.
+  - Improved memory and communication requirements in gex_TM_Split().
+  - Improved memory scaling in management of collectives scratch spaces.
+  - Initial implementation of gex_TM_Create() sufficient for implementation
+    of (at least) efficient Split-like operations with computable membership,
+    using less communication than gex_TM_Split.
+
+* Cray XC uGNI (aries-conduit)
+  - The parameter GASNET_NETWORKDEPTH is now honored for both the Eager and
+    RVous AM algorithms, resulting in GASNET_NETWORKDEPTH_SPACE now being
+    rounded down to a multiple of GASNET_NETWORKDEPTH and a power-of-two.
+    Connected to this change, the default GASNET_NETWORKDEPTH_SPACE has
+    increased from 12K to 16K, resulting in an increased default per-peer
+    memory consumption for the Eager AM algorithm (not used at large scale).
+  - The parameter GASNET_GNI_ROUTING_MODE is now available to set the
+    Aries routing mode, accepting the same values as the parameter
+    MPICH_GNI_ROUTING_MODE used by Cray MPICH (see the intro_mpi manpage).
+
+* Portable UDP support (udp-conduit)
+  - The amudprun spawning protocol has changed slightly, breaking backwards
+    compatibility for amudprun binaries built against earlier versions.
+
+* Unified Communication X framework (ucx-conduit) [EXPERIMENTAL]
+  - Tune the Active Message buffer handling, resulting in improved performance
+  - Fix an unreported defect in AM injection with asynchronous LC
+  - For details, see ucx-conduit/README
+
+* Platform support/portability
+  - Installs on Cray XC systems now default to using linker options for
+    low-level libraries that are more resilient to minor system upgrades. 
+  - PMI-based spawner cleanups to reduce memory use and improve robustness
+
+* SSH-based job-launch (ssh-spawner)
+  - The default scheme for process layout has changed to ignore duplicates
+    in a host list (such as GASNET_SSH_SERVERS).  Setting the environment
+    variable GASNET_SSH_KEEPDUP=1 restores the previous behavior.
+    See other/ssh-spawner/README for details.
+  - Job exit no longer runs atexit handlers and static destructors on
+    the "hidden" processes used to implement ssh-spawner.
+
+* GASNet-EX Spec v0.9:
+  - Restrict scratch sizes (query outputs and split inputs) for gex_TM_Split()
+    to be single-valued over members of each output team.
+  - Add gex_TM_Create() and an associated family of flags
+    GEX_FLAG_TM_{GLOBAL,LOCAL,SYMMETRIC}_SCRATCH.
+
+* GASNet-EX Spec v0.10:
+  - Add gex_TM_Destroy() and associated GEX_FLAG_GLOBALLY_QUIESCED flag.
+
+* GASNet tools (spec v1.16)
+  - Add gasnett_fatalerror_nopos
+  - In some cases, code including gasnet_tools.h (but not gasnetex.h or
+    gasnet.h) must now be explicitly compiled with `-DGASNETT_THREAD_SINGLE`
+    if it is to be linked with a PARSYNC conduit library, due to changes in
+    how PARSYNC libraries are built.
+
+* Notable bugs fixed in this release:
+  - bug3806: workaround xpmem startup failures while profiling (eg CrayPat)
+  - bug4060: tools atomics using constructs deprecated in C++20
+  - bug4061: aries-conduit startup time regression
+  - bug4074: cross-configure scripts for KNL now default to --enable-large-pshm
+  - bug4075: gex_TM_Split is not thread-safe
+  - bug4076: valgrind 'invalid read' errors on GASNet/UPC++ startup
+  - bug4079: udp-conduit localhost spawn fails to search PATH for wrappers
+  - bug4081: Oversubscription warnings from jsrun
+  - bug4086: AM performance bug for --enable-{debug,trace}
+  - bug4089: gex_Coll_ReduceToOne failures under some conditions
+  - bug4093: partial fix to scale "p2p" data with team size, not job size
+  - bug4095: Incorrect algorithms for small scratch and/or large data
+  - bug4103: Configure failures with -ffat-lto-objects in CFLAGS
+  - bug4127: Overflow for >2G pre-pinned memory (ibv-conduit)
+  - bug4135: Aries CE use with multi-domain support hangs
+  - bug4138: gasneti_argv_from_sysctl() failure for UPC++ codes on macOS 11
+  - bug4143: ibv-conduit GASNET_USE_FIREHOSE=0 support broken
+  - bug3630/3828/3842: Various failures on testvis, testratomic, testslice
+
+----------------------------------------------------------------------
 03-12-2020: GASNet-EX 2020.3.0 Release
 
 * InfiniBand Verbs (ibv-conduit)

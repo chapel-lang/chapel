@@ -1,0 +1,2 @@
+if-var-2-scope.chpl:14: In function 'showCs':
+if-var-2-scope.chpl:19: error: 'cNN' undeclared (first use this function)

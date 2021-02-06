@@ -30,8 +30,8 @@ enable more features, such as distributed memory execution.
 
          tar xzf chapel-1.23.0.tar.gz
 
-   b. Make sure that your shell is in the directory containing
-      QUICKSTART.rst, for example:
+   b. Make sure that you are in the directory you just created by expanding the
+      source release, for example:
 
       .. code-block:: bash
 

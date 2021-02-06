@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct chpl_byte_buffer {
   int8_t isOwned;
   char* data;
@@ -35,5 +39,9 @@ void chpl_byte_buffer_free_server(chpl_byte_buffer cb);
 
 chpl_byte_buffer chpl_byte_buffer_make(const char* data);
 chpl_byte_buffer chpl_byte_buffer_make_len(const char* data, uint64_t size);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

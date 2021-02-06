@@ -17,8 +17,8 @@ type elType = real;
 //const adjcoords = ((0,-1), (-1,0), (0,1), (1,0));
 
 record localInfo {
-  var domAlloc = {0..n+1, 0..m+1};  // does not change
-  var domCompute = {1..n, 1..m};    // does not change
+  const domAlloc = {0..n+1, 0..m+1};  // does not change
+  const domCompute = {1..n, 1..m};    // does not change
 
   var A, B: [domAlloc] elType;
 

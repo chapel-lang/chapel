@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -341,7 +341,7 @@ void instantiateBody(FnSymbol* fn) {
  *
  * \param fn   Generic function to instantiate
  * \param subs Type substitutions to be made during instantiation
- * \param call Call that is being resolved
+ * \param visInfo Contains the call that is being resolved
  */
 FnSymbol* instantiateSignature(FnSymbol*  fn,
                                SymbolMap& subs,
@@ -596,7 +596,7 @@ FnSymbol* determineRootFunc(FnSymbol* fn) {
   FnSymbol* root = fn;
 
   while (root->instantiatedFrom != NULL &&
-         root->numFormals()     == root->instantiatedFrom->numFormals()) {
+         root->numFormals() == root->instantiatedFrom->numFormals()) {
     root = root->instantiatedFrom;
   }
 

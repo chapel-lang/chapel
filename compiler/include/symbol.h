@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -395,6 +395,8 @@ public:
   std::string     getPythonDefaultValue();
   std::string     getPythonArgTranslation();
 
+  std::string     demungeVarArgName(std::string* num=NULL);
+
   IntentTag       intent;
   IntentTag       originalIntent; // stores orig intent after resolve intents
   BlockStmt*      typeExpr;    // Type expr for arg type, or NULL.
@@ -549,6 +551,47 @@ class TypeSymbol : public Symbol {
 ************************************** | *************************************/
 
 #include "FnSymbol.h"
+
+/************************************* | **************************************
+*                                                                             *
+* An InterfaceSymbol represents an interface declaration. An IfcConstraint or *
+* an ImplementsStmt reference the interface being constrained or implemented  *
+* via a SymExpr referring to the InterfaceSymbol.                             *
+*                                                                             *
+* An interface declaration looks like this:                                   *
+*   interface InterfaceName(InterfaceFormal...) {                             *
+*     proc requiredFunction(args...);                                         *
+*     proc requiredFunctionWithDefaultImplementation(args...) {...}           *
+*   }                                                                         *
+*                                                                             *
+************************************** | *************************************/
+
+class InterfaceSymbol : public Symbol {
+public:
+  static DefExpr* buildDef(const char* name, CallExpr* formals, BlockStmt* body);
+  static DefExpr* buildFormal(const char* name, IntentTag intent);
+  InterfaceSymbol(const char* name, BlockStmt* body);
+
+  DECLARE_SYMBOL_COPY(InterfaceSymbol);
+  virtual void verify();
+  virtual void accept(AstVisitor* visitor);
+
+  virtual void replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void         printDocs(std::ostream* file, unsigned int tabs);
+
+  int          numFormals() const { return ifcFormals.length; }
+
+  // the DefExprs for each interface formal
+  AList      ifcFormals;
+
+  // the body block of the interface declaration, always non-null
+  BlockStmt* ifcBody;
+
+  // each FnSymbol for the interface's required function is mapped
+  //  - to itself, if there is a default implementation
+  //  - to gDummyWitness, otherwise
+  SymbolMap  requiredFns;
+};
 
 /************************************* | **************************************
 *                                                                             *
@@ -741,9 +784,6 @@ extern StringChainHash uniqueStringHash;
 extern Symbol *gNil;
 extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
-// Pass this to a return-by-ref formal when the result is not needed.
-// Used when inlining iterators for ForallStmts.
-extern Symbol *gDummyRef;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
 extern Symbol *gModuleToken;
@@ -755,6 +795,11 @@ extern Symbol *gStringC;
 extern Symbol *gOpaque;
 extern Symbol *gTimer;
 extern Symbol *gTaskID;
+// Used in InterfaceSymbol::requiredFns
+extern Symbol *gDummyWitness;
+// Pass this to a return-by-ref formal when the result is not needed.
+// Used when inlining iterators for ForallStmts.
+extern Symbol *gDummyRef;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
 extern VarSymbol *gBoundsChecking;
@@ -762,6 +807,7 @@ extern VarSymbol *gCastChecking;
 extern VarSymbol *gNilChecking;
 extern VarSymbol *gOverloadSetsChecks;
 extern VarSymbol *gDivZeroChecking;
+extern VarSymbol *gCacheRemote;
 extern VarSymbol *gPrivatization;
 extern VarSymbol *gLocal;
 extern VarSymbol *gWarnUnstable;

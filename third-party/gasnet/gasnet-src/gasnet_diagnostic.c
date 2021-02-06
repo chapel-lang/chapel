@@ -100,6 +100,8 @@ static void malloc_test(int id);
 static void progressfns_test(int id);
 static void op_test(int id);
 
+static void spawner_test(void);
+
 static gex_TM_t myteam;
 
 /* ------------------------------------------------------------------------------------ */
@@ -128,7 +130,7 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
     void *owneraddr;
     void *localaddr;
     uintptr_t size;
-    check_zeroret(gex_Segment_QueryBound(myteam_arg, rank, &owneraddr, &localaddr, &size));
+    GASNET_Safe(gex_Segment_QueryBound(myteam_arg, rank, &owneraddr, &localaddr, &size));
     gasneti_assert_always_uint(size ,>=, TEST_SEGSZ);
     gasneti_assert_always_uint((((uintptr_t)owneraddr) % PAGESZ) ,==, 0);
     gasneti_assert_always_uint((((uintptr_t)localaddr) % PAGESZ) ,==, 0);
@@ -190,6 +192,11 @@ extern int gasneti_run_diagnostics(int iter_cnt, int threadcnt, const char *test
     test_errs += GASNETE_RUN_DIAGNOSTICS_SEQ(iters);
   }
   BARRIER();
+
+  #if HAVE_SSH_SPAWNER || HAVE_MPI_SPAWNER || HAVE_PMI_SPAWNER
+    spawner_test();
+    BARRIER();
+  #endif
 
   #if GASNET_PAR
     num_threads = threadcnt;
@@ -300,7 +307,7 @@ static void malloc_test(int id) {
 
   for (i = 0; i < iters/num_threads; i++) {
     int alignsz;
-    for (alignsz = 1; alignsz < 64*1024; alignsz *= 2) {
+    for (alignsz = 1; alignsz < MIN(GASNET_PAGESIZE,64*1024); alignsz *= 2) {
       size_t sz = TEST_RAND(1,alignsz*2);
       char * p = gasneti_malloc_aligned(alignsz,sz);
       gasneti_assert_always(p);
@@ -948,7 +955,7 @@ static void progressfns_test(int id) {
 
     /* do some work that should cause progress fns to run */
     for (i=0; i < 2; i++) {
-      int tmp;
+      int tmp = 42;
       gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
       gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
       gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
@@ -974,7 +981,7 @@ static void progressfns_test(int id) {
 
     /* do some work that might cause progress fns to run */
     for (i=0; i < 2; i++) {
-      int tmp;
+      int tmp = 42;
       gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, sizeof(tmp), 0);
       gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, sizeof(tmp), 0);
       gex_RMA_PutBlocking(myteam, peer, peersegmid, myseg, 1024, 0);
@@ -1259,6 +1266,194 @@ static void * thread_fn(void *arg) {
 }
 #endif
 
+/* ------------------------------------------------------------------------------------ */
+
+#if HAVE_SSH_SPAWNER || HAVE_MPI_SPAWNER || HAVE_PMI_SPAWNER
+extern gasneti_spawnerfn_t const *gasneti_spawner;
+static void spawner_test(void) {
+  if (!gasneti_spawner) {
+    TEST_HEADER("bootstrap functions test - SKIPPED"); else return;
+    return;
+  } else {
+    TEST_HEADER("bootstrap functions test"); else return;
+  }
+
+  int iters1 = MAX(5,MIN(50,iters/100));
+
+  #define DATUM_SZ 32
+  typedef uint8_t datum_t[DATUM_SZ];
+  #define INIT_DATUM(datum,iter,node,sz) do { \
+      uint8_t val = (iter) ^ (node) ^ (sz);       \
+      for (int lcv = 0; lcv < sz; ++lcv, ++val) { \
+        (datum)[lcv] = val;                       \
+      }                                           \
+    } while (0)
+  #define CHECK_DATUM(datum,iter,node,sz,name) do { \
+      uint8_t val = (iter) ^ (node) ^ (sz);       \
+      for (int lcv = 0; lcv < sz; ++lcv, ++val) { \
+        if ((datum)[lcv] != val) {                \
+          MSG("ERROR: %s test failed at sz=%d", name, (int)sz); \
+          test_errs += 1;                            \
+          break;                                     \
+        }                                            \
+      }                                              \
+    } while (0)
+  datum_t my_datum, other_datum;
+  datum_t *all_data = gasneti_calloc(gasneti_nodes, sizeof(datum_t));
+
+  // Frequent Cleanup calls will check that each operation works correctly after one.
+  // Additionally, here we make sure back-to-back calls are safe
+  gasneti_spawner->Cleanup();
+  gasneti_spawner->Cleanup();
+
+  { // Barrier
+    // Using RMA to (weakly) validate barrier correctness
+    // Lack of progress (both RMA and AM) in bootstrap ops constrains what we can do.
+    char * mysegmid = (char *)myseg + TEST_SEGSZ/2;
+    int once = 0;
+    gex_Rank_t tmp = gasneti_mynode;
+    for (int i = 0; i < iters1; ++i, ++tmp) {
+      *(gex_Rank_t *)myseg = tmp;
+      gasneti_spawner->Barrier();
+      gex_Rank_t val = gex_RMA_GetBlockingVal(myteam, peer, peerseg, sizeof(val), 0);
+      gex_Event_t ev = gex_Coll_BarrierNB(myteam, 0);
+      if (val != peer + i) {
+        if (!once) {
+          MSG("ERROR: Barrier test failed");
+          test_errs += 1;
+          once = 1;
+        }
+      }
+      gex_Event_Wait(ev); // ensure peer's Get completes before next bootstrap barrier
+    }
+    // back-to-back barriers
+    for (int i = 0; i < iters1; ++i) {
+      gasneti_spawner->Barrier();
+    }
+  }
+
+  gasneti_spawner->Cleanup();
+
+  { // Broadcast
+    gex_Rank_t step = MAX(1, gasneti_nodes / iters1);
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = (step * i) % gasneti_nodes;
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(my_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->Broadcast(my_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "Broadcast");
+      }
+    }
+  }
+
+  { // Broadcast (in-place)
+    gex_Rank_t step = MAX(1, gasneti_nodes / iters1);
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = (step * i) % gasneti_nodes;
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(other_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->Broadcast(other_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "Broadcast (in-place)");
+      }
+    }
+  }
+
+  gasneti_spawner->Cleanup();
+
+  { // SNodeBroadcast
+    // We need a constant number of iterations for this collective call.
+    // However, gasneti_nodemap_local_count is not always single-valued.
+    // So this could double-test some roots
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = gasneti_nodemap_local[i % gasneti_nodemap_local_count];
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(my_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->SNodeBroadcast(my_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "SNodeBroadcast");
+      }
+    }
+  }
+
+  { // SNodeBroadcast (in-place)
+    for (int i = 0; i < iters1; ++i) {
+      gex_Rank_t root = gasneti_nodemap_local[i % gasneti_nodemap_local_count];
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        INIT_DATUM(other_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->SNodeBroadcast(other_datum, sz, other_datum, root);
+        CHECK_DATUM(other_datum, i, root, sz, "SNodeBroadcast (in-place)");
+      }
+    }
+  }
+
+  gasneti_spawner->Cleanup();
+
+  { // Exchange
+    for (int i = 0; i < iters1; ++i) {
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        uint8_t *dst = (uint8_t *)all_data;
+        INIT_DATUM(my_datum, i, gasneti_mynode, sz);
+        gasneti_spawner->Exchange(my_datum, sz, all_data);
+        for (int n = 0; n < gasneti_nodes; ++n, dst+=sz) {
+          CHECK_DATUM(dst, i, n, sz, "Exchange");
+        }
+      }
+    }
+  }
+
+  { // Exchange (in-place)
+    for (int i = 0; i < iters1; ++i) {
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        uint8_t *dst = (uint8_t *)all_data;
+        uint8_t *src = dst + sz*gasneti_mynode;
+        INIT_DATUM(src, i, gasneti_mynode, sz);
+        gasneti_spawner->Exchange(src, sz, all_data);
+        for (int n = 0; n < gasneti_nodes; ++n, dst+=sz) {
+          CHECK_DATUM(dst, i, n, sz, "Exchange (in-place)");
+        }
+      }
+    }
+  }
+
+  gasneti_spawner->Cleanup();
+
+  { // Alltoall
+    uint8_t *src_data = gasneti_calloc(gasneti_nodes, sizeof(datum_t));
+    for (int i = 0; i < iters1; ++i) {
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        for (int n = 0; n < gasneti_nodes; ++n) {
+          INIT_DATUM(src_data + n*sz, i, gasneti_mynode + n*gasneti_nodes, sz);
+        }
+        uint8_t *dst = (uint8_t *)all_data;
+        gasneti_spawner->Alltoall(src_data, sz, all_data);
+        for (int n = 0; n < gasneti_nodes; ++n, dst+=sz) {
+          CHECK_DATUM(dst, i, n + gasneti_mynode*gasneti_nodes, sz, "Alltoall");
+        }
+      }
+    }
+    gasneti_free(src_data);
+  }
+
+  { // Alltoall (in-place)
+    uint8_t *src_data = (uint8_t *)all_data;
+    for (int i = 0; i < iters1; ++i) {
+      for (size_t sz = 1; sz <= sizeof(datum_t); sz *= 2) {
+        for (int n = 0; n < gasneti_nodes; ++n) {
+          INIT_DATUM(src_data + n*sz, i, gasneti_mynode + n*gasneti_nodes, sz);
+        }
+        uint8_t *dst = (uint8_t *)all_data;
+        gasneti_spawner->Alltoall(src_data, sz, all_data);
+        for (int n = 0; n < gasneti_nodes; ++n, dst+=sz) {
+          CHECK_DATUM(dst, i, n + gasneti_mynode*gasneti_nodes, sz, "Alltoall (in-place)");
+        }
+      }
+    }
+  }
+
+  gasneti_free(all_data);
+}
+#endif
+
+/* ------------------------------------------------------------------------------------ */
 static gex_AM_Entry_t gasneti_diag_handlers[] = {
   #ifdef GASNETC_DIAG_HANDLERS
     GASNETC_DIAG_HANDLERS(), /* should start at gasnetc_diag_hidx_base */

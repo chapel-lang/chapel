@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -83,7 +83,7 @@
 pragma "atomic module"
 module Atomics {
 
-  use ChapelBase;             // to get CHPL_CACHE_REMOTE...
+  use ChapelBase;
   public use MemConsistency;  // OK: to get and propagate memoryOrder
 
   pragma "no doc"

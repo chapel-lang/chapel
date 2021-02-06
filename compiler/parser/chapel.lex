@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,6 +160,8 @@ index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
 inout            return processToken(yyscanner, TINOUT);
 int              return processToken(yyscanner, TINT);
+implements       return processToken(yyscanner, TIMPLEMENTS);
+interface        return processToken(yyscanner, TINTERFACE);
 iter             return processToken(yyscanner, TITER);
 label            return processToken(yyscanner, TLABEL);
 lambda           return processToken(yyscanner, TLAMBDA);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -501,6 +501,7 @@ module ChapelRange {
   //################################################################################
   //# Predicates
   //#
+
   /* Return true if argument ``t`` is a range type, false otherwise */
   proc isRangeType(type t) param {
     proc isRangeHelp(type t: range(?)) param  return true;
@@ -2425,18 +2426,10 @@ proc _cast(type t: range(?), r: range(?)) {
   //################################################################################
   //# Internal helper functions.
   //#
-  pragma "no doc"
-  inline proc range.chpl__unTranslate(i: intIdxType)
-    return this - i;
 
   pragma "no doc"
   inline proc range.chpl__unTranslate(i)
-  {
-    if isIntType(i.type) then
-      return this - i;
-    else
-      return this + abs(i);
-  }
+    return this - i;
 
   // Determine if a strided range has a definite alignment.
   proc chpl__hasAlignment(r : range(?))

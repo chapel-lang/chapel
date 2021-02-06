@@ -2,7 +2,7 @@
 // Measures both array iteration and array access time
 //
 
-use Memory, Time, Types;
+use Memory.Diagnostics, Time, Types;
 
 config const memFraction = 1000;
 config const printPerf = false;

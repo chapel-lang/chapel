@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,10 +23,18 @@
 
 #ifndef LAUNCHER
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void cleanup_for_exit(void);    // must be exposed to avoid dead-code elim.
 
 void chpl_exit_all(int status);  // must be called by all threads
 void chpl_exit_any(int status);  // may be called by any thread
+
+#ifdef __cplusplus
+}
+#endif
 
 #else // LAUNCHER
 

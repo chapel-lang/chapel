@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1520,7 +1520,7 @@ static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
 
   if (result                                   &&
       propagateNotPOD(actualSym->getValType()) &&
-      ! isLeaderIterator(calleeFn)             )
+      isFollowerIterator(calleeFn)             )
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;

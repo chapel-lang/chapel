@@ -9,6 +9,7 @@ use IO;
 {
   use LinearAlgebra.Sparse;
 
+  // 1-based domains
   const parentDom = {1..3, 1..3},
         parentDom2 = {1..4, 1..6},
         tParentDom = {1..3, 1..5},
@@ -20,28 +21,36 @@ use IO;
         tDom: sparse subdomain (tParentDom) dmapped CS(sortedIndices=false),
         tDomT: sparse subdomain (tParentDomT) dmapped CS(sortedIndices=false);
 
+  // 0-based domains
+  const parentDom0 = {0..<3, 0..<3};
+
+  var Dom0: sparse subdomain(parentDom0) dmapped CS(sortedIndices=false),
+      IDom0: sparse subdomain (parentDom0) dmapped CS(sortedIndices=false);
 
   // Identity sparse domain
   IDom += [(1,1), (2,2), (3,3)];
   tDom += [(1,1), (2,1), (3,1), (3,4), (3,5)];
   tDomT += [(1,1), (1,2), (1,3), (4,3), (5,3)];
 
+  IDom0 += [(0,0), (1,1), (2,2)];
+
   /* Rows */
   {
     var D = CSRDomain(3);
-    assertEqual(D, Dom, "CSRDomain(3)");
+
+    assertEqual(D, Dom0, "CSRDomain(3)");
   }
 
   /* Dimensions */
   {
     var D = CSRDomain(3, 3);
-    assertEqual(D, Dom, "CSRDomain(3, 3)");
+    assertEqual(D, Dom0, "CSRDomain(3, 3)");
   }
 
   /* Range */
   {
     var D = CSRDomain(1..3);
-    assertEqual(D, Dom, "CSRDomain(0..#3)");
+    assertEqual(D, Dom, "CSRDomain(1..3)");
   }
 
   /* Ranges */
@@ -66,7 +75,7 @@ use IO;
   {
     var I = LinearAlgebra.eye(3,3);
     var A = CSRMatrix(I);
-    assertEqual(A.domain, IDom, "CSRMatrix(I)");
+    assertEqual(A.domain, IDom0, "CSRMatrix(I)");
   }
 
   /* Array - CSR -> CSR */
@@ -143,6 +152,8 @@ use IO;
     // Sparse dot
     var csrA = CSRMatrix(A);
     var csrAAT = csrA.dot(csrA.T);
+
+    var csrAT = csrA.T;
 
     assertEqual(csrAAT, CSRMatrix(AAT), "csrA.dot(csrA.T)");
   }
@@ -234,7 +245,7 @@ use IO;
 
   /* dot - Various matrix-matrix tests */
   {
-    var A = LinearAlgebra.eye(3,5);
+    var A = LinearAlgebra.eye({1..3, 1..5});
     // Identity matrix (3x5)
     test_CSRdot(A);
 
@@ -249,13 +260,13 @@ use IO;
     A[1,1] = 0.0;
     test_CSRdot(A);
 
-    var B = LinearAlgebra.Matrix(5, 4);
+    var B = LinearAlgebra.Matrix({1..5, 1..4});
     B[.., 1] =  1.0;
     B[1, ..] =  1.0;
     test_CSRdot(A, B);
 
     // A bigger matrix
-    var C = LinearAlgebra.eye(100, 20);
+    var C = LinearAlgebra.eye({1..100, 1..20});
     test_CSRdot(C);
   }
 
@@ -285,25 +296,25 @@ use IO;
   // matPow with sparse matrices
   {
     // Real domains
-    var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    var D = CSRDomain({1..3, 1..3});
+    for ii in 1..3 do D += (ii,ii);
 
     var A = CSRMatrix(D, real);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in 1..3 do A[ii,ii] = ii;
     var B = LinearAlgebra.matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],(ii**3),
+    for ii in 1..3 do assertEqual(B[ii,ii],(ii**3),
                                    "Error in matPow with sparse matrices : real");
   }
 
   {
     // Int domains
-    var D = CSRDomain(3,3);
-    for ii in 1..#3 do D += (ii,ii);
+    var D = CSRDomain({1..3, 1..3});
+    for ii in 1..3 do D += (ii,ii);
 
     var A = CSRMatrix(D, int);
-    for ii in 1..#3 do A[ii,ii] = ii;
+    for ii in 1..3 do A[ii,ii] = ii;
     var B = LinearAlgebra.matPow(A, 3);
-    for ii in 1..#3 do assertEqual(B[ii,ii],ii**3,
+    for ii in 1..3 do assertEqual(B[ii,ii],ii**3,
                                    "Error in matPow with sparse matrices : int");
   }
 

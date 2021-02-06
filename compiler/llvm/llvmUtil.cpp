@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -562,6 +562,17 @@ void print_llvm(llvm::Value* v)
 
   fprintf(stderr, "\n");
 }
+
+void print_llvm(llvm::Module* m)
+{
+  if (m == NULL)
+    fprintf(stderr, "NULL");
+  else
+    m->print(llvm::dbgs(), NULL);
+
+  fprintf(stderr, "\n");
+}
+
 
 
 #endif

@@ -1,0 +1,7 @@
+testBadCallCandidates.chpl:14: In method 'test':
+testBadCallCandidates.chpl:26: error: unresolved call 'baz(42)'
+testBadCallCandidates.chpl:68: note: this candidate did not match: baz(x: C)
+testBadCallCandidates.chpl:26: note: because actual argument #1 with type 'int(64)'
+testBadCallCandidates.chpl:68: note: is passed to formal 'x: C'
+testBadCallCandidates.chpl:26: note: other candidates are:
+testBadCallCandidates.chpl:39: note:   D.baz(x: C)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,10 @@
 
 #ifndef _chpl_comm_native_atomics_h_
 #define _chpl_comm_native_atomics_h_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // These are the declarations for network-native atomic ops, for the
@@ -167,5 +171,9 @@ DECL_CHPL_COMM_ATOMIC_BINARY(sub, real32)
 DECL_CHPL_COMM_ATOMIC_BINARY(sub, real64)
 
 void chpl_comm_atomic_unordered_task_fence(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_comm_native_atomics_h_

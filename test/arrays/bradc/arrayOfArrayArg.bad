@@ -1,6 +1,6 @@
 arrayOfArrayArg.chpl:5: In function 'bar':
 arrayOfArrayArg.chpl:5: error: unresolved call 'chpl__buildArrayRuntimeType(nil, type real(64))'
 $CHPL_HOME/modules/internal/ChapelArray.chpl:453: note: this candidate did not match: chpl__buildArrayRuntimeType(dom: domain, type eltType)
-arrayOfArrayArg.chpl:5: note: because call actual argument #1 with type nil
+arrayOfArrayArg.chpl:5: note: because actual argument #1 with type 'nil'
 $CHPL_HOME/modules/internal/ChapelArray.chpl:453: note: is passed to formal 'dom: _domain'
   arrayOfArrayArg.chpl:1: called as bar(X: [domain(1,int(64),false)] [domain(1,int(64),false)] real(64))

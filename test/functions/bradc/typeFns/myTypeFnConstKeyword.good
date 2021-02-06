@@ -1,3 +1,3 @@
 myTypeFnConstKeyword.chpl:1: In function 'myint':
 myTypeFnConstKeyword.chpl:1: error: illegal return of type where value is expected
-  myTypeFnConstKeyword.chpl:3: called as myint(param x = 1)
+  myTypeFnConstKeyword.chpl:3: called as myint(param x = true)

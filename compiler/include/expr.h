@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -273,6 +273,41 @@ class NamedExpr : public Expr {
 
   virtual Expr*   getFirstExpr();
 };
+
+//
+// Represents interface constraints written as:
+//   implements InterfaceName(actualType...)
+// or
+//   actualType implements InterfaceName
+//   
+class IfcConstraint : public Expr {
+public:
+  static IfcConstraint* build(const char* name,
+                              CallExpr* actuals);
+  IfcConstraint(Expr* iifc);
+
+  DECLARE_COPY(IfcConstraint);
+  virtual GenRet codegen();
+  virtual void   verify();
+  virtual void   accept(AstVisitor* visitor);
+  virtual QualifiedType qualType();
+
+  virtual void   replaceChild(Expr* oldAst, Expr* newAst);
+  virtual Expr*  getFirstExpr();
+  virtual Expr*  getNextExpr(Expr* expr);
+  virtual void   prettyPrint(std::ostream* o);
+
+  InterfaceSymbol* ifcSymbol()  const;
+  int              numActuals() const { return consActuals.length; }
+
+  Expr* interfaceExpr;  // UnresolvedSymExpr -> SymExpr(InterfaceSymbol)
+  AList consActuals;    // Exprs -> SymExprs of the constraint's actuals
+};
+
+// valid after scopeResolve
+inline InterfaceSymbol* IfcConstraint::ifcSymbol() const {
+  return toInterfaceSymbol(toSymExpr(interfaceExpr)->symbol());  
+}
 
 
 // Determines whether a node is in the AST (vs. has been removed

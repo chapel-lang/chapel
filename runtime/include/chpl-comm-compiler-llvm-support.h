@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -28,6 +28,9 @@
 #include "error.h"
 #include "chpl-wide-ptr-fns.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // These are used by the LLVM wide optimization.
 // Some of these functions take in a ctl parameter - this parameter controls
@@ -104,6 +107,10 @@ void chpl_gen_comm_memset(c_nodeid_t dst_node, void* dst_addr,
     }
   }
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LAUNCHER
 

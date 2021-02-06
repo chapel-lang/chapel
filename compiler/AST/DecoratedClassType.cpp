@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -461,12 +461,14 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
       }
     }
 
-    form_Map(SymbolMapElem, e, ts->type->substitutions) {
-      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+    size_t n = ts->type->substitutionsPostResolve.size();;
+    for (size_t i = 0; i < n; i++) {
+      NameAndSymbol& ns = ts->type->substitutionsPostResolve[i];
+      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
         Type* newT = convert(ets->type);
         if (newT != ets->type) {
           TypeSymbol* newTS = newT->symbol;
-          e->value = newTS;
+          ns.value = newTS;
         }
       }
     }
@@ -482,12 +484,14 @@ static void convertClassTypes(Type* (*convert)(Type*)) {
         fn->iteratorInfo->yieldedType = newYieldT;
     }
 
-    form_Map(SymbolMapElem, e, fn->substitutions) {
-      if (TypeSymbol* ets = toTypeSymbol(e->value)) {
+    size_t n = fn->substitutionsPostResolve.size();
+    for (size_t i = 0; i < n; i++) {
+      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
+      if (TypeSymbol* ets = toTypeSymbol(ns.value)) {
         Type* newT = convert(ets->type);
         if (newT != ets->type) {
           TypeSymbol* newTS = newT->symbol;
-          e->value = newTS;
+          ns.value = newTS;
         }
       }
     }

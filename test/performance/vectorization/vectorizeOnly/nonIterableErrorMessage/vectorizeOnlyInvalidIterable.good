@@ -1,1 +1,3 @@
-vectorizeOnlyInvalidIterable.chpl:4: error: cannot iterate over values of type int(64)
+$CHPL_HOME/modules/standard/VectorizingIterator.chpl:128: In iterator 'vectorizeOnly':
+$CHPL_HOME/modules/standard/VectorizingIterator.chpl:128: error: cannot iterate over values of type int(64)
+  vectorizeOnlyInvalidIterable.chpl:4: called as vectorizeOnly(iterables(0): int(64))

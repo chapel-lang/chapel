@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -20,6 +20,10 @@
 
 #ifndef _CHPL_MATH_H_
 #define _CHPL_MATH_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 static inline float chpl_macro_INFINITY(void) {
   return INFINITY;
@@ -91,6 +95,10 @@ static inline float chpl_float_yn(int n, float x) { return (float)yn(n, x); }
 #define truncf(x) (float)trunc(x)
 #define nearbyintf(x) (float)nearbyint(x)
 #define tgammaf(x) (float)tgamma(x)
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

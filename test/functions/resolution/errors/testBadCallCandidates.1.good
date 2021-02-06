@@ -1,0 +1,8 @@
+testBadCallCandidates.chpl:71: In function 'main':
+testBadCallCandidates.chpl:76: error: unresolved call 'owned C.foo(42)'
+testBadCallCandidates.chpl:33: note: this candidate did not match: D.foo(x: C)
+testBadCallCandidates.chpl:76: note: because method call receiver with type 'owned C'
+testBadCallCandidates.chpl:32: note: is passed to formal 'this: borrowed D'
+testBadCallCandidates.chpl:76: note: other candidates are:
+testBadCallCandidates.chpl:5: note:   C.foo(x: string)
+note: and 2 other candidates, use --print-all-candidates to see them

@@ -2,5 +2,5 @@ method-iter-resolution-bug.chpl:4: In method 'iTerate':
 method-iter-resolution-bug.chpl:7: error: unresolved call 'C.iTerate(int(64), int(64))'
 method-iter-resolution-bug.chpl:4: note: this candidate did not match: C.iTerate(x: int)
 method-iter-resolution-bug.chpl:7: note: because call includes 2 arguments
-method-iter-resolution-bug.chpl:4: note: but function can only accept 1 arguments
-method-iter-resolution-bug.chpl:11: note: candidates are: iTerate(start: int, end: int)
+method-iter-resolution-bug.chpl:4: note: but function can only accept 1 argument
+note: there is also 1 other candidate, use --print-all-candidates to see it

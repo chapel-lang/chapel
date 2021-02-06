@@ -88,6 +88,9 @@ void do_test(void) {GASNET_BEGIN_FUNCTION();
 	}
 
 	BARRIER();
+
+    test_free(loc_addr);
+    test_free(rem_addr);
 }
 
 int main(int argc, char **argv) {

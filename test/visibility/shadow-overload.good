@@ -1,6 +1,6 @@
 shadow-overload.chpl:11: In method 'shadow':
 shadow-overload.chpl:14: error: unresolved call 'R.shadow(10)'
-shadow-overload.chpl:5: note: this candidate did not match: shadow(x)
-shadow-overload.chpl:14: note: because call is written as a method call
-shadow-overload.chpl:5: note: but candidate function is not a method
-shadow-overload.chpl:11: note: candidates are: R.shadow()
+shadow-overload.chpl:11: note: this candidate did not match: R.shadow()
+shadow-overload.chpl:14: note: because call includes 1 argument
+shadow-overload.chpl:11: note: but function can only accept 0 arguments
+note: there is also 1 other candidate, use --print-all-candidates to see it

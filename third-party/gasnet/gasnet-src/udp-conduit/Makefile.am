@@ -8,11 +8,6 @@ AUTOMAKE_OPTIONS = foreign 1.4
 
 CONDUIT_NAME=udp
 
-## BLCR
-if BLCR_ENABLED
-include $(top_builddir)/other/blcr/blcr.mak
-endif
-
 # any conduit-specific subdirectories containing Makefile.am's
 SUBDIRS = .
 
@@ -29,28 +24,24 @@ CONDUIT_FILELIST =           \
 # list of conduit core and extended .c source files 
 # to be compiled into libgasnet on the compiled command line
 CONDUIT_SOURCELIST =          \
-      $(blcr_sourcelist)      \
       $(srcdir)/gasnet_core.c \
       $(top_srcdir)/extended-ref/gasnet_extended.c 
 
 # additional -I or -D directives needed by this specific conduit
 # other than the standard GASNet includes and flags
-CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp -I$(top_builddir)/other/amudp $(blcr_extralibcflags)
+CONDUIT_EXTRALIBCFLAGS = -I$(top_srcdir)/other/amudp -I$(top_builddir)/other/amudp
 
 # additional conduit header files to install from external, non-standard directories
 CONDUIT_EXTRAHEADERS =                                        \
-	$(blcr_extraheaders)                                  \
 	$(top_builddir)/other/amudp/amx_portable_platform.h   \
 	$(top_srcdir)/other/amudp/amudp_const.h 
 
 # headers selected by default rules that should NOT be installed
-CONDUIT_PRIVATEHEADERS = \
-	$(blcr_privheaders)
+CONDUIT_PRIVATEHEADERS =
 
 # additional file dependencies not mentioned elsewhere 
 # that should force libgasnet rebuild on update
 CONDUIT_EXTRADEPS = \
-	$(blcr_extradeps)                      \
 	$(top_builddir)/other/amudp/libamudp.a \
 	$(top_srcdir)/other/amudp/*.h 
 
@@ -62,8 +53,7 @@ $(top_builddir)/other/amudp/amx_portable_platform.h: $(top_builddir)/other/amudp
 # additional object files to be included in libgasnet that need to be compiled 
 # using a special, conduit-specific command. These should also be included as
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
-CONDUIT_SPECIAL_OBJS = \
-	$(blcr_special_objs)
+CONDUIT_SPECIAL_OBJS =
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:

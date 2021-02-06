@@ -122,13 +122,6 @@ extern amudp_spawnfn_desc_t const AMUDP_Spawnfn_Desc[];
 #define AMX_SPMDStartup(pargc, pargv, networkdepth, pnetworkpid, peb, pep) \
       AMUDP_SPMDStartup((pargc), (pargv), 0, (networkdepth), NULL, (pnetworkpid), (peb), (pep))
 
-/* ------------------------------------------------------------------------------------ */
-/* non-standard extensions for checkpoint/restart */
-
-extern int  AMUDP_SPMDCheckpoint(eb_t *eb, ep_t *ep, const char *dir);
-extern void AMUDP_SPMDRunRestart(char *argv0, char *dir, int nproc);
-extern int  AMUDP_SPMDRestartProcId(int *argc, char ***argv);
-
 AMUDP_END_EXTERNC
 
 #endif

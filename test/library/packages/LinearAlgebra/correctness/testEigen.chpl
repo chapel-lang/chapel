@@ -53,8 +53,8 @@ var cplxA: [1..10, 1..10] complex = A;
   // Check that:
   // Av = e * v
   // Where e and v are corresponding eigenvalues and right eigenvectors
-  for (e, i) in zip(eigenvalues, 1..) {
-    var eigVec:[1..10] complex = right[.., i];
+  for (e, i) in zip(eigenvalues, right.domain.dim(1)){
+    var eigVec:[right.domain.dim(0)] complex = right[.., i];
     var Av = dot(cplxA, eigVec);
     var ev = dot(e, eigVec);
 
@@ -81,8 +81,8 @@ var cplxA: [1..10, 1..10] complex = A;
   // u^H * A = k * u^H
   // Where k and u are corresponding eigenvalues and left eigenvectors
   // and ^H means conjugate transpose.
-  for (k, i) in zip(eigenvalues, 1..) {
-    var eigVec:[1..10] complex = conjg(left[.., i]);
+  for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
+    var eigVec:[left.domain.dim(0)] complex = conjg(left[.., i]);
     var Av = dot(eigVec, cplxA);
     var ku = dot(k, eigVec);
 
@@ -108,8 +108,8 @@ var cplxA: [1..10, 1..10] complex = A;
   }
 
   // Av = e * v
-  for (e, i) in zip(eigenvalues, 1..) {
-    var eigVec:[1..10] complex = right[.., i];
+  for (e, i) in zip(eigenvalues, right.domain.dim(1)) {
+    var eigVec:[right.domain.dim(0)] complex = right[.., i];
     var Av = dot(cplxA, eigVec);
     var ev = dot(e, eigVec);
 
@@ -120,8 +120,8 @@ var cplxA: [1..10, 1..10] complex = A;
   }
 
   // u^H * A = k * u^H
-  for (k, i) in zip(eigenvalues, 1..) {
-    var eigVec:[1..10] complex = conjg(left[.., i]);
+  for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
+    var eigVec:[left.domain.dim(0)] complex = conjg(left[.., i]);
     var Av = dot(eigVec, cplxA);
     var ku = dot(k, eigVec);
 
@@ -179,8 +179,8 @@ fillRandom(B);
   // Check that:
   // Bv = e * v
   // Where e and v are corresponding eigenvalues and right eigenvectors
-  for (e, i) in zip(eigenvalues, 1..) {
-    var eigVec:[1..10] complex = right[.., i];
+  for (e, i) in zip(eigenvalues, right.domain.dim(1)) {
+    var eigVec:[right.domain.dim(0)] complex = right[.., i];
     var Bv = dot(B, eigVec);
     var ev = dot(e, eigVec);
 
@@ -207,7 +207,7 @@ fillRandom(B);
   // u^H * B = k * u^H
   // Where k and u are corresponding eigenvalues and left eigenvectors
   // and ^H means conjugate transpose.
-  for (k, i) in zip(eigenvalues, 1..) {
+  for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
     var eigVec:[1..10] complex = conjg(left[.., i]);
     var Bv = dot(eigVec, B);
     var ku = dot(k, eigVec);
@@ -234,7 +234,7 @@ fillRandom(B);
   }
 
   // Bv = e * v
-  for (e, i) in zip(eigenvalues, 1..) {
+  for (e, i) in zip(eigenvalues, right.domain.dim(1)) {
     var eigVec:[1..10] complex = right[.., i];
     var Bv = dot(B, eigVec);
     var ev = dot(e, eigVec);
@@ -246,7 +246,7 @@ fillRandom(B);
   }
 
   // u^H * B = k * u^H
-  for (k, i) in zip(eigenvalues, 1..) {
+  for (k, i) in zip(eigenvalues, left.domain.dim(1)) {
     var eigVec:[1..10] complex = conjg(left[.., i]);
     var Bv = dot(eigVec, B);
     var ku = dot(k, eigVec);

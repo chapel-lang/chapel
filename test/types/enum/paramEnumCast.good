@@ -1,11 +1,11 @@
 paramEnumCast.chpl:6: In function 'testEnum':
 paramEnumCast.chpl:19: error: Initializing parameter 'i' to value not known at compile time
-  paramEnumCast.chpl:41: called as testEnum(type t = gender, param e = gender.decline, param expectStr = "decline": string, param expectVal = 0)
+  paramEnumCast.chpl:41: called as testEnum(type t = gender, param e = gender.decline, param expectStr = "decline", param expectVal = 0)
 paramEnumCast.chpl:41: warning: enum->int cast was a surprise for decline
 paramEnumCast.chpl:6: In function 'testEnum':
 paramEnumCast.chpl:23: error: Initializing parameter 'e3' to value not known at compile time
-  paramEnumCast.chpl:41: called as testEnum(type t = gender, param e = gender.decline, param expectStr = "decline": string, param expectVal = 0)
+  paramEnumCast.chpl:41: called as testEnum(type t = gender, param e = gender.decline, param expectStr = "decline", param expectVal = 0)
 paramEnumCast.chpl:41: warning: int->enum cast was a surprise for decline
 paramEnumCast.chpl:6: In function 'testEnum':
 paramEnumCast.chpl:19: error: can't cast from an abstract enum ('color') to int(64)
-  paramEnumCast.chpl:42: called as testEnum(type t = color, param e = color.red, param expectStr = "red": string, param expectVal = 1)
+  paramEnumCast.chpl:42: called as testEnum(type t = color, param e = color.red, param expectStr = "red", param expectVal = 1)

@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: functionArgDefaultNil.doc
+
+functionArgDefaultNil.doc
+=========================
+**Usage**
+
+.. code-block:: chapel
+
+   use functionArgDefaultNil.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import functionArgDefaultNil.doc;
+
+.. class:: C
+
+.. function:: proc nilDefault(arg: nilable C = nil)
+

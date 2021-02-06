@@ -433,13 +433,14 @@ __gmpn_cpuvec_init (void)
 	  CPUVEC_SETUP_bt2;
 	  break;
 
-	case 0x15:	    /* bulldozer, piledriver, steamroller, excavator */
+	case 0x15:		/* bulldozer, piledriver, steamroller, excavator */
 	  CPUVEC_SETUP_k8;
 	  CPUVEC_SETUP_k10;
 	  CPUVEC_SETUP_bd1;
 	  break;
 
-	case 0x17:	    /* zen */
+	case 0x17:		/* zen */
+	case 0x19:		/* zen3 */
 	  CPUVEC_SETUP_zen;
 	  break;
 	}

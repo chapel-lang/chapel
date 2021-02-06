@@ -1,1 +1,0 @@
-arrOfRecConstField.chpl:8: error: cannot assign to a record of the type R using the default assignment operator because it has 'const' field(s)

@@ -1,2 +1,9 @@
---no-cache-remote # loop.no-cache.good
---cache-remote    # loop.cache.good
+#!/usr/bin/env python3
+
+import os
+
+do_cache = os.getenv('CHPL_SANITIZE_EXE', '') == 'none'
+
+print(  '--no-cache-remote # loop.no-cache.good')
+if do_cache:
+  print('--cache-remote    # loop.cache.good')

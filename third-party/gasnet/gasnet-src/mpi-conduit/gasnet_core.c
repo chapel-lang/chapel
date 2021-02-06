@@ -100,6 +100,10 @@ void gasnetc_bootstrapBroadcast(void *src, size_t len, void *dest, int rootnode)
 static void gasnetc_bootstrapSNodeBroadcast(void *src, size_t len, void *dest, int rootnode) {
   void *tmp = gasneti_malloc(len * gasneti_nodes);
   void *self = src ? src : gasneti_malloc(len); /* Ensure never NULL */
+  if (gasneti_mynode != rootnode) {
+     // silence a harmless valgrind error caused by sending potentially uninitialized bytes
+     memset(self, 0, len);
+  }
   gasnetc_bootstrapExchange(self, len, tmp);
   GASNETI_MEMCPY(dest, (void*)((uintptr_t)tmp + (len * rootnode)), len);
   if (self != src) gasneti_free(self);
@@ -1075,8 +1079,10 @@ extern void gasnetc_hsl_init   (gex_HSL_t *hsl) {
   GASNETI_CHECKATTACH();
   #if GASNETC_HSL_ERRCHECK
   {
+  #if !GASNETI_VALGRIND // this test causes valgrind uninit read warnings for newly allocated space
     if (hsl->tag == GASNETC_HSL_ERRCHECK_TAGINIT)
         gasneti_fatalerror("HSL USAGE VIOLATION: tried to gex_HSL_Init() a statically-initialized HSL");
+  #endif
   #if 0
     /* this causes false errors in Titanium, because object destructors aren't implemented */
     if (hsl->tag == GASNETC_HSL_ERRCHECK_TAGDYN)

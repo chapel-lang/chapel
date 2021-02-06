@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 var m = 5;
 var n = 2;

@@ -1,5 +1,5 @@
 use BlockDist;
-use Memory;
+use Memory.Diagnostics;
 
 config const numTasks = 4;
 config const n = 100_000_000;

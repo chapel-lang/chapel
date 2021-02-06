@@ -3,6 +3,31 @@ Copyright 1996, 1999-2016, 2018-2020 Free Software Foundation, Inc.
 Verbatim copying and distribution of this entire article is permitted in any
 medium, provided this notice is preserved.
 
+Changes between GMP version 6.2.0 and 6.2.1
+
+  BUGS FIXED
+  * A possible overflow of type int is avoided for mpz_cmp on huge operands.
+
+  * Overflows are more carefully detected and reported for mpz_pow_ui.
+
+  * A bug in longlong.h for aarch64 sub_ddmmss, not affecting GMP, was healed.
+
+  * mini-gmp: mpz_out_str and mpq_out_str now correctly handle out of
+    range bases.
+
+  FEATURES
+  * C90 compliance.
+
+  * Initial support for Darwin on arm64, and improved portability.
+
+  * Support for more processors.
+
+  SPEEDUPS
+  * None, except indirectly through recognition of new CPUs.
+
+  MISC
+  * None.
+
 Changes between GMP version 6.1.* and 6.2.0
 
   BUGS FIXED
