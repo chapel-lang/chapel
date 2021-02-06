@@ -884,12 +884,12 @@ inline proc CyclicArr.dsiLocalAccess(i: rank*idxType) ref {
 
 proc CyclicArr.dsiAccess(i:rank*idxType) ref {
   local {
-    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(i) then
-      return _to_nonnil(myLocArr).this(i);
+    if const myLocArrNN = myLocArr then
+      if myLocArrNN.locDom.contains(i) then
+        return myLocArrNN.this(i);
   }
   if doRADOpt && !stridable {
-    if this.myLocArr {
-      const myLocArr = _to_nonnil(this.myLocArr);
+    if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableCyclicLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1011,9 +1011,9 @@ iter CyclicArr.these(param tag: iterKind, followThis, param fast: bool = false) 
     }
   } else {
     proc accessHelper(i) ref {
-      if myLocArr then local {
-        if _to_nonnil(myLocArr).locDom.contains(i) then
-          return _to_nonnil(myLocArr).this(i);
+      if const myLocArrNN = myLocArr then local {
+        if myLocArrNN.locDom.contains(i) then
+          return myLocArrNN.this(i);
       }
       return dsiAccess(i);
     }
@@ -1273,8 +1273,8 @@ proc CyclicDom.dsiHasSingleLocalSubdomain() param return true;
 proc CyclicArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
-    if myLocArr != nil then
-      return _to_nonnil(myLocArr).locDom.myBlock;
+    if const myLocArrNN = myLocArr then
+      return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable=true);
     return d;
