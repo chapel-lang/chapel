@@ -632,6 +632,10 @@ module ChapelIteratorSupport {
     return chpl__staticFastFollowCheckZip(x);
   }
 
+  proc chpl__dynamicFastFollowCheckZipNew(x ...?n) {
+    return chpl__dynamicFastFollowCheckZip(x);
+  }
+
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
     if !chpl__canHaveFastFollowersZip(x) {
       return false;
@@ -763,6 +767,11 @@ module ChapelIteratorSupport {
       return _toFastFollower(_getIterator(x), leaderIndex, fast=true);
     else
       return _toFollower(_getIterator(x), leaderIndex);
+  }
+
+  pragma "fn returns iterator"
+  inline proc _toFastFollowerZipNew(x ..., leaderIndex) {
+    return _toFastFollowerZip(x, leaderIndex);
   }
 
   pragma "fn returns iterator"

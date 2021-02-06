@@ -310,9 +310,9 @@ buildFollowLoop(VarSymbol* iter,
 
     if (zippered) {
       if (inTestFile(loopBody)) {
-        CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFastFollowerZip");
+        CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFastFollowerZipNew");
         toFollowerCall->insertAtTail(leadIdxCopy);
-        toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
+        //toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
         CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
 
         CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
@@ -1041,9 +1041,22 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
         leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
       }
       else {
-        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                            new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                            new_Expr("'move'(%S, %S)", T2, gFalse)));
+        if (inTestFile(iterExpr)) {
+          CallExpr *checkCall = generateModuleCallFromZip(iterExpr,
+                                                          "chpl__dynamicFastFollowCheckZipNew");
+          //CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T2, checkCall);
+
+          //leadForLoop->insertAtTail(moveToFlag);
+
+          leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                                 new CallExpr(PRIM_MOVE, T2, checkCall),
+                                                 new CallExpr(PRIM_MOVE, T2, gFalse)));
+        }
+        else {
+          leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                              new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
+                                              new_Expr("'move'(%S, %S)", T2, gFalse)));
+        }
       }
     }
 
