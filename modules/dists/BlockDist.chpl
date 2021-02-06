@@ -572,6 +572,8 @@ override proc Block.dsiDisplayRepresentation() {
 
 override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
                                          param stridable: bool, inds) {
+
+  writeln(here, " creating new rectangular dom this is on ", this.locale);
   if idxType != this.idxType then
     compilerError("Block domain index type does not match distribution's");
   if rank != this.rank then

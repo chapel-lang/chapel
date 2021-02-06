@@ -628,12 +628,8 @@ module ChapelIteratorSupport {
     return x._value.dsiStaticFastFollowCheck(lead._value.type);
   }
 
-  proc chpl__staticFastFollowCheckZipNew(x ...?n) param {
+  proc chpl__staticFastFollowCheckZipNew(ref x ...?n) param {
     return chpl__staticFastFollowCheckZip(x);
-  }
-
-  proc chpl__dynamicFastFollowCheckZipNew(x ...?n) {
-    return chpl__dynamicFastFollowCheckZip(x);
   }
 
   proc chpl__staticFastFollowCheckZip(x: _tuple) param {
@@ -679,6 +675,10 @@ module ChapelIteratorSupport {
       return x._value.dsiDynamicFastFollowCheck(lead);
     else
       return false;
+  }
+
+  proc chpl__dynamicFastFollowCheckZipNew(ref x ...?n) {
+    return chpl__dynamicFastFollowCheckZip(x);
   }
 
   proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
@@ -741,7 +741,8 @@ module ChapelIteratorSupport {
               (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
   }
 
-  inline proc _toFollowerZipInternalNew(x ..., leaderIndex, param dim: int) {
+  pragma "fn returns iterator"
+  inline proc _toFollowerZipInternalNew(ref x ..., leaderIndex, param dim: int) {
     return _toFollowerZipInternal(x, leaderIndex, dim);
   }
 
@@ -770,7 +771,7 @@ module ChapelIteratorSupport {
   }
 
   pragma "fn returns iterator"
-  inline proc _toFastFollowerZipNew(x ..., leaderIndex) {
+  inline proc _toFastFollowerZipNew(ref x ..., leaderIndex) {
     return _toFastFollowerZip(x, leaderIndex);
   }
 

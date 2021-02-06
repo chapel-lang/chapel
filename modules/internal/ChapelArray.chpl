@@ -161,6 +161,8 @@
  */
 module ChapelArray {
 
+  extern proc printf(s...);
+
   public use ChapelBase;
   use ChapelTuple;
   use ChapelLocale;
@@ -1296,7 +1298,17 @@ module ChapelArray {
     pragma "no doc"
     proc type chpl__deserialize(data) {
       type valueType = __primitive("static field type", this, "_instance");
-      return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
+      var dominst = _to_borrowed(valueType).chpl__deserialize(data);
+      if _isPrivatized(dominst) {
+        return new _domain(_pid=data,
+                           _instance=_to_borrowed(valueType).chpl__deserialize(data),
+                           _unowned=false);
+      }
+      else {
+        return new _domain(_to_borrowed(valueType).chpl__deserialize(data));
+      }
+
+
     }
 
     pragma "no doc"
@@ -2506,9 +2518,20 @@ module ChapelArray {
     pragma "no doc"
     pragma "no copy return"
     proc type chpl__deserialize(data) {
+      local {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
-      return new _array(nullPid, arrinst, _unowned=true);
+      compilerWarning("chpl__deserialize for ", arrinst.type:string);
+      if _isPrivatized(arrinst) {
+        compilerAssert(data.type == int,
+                       "A privatized array's serial representation must be its pid only");
+        return new _array(data, arrinst, _unowned=true);
+      }
+      else {
+        return new _array(nullPid, arrinst, _unowned=true);
+      }
+      }
     }
+
 
     proc chpl__promotionType() type {
       return _value.eltType;
