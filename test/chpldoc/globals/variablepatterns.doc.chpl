@@ -8,3 +8,4 @@ var g = forall i in 1..10 do i;
 var h = [i in 1..10] i;
 var i = try! x;
 var j = try x;
+var k = foo("this is", a, "function", call);
