@@ -175,6 +175,4 @@ void gatherTypesForCodegen(void);
 void registerPrimitiveCodegens();
 
 bool localeUsesGPU();
-
-
 #endif //CODEGEN_H

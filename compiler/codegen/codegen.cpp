@@ -49,9 +49,6 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/Support/ErrorOr.h"
-#include "llvm/Support/MemoryBuffer.h"
-#include "llvm/IR/Verifier.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -69,8 +66,6 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
-#include <cstdlib>
 
 // function prototypes
 static bool compareSymbol(const void* v1, const void* v2);
@@ -559,13 +554,13 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* eltType = "chpl_fn_p";
   const char* name = "chpl_ftable";
 
-  if(isHeader) {
+  if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
     return;
   }
 
-  if(gCodegenGPU == true){
+  if (gCodegenGPU == true) {
     return;
   }
 
@@ -684,6 +679,7 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
     }
     finfo.push_back(nullStruct);
   }
+
   // Now emit the global array declaration
   codegenGlobalConstArray(name, eltType, &finfo, false);
 }
@@ -697,11 +693,6 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
     codegenGlobalConstArray(vmt, eltType, NULL, true);
     return;
   }
-
-  //if(gCodegenGPU == true){
-  //  return;
-  //}
-
 
   // compute max # methods per type
   int maxVMT = 0;
@@ -736,33 +727,33 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
-            if ( vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ) {
-            int classId = ct->classId;
-            int fnId = i;
-            int index = gMaxVMT * classId + fnId;
+            if (vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) {
+              int classId = ct->classId;
+              int fnId = i;
+              int index = gMaxVMT * classId + fnId;
 
-            INT_ASSERT(classId > 0);
+              INT_ASSERT(classId > 0);
 
-            GenRet fnAddress;
+              GenRet fnAddress;
 
-            if( info->cfile ) {
-              fnAddress.c = "(" + funcPtrType.c + ")";
-              fnAddress.c += vfn->cname;
-            } else {
+              if( info->cfile ) {
+                fnAddress.c = "(" + funcPtrType.c + ")";
+                fnAddress.c += vfn->cname;
+              } else {
 #ifdef HAVE_LLVM
-              INT_ASSERT(funcPtrType.type);
-              llvm::Function *func = getFunctionLLVM(vfn->cname);
-              fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+                INT_ASSERT(funcPtrType.type);
+                llvm::Function *func = getFunctionLLVM(vfn->cname);
+                fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
 #endif
+              }
+
+              if (vmt_elts.size() <= (size_t) index)
+                vmt_elts.resize(index+1);
+
+              vmt_elts[index] = fnAddress;
+
+              i++;
             }
-
-            if (vmt_elts.size() <= (size_t) index)
-              vmt_elts.resize(index+1);
-
-            vmt_elts[index] = fnAddress;
-
-            i++;
-          }
           }
         }
       }
@@ -1169,7 +1160,7 @@ static void genConfigGlobalsAndAbout() {
     );
     info->irBuilder->SetInsertPoint(programAboutBlock);
 #endif
-    }
+  }
 
   codegenCallPrintf(astr("Compilation command: ", compileCommand, "\\n"));
   codegenCallPrintf(astr("Chapel compiler version: ", compileVersion, "\\n"));
@@ -1221,8 +1212,8 @@ static void codegen_header_compilation_config() {
   if (fLlvmCodegen) {
     info->cfile = NULL;
     if ( gCodegenGPU == false ) {
-    genConfigGlobalsAndAbout();
-    genFunctionTables();
+      genConfigGlobalsAndAbout();
+      genFunctionTables();
     }
   }
 
@@ -1683,13 +1674,14 @@ static void codegen_header(std::set<const char*> & cnames,
     }
   }
   std::sort(globals.begin(), globals.end(), compareSymbol);
+
   //
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     legalizeName(fn);
-    if ( fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
-     functions.push_back(fn);
+    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+      functions.push_back(fn);
     }
   }
   std::sort(functions.begin(), functions.end(), compareSymbol);
@@ -1846,7 +1838,7 @@ static void codegen_header(std::set<const char*> & cnames,
   
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
-      varSymbol->codegenGlobalDef(true);
+    varSymbol->codegenGlobalDef(true);
   }
   flushStatements();
 
@@ -1979,8 +1971,7 @@ codegen_config() {
 
   // LLVM backend need _config.c generated for the launcher,
   // so we produce the C for it either way.
-  if(gCodegenGPU == false)
-  {
+  if (gCodegenGPU == false) {
     FILE* mainfile = info->cfile;
     if( mainfile ) fprintf(mainfile, "#include \"_config.c\"\n");
     fileinfo configFile;
@@ -2389,12 +2380,12 @@ static void codegenPartOne() {
   convertToRefTypes();
 
   // Wrap calls to chosen functions from c library
-  if( fLlvmCodegen ) {
+  if (fLlvmCodegen) {
 #ifdef HAVE_LLVM
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_EXTERN)) {
-          if(hasWrapper(fn->cname))
-            fn->cname = getClangBuiltinWrappedName(fn->cname);
+        if(hasWrapper(fn->cname))
+          fn->cname = getClangBuiltinWrappedName(fn->cname);
       }
     }
 #endif
@@ -2515,9 +2506,7 @@ static void codegenPartTwo() {
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
-  //if ( gCodegenGPU == false ) {
   codegen_defn(cnames, types, functions, globals);
-  //}
   info->cfile = mainfile.fptr;
   if ( gCodegenGPU == false ) {
     codegen_config();
@@ -2525,7 +2514,6 @@ static void codegenPartTwo() {
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
-
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
     checkAdjustedDataLayout();
@@ -2606,14 +2594,12 @@ void codegen() {
 
   if (localeUsesGPU()) {
 
-    gdbShouldBreakHere();
     pid_t pid = fork();
 
     if (pid == 0) {
       // child process
       gCodegenGPU = true;
       codegenPartTwo();
-      // ? save the PTX somewhere meaningful?
       gCodegenGPU = false;
       exit(0);
     } else {
@@ -2626,8 +2612,6 @@ void codegen() {
   }
 
   codegenPartTwo();
-    // add to codegenPartTwo to embed tmp/chpl__module-gpu.ptx
-    // in the binary "hello"?
 
 }
 

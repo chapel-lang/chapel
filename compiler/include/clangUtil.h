@@ -109,8 +109,6 @@ extern std::string ggpuFatbinPath;
 
 void print_clang(clang::Decl* d);
 
-void print_clang(clang::Decl* d);
-
 #endif // HAVE_LLVM
 
 #endif //CLANGUTIL_H

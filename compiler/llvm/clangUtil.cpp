@@ -4,7 +4,7 @@
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
- * Version 2.0 (the "License"); you may not use this file excet
+ * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  *
  * You may obtain a copy of the License at
@@ -72,8 +72,6 @@
 
 #if HAVE_LLVM_VER >= 90
 #include "llvm/Support/CodeGen.h"
-#include "llvm/Support/ErrorOr.h"
-#include "llvm/Support/MemoryBuffer.h"
 #endif
 
 #ifdef HAVE_LLVM_RV
@@ -139,7 +137,6 @@ static void adjustLayoutForGlobalToWide();
 static void setupModule();
 
 fileinfo    gAllExternCode;
-
 
 // forward declare
 class CCodeGenConsumer;
@@ -1509,19 +1506,19 @@ void setupClang(GenInfo* info, std::string mainFile)
     // CPU+GPU compilation
     //  1st cc1 command is for the GPU
     //  2nd cc1 command is for the CPU
-    for ( auto &command : C->getJobs() ) {
+    for (auto &command : C->getJobs()) {
       bool isCC1 = false;
-      for ( auto arg : command.getArguments() ) {
-        if ( 0 == strcmp(arg, "-cc1") ) {
+      for (auto arg : command.getArguments()) {
+        if (0 == strcmp(arg, "-cc1")) {
           isCC1 = true;
           break;
         }
       }
       if (isCC1) {
 
-        if ( gCodegenGPU ) {
+        if (gCodegenGPU) {
           // For GPU, set j to 1st cc1 command
-          if ( job == NULL ) job = &command;
+          if (job == NULL) job = &command;
         } else {
           // For CPU, set j to last cc1 command
           job = &command;
@@ -1533,114 +1530,10 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   if (job == NULL)
     USR_FATAL("Could not find cc1 command from clang driver");
-  /*
-  clang::driver::Command newJob(job->getSource(), job->getCreator(),
-                                 //job->getResponseFileSupport(),
-                                 job->getExecutable(),
-                                 job->getArguments(), 
-                                 job->getInputFilenames());
-                                 //job->getOutputFilenames());
-  */
 
   if ( gCodegenGPU == false && localeUsesGPU() == true && clangInfo->parseOnly == false) {
     bool isGPUBinaryFlag = false;
-
-    /*
-    for ( auto a : job->getArguments() ) {
-
-      if ( isGPUBinaryFlag ) {
-        ggpuFatbinPath = a;
-
-        //std::string catFatbinaryBefore = "head -n 5 " + ggpuFatbinPath;
-        //mysystem(catFatbinaryBefore.c_str(), "first 5 lines of fatbin before copy");
-
-        
-        std::string copyFatbinaryCmd = "cp tmp/chpl_gpu.fatbin " + ggpuFatbinPath;
-        mysystem(copyFatbinaryCmd.c_str(), "copy fatbinry");
-
-        //std::string catFatbinary = "head -n 5 " + ggpuFatbinPath;
-        //mysystem(catFatbinary.c_str(), "first 5 lines of fatbin");
-        
-        //std::string copyFatbinaryCmd1 = "cp tmp/chpl_gpu.fatbin tmp/test.fatbin";
-        //mysystem(copyFatbinaryCmd1.c_str(), "copy fatbinry to test fatbin");
-
-
-        break;
-      }
-
-      if ( 0 == strcmp(a, "-fcuda-include-gpubinary") ){
-        isGPUBinaryFlag = true;
-      }
-    }
-    std::cout << "fatbin path: " << ggpuFatbinPath << "\n";
-*/
-    //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
-/*
-    llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
-      llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fabin");
-
-    const std::string &Str = GpuBinaryOrErr.get()->getBuffer();
-    StringRef StrWithNull(Str.c_str(), Str.size() + 1);
-    clang::CharUnits Alignment =
-      clangInfo->Ctx->getAlignOfGlobalVarInChars(clangInfo->Ctx->CharTy);
-    llvm::Constant *C =
-      llvm::ConstantDataArray::getString(info->module->getContext(), StrWithNull, false);
-    const char GlobalName = ".str";
-    unsigned AddrSpace = clangInfo->Ctx->getTargetAddressSpace(
-       gGenInfo->clangInfo->cCodeGen->CGM().getStringLiteralAddressSpace());
-    llvm::Module &M = info->module;
-   // Create a global variable for this string
-   auto *GV = new llvm::GlobalVariable(
-       info->module, C->getType(), info->module..getLangOpts().WritableStrings, llvm::GlobalValue::PrivateLinkage, C, GlobalName,
-       nullptr, llvm::GlobalVariable::NotThreadLocal, AddrSpace);
-   GV->setAlignment(Alignment.getAsAlign());
-   GV->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
-   if (GV->isWeakForLinker()) {
-     assert(info->module->supportsCOMDAT() && "Only COFF uses weak string literals");
-     GV->setComdat(M.getOrInsertComdat(GV->getName()));
-   }
-   info->module->setDSOLocal(GV);
-    //auto GV = GenerateStringLiteral(C, llvm::GlobalValue::PrivateLinkage, info->module, GlobalName, Alignment);
-    */
   }
-
-/*
-#ifdef HAVE_LLVM
-  if(localeUsesGPU() && gCodegenGPU == false){
-
-   llvm::IntegerType *IntTy;
-   llvm::PointerType *VoidPtrTy;
-
-   IntTy = llvm::IntegerType::getInt32Ty(info->module->getContext());
-   VoidPtrTy = llvm::Type::getInt8PtrTy(info->module->getContext(), 0);
-   //SizeTy = info->module->getContext().getSizeType();
-
-   llvm::StructType *FatbinWrapperTy =
-     llvm::StructType::get(IntTy, IntTy, VoidPtrTy, VoidPtrTy);
-
-     llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
-        llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fabin");
-    //llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> GpuBinaryOrErr =
-     //    llvm::MemoryBuffer::getFileOrSTDIN("tmp/chpl_gpu.fatbin");
-
-
-    //const std::string &Name = "";
-    //clang::CodeGen::CodeGenModule& CGM = gGenInfo->clangInfo->cCodeGen->CGM();
-    //auto ConstStr = CGM.GetAddrOfConstantCString(GpuBinaryOrErr.get()->getBuffer(), Name.c_str());
-    llvm::Constant *Values[] = {
-      llvm::ConstantInt::get(IntTy, 0x466243b1), // Fatbin wrapper magic.
-      llvm::ConstantInt::get(IntTy, 1),          // Fatbin version.
-      //makeConstantString(GpuBinaryOrErr.get()->getBuffer(), "", 16), // Data.
-      llvm::ConstantPointerNull::get(VoidPtrTy)}; // Unused in fatbin v1.
-    llvm::GlobalVariable *FatbinWrapper = new llvm::GlobalVariable(
-      *info->module, FatbinWrapperTy, true, llvm::GlobalValue::InternalLinkage,
-      llvm::ConstantStruct::get(FatbinWrapperTy, Values),
-       "__cuda_fatbin_wrapper");
-     // NVIDIA's cuobjdump looks for fatbins in this section.
-    FatbinWrapper->setSection(".nvFatBinSegment");
-  }
-#endif
-*/
 
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
@@ -2041,7 +1934,7 @@ void prepareCodegenLLVM()
     // --ieee-float
     FM.setAllowContract(true);
   }
-  if ( gCodegenGPU == false) {
+  if (gCodegenGPU == false) {
     info->irBuilder->setFastMathFlags(FM);
   }
 
@@ -3604,10 +3497,9 @@ void makeBinaryLLVM(void) {
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
     
-    bool disableVerify = ! developer;
-    //llvm::legacy::PassManager emitPM;
+    bool disableVerify = !developer;
 
-    if (gCodegenGPU == false){
+    if (gCodegenGPU == false) {
       llvm::raw_fd_ostream outputOfile(moduleFilename, error, flags);
       if (error || outputOfile.has_error())
         USR_FATAL("Could not open output file %s", moduleFilename.c_str());
@@ -3679,7 +3571,6 @@ void makeBinaryLLVM(void) {
       
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
- 
     }
   }
 
