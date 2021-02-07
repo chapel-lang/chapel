@@ -3496,7 +3496,7 @@ void makeBinaryLLVM(void) {
   // Emit the .o file for linking with clang
   // Setup and run LLVM passes to emit a .o file to outputOfile
   {
-    
+
     bool disableVerify = !developer;
 
     if (gCodegenGPU == false) {
@@ -3516,7 +3516,7 @@ void makeBinaryLLVM(void) {
 
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
-        
+
 #if HAVE_LLVM_VER > 60
         info->targetMachine->addPassesToEmitFile(emitPM, outputOfile,
                                                  nullptr,
@@ -3546,12 +3546,12 @@ void makeBinaryLLVM(void) {
 
         emitPM.add(createTargetTransformInfoWrapperPass(
                    info->targetMachine->getTargetIRAnalysis()));
- 
+
         info->targetMachine->addPassesToEmitFile(emitPM, outputASMfile,
                                                  nullptr,
                                                  asmFileType,
                                                  disableVerify);
-        
+
         emitPM.run(*info->module);
 
       }
@@ -3568,7 +3568,7 @@ void makeBinaryLLVM(void) {
                                  std::string("--create ") + fatbinFilename.c_str() +
                                  std::string(" --image=profile=sm_61,file=") + ptxObjectFilename.c_str() +
                                  std::string(" --image=profile=compute_61,file=") + asmFilename.c_str();
-      
+
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
     }

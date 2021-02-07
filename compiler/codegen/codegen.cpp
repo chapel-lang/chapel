@@ -1835,7 +1835,6 @@ static void codegen_header(std::set<const char*> & cnames,
   genComment("Virtual Method Table");
   genVirtualMethodTable(types,true);
 
-  
   genComment("Global Variables");
   forv_Vec(VarSymbol, varSymbol, globals) {
     varSymbol->codegenGlobalDef(true);
