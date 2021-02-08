@@ -60,7 +60,7 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 ************************************** | *************************************/
 
 bool ResolutionCandidate::isApplicable(CallInfo& info,
-                                       VisibilityInfo* visInfo, bool isOp) {
+                                       VisibilityInfo* visInfo) {
   bool retval = false;
 
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
@@ -70,9 +70,9 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
   resolveConstrainedGenericFun(fn);
 
   if (! fn->isGeneric()) {
-    retval = isApplicableConcrete(info, visInfo, isOp);
+    retval = isApplicableConcrete(info, visInfo);
   } else {
-    retval = isApplicableGeneric(info, visInfo, isOp);
+    retval = isApplicableGeneric(info, visInfo);
   }
 
   // Note: for generic instantiations, this code will be executed twice.
@@ -88,8 +88,7 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
 }
 
 bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
-                                               VisibilityInfo* visInfo,
-                                               bool isOp) {
+                                               VisibilityInfo* visInfo) {
 
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
@@ -99,15 +98,14 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
 
   resolveTypedefedArgTypes();
 
-  if (computeAlignment(info, isOp) == false)
+  if (computeAlignment(info) == false)
     return false;
 
   return checkResolveFormalsWhereClauses(info, visInfo);
 }
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
-                                              VisibilityInfo* visInfo,
-                                              bool isOp) {
+                                              VisibilityInfo* visInfo) {
 
   FnSymbol* oldFn = fn;
 
@@ -117,14 +115,14 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
     return false;
   }
 
-  if (computeAlignment(info, isOp) == false)
+  if (computeAlignment(info) == false)
     return false;
 
   if (checkGenericFormals(info.call) == false)
     return false;
 
   // Compute the param/type substitutions for generic arguments.
-  if (computeSubstitutions(info.call, isOp) == false) {
+  if (computeSubstitutions(info.call) == false) {
     reason = RESOLUTION_CANDIDATE_OTHER;
     return false;
   }
@@ -153,7 +151,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
   if (! witnesses.empty()) // i.e. when CG
     cleanupInstantiatedCGfun(fn, witnesses);
 
-  return isApplicable(info, visInfo, isOp);
+  return isApplicable(info, visInfo);
 }
 
 // Computes whether fn's interface constraints are satisfied at the call site.
@@ -180,7 +178,7 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::computeAlignment(CallInfo& info, bool isOp) {
+bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
@@ -240,7 +238,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool isOp) {
           return fn->isGeneric();
         }
 
-        if (isOp) {
+        if (fn->hasFlag(FLAG_OPERATOR)) {
           if (formal->typeInfo() == dtMethodToken &&
               info.actuals.v[i]->typeInfo() != dtMethodToken) {
             // Formal is a method token and the actual is not (but this was an
@@ -294,7 +292,7 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool isOp) {
         // If this isn't an operator call, or it was an operator call but this
         // actual wasn't intended for a skippable method token or "this"
         // argument, then we should fail at this actual.
-        if (!isOp || !skippedThisActual) {
+        if (!fn->hasFlag(FLAG_OPERATOR) || !skippedThisActual) {
           if (! fn->isGeneric()) {
             failingArgument = info.actuals.v[i];
             reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
@@ -314,8 +312,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool isOp) {
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL &&
         !formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-      if (isOp && (formal->typeInfo() == dtMethodToken ||
-                   formal->hasFlag(FLAG_ARG_THIS))) {
+      if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
+                                         formal->hasFlag(FLAG_ARG_THIS))) {
       // Operator calls are allowed to skip matching the method token and "this"
       // arguments
       } else {
@@ -344,7 +342,7 @@ static Type* getBasicInstantiationType(Type* actualType, Symbol* actualSym,
                                        bool allowCoercion,
                                        bool implicitBang);
 
-bool ResolutionCandidate::computeSubstitutions(Expr* ctx, bool isOp) {
+bool ResolutionCandidate::computeSubstitutions(Expr* ctx) {
   substitutions.clear();
 
   int nDefault = 0;
@@ -360,8 +358,9 @@ bool ResolutionCandidate::computeSubstitutions(Expr* ctx, bool isOp) {
       } else if (formal->defaultExpr != NULL) {
         computeSubstitutionForDefaultExpr(formal, ctx);
         nDefault++;
-      } else if (isOp && (formal->typeInfo() == dtMethodToken ||
-                          formal->hasFlag(FLAG_ARG_THIS))) {
+      } else if (fn->hasFlag(FLAG_OPERATOR) &&
+                 (formal->typeInfo() == dtMethodToken ||
+                  formal->hasFlag(FLAG_ARG_THIS))) {
         nIgnored++;
       }
 

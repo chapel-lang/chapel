@@ -4676,8 +4676,7 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  bool isOp = fn->hasFlag(FLAG_OPERATOR);
-  if (candidate->isApplicable(info, &visInfo, isOp)) {
+  if (candidate->isApplicable(info, &visInfo)) {
     candidates.add(candidate);
   } else {
     delete candidate;
