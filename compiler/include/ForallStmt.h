@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,8 +23,17 @@
 
 #include "stmt.h"
 
+enum ForallAutoLocalAccessCloneType {
+  NOT_CLONE,
+  NO_OPTIMIZATION,
+  STATIC_ONLY,
+  STATIC_AND_DYNAMIC
+};
+
 class ForallOptimizationInfo {
   public:
+    bool infoGathered;
+
     Symbol *iterSym;
     Expr *dotDomIterExpr;
     Symbol *dotDomIterSym;
@@ -49,9 +58,9 @@ class ForallOptimizationInfo {
     std::vector<Symbol *> staticCheckSymsForDynamicCandidates;
 
     bool autoLocalAccessChecked;
-
-
     bool confirmedFastFollower;
+
+    ForallAutoLocalAccessCloneType cloneType;
 
     ForallOptimizationInfo();
 };

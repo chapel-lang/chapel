@@ -1236,11 +1236,11 @@ proc CyclicZipOptArr.doiBulkTransferFromDR(Barg)
     }
 }
     
-proc CyclicZipOptArr.dsiTargetLocDom() {
+proc CyclicZipOptArr.dsiTargetLocDom() const ref {
   return dom.dist.targetLocDom;
 }
 
-proc CyclicZipOptArr.dsiTargetLocales() {
+proc CyclicZipOptArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 

@@ -1,0 +1,6 @@
+testBadCallCandidates.chpl:42: In method 'test':
+testBadCallCandidates.chpl:52: error: unresolved call 'D.baz("hi")'
+testBadCallCandidates.chpl:39: note: this candidate did not match: D.baz(x: C)
+testBadCallCandidates.chpl:52: note: because actual argument #1 with type 'string'
+testBadCallCandidates.chpl:39: note: is passed to formal 'x: C'
+note: there is also 1 other candidate, use --print-all-candidates to see it

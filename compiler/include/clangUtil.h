@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -106,6 +106,8 @@ void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
 extern std::string ggpuFatbinPath;
+
+void print_clang(clang::Decl* d);
 
 void print_clang(clang::Decl* d);
 

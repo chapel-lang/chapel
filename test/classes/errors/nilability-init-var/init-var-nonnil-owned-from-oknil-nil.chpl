@@ -7,5 +7,3 @@ class MyClass {
 
 
 var lhs: owned MyClass = nil;
-
-compilerError("done");

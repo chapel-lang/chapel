@@ -3,3 +3,4 @@
 ./SetTest.chpl:24: note: 'x' is dead due to ownership transfer here
 ./SetTest.chpl:27: error: mention of non-nilable variable after ownership is transferred out of it
 ./SetTest.chpl:24: note: ownership transfer occurred here
+  testOwnedRemove.chpl:9: called as testSet(type t = owned T)

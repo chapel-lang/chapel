@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,6 +69,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
+VarSymbol* gCacheRemote = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
@@ -959,6 +960,22 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
     visitor->exitArgSym(this);
   }
+}
+
+std::string ArgSymbol::demungeVarArgName(std::string* num) {
+  std::string name = this->name;
+  if (!this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
+  }
+  std::string mynum = name;
+  mynum.erase(0, 2); // remove _e
+  std::string n = mynum; // ##_name
+  mynum.resize(mynum.find('_')); // ##
+  n.erase(0, n.find('_')+1); // name
+  if (num != NULL) {
+    *num = mynum;
+  }
+  return n;
 }
 
 /******************************** | *********************************

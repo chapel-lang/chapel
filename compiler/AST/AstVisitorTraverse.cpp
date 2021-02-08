@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -67,6 +67,11 @@ void AstVisitorTraverse::visitPrimType(PrimitiveType* node)
 
 }
 
+void AstVisitorTraverse::visitConstrainedType(ConstrainedType* node)
+{
+
+}
+
 bool AstVisitorTraverse::enterArgSym(ArgSymbol* node)
 {
   return true;
@@ -88,6 +93,16 @@ bool AstVisitorTraverse::enterFnSym(FnSymbol* node)
 }
 
 void AstVisitorTraverse::exitFnSym(FnSymbol* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterInterfaceSym(InterfaceSymbol* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitInterfaceSym(InterfaceSymbol* node)
 {
 
 }
@@ -157,6 +172,16 @@ bool AstVisitorTraverse::enterNamedExpr(NamedExpr* node)
 }
 
 void AstVisitorTraverse::exitNamedExpr(NamedExpr* node)
+{
+
+}
+
+bool AstVisitorTraverse::enterIfcConstraint(IfcConstraint* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitIfcConstraint(IfcConstraint* node)
 {
 
 }
@@ -331,5 +356,15 @@ bool AstVisitorTraverse::enterCatchStmt(CatchStmt* node) {
 }
 
 void AstVisitorTraverse::exitCatchStmt(CatchStmt* node) {
+
+}
+
+bool AstVisitorTraverse::enterImplementsStmt(ImplementsStmt* node)
+{
+  return true;
+}
+
+void AstVisitorTraverse::exitImplementsStmt(ImplementsStmt* node)
+{
 
 }

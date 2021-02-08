@@ -1,4 +1,4 @@
 generic-varargs2.chpl:15: error: unresolved call 'Foo.init(4, 8, 15, 16, 23, 42)'
 generic-varargs2.chpl:5: note: this candidate did not match: Foo.init(args ..., type eltType = args.type )
-generic-varargs2.chpl:15: note: because non-type call actual argument #6
+generic-varargs2.chpl:15: note: because non-type actual argument #6
 generic-varargs2.chpl:5: note: is passed to formal 'eltType'

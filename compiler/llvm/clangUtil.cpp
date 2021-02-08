@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2652,9 +2652,10 @@ void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
   addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
 }
 
-void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
+void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
   Storage store;
   store.u.type = type;
+  store.isUnsigned = isUnsigned;
   /*fprintf(stderr, "Adding global type %s ", name.str().c_str());
   type->dump();
   fprintf(stderr, "\n");
@@ -2778,8 +2779,12 @@ llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
   return NULL;
 }
 
-llvm::Type *LayeredValueTable::getType(StringRef name) {
+llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
   if(Storage *store = get(name)) {
+    if (isUnsigned != NULL) {
+      *isUnsigned = store->isUnsigned;
+    }
+
     if( store->u.type ) {
       INT_ASSERT(isa<llvm::Type>(store->u.type));
       return store->u.type;
@@ -2791,6 +2796,10 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
 
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
+      const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
+      if (type != NULL) {
+        store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
+      }
       return store->u.type;
     }
   }

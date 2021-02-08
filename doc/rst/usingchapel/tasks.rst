@@ -181,7 +181,7 @@ execution time (see :ref:`oversubscribed-execution`).
 Hwloc
 =====
 
-When ``CHPL_TASKS=qthreads``, the default for ``CHPL_HWLOC`` becomes "hwloc",
+When ``CHPL_TASKS=qthreads``, the default for ``CHPL_HWLOC`` becomes "bundled",
 and the hwloc third-party package will be built.  Qthreads depends on
 this package to provide it with a description of the locale hardware, to
 support locality and affinity operations.

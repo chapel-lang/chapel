@@ -1,0 +1,1 @@
+arrOfTupleOfArr3.chpl:1: error: default initialization of tuple containing array or domain type not yet implemented

@@ -1,4 +1,4 @@
 whereClauseParamArgMismatch.chpl:10: error: unresolved call 'foo(1.2)'
 whereClauseParamArgMismatch.chpl:1: note: this candidate did not match: foo(param x: uint)
-whereClauseParamArgMismatch.chpl:10: note: because call actual argument #1 with type real(64)
+whereClauseParamArgMismatch.chpl:10: note: because actual argument #1 with type 'real(64)'
 whereClauseParamArgMismatch.chpl:1: note: is passed to formal 'param x: uint(64)'

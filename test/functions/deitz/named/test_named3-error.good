@@ -2,4 +2,5 @@ test_named3-error.chpl:23: error: unresolved call 'foo(i=1, m=2, n=3)'
 test_named3-error.chpl:1: note: this candidate did not match: foo(i: int, j: int, k: int)
 test_named3-error.chpl:23: note: because call uses named argument m
 test_named3-error.chpl:1: note: but function contains no formal named m
-test_named3-error.chpl:5: note: candidates are: foo(l: int, m: int, n: int)
+test_named3-error.chpl:23: note: other candidates are:
+test_named3-error.chpl:5: note:   foo(l: int, m: int, n: int)

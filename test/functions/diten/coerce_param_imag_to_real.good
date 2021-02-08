@@ -1,4 +1,4 @@
 coerce_param_imag_to_real.chpl:6: error: unresolved call 'foo(1.1i)'
 coerce_param_imag_to_real.chpl:1: note: this candidate did not match: foo(r: real)
-coerce_param_imag_to_real.chpl:6: note: because call actual argument #1 with type imag(64)
+coerce_param_imag_to_real.chpl:6: note: because actual argument #1 with type 'imag(64)'
 coerce_param_imag_to_real.chpl:1: note: is passed to formal 'r: real(64)'

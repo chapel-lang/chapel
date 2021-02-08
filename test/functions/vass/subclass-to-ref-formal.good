@@ -1,4 +1,4 @@
 subclass-to-ref-formal.chpl:14: error: unresolved call 'test(unmanaged D)'
 subclass-to-ref-formal.chpl:8: note: this candidate did not match: test(ref lhs: unmanaged C)
-subclass-to-ref-formal.chpl:14: note: because call actual argument #1 with type unmanaged D
+subclass-to-ref-formal.chpl:14: note: because actual argument #1 with type 'unmanaged D'
 subclass-to-ref-formal.chpl:8: note: is passed to formal 'ref lhs: unmanaged C'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "stringutil.h"
 
 ForallOptimizationInfo::ForallOptimizationInfo():
+  infoGathered(false),
   iterSym(NULL),
   dotDomIterExpr(NULL),
   dotDomIterSym(NULL),
@@ -33,7 +34,8 @@ ForallOptimizationInfo::ForallOptimizationInfo():
   iterCall(NULL),
   iterCallTmp(NULL),
   autoLocalAccessChecked(false),
-  confirmedFastFollower(false)
+  confirmedFastFollower(false),
+  cloneType(NOT_CLONE)
 {
 }
 

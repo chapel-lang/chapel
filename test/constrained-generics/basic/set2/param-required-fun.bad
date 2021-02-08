@@ -1,0 +1,2 @@
+param-required-fun.chpl:10: In method 'rank':
+param-required-fun.chpl:10: error: 'param' functions cannot return non-'param' values

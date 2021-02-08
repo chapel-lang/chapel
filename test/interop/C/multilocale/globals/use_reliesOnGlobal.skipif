@@ -1,0 +1,5 @@
+#!/usr/bin/env python3
+
+import os
+
+print('memory' not in  os.getenv('CHPL_SANITIZE_EXE', ''))

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,6 +27,7 @@
 #include "ForLoop.h"
 #include "optimizations.h"
 #include "passes.h"
+#include "forallOptimizations.h"
 #include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
@@ -125,6 +126,22 @@ static Expr* skipIgnoredStmts(Expr* last) {
   return last;
 }
 
+static bool shouldCheckElseStmtForLastStmts(CondStmt *cond) {
+  if (cond->elseStmt == NULL) {
+    return false;
+  }
+  // if this conditional was generated for aggregation, the else block has all
+  // the aggregation code, and as such, there is no applicable "last statement"
+  // within that block
+  if (SymExpr *condSymExpr = toSymExpr(cond->condExpr)) {
+    if (condSymExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (last == NULL)
@@ -134,7 +151,7 @@ static void helpGetLastStmts(Expr* last, std::vector<Expr*>& stmts) {
 
   if (CondStmt* cond = toCondStmt(last)) {
     helpGetLastStmts(cond->thenStmt->body.last(), stmts);
-    if (cond->elseStmt)
+    if (shouldCheckElseStmtForLastStmts(cond))
       helpGetLastStmts(cond->elseStmt->body.last(), stmts);
     return;
   }
@@ -233,6 +250,9 @@ static bool forallNoTaskPrivate(ForallStmt* forall) {
     } else if (shadow->isTaskPrivate()) {
       // task private variable could include arbitrary init expr
       // effectively computing a task id
+      if (shadow->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+        continue;
+      }
       return false;
     } else if (shadow->intent == TFI_IN || shadow->intent == TFI_CONST_IN) {
       // copy-init or = for in intent could compute a task ID
@@ -875,6 +895,29 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
   return false;
 }
 
+static CondStmt *getAggregationCondStmt(Expr *stmt) {
+
+  // if this was an aggregatable assignment, it must be inside a then block of
+  // an:
+  //
+  // if aggMarker {
+  //    (call = ....);   <-this must be `stmt
+  // }
+  // else {
+  //    (call copy aggregator ....)
+  // }
+  //
+  // In that scenario, the immediate parent of `stmt` is the then block, and its
+  // parent is the actual conditional
+  if (CondStmt *aggCond = toCondStmt(stmt->parentExpr->parentExpr)) {
+    if (SymExpr *condExpr = toSymExpr(aggCond->condExpr)) {
+      if (condExpr->symbol()->hasFlag(FLAG_AGG_MARKER)) {
+        return aggCond;
+      }
+    }
+  }
+  return NULL;
+}
 
 static void transformAssignStmt(Expr* stmt) {
   SET_LINENO(stmt);
@@ -967,6 +1010,7 @@ void optimizeForallUnorderedOps() {
   }
 
   std::vector<Expr*> atomicsToOptimize;
+  std::vector<CondStmt*> aggCondsToTransform;
   std::vector<Expr*> assignsToOptimize;
 
   // Gather expressions to optimize. This is done separately from
@@ -982,10 +1026,17 @@ void optimizeForallUnorderedOps() {
         std::vector<Expr*> lastStmts;
         getLastStmts(loop, lastStmts);
         for_vector(Expr, lastStmt, lastStmts) {
-          if (isOptimizableAtomicStmt(lastStmt, loop))
+          if (isOptimizableAtomicStmt(lastStmt, loop)) {
             atomicsToOptimize.push_back(lastStmt);
-          else if (isOptimizableAssignStmt(lastStmt, loop))
-            assignsToOptimize.push_back(lastStmt);
+          }
+          else if (isOptimizableAssignStmt(lastStmt, loop)) {
+            if (CondStmt *aggCond = getAggregationCondStmt(lastStmt)) {
+              aggCondsToTransform.push_back(aggCond);
+            }
+            else {
+              assignsToOptimize.push_back(lastStmt);
+            }
+          }
         }
       }
     }
@@ -995,7 +1046,12 @@ void optimizeForallUnorderedOps() {
   for_vector(Expr, atomic, atomicsToOptimize) {
     transformAtomicStmt(atomic);
   }
+  for_vector(CondStmt, cond, aggCondsToTransform) {
+    transformConditionalAggregation(cond);
+  }
   for_vector(Expr, assign, assignsToOptimize) {
     transformAssignStmt(assign);
   }
+
+  cleanupRemainingAggCondStmts();
 }

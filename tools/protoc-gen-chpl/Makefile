@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -32,7 +32,17 @@ linkFile=$(bdir)/protoc-gen-chpl
 SOURCES=$(wildcard *.cpp)
 HEADERS=$(wildcard *.h)
 LDFLAGS = -lprotobuf -lprotoc
-CPPFLAGS = -I.
+CPPFLAGS = -I. -std=c++11
+
+ifeq ($(CHPL_MAKE_PLATFORM),darwin)
+	PROTOC_LIB_LOC=$(dir $(shell which protoc))../lib
+	UPDATE_RPATH = install_name_tool -add_rpath $(PROTOC_LIB_LOC)
+else
+	# Don't want to accidentally execute protoc-gen-chpl when install_name_tool
+	# isn't available, so instead use a noop
+	UPDATE_RPATH = touch
+endif
+
 
 all: $(bdir)/protoc-gen-chpl FORCE
 
@@ -43,6 +53,7 @@ install: $(bdir)/protoc-gen-chpl FORCE
 $(bdir)/protoc-gen-chpl:	$(SOURCES)	$(HEADERS)
 	@echo "Building protoc-gen-chpl.."
 	$(CC) $(CPPFLAGS) -o $@ $(SOURCES) $(LDFLAGS) -lstdc++
+	$(UPDATE_RPATH) $@
 
 clean:
 	@echo "Removing protoc-gen-chpl..."

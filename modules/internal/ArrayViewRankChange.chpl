@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -112,6 +112,12 @@ module ArrayViewRankChange {
 
     override proc dsiIsLayout() param {
       return downDistInst.dsiIsLayout();
+    }
+
+    proc dsiEqualDMaps(that: ArrayViewRankChangeDist(?)) {
+      return (this.collapsedDim == that.collapsedDim && 
+              this.idx == that.idx &&
+              this.downDist.dsiEqualDMaps(that.downDist));
     }
   }
 
@@ -332,7 +338,7 @@ module ArrayViewRankChange {
       return dist;
     }
 
-    proc dsiTargetLocales() {
+    proc dsiTargetLocales() const ref {
       //
       // BLC: there's a bit of a question in my mind about whether
       // rank-change slices (and regular slices for that matter) ought
@@ -420,6 +426,10 @@ module ArrayViewRankChange {
       //      distInst = other.distInst;
       downDomPid = reprivatizeData(1);
       downDomInst = reprivatizeData(2);
+    }
+
+    override proc dsiSupportsAutoLocalAccess() param {
+      return downDomInst!.dsiSupportsAutoLocalAccess();
     }
 
  } // end of class ArrayViewRankChangeDom

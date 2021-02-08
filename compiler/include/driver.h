@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,6 +59,9 @@ extern bool fLLVMWideOpt;
 extern bool fAutoLocalAccess;
 extern bool fDynamicAutoLocalAccess;
 extern bool fReportAutoLocalAccess;
+
+extern bool fAutoAggregation;
+extern bool fReportAutoAggregation;
 
 extern bool fNoRemoteValueForwarding;
 extern bool fNoInferConstRefs;
@@ -165,6 +168,7 @@ extern bool fNoSplitInit;
 extern bool fNoEarlyDeinit;
 extern bool fNoCopyElision;
 extern bool fCompileTimeNilChecking;
+extern bool fInferImplementsStmts;
 extern bool fOverrideChecking;
 extern int  ffloatOpt;
 extern int  fMaxCIdentLen;
@@ -250,5 +254,7 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+
+extern bool fPrintAdditionalErrors;
 
 #endif

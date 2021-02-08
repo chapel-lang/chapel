@@ -1,4 +1,4 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: internal error: RES-FUN-ION-nnnn chpl version mmmm
+$CHPL_HOME/modules/internal/ChapelReduce.chpl:nnnn: internal error: RES-FUN-ION-nnnn chpl version mmmm
 Note: This source location is a guess.
 
 Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),

@@ -1,0 +1,3 @@
+#!/bin/bash
+testname=$1
+hostname > $testname.good

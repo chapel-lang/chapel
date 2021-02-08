@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,41 +24,45 @@
 class AggregateType;
 class DecoratedClassType;
 class EnumType;
+class ConstrainedType;
 class PrimitiveType;
 
 class ArgSymbol;
 class EnumSymbol;
 class FnSymbol;
+class InterfaceSymbol;
 class LabelSymbol;
 class ModuleSymbol;
 class TypeSymbol;
 class VarSymbol;
 
-class CallExpr;
-class ContextCallExpr;
-class DefExpr;
-class NamedExpr;
-class IfExpr;
 class SymExpr;
 class UnresolvedSymExpr;
+class DefExpr;
+class CallExpr;
+class ContextCallExpr;
 class LoopExpr;
+class NamedExpr;
+class IfcConstraint;
+class IfExpr;
 
 class UseStmt;
 class ImportStmt;
 class BlockStmt;
-class ForallStmt;
 class WhileDoStmt;
 class DoWhileStmt;
 class CForLoop;
 class ForLoop;
 class ParamForLoop;
-class ExternBlockStmt;
 class CondStmt;
 class GotoStmt;
-class ForwardingStmt;
 class DeferStmt;
+class ForallStmt;
 class TryStmt;
+class ForwardingStmt;
 class CatchStmt;
+class ImplementsStmt;
+class ExternBlockStmt;
 
 class AstVisitor
 {
@@ -97,7 +101,7 @@ public:
 
   virtual bool   enterEnumType       (EnumType*          node) = 0;
   virtual void   exitEnumType        (EnumType*          node) = 0;
-
+  virtual void   visitConstrainedType(ConstrainedType*   node) = 0;
   virtual void   visitPrimType       (PrimitiveType*     node) = 0;
 
   //
@@ -110,6 +114,9 @@ public:
 
   virtual bool   enterFnSym          (FnSymbol*          node) = 0;
   virtual void   exitFnSym           (FnSymbol*          node) = 0;
+
+  virtual bool   enterInterfaceSym   (InterfaceSymbol*   node) = 0;
+  virtual void   exitInterfaceSym    (InterfaceSymbol*   node) = 0;
 
   virtual void   visitLabelSym       (LabelSymbol*       node) = 0;
 
@@ -135,6 +142,9 @@ public:
 
   virtual bool   enterNamedExpr      (NamedExpr*         node) = 0;
   virtual void   exitNamedExpr       (NamedExpr*         node) = 0;
+
+  virtual bool   enterIfcConstraint  (IfcConstraint*     node) = 0;
+  virtual void   exitIfcConstraint   (IfcConstraint*     node) = 0;
 
   virtual bool   enterIfExpr         (IfExpr*            node) = 0;
   virtual void   exitIfExpr          (IfExpr*            node) = 0;
@@ -193,6 +203,9 @@ public:
 
   virtual bool   enterCatchStmt      (CatchStmt*         node) = 0;
   virtual void   exitCatchStmt       (CatchStmt*         node) = 0;
+
+  virtual bool   enterImplementsStmt (ImplementsStmt*    node) = 0;
+  virtual void   exitImplementsStmt  (ImplementsStmt*    node) = 0;
 };
 
 #endif

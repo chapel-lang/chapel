@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -235,6 +235,11 @@ void CollapseBlocks::visitPrimType(PrimitiveType* node)
 
 }
 
+void CollapseBlocks::visitConstrainedType(ConstrainedType* node)
+{
+
+}
+
 bool CollapseBlocks::enterArgSym(ArgSymbol* node)
 {
   return false;
@@ -256,6 +261,16 @@ bool CollapseBlocks::enterFnSym(FnSymbol* node)
 }
 
 void CollapseBlocks::exitFnSym(FnSymbol* node)
+{
+
+}
+
+bool CollapseBlocks::enterInterfaceSym(InterfaceSymbol* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitInterfaceSym(InterfaceSymbol* node)
 {
 
 }
@@ -324,6 +339,16 @@ bool CollapseBlocks::enterNamedExpr(NamedExpr* node)
 }
 
 void CollapseBlocks::exitNamedExpr(NamedExpr* node)
+{
+
+}
+
+bool CollapseBlocks::enterIfcConstraint(IfcConstraint* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitIfcConstraint(IfcConstraint* node)
 {
 
 }
@@ -463,6 +488,16 @@ bool CollapseBlocks::enterCatchStmt(CatchStmt* node)
 }
 
 void CollapseBlocks::exitCatchStmt(CatchStmt* node)
+{
+
+}
+
+bool CollapseBlocks::enterImplementsStmt(ImplementsStmt* node)
+{
+  return false;
+}
+
+void CollapseBlocks::exitImplementsStmt(ImplementsStmt* node)
 {
 
 }

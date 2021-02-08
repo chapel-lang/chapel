@@ -1,4 +1,4 @@
 resolutionErrorMsg.chpl:5: error: unresolved call 'f(0)'
 resolutionErrorMsg.chpl:1: note: this candidate did not match: f()
-resolutionErrorMsg.chpl:5: note: because call includes 1 arguments
+resolutionErrorMsg.chpl:5: note: because call includes 1 argument
 resolutionErrorMsg.chpl:1: note: but function can only accept 0 arguments

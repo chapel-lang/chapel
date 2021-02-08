@@ -1,0 +1,7 @@
+error message: chpldoc should report errors in terms of .chpl source line #s
+
+#16903
+
+Note that the .good message here is just an example.  I'd be open to almost
+any error as long as it pointed to the .chpl line number where the error
+originated rather than the /tmp/.../*.rst file.

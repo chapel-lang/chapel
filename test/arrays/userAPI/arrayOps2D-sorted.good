@@ -1,3 +1,3 @@
 ./arrayAPItest.chpl:105: In function 'testArrayAPI2D':
-./arrayAPItest.chpl:229: error: sort() requires 1-D array
+./arrayAPItest.chpl:229: error: sort() is currently only supported for 1D rectangular arrays
   arrayOps2D.chpl:5: called as testArrayAPI2D(lbl: string, X: [domain(2,int(64),false)] real(64), sliceDom: domain(2,int(64),false), reindexDom: domain(2,int(64),true))

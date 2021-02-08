@@ -161,8 +161,9 @@ types. A link to the type will be created, if possible. For example:
    * Leave an empty line above and below all these fields for best results.
    * All of these fields must be left-aligned with the outer most paragraph(s).
 
-For more information see the `Documenting argument, return, and yield values
-and types <#documenting-argument-return-and-yield-values-and-types>`_ section.
+For more information see the :ref:`Documenting argument, return, and yield values
+and types <documenting-args-returns-yields>` section.
+
 
 Documenting functions that throw
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -244,7 +245,7 @@ Private symbols are not documented by default.
 Creating links to other symbols
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-See the `hyperlinks <#hyperlinks>`_ section for details on creating links, also
+See the `Hyperlinks`_ section for details on creating links, also
 known as cross-references, in the documentation to other symbols.
 
 
@@ -280,6 +281,7 @@ Simple chunks of text. Paragraphs can have line breaks to improve source
 readability. Separate paragraphs with an empty line. Indentation is significant
 in reST. All lines of paragraph must be left-aligned.
 
+.. _inline-markup-1:
 
 Inline markup
 ~~~~~~~~~~~~~
@@ -403,7 +405,7 @@ Internal links
 ++++++++++++++
 
 Internal linking is done via a special reST role, see the section on specific
-markup `cross-references <#inline-markup-1>`_.
+:ref:`Inline markup <inline-markup-1>`.
 
 
 Sections
@@ -443,6 +445,8 @@ You can indent text after a comment start to form multiline comments::
       Still in the comment.
 
 
+.. _inline-markup-2:
+
 Inline markup
 ~~~~~~~~~~~~~
 
@@ -478,8 +482,9 @@ a matching identifier is found:
 
 ``:mod:``
 
-    Reference a module; a dotted name may be used. See `cross-references <#inline-markup-1>`_ for
-    details on dotted and non-dotted names.
+    Reference a module; a dotted name may be used. See
+    :ref:`Inline markup <inline-markup-1>` for details on dotted and non-dotted
+    names.
 
 ``:proc:``
 ``:iter:``

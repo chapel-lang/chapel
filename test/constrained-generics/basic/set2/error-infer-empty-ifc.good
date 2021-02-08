@@ -1,0 +1,4 @@
+error-infer-empty-ifc.chpl:15: warning: success #1
+error-infer-empty-ifc.chpl:19: error: unresolved call 'cgFun(5, "#2")'
+error-infer-empty-ifc.chpl:8: note: this candidate did not match: cgFun(cgArg: ?Q, msg: string)
+error-infer-empty-ifc.chpl:8: note: because interface constraint(s) were not satisfied

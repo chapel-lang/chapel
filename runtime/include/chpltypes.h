@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -30,8 +30,19 @@
 #include <stddef.h> // for ptrdiff_t
 #include <string.h>
 #include <sys/time.h> // for struct timeval
+
 #ifndef __cplusplus
 #include <complex.h>
+typedef float complex        _complex64;
+typedef double complex       _complex128;
+#else
+#include <complex>
+typedef std::complex<float>  _complex64;
+typedef std::complex<double> _complex128;
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 #ifdef __cplusplus
@@ -188,10 +199,6 @@ typedef float               _real32;
 typedef double              _real64;
 typedef float               _imag32;
 typedef double              _imag64;
-#ifndef __cplusplus
-typedef float complex       _complex64;
-typedef double complex      _complex128;
-#endif
 typedef int64_t             _symbol;
 
 // macros for Chapel min/max -> C stdint.h or values.h min/max
@@ -238,12 +245,19 @@ typedef struct chpl_main_argument_s {
   int32_t return_value;
 } chpl_main_argument;
 
-#ifndef __cplusplus
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+#ifndef __cplusplus
   return re + im*_Complex_I;
+#else
+  return std::complex<double>(re, im);
+#endif
 }
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+#ifndef __cplusplus
   return re + im*_Complex_I;
+#else
+  return std::complex<float>(re, im);
+#endif
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
@@ -292,7 +306,6 @@ static inline _complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
 static inline _complex64 complexUnaryMinus64(_complex64 c1) {
   return -c1;
 }
-#endif
 
 /* This should be moved somewhere else, but where is the question */
 static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)

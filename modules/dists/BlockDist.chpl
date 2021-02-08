@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1001,6 +1001,10 @@ override proc BlockArr.dsiDisplayRepresentation() {
 
 override proc BlockArr.dsiGetBaseDom() return dom;
 
+override proc BlockArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 //
 // NOTE: Each locale's myElems array must be initialized prior to
 // setting up the RAD cache.
@@ -1442,15 +1446,15 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
 ////// more /////////////////////////////////////////////////////////////////
 
-proc BlockArr.dsiTargetLocales() {
+proc BlockArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc BlockDom.dsiTargetLocales() {
+proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Block.dsiTargetLocales() {
+proc Block.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1724,14 +1728,14 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // The result of this scan, which will be Block-distributed as well
   type resType = op.generate().type;
-  var res: [dom] resType;
+  var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
   // writing it.  This domain really wants an easier way to express
   // it...
   use ReplicatedDist;
-  ref targetLocs = this.dsiTargetLocales();
+  const ref targetLocs = this.dsiTargetLocales();
   const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
   var elemPerLoc: [elemPerLocDom] resType;
   var inputReady$: [elemPerLocDom] sync bool;
@@ -1800,6 +1804,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       delete myop;
     }
   }
+  if isPOD(resType) then res.dsiElementInitializationComplete();
 
   delete op;
   return res;

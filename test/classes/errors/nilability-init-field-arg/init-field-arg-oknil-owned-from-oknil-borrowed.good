@@ -1,3 +1,4 @@
 init-field-arg-oknil-owned-from-oknil-borrowed.chpl:9: In initializer:
+init-field-arg-oknil-owned-from-oknil-borrowed.chpl:10: error: invalid copy-initialization
 init-field-arg-oknil-owned-from-oknil-borrowed.chpl:10: error: cannot create an owned variable from a borrowed class instance
-  init-field-arg-oknil-owned-from-oknil-borrowed.chpl:14: called as MyRecord.init(rhs: borrowed MyClass?)
+  init-field-arg-oknil-owned-from-oknil-borrowed.chpl:14: called as MyRecord.init(rhs: borrowed MyClass)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -512,7 +512,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
           {
             mText  += ": ";
             appendExpr(moveSrc, true);
-            mText  += ".type ";
+            mText  += ".type";
 
             retval =  true;
           }
@@ -878,6 +878,14 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
   }
 }
 
+static bool looksLikeInfixOperator(const char *fnName)
+{
+  // It looks like an operator if it doesn't look like an identifier.
+  bool looksLikeIdentifier = isalpha(fnName[0]) || fnName[0] == '_';
+
+  return !looksLikeIdentifier;
+}
+
 void AstToText::appendExpr(CallExpr* expr, bool printingType)
 {
   if (expr->primitive == 0)
@@ -890,6 +898,22 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       if     (strcmp(fnName, "!")                            == 0)
       {
         mText += "!";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      // postfix!
+      else if (fnName == astrPostfixBang                     &&
+               expr->numActuals()                            == 1)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "!";
+      }
+
+      // UnaryOp bitwise negate
+      else if (strcmp(fnName, "~")                           == 0 &&
+               expr->numActuals()                            == 1)
+      {
+        mText += "~";
         appendExpr(expr->get(1), printingType);
       }
 
@@ -1135,12 +1159,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += name->unresolved;
       }
 
-      // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
-      // Lydia 2015/02/17 ... except homogeneous tuple inner workings.
-      else if (expr->numActuals() == 2)
+      // Format binary operators in infix notation
+      else if (expr->numActuals() == 2 && looksLikeInfixOperator(fnName))
       {
-        UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
-        if (printingType && strcmp(name->unresolved, "*") == 0)
+        // ... except homogeneous tuple inner workings.
+        if (printingType && strcmp(fnName, "*") == 0)
         {
           // This is not a multiply, it's the symbol for a homogeneous tuple.
 
@@ -1158,13 +1181,15 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         else
         {
+          // Binary operator, infix notation
           appendExpr(expr->get(1), printingType);
           appendExpr(expr->baseExpr, printingType);
           appendExpr(expr->get(2), printingType);
         }
+
       }
 
-      else
+      else /* function/type */
         appendExpr(expr, fnName, printingType);
     }
 
@@ -1226,7 +1251,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     if (expr->isPrimitive(PRIM_TYPEOF))
     {
       appendExpr(expr->get(1), printingType);
-      mText += ".type ";
+      mText += ".type";
     }
     else if (expr->isPrimitive(PRIM_NEW))
     {
@@ -1460,6 +1485,11 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
 
     appendExpr(expr->get(i), printingType);
   }
+
+  // 1-tuples get a trailing "," inside the parens.
+  // Only tuples reach here with fnName == "".
+  if (strlen(fnName) == 0 && expr->numActuals() == 1)
+    mText += ",";
 
   mText += ')';
 }

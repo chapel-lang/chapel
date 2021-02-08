@@ -1,0 +1,15 @@
+array literal indexing not working as expected
+
+In this program, I expected that I'd written an array literal and
+indexed into it, as a short-hand form of:
+
+```chapel
+var A = [1, 2, 3];
+writeln(A[1]);
+```
+
+However, it seems from the result that the expression `[1, 2, 3][1]`
+is being parsed as though it was an index-less variation of the forall
+loop: `[i in [1, 2, 3]] [1]`.  However, this seems wrong to me in that
+I wouldn't think that `[1, 2, 3]` would/should/could be considered a
+forall expression (whereas `[[1, 2, 3]]` could be).

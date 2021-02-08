@@ -1,6 +1,6 @@
 nested-function-mods-field2.chpl:6: In initializer:
 nested-function-mods-field2.chpl:8: error: illegal lvalue in assignment
-  nested-function-mods-field2.chpl:17: called as borrowed Foo.init(param val = 13)
+  nested-function-mods-field2.chpl:17: called as Foo.init(param val = 13)
 nested-function-mods-field2.chpl:6: In initializer:
 nested-function-mods-field2.chpl:8: error: parameter set multiple times
-  nested-function-mods-field2.chpl:17: called as borrowed Foo.init(param val = 13)
+  nested-function-mods-field2.chpl:17: called as Foo.init(param val = 13)

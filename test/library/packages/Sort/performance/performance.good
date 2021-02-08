@@ -6,3 +6,4 @@ insertionSort (seconds): x.xxx
 binaryInsertionSort (seconds): x.xxx
 mergeSort (seconds): x.xxx
 selectionSort (seconds): x.xxx
+timSort (seconds): x.xxx

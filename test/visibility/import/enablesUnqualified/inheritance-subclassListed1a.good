@@ -1,0 +1,1 @@
+inheritance-subclassListed1a.chpl:30: error: Cannot find symbol 'Child' in module 'definesTertiary'

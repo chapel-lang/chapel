@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -493,6 +493,9 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
   currTPV->qual = TPV->qual;
   if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
   if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  if (TPV->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+    currTPV->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+  }
   return currTPV;
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -429,6 +429,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   bool found = false;
   int i;
   int use_captures = ncaptures;
+  bool atEOF = false;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
   if( ncaptures > INT_MAX || ncaptures < 0 )
@@ -476,6 +477,13 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
     goto markerror;
   }
 
+  // check for EOF
+  err = qio_channel_require_read(false, ch, 1);
+  if( qio_err_to_int(err) == EEOF ) {
+    atEOF = true;
+    err = 0;
+  }
+
   // Require at least 1 byte and at most 1024 bytes.
   need = re->min_match_length_bytes();
   if( need <= 0 ) need = 1;
@@ -506,14 +514,16 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
 
-  // Copy capture groups.
-  for( i = 0; i < ncaptures; i++ ) {
-    if( !found || locs[i].start == -1 ) {
-      captures[i].offset = -1;
-      captures[i].len = 0;
-    } else {
-      captures[i].offset = locs[i].start;
-      captures[i].len = locs[i].size();
+  // Copy capture groups if we found something
+  if( found ) {
+    for( i = 0; i < ncaptures; i++ ) {
+      if( locs[i].start == -1 ) {
+        captures[i].offset = -1;
+        captures[i].len = 0;
+      } else {
+        captures[i].offset = locs[i].start;
+        captures[i].len = locs[i].size();
+      }
     }
   }
 
@@ -546,6 +556,12 @@ error:
     } else {
       qio_channel_advance(false, ch, end_offset - offset);
     }
+
+    // reset the captures if we didn't find anything
+    for( i = 0; i < ncaptures; i++ ) {
+      captures[i].offset = -1;
+      captures[i].len = 0;
+    }
   }
 
 markerror:
@@ -553,7 +569,14 @@ markerror:
     qio_unlock(&ch->lock);
   }
 
-  if( err == 0 && ! found ) QIO_GET_CONSTANT_ERROR(err, EFORMAT, "no match");
+  // Adjust the error code if nothing was found
+  if( err == 0 && ! found ) {
+    if (atEOF) {
+      err = QIO_EEOF;
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "no match");
+    }
+  }
 
   return err;
 }

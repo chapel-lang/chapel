@@ -1,3 +1,4 @@
-test_compare_range.chpl:14: In function 'initMatrix':
-test_compare_range.chpl:20: error: iterator or promoted expression iterator used in if or while condition
-  test_compare_range.chpl:6: called as initMatrix(A: [domain(2,int(64),false)] real(64))
+$CHPL_HOME/modules/standard/Math.chpl:nnn: In function 'min':
+$CHPL_HOME/modules/standard/Math.chpl:nnn: error: iterator or promoted expression iterator used in if or while condition
+  test_compare_range.chpl:nnn: called as min(x: range(int(64),bounded,false), y: range(int(64),bounded,false)) from function 'initMatrix'
+  test_compare_range.chpl:nnn: called as initMatrix(A: [domain(2,int(64),false)] real(64))

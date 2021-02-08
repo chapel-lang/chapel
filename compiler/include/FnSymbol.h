@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,6 +42,32 @@ enum TagGenericResult {
   TGR_TAGGING_ABORTED
 };
 
+// Additional data for interface constraints / constrained generics / CG.
+// Stored in a FnSymbol for a constrained-generic function.
+class InterfaceInfo {
+public:
+  InterfaceInfo(FnSymbol* parent);
+  void addConstrainedType(DefExpr* def);
+  void addInterfaceConstraint(IfcConstraint* icon);
+
+  // each element is a DefExpr of a ConstrainedType
+  // that is used in the type of this function's formal
+  AList constrainedTypes;
+
+  // each element is an IfcConstraint representing
+  // an interface constraint of this function
+  AList interfaceConstraints;
+
+  // contains one SymbolMap per IfcConstraint in 'interfaceConstraints'
+  // with mapping: the FnSymbol for a required function in the interface def
+  //   -> the FnSymbol used to represent calls to that required function
+  //      throughout the body of this function
+  //
+  // a single SymbolMap for all constraints in a CG function is not sufficient
+  // when the same interface is implemented by different ConstrainedTypes
+  std::vector<SymbolMap> repsForRequiredFns;
+};
+
 class FnSymbol : public Symbol {
 public:
   // each formal is an ArgSymbol, but the elements are DefExprs
@@ -65,10 +91,14 @@ public:
   IteratorGroup*             iteratorGroup;
   // Support for genericsCache.
   GenericsCacheInfo*         cacheInfo;
+  // Support for interface constraints / constrained generics / CG.
+  InterfaceInfo*             interfaceInfo;
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;
+
   SymbolMap                  substitutions;
+  SymbolNameVec              substitutionsPostResolve;
 
   astlocT                    userInstantiationPointLoc;
 
@@ -190,10 +220,14 @@ public:
   bool                       isDefaultInit()                             const;
   bool                       isCopyInit()                                const;
 
-  bool                       isGeneric();
-  bool                       isGenericIsValid();
+  bool                       isGeneric()                                 const;
+  bool                       isGenericIsValid()                          const;
   void                       setGeneric(bool generic);
   void                       clearGeneric();
+  bool                       isConstrainedGeneric()                      const;
+  InterfaceInfo*             ensureInterfaceInfo();
+  void                       addConstrainedType(DefExpr* def);
+  void                       addInterfaceConstraint(IfcConstraint* icon);
 
   AggregateType*             getReceiverType()                           const;
 
@@ -210,6 +244,8 @@ public:
   bool                       throwsError()                               const;
 
   bool                       retExprDefinesNonVoid()                     const;
+
+  Symbol*                    getSubstitutionWithName(const char* name)   const;
 
   std::string                nameAndArgsToString(const char* sep,
                                                  bool forError,
