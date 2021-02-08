@@ -86,9 +86,10 @@
   class NamedExpr;
   class Type;
 
-  enum   ProcIter {
-    ProcIter_PROC,
-    ProcIter_ITER
+  enum   ProcIterOp {
+    ProcIterOp_PROC,
+    ProcIterOp_ITER,
+    ProcIterOp_OP
   };
 
   struct PotentialRename {
@@ -132,7 +133,7 @@
     FnSymbol*                 pfnsymbol;
     ModuleSymbol*             pmodsymbol;
     ImportStmt*               pimportstmt;
-    ProcIter                  procIter;
+    ProcIterOp                procIterOp;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
@@ -324,7 +325,7 @@
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
-%token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
+%token TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
@@ -499,7 +500,7 @@
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <pexpr> fn_decl_receiver_expr
-%type <procIter> proc_or_iter
+%type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
 %type <pShadowVar> intent_expr
 %type <pShadowVarPref> shadow_var_prefix
@@ -1394,7 +1395,7 @@ linkage_spec:
 ;
 
 fn_decl_stmt:
-  linkage_spec proc_or_iter
+  linkage_spec proc_iter_or_op
     {
       // Capture the latest comment
       @2.comment = context->latestComment;
@@ -1424,11 +1425,18 @@ fn_decl_stmt:
         // cname should be set based upon param
         fn->insertFormalAtTail(linkageFn->getFormal(1));
 
-      if ($2 == ProcIter_ITER)
+      if ($2 == ProcIterOp_ITER)
       {
         if (fn->hasFlag(FLAG_EXTERN))
           USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
         fn->addFlag(FLAG_ITERATOR_FN);
+      }
+      if ($2 == ProcIterOp_OP) {
+        fn->addFlag(FLAG_OPERATOR);
+        if (fn->_this != NULL) {
+          updateOpThisTagOrErr(fn);
+          setupTypeIntentArg(toArgSymbol(fn->_this));
+        }
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
@@ -1567,9 +1575,10 @@ opt_this_intent_tag:
 | TTYPE  { $$ = INTENT_TYPE;  }
 ;
 
-proc_or_iter:
-  TPROC  { $$ = ProcIter_PROC; }
-| TITER  { $$ = ProcIter_ITER; }
+proc_iter_or_op:
+  TPROC  { $$ = ProcIterOp_PROC; }
+| TITER  { $$ = ProcIterOp_ITER; }
+| TOPERATOR { $$ = ProcIterOp_OP; }
 ;
 
 opt_ret_tag:

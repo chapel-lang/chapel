@@ -337,6 +337,8 @@ symbolFlag( FLAG_OBJECT_CLASS , ypr, "object class" , ncm )
 symbolFlag( FLAG_ON , npr, "on" , ncm )
 symbolFlag( FLAG_ON_BLOCK , npr, "on block" , ncm )
 
+symbolFlag( FLAG_OPERATOR , npr, "operator" , ncm )
+
 symbolFlag( FLAG_OVERRIDE , npr, "method overrides" , ncm )
 
 // variables added by flatten functions

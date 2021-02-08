@@ -4986,6 +4986,11 @@ static void testArgMapping(FnSymbol*                    fn1,
                            int                          j,
                            DisambiguationState&         DS);
 
+static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                             ArgSymbol* formal2, Symbol* actual,
+                             const DisambiguationContext& DC, int i, int j,
+                             DisambiguationState& DS);
+
 ResolutionCandidate*
 disambiguateForInit(CallInfo& info, Vec<ResolutionCandidate*>& candidates) {
   DisambiguationContext     DC(info);
@@ -5282,6 +5287,21 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
 
     EXPLAIN("\nLooking at argument %d\n", k);
 
+    if (formal1 == NULL || formal2 == NULL) {
+      if (candidate1->fn->hasFlag(FLAG_OPERATOR) &&
+          candidate2->fn->hasFlag(FLAG_OPERATOR)) {
+        EXPLAIN("\nSkipping argument %d because could be in an operator call\n",
+                k);
+        continue;
+      } else {
+        // One of the two candidate functions was not an operator, but one
+        // was so we need to do something special here.
+        testOpArgMapping(candidate1->fn, formal1, candidate2->fn, formal2,
+                         actual, DC, i, j, DS);
+        continue;
+      }
+    }
+
     testArgMapping(candidate1->fn,
                    formal1,
                    candidate2->fn,
@@ -5377,6 +5397,43 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   }
 }
 
+// Calls canDispatch and does the initial EXPLAIN calls, which were otherwise
+// duplicated
+static void testArgMapHelper(FnSymbol* fn, ArgSymbol* formal, Symbol* actual,
+                             Type* fType, Type* actualType, bool actualParam,
+                             bool* formalPromotes, bool* formalNarrows,
+                             const DisambiguationContext& DC,
+                             DisambiguationState& DS,
+                             int fnNum) {
+  canDispatch(actualType, actual, fType, formal, fn, formalPromotes,
+              formalNarrows);
+
+  if (fnNum == 1) {
+    DS.fn1Promotes |= *formalPromotes;
+  } else if (fnNum == 2) {
+    DS.fn2Promotes |= *formalPromotes;
+  } else {
+    INT_FATAL("fnNum should be either 1 or 2");
+  }
+
+  EXPLAIN("Formal %d's type: %s", fnNum, toString(fType));
+  if (*formalPromotes)
+    EXPLAIN(" (promotes)");
+  if (formal->hasFlag(FLAG_INSTANTIATED_PARAM))
+    EXPLAIN(" (instantiated param)");
+  if (*formalNarrows)
+    EXPLAIN(" (narrows param)");
+  EXPLAIN("\n");
+
+  if (actualType != fType) {
+    if (actualParam) {
+      EXPLAIN("Actual requires param coercion to match formal %d\n", fnNum);
+    } else {
+      EXPLAIN("Actual requires coercion to match formal %d\n", fnNum);
+    }
+  }
+}
+
 /** Compare two argument mappings, given a set of actual arguments, and set the
  *  disambiguation state appropriately.
  *
@@ -5441,52 +5498,11 @@ static void testArgMapping(FnSymbol*                    fn1,
     EXPLAIN(" (default)");
   EXPLAIN("\n");
 
-  canDispatch(actualType, actual,
-             f1Type, formal1, fn1,
-             &formal1Promotes, &formal1Narrows);
+  testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
+                   &formal1Promotes, &formal1Narrows, DC, DS, 1);
 
-  DS.fn1Promotes |= formal1Promotes;
-
-  EXPLAIN("Formal 1's type: %s", toString(f1Type));
-  if (formal1Promotes)
-    EXPLAIN(" (promotes)");
-  if (formal1->hasFlag(FLAG_INSTANTIATED_PARAM))
-    EXPLAIN(" (instantiated param)");
-  if (formal1Narrows)
-    EXPLAIN(" (narrows param)");
-  EXPLAIN("\n");
-
-  if (actualType != f1Type) {
-    if (actualParam) {
-      EXPLAIN("Actual requires param coercion to match formal 1\n");
-    } else {
-      EXPLAIN("Actual requires coercion to match formal 1\n");
-    }
-  }
-
-  canDispatch(actualType, actual,
-              f2Type, formal1, fn1,
-              &formal2Promotes, &formal2Narrows);
-
-  DS.fn2Promotes |= formal2Promotes;
-
-  EXPLAIN("Formal 2's type: %s", toString(f2Type));
-  if (formal2Promotes)
-    EXPLAIN(" (promotes)");
-  if (formal2->hasFlag(FLAG_INSTANTIATED_PARAM))
-    EXPLAIN(" (instantiated param)");
-  if (formal2Narrows)
-    EXPLAIN(" (narrows param)");
-  EXPLAIN("\n");
-
-  // Adjust number of coercions for f2
-  if (actualType != f2Type) {
-    if (actualParam) {
-      EXPLAIN("Actual requires param coercion to match formal 2\n");
-    } else {
-      EXPLAIN("Actual requires coercion to match formal 2\n");
-    }
-  }
+  testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
+                   &formal2Promotes, &formal2Narrows, DC, DS, 2);
 
   // Figure out scalar type for candidate matching
   if ((formal1Promotes || formal2Promotes) &&
@@ -5640,6 +5656,53 @@ static void testArgMapping(FnSymbol*                    fn1,
     if (prefer2 == WEAKER)  { DS.fn2WeakerPreferred = true;  level = "weaker"; }
     if (prefer2 == WEAKEST) { DS.fn2WeakestPreferred = true; level = "weakest"; }
     EXPLAIN("%s: Fn %d is %s preferred\n", reason, j, level);
+  }
+}
+
+static void testOpArgMapping(FnSymbol* fn1, ArgSymbol* formal1, FnSymbol* fn2,
+                             ArgSymbol* formal2, Symbol* actual,
+                             const DisambiguationContext& DC, int i, int j,
+                             DisambiguationState& DS) {
+  // Validate our assumptions in this function - only operator functions should
+  // return a NULL for the formal and they should only do so for method token
+  // and "this" actuals.
+  INT_ASSERT(fn1->hasFlag(FLAG_OPERATOR) == (formal1 == NULL));
+  INT_ASSERT(fn2->hasFlag(FLAG_OPERATOR) == (formal2 == NULL));
+
+  Type* actualType = actual->type->getValType();
+  bool actualParam = getImmediate(actual) != NULL;
+  const char* reason = "potentially optional argument present vs not";
+  const char* level = "weak";
+
+  if (formal1 == NULL) {
+    EXPLAIN("Function 1 did not have a corresponding formal");
+    EXPLAIN("Function 1 is an operator standalone function");
+    INT_ASSERT(formal2 != NULL);
+
+    Type* f2Type = formal2->type->getValType();
+    bool formal2Promotes = false;
+    bool formal2Narrows = false;
+
+    testArgMapHelper(fn2, formal2, actual, f2Type, actualType, actualParam,
+                     &formal2Promotes, &formal2Narrows, DC, DS, 2);
+
+    DS.fn2WeakPreferred = true;
+    EXPLAIN("%s: Fn % is %s preferred\n", reason, j, level);
+
+  } else {
+    INT_ASSERT(formal2 == NULL);
+    EXPLAIN("Function 2 did not have a corresponding formal");
+    EXPLAIN("Function 2 is an operator standalone function");
+
+    Type* f1Type = formal1->type->getValType();
+    bool formal1Promotes = false;
+    bool formal1Narrows = false;
+
+    testArgMapHelper(fn1, formal1, actual, f1Type, actualType, actualParam,
+                     &formal1Promotes, &formal1Narrows, DC, DS, 1);
+
+    DS.fn1WeakPreferred = true;
+    EXPLAIN("%s: Fn % is %s preferred\n", reason, i, level);
   }
 }
 

@@ -2633,3 +2633,13 @@ void redefiningReservedWordError(const char* name)
   USR_FATAL_CONT(buildErrorStandin(),
                  "attempt to redefine reserved word '%s'", name);
 }
+
+void updateOpThisTagOrErr(FnSymbol* fn) {
+  if (fn->thisTag == INTENT_BLANK) {
+    fn->thisTag = INTENT_TYPE;
+  } else {
+    USR_FATAL_CONT(buildErrorStandin(),
+                   "attempt to declare unsupported this intent tag for operator"
+                   " function '%s'", fn->name);
+  }
+}

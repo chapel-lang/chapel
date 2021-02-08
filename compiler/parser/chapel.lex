@@ -177,6 +177,7 @@ none             return processToken(yyscanner, TNONE);
 nothing          return processToken(yyscanner, TNOTHING);
 on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
+operator         return processToken(yyscanner, TOPERATOR);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 override         return processToken(yyscanner, TOVERRIDE);

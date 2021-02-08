@@ -255,12 +255,6 @@ void normalize() {
         fn->name = astrDeinit;
       }
 
-    // make sure methods don't attempt to overload operators
-    } else if (isalpha(fn->name[0])         == 0   &&
-               fn->name[0]                  != '_' &&
-               fn->formals.length           >  1   &&
-               fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
-      USR_FATAL(fn, "invalid method name");
     }
   }
 
