@@ -13,6 +13,10 @@ proc R.init=(param p : this.type.T) {
   this.T = p.type;
   this.p = p;
 }
+proc _cast(type t: R, from: t.T) {
+  var tmp: t = from;
+  return tmp;
+}
 
 record W {
   type T;
