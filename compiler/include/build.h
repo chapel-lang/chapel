@@ -215,6 +215,6 @@ void redefiningReservedWordError(const char* name);
 
 // Emits an error for an attempt to provide an unexpected this intent tag
 // when defining an explicit operator.
-void badOperatorThisTagError(const char* name);
+void updateOpThisTagOrErr(FnSymbol* fn);
 
 #endif

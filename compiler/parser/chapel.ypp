@@ -1434,11 +1434,7 @@ fn_decl_stmt:
       if ($2 == ProcIterOp_OP) {
         fn->addFlag(FLAG_OPERATOR);
         if (fn->_this != NULL) {
-          if (fn->thisTag == INTENT_BLANK) {
-            fn->thisTag = INTENT_TYPE;
-          } else {
-            badOperatorThisTagError(fn->name);
-          }
+          updateOpThisTagOrErr(fn);
           setupTypeIntentArg(toArgSymbol(fn->_this));
         }
       }

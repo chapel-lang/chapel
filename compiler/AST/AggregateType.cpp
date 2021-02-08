@@ -623,11 +623,7 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
       fn->_this = arg;
 
       if (fn->hasFlag(FLAG_OPERATOR)) {
-        if (fn->thisTag == INTENT_BLANK) {
-          fn->thisTag = INTENT_TYPE;
-        } else {
-          badOperatorThisTagError(fn->name);
-        }
+        updateOpThisTagOrErr(fn);
       }
 
       if (fn->thisTag == INTENT_TYPE) {
