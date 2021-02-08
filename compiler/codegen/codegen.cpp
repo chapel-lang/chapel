@@ -2591,6 +2591,7 @@ void codegen() {
 
   codegenPartOne();
 
+#ifdef HAVE_LLVM
   if (localeUsesGPU()) {
 
     pid_t pid = fork();
@@ -2609,6 +2610,7 @@ void codegen() {
       }
     }
   }
+#endif
 
   codegenPartTwo();
 
