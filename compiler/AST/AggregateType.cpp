@@ -622,6 +622,14 @@ void AggregateType::addDeclaration(DefExpr* defExpr) {
 
       fn->_this = arg;
 
+      if (fn->hasFlag(FLAG_OPERATOR)) {
+        if (fn->thisTag == INTENT_BLANK) {
+          fn->thisTag = INTENT_TYPE;
+        } else {
+          badOperatorThisTagError(fn->name);
+        }
+      }
+
       if (fn->thisTag == INTENT_TYPE) {
         arg->intent = INTENT_BLANK;
         arg->addFlag(FLAG_TYPE_VARIABLE);
