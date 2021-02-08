@@ -2520,7 +2520,6 @@ module ChapelArray {
     proc type chpl__deserialize(data) {
       local {
       var arrinst = _to_borrowed(__primitive("static field type", this, "_instance")).chpl__deserialize(data);
-      compilerWarning("chpl__deserialize for ", arrinst.type:string);
       if _isPrivatized(arrinst) {
         compilerAssert(data.type == int,
                        "A privatized array's serial representation must be its pid only");
