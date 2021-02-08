@@ -1292,6 +1292,31 @@ private proc _lu (in A: [?Adom] ?eltType) {
 }
 
 /*
+  Compute QR factorization of matrix `A`
+*/
+proc qr(A: [?Adom] ?t)
+  where A.rank ==2 && !usingLAPACK && usingBLAS{
+  const (m,n) = Adom.shape;
+  var Q: [1..m, 1..n] t;
+  var R: [1..n, 1..n] t;
+
+  for i in 1..n {
+    var v = A[..,i];
+
+    for j in 1..(i-1) {
+      var q = Q[.., j];
+      R[j, i] = dot(q, v);
+      v = v - ( R[j, i] * q);
+    }
+
+    var vNorm = norm(v, normType.norm2);
+    Q[.., i] = v / vNorm;
+    R[i, i] = vNorm;
+  }
+  return (Q,R);
+}
+
+/*
   Compute an LU factorization of square matrix `A`
   using partial pivoting, such that `A = P * L * U` where P
   is a permutation matrix. Return a tuple of size 2 `(LU, ipiv)`.
