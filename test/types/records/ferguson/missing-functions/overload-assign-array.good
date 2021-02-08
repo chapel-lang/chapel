@@ -1,0 +1,2 @@
+overload-assign-array.chpl:6: error: unsupported = overload to '[domain(1,int(64),false)] real(64)' from 'Point'
+note: assignment overloads setting array or tuples are not currently supported

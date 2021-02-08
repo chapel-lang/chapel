@@ -701,6 +701,8 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
                      toString(toType), toString(fromType));
       USR_PRINT("assignment overloads setting array or tuples "
                 "are not currently supported");
+      checkAssign = false;
+      checkCast = false;
     }
   }
 
