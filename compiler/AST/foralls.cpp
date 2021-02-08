@@ -955,6 +955,27 @@ static CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName) {
   return ret;
 }
 
+static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
+
+  CallExpr *iterCall = toCallExpr(e);
+  INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+  INT_ASSERT(iterCall->numActuals() > 1);
+
+  const char *fnName = isStatic ? "chpl__staticFastFollowCheckNew" :
+                                  "chpl__dynamicFastFollowCheckNew";
+
+  CallExpr *ret = new CallExpr(PRIM_AND);
+
+  for_actuals(actual, iterCall) {
+    if (ret->numActuals() == 2) {
+      ret = new CallExpr(PRIM_AND, ret);
+    }
+    ret->insertAtTail(new CallExpr(fnName, actual->copy()));
+  }
+
+  return ret;
+}
+
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
@@ -1026,11 +1047,10 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
       if (inTestFile(iterExpr)) {
-        CallExpr *checkCall = generateModuleCallFromZip(iterExpr,
-                                                        "chpl__staticFastFollowCheckZipNew");
+        CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
         CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
-
         leadForLoop->insertAtTail(moveToFlag);
+        normalize(checkCall);
       }
       else {
         leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
@@ -1042,15 +1062,11 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
       }
       else {
         if (inTestFile(iterExpr)) {
-          CallExpr *checkCall = generateModuleCallFromZip(iterExpr,
-                                                          "chpl__dynamicFastFollowCheckZipNew");
-          //CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T2, checkCall);
-
-          //leadForLoop->insertAtTail(moveToFlag);
-
+          CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/false);
           leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
                                                  new CallExpr(PRIM_MOVE, T2, checkCall),
                                                  new CallExpr(PRIM_MOVE, T2, gFalse)));
+          normalize(checkCall);
         }
         else {
           leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),

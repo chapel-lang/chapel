@@ -620,6 +620,10 @@ module ChapelIteratorSupport {
     }
   }
 
+  proc chpl__staticFastFollowCheckNew(const ref x) param {
+    return chpl__staticFastFollowCheck(x);
+  }
+
   proc chpl__staticFastFollowCheck(x, lead) param {
     return chpl__hasInertFastFollowers(x);
   }
@@ -664,6 +668,10 @@ module ChapelIteratorSupport {
     else {
       return false;
     }
+  }
+
+  proc chpl__dynamicFastFollowCheckNew(const ref x) {
+    return chpl__dynamicFastFollowCheck(x);
   }
 
   proc chpl__dynamicFastFollowCheck(x, lead) {

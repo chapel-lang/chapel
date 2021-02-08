@@ -742,8 +742,8 @@ void registerModule(ModuleSymbol* mod);
 void update_symbols(BaseAST* ast, SymbolMap* map);
 
 static inline bool inTestFile(BaseAST *ast) {
-  return true;
-  //return strcmp(ast->fname(), "/Users/ekayraklio/code/chapel/versions/f03/chapel/primZip.chpl") == 0;
+  //return true;
+  return strcmp(ast->fname(), "/Users/ekayraklio/code/chapel/versions/f03/chapel/primZip.chpl") == 0;
 }
 
 #endif
