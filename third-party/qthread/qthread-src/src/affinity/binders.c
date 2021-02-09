@@ -1,6 +1,7 @@
 #include <hwloc.h>
 #include <stdio.h>
 
+#include "qt_alloc.h"
 #include "qt_affinity.h"
 #include "qt_envariables.h"
 
