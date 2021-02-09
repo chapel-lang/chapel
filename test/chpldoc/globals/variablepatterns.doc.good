@@ -37,5 +37,3 @@ or
 
 .. data:: var j = try x
 
-.. data:: var k = foo("this is", a, "function", call)
-
