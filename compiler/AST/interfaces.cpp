@@ -438,6 +438,10 @@ static void verifyWrapImplementsStmt(ImplementsStmt* istm,
 
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
   SET_LINENO(istm);
+  if (isUnresolvedSymExpr(istm->iConstraint->interfaceExpr)) {
+    INT_ASSERT(! normalized); // will report "undeclared" error later
+    return NULL;
+  }
   InterfaceSymbol* isym = istm->iConstraint->ifcSymbol();
   FnSymbol* wrapFn = new FnSymbol(implementsStmtWrapperName(isym));
   wrapFn->addFlag(FLAG_IMPLEMENTS_WRAPPER);
@@ -453,6 +457,7 @@ FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
 void wrapImplementsStatements() {
   forv_Vec(ImplementsStmt, istm, gImplementsStmts) {
     FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
+    if (!wrapFn) continue; // there was an error
     if (fVerify) verifyWrapImplementsStmt(istm, wrapFn);
   }
 }
