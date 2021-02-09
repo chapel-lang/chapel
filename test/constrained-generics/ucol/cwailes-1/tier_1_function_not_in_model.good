@@ -1,1 +1,5 @@
-Error: Can't resolve call to LT(T, T)
+tier_1_function_not_in_model.chpl:20: In function 'minFn':
+tier_1_function_not_in_model.chpl:22: error: unresolved call 'LT(T, T)'
+tier_1_function_not_in_model.chpl:12: note: this candidate did not match: LT(x: int, y: int)
+tier_1_function_not_in_model.chpl:22: note: because actual argument #1 with type 'T'
+tier_1_function_not_in_model.chpl:12: note: is passed to formal 'x: int(64)'

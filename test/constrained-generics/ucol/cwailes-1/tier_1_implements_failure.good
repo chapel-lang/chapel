@@ -1,1 +1,4 @@
-Error: LT(int, int) not in scope
+tier_1_implements_failure.chpl:6: In 'implements LessThan' statement:
+tier_1_implements_failure.chpl:6: error: when checking this implements statement
+tier_1_implements_failure.chpl:6: note: the required function LT is not implemented
+tier_1_implements_failure.chpl:2: note: the required function LT in the interface LessThan is declared here

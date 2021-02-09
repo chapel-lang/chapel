@@ -1,8 +1,8 @@
-interface LessThan(type T) {
+interface LessThan(T) {
   proc LT(x:T, y:T):bool;
 }
 
-interface Equal(type T) {
+interface Equal(T) {
   proc EQ(x:T, y:T):bool;
 }
 
@@ -14,7 +14,9 @@ proc EQ(x:int, y:int) {
   return x == y;
 }
 
-proc minFnPrime(x:?T, y:T, ifeq:T) where implements LessThan(T), Equal(T) {
+proc minFnPrime(x:?T, y:T, ifeq:T)
+ where implements LessThan(T) && implements Equal(T)
+{
   if (LT(y, x)) {
     return y;
   } else if (EQ(x,y)) {

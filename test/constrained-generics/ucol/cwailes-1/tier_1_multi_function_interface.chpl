@@ -1,4 +1,4 @@
-interface LessThanEqual(type T) {
+interface LessThanEqual(T) {
   proc LT(x:T, y:T):bool;
   proc EQ(x:T, y:T):bool;
 }

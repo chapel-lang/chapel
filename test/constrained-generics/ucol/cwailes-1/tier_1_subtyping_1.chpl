@@ -4,7 +4,7 @@ class C {
 
 class D : C {}
 
-interface I(type T) {
+interface I(T) {
   proc g(x:T):int;
 }
 

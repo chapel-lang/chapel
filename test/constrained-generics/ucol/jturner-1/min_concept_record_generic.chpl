@@ -1,5 +1,5 @@
 interface LessThan {
-  proc LT(x:self, y:self):bool;
+  proc LT(x:Self, y:Self):bool;
 }
 
 record TestMe {

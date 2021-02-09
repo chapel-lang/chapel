@@ -1,0 +1,6 @@
+calling_simple_generic.chpl:15: In function 'minFn':
+calling_simple_generic.chpl:16: error: unresolved call 'DoID(T)'
+calling_simple_generic.chpl:11: note: this candidate did not match: DoID(x: ?T)
+calling_simple_generic.chpl:16: note: because actual argument #1 of an interface type T
+calling_simple_generic.chpl:11: note: is passed to a generic formal
+calling_simple_generic.chpl:11: note: passing a constrained-generic formal to a non-constrained-generic function is not allowed
