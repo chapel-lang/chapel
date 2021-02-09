@@ -1,0 +1,36 @@
+T1
+0 1 2 3 
+
+T2
+default-init: (ptr = {x = 0})
+default-init: (ptr = {x = 0})
+default-init: (ptr = {x = 0})
+default-init: (ptr = {x = 0})
+(ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) 
+deinit: (ptr = {x = 0})
+init-int: (ptr = {x = 0})
+deinit: (ptr = {x = 0})
+init-int: (ptr = {x = 1})
+deinit: (ptr = {x = 0})
+init-int: (ptr = {x = 2})
+deinit: (ptr = {x = 0})
+init-int: (ptr = {x = 3})
+(ptr = {x = 0}) (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) 
+deinit: (ptr = {x = 0})
+deinit: (ptr = {x = 1})
+deinit: (ptr = {x = 2})
+deinit: (ptr = {x = 3})
+
+T3
+init-int: (ptr = {x = 0})
+init-int: (ptr = {x = 1})
+init-int: (ptr = {x = 2})
+init-int: (ptr = {x = 3})
+(ptr = {x = 0}) (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) 
+(ptr = {x = 3}) (ptr = {x = 2}) (ptr = {x = 1}) (ptr = {x = 0}) 
+deinit: (ptr = {x = 3})
+deinit: (ptr = {x = 2})
+deinit: (ptr = {x = 1})
+deinit: (ptr = {x = 0})
+
+T4
