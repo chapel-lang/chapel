@@ -1,0 +1,4 @@
+			#c-ray-5.good
+--scene ../scene 	#c-ray-5a.good
+--scene ../sphfract 	#c-ray-5b.good
+--maxRayDepth 100000 	#c-ray-5c.good
