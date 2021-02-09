@@ -35,6 +35,8 @@ or
 
 .. data:: var notNilDefault = c!
 
+.. data:: var isNilDefault: nilable C = nil
+
 .. data:: var plusDefault = x+y
 
 .. data:: var minusDefault = x-y
@@ -86,6 +88,8 @@ or
 .. data:: var maxDefault = max(int)
 
 .. data:: var castDefault = x: int(32)
+
+.. data:: var tuple1Default = (x,)
 
 .. data:: var tuple2Default = (x, y)
 
