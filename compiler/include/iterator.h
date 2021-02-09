@@ -86,4 +86,7 @@ void cleanupPrimIRFieldValByFormal();
 
 void lowerIterator(FnSymbol* fn);
 
+CallExpr* generateModuleCallFromZip(Expr *e, const char *fName,
+                                    SymbolMap *map = NULL);
+
 #endif

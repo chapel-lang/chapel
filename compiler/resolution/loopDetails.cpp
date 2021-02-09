@@ -656,6 +656,15 @@ void gatherLoopDetails(ForallStmt* fs,
   if (fs->zippered())
     zippered = true;
 
+  CallExpr *zipCall = NULL;
+  if (CallExpr *prevCall = toCallExpr(fs->prev)) {
+    if (prevCall->isPrimitive(PRIM_ZIP)) {
+      zipCall = prevCall;
+      isLeader = true;
+      zippered = true;
+    }
+  }
+
   INT_ASSERT(isLeader ==
              !strcmp(parIdxVar(fs)->name, "chpl_followThis"));
 
@@ -701,7 +710,7 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        if (inTestFile(newIterLF)) {
+        if (true) {
           CallExpr *prevCall = toCallExpr(fs->prev);
           INT_ASSERT(prevCall);
           INT_ASSERT(prevCall->isPrimitive(PRIM_ZIP));
@@ -717,6 +726,7 @@ void gatherLoopDetails(ForallStmt* fs,
           }
         }
         else {
+          INT_ASSERT(false);
           FnSymbol* buildTupleFn = NULL;
           CallExpr* buildTupleCall = toCallExpr(findExprProducing(newIterLF));
           if (buildTupleCall)

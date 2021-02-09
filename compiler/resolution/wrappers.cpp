@@ -2245,8 +2245,25 @@ static void buildLeaderIterator(PromotionInfo& promotion,
 
   liIterator->addFlag(FLAG_EXPR_TEMP);
 
-  const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
-  CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+  CallExpr *toLeader = NULL;
+  if (zippered) {
+    CallExpr *iterCall = toCallExpr(iterator);
+    INT_ASSERT(iterCall);
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+    
+    toLeader = new CallExpr("_toLeaderNew");
+
+    for_actuals(actual, iterCall) {
+      toLeader->insertAtTail(actual->copy(&leaderMap));
+    }
+  }
+  else {
+    toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
+  }
+  //const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
+  //CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
+
+
   BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
   ForallStmt* fs = ForallStmt::buildHelper(new SymExpr(liIndex),
@@ -2353,25 +2370,24 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
                                 VarSymbol* followerIterator,
                                 SymbolMap& followerMap,
                                 ArgSymbol* fiFnFollower) {
-  const char* name1 = NULL;
   CallExpr*   call1 = NULL;
   CallExpr*   move1 = NULL;
 
-  const char* name2 = NULL;
   CallExpr*   call2 = NULL;
   CallExpr*   move2 = NULL;
 
   if (isCallExpr(iterator) == true) {
-    name1 = "_toFastFollowerZip";
-    name2 = "_toFollowerZip";
+    call1 = generateModuleCallFromZip(iterator, "_toFastFollowerZipNew", &followerMap);
+    call1->insertAtTail(fiFnFollower);
 
+    call2 = generateModuleCallFromZip(iterator, "_toFollowerZipInternalNew", &followerMap);
+    call2->insertAtTail(fiFnFollower);
+    call2->insertAtTail(new_IntSymbol(0));
   } else {
-    name1 = "_toFastFollower";
-    name2 = "_toFollower";
+    call1 = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
+    call2 = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
   }
 
-  call1 = new CallExpr(name1, iterator->copy(&followerMap), fiFnFollower);
-  call2 = new CallExpr(name2, iterator->copy(&followerMap), fiFnFollower);
 
   move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
   move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
@@ -2486,7 +2502,7 @@ static Expr* getIndices(PromotionInfo& promotion) {
 
 static Expr* getIterator(PromotionInfo& promotion) {
   FnSymbol* fn           = promotion.fn;
-  CallExpr* iteratorCall = new CallExpr("_build_tuple");
+  CallExpr* iteratorCall = new CallExpr(PRIM_ZIP);
   Expr*     retval       = NULL;
 
   int i = 0;

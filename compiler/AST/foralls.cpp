@@ -33,7 +33,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
-static CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName);
 
 
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
@@ -941,15 +940,16 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
   return result;
 }
 
-static CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName) {
-
+CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName,
+                                           SymbolMap* map) {
   CallExpr *iterCall = toCallExpr(e);
+  INT_ASSERT(iterCall);
   INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
   CallExpr *ret = new CallExpr(fnName);
 
   for_actuals(actual, iterCall) {
-    ret->insertAtTail(actual->copy());
+    ret->insertAtTail(actual->copy(map));
   }
 
   return ret;
@@ -1002,13 +1002,14 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER);
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
-  preFS->insertAtTail(new DefExpr(iterRec));
-  if (inTestFile(pfs)) {
+  if (zippered) {
     preFS->insertAtTail(iterExpr);
   }
   else {
+    preFS->insertAtTail(new DefExpr(iterRec));
     preFS->insertAtTail(new CallExpr(PRIM_MOVE, iterRec, iterExpr));
   }
+
   Expr* toNormalize = preFS->body.tail;
 
   followBlock = buildFollowLoop(iterRec,

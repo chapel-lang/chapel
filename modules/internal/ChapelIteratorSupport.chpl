@@ -459,6 +459,12 @@ module ChapelIteratorSupport {
     where Reflection.canResolve("_toLeader", x(0))
     return _toLeader(x(0));
 
+  pragma "fn returns iterator"
+  inline proc _toLeaderNew(const ref x ...) {
+    return _toLeaderZip(x);
+  }
+
+
   pragma "no implicit copy"
   pragma "fn returns iterator"
   inline proc _toStandalone(iterator: _iteratorClass)
@@ -622,6 +628,10 @@ module ChapelIteratorSupport {
 
   proc chpl__staticFastFollowCheckNew(const ref x) param {
     return chpl__staticFastFollowCheck(x);
+  }
+
+  proc chpl__staticFastFollowCheckNew(const ref x, lead) param {
+    return chpl__staticFastFollowCheck(x, lead);
   }
 
   proc chpl__staticFastFollowCheck(x, lead) param {
