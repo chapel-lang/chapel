@@ -1,9 +1,9 @@
 interface LessThan {
-  proc LT(x:self, y:self):bool;
+  proc LT(x:Self, y:Self):bool;
 }
 
 interface GreaterThan {
-  proc GT(x:self, y:self):bool;
+  proc GT(x:Self, y:Self):bool;
 }
 
 implements LessThan(int);
@@ -13,7 +13,7 @@ proc LT(x : int, y : int) : bool {
 }
 
 proc minFn(x:?T, y:T):T where implements GreaterThan(T) {
-  if (LT(y, x)) {
+  if (GT(x,y)) {
     return y;
   }
   else {
@@ -21,4 +21,5 @@ proc minFn(x:?T, y:T):T where implements GreaterThan(T) {
   }
 }
 
+// Error: int does not implement GreaterThan
 writeln(minFn(3, 4));

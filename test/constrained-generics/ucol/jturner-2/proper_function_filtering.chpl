@@ -1,4 +1,4 @@
-interface IFace(type T){ }
+interface IFace(T){ }
 
 implements IFace(int);
 
