@@ -3,7 +3,7 @@
 .. module:: variableInitialization.doc
 
 variableInitialization.doc
-====================
+==========================
 **Usage**
 
 .. code-block:: chapel
