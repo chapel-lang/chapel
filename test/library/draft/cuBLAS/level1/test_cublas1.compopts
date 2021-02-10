@@ -1,1 +1,7 @@
--M../ -L/usr/local/cuda-10.2/lib64 -lcudart -lcublas
+#!/usr/bin/env bash
+
+# TODO could also look at getting this with pkg-config if this isn't portable
+nvccDir=$(which nvcc)
+nvccLib=${nvccDir%/bin/nvcc}/lib64
+
+echo "-M../ -L$nvccLib -lcudart -lcublas"
