@@ -285,6 +285,6 @@ module Initialization {
     }
   }
 
-// Memory.Diagnostics;
+// Memory.Initialization;
 }
 
