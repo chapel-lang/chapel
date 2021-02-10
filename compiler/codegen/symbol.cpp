@@ -895,8 +895,30 @@ void VarSymbol::codegenDef() {
       }
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
+
+#if HAVE_LLVM_VER >= 100
+    llvm::MaybeAlign alignment;
+#else
+    unsigned alignment = 0;
+#endif
+
+    alignment = getAlignment(type);
+
     llvm::Type *varType = type->codegen().type;
-    llvm::Value *varAlloca = createVarLLVM(varType, cname);
+    llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
+
+    // Update the alignment if necessary
+#if HAVE_LLVM_VER >= 100
+    if (alignment.hasValue()) {
+      varAlloca->setAlignment(alignment.getValue());
+    }
+#else
+    if (alignment > 1) {
+      varAlloca->setAlignment(alignment);
+    }
+#endif
+
+
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {

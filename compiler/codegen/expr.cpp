@@ -238,22 +238,22 @@ GenRet DefExpr::codegen() {
 ************************************* | ************************************/
 
 #ifdef HAVE_LLVM
-llvm::Value* createVarLLVM(llvm::Type* type, const char* name)
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name)
 {
   GenInfo* info = gGenInfo;
   llvm::IRBuilder<>* irBuilder = info->irBuilder;
   const llvm::DataLayout& layout = info->module->getDataLayout();
   llvm::LLVMContext &ctx = info->llvmContext;
-  llvm::Value* val = NULL;
+  llvm::AllocaInst* val = NULL;
 
   val = makeAllocaAndLifetimeStart(irBuilder, layout, ctx, type, name);
   info->currentStackVariables.push_back(
-      std::pair<llvm::Value*, llvm::Type*>(val, type));
+      std::pair<llvm::AllocaInst*, llvm::Type*>(val, type));
 
   return val;
 }
 
-llvm::Value* createVarLLVM(llvm::Type* type)
+llvm::AllocaInst* createVarLLVM(llvm::Type* type)
 {
   char name[32];
   sprintf(name, "chpl_macro_tmp_%d", codegen_tmp++);
@@ -267,7 +267,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
   const llvm::DataLayout& layout = info->module->getDataLayout();
   llvm::LLVMContext &ctx = info->llvmContext;
   llvm::Value* val = NULL;
-  llvm::Value* alloca = NULL;
+  llvm::AllocaInst* alloca = NULL;
 
   val = convertValueToType(irBuilder, layout, ctx,
                             value, newType,
@@ -275,7 +275,7 @@ llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
 
   if (alloca != NULL)
     info->currentStackVariables.push_back(
-      std::pair<llvm::Value*, llvm::Type*>(alloca, newType));
+      std::pair<llvm::AllocaInst*, llvm::Type*>(alloca, newType));
 
   return val;
 }
@@ -1365,8 +1365,14 @@ GenRet createTempVar(Type* t)
     GenRet tmp = t;
     llvm::Type* llTy = tmp.type;
     INT_ASSERT(llTy);
+
+    llvm::AllocaInst* alloca = createVarLLVM(llTy);
+    llvm::MaybeAlign alignment = getAlignment(t);
+    if (alignment.hasValue()) {
+      alloca->setAlignment(alignment.getValue());
+    }
     ret.isLVPtr = GEN_PTR;
-    ret.val = createVarLLVM(llTy);
+    ret.val = alloca;
 #endif
   }
   ret.chplType = t;
@@ -2382,15 +2388,17 @@ GenRet codegenCallExpr(GenRet function,
     }
 
     std::vector<llvm::Value *> llArgs;
-    llvm::Value* sret = NULL;
+    llvm::AllocaInst* sret = NULL;
     llvm::Type* chapelRetTy = NULL;
     bool chplRetTySigned = false;
+    llvm::MaybeAlign retAlignment;
     if (fn) {
       if (fn->retType == dtNothing || fn->retType == dtVoid) {
         chapelRetTy = llvm::Type::getVoidTy(ctx);
       } else {
         chapelRetTy = fn->retType->codegen().type;
         chplRetTySigned = is_signed(fn->retType);
+        retAlignment = getAlignment(fn->retType);
       }
     } else if (FD) {
       clang::QualType retTy = FD->getCallResultType();
@@ -2399,6 +2407,7 @@ GenRet codegenCallExpr(GenRet function,
       } else {
         chapelRetTy = codegenCType(retTy);
         chplRetTySigned = retTy->hasSignedIntegerRepresentation();
+        retAlignment = getCTypeAlignment(retTy);
       }
     }
 
@@ -2419,6 +2428,10 @@ GenRet codegenCallExpr(GenRet function,
       if (returnInfo.isIndirect()) {
         // Create a temporary for holding the return value
         sret = createVarLLVM(chapelRetTy);
+
+        if (retAlignment.hasValue()) {
+          sret->setAlignment(retAlignment.getValue());
+        }
         llArgs.push_back(sret);
       }
     }

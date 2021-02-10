@@ -1,0 +1,2 @@
+--llvm --llvm-print-ir-stage basic --llvm-print-ir  struct_aligned16test_return_c_____,struct_aligned16test_arg_c_____,struct_aligned16test_return_chapel,struct_aligned16test_arg_chapel,main 
+
