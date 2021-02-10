@@ -1,0 +1,2 @@
+bug: Compilation error due to break in chpl version 1.24.0 pre-release
+#17085
