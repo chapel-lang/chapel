@@ -1501,6 +1501,7 @@ fn_ident:
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| TCOLON         { $$ = ":"; }
 | ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
