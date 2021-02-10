@@ -920,7 +920,7 @@ static void issueThrowingFnError(FnSymbol* calledFn,
                                  const char* problem) {
   const char* desc = "cast";
   bool cast = true;
-  if (calledFn->name != astr_cast) {
+  if (calledFn->name != astrScolon) {
     desc = astr("function ", calledFn->name);
     cast = false;
   }

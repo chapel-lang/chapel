@@ -1580,10 +1580,11 @@ bool canCoerce(Type*     actualType,
       // are the decorated class types the same?
       if (actualC == formalC)
         return true;
+      else if (isBuiltinGenericClassType(formalType))
+        return true; // only decorators matter, other type is generic
       else if (formalC->symbol->hasFlag(FLAG_GENERIC) &&
-               instantiatedFieldsMatch(actualC, formalC)) {
+               instantiatedFieldsMatch(actualC, formalC))
         return true;
-      }
 
       // are we passing a subclass?
       AggregateType* actualParent = actualC;
@@ -2746,8 +2747,8 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
 
 static void adjustClassCastCall(CallExpr* call)
 {
-  SymExpr* targetTypeSe = toSymExpr(call->get(1));
-  SymExpr* valueSe = toSymExpr(call->get(2));
+  SymExpr* valueSe = toSymExpr(call->get(1));
+  SymExpr* targetTypeSe = toSymExpr(call->get(2));
   bool valueIsType = isTypeExpr(valueSe);
   Type* targetType = targetTypeSe->symbol()->getValType();
   Type* valueType = valueSe->symbol()->getValType();
@@ -2851,11 +2852,11 @@ static bool resolveBuiltinCastCall(CallExpr* call)
   if (urse == NULL)
     return false;
 
-  if (urse->unresolved != astr_cast || call->numActuals() != 2)
+  if (urse->unresolved != astrScolon || call->numActuals() != 2)
     return false;
 
-  SymExpr* targetTypeSe = toSymExpr(call->get(1));
-  SymExpr* valueSe = toSymExpr(call->get(2));
+  SymExpr* valueSe = toSymExpr(call->get(1));
+  SymExpr* targetTypeSe = toSymExpr(call->get(2));
 
   if (targetTypeSe && valueSe &&
       targetTypeSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
@@ -2933,6 +2934,12 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       // Otherwise, convert the _cast call to a primitive cast
       call->baseExpr->remove();
       call->primitive = primitives[PRIM_CAST];
+
+      // swap the order of the two arguments
+      //  have: val, type
+      //  want: type, val
+      valueSe->remove();
+      targetTypeSe->insertAfter(valueSe);
 
       // Add a dereference for references to avoid confusing the compiler.
       if (valueSe->symbol()->isRef()) {
@@ -3965,8 +3972,8 @@ void printResolutionErrorUnresolved(CallInfo&       info,
       if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
       } else {
-        Type* dstType = info.actuals.v[0]->type;
-        Type* srcType = info.actuals.v[1]->type;
+        Type* srcType = info.actuals.v[0]->type;
+        Type* dstType = info.actuals.v[1]->type;
         EnumType* dstEnumType = toEnumType(dstType);
         EnumType* srcEnumType = toEnumType(srcType);
         if (srcEnumType && srcEnumType->isAbstract()) {
