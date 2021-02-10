@@ -1045,7 +1045,7 @@ module Bytes {
     }
 
   pragma "no doc"
-  inline proc _cast(type t: bytes, x: string) {
+  inline operator :(x: string, type t: bytes) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
   pragma "no doc"
