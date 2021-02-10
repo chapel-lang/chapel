@@ -2286,7 +2286,9 @@ static bool insertAndResolveCasts(FnSymbol* fn) {
 
     for_vector(CallExpr, call, newCalls) {
       if (call->inTree()) {
+        // Resolve PRIM_MOVE etc
         Expr* e = resolveExpr(call);
+        // and additionally calls to functions
         if (CallExpr* eCall = toCallExpr(e))
           resolveCallAndCallee(eCall, true);
       }
@@ -2569,6 +2571,12 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
   }
 }
 
+// Adds conversions for cases where the the lhs and rhs types of
+// PRIM_MOVE/PRIM_ASSIGN do not match. The conversions might be implemented
+// with a cast or init=.
+//
+// All new calls added by this function are added to newCalls so that
+// they can be resolved appropriately.
 static void insertCasts(BaseAST* ast, FnSymbol* fn,
                         std::vector<CallExpr*>& newCalls) {
 
