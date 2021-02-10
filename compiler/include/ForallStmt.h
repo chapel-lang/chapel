@@ -73,6 +73,7 @@ class ForallStmt final : public Stmt
 {
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
+  std::vector<Symbol *>     zipSymbols();
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   const AList& constInductionVariables() const; // const counterpart
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
@@ -81,6 +82,8 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
+
+  CallExpr*  zipCall;
 
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
@@ -134,9 +137,13 @@ public:
 
   ForallOptimizationInfo optInfo;
 
+  void insertZipSym(Symbol *sym);
+
+
 private:
   AList          fIterVars;
   AList          fIterExprs;
+  std::vector<Symbol *>          fZipSyms;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fZippered;
@@ -182,6 +189,7 @@ Same idea as fFromForLoop.
 
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
+inline std::vector<Symbol *> ForallStmt::zipSymbols()             { return fZipSyms;   }
 inline const AList& ForallStmt::constInductionVariables() const {
   return fIterVars;
 }

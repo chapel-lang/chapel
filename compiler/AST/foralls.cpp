@@ -926,12 +926,8 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
   }
 
   CallExpr *result = NULL;
-  if (inTestFile(pfs)) {
-    result = new CallExpr(PRIM_ZIP, origExprFlw);
-  }
-  else {
-    result = new CallExpr("_build_tuple", origExprFlw);
-  }
+  result = new CallExpr(PRIM_ZIP, origExprFlw);
+
   while (Expr* curr = iterCall->next)
     result->insertAtTail(curr->remove());
 
@@ -1003,7 +999,14 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
   if (zippered) {
-    preFS->insertAtTail(iterExpr);
+    CallExpr *iterCall = toCallExpr(iterExpr);
+    INT_ASSERT(iterCall);
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+
+    pfs->zipCall = iterCall->copy();
+    preFS->insertAtTail(pfs->zipCall);
+    //resolveExpr(pfs->zipCall);
+    //pfs->zipCall->remove();
   }
   else {
     preFS->insertAtTail(new DefExpr(iterRec));
@@ -1011,6 +1014,12 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   Expr* toNormalize = preFS->body.tail;
+  //if (toNormalize == NULL) {
+    //toNormalize = pfs->zipCall;
+    //INT_ASSERT(toNormalize);
+  //}
+
+
 
   followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
@@ -1098,9 +1107,21 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   pfs->insertBefore(preFS);
-  normalize(toNormalize); // requires inTree()
+  if (toNormalize != NULL) {
+    normalize(toNormalize); // requires inTree()
+  }
   resolveBlockStmt(preFS);
   preFS->flattenAndRemove();
+
+  if (pfs->zipCall != NULL) {
+    for_actuals (actual, pfs->zipCall) {
+      SymExpr *actualSymExpr = toSymExpr(actual);
+      INT_ASSERT(actualSymExpr);
+
+      pfs->insertZipSym(actualSymExpr->symbol());
+    }
+    pfs->zipCall->remove();
+  }
 }
 
 void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);

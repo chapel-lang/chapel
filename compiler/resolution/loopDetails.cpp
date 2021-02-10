@@ -656,13 +656,9 @@ void gatherLoopDetails(ForallStmt* fs,
   if (fs->zippered())
     zippered = true;
 
-  CallExpr *zipCall = NULL;
-  if (CallExpr *prevCall = toCallExpr(fs->prev)) {
-    if (prevCall->isPrimitive(PRIM_ZIP)) {
-      zipCall = prevCall;
+  if (fs->zipSymbols().size() > 1) {
       isLeader = true;
       zippered = true;
-    }
   }
 
   INT_ASSERT(isLeader ==
@@ -711,16 +707,19 @@ void gatherLoopDetails(ForallStmt* fs,
         detailsVector.push_back(details);
       } else {
         if (true) {
-          CallExpr *prevCall = toCallExpr(fs->prev);
-          INT_ASSERT(prevCall);
-          INT_ASSERT(prevCall->isPrimitive(PRIM_ZIP));
+          INT_ASSERT(fs->zipSymbols().size() > 1);
+          //CallExpr *prevCall = toCallExpr(fs->prev);
+          //INT_ASSERT(prevCall);
+          //INT_ASSERT(prevCall->isPrimitive(PRIM_ZIP));
 
-          for_actuals(actual, prevCall) {
-            SymExpr* actualSe = toSymExpr(actual);
-            INT_ASSERT(actualSe); // otherwise not normalized
-            // actualSe is the iterable in this case
+          //for_actuals(actual, zipCall) {
+          for_vector(Symbol, s, fs->zipSymbols()) {
+            SET_LINENO(fs);
+            //SymExpr* se = toSymExpr(e);
+            //INT_ASSERT(se); // otherwise not normalized
+            // se is the iterable in this case
             IteratorDetails details;
-            details.iterable = actualSe;
+            details.iterable = new SymExpr(s);
             // Other details set below.
             detailsVector.push_back(details);
           }
