@@ -1,2 +1,2 @@
 init-var-nonnil-shared-from-nonnil-borrowed.chpl:9: error: invalid copy-initialization
-init-var-nonnil-shared-from-nonnil-borrowed.chpl:9: error: Cannot initialize 'shared MyClass' from a 'borrowed MyClass'
+init-var-nonnil-shared-from-nonnil-borrowed.chpl:9: error: cannot initialize 'shared MyClass' from a 'borrowed MyClass'

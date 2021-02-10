@@ -2356,7 +2356,7 @@ static void issueInitConversionError(Symbol* to, Symbol* toType, Symbol* from,
   }
 
   USR_FATAL_CONT(where,
-                 "Cannot initialize %s of type '%s' from %s'%s'",
+                 "cannot initialize %s of type '%s' from %s'%s'",
                  toName, toTypeStr, sep, fromStr);
 }
 

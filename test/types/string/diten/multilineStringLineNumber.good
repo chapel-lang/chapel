@@ -1,1 +1,1 @@
-multilineStringLineNumber.chpl:8: error: Cannot initialize 'x' of type 'int(64)' from '1.5'
+multilineStringLineNumber.chpl:8: error: cannot initialize 'x' of type 'int(64)' from '1.5'

@@ -4054,7 +4054,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     } else if (info.name == astr_coerceCopy || info.name == astr_coerceMove) {
 
         USR_FATAL_CONT(call,
-                       "Cannot initialize %s from %s",
+                       "cannot initialize %s from %s",
                        toString(info.actuals.v[0]->type),
                        toString(info.actuals.v[1]->type));
 
@@ -4142,16 +4142,16 @@ static bool defaultValueMismatch(CallInfo& info) {
 
         if (isNonNilableClassType(formalType) &&
             actualType == dtNil) {
-          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from nil",
+          USR_FATAL_CONT(call, "cannot initialize %s of non-nilable type '%s' from nil",
                          userVariable->name,
                          toString(formalType));
         } else if (isNonNilableClassType(formalType) &&
             isNilableClassType(actualType)) {
-          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
+          USR_FATAL_CONT(call, "cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
                          userVariable->name,
                          toString(formalType), toString(actualType));
         } else {
-          USR_FATAL_CONT(call, "Cannot initialize '%s' of type %s from a '%s'",
+          USR_FATAL_CONT(call, "cannot initialize '%s' of type %s from a '%s'",
                          userVariable->name,
                          toString(formalType), toString(actualType));
         }

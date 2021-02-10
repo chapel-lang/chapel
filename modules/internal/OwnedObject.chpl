@@ -205,18 +205,18 @@ module OwnedObject {
                     else _to_borrowed(src.type);
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_p = src.release();
       this.complete();
 
       if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
     }
 
     pragma "no doc"
     proc init=(src: shared) {
-      compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -224,7 +224,7 @@ module OwnedObject {
 
     pragma "no doc"
     proc init=(src: borrowed) {
-      compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -232,7 +232,7 @@ module OwnedObject {
 
     pragma "no doc"
     proc init=(src: unmanaged) {
-      compilerError("Cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -247,7 +247,7 @@ module OwnedObject {
       this.init(this.type.chpl_t);
 
       if isNonNilableClass(chpl_t) then
-        compilerError("Cannot initialize '", this.type:string, "' from 'nil'");
+        compilerError("cannot initialize '", this.type:string, "' from 'nil'");
     }
 
     // Copy-init implementation to allow for 'new _owned(foo)' in module code

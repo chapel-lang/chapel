@@ -1,2 +1,2 @@
 init-var-oknil-owned-from-nonnil-unmanaged.chpl:9: error: invalid copy-initialization
-init-var-oknil-owned-from-nonnil-unmanaged.chpl:9: error: Cannot initialize 'owned MyClass?' from a 'unmanaged MyClass'
+init-var-oknil-owned-from-nonnil-unmanaged.chpl:9: error: cannot initialize 'owned MyClass?' from a 'unmanaged MyClass'
