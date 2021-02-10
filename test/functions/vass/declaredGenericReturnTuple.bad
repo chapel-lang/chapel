@@ -1,2 +1,8 @@
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:196: error: the type of the actual argument 'call_tmp' is generic
-note: generic actual arguments are not currently supported
+$CHPL_HOME/modules/internal/ChapelTuple.chpl:344: internal error: RES-RES-ION-2380 chpl version 1.24.0 pre-release (5021e115fd)
+Note: This source location is a guess.
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
