@@ -1,0 +1,7 @@
+%int32int64_chpl = type { i32, [4 x i8], i64 }
+%int64aligned16b_chpl = type { i64, [8 x i8], %struct.aligned16test }
+%int8int16int64_chpl = type { i8, [1 x i8], i16, [4 x i8], i64 }
+%int8int32_chpl = type { i8, [3 x i8], i32 }
+%int8int64_chpl = type { i8, [7 x i8], i64 }
+%int8int8int64_chpl = type { i8, i8, [6 x i8], i64 }
+%struct.aligned16test = type { i64, [8 x i8], i64, [8 x i8] }
