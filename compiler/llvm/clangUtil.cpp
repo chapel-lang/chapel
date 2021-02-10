@@ -2372,22 +2372,13 @@ llvm::Type* codegenCType(const TypeDecl* td)
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
   INT_ASSERT(cCodeGen);
 
-  //CodeGen::CodeGenTypes & cdt = info->cgBuilder->getTypes();
   QualType qType;
 
   // handle TypedefDecl
   if( const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td) ) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
-    // had const Type *ctype = td->getUnderlyingType().getTypePtrOrNull();
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const EnumDecl* ed = dyn_cast<EnumDecl>(td) ) {
     qType = ed->getCanonicalDecl()->getIntegerType();
-    // could also use getPromotionType()
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
     INT_ASSERT(def);
@@ -2989,10 +2980,6 @@ static unsigned helpGetCTypeAlignment(const clang::TypeDecl* td) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
   } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
     qType = ed->getCanonicalDecl()->getIntegerType();
-    // could also use getPromotionType()
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
     RecordDecl *def = rd->getDefinition();
     INT_ASSERT(def);
