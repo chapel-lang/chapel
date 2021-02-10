@@ -14,8 +14,7 @@ module variableDefaultValues {
   var bitwiseNegDefault = ~x;
 
   var notNilDefault = c!;
-
-  //var isNilDefault: C? = nil;
+  var isNilDefault: C? = nil;
 
   var plusDefault = x+y;
   var minusDefault = x-y;
@@ -50,7 +49,7 @@ module variableDefaultValues {
 
   var castDefault = x:int(32);
 
-  //var tuple1Default = (x,);
+  var tuple1Default = (x,);
   var tuple2Default = (x,y);
   var tuple3Default = (x,y,z);
 
