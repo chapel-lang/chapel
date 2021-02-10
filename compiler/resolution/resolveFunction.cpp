@@ -2495,13 +2495,18 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     INT_ASSERT(stealRHS == false); // other case not handled here
 
     if (toType->type->symbol->hasFlag(FLAG_TUPLE)) {
-      // use tuple cast (at least to handle ref vs value tuples)
-      // TODO: adjust tuples to use init=
-      CallExpr* cast = createCast(from, toType->type->symbol);
-      newCalls.push_back(cast);
-      CallExpr* assign = new CallExpr(PRIM_ASSIGN, to, cast);
-      newCalls.push_back(assign);
-      insertBefore->insertBefore(assign);
+
+      if (canCoerce(fromValType, from, toType->type, NULL, NULL)) {
+        // use tuple cast (at least to handle ref vs value tuples)
+        // TODO: adjust tuples to use init=
+        CallExpr* cast = createCast(from, toType->type->symbol);
+        newCalls.push_back(cast);
+        CallExpr* assign = new CallExpr(PRIM_ASSIGN, to, cast);
+        newCalls.push_back(assign);
+        insertBefore->insertBefore(assign);
+      } else {
+        issueInitConversionError(to, toType, from, insertBefore);
+      }
 
     } else if (toType->type == getCopyTypeDuringResolution(fromValType)) {
       // today, this code should only apply to sync/single
