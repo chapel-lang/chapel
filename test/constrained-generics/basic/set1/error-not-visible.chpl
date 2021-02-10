@@ -1,10 +1,6 @@
 /*
-This is basic-arg-query.chpl
-with the interface declaration and the CG function
-are wrapped in one module and "user" code in another.
-
-This way reqFun() implementation is not visible
-at call site within the CG function.
+This is module-with-ifc.chpl
+with the "import" declaration removed.
 */
 module Library {
   interface IFC(T) {
@@ -22,8 +18,6 @@ module Library {
 }
 
 module User {
-  use Library;
-
   proc reqFun(arg1: real, arg2: int) {
     writeln("in reqFun/real*int", (arg1, arg2));
   }
