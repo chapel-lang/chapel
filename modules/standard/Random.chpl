@@ -1186,11 +1186,12 @@ module Random {
         var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
         var PCGRandomStreamPrivate_count: int(64) = this.PCGRandomStreamPrivate_count;
         var i = start, j = mid;
-        var k: D.idxType;
+        if(mid > n) then return;
+        var k: int;
         const stride = D.stride;
 
         while true{
-          k = randlc_bounded(D.idxType,
+          k = randlc_bounded(int,
                           PCGRandomStreamPrivate_rngs,
                           seed, PCGRandomStreamPrivate_count,
                           0, 1);
@@ -1207,10 +1208,11 @@ module Random {
         }
 
         while i < n {
-          k = randlc_bounded(D.idxType,
+          k = randlc_bounded(int,
                           PCGRandomStreamPrivate_rngs,
                           seed, PCGRandomStreamPrivate_count,
                           0, (i - start) / stride);
+
           arr[i] <=> arr[start + k * stride];
           i += stride;
         }
@@ -1240,7 +1242,7 @@ module Random {
             var start = it, mid = it + numSize, n = min(hi, it + 2 * numSize - stride) + stride;
             _Merge(arr, start, mid, n);
           }
-          numSize <<= 1;
+          numSize += numSize;
         }
         
       }
