@@ -16,7 +16,7 @@ proc =(ref lhs: R, rhs: int) {
 proc R.init=(other: int) {
   this.x = other;
 }
-/*
+/* expecting error because this is missing
 proc _cast(type t: R, x: int) {
   return new R(x);
 }*/

@@ -797,19 +797,13 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
 
   if (error) {
     if (implicitConverts) {
-      USR_PRINT("implicit conversion is available between these two types");
-    }
-    if (have.assign != NULL) {
+      USR_PRINT("expected because implicit conversion is available between these two types");
+    } else if (have.assign != NULL) {
       USR_PRINT(have.assign->defPoint,
-                "assignment is defined here between these two types");
-    }
-    if (have.initEq != NULL) {
+                "expected because assignment is defined here between these two types");
+    } else if (have.initEq != NULL) {
       USR_PRINT(have.initEq->defPoint,
-                "init= is defined here between these two types");
-    }
-    if (have.cast != NULL) {
-      USR_PRINT(have.cast->defPoint,
-                "cast is defined here between these two types");
+                "expected because init= is defined here between these two types");
     }
   }
 }

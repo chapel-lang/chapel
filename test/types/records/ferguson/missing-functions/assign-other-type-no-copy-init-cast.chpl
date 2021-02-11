@@ -13,7 +13,8 @@ proc R.init=(other: R) {
 proc =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
-/*proc R.init=(other: int) {
+/* expecting errors because these are missing
+proc R.init=(other: int) {
   this.x = other;
 }
 proc _cast(type t: R, x: int) {
