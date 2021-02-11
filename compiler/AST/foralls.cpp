@@ -1060,33 +1060,21 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                           new_Expr("'move'(%S, chpl__dynamicFastFollowCheck(%S))",    T2, iterRec),
                                           new_Expr("'move'(%S, %S)", T2, gFalse)));
     } else {
-      if (inTestFile(iterExpr)) {
-        CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
-        CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
-        leadForLoop->insertAtTail(moveToFlag);
-        normalize(checkCall);
-      }
-      else {
-        leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
-      }
+      CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
+      CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
+      leadForLoop->insertAtTail(moveToFlag);
+      normalize(checkCall);
 
       // override the dynamic check if the compiler can prove it's safe
       if (pfs->optInfo.hasAlignedFollowers) {
         leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
       }
       else {
-        if (inTestFile(iterExpr)) {
-          CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/false);
-          leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                                 new CallExpr(PRIM_MOVE, T2, checkCall),
-                                                 new CallExpr(PRIM_MOVE, T2, gFalse)));
-          normalize(checkCall);
-        }
-        else {
-          leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                              new_Expr("'move'(%S, chpl__dynamicFastFollowCheckZip(%S))", T2, iterRec),
-                                              new_Expr("'move'(%S, %S)", T2, gFalse)));
-        }
+        CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/false);
+        leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
+                                               new CallExpr(PRIM_MOVE, T2, checkCall),
+                                               new CallExpr(PRIM_MOVE, T2, gFalse)));
+        normalize(checkCall);
       }
     }
 

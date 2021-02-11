@@ -2808,10 +2808,10 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
     checkFn->insertFormalAtTail(lead);
 
-    forward = new CallExpr(astr(fnName, "Zip"), pTup, lead);
+    forward = new CallExpr(astr(fnName, "New"), pTup, lead);
 
   } else {
-    forward = new CallExpr(astr(fnName, "Zip"), pTup);
+    forward = new CallExpr(astr(fnName), pTup);
 
     INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
   }

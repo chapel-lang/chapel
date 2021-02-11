@@ -630,11 +630,11 @@ module ChapelIteratorSupport {
     return chpl__staticFastFollowCheck(x, lead);
   }
 
-  proc chpl__staticFastFollowCheck(x, lead) param {
+  private proc chpl__staticFastFollowCheck(x, lead) param {
     return chpl__hasInertFastFollowers(x);
   }
 
-  proc chpl__staticFastFollowCheck(x: [], lead) param {
+  private proc chpl__staticFastFollowCheck(x: [], lead) param {
     return x._value.dsiStaticFastFollowCheck(lead._value.type);
   }
 
