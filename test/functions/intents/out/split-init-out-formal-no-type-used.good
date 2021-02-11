@@ -1,0 +1,5 @@
+split-init-out-formal-no-type-used.chpl:2: In function 'f':
+split-init-out-formal-no-type-used.chpl:3: error: unresolved call 'usearg(<type unknown>)'
+split-init-out-formal-no-type-used.chpl:6: note: this candidate did not match: usearg(arg)
+split-init-out-formal-no-type-used.chpl:2: note: because 'arg' is not initialized and has no type
+note: the type for a generic out intent argument is inferred from the function body

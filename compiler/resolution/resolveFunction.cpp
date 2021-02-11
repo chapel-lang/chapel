@@ -1203,12 +1203,7 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
     // also have an init= function accepting the different RHS type.
 
     if (requireSplitInit && !foundSplitInit) {
-      const char* name = sym->name;
-      const char* prefix = "_formal_tmp_";
-      if (startsWith(name, prefix)) {
-        name = &name[strlen(prefix)];
-      }
-      USR_FATAL(call, "variable '%s' is not initialized and has no type", name);
+      splitInitMissingTypeError(sym, prevent, /*unresolved*/false);
     }
 
     if (foundSplitInit) {

@@ -4209,6 +4209,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     }
   }
 
+  int nFnsWithOutIntentFormals = 0;
   forv_Vec(ResolutionCandidate, cand, candidates) {
     if (printedOne == false) {
       USR_PRINT(cand->fn, "candidates are: %s", toString(cand->fn));
@@ -4217,6 +4218,22 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
     } else {
       USR_PRINT(cand->fn, "                %s", toString(cand->fn));
     }
+
+    bool hasOutFormal = false;
+    for_formals(arg, cand->fn) {
+      if (arg->originalIntent == INTENT_OUT)
+        hasOutFormal = true;
+    }
+    if (hasOutFormal)
+      nFnsWithOutIntentFormals++;
+  }
+
+
+  // This condition is not exact
+  // (the ambiguity could be due to do with something other than the out
+  //  formals).
+  if (nFnsWithOutIntentFormals == candidates.n) {
+    USR_PRINT(call, "out intent formals do not participate in overload resolution");
   }
 
   if (developer == true) {

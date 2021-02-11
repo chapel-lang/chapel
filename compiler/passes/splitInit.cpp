@@ -445,6 +445,42 @@ static found_init_t doFindInitPoints(Symbol* sym,
   return FOUND_NOTHING;
 }
 
+void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
+  const char* name = sym->name;
+  VarSymbol* var = toVarSymbol(sym);
+  ArgSymbol* arg = toArgSymbol(sym);
+  if (var != NULL)
+    name = toString(var, false);
+  if (arg != NULL)
+    name = toString(arg, false);
+
+  if (unresolved) {
+    USR_PRINT(sym->defPoint,
+                   "because '%s' is not initialized and has no type",
+                   name);
+  } else {
+    USR_FATAL_CONT(sym->defPoint,
+                   "'%s' is not initialized and has no type",
+                   name);
+  }
+
+  if (sym->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
+      (arg && arg->originalIntent == INTENT_OUT)) {
+    USR_PRINT(arg, "the type for a generic out intent argument "
+                   "is inferred from the function body");
+  } else {
+    USR_PRINT(sym->defPoint,
+             "cannot find initialization point to split-init this variable");
+  }
+
+  if (mention && !unresolved) {
+    if (mention->astloc != sym->astloc)
+      USR_PRINT(mention, "'%s' is used here before it is initialized", name);
+  }
+
+  USR_STOP();
+}
+
 /************************************* | **************************************
 *                                                                             *
 *   copy elision                                                              *
@@ -579,7 +615,7 @@ static void doElideCopies(VarToCopyElisionState &map) {
           call->get(2)->replace(new SymExpr(tmp));
         } else {
           // Change the copy into a move and don't destroy the variable.
-          
+
           Symbol *definedConst = NULL;
           if (call->isPrimitive(PRIM_MOVE)) {
             if (CallExpr *rhsCall = toCallExpr(call->get(2))) {

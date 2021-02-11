@@ -29,6 +29,7 @@
 #include "expr.h"
 #include "resolution.h"
 #include "resolveFunction.h"
+#include "splitInit.h"
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
@@ -1199,16 +1200,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       }
       break;
     case RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED:
-      {
-        const char* actualName = failingActual->name;
-        if (VarSymbol* actualVar = toVarSymbol(failingActual))
-          actualName = toString(actualVar, false);
-        if (ArgSymbol* actualArg = toArgSymbol(failingActual))
-          actualName = toString(actualArg, false);
-        USR_PRINT(call,
-                  "because variable '%s' is not initialized and has no type",
-                  actualName);
-      }
+      splitInitMissingTypeError(failingActual, call, /*unresolved*/ true);
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
       USR_PRINT(call, "because call includes %i argument%s",

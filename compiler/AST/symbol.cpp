@@ -2137,26 +2137,28 @@ VarSymbol* newTempConst(QualifiedType qt) {
   return result;
 }
 
-const char* toString(ArgSymbol* arg, bool withType) {
+const char* toString(ArgSymbol* arg, bool withTypeAndIntent) {
   const char* intent = "";
-  switch (arg->intent) {
-    case INTENT_BLANK:           intent = "";           break;
-    case INTENT_IN:              intent = "in ";        break;
-    case INTENT_INOUT:           intent = "inout ";     break;
-    case INTENT_OUT:             intent = "out ";       break;
-    case INTENT_CONST:           intent = "const ";     break;
-    case INTENT_CONST_IN:        intent = "const in ";  break;
-    case INTENT_CONST_REF:       intent = "const ref "; break;
-    case INTENT_REF_MAYBE_CONST: intent = "";           break;
-    case INTENT_REF:             intent = "ref ";       break;
-    case INTENT_PARAM:           intent = "param ";     break;
-    case INTENT_TYPE:            intent = "type ";      break;
+  if (withTypeAndIntent) {
+    switch (arg->intent) {
+      case INTENT_BLANK:           intent = "";           break;
+      case INTENT_IN:              intent = "in ";        break;
+      case INTENT_INOUT:           intent = "inout ";     break;
+      case INTENT_OUT:             intent = "out ";       break;
+      case INTENT_CONST:           intent = "const ";     break;
+      case INTENT_CONST_IN:        intent = "const in ";  break;
+      case INTENT_CONST_REF:       intent = "const ref "; break;
+      case INTENT_REF_MAYBE_CONST: intent = "";           break;
+      case INTENT_REF:             intent = "ref ";       break;
+      case INTENT_PARAM:           intent = "param ";     break;
+      case INTENT_TYPE:            intent = "type ";      break;
+    }
   }
 
   const char* retval = "";
   if (arg->getValType() == dtAny ||
       arg->getValType() == dtUnknown ||
-      withType == false)
+      withTypeAndIntent == false)
     retval = astr(intent, arg->name);
   else
     retval = astr(intent, arg->name, ": ", toString(arg->getValType()));

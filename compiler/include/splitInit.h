@@ -43,4 +43,6 @@ bool findInitPoints(CallExpr* defaultInit,
 
 void elideCopies(FnSymbol* fn);
 
+void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved);
+
 #endif
