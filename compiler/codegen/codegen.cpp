@@ -2591,7 +2591,6 @@ void codegen() {
 
   codegenPartOne();
 
-#ifdef HAVE_LLVM
   if (localeUsesGPU()) {
 
     pid_t pid = fork();
@@ -2601,7 +2600,7 @@ void codegen() {
       gCodegenGPU = true;
       codegenPartTwo();
       gCodegenGPU = false;
-      exit(0);
+      clean_exit(0);
     } else {
       // parent process
       int status = 0;
@@ -2610,7 +2609,6 @@ void codegen() {
       }
     }
   }
-#endif
 
   codegenPartTwo();
 
