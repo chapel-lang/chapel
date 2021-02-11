@@ -569,7 +569,15 @@ proc bulkCommTranslateDomain(srcSlice : domain, srcDom : domain, targetDom : dom
   // will need to be stridable as well. For example:
   // {1..20 by 4} in {1..20} to {101..120} = {101..120 by 4}
   param needsStridable = targetDom.stridable || srcSlice.stridable;
-  var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable) = targetDom.dims();
+  var rngs : targetDom.rank*range(targetDom.idxType, stridable=needsStridable);
+  // the following is a hack because split-init treats the following
+  // assignment as an initialization, but that initialization fails on
+  // master (which is why it was split into a separate statement to
+  // begin with).  Introducing the conditional causes the compiler not
+  // to consider it a split initialization, returning to the previous
+  // behavior.
+  if (true) then
+    rngs = targetDom.dims();
 
   for i in 0..inferredRank-1 {
     const SD    = SrcActives(i);
