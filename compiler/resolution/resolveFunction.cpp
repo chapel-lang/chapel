@@ -2258,11 +2258,12 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
           def->init = new SymExpr(gSplitInit);
         }
         parent_insert_help(def, def->init);
-
-        // Set the formal type to dtUnknown to avoid spurious casts
-        if (formalType == dtAny)
-          formal->type = dtUnknown;
       }
+
+      // Set the formal type to dtUnknown to avoid spurious casts.
+      // The formal type should be inferred from the formal-temp we have created
+      // when the formal is initialized in the function epilogue.
+      formal->type = dtUnknown;
 
       // run normalizeVariableDefinition to handle split-init
       normalizeVariableDefinition(def, true);
@@ -2385,7 +2386,7 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
      }
     }
 
-    // For inout or out intent, this assigns the modified value back to the
+    // For out intent, this assigns the modified value back to the
     // formal at the end of the function body.
     if (formal->intent == INTENT_OUT) {
       fn->insertIntoEpilogue(new CallExpr(PRIM_ASSIGN, formal, tmp));
