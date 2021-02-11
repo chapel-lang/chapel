@@ -611,6 +611,17 @@ module SharedObject {
     return tmp;
   }
 
+  // cast from owned to shared
+  pragma "no doc"
+  inline proc _cast(type t:_shared, pragma "nil from arg" pragma "leaves arg nil" in x:owned) {
+    if t.chpl_t != ? && t.chpl_t != x.chpl_t then
+      compilerError("Cannot change class type in conversion from '",
+                    x.type:string, "' to '", t:string, "'");
+
+    var tmp:t = x;
+    return tmp;
+  }
+
   pragma "no doc"
   pragma "always propagate line file info"
   inline proc postfix!(x:_shared) {

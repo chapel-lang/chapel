@@ -16,6 +16,11 @@ proc =(ref lhs: R, rhs: int) {
   lhs.x = rhs;
 }
 
+proc _cast(type t:R, from: int) {
+  var tmp: R = from;
+  return tmp;
+}
+
 proc bar() {
   return (78, 45);
 }

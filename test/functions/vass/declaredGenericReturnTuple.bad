@@ -1,8 +1,12 @@
-$CHPL_HOME/modules/internal/ChapelTuple.chpl:344: internal error: RES-RES-ION-2380 chpl version 1.24.0 pre-release (5021e115fd)
-Note: This source location is a guess.
-
-Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
-and we're sorry for the hassle.  We would appreciate your reporting this bug -- 
-please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
-the filename + line number above may be useful in working around the issue.
-
+declaredGenericReturnTuple.chpl:11: In function 'p2':
+declaredGenericReturnTuple.chpl:11: error: cannot initialize return value of type '1*VectorListElement' from a '1*VectorListElement(int(64))'
+$CHPL_HOME/modules/standard/ChapelIO.chpl:728: In method 'readWriteThis':
+$CHPL_HOME/modules/standard/ChapelIO.chpl:753: error: the type of the actual argument 'call_tmp' is generic
+note: generic actual arguments are not currently supported
+  <internal>:0: called as 1*VectorListElement.readWriteThis(f: channel(true,dynamic,false))
+  within internal functions (use --print-callstack-on-error to see)
+  $CHPL_HOME/modules/standard/IO.chpl:3085: called as _write_one_internal(_channel_internal: qio_channel_ptr_t, param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method '_writeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:4000: called as (channel(true,dynamic,true))._writeOne(param kind = 0: iokind, x: 1*VectorListElement, loc: locale) from method 'write'
+  $CHPL_HOME/modules/standard/IO.chpl:4049: called as (channel(true,dynamic,true)).write(args(0): 1*VectorListElement, args(1): ioNewline) from method 'writeln'
+  $CHPL_HOME/modules/standard/ChapelIO.chpl:842: called as (channel(true,dynamic,true)).writeln(args(0): 1*VectorListElement) from function 'writeln'
+  declaredGenericReturnTuple.chpl:12: called as writeln(args(0): 1*VectorListElement)
