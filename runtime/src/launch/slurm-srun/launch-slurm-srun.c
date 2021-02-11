@@ -316,12 +316,16 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       sprintf(stdoutFileNoFmt, "%s", outputfn);
     }
     else {
-      stdoutFile=(char *)chpl_mem_allocMany((strlen(argv[0]) + 9), 
-                          sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-      sprintf(stdoutFile,      "%s.%s.out", argv[0], "%j");
-      stdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(argv[0]) + 20), 
+      char* format="%s.%s.out";
+      int stdoutFileLen = strlen(format) + strlen(argv[0])+ strlen("%j");
+      stdoutFile=(char *)chpl_mem_allocMany(stdoutFileLen, sizeof(char), 
+                          CHPL_RT_MD_FILENAME, -1, 0);
+      sprintf(stdoutFile,      format, argv[0], "%j");
+      char* tempArg = "$SLURM_JOB_ID";
+      int stdoutFileNoFmtLen = strlen(format) + strlen(argv[0]) + strlen(tempArg);
+      stdoutFileNoFmt=(char *)chpl_mem_allocMany(stdoutFileNoFmtLen, 
                               sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-      sprintf(stdoutFileNoFmt, "%s.%s.out", argv[0], "$SLURM_JOB_ID");
+      sprintf(stdoutFileNoFmt, format, argv[0], tempArg);
     }
     // We have slurm use the real output file to capture slurm errors/timeouts
     // We only redirect the program output to the tmp file
@@ -334,10 +338,13 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     // If we're buffering the output, set the temp output file name.
     // It's always <tmpDir>/binaryName.<jobID>.out.
     if (bufferStdout != NULL) {
-      tmpStdoutFileNoFmt=(char *)chpl_mem_allocMany((strlen(tmpDir) + 
-                                                    strlen(argv[0]) + 20), 
+      char* format = "%s/%s.%s.out";
+      char* tempArg = "$SLURM_JOB_ID";
+      int tmpStdoutFileNoFmtLen = strlen(format) + strlen(tmpDir) + 
+                                    strlen(argv[0]) + strlen(tempArg);
+      tmpStdoutFileNoFmt = (char *)chpl_mem_allocMany(tmpStdoutFileNoFmtLen, 
                                 sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-      sprintf(tmpStdoutFileNoFmt, "%s/%s.%s.out", tmpDir, argv[0], "$SLURM_JOB_ID");
+      sprintf(tmpStdoutFileNoFmt, format, tmpDir, argv[0], tempArg);
     }
 
     // add the srun command and the (possibly wrapped) binary name.
@@ -376,9 +383,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     // the baseCommand is what will call the batch file
     // that was just created 
-    baseCommand=(char *)chpl_mem_allocMany((strlen(slurmFilename) + 9), 
-                        sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+    char* format = "sbatch %s\n";
+    int baseCommandLen = strlen(slurmFilename) + strlen(format);
+    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen, sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    sprintf(baseCommand, format, slurmFilename);
   }
   // else we're running an interactive job 
   else {
@@ -449,11 +458,12 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, "%s ", argv[i]);
     }
-
-    baseCommand=(char *)chpl_mem_allocMany((strlen(iCom) + 8), sizeof(char), 
+    char* format = "srun %s ";
+    int baseCommandLen = strlen(format) + len;
+    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen, sizeof(char), 
                         CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
     // launch the job using srun
-    sprintf(baseCommand, "srun %s ", iCom);
+    sprintf(baseCommand, format, iCom);
   }
 
   // copy baseCommand into command and return it 

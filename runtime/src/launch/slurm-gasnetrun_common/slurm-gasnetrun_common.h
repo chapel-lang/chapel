@@ -272,9 +272,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
 
     fclose(slurmFile);
     chmod(slurmFilename, 0755);
-    baseCommand=(char *)chpl_mem_allocMany((strlen(slurmFilename) + 9), 
-                      sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    sprintf(baseCommand, "sbatch %s\n", slurmFilename);
+    char* format="sbatch %s\n";
+    int baseCommandLen=strlen(slurmFilename) + strlen(format);
+    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen), sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    sprintf(baseCommand, format, slurmFilename);
   } else {
     char iCom[2*FILENAME_MAX-10];
     int len = 0;
@@ -301,9 +303,11 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     for (i=1; i<argc; i++) {
       len += sprintf(iCom+len, " %s", argv[i]);
     }
-    baseCommand=(char *)chpl_mem_allocMany(len + 10), sizeof(char), 
-                       CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
-    sprintf(baseCommand, "salloc %s", iCom);
+    char* format="salloc %s";
+    int baseCommandLen = strlen(format) + len;
+    baseCommand=(char *)chpl_mem_allocMany(baseCommandLen), sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+    sprintf(baseCommand, format, iCom);
   }
 
   size = strlen(baseCommand) + 1;

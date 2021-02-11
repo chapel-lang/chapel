@@ -397,10 +397,11 @@ static void genQsubScript(int argc, char *argv[], int numLocales) {
 static void chpl_launch_cleanup(void) {
   if (!debug) {
     if (unlink(expectFilename)) {
-      char* msg=(char *)chpl_mem_allocMany((strlen(expectFilename) + 
-                                            strlen(strerror(errno)) + 36), 
-                        sizeof(char), CHPL_RT_MD_FILENAME, -1, 0);
-      snprintf(msg, FILENAME_MAX + 45, "Error removing temporary file '%s': %s",
+      char *format="Error removing temporary file '%s': %s";
+      int msgLen=strlen(format) + strlen(expectFilename) + strlen(strerror(errno)
+      char* msg=(char *)chpl_mem_allocMany(msgLen, sizeof(char), 
+                        CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
+      snprintf(msg, msgLen, "Error removing temporary file '%s': %s",
                expectFilename, strerror(errno));
       chpl_warning(msg, 0, 0);
       chpl_mem_free(msg);
