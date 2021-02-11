@@ -92,10 +92,7 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
     Symbol*  sym = se->symbol();
     Type*    t   = sym->type;
 
-    if (t == dtSplitInitType) {
-      retval = false;
-
-    } else if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+    if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       retval = false;
 
     } else if (t->symbol->hasFlag(FLAG_GENERIC) == true) {
@@ -138,22 +135,7 @@ void CallInfo::haltNotWellFormed() const {
     Symbol*  sym = se->symbol();
     Type*    t   = sym->type;
 
-    if (t == dtSplitInitType) {
-
-      const char* name = sym->name;
-      const char* prefix = "_formal_tmp_";
-      if (startsWith(name, prefix)) {
-        name = &name[strlen(prefix)];
-      }
-
-      DefExpr* def = sym->defPoint;
-      USR_FATAL_CONT(def, "variable '%s' is not initialized and has no type",
-                          name);
-      USR_PRINT(call, "'%s' is used here before it is initialized",
-                      name);
-      USR_STOP();
-
-    } else if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+    if (t == dtUnknown && sym->hasFlag(FLAG_TYPE_VARIABLE) == false) {
       USR_FATAL(call,
                 "use of '%s' before encountering its definition, "
                 "type unknown",

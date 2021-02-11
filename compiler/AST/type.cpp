@@ -169,7 +169,7 @@ void Type::setSubstitutionWithName(const char* name, Symbol* value) {
 const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
-  if (type != NULL) {
+  if (type != NULL && type != dtUnknown && type != dtSplitInitType) {
     Type* vt = type->getValType();
 
     if (AggregateType* at = toAggregateType(vt)) {
@@ -251,7 +251,7 @@ const char* toString(Type* type, bool decorateAllClasses) {
       retval = vt->symbol->name;
 
   } else {
-    retval = "null type";
+    retval = "<type unknown>";
   }
 
   return retval;

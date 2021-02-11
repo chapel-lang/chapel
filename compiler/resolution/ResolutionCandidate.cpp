@@ -869,6 +869,12 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
         return false;
 
 
+      } else if (formal->originalIntent != INTENT_OUT &&
+                 actual->getValType() == dtSplitInitType) {
+        failingArgument = actual;
+        reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;
+        return false;
+
       // MPF TODO: one day, this should use actual/formal getValType,
       // and canCoerce should be adjusted to consider intents,
       // rather than depending on ref types at this stage in compilation.
@@ -1190,6 +1196,18 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
           USR_PRINT(fn, "but is passed to non-type formal '%s'",
                     toString(failingFormal, true));
         }
+      }
+      break;
+    case RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED:
+      {
+        const char* actualName = failingActual->name;
+        if (VarSymbol* actualVar = toVarSymbol(failingActual))
+          actualName = toString(actualVar, false);
+        if (ArgSymbol* actualArg = toArgSymbol(failingActual))
+          actualName = toString(actualArg, false);
+        USR_PRINT(call,
+                  "because variable '%s' is not initialized and has no type",
+                  actualName);
       }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:

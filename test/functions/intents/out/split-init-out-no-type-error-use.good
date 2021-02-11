@@ -1,0 +1,4 @@
+split-init-out-no-type-error-use.chpl:8: In function 'main':
+split-init-out-no-type-error-use.chpl:10: error: unresolved call 'usearg(<type unknown>)'
+split-init-out-no-type-error-use.chpl:6: note: this candidate did not match: usearg(arg)
+split-init-out-no-type-error-use.chpl:10: note: because variable 'x' is not initialized and has no type
