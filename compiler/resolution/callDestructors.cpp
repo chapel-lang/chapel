@@ -323,7 +323,8 @@ void ReturnByRef::updateAssignmentsFromRefArgToValue(FnSymbol* fn)
   {
     CallExpr* move = callExprs[i];
 
-    if (move->isPrimitive(PRIM_MOVE) == true)
+    if (move->isPrimitive(PRIM_MOVE) ||
+        move->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhs = toSymExpr(move->get(1));
       SymExpr* rhs = toSymExpr(move->get(2));
@@ -402,7 +403,7 @@ void ReturnByRef::updateAssignmentsFromRefTypeToValue(FnSymbol* fn)
   {
     CallExpr* move = callExprs[i];
 
-    if (move->isPrimitive(PRIM_MOVE) == true)
+    if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr*  symLhs  = toSymExpr (move->get(1));
       CallExpr* callRhs = toCallExpr(move->get(2));
@@ -474,7 +475,7 @@ void ReturnByRef::updateAssignmentsFromModuleLevelValue(FnSymbol* fn)
   {
     CallExpr* move = callExprs[i];
 
-    if (move->isPrimitive(PRIM_MOVE) == true)
+    if (move->isPrimitive(PRIM_MOVE) || move->isPrimitive(PRIM_ASSIGN))
     {
       SymExpr* lhs = toSymExpr(move->get(1));
       SymExpr* rhs = toSymExpr(move->get(2));
@@ -650,7 +651,8 @@ void ReturnByRef::transformMove(CallExpr* moveExpr)
   {
     if (CallExpr* callNext = toCallExpr(nextExpr))
     {
-      if (callNext->isPrimitive(PRIM_MOVE) == true)
+      if (callNext->isPrimitive(PRIM_MOVE) ||
+          callNext->isPrimitive(PRIM_ASSIGN))
       {
         if (CallExpr* rhsCall = toCallExpr(callNext->get(2)))
         {

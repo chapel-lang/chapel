@@ -131,3 +131,5 @@ s9.chpl:42: In function 'test':
 s9.chpl:42: In function 'test':
 s9.chpl:65: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
 s9.chpl:65: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s9.chpl:65: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether
+s9.chpl:65: warning: initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether

@@ -189,7 +189,6 @@ symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 // into loop index variables.
 symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "an _indexOfInterest or chpl__followIdx variable" , ncm )
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
-symbolFlag( FLAG_INITIALIZED_LATER,  ypr, "initialized later" , "initialized in subsequent statement" )
 symbolFlag( FLAG_INIT_TUPLE, ypr, "tuple init fn", ncm)
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINED_FN , npr, "inlined function" , ncm )

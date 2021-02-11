@@ -272,7 +272,7 @@ module SharedObject {
       this.complete();
 
       if isNonNilableClass(this.type) && isNilableClass(take) then
-        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+        compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
     }
 
     /*
@@ -286,7 +286,7 @@ module SharedObject {
                     else _to_borrowed(src.type);
 
       if isCoercible(src.chpl_t, this.type.chpl_t) == false then
-        compilerError("cannot coerce '", src.type:string, "' to '", this.type:string, "' in initialization");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_p = src.chpl_p;
       this.chpl_pn = src.chpl_pn;
@@ -297,13 +297,13 @@ module SharedObject {
         this.chpl_pn!.retain();
 
       if isNonNilableClass(this.type) && isNilableClass(src) then
-        compilerError("cannot create a non-nilable shared variable from a nilable class instance");
+        compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
     }
 
     pragma "no doc"
     proc init=(src: borrowed) {
-      compilerError("cannot create a shared variable from a borrowed class instance");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
 
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
@@ -312,7 +312,7 @@ module SharedObject {
 
     pragma "no doc"
     proc init=(src: unmanaged) {
-      compilerError("cannot create a shared variable from an unmanaged class instance");
+      compilerError("cannot initialize '", this.type:string, "' from a '", src.type:string, "'");
       this.chpl_t = if this.type.chpl_t != ?
                     then this.type.chpl_t
                     else _to_borrowed(src.type);
@@ -322,12 +322,12 @@ module SharedObject {
     pragma "leaves this nil"
     proc init=(src : _nilType) {
       if this.type.chpl_t == ? then
-        compilerError("Cannot establish type of shared when initializing with  nil");
+        compilerError("cannot establish type of shared when initializing with 'nil'");
 
       this.init(this.type.chpl_t);
 
       if isNonNilableClass(chpl_t) then
-        compilerError("Assigning non-nilable shared to nil");
+        compilerError("cannot initialize '", this.type:string, "' from 'nil'");
     }
 
     pragma "no doc"

@@ -1,4 +1,4 @@
 invalid-set-param-again.chpl:7: In method 'init=':
 invalid-set-param-again.chpl:8: error: Cannot replace an instantiated param field with another value
-invalid-set-param-again.chpl:8: note: field 'fixed' has value 'false: bool' but is set to 'true: bool'
+invalid-set-param-again.chpl:8: note: field 'fixed' has value 'false' but is set to 'true'
   invalid-set-param-again.chpl:24: called as (R(false,false)).init=(rhs: R(true,true))

@@ -1,2 +1,2 @@
-init-field-dflt-nonnil-unmanaged-from-oknil-unmanaged.chpl:8: error: Cannot initialize lhs of non-nilable type 'unmanaged MyClass' from a nilable 'unmanaged MyClass?'
+init-field-dflt-nonnil-unmanaged-from-oknil-unmanaged.chpl:8: error: cannot initialize 'lhs' of type 'unmanaged MyClass' from a 'unmanaged MyClass?'
 init-field-dflt-nonnil-unmanaged-from-oknil-unmanaged.chpl:13: error: done

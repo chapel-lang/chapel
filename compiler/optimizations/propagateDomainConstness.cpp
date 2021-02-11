@@ -238,6 +238,7 @@ static void setDefinedConstForDomainSymbol(Symbol *domainSym,
                                                 insBeforeMarker, insAfterMarker,
                                                 /*asRef=*/ true);
 
+  // TODO: this would be clearer with PRIM_ASSIGN since the LHS is a ref
   CallExpr *setDefinedConst = new CallExpr(PRIM_MOVE, refToDefinedConst,
                                            isConst);
 

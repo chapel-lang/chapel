@@ -105,7 +105,7 @@ module OrderedSet {
 
 
       if !isCopyableType(eltType) then
-        compilerError('Cannot initialize ' + this.type:string + ' from ' +
+        compilerError('cannot initialize ' + this.type:string + ' from ' +
                       other.type:string + ' because element type ' +
                       eltType:string + ' is not copyable');
 

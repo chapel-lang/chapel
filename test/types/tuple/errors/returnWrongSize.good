@@ -1,3 +1,6 @@
 returnWrongSize.chpl:1: In function 'foo':
-returnWrongSize.chpl:3: error: cannot return '2*int(64)' when the declared return type is '3*int(64)'
+returnWrongSize.chpl:3: error: cannot initialize return value of type '3*int(64)' from a '2*int(64)'
   returnWrongSize.chpl:8: called as foo(param small = true)
+returnWrongSize.chpl:1: In function 'foo':
+returnWrongSize.chpl:5: error: cannot initialize return value of type '3*int(64)' from a '4*int(64)'
+  returnWrongSize.chpl:9: called as foo(param small = false)

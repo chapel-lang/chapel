@@ -1,1 +1,2 @@
-init-field-dflt-oknil-unmanaged-from-nonnil-owned.chpl:8: error: Cannot initialize 'lhs' of type unmanaged MyClass? from a 'owned MyClass'
+init-field-dflt-oknil-unmanaged-from-nonnil-owned.chpl:8: error: cannot initialize 'lhs' of type 'unmanaged MyClass?' from a 'owned MyClass'
+init-field-dflt-oknil-unmanaged-from-nonnil-owned.chpl:13: error: done

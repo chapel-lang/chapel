@@ -1,2 +1,2 @@
 init-var-oknil-owned-from-nonnil-borrowed.chpl:9: error: invalid copy-initialization
-init-var-oknil-owned-from-nonnil-borrowed.chpl:9: error: cannot create an owned variable from a borrowed class instance
+init-var-oknil-owned-from-nonnil-borrowed.chpl:9: error: cannot initialize 'owned MyClass?' from a 'borrowed MyClass'

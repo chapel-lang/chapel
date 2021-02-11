@@ -458,7 +458,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       if ((isParam || isTypeVar) && initCall->isPrimitive(PRIM_NEW) == true) {
         const char* kind = isTypeVar ? "type" : "param";
         USR_FATAL(initExpr,
-                  "Cannot initialize %s field '%s' with 'new' expression",
+                  "cannot initialize %s field '%s' with 'new' expression",
                   kind, field->sym->name);
       }
     }
