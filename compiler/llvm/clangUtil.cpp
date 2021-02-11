@@ -1517,10 +1517,10 @@ void setupClang(GenInfo* info, std::string mainFile)
       if (isCC1) {
 
         if (gCodegenGPU) {
-          // For GPU, set j to 1st cc1 command
+          // For GPU, set job to 1st cc1 command
           if (job == NULL) job = &command;
         } else {
-          // For CPU, set j to last cc1 command
+          // For CPU, set job to last cc1 command
           job = &command;
         }
       }
@@ -3558,13 +3558,22 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      std::string ptxCmd = std::string("/usr/local/cuda/bin/ptxas -m64 --gpu-name ") +
+      if (system("which ptxas > /dev/null 2>&1")) {
+        USR_FATAL("Command 'ptxas' not found\n");
+      }
+
+      if (system("which fatbinary > /dev/null 2>&1")) {
+        USR_FATAL("Command 'fatbinary' not found\n");
+      }
+
+
+      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
                            std::string("sm_61 --output-file ") + ptxObjectFilename.c_str() +
                            " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-      std::string fatbinaryCmd = std::string("/usr/local/cuda/bin/fatbinary -64 ") +
+      std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                                  std::string("--create ") + fatbinFilename.c_str() +
                                  std::string(" --image=profile=sm_61,file=") + ptxObjectFilename.c_str() +
                                  std::string(" --image=profile=compute_61,file=") + asmFilename.c_str();

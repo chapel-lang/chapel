@@ -2614,6 +2614,7 @@ void codegen() {
 
 }
 
+//TODO: remove makeBinary
 void makeBinary(void) {
   // moved to codegenPartTwo
 
