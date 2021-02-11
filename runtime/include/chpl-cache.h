@@ -141,10 +141,6 @@ void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
 }
 #endif
 
-#ifdef __cplusplus
-}
-#endif
-
 #endif
 // ifdef HAS_CHPL_CACHE_FNS
 
