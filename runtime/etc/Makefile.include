@@ -103,7 +103,7 @@ x:
 	@echo $(CHPL_MAKE_RUNTIME_LIB)
 
 printincludesanddefines:
-	@echo $(CHPL_MAKE_BASE_CFLAGS) $(RUNTIME_DEFS) $(RUNTIME_INCLS)
+	@echo $(CHPL_MAKE_BASE_CFLAGS) $(patsubst -DNDEBUG,,$(patsubst -DCHPL_OPTIMIZE,,$(patsubst -DCHPL_DEBUG,,$(RUNTIME_DEFS)))) $(RUNTIME_INCLS)
 
 printcompileline:
 	@echo $(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) $(CHPL_RT_INC_DIR)

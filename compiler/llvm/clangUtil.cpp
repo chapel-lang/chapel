@@ -2054,11 +2054,15 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
-  if (debugCCode)
+  if (debugCCode) {
     args.push_back(clang_debug);
+    args.push_back("-DCHPL_DEBUG");
+  }
 
-  if (optimizeCCode)
+  if (optimizeCCode) {
     args.push_back(clang_opt);
+    args.push_back("-DCHPL_OPTIMIZE");
+  }
 
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
