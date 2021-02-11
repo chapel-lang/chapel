@@ -454,6 +454,8 @@ all:
       config: 16-node-xc, 16-node-cs
   11/19/20:
     - Improve the speed of tracking arrays declared over a domain (#16740)
+  02/01/21:
+    - Enable the cache for remote data by default (#17044)
 # End all
 
 AllCompTime: &timecomp-base
