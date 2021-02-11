@@ -39,56 +39,56 @@ module CString {
     return x;
   }
 
-  inline proc ==(s0: c_string, s1: c_string) {
+  inline operator c_string.==(s0: c_string, s1: c_string) {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
-//  inline proc ==(s0: string, s1: c_string) {
+//  inline operator c_string.==(s0: string, s1: c_string) {
 //    return __primitive("string_compare", s0.c_str(), s1) == 0;
 //  }
 //
-//  inline proc ==(s0: c_string, s1: string) {
+//  inline operator ==(s0: c_string, s1: string) {
 //    return __primitive("string_compare", s0, s1.c_str()) == 0;
 //  }
 
-  inline proc !=(s0: c_string, s1: c_string) {
+  inline operator c_string.!=(s0: c_string, s1: c_string) {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
-//  inline proc !=(s0: string, s1: c_string) {
+//  inline operator c_string.!=(s0: string, s1: c_string) {
 //    return __primitive("string_compare", s0.c_str(), s1) != 0;
 //  }
 //
-//  inline proc !=(s0: c_string, s1: string) {
+//  inline operator !=(s0: c_string, s1: string) {
 //    return __primitive("string_compare", s0, s1.c_str()) != 0;
 //  }
 
-  inline proc <=(a: c_string, b: c_string) {
+  inline operator c_string.<=(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
-  inline proc >=(a: c_string, b: c_string) {
+  inline operator c_string.>=(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
-  inline proc <(a: c_string, b: c_string) {
+  inline operator c_string.<(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) < 0);
   }
 
-  inline proc >(a: c_string, b: c_string) {
+  inline operator c_string.>(a: c_string, b: c_string) {
     return (__primitive("string_compare", a, b) > 0);
   }
 
-  inline proc =(ref a: c_string, b: c_string) {
+  inline operator c_string.=(ref a: c_string, b: c_string) {
     __primitive("=", a, b);
   }
 
   // let us set c_strings to NULL
-  inline proc =(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
+  inline operator =(ref a:c_string, b:_nilType) { a = c_nil:c_string; }
 
   // for a to be a valid c_string after this function it must be on the same
   // locale as b
-  inline proc =(ref a: c_string, b: string) {
+  inline operator =(ref a: c_string, b: string) {
     __primitive("=", a, b.c_str());
   }
 
