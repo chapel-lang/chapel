@@ -68,7 +68,7 @@ public:
   std::vector<SymbolMap> repsForRequiredFns;
 };
 
-class FnSymbol : public Symbol {
+class FnSymbol final : public Symbol {
 public:
   // each formal is an ArgSymbol, but the elements are DefExprs
   AList                      formals;
@@ -131,13 +131,14 @@ public:
                              FnSymbol(const char* initName);
                             ~FnSymbol();
 
-  void                       verify();
-  virtual void               accept(AstVisitor* visitor);
+  void                       verify() override;
+  void               accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(FnSymbol);
+  FnSymbol* copyInner(SymbolMap* map) override;
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void               replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
   FnSymbol*                  partialCopy(SymbolMap* map);
   void                       finalizeCopy();
@@ -146,10 +147,10 @@ public:
   GenRet                     codegenFunctionType(bool forHeader);
   GenRet                     codegenCast(GenRet fnPtr);
 
-  GenRet                     codegen();
+  GenRet                     codegen() override;
   void                       codegenHeaderC();
-  void                       codegenPrototype();
-  void                       codegenDef();
+  void                       codegenPrototype() override;
+  void                       codegenDef() override;
   void                       codegenFortran(int indent);
   void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
@@ -237,7 +238,7 @@ public:
 
   QualifiedType              getReturnQualType()                         const;
 
-  virtual void               printDocs(std::ostream* file,
+  void                       printDocs(std::ostream* file,
                                        unsigned int  tabs);
 
   void                       throwsErrorInit();
@@ -252,7 +253,7 @@ public:
                                                  bool& printedUnderline) const;
 
 private:
-  virtual std::string        docsDirective();
+  std::string                docsDirective();
 
   bool                       hasGenericFormals(SymbolMap* map)           const;
 

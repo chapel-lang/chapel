@@ -46,10 +46,10 @@ public:
   virtual        ~Expr();
 
   // Interface for BaseAST
-          bool    inTree();
+          bool    inTree()                                        override;
   virtual bool    isStmt()                                           const;
-  virtual QualifiedType qualType();
-  virtual void    verify();
+          QualifiedType qualType()                                override;
+          void    verify()                                        override;
 
   void verify(AstTag expectedTag); // ensure tag is as expected, then verify()
   void verifyParent(const Expr* child); // verify proper child->parentExpr
@@ -115,25 +115,27 @@ private:
 };
 
 
-class DefExpr : public Expr {
+class DefExpr final : public Expr {
 public:
                   DefExpr(Symbol*  initSym      = NULL,
                           BaseAST* initInit     = NULL,
                           BaseAST* initExprType = NULL);
 
-  virtual void    verify();
+  void    verify()                                   override;
 
   DECLARE_COPY(DefExpr);
+  DefExpr* copyInner(SymbolMap* map)                 override;
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    accept(AstVisitor* visitor);
 
-  virtual QualifiedType qualType();
-  virtual void    prettyPrint(std::ostream* o);
+  void    replaceChild(Expr* old_ast, Expr* new_ast) override;
+  void    accept(AstVisitor* visitor)                override;
 
-  virtual GenRet  codegen();
+  QualifiedType qualType()                           override;
+  void    prettyPrint(std::ostream* o)               override;
 
-  virtual Expr*   getFirstExpr();
+  GenRet  codegen()                                  override;
+
+  Expr*   getFirstExpr()                             override;
 
   const char*     name()                               const;
 
@@ -143,7 +145,7 @@ public:
 };
 
 
-class SymExpr : public Expr {
+class SymExpr final : public Expr {
  private:
   Symbol* var;
 
@@ -158,17 +160,18 @@ class SymExpr : public Expr {
   SymExpr(Symbol* init_var);
 
   DECLARE_COPY(SymExpr);
+  SymExpr* copyInner(SymbolMap* map)                  override;
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
+  void    replaceChild(Expr* old_ast, Expr* new_ast)  override;
+  void    verify()                                    override;
+  void    accept(AstVisitor* visitor)                 override;
 
-  virtual QualifiedType qualType();
-  virtual bool    isNoInitExpr() const;
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream* o);
+  QualifiedType qualType()                            override;
+  bool    isNoInitExpr()                        const override;
+  GenRet  codegen()                                   override;
+  void    prettyPrint(std::ostream* o)                override;
 
-  virtual Expr*   getFirstExpr();
+  Expr*   getFirstExpr()                              override;
 
   Symbol* symbol() const {
     return var;
@@ -177,22 +180,23 @@ class SymExpr : public Expr {
   void setSymbol(Symbol* s);
 };
 
-class UnresolvedSymExpr : public Expr {
+class UnresolvedSymExpr final : public Expr {
  public:
   const char* unresolved;
 
   UnresolvedSymExpr(const char* init_var);
 
   DECLARE_COPY(UnresolvedSymExpr);
+  UnresolvedSymExpr* copyInner(SymbolMap* map)        override;
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    verify();
-  virtual void    accept(AstVisitor* visitor);
-  virtual QualifiedType qualType();
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream *o);
+  void    replaceChild(Expr* old_ast, Expr* new_ast)  override;
+  void    verify()                                    override;
+  void    accept(AstVisitor* visitor)                 override;
+  QualifiedType qualType()                            override;
+  GenRet  codegen()                                   override;
+  void    prettyPrint(std::ostream *o)                override;
 
-  virtual Expr*   getFirstExpr();
+  Expr*   getFirstExpr()                              override;
 };
 
 
@@ -225,21 +229,22 @@ class UnresolvedSymExpr : public Expr {
 //
 // isCallExpr() will return true for a ContextCallExpr
 //
-class ContextCallExpr : public Expr {
+class ContextCallExpr final : public Expr {
 public:
                          ContextCallExpr();
 
   DECLARE_COPY(ContextCallExpr);
+  ContextCallExpr* copyInner(SymbolMap* map)              override;
 
-  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
+  void           replaceChild(Expr* oldAst, Expr* newAst) override;
 
-  virtual void           verify();
-  virtual void           accept(AstVisitor* visitor);
-  virtual QualifiedType  qualType();
-  virtual GenRet         codegen();
-  virtual void           prettyPrint(std::ostream* o);
+  void           verify()                                 override;
+  void           accept(AstVisitor* visitor)              override;
+  QualifiedType  qualType()                               override;
+  GenRet         codegen()                                override;
+  void           prettyPrint(std::ostream* o)             override;
 
-  virtual Expr*          getFirstExpr();
+  Expr*          getFirstExpr()                           override;
 
   void                   setRefValueConstRefOptions(CallExpr* refCall,
                                                     CallExpr* valueCall,
@@ -262,24 +267,25 @@ private:
 };
 
 
-class NamedExpr : public Expr {
+class NamedExpr final : public Expr {
  public:
   const char*     name;
   Expr*           actual;
 
   NamedExpr(const char* init_name, Expr* init_actual);
 
-  virtual void    verify();
+  void    verify()                                    override;
 
   DECLARE_COPY(NamedExpr);
+  NamedExpr* copyInner(SymbolMap* map)                override;
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void    accept(AstVisitor* visitor);
-  virtual QualifiedType qualType();
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream* o);
+  void    replaceChild(Expr* old_ast, Expr* new_ast)  override;
+  void    accept(AstVisitor* visitor)                 override;
+  QualifiedType qualType()                            override;
+  GenRet  codegen()                                   override;
+  void    prettyPrint(std::ostream* o)                override;
 
-  virtual Expr*   getFirstExpr();
+  Expr*   getFirstExpr()                              override;
 };
 
 //
@@ -288,22 +294,23 @@ class NamedExpr : public Expr {
 // or
 //   actualType implements InterfaceName
 //   
-class IfcConstraint : public Expr {
+class IfcConstraint final : public Expr {
 public:
   static IfcConstraint* build(const char* name,
                               CallExpr* actuals);
   IfcConstraint(Expr* iifc);
 
   DECLARE_COPY(IfcConstraint);
-  virtual GenRet codegen();
-  virtual void   verify();
-  virtual void   accept(AstVisitor* visitor);
-  virtual QualifiedType qualType();
+  IfcConstraint* copyInner(SymbolMap* map)            override;
+  GenRet codegen()                                    override;
+  void   verify()                                     override;
+  void   accept(AstVisitor* visitor)                  override;
+  QualifiedType qualType()                            override;
 
-  virtual void   replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*  getFirstExpr();
-  virtual Expr*  getNextExpr(Expr* expr);
-  virtual void   prettyPrint(std::ostream* o);
+  void   replaceChild(Expr* oldAst, Expr* newAst)     override;
+  Expr*  getFirstExpr()                               override;
+  Expr*  getNextExpr(Expr* expr)                      override;
+  void   prettyPrint(std::ostream* o)                 override;
 
   InterfaceSymbol* ifcSymbol()  const;
   int              numActuals() const { return consActuals.length; }

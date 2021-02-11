@@ -41,15 +41,11 @@ WhileStmt::~WhileStmt()
 
 }
 
-void WhileStmt::copyShare(const WhileStmt& ref,
-                          SymbolMap*       mapRef,
-                          bool             internal)
+void WhileStmt::copyInnerShare(const WhileStmt& ref,
+                               SymbolMap*       map)
 {
-  SymbolMap  localMap;
-  SymbolMap* map       = (mapRef != 0) ? mapRef : &localMap;
   Expr*      condExpr  = ref.condExprGet();
 
-  astloc            = ref.astloc;
   blockTag          = ref.blockTag;
 
   mBreakLabel       = ref.mBreakLabel;
@@ -61,9 +57,6 @@ void WhileStmt::copyShare(const WhileStmt& ref,
 
   for_alist(expr, ref.body)
     insertAtTail(expr->copy(map, true));
-
-  if (internal == false)
-    update_symbols(this, map);
 }
 
 void WhileStmt::verify()

@@ -2217,11 +2217,11 @@ namespace {
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
     void handleLoopStmt(LoopStmt* loop);
     bool exprPointsToNonStack(Expr* e);
-    bool enterCallExpr(CallExpr* call);
-    bool enterWhileDoStmt(WhileDoStmt* loop);
-    bool enterDoWhileStmt(DoWhileStmt* loop);
-    bool enterCForLoop(CForLoop* loop);
-    bool enterForLoop(ForLoop* loop);
+    bool enterCallExpr(CallExpr* call) override;
+    bool enterWhileDoStmt(WhileDoStmt* loop) override;
+    bool enterDoWhileStmt(DoWhileStmt* loop) override;
+    bool enterCForLoop(CForLoop* loop) override;
+    bool enterForLoop(ForLoop* loop) override;
   };
 }
 

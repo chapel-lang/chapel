@@ -1159,7 +1159,7 @@ namespace {
 
 
   // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide : public ModulePass {
+  struct GlobalToWide final : public ModulePass {
     static char ID; // Pass identification, replacement for typeid
 
     GlobalToWideInfo * info;
@@ -1191,7 +1191,7 @@ namespace {
 
 
 
-    virtual bool runOnModule(Module &M) {
+    bool runOnModule(Module &M) override {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {

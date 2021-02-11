@@ -434,7 +434,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
 
 // END stolen from MemCpyOptimizer.
 
-  struct AggregateGlobalOpsOpt : public FunctionPass {
+  struct AggregateGlobalOpsOpt final : public FunctionPass {
     const DataLayout *DL;
     unsigned globalSpace;
 
@@ -454,7 +454,7 @@ void MemOpRanges::addRange(int64_t Start, int64_t Size, int64_t Slack, Value *Pt
     bool runOnFunction(Function &F);
 
   private:
-    virtual void getAnalysisUsage(AnalysisUsage &AU) const {
+    void getAnalysisUsage(AnalysisUsage &AU) const override {
       // TODO -- update these better
       AU.setPreservesCFG();
       /*AU.addRequired<DominatorTree>();

@@ -942,17 +942,17 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
   return retval;
 }
 
-class ProcessThisUses : public AstVisitorTraverse
+class ProcessThisUses final : public AstVisitorTraverse
 {
   public:
     ProcessThisUses(const InitNormalize* state) {
       this->state = state;
     }
-    virtual ~ProcessThisUses() { }
+    ~ProcessThisUses() { }
 
-    virtual void visitSymExpr(SymExpr* node);
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual bool enterFnSym(FnSymbol* node);
+    void visitSymExpr(SymExpr* node) override;
+    bool enterCallExpr(CallExpr* node) override;
+    bool enterFnSym(FnSymbol* node) override;
 
   private:
     const InitNormalize* state;

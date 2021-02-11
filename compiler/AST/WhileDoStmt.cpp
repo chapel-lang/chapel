@@ -103,13 +103,13 @@ WhileDoStmt::~WhileDoStmt()
 
 }
 
-WhileDoStmt* WhileDoStmt::copy(SymbolMap* map, bool internal)
+WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
 {
   Expr*        condExpr = 0;
   BlockStmt*   body     = 0;
   WhileDoStmt* retval   = new WhileDoStmt(condExpr, body);
 
-  retval->copyShare(*this, map, internal);
+  retval->copyInnerShare(*this, map);
 
   return retval;
 }

@@ -33,7 +33,7 @@ public:
   static Stmt*           findEnclosingLoopOrForall(Expr* expr);
 
 public:
-  virtual bool           isLoopStmt()                                    const;
+  bool           isLoopStmt()                                   const override;
 
   LabelSymbol*           breakLabelGet()                                 const;
   void                   breakLabelSet(LabelSymbol* sym);
