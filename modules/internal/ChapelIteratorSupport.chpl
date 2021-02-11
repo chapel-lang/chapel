@@ -626,10 +626,6 @@ module ChapelIteratorSupport {
     }
   }
 
-  proc chpl__staticFastFollowCheckNew(const ref x) param {
-    return chpl__staticFastFollowCheck(x);
-  }
-
   proc chpl__staticFastFollowCheckNew(const ref x, lead) param {
     return chpl__staticFastFollowCheck(x, lead);
   }
@@ -640,31 +636,6 @@ module ChapelIteratorSupport {
 
   proc chpl__staticFastFollowCheck(x: [], lead) param {
     return x._value.dsiStaticFastFollowCheck(lead._value.type);
-  }
-
-  proc chpl__staticFastFollowCheckZipNew(const ref x ...?n) param {
-    return chpl__staticFastFollowCheckZip(x);
-  }
-
-  proc chpl__staticFastFollowCheckZip(x: _tuple) param {
-    if !chpl__canHaveFastFollowersZip(x) {
-      return false;
-    }
-    else {
-      pragma "no copy" const lead = x(0);
-      if chpl__canLeadFastFollowers(lead) then
-        return chpl__staticFastFollowCheckZip(x, lead);
-      else
-        return false;
-    }
-  }
-
-  proc chpl__staticFastFollowCheckZip(x: _tuple, lead, param dim = 0) param {
-    if x.size-1 == dim then
-      return chpl__staticFastFollowCheck(x(dim), lead);
-    else
-      return chpl__staticFastFollowCheck(x(dim), lead) &&
-             chpl__staticFastFollowCheckZip(x, lead, dim+1);
   }
 
   //
@@ -680,8 +651,8 @@ module ChapelIteratorSupport {
     }
   }
 
-  proc chpl__dynamicFastFollowCheckNew(const ref x) {
-    return chpl__dynamicFastFollowCheck(x);
+  proc chpl__dynamicFastFollowCheckNew(const ref x, const ref lead) {
+    return chpl__dynamicFastFollowCheck(x, lead);
   }
 
   proc chpl__dynamicFastFollowCheck(x, lead) {
@@ -693,31 +664,6 @@ module ChapelIteratorSupport {
       return x._value.dsiDynamicFastFollowCheck(lead);
     else
       return false;
-  }
-
-  proc chpl__dynamicFastFollowCheckZipNew(const ref x ...?n) {
-    return chpl__dynamicFastFollowCheckZip(x);
-  }
-
-  proc chpl__dynamicFastFollowCheckZip(x: _tuple) {
-    if !chpl__canHaveFastFollowersZip(x) {
-      return false;
-    }
-
-    if chpl__canLeadFastFollowers(x(0)) {
-      return chpl__dynamicFastFollowCheckZip(x, x(0));
-    }
-    else {
-      return false;
-    }
-  }
-
-  proc chpl__dynamicFastFollowCheckZip(x: _tuple, lead, param dim = 0) {
-    if x.size-1 == dim then
-      return chpl__dynamicFastFollowCheck(x(dim), lead);
-    else
-      return chpl__dynamicFastFollowCheck(x(dim), lead) &&
-             chpl__dynamicFastFollowCheckZip(x, lead, dim+1);
   }
 
   pragma "no implicit copy"

@@ -960,13 +960,17 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
   const char *fnName = isStatic ? "chpl__staticFastFollowCheckNew" :
                                   "chpl__dynamicFastFollowCheckNew";
 
+  Expr *lead = iterCall->get(1);
+  INT_ASSERT(isSymExpr(lead));
+
   CallExpr *ret = new CallExpr(PRIM_AND);
 
   for_actuals(actual, iterCall) {
     if (ret->numActuals() == 2) {
       ret = new CallExpr(PRIM_AND, ret);
     }
-    ret->insertAtTail(new CallExpr(fnName, actual->copy()));
+    INT_ASSERT(isSymExpr(actual));
+    ret->insertAtTail(new CallExpr(fnName, actual->copy(), lead->copy()));
   }
 
   return ret;
