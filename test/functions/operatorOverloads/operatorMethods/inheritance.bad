@@ -1,0 +1,18 @@
+inheritance.chpl:15: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:15: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'rhs'
+inheritance.chpl:16: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:16: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'lhs'
+inheritance.chpl:18: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:18: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'lhs'
+inheritance.chpl:18: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:18: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'rhs'
+inheritance.chpl:19: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:19: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'lhs'
+inheritance.chpl:19: error: in call to '<', cannot pass result of coercion by reference
+inheritance.chpl:19: note: implicit coercion from 'owned Child' to 'owned Parent'
+inheritance.chpl:4: note: when passing to 'const ref' intent formal 'rhs'

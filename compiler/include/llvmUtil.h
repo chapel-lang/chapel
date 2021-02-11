@@ -45,13 +45,14 @@ llvm::Constant* codegenSizeofLLVM(llvm::Type* type);
 // 0 means undefined alignment
 llvm::AllocaInst* makeAlloca(llvm::Type* type, const char* name, llvm::Instruction* insertBefore, unsigned n=1, unsigned align=0);
 
-llvm::Value* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
+llvm::AllocaInst* createLLVMAlloca(llvm::IRBuilder<>* irBuilder, llvm::Type* type, const char* name);
+
 PromotedPair convertValuesToLarger(llvm::IRBuilder<> *irBuilder, llvm::Value *value1, llvm::Value *value2, bool isSigned1 = false, bool isSigned2 = false);
 llvm::Value *convertValueToType(llvm::IRBuilder<>* irBuilder,
                                 const llvm::DataLayout& layout,
                                 llvm::LLVMContext &ctx,
                                 llvm::Value *value, llvm::Type *newType,
-                                llvm::Value **alloca, // an alloca generated
+                                llvm::AllocaInst **alloca, // an alloca generated
                                 bool isSigned=false, bool force=false);
 
 void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
@@ -60,7 +61,7 @@ void makeLifetimeStart(llvm::IRBuilder<>* irBuilder,
                        llvm::Type *valType, llvm::Value *addr);
 
 // Returns an alloca
-llvm::Value* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
+llvm::AllocaInst* makeAllocaAndLifetimeStart(llvm::IRBuilder<>* irBuilder,
                                         const llvm::DataLayout& layout,
                                         llvm::LLVMContext &ctx,
                                         llvm::Type* type, const char* name);
@@ -71,6 +72,7 @@ bool isTypeSizeSmallerThan(const llvm::DataLayout& layout, llvm::Type* ty, uint6
 void print_llvm(llvm::Type* t);
 void print_llvm(llvm::Value* v);
 void print_llvm(llvm::Module* m);
+// print_clang is also available in another file
 
 #endif //HAVE_LLVM
 

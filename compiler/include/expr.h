@@ -29,6 +29,14 @@
 
 #include <ostream>
 
+#ifdef HAVE_LLVM
+// Forward declare AllocaInst.
+namespace llvm
+{
+  class AllocaInst;
+}
+#endif
+
 class PrimitiveOp;
 
 
@@ -426,8 +434,8 @@ bool hasOptimizationFlag(Expr* anchor, Flag flag);
 
 
 #ifdef HAVE_LLVM
-llvm::Value* createVarLLVM(llvm::Type* type, const char* name);
-llvm::Value* createVarLLVM(llvm::Type* type);
+llvm::AllocaInst* createVarLLVM(llvm::Type* type, const char* name);
+llvm::AllocaInst* createVarLLVM(llvm::Type* type);
 
 llvm::Value *convertValueToType(llvm::Value *value, llvm::Type *newType,
                                 bool isSigned = false, bool force = false);

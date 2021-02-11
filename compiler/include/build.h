@@ -213,4 +213,8 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
 void redefiningReservedTypeError(const char* name);
 void redefiningReservedWordError(const char* name);
 
+// Emits an error for an attempt to provide an unexpected this intent tag
+// when defining an explicit operator.
+void updateOpThisTagOrErr(FnSymbol* fn);
+
 #endif

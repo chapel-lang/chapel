@@ -110,7 +110,7 @@ struct GenInfo {
   llvm::TargetMachine* targetMachine;
 
   std::vector<LoopData> loopStack;
-  std::vector<std::pair<llvm::Value*, llvm::Type*> > currentStackVariables;
+  std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;

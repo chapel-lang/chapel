@@ -1116,11 +1116,17 @@ def set_up_executables():
                         "{0}".format(prediff))
                 finish()
             chpl_system_prediff.append(prediff)
-    if launcher == "slurm-srun":
-        # With Slurm-based launcher, auto-run prediff-for-slurm-srun.
-        prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm-srun")
+    if "slurm" in launcher:
+        # With Slurm-based launcher, auto-run prediff-for-slurm.
+        prediff_for_slurm = os.path.join(util_dir, "test", "prediff-for-slurm")
         if prediff_for_slurm not in chpl_system_prediff:
             chpl_system_prediff.append(prediff_for_slurm)
+    elif 'lsf-' in launcher:
+        # With lsf-based launcher, auto-run prediff-for-lsf.
+        prediff_for_lsf = os.path.join(util_dir, "test", "prediff-for-lsf")
+        if prediff_for_lsf not in chpl_system_prediff:
+            chpl_system_prediff.append(prediff_for_lsf)
+
     if chpl_system_prediff:
         os.environ["CHPL_SYSTEM_PREDIFF"] = ','.join(chpl_system_prediff)
 

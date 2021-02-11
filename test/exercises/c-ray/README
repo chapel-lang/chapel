@@ -120,7 +120,7 @@ STEP 3: Compute the ray tracing using a parallel loop
 STEP 4: Compute the ray tracing using promotion
 -----------------------------------------------
 
-* Can you write the computation using promotion?  Does it affect the
+* Can you replace the above parallel loop with promotion?  Does it affect the
   speed at all?
 
 

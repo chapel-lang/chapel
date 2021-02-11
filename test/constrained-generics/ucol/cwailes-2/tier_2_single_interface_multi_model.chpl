@@ -1,4 +1,4 @@
-interface I(type T) {
+interface I(T) {
   proc f(x:T):T;
 }
 
@@ -8,7 +8,7 @@ module A {
   // Model 1
   implements I(int);
   
-  proc j(x:?U, y:?V) where implements I(U), I(V) {
+  proc j(x:?U, y:?V) where implements I(U) && implements I(V) {
     return f(x) + f(y);
   }
   
