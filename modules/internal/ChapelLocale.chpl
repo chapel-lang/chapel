@@ -305,7 +305,7 @@ module ChapelLocale {
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
   pragma "no doc"
-  proc =(ref l1: locale, const ref l2: locale) {
+  operator =(ref l1: locale, const ref l2: locale) {
     l1._instance = l2._instance;
   }
 
