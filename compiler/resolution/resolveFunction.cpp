@@ -594,15 +594,19 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   Type* fromType = NULL;
 
   if (fn->name == astrSassign) {
-    toType = fn->getFormal(1)->getValType();
-    fromType = fn->getFormal(2)->getValType();
+    int i = 1;
+    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    toType = fn->getFormal(i)->getValType(); i++;
+    fromType = fn->getFormal(i)->getValType();
   } else if (fn->name == astrInitEquals) {
     // arg 1 is the method token
     toType = fn->getFormal(2)->getValType();
     fromType = fn->getFormal(3)->getValType();
   } else if (fn->name == astr_cast) {
-    toType = fn->getFormal(1)->getValType();
-    fromType = fn->getFormal(2)->getValType();
+    int i = 1;
+    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    toType = fn->getFormal(i)->getValType(); i++;
+    fromType = fn->getFormal(i)->getValType();
   } else {
     // Nothing to do if it's not one of the above cases.
     return;
