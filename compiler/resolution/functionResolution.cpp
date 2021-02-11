@@ -10880,12 +10880,14 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
     uCall = userCall(call);
   }
 
-  USR_FATAL_CONT(uCall, "Cannot default-initialize %s", descr);
+  USR_FATAL_CONT(uCall, "cannot default-initialize %s", descr);
   if (preventingSplitInit != NULL && !val->hasFlag(FLAG_TEMP))
     USR_FATAL_CONT(preventingSplitInit, "use here prevents split-init");
 
   if (isNonNilableClassType(typeToCheck)) {
-    USR_PRINT("non-nil class types do not support default initialization");
+    USR_PRINT("non-nilable class type '%s' "
+              "does not support default initialization",
+              toString(typeToCheck));
 
     AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
     ClassTypeDecorator d = classTypeDecorator(type);
@@ -11289,17 +11291,15 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
         if (isDecoratorUnknownManagement(dt->getDecorator())) {
           if (isDecoratorNilable(dt->getDecorator())) {
             USR_PRINT(ctx, "'%s?' "
-                           "now means nilable class with any management",
-                      at->symbol->name);
-            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s?'",
+                           "indicates a nilable class with any management",
                       at->symbol->name);
           } else {
             USR_PRINT(ctx, "'%s' "
-                            "now means non-nilable class with any management",
-                      at->symbol->name);
-            USR_PRINT(ctx, "to migrate old code, change it to 'borrowed %s'",
+                            "indicates a non-nilable class with any management",
                       at->symbol->name);
           }
+          USR_PRINT(ctx, "consider adding a management decorator such as "
+                         "'owned', 'shared', 'borrowed', or 'unmanaged'");
         }
       }
     }
