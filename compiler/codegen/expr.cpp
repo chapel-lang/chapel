@@ -4636,6 +4636,17 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       ret = rcall->codegen();
 }
 
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
+
+  std::vector<GenRet> args;
+  for_actuals(actual, call) {
+    args.push_back(actual->codegen());
+  }
+
+  // TODO: make this emit what you want
+  ret = codegenCallExpr("gpu_kernel_launch_here", args);
+}
+
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
     //   localvar, locale, remote addr, get(4)==size, line, file
