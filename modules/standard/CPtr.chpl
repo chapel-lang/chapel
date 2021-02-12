@@ -364,12 +364,14 @@ module CPtr {
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline operator =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
 
 
 
   pragma "no doc"
-  inline operator ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
 
@@ -385,7 +387,7 @@ module CPtr {
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
   pragma "no doc"
-  inline operator !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator c_ptr.!=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
@@ -401,7 +403,7 @@ module CPtr {
   inline proc _cond_test(x: c_ptr) return x != c_nil;
 
   pragma "no doc"
-  inline operator !(x: c_ptr) return x == c_nil;
+  inline operator c_ptr.!(x: c_ptr) return x == c_nil;
 
   pragma "no doc"
   inline operator +(a: c_ptr, b: integral) return __primitive("+", a, b);
@@ -410,7 +412,7 @@ module CPtr {
   inline operator -(a: c_ptr, b: integral) return __primitive("-", a, b);
 
   pragma "no doc"
-  inline operator -(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
+  inline operator c_ptr.-(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
