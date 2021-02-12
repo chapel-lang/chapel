@@ -508,7 +508,7 @@ module Set {
     :arg lhs: The set to assign to.
     :arg rhs: The set to assign from.
   */
-  proc =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator =(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs.clear();
 
     for x in rhs do
@@ -524,7 +524,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.|(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     result = a;
@@ -539,7 +539,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.|=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     for x in rhs do
       lhs.add(x);
   }
@@ -554,7 +554,7 @@ module Set {
     :return: A new set containing the union between `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc +(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
+  operator set.+(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t, ?) {
     return a | b;
   }
 
@@ -564,7 +564,7 @@ module Set {
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
-  proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.+=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     lhs |= rhs;
   }
 
@@ -577,7 +577,7 @@ module Set {
     :return: A new set containing the difference between `a` and `b`.
     :rtype: `set(t)`
   */
-  proc -(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.-(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result = new set(t, (a.parSafe || b.parSafe));
 
     if a.parSafe && b.parSafe {
@@ -604,7 +604,7 @@ module Set {
     :arg lhs: A set to take the difference of and then assign to.
     :arg rhs: A set to take the difference of.
   */
-  proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.-=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
       forall x in rhs do
         lhs.remove(x);
@@ -623,7 +623,7 @@ module Set {
     :return: A new set containing the intersection of `a` and `b`.
     :rtype: `set(t)`
   */
-  proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.&(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller set */
@@ -664,7 +664,7 @@ module Set {
     :arg lhs: A set to take the intersection of and then assign to.
     :arg rhs: A set to take the intersection of.
   */
-  proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.&=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     /* We can't remove things from lhs while iterating over it, so
      * use a temporary. */
     var result: set(t, (lhs.parSafe || rhs.parSafe));
@@ -690,7 +690,7 @@ module Set {
     :return: A new set containing the symmetric difference of `a` and `b`.
     :rtype: `set(?t, ?)`
   */
-  proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
+  operator set.^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
@@ -718,7 +718,7 @@ module Set {
     :arg lhs: A set to take the symmetric difference of and then assign to.
     :arg rhs: A set to take the symmetric difference of.
   */
-  proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
+  operator set.^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
     if lhs.parSafe && rhs.parSafe {
       forall x in rhs {
         if lhs.contains(x) {
@@ -748,7 +748,7 @@ module Set {
     :return: `true` if two sets are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.==(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -776,7 +776,7 @@ module Set {
     :return: `true` if two sets are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.!=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     return !(a == b);
   }
 
@@ -789,7 +789,7 @@ module Set {
     :return: `true` if `a` is a proper subset of `b`.
     :rtype: `bool`
   */
-  proc <(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.<(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size >= b.size then
       return false;
     return a <= b;
@@ -804,7 +804,7 @@ module Set {
     :return: `true` if `a` is a subset of `b`.
     :rtype: `bool`
   */
-  proc <=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.<=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size > b.size then
       return false;
 
@@ -833,7 +833,7 @@ module Set {
     :return: `true` if `a` is a proper superset of `b`.
     :rtype: `bool`
   */
-  proc >(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.>(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size <= b.size then
       return false;
     return a >= b;
@@ -848,7 +848,7 @@ module Set {
     :return: `true` if `a` is a superset of `b`.
     :rtype: `bool`
   */
-  proc >=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
+  operator set.>=(const ref a: set(?t, ?), const ref b: set(t, ?)): bool {
     if a.size < b.size then
       return false;
 
