@@ -532,7 +532,7 @@ proc _to_reMatch(ref p:qio_regexp_string_piece_t):reMatch {
 }
 
 pragma "no doc"
-inline proc !(m: reMatch) return !m.matched;
+inline operator reMatch.!(m: reMatch) return !m.matched;
 
 pragma "no doc"
 inline proc _cond_test(m: reMatch) return m.matched;
@@ -992,7 +992,7 @@ record regexp {
 }
 
 pragma "no doc"
-proc =(ref ret:regexp(?t), x:regexp(t))
+operator =(ref ret:regexp(?t), x:regexp(t))
 {
   // retain -- release
   if x.home == ret.home {
