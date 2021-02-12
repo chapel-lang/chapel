@@ -1,2 +1,2 @@
 bug-375.chpl:4: In function 'main':
-bug-375.chpl:6: error: illegal cast from owned Child to shared Parent
+bug-375.chpl:6: error: Cannot change class type in conversion from 'owned Child' to 'shared Parent'

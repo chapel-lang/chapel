@@ -1,4 +1,4 @@
 init-field-arg-oknil-owned-from-oknil-shared.chpl:9: In initializer:
 init-field-arg-oknil-owned-from-oknil-shared.chpl:10: error: invalid copy-initialization
-init-field-arg-oknil-owned-from-oknil-shared.chpl:10: error: cannot create an owned variable from a shared class instance
+init-field-arg-oknil-owned-from-oknil-shared.chpl:10: error: cannot initialize 'owned MyClass?' from a 'shared MyClass?'
   init-field-arg-oknil-owned-from-oknil-shared.chpl:14: called as MyRecord.init(rhs: shared MyClass?)

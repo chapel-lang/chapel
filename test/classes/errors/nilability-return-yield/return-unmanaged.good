@@ -1,2 +1,2 @@
 return-unmanaged.chpl:3: In function 'P':
-return-unmanaged.chpl:3: error: cannot return 'unmanaged C?' when the declared return type is 'unmanaged C'
+return-unmanaged.chpl:3: error: cannot initialize return value of type 'unmanaged C' from a 'unmanaged C?'

@@ -1,2 +1,2 @@
 explicitAssignment.chpl:17: In function 'main':
-explicitAssignment.chpl:18: error: Cannot assign to borrowed Foo(real(64)) from borrowed Foo(int(64))
+explicitAssignment.chpl:18: error: cannot initialize 'a' of type 'borrowed Foo(real(64))' from a 'borrowed Foo(int(64))'

@@ -841,7 +841,17 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
     }
     else
     {
-      if (strcmp(var->name, "nil") != 0)
+      /*
+       * For an expression like
+       *   var o: object? = nil;
+       * we arrive here at the "nil" with printingType == false.
+       *
+       * For an expression like
+       *   x: [something] int
+       * we arrive here inside the [] with printingType == true.  When
+       * var->name is "nil" we want to produce "x: [] int".
+       */
+      if (!printingType || strcmp(var->name, "nil") != 0)
         mText += var->name;
     }
   }

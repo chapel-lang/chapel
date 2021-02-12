@@ -1527,7 +1527,7 @@ bool typeNeedsCopyInitDeinit(Type* type) {
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
 
-    // Must be a record type
+    // Must be a record or union type
     if (aggr->aggregateTag != AGGREGATE_RECORD &&
         aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;

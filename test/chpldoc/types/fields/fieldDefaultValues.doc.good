@@ -57,6 +57,8 @@ or
 
    .. attribute:: var notNilDefault = c!
 
+   .. attribute:: var isNilDefault: nilable C = nil
+
    .. attribute:: var plusDefault = x+y
 
    .. attribute:: var minusDefault = x-y
@@ -108,6 +110,8 @@ or
    .. attribute:: var maxDefault = max(int)
 
    .. attribute:: var castDefault = x: int(32)
+
+   .. attribute:: var tuple1Default = (x,)
 
    .. attribute:: var tuple2Default = (x, y)
 

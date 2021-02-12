@@ -1,22 +1,13 @@
-// methodAssignment.cpl
-//
-// The compiler should call a user-defined assignment method with the 
-// signature:
-//   proc T.=(rhs:T)
-// The implicit "this" argument is assumed to be updated to be a copy of the rhs
-// argument.
-//
-
-class C
+record C
 {
   var i:int;
 
-  proc =(rhs:C)
+  operator =(ref lhs: C, rhs:C)
   {
-    writeln("Called C.=(:C)");
-    writeln("Old value was ", this.i);
-    this.i = rhs.i;
-    writeln("New value is ", this.i);
+    writeln("Called =(:C, :C)");
+    writeln("Old value was ", lhs.i);
+    lhs.i = rhs.i;
+    writeln("New value is ", lhs.i);
   }
 }
 

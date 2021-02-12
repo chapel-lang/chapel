@@ -1,0 +1,1 @@
+t8.chpl:1: error: cannot initialize 't' of type '10*uint(8)' from a '10*int(64)'

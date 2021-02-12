@@ -14,6 +14,7 @@ proc negDefault(arg=-x) {}
 proc bitwiseNegDefault(arg=~x) {}
 
 proc notNilDefault(arg=c!) {}
+proc isNilDefault(arg=nil) {}
 
 proc plusDefault(arg=x+y) {}
 proc minusDefault(arg=x-y) {}
@@ -48,7 +49,7 @@ proc maxDefault(arg=max(int)) {}
 
 proc castDefault(arg=x:int(32)) {}
 
-//proc tuple1Default(arg=(x,)) {}
+proc tuple1Default(arg=(x,)) {}
 proc tuple2Default(arg=(x,y)) {}
 proc tuple3Default(arg=(x,y,z)) {}
 

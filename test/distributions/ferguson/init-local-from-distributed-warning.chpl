@@ -29,7 +29,7 @@ proc ok1() {
 
   var myDomain: domain(2);
   myDomain;  // disabling split-init for myDomain
-  // this one is a warning too as discussed in issue #14746
+  // this one is not a warning today
   myDomain = {1..n, 1..n} dmapped Block({1..n, 1..n});
   writeln(myDomain);
 

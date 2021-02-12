@@ -896,9 +896,9 @@ proc _cast(type t: range(?), r: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = r._stride;
-    tmp._alignment = r._alignment: tmp.intIdxType;
-    tmp._aligned = r._aligned;
+    tmp._stride = r.stride;
+    tmp._alignment = r.alignment: tmp.intIdxType;
+    tmp._aligned = r.aligned;
   }
 
   tmp._low = r.low: tmp.intIdxType;

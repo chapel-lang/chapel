@@ -16,6 +16,11 @@ record R {
   }
 }
 
+proc _cast(type t: R(?T), other: T) {
+  var tmp: t = other;
+  return tmp;
+}
+
 record X {
   var x : int;
 

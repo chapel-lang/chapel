@@ -1,1 +1,1 @@
-syncAsClass2.chpl:5: error: Cannot assign to borrowed object? from sync int(64)
+syncAsClass2.chpl:5: error: cannot initialize 'myObject' of type 'borrowed object?' from a 'sync int(64)'

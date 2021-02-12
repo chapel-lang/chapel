@@ -1,0 +1,5 @@
+#!/bin/bash
+output=$2
+
+sed -e 's/:[0-9]*:/:N:/' $output > $output.tmp
+mv $output.tmp $output

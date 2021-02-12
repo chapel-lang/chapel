@@ -2012,6 +2012,12 @@ proc channel.init=(x: channel) {
   }
 }
 
+pragma "no doc"
+proc _cast(type t: channel, rhs: channel) {
+  var tmp: t = rhs; // just run init=
+  return tmp;
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer

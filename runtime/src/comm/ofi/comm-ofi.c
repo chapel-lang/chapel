@@ -1018,6 +1018,38 @@ void debugOverrideHints(struct fi_info* hints) {
   uint64_t val;
 
   {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_ATOMIC),
+                                  CFG_HINT(FI_DIRECTED_RECV),
+                                  CFG_HINT(FI_FENCE),
+                                  CFG_HINT(FI_HMEM),
+                                  CFG_HINT(FI_LOCAL_COMM),
+                                  CFG_HINT(FI_MSG),
+                                  CFG_HINT(FI_MULTICAST),
+                                  CFG_HINT(FI_MULTI_RECV),
+                                  CFG_HINT(FI_NAMED_RX_CTX),
+                                  CFG_HINT(FI_READ),
+                                  CFG_HINT(FI_RECV),
+                                  CFG_HINT(FI_REMOTE_COMM),
+                                  CFG_HINT(FI_REMOTE_READ),
+                                  CFG_HINT(FI_REMOTE_WRITE),
+                                  CFG_HINT(FI_RMA),
+                                  CFG_HINT(FI_RMA_EVENT),
+                                  CFG_HINT(FI_RMA_PMEM),
+                                  CFG_HINT(FI_SEND),
+                                  CFG_HINT(FI_SHARED_AV),
+                                  CFG_HINT(FI_SOURCE),
+                                  CFG_HINT(FI_SOURCE_ERR),
+                                  CFG_HINT(FI_TAGGED),
+                                  CFG_HINT(FI_TRIGGER),
+                                  CFG_HINT(FI_VARIABLE_MSG),
+                                  CFG_HINT(FI_WRITE), };
+    if (getCfgHint("COMM_OFI_HINTS_CAPS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->caps = val;
+    }
+  }
+
+  {
     struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
                                   CFG_HINT(FI_COMPLETION),
                                   CFG_HINT(FI_DELIVERY_COMPLETE),
@@ -1206,8 +1238,9 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
-      && (prov_name == NULL || isInProvName("gni", prov_name))) {
+  if ((strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+       && (prov_name == NULL || isInProvName("gni", prov_name)))
+      || chpl_env_rt_get_bool("COMM_OFI_HINTS_CAPS_ATOMIC", false)) {
     hints->caps |= FI_ATOMIC;
   }
   hints->tx_attr->op_flags = FI_COMPLETION;
@@ -1476,14 +1509,17 @@ void init_ofiDoProviderChecks(void) {
     //   It uses the AV attribute 'count' member to size the data
     //   structure in which it stores those.  So, that member will need
     //   to account for all transmitting endpoints.
-    // - Based on analyzing a segfault, RxD has to have a non-NULL
-    //   buf arg for fi_fetch_atomic(FI_ATOMIC_READ) even though the
-    //   fi_atomic man page says buf is ignored for that operation
-    //   and may be NULL.
     //
     provCtl_sizeAvsByNumEps = true;
-    provCtl_readAmoNeedsOpnd = true;
   }
+
+  //
+  // RxD and perhaps other providers must have a non-NULL buf arg for
+  // fi_fetch_atomic(FI_ATOMIC_READ) or they segfault, even though the
+  // fi_atomic man page says buf is ignored for that operation and may
+  // be NULL.
+  //
+  provCtl_readAmoNeedsOpnd = true;
 }
 
 
@@ -4745,8 +4781,9 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               ofiType, ofiOp, ctx));
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
+    // Workaround for bug wherein operand1 is unused but nevertheless
+    // must not be NULL.
     if (provCtl_readAmoNeedsOpnd) {
-      // Workaround for RxD bug.
       if (ofiOp == FI_ATOMIC_READ && bufArg == NULL) {
         static int64_t dummy;
         bufArg = &dummy;
@@ -6211,8 +6248,8 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
   case FI_UINT64: return "uint64";
-  case FI_FLOAT: return "_real32";
-  case FI_DOUBLE: return "_real64";
+  case FI_FLOAT: return "real32";
+  case FI_DOUBLE: return "real64";
   default: return "amoType???";
   }
 }

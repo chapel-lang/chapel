@@ -37,6 +37,8 @@ or
 
 .. function:: proc notNilDefault(arg = c!)
 
+.. function:: proc isNilDefault(arg = nil)
+
 .. function:: proc plusDefault(arg = x+y)
 
 .. function:: proc minusDefault(arg = x-y)
@@ -88,6 +90,8 @@ or
 .. function:: proc maxDefault(arg = max(int))
 
 .. function:: proc castDefault(arg = x: int(32))
+
+.. function:: proc tuple1Default(arg = (x,))
 
 .. function:: proc tuple2Default(arg = (x, y))
 
