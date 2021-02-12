@@ -723,6 +723,8 @@ void gatherLoopDetails(ForallStmt* fs,
             // Other details set below.
             detailsVector.push_back(details);
           }
+
+          fs->zipSymbols().clear();
         }
         else {
           INT_ASSERT(false);

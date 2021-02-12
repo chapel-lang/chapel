@@ -84,8 +84,8 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fIterExprs.insertAtTail(COPY_INT(expr));
   //for_alist(expr, fZipSyms)
     //_this->fZipSyms.insertAtTail(COPY_INT(expr));
-  for_vector(Symbol, sym, fZipSyms)
-    _this->fZipSyms.push_back(COPY_INT(sym));
+  //for_vector(Symbol, sym, fZipSyms)
+    //_this->fZipSyms.push_back(COPY_INT(sym));
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 

@@ -143,7 +143,6 @@ public:
 private:
   AList          fIterVars;
   AList          fIterExprs;
-  std::vector<Symbol *>          fZipSyms;
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fZippered;
@@ -159,8 +158,9 @@ private:
   ForallStmt(BlockStmt* body);
 
 public:
-  LabelSymbol*   fContinueLabel;
-  LabelSymbol*   fErrorHandlerLabel;
+  LabelSymbol*            fContinueLabel;
+  LabelSymbol*            fErrorHandlerLabel;
+  std::vector<Symbol *>   fZipSyms;
 
   // for recursive iterators during lowerIterators
   DefExpr*       fRecIterIRdef;
