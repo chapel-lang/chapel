@@ -348,83 +348,120 @@ module String {
   proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type
     return int;
 
-  pragma "no doc" inline proc >(x: byteIndex, y: byteIndex)           return x: int > y: int;
-  pragma "no doc" inline proc >(x: codepointIndex, y: codepointIndex) return x: int > y: int;
+  pragma "no doc" inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
+    return x: int > y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>(x: codepointIndex, y: codepointIndex) {
+    return x: int > y: int;
+  }
 
-  pragma "no doc" inline proc >(x: byteIndex,      y: int) return x: int > y;
-  pragma "no doc" inline proc >(x: codepointIndex, y: int) return x: int > y;
+  pragma "no doc" inline operator >(x: byteIndex,      y: int) return x: int > y;
+  pragma "no doc" inline operator >(x: codepointIndex, y: int) return x: int > y;
 
-  pragma "no doc" inline proc >(x: int, y: byteIndex)      return x > y: int;
-  pragma "no doc" inline proc >(x: int, y: codepointIndex) return x > y: int;
+  pragma "no doc" inline operator >(x: int, y: byteIndex)      return x > y: int;
+  pragma "no doc" inline operator >(x: int, y: codepointIndex) return x > y: int;
   // End range helper support
 
   // Index arithmetic support
 
   // index + int or int + index --> index
-  pragma "no doc" inline proc +(x: byteIndex,      y: int) return (x: int + y): byteIndex;
-  pragma "no doc" inline proc +(x: codepointIndex, y: int) return (x: int + y): codepointIndex;
+  pragma "no doc" inline operator +(x: byteIndex,      y: int) return (x: int + y): byteIndex;
+  pragma "no doc" inline operator +(x: codepointIndex, y: int) return (x: int + y): codepointIndex;
 
-  pragma "no doc" inline proc +(x: int, y: byteIndex)      return (x + y: int): byteIndex;
-  pragma "no doc" inline proc +(x: int, y: codepointIndex) return (x + y: int): codepointIndex;
+  pragma "no doc" inline operator +(x: int, y: byteIndex)      return (x + y: int): byteIndex;
+  pragma "no doc" inline operator +(x: int, y: codepointIndex) return (x + y: int): codepointIndex;
 
-  pragma "no doc" inline proc +(x: bufferType, y: byteIndex) return x+(y:int);
+  pragma "no doc" inline operator +(x: bufferType, y: byteIndex) return x+(y:int);
 
   // index - int --> index
-  pragma "no doc" inline proc -(x: byteIndex,      y: int) return (x: int - y): byteIndex;
-  pragma "no doc" inline proc -(x: codepointIndex, y: int) return (x: int - y): codepointIndex;
+  pragma "no doc" inline operator -(x: byteIndex,      y: int) return (x: int - y): byteIndex;
+  pragma "no doc" inline operator -(x: codepointIndex, y: int) return (x: int - y): codepointIndex;
 
   // index - index --> int
-  pragma "no doc" inline proc -(x: byteIndex, y: byteIndex)           return x: int - y: int;
-  pragma "no doc" inline proc -(x: codepointIndex, y: codepointIndex) return x: int - y: int;
+  pragma "no doc" inline operator byteIndex.-(x: byteIndex, y: byteIndex) {
+    return x: int - y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.-(x: codepointIndex, y: codepointIndex) {
+    return x: int - y: int;
+  }
 
   // other relationals
-  pragma "no doc" inline proc <(x: byteIndex, y: byteIndex)           return x: int < y: int;
-  pragma "no doc" inline proc <(x: codepointIndex, y: codepointIndex) return x: int < y: int;
+  pragma "no doc" inline operator byteIndex.<(x: byteIndex, y: byteIndex) {
+    return x: int < y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.<(x: codepointIndex, y: codepointIndex) {
+    return x: int < y: int;
+  }
 
-  pragma "no doc" inline proc <(x: byteIndex,      y: int) return x: int < y;
-  pragma "no doc" inline proc <(x: codepointIndex, y: int) return x: int < y;
+  pragma "no doc" inline operator <(x: byteIndex,      y: int) return x: int < y;
+  pragma "no doc" inline operator <(x: codepointIndex, y: int) return x: int < y;
 
-  pragma "no doc" inline proc <(x: int, y: byteIndex)      return x < y: int;
-  pragma "no doc" inline proc <(x: int, y: codepointIndex) return x < y: int;
+  pragma "no doc" inline operator <(x: int, y: byteIndex)      return x < y: int;
+  pragma "no doc" inline operator <(x: int, y: codepointIndex) return x < y: int;
 
-  pragma "no doc" inline proc >=(x: byteIndex, y: byteIndex)           return x: int >= y: int;
-  pragma "no doc" inline proc >=(x: codepointIndex, y: codepointIndex) return x: int >= y: int;
+  pragma "no doc" inline operator byteIndex.>=(x: byteIndex, y: byteIndex) {
+    return x: int >= y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.>=(x: codepointIndex, y: codepointIndex) {
+    return x: int >= y: int;
+  }
 
-  pragma "no doc" inline proc >=(x: byteIndex, y: int)      return x: int >= y;
-  pragma "no doc" inline proc >=(x: codepointIndex, y: int) return x: int >= y;
+  pragma "no doc" inline operator >=(x: byteIndex, y: int)      return x: int >= y;
+  pragma "no doc" inline operator >=(x: codepointIndex, y: int) return x: int >= y;
 
-  pragma "no doc" inline proc >=(x: int, y: byteIndex)      return x >= y: int;
-  pragma "no doc" inline proc >=(x: int, y: codepointIndex) return x >= y: int;
+  pragma "no doc" inline operator >=(x: int, y: byteIndex)      return x >= y: int;
+  pragma "no doc" inline operator >=(x: int, y: codepointIndex) return x >= y: int;
 
-  pragma "no doc" inline proc <=(x: byteIndex, y: byteIndex)           return x: int <= y: int;
-  pragma "no doc" inline proc <=(x: codepointIndex, y: codepointIndex) return x: int <= y: int;
+  pragma "no doc" inline operator byteIndex.<=(x: byteIndex, y: byteIndex) {
+    return x: int <= y: int;
+  }
+  pragma "no doc"
+  inline operator codepointIndex.<=(x: codepointIndex, y: codepointIndex) {
+    return x: int <= y: int;
+  }
 
-  pragma "no doc" inline proc <=(x: byteIndex, y: int)      return x: int <= y;
-  pragma "no doc" inline proc <=(x: codepointIndex, y: int) return x: int <= y;
+  pragma "no doc" inline operator <=(x: byteIndex, y: int)      return x: int <= y;
+  pragma "no doc" inline operator <=(x: codepointIndex, y: int) return x: int <= y;
 
-  pragma "no doc" inline proc <=(x: int, y: byteIndex)      return x <= y: int;
-  pragma "no doc" inline proc <=(x: int, y: codepointIndex) return x <= y: int;
+  pragma "no doc" inline operator <=(x: int, y: byteIndex)      return x <= y: int;
+  pragma "no doc" inline operator <=(x: int, y: codepointIndex) return x <= y: int;
 
-  pragma "no doc" inline proc ==(x: byteIndex, y: byteIndex)           return (x:int) == (y:int);
-  pragma "no doc" inline proc ==(x: codepointIndex, y: codepointIndex) return (x:int) == (y:int);
+  pragma "no doc" inline operator byteIndex.==(x: byteIndex, y: byteIndex) {
+    return (x:int) == (y:int);
+  }
+  pragma "no doc"
+  inline operator codepointIndex.==(x: codepointIndex, y: codepointIndex) {
+    return (x:int) == (y:int);
+  }
 
-  pragma "no doc" inline proc ==(x: byteIndex,      y: int) return (x:int) == y;
-  pragma "no doc" inline proc ==(x: codepointIndex, y: int) return (x:int) == y;
+  pragma "no doc" inline operator ==(x: byteIndex,      y: int) return (x:int) == y;
+  pragma "no doc" inline operator ==(x: codepointIndex, y: int) return (x:int) == y;
 
-  pragma "no doc" inline proc ==(x: int, y: byteIndex)      return x == (y:int);
-  pragma "no doc" inline proc ==(x: int, y: codepointIndex) return x == (y:int);
+  pragma "no doc" inline operator ==(x: int, y: byteIndex)      return x == (y:int);
+  pragma "no doc" inline operator ==(x: int, y: codepointIndex) return x == (y:int);
 
-  pragma "no doc" inline proc !=(x: byteIndex, y: byteIndex)           return (x:int) != (y:int);
-  pragma "no doc" inline proc !=(x: codepointIndex, y: codepointIndex) return (x:int) != (y:int);
+  pragma "no doc" inline operator byteIndex.!=(x: byteIndex, y: byteIndex) {
+    return (x:int) != (y:int);
+  }
+  pragma "no doc"
+  inline operator codepointIndex.!=(x: codepointIndex, y: codepointIndex) {
+    return (x:int) != (y:int);
+  }
 
-  pragma "no doc" inline proc !=(x: byteIndex, y: int)      return (x:int) != y;
-  pragma "no doc" inline proc !=(x: codepointIndex, y: int) return (x:int) != y;
+  pragma "no doc" inline operator !=(x: byteIndex, y: int)      return (x:int) != y;
+  pragma "no doc" inline operator !=(x: codepointIndex, y: int) return (x:int) != y;
 
-  pragma "no doc" inline proc !=(x: int, y: byteIndex)      return x != (y:int);
-  pragma "no doc" inline proc !=(x: int, y: codepointIndex) return x != (y:int);
+  pragma "no doc" inline operator !=(x: int, y: byteIndex)      return x != (y:int);
+  pragma "no doc" inline operator !=(x: int, y: codepointIndex) return x != (y:int);
 
-  pragma "no doc" inline proc !(x: byteIndex)      return !(x:int);
-  pragma "no doc" inline proc !(x: codepointIndex) return !(x:int);
+  pragma "no doc" inline operator byteIndex.!(x: byteIndex) return !(x:int);
+  pragma "no doc" inline operator codepointIndex.!(x: codepointIndex) {
+    return !(x:int);
+  }
 
   pragma "no doc" inline proc _cond_test(x: byteIndex)      return x != 0;
   pragma "no doc" inline proc _cond_test(x: codepointIndex) return x != 0;
@@ -2074,11 +2111,11 @@ module String {
      Copies the int `rhs` into the byteIndex `lhs`.
   */
   pragma "no doc"
-  proc =(ref lhs: byteIndex, rhs: int) {
+  operator =(ref lhs: byteIndex, rhs: int) {
     lhs._bindex = rhs: int;
   }
   pragma "no doc"
-  proc =(ref lhs: byteIndex, const ref rhs: byteIndex) {
+  operator =(ref lhs: byteIndex, const ref rhs: byteIndex) {
     lhs._bindex = rhs._bindex;
   }
 
@@ -2086,11 +2123,11 @@ module String {
      Copies the int `rhs` into the codepointIndex `lhs`.
   */
   pragma "no doc"
-  proc =(ref lhs: codepointIndex, rhs: int) {
+  operator =(ref lhs: codepointIndex, rhs: int) {
     lhs._cpindex = rhs: int;
   }
   pragma "no doc"
-  proc =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
+  operator =(ref lhs: codepointIndex, const ref rhs: codepointIndex) {
     lhs._cpindex = rhs._cpindex;
   }
 
@@ -2098,7 +2135,7 @@ module String {
   /*
      Copies the string `rhs` into the string `lhs`.
   */
-  proc =(ref lhs: string, rhs: string) {
+  operator =(ref lhs: string, rhs: string) {
     doAssign(lhs, rhs);
   }
 
@@ -2107,7 +2144,7 @@ module String {
 
      Halts if `lhs` is a remote string.
   */
-  proc =(ref lhs: string, rhs_c: c_string) {
+  operator =(ref lhs: string, rhs_c: c_string) {
     cStrAssignmentDeprWarn();
     // I want to use try! but got tripped over by #14465
     try {
@@ -2124,7 +2161,7 @@ module String {
   /*
      :returns: A new string which is the result of concatenating `s0` and `s1`
   */
-  proc +(s0: string, s1: string) {
+  operator string.+(s0: string, s1: string) {
     return doConcat(s0, s1);
   }
 
@@ -2142,7 +2179,7 @@ module String {
 
        Hello! Hello! Hello!
   */
-  proc *(s: string, n: integral) {
+  operator *(s: string, n: integral) {
     return doMultiply(s, n);
   }
 
@@ -2151,37 +2188,37 @@ module String {
   //
 
   pragma "no doc"
-  inline proc ==(param s0: string, param s1: string) param  {
+  inline operator string.==(param s0: string, param s1: string) param  {
     return __primitive("string_compare", s0, s1) == 0;
   }
 
   pragma "no doc"
-  inline proc !=(param s0: string, param s1: string) param {
+  inline operator string.!=(param s0: string, param s1: string) param {
     return __primitive("string_compare", s0, s1) != 0;
   }
 
   pragma "no doc"
-  inline proc <=(param a: string, param b: string) param {
+  inline operator string.<=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) <= 0);
   }
 
   pragma "no doc"
-  inline proc >=(param a: string, param b: string) param {
+  inline operator string.>=(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) >= 0);
   }
 
   pragma "no doc"
-  inline proc <(param a: string, param b: string) param {
+  inline operator string.<(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) < 0);
   }
 
   pragma "no doc"
-  inline proc >(param a: string, param b: string) param {
+  inline operator string.>(param a: string, param b: string) param {
     return (__primitive("string_compare", a, b) > 0);
   }
 
   pragma "no doc"
-  inline proc +(param a: string, param b: string) param
+  inline operator string.+(param a: string, param b: string) param
     return __primitive("string_concat", a, b);
 
   pragma "no doc"
@@ -2221,7 +2258,7 @@ module String {
   /*
      Appends the string `rhs` to the string `lhs`.
   */
-  proc +=(ref lhs: string, const ref rhs: string) : void {
+  operator string.+=(ref lhs: string, const ref rhs: string) : void {
     doAppend(lhs, rhs);
   }
 
@@ -2242,7 +2279,7 @@ module String {
   //
 
   pragma "no doc"
-  proc ==(a: string, b: string) : bool {
+  operator string.==(a: string, b: string) : bool {
     // At the moment, this commented out section will not work correctly. If a
     // and b are on the same locale, we will go to that locale, but an autoCopy
     // will localize a and b, before they are placed into the on bundle,
@@ -2261,26 +2298,26 @@ module String {
   }
 
   pragma "no doc"
-  inline proc !=(a: string, b: string) : bool {
+  inline operator string.!=(a: string, b: string) : bool {
     return !doEq(a,b);
   }
 
   pragma "no doc"
-  inline proc <(a: string, b: string) : bool {
+  inline operator string.<(a: string, b: string) : bool {
     return doLessThan(a, b);
   }
 
   pragma "no doc"
-  inline proc >(a: string, b: string) : bool {
+  inline operator string.>(a: string, b: string) : bool {
     return doGreaterThan(a, b);
   }
 
   pragma "no doc"
-  inline proc <=(a: string, b: string) : bool {
+  inline operator string.<=(a: string, b: string) : bool {
     return doLessThanOrEq(a, b);
   }
   pragma "no doc"
-  inline proc >=(a: string, b: string) : bool {
+  inline operator string.>=(a: string, b: string) : bool {
     return doGreaterThanOrEq(a, b);
   }
 
