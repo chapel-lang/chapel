@@ -446,13 +446,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
 }
 
 void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
-  const char* name = sym->name;
-  VarSymbol* var = toVarSymbol(sym);
+  const char* name = toString(sym, false);
   ArgSymbol* arg = toArgSymbol(sym);
-  if (var != NULL)
-    name = toString(var, false);
-  if (arg != NULL)
-    name = toString(arg, false);
 
   if (unresolved) {
     USR_PRINT(sym->defPoint,

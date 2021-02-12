@@ -886,5 +886,6 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage);
 
 const char* toString(ArgSymbol* arg, bool withTypeAndIntent);
 const char* toString(VarSymbol* var, bool withType);
+const char* toString(Symbol* sym, bool withTypeAndIntent);
 
 #endif

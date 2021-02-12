@@ -90,6 +90,7 @@ static Expr*       getCallTempInsertPoint(Expr* expr);
 static void        addTypeBlocksForParentTypeOf(CallExpr* call);
 static void        normalizeReturns(FnSymbol* fn);
 static void        normalizeYields(FnSymbol* fn);
+static void        fixupOutArrayFormals(FnSymbol* fn);
 
 static bool        isCallToConstructor(CallExpr* call);
 static void        normalizeCallToConstructor(CallExpr* call);
@@ -609,6 +610,8 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
         if (fn->isIterator() == true) {
           normalizeYields(fn);
         }
+
+        fixupOutArrayFormals(fn);
       }
     }
   }
@@ -3372,8 +3375,7 @@ static void fixupArrayFormals(FnSymbol* fn) {
 }
 
 static bool skipFixup(ArgSymbol* formal, Expr* domExpr, Expr* eltExpr) {
-  if ((formal->intent & INTENT_FLAG_IN) ||
-      formal->intent == INTENT_OUT) {
+  if ((formal->intent & INTENT_FLAG_IN)) {
     if (isDefExpr(domExpr) || isDefExpr(eltExpr)) {
       return false;
     } else if (SymExpr* se = toSymExpr(domExpr)) {
@@ -3580,6 +3582,42 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   return cond;
 }
 
+static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
+  BlockStmt*            typeExpr = formal->typeExpr;
+  CallExpr*             call     = toCallExpr(typeExpr->body.tail);
+  int                   nArgs    = call->numActuals();
+  Expr*                 domExpr  = call->get(1);
+  Expr*                 eltExpr  = nArgs == 2 ? call->get(2) : NULL;
+  bool noDom = (isSymExpr(domExpr) && toSymExpr(domExpr)->symbol() == gNil);
+
+  SET_LINENO(formal);
+
+  typeExpr->replace(new BlockStmt(new SymExpr(dtAny->symbol), BLOCK_TYPE));
+
+  if (noDom == false) {
+    CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",
+                                      formal,
+                                      domExpr->copy());
+    fn->insertIntoEpilogue(checkDom);
+  }
+
+  if (eltExpr != NULL) {
+    CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
+                                          formal,
+                                          eltExpr->copy());
+    fn->insertIntoEpilogue(checkEltType);
+  }
+}
+
+static void fixupOutArrayFormals(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (isArrayFormal(formal)) {
+      fixupOutArrayFormal(fn, formal);
+    }
+  }
+}
+
+
 // Preliminary validation is performed within the caller
 static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
@@ -3600,6 +3638,12 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
       USR_FATAL_CONT(def, "cannot query part of a domain");
     }
   }
+
+  if (formal->intent == INTENT_OUT) {
+    // handled in fixupOutArrayFormals, called elsewhere
+    return;
+  }
+
   //
   // Only fix array formals with 'in' intent if there was:
   // - a type query, or

@@ -1814,9 +1814,10 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
       if (out) {
         Type* formalType = formal->type->getValType();
 
-        // If the actual argument has type dtSplitInitType,
+        // If the actual argument has generic or dtSplitInitType type,
         // update it to infer the type from the called function.
-        if (actualSe->symbol()->type == dtSplitInitType)
+        if (actualSe->symbol()->type == dtSplitInitType ||
+            actualSe->symbol()->type->symbol->hasFlag(FLAG_GENERIC))
           actualSe->symbol()->type = formalType;
 
         VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),

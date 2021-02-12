@@ -2298,3 +2298,13 @@ const char* toString(VarSymbol* var, bool withType) {
     return astr("<temporary>");
   }
 }
+const char* toString(Symbol* sym, bool withType) {
+  VarSymbol* var = toVarSymbol(sym);
+  ArgSymbol* arg = toArgSymbol(sym);
+  if (var != NULL)
+    return toString(var, withType);
+  if (arg != NULL)
+    return toString(arg, withType);
+
+  return sym->name;
+}

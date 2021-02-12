@@ -871,7 +871,9 @@ bool ResolutionCandidate::checkResolveFormalsWhereClauses(CallInfo& info,
 
 
       } else if (formal->originalIntent != INTENT_OUT &&
-                 actual->getValType() == dtSplitInitType) {
+                 (actual->getValType() == dtSplitInitType ||
+                  (formalIsTypeAlias == false && isInitThis == false &&
+                   actual->getValType()->symbol->hasFlag(FLAG_GENERIC)))) {
         failingArgument = actual;
         reason = RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED;
         return false;
@@ -1200,7 +1202,15 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
       }
       break;
     case RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED:
-      splitInitMissingTypeError(failingActual, call, /*unresolved*/ true);
+      if (failingActual->getValType() == dtSplitInitType) {
+        splitInitMissingTypeError(failingActual, call, /*unresolved*/ true);
+      } else {
+        USR_PRINT(call,
+                  "actual argument '%s' has generic type '%s'",
+                  toString(failingActual, false),
+                  toString(failingActual->getValType()));
+        printUndecoratedClassTypeNote(call, failingActual->getValType());
+      }
       break;
     case RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS:
       USR_PRINT(call, "because call includes %i argument%s",
