@@ -3558,11 +3558,11 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      if (system("which ptxas > /dev/null 2>&1")) {
+      if (mysystem("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
         USR_FATAL("Command 'ptxas' not found\n");
       }
 
-      if (system("which fatbinary > /dev/null 2>&1")) {
+      if (mysystem("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
         USR_FATAL("Command 'fatbinary' not found\n");
       }
 
