@@ -1780,13 +1780,14 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
   Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
 
-  bool anyOut = false;
+  bool anyGenericOut = false;
   for_formals(formal, fn) {
     if (formal->intent == INTENT_OUT ||
         formal->originalIntent == INTENT_OUT)
-      anyOut = true;
+      if (formal->getValType()->symbol->hasFlag(FLAG_GENERIC))
+        anyGenericOut = true;
   }
-  if (anyOut) {
+  if (anyGenericOut) {
     // resolve out functions now, to infer any types of out arguments,
     // so that the call-site temporaries have proper types.
     resolveFunction(fn, call);

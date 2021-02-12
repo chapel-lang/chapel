@@ -3592,7 +3592,8 @@ static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   SET_LINENO(formal);
 
-  typeExpr->replace(new BlockStmt(new SymExpr(dtAny->symbol), BLOCK_TYPE));
+  if (noDom || eltExpr == NULL)
+    typeExpr->replace(new BlockStmt(new SymExpr(dtAny->symbol), BLOCK_TYPE));
 
   if (noDom == false) {
     CallExpr* checkDom = new CallExpr("chpl__checkDomainsMatch",

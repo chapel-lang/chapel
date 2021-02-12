@@ -2192,88 +2192,73 @@ static void addLocalCopiesAndWritebacks(FnSymbol*  fn,
       break;
 
      case INTENT_OUT: {
-      BlockStmt* defaultExpr = NULL;
-      BlockStmt* typeExpr = NULL;
+      // Set the formal type to dtUnknown to avoid spurious casts.
+      // The formal type should be inferred from the formal-temp we create
+      // below when the formal is initialized from the temp in the epilogue.
+      formal->type = dtUnknown;
 
-      // Include the defaultExpr and typeExpr code for side effects.
+      if (formalType == dtAny || formalType == dtUnknown)
+        formalType = dtSplitInitType;
+
+      BlockStmt* defaultExpr = NULL;
+
       if (formal->defaultExpr &&
           formal->defaultExpr->body.tail->typeInfo() != dtTypeDefaultToken) {
         defaultExpr = formal->defaultExpr->copy();
-        def->insertBefore(defaultExpr);
       }
 
-      if (formal->typeExpr &&
-          formalType != dtUnknown && formalType != dtAny) {
-        typeExpr = formal->typeExpr->copy();
-        def->insertBefore(typeExpr);
+      if (formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        VarSymbol* typeTmp = NULL;
 
-        // Check if there is just 1 expression in the typeExpr block
-        Expr* lastExpr = NULL;
-        int nExpr = 0;
-        for_alist(expr, typeExpr->body) {
-          lastExpr = expr;
-          nExpr++;
-        }
-
-        if (nExpr == 1 && isSymExpr(lastExpr)) {
-          // OK; we don't have to introduce a temporary
-        } else {
-          // This pattern comes up for formals with array types, at least
-          // Replace the call at the end of typeExpr with a tmp
-          // set to it and finally a SymExpr referring to the tmp.
-          VarSymbol* typeTmp = newTemp("_formal_type_tmp_");
-          typeTmp->addFlag(FLAG_TYPE_VARIABLE);
-          DefExpr* tmpDef = new DefExpr(typeTmp);
+        if (formal->typeExpr != NULL) {
+          typeTmp = newTemp("_formal_type_tmp_");
+          typeTmp->addFlag(FLAG_MAYBE_TYPE);
+          BlockStmt* typeExpr = formal->typeExpr->copy();
+          start->insertBefore(new DefExpr(typeTmp));
           CallExpr* setType = new CallExpr(PRIM_MOVE,
                                            typeTmp,
                                            typeExpr->body.tail->remove());
-          typeExpr->body.tail->insertAfter(tmpDef);
-          tmpDef->insertAfter(setType);
-          setType->insertAfter(new SymExpr(typeTmp));
+          start->insertBefore(typeExpr);
+          start->insertBefore(setType);
+          typeExpr->flattenAndRemove();
         }
-        // last statement in typeExpr will be removed below
-      }
-
-      // Adjust def->exprType / def->init
-      // to prepare to run normalizeVariableDefinition
-
-      // For the type use whatever was provided, if anything
-      if (formalType != dtUnknown && formalType != dtAny) {
-        if (typeExpr) {
-          def->exprType = typeExpr->body.tail->remove();
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove());
+          if (typeTmp != NULL)
+            init->insertAtTail(new SymExpr(typeTmp));
+          start->insertBefore(defaultExpr);
+          start->insertBefore(init);
         } else {
-          def->exprType = new SymExpr(formalType->symbol);
+          CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp);
+          if (typeTmp != NULL) {
+            init->insertAtTail(new SymExpr(typeTmp));
+          } else {
+            // find the FLAG_TYPE_FORMAL_FOR_OUT formal just before this one
+            // and set typeTmp to that.
+            DefExpr* beforeDef = toDefExpr(formal->defPoint->prev);
+            INT_ASSERT(beforeDef != NULL);
+            ArgSymbol* typeFormal = toArgSymbol(beforeDef->sym);
+            INT_ASSERT(typeFormal != NULL);
+            init->insertAtTail(new SymExpr(typeFormal));
+          }
+          start->insertBefore(init);
+          start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
-        parent_insert_help(def, def->exprType);
-      }
-
-      // For the init expr, use whatever was provided, or
-      // gSplitInit if there was no type
-      if (formalType == dtAny || formal->defaultExpr) {
-        if (defaultExpr) {
-          def->init = defaultExpr->body.tail->remove();
+      } else {
+        if (defaultExpr != NULL) {
+          CallExpr* init = new CallExpr(PRIM_INIT_VAR, tmp,
+                                        defaultExpr->body.tail->remove(),
+                                        formalType->symbol);
+          start->insertBefore(defaultExpr);
+          start->insertBefore(init);
         } else {
-          INT_ASSERT(formalType == dtAny);
-          // no type and no init
-          def->init = new SymExpr(gSplitInit);
+          CallExpr * init = new CallExpr(PRIM_DEFAULT_INIT_VAR, tmp,
+                                         formalType->symbol);
+          start->insertBefore(init);
+          start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
         }
-        parent_insert_help(def, def->init);
       }
-
-      // Set the formal type to dtUnknown to avoid spurious casts.
-      // The formal type should be inferred from the formal-temp we have created
-      // when the formal is initialized in the function epilogue.
-      formal->type = dtUnknown;
-
-      // run normalizeVariableDefinition to handle split-init
-      normalizeVariableDefinition(def, true);
-      start->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
-
-      // clean up temporary blocks we added
-      if (defaultExpr)
-        defaultExpr->flattenAndRemove();
-      if (typeExpr)
-        typeExpr->flattenAndRemove();
 
       tmp->addFlag(FLAG_FORMAL_TEMP);
       tmp->addFlag(FLAG_FORMAL_TEMP_OUT);

@@ -749,7 +749,8 @@ void initPrimitiveTypes() {
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
 
-  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
+  dtSplitInitType = createInternalType("_splitInitType", "_splitInitType");
+  CREATE_DEFAULT_SYMBOL (dtSplitInitType, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -914,8 +915,6 @@ void initPrimitiveTypes() {
 
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
-
-  dtSplitInitType = createInternalType("_splitInitType", "_splitInitType");
 
   dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");
 
