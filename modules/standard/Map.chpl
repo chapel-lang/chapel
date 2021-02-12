@@ -704,7 +704,7 @@ module Map {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from. 
   */
-  proc =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)) {
+  operator =(ref lhs: map(?kt, ?vt, ?ps), const ref rhs: map(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
       compilerError("assigning map with non-copyable type");
@@ -728,7 +728,7 @@ module Map {
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
+  operator ==(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
     for key in a.keys() {
       if !b.contains(key) || a[key] != b[key] then
         return false;
@@ -752,12 +752,12 @@ module Map {
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
+  operator !=(const ref a: map(?kt, ?vt, ?ps), const ref b: map(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc +(a: map(?keyType, ?valueType, ?parSafe),
+  operator +(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     return a | b;
   }
@@ -766,13 +766,13 @@ module Map {
     Sets the left-hand side map to contain the keys and values in either
     a or b.
    */
-  proc +=(ref a: map(?keyType, ?valueType, ?parSafe),
+  operator +=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     a |= b;
   }
 
   /* Returns a new map containing the keys and values in either a or b. */
-  proc |(a: map(?keyType, ?valueType, ?parSafe),
+  operator |(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
 
@@ -784,14 +784,14 @@ module Map {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  proc |=(ref a: map(?keyType, ?valueType, ?parSafe),
+  operator |=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
     for k in b do a.add(k, b[k]);
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
-  proc &(a: map(?keyType, ?valueType, ?parSafe),
+  operator &(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
     // TODO: This is a horrible way to do this. Fix it
@@ -806,13 +806,13 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in both a and b.
    */
-  proc &=(ref a: map(?keyType, ?valueType, ?parSafe),
+  operator &=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     a = a & b;
   }
 
   /* Returns a new map containing the keys that are only in a, but not b. */
-  proc -(a: map(?keyType, ?valueType, ?parSafe),
+  operator -(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
 
@@ -826,7 +826,7 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in the
      left-hand map, but not the right-hand map. */
-  proc -=(ref a: map(?keyType, ?valueType, ?parSafe),
+  operator -=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     a._enter(); defer a._leave();
     for k in b.keys() {
@@ -841,7 +841,7 @@ module Map {
 
   /* Returns a new map containing the keys that are in either a or b, but
      not both. */
-  proc ^(a: map(?keyType, ?valueType, ?parSafe),
+  operator ^(a: map(?keyType, ?valueType, ?parSafe),
          b: map(keyType, valueType, parSafe)) {
     var newMap = new map(keyType, valueType, parSafe);
 
@@ -854,7 +854,7 @@ module Map {
 
   /* Sets the left-hand side map to contain the keys that are in either the
      left-hand map or the right-hand map, but not both. */
-  proc ^=(ref a: map(?keyType, ?valueType, ?parSafe),
+  operator ^=(ref a: map(?keyType, ?valueType, ?parSafe),
           b: map(keyType, valueType, parSafe)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
