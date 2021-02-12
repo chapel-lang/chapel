@@ -1275,7 +1275,7 @@ static VarSymbol* theCheckedModuleScopeVariable(Expr* actual) {
 }
 
 // There should be a single instance of this class per compilation.
-class GatherGlobalsReferredTo : public AstVisitorTraverse {
+class GatherGlobalsReferredTo final : public AstVisitorTraverse {
   public:
     // these are set and "returned" by visiting a function
     FnSymbol* thisFunction;
@@ -1292,9 +1292,9 @@ class GatherGlobalsReferredTo : public AstVisitorTraverse {
     { }
     bool callUsesGlobal(CallExpr* c, std::set<VarSymbol*>& globals);
     bool fnUsesGlobal(FnSymbol* fn, std::set<VarSymbol*>& globals);
-    virtual bool enterFnSym(FnSymbol* fn);
-    virtual void visitSymExpr(SymExpr* se);
-    virtual void exitFnSym(FnSymbol* fn);
+    bool enterFnSym(FnSymbol* fn) override;
+    void visitSymExpr(SymExpr* se) override;
+    void exitFnSym(FnSymbol* fn) override;
 };
 
 bool GatherGlobalsReferredTo::enterFnSym(FnSymbol* fn) {
@@ -1387,7 +1387,7 @@ void GatherGlobalsReferredTo::exitFnSym(FnSymbol* fn) {
 
 // There will be one instance of this per module, but these will
 // share a single GatherGlobalsReferredTo.
-class FindInvalidGlobalUses : public AstVisitorTraverse {
+class FindInvalidGlobalUses final : public AstVisitorTraverse {
   public:
     GatherGlobalsReferredTo& gatherVisitor;
     std::set<VarSymbol*> invalidGlobals;
@@ -1405,8 +1405,8 @@ class FindInvalidGlobalUses : public AstVisitorTraverse {
     bool checkIfFnUsesInvalid(FnSymbol* fn);
     bool errorIfFnUsesInvalid(FnSymbol* fn, BaseAST* loc,
                               std::set<FnSymbol*>& visited);
-    virtual bool enterCallExpr(CallExpr* call);
-    virtual bool enterCondStmt(CondStmt* cond);
+    bool enterCallExpr(CallExpr* call) override;
+    bool enterCondStmt(CondStmt* cond) override;
 };
 
 

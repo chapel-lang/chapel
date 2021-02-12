@@ -1168,7 +1168,7 @@ void readMacrosClang(void) {
 // 3: keep the code generator open until we finish generating Chapel code,
 //    since we might need to code generate called functions.
 // 4: get LLVM values for code generated C things (e.g. types, function ptrs)
-class CCodeGenConsumer : public ASTConsumer {
+class CCodeGenConsumer final : public ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
@@ -1397,7 +1397,7 @@ class CCodeGenConsumer : public ASTConsumer {
 };
 
 
-class CCodeGenAction : public ASTFrontendAction {
+class CCodeGenAction final : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:

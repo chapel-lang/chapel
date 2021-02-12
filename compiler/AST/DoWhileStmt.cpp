@@ -85,13 +85,13 @@ DoWhileStmt::~DoWhileStmt()
 
 }
 
-DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
+DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
 {
   Expr*        cond   = NULL;
   BlockStmt*   body   = NULL;
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
-  retval->copyShare(*this, map, internal);
+  retval->copyInnerShare(*this, map);
 
   return retval;
 }

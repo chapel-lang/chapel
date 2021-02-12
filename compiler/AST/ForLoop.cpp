@@ -353,10 +353,8 @@ ForLoop::~ForLoop()
 
 }
 
-ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
+ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
-  SymbolMap  localMap;
-  SymbolMap* map            = (mapRef != 0) ? mapRef : &localMap;
   ForLoop*   retval         = new ForLoop();
 
   retval->astloc            = astloc;
@@ -376,9 +374,6 @@ ForLoop* ForLoop::copy(SymbolMap* mapRef, bool internal)
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
-
-  if (internal == false)
-    update_symbols(retval, map);
 
   return retval;
 }

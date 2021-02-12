@@ -1140,7 +1140,7 @@ static CallExpr* findSetShape(CallExpr* setRet, Symbol* ret) {
   return NULL;
 }
 
-class SplitInitVisitor : public AstVisitorTraverse {
+class SplitInitVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
@@ -1148,9 +1148,10 @@ class SplitInitVisitor : public AstVisitorTraverse {
   SplitInitVisitor(std::map<Symbol*, Expr*>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
-  virtual bool enterFnSym(FnSymbol* node);
-  virtual bool enterDefExpr(DefExpr* def);
-  virtual bool enterCallExpr(CallExpr* call);
+
+  bool enterFnSym(FnSymbol* node) override;
+  bool enterDefExpr(DefExpr* def) override;
+  bool enterCallExpr(CallExpr* call) override;
 };
 
 bool SplitInitVisitor::enterFnSym(FnSymbol* node) {
@@ -1209,15 +1210,15 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
-class AddOutIntentTypeArgs : public AstVisitorTraverse {
+class AddOutIntentTypeArgs final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
   AddOutIntentTypeArgs()
     : inFunction(false), changed(false)
   { }
-  virtual bool enterFnSym(FnSymbol* node);
-  virtual bool enterCallExpr(CallExpr* call);
+  bool enterFnSym(FnSymbol* node) override;
+  bool enterCallExpr(CallExpr* call) override;
 };
 
 bool AddOutIntentTypeArgs::enterFnSym(FnSymbol* node) {
@@ -1330,7 +1331,7 @@ bool AddOutIntentTypeArgs::enterCallExpr(CallExpr* call) {
 }
 
 
-class FixPrimInitsVisitor : public AstVisitorTraverse {
+class FixPrimInitsVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   bool changed;
@@ -1338,8 +1339,9 @@ class FixPrimInitsVisitor : public AstVisitorTraverse {
   FixPrimInitsVisitor(std::map<Symbol*, Expr*>& preventMap)
     : inFunction(false), changed(false), preventMap(preventMap)
   { }
-  virtual bool enterFnSym(FnSymbol* node);
-  virtual bool enterCallExpr(CallExpr* call);
+
+  bool enterFnSym(FnSymbol* node) override;
+  bool enterCallExpr(CallExpr* call) override;
 };
 
 bool FixPrimInitsVisitor::enterFnSym(FnSymbol* node) {
@@ -1368,12 +1370,13 @@ bool FixPrimInitsVisitor::enterCallExpr(CallExpr* call) {
   return true;
 }
 
-class MarkTempsVisitor : public AstVisitorTraverse {
+class MarkTempsVisitor final : public AstVisitorTraverse {
  public:
   bool inFunction;
   MarkTempsVisitor() : inFunction(false) { }
-  virtual bool enterFnSym(FnSymbol* node);
-  virtual bool enterDefExpr(DefExpr* node);
+
+  bool enterFnSym(FnSymbol* node) override;
+  bool enterDefExpr(DefExpr* node) override;
 };
 
 bool MarkTempsVisitor::enterFnSym(FnSymbol* node) {
