@@ -81,4 +81,7 @@ main (int argc, char **argv)
   mpz_clear (a);
   mpz_clear (b);
   mpz_clear (ref);
+
+  tests_end ();
+  return 0;
 }

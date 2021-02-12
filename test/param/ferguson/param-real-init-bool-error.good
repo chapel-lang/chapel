@@ -1,2 +1,2 @@
 param-real-init-bool-error.chpl:1: error: Could not coerce param into requested type
-param-real-init-bool-error.chpl:1: error: Cannot assign to real(64) from bool
+param-real-init-bool-error.chpl:1: error: cannot initialize 'x' of type 'real(64)' from 'true'

@@ -105,6 +105,7 @@ static struct {
   { "steamroller","AuthenticAMD", MAKE_FMS (21, 0x30) },
   { "excavator",  "AuthenticAMD", MAKE_FMS (21, 0x60) },
   { "jaguar",     "AuthenticAMD", MAKE_FMS (22, 1) },
+  { "zen",        "AuthenticAMD", MAKE_FMS (23, 1) },
 
   { "viac3",      "CentaurHauls", MAKE_FMS (6, 0) },
   { "viac32",     "CentaurHauls", MAKE_FMS (6, 9) },
@@ -335,6 +336,28 @@ __gmpn_cpuvec_init (void)
 		  CPUVEC_SETUP_atom_sse2;
 		  break;
 
+		case 0x37:		/* Silvermont */
+		case 0x4a:		/* Silvermont */
+		case 0x4c:		/* Airmont */
+		case 0x4d:		/* Silvermont/Avoton */
+		case 0x5a:		/* Silvermont */
+		  TRACE (printf ("  silvermont\n"));
+		  CPUVEC_SETUP_atom;
+		  CPUVEC_SETUP_atom_mmx;
+		  CPUVEC_SETUP_atom_sse2;
+		  CPUVEC_SETUP_silvermont;
+		  break;
+
+		case 0x5c:		/* Goldmont */
+		case 0x5f:		/* Goldmont */
+		case 0x7a:		/* Goldmont Plus */
+		  TRACE (printf ("  goldmont\n"));
+		  CPUVEC_SETUP_atom;
+		  CPUVEC_SETUP_atom_mmx;
+		  CPUVEC_SETUP_atom_sse2;
+		  CPUVEC_SETUP_goldmont;
+		  break;
+
 		case 0x1a:		/* NHM Gainestown */
 		case 0x1b:
 		case 0x1e:		/* NHM Lynnfield/Jasper */
@@ -362,6 +385,7 @@ __gmpn_cpuvec_init (void)
 		case 0x2a:		/* SBR */
 		case 0x2d:		/* SBR-EP */
 		case 0x3a:		/* IBR */
+		case 0x3e:		/* IBR Ivytown */
 		case 0x3c:		/* Haswell client */
 		case 0x3f:		/* Haswell server */
 		case 0x45:		/* Haswell ULT */
@@ -428,8 +452,6 @@ __gmpn_cpuvec_init (void)
             case 0x0f:		/* k8 */
             case 0x11:		/* "fam 11h", mix of k8 and k10 */
             case 0x13:		/* unknown, conservatively assume k8  */
-            case 0x16:		/* unknown, conservatively assume k8  */
-            case 0x17:		/* unknown, conservatively assume k8  */
               TRACE (printf ("  k8\n"));
               CPUVEC_SETUP_k7;
               CPUVEC_SETUP_k7_mmx;
@@ -444,6 +466,7 @@ __gmpn_cpuvec_init (void)
 	      break;
 
             case 0x14:		/* bobcat */
+            case 0x16:		/* jaguar */
               TRACE (printf ("  bobcat\n"));
               CPUVEC_SETUP_k7;
               CPUVEC_SETUP_k7_mmx;
@@ -454,6 +477,14 @@ __gmpn_cpuvec_init (void)
               TRACE (printf ("  bulldozer\n"));
               CPUVEC_SETUP_k7;
               CPUVEC_SETUP_k7_mmx;
+              CPUVEC_SETUP_bd1;
+	      break;
+
+	    case 0x17:		/* zen */
+	    case 0x19:		/* zen3 */
+	      TRACE (printf ("  zen\n"));
+	      CPUVEC_SETUP_k7;
+	      CPUVEC_SETUP_k7_mmx;
 	      break;
             }
         }

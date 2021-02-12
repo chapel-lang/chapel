@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1159,7 +1159,7 @@ namespace {
 
 
   // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide : public ModulePass {
+  struct GlobalToWide final : public ModulePass {
     static char ID; // Pass identification, replacement for typeid
 
     GlobalToWideInfo * info;
@@ -1191,7 +1191,7 @@ namespace {
 
 
 
-    virtual bool runOnModule(Module &M) {
+    bool runOnModule(Module &M) override {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {

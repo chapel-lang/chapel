@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,6 +69,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
+VarSymbol* gCacheRemote = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
@@ -959,6 +960,22 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
     visitor->exitArgSym(this);
   }
+}
+
+std::string ArgSymbol::demungeVarArgName(std::string* num) {
+  std::string name = this->name;
+  if (!this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
+  }
+  std::string mynum = name;
+  mynum.erase(0, 2); // remove _e
+  std::string n = mynum; // ##_name
+  mynum.resize(mynum.find('_')); // ##
+  n.erase(0, n.find('_')+1); // name
+  if (num != NULL) {
+    *num = mynum;
+  }
+  return n;
 }
 
 /******************************** | *********************************
@@ -2123,7 +2140,7 @@ VarSymbol* newTempConst(QualifiedType qt) {
   return result;
 }
 
-const char* toString(ArgSymbol* arg) {
+const char* toString(ArgSymbol* arg, bool withType) {
   const char* intent = "";
   switch (arg->intent) {
     case INTENT_BLANK:           intent = "";           break;
@@ -2140,7 +2157,9 @@ const char* toString(ArgSymbol* arg) {
   }
 
   const char* retval = "";
-  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
+  if (arg->getValType() == dtAny ||
+      arg->getValType() == dtUnknown ||
+      withType == false)
     retval = astr(intent, arg->name);
   else
     retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
@@ -2152,13 +2171,49 @@ const char* toString(ArgSymbol* arg) {
   return retval;
 }
 
-const char* toString(VarSymbol* var) {
+const char* toString(VarSymbol* var, bool withType) {
+
+  Immediate* imm = getSymbolImmediate(var);
+  if (imm) {
+    Type* t = var->getValType();
+    if (imm->const_kind == NUM_KIND_BOOL) {
+      return astr(imm->bool_value() ? "true" : "false");
+    } else if (imm->const_kind == CONST_KIND_STRING) {
+      std::string value;
+      value = "";
+      if (t == dtBytes)
+        value += "b";
+      value += '"';
+      value += imm->string_value();
+      value += '"';
+      return astr(value.c_str());
+    } else {
+      std::string value;
+      const size_t bufSize = 128;
+      char buf[bufSize];
+      snprint_imm(buf, bufSize, *imm);
+      value = buf;
+      // Add the type if it's not default
+      if (t != dtUnknown && t != dtString && t != dtBytes) {
+        if (withType && isNumericParamDefaultType(t) == false) {
+          value += ": ";
+          value += toString(t);
+        }
+      }
+      return astr(value.c_str());
+    }
+  }
+
   // If it's a compiler temporary, find an assignment
   //  * from a user variable or field
   //  * to a user variable or field
 
-  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP))
-    return astr(var->name, ": ", toString(var->getValType()));
+  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP)) {
+    if (withType)
+      return astr(var->name, ": ", toString(var->getValType()));
+    else
+      return var->name;
+  }
 
   Symbol* sym = var;
   // Compiler temporaries should have a single definition
@@ -2233,10 +2288,14 @@ const char* toString(VarSymbol* var) {
     }
   }
 
-  if (ArgSymbol* arg = toArgSymbol(sym))
-    return toString(arg);
-  else if (name != NULL)
-    return astr(name, ": ", toString(var->getValType()));
-
-  return astr("<temporary>");
+  if (ArgSymbol* arg = toArgSymbol(sym)) {
+    return toString(arg, withType);
+  } else if (name != NULL) {
+    if (withType)
+      return astr(name, ": ", toString(var->getValType()));
+    else
+      return astr(name);
+  } else {
+    return astr("<temporary>");
+  }
 }

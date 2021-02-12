@@ -1,6 +1,6 @@
 offset-1.chpl:10: In function 'test':
 offset-1.chpl:12: warning: invoking 'offset' on an unstrided range has no effect.
-  offset-1.chpl:23: called as test(r: range(int(64),bounded,false), offs: _unknown) from function 'suite'
+  offset-1.chpl:23: called as test(r: range(int(64),bounded,false), offs: int(64)) from function 'suite'
   offset-1.chpl:28: called as suite(r: range(int(64),bounded,false))
 3..3  offs -4  3..3
 3..3  offs -2  3..3

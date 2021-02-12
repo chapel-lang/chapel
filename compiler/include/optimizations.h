@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -64,6 +64,7 @@ bool outlivesBlock(LifetimeInformation* info, Symbol* sym, BlockStmt* block);
 
 void checkLifetimesForForallUnorderedOps(FnSymbol* fn,
                                          LifetimeInformation* lifetimeInfo);
+std::vector<Expr *> getLastStmtsForForallUnorderedOps(ForallStmt *forall);
 void optimizeForallUnorderedOps();
 
 void liveVariableAnalysis(FnSymbol* fn,

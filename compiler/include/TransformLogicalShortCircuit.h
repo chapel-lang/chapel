@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,14 +38,14 @@
 
 class Expr;
 
-class TransformLogicalShortCircuit : public AstVisitorTraverse
+class TransformLogicalShortCircuit final : public AstVisitorTraverse
 {
 public:
                  TransformLogicalShortCircuit();
-  virtual       ~TransformLogicalShortCircuit();
+                ~TransformLogicalShortCircuit();
 
   // Transform performed pre-order
-  virtual bool   enterCallExpr (CallExpr* node);
+  bool   enterCallExpr (CallExpr* node) override;
 };
 
 #endif

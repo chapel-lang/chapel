@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 # 
@@ -20,6 +20,7 @@ OPTIMIZATIONS_SRCS = \
 	bulkCopyRecords.cpp \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
+	forallOptimizations.cpp \
 	inlineFunctions.cpp \
 	inferConstRefs.cpp \
 	liveVariableAnalysis.cpp \
@@ -28,7 +29,6 @@ OPTIMIZATIONS_SRCS = \
 	noAliasSets.cpp \
         optimizeForallUnorderedOps.cpp \
 	optimizeOnClauses.cpp \
-	preNormalizeOptimizations.cpp \
 	propagateDomainConstness.cpp \
 	refPropagation.cpp \
 	remoteValueForwarding.cpp \

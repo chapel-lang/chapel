@@ -10,12 +10,14 @@
 #include <signal.h>
 #include <string.h>
 
-#define GASNETC_NETWORKDEPTH_SPACE_DEFAULT (12*1024)
+#define GASNETC_NETWORKDEPTH_SPACE_DEFAULT (16*1024)
 #define GASNETC_NETWORKDEPTH_TOTAL_DEFAULT 64
 #define GASNETC_NETWORKDEPTH_DEFAULT 64
 
 #define GASNETC_GNI_AM_RVOUS_CUTOVER_DEFAULT 16384 // TODO-EX: this is a W.A.G.
 #define GASNETC_GNI_AM_RVOUS_BUFFERS_DEFAULT 64
+
+#define GASNETC_GNI_ROUTING_MODE_DEFAULT "ADAPTIVE_0"
 
 // How many times to retry a Post which fails with GNI_RC_ERROR_RESOURCE
 // TODO: Should this be an env var?
@@ -49,6 +51,8 @@ static int gasnetc_ampoll_burst; // Units of events
   #define GASNETC_CDM_MODE GNI_CDM_MODE_FORK_FULLCOPY
 #endif
 static uint32_t gasnetc_cdm_mode = GASNETC_CDM_MODE | GNI_CDM_MODE_DUAL_EVENTS;
+
+static uint16_t gasnetc_dlvr_mode = GNI_DLVMODE_PERFORMANCE; // AKA ADAPTIVE_0
 
 int      gasnetc_dev_id;
 uint32_t gasnetc_cookie;
@@ -142,6 +146,10 @@ static gni_mem_handle_t my_aux_handle;
 static gni_ep_handle_t my_ce_ep_handle;
 static gni_ce_handle_t ce_handle;
 int gasnete_ce_available = 0;
+#if GASNETC_USE_MULTI_DOMAIN
+  // cross-domain polling logic needs this help
+  static gasneti_weakatomic_t gasnete_ce_active = gasneti_weakatomic_init(0);
+#endif
 #endif
 
 #if GASNETC_USE_MULTI_DOMAIN
@@ -1002,6 +1010,26 @@ uintptr_t gasnetc_init_messaging(void)
   }
   #endif
 
+  // Process GASNET_GNI_ROUTING_MODE
+  { char *env_val = gasneti_getenv_withdefault("GASNET_GNI_ROUTING_MODE", GASNETC_GNI_ROUTING_MODE_DEFAULT);
+    char dlvr_mode[64];
+    int i;
+    for (i = 0; env_val[i] && i < sizeof(dlvr_mode)-1; i++) {
+      dlvr_mode[i] = toupper(env_val[i]); // normalize to uppercase
+    }
+    dlvr_mode[i] = '\0';
+    if      (!strcmp(dlvr_mode, "IN_ORDER"  )) gasnetc_dlvr_mode = GNI_DLVMODE_IN_ORDER;
+    else if (!strcmp(dlvr_mode, "NMIN_HASH" )) gasnetc_dlvr_mode = GNI_DLVMODE_NMIN_HASH;
+    else if (!strcmp(dlvr_mode, "MIN_HASH"  )) gasnetc_dlvr_mode = GNI_DLVMODE_MIN_HASH;
+    else if (!strcmp(dlvr_mode, "ADAPTIVE_0")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE0;
+    else if (!strcmp(dlvr_mode, "ADAPTIVE_1")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE1;
+    else if (!strcmp(dlvr_mode, "ADAPTIVE_2")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE2;
+    else if (!strcmp(dlvr_mode, "ADAPTIVE_3")) gasnetc_dlvr_mode = GNI_DLVMODE_ADAPTIVE3;
+    else if (! gasneti_mynode) {
+      gasneti_console_message("WARNING", "Ignoring unknown GASNET_GNI_ROUTING_MODE='%s'", env_val);
+    }
+  }
+
   // Process GASNET_GNI_PACKEDLONG_CUTOVER
   // Default is arch-dependent
   gasnetc_packedlong_cutover = gasneti_getenv_int_withdefault("GASNET_GNI_PACKEDLONG_CUTOVER",
@@ -1036,6 +1064,19 @@ uintptr_t gasnetc_init_messaging(void)
   reply_count = MAX(1, reply_count); /* Min is 1 */
   reply_count = MIN(GASNETC_AM_INITIATOR_SLOTS, reply_count); /* Max determined by count of 'initiator_slot' */
 
+  // Determine number of AM Credits (subject to later adjustments)
+  am_maxcredit = gasneti_getenv_int_withdefault("GASNET_NETWORKDEPTH",
+                                                GASNETC_NETWORKDEPTH_DEFAULT, 0);
+  am_maxcredit = MAX(1, am_maxcredit); // Min is 1
+  if (am_maxcredit > reply_count) {
+    if (! gasneti_mynode) {
+      gasneti_console_message("WARNING",
+                              "Requested GASNET_NETWORKDEPTH %d reduced to GASNET_NETWORKDEPTH_TOTAL of %d\n",
+                              am_maxcredit, reply_count);
+    }
+    am_maxcredit = reply_count;
+  }
+
   /* Select Eager or Rendezvous protocol for AM Requests */
   int am_rvous_val = gasneti_getenv_int_withdefault("GASNET_GNI_AM_RVOUS_CUTOVER",
                                                     GASNETC_GNI_AM_RVOUS_CUTOVER_DEFAULT, 0);
@@ -1045,48 +1086,42 @@ uintptr_t gasnetc_init_messaging(void)
   if (am_rvous_enabled) {
     /* Rendezvous: GASNET_NETWORKDEPTH */
     GASNETI_TRACE_PRINTF(I, ("Using Rendezvous protocol for AM Requests"));
-    am_maxcredit = gasneti_getenv_int_withdefault("GASNET_NETWORKDEPTH",
-                                                  GASNETC_NETWORKDEPTH_DEFAULT, 0);
-    am_maxcredit = MAX(1, am_maxcredit); /* Min is 1 */
-    if (am_maxcredit > reply_count) {
-      if (gasneti_mynode) {
-        fprintf(stderr,
-                "WARNING: Requested GASNET_NETWORKDEPTH %d reduced to GASNET_NETWORKDEPTH_TOTAL of %d\n",
-                am_maxcredit, reply_count);
-      }
-      am_maxcredit = reply_count;
-    }
     rvous_count = gasneti_getenv_int_withdefault("GASNET_GNI_AM_RVOUS_BUFFERS",
                                                  GASNETC_GNI_AM_RVOUS_BUFFERS_DEFAULT, 0);
     rvous_count = MAX(1, rvous_count); /* Min is 1 */
 
-    request_bits = am_maxcredit;
-
     am_replysz = GASNETI_ALIGNUP(GASNETC_MSG_MAXSIZE, GASNETC_CACHELINE_SIZE); // No-op??
   } else {
-    /* Eager: GASNET_NETWORKDEPTH_SPACE */
+    /* Eager: GASNET_NETWORKDEPTH_SPACE limits credits */
     GASNETI_TRACE_PRINTF(I, ("Using Eager protocol for AM Requests"));
+    am_maxcredit = MIN(am_maxcredit, 64); // max of 64 bits to track
     request_region_length = gasneti_getenv_int_withdefault("GASNET_NETWORKDEPTH_SPACE",
                                                            GASNETC_NETWORKDEPTH_SPACE_DEFAULT, 1);
-    request_region_length = GASNETI_ALIGNUP(request_region_length, 64);
-    request_region_length = MAX(request_region_length,  2*GASNETC_MSG_MAXSIZE);
-    request_region_length = MIN(request_region_length, 64*GASNETC_MSG_MAXSIZE);
-    am_slotsz = gasnetc_next_power_of_2(request_region_length / 64);
+    // Ensure intermediate computations don't yield a zero from which there is no recovery
+    request_region_length = MAX(request_region_length, am_maxcredit);
+    // Divide the region into equal per-credit slices, rounding down to a power-of-two.
+    // The resulting request_region_length = (am_maxcredit * 2^i) for some i,
+    // and subsequent work to bound between two and am_maxcredit max-sized
+    // messages only changes the 'i'.
+    request_region_length = am_maxcredit * gasnetc_prev_power_of_2(request_region_length / am_maxcredit);
+    // Must be large enough for 2 max-sized messages
+    while (request_region_length < 2*GASNETC_MSG_MAXSIZE) {
+      request_region_length *= 2;
+    }
+    // Space beyond next_power_of_2(credits * max message) is unusable
+    while (request_region_length / 2 >= gasnetc_next_power_of_2(am_maxcredit*GASNETC_MSG_MAXSIZE)) {
+      request_region_length /= 2;
+    }
+    am_slotsz = request_region_length / am_maxcredit;
+    gasneti_assert(GASNETI_POWEROFTWO(am_slotsz));
     am_slot_bits = ffs(am_slotsz) - 1;
-    am_maxcredit = request_region_length / am_slotsz;
-    request_region_length = am_maxcredit * am_slotsz;
-    /* NOTE: 1<<64 is undefined and indeed icc yields 1.  So, we special case 64 credits */
-    gasneti_assert(am_maxcredit >= 32);
-    gasneti_assert(am_maxcredit <= 64);
-    request_bits = am_maxcredit;
 
-    // Clip credits to NETWORKDEPTH_TOTAL for use in computing size of Cq and notify ring
-    am_maxcredit = MIN(am_maxcredit, reply_count);
     /* reply destination is also request source.  So, must fit largest *outgoing* message */
     am_replysz = GASNETI_ALIGNUP(GASNETC_MSG_MAXSIZE, am_slotsz);
   }
 
   // NOTE: 1<<64 is undefined and indeed icc yields 1.  So, we special case 64.
+  request_bits = am_maxcredit;
   request_map = (request_bits == 64) ? ~(uint64_t)0 : (((uint64_t)1 << request_bits) - 1);
 
   // Maximum number of Long requests outstanding per peer
@@ -1129,6 +1164,24 @@ uintptr_t gasnetc_init_messaging(void)
                       remote_nodes * am_maxcredit + // for Request headers
                       remote_nodes * am_long_depth, // for Request Long payloads
                       2);                           // need it to be even
+  if (gasneti_getenv("GASNET_GNI_AM_MAX_CQE")) {
+    // GASNET_GNI_AM_MAX_CQE provides for an UNDOCUMENTED ceiling.
+    // This setting may be used to artificially lower the size of the AM CQ below
+    // the minimum "safe" level.  Therefore, use may lead to hangs or crashes
+    // under some AM traffic patterns.  You have been warned.
+    int am_max_cqe = gasneti_getenv_int_withdefault("GASNET_GNI_AM_MAX_CQE", 0, 0);
+    if (am_max_cqe) { // zero means no limit
+      am_max_cqe = GASNETI_ALIGNUP(am_max_cqe,2); // must be even
+      if (am_max_cqe < am_num_cqe) {
+        if (!gasneti_mynode) {
+          gasneti_console_message("WARNING",
+                                  "Unsupported GASNET_GNI_AM_MAX_CQE reducing AM CQ length from %d to %d",
+                                  am_num_cqe, am_max_cqe);
+        }
+        am_num_cqe = am_max_cqe;
+      }
+    }
+  }
   status = GNI_CqCreate(nic_handle,am_num_cqe,0,GNI_CQ_NOBLOCK,NULL,NULL,&am_cq_handle);
   if (status != GNI_RC_SUCCESS) {
     gasnetc_GNIT_Abort("GNI_CqCreate returned error %s", gasnetc_gni_rc_string(status));
@@ -1241,7 +1294,7 @@ am_memory_report:
       gpd->domain_idx = GASNETC_DEFAULT_DOMAIN;
     #endif
       gpd->pd.cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-      gpd->pd.dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+      gpd->pd.dlvr_mode = gasnetc_dlvr_mode;
       gpd->pd.local_addr = (uint64_t) packet_addr;
       gpd->pd.local_mem_hndl = am_handle;
       packet_addr += am_replysz;
@@ -1616,7 +1669,7 @@ int send_ctrl(peer_struct_t * const peer, uint32_t value, gasneti_weakatomic_t *
     gpd->gpd_flags = GC_POST_COMPLETION_CNTR;
   }
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT | GNI_CQMODE_REMOTE_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_mem_hndl = peer->am_handle;
 
   pd->type = GNI_POST_CQWRITE;
@@ -1687,7 +1740,7 @@ void gasnetc_format_am_gpd(gasnetc_post_descriptor_t *gpd,
   pd->local_addr = (uint64_t)p;
   pd->remote_mem_hndl = peer->am_handle;
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT | GNI_CQMODE_REMOTE_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->type = GNI_POST_FMA_PUT_W_SYNCFLAG;
 }
 
@@ -2711,6 +2764,11 @@ release:
         gasneti_lifo_push(&medxl_descriptor_pool, (void *) gpd->pd.local_addr);
       }
     #endif
+    #if GASNETC_USE_MULTI_DOMAIN
+      else if (gpd_flags & GC_POST_CE_RELEASE) {
+        gasneti_weakatomic_decrement(&gasnete_ce_active,0);
+      }
+    #endif
 
       if (!(gpd_flags & GC_POST_KEEP_GPD)) {
         gasnetc_free_post_descriptor(gpd);
@@ -2750,12 +2808,15 @@ void gasnetc_poll_single_domain(GASNETI_THREAD_FARG_ALONE)
   {
     if (GASNETC_DIDX == GASNETC_DEFAULT_DOMAIN) {
        gasnetc_poll_am_queue(GASNETI_THREAD_PASS_ALONE);
-    } else if_pf ((DOMAIN_SPECIFIC_VAL(poll_idx)++ & gasnetc_poll_am_domain_mask) == 0) {
-      /* Every now and then poll for AMs even from non-default domains: */
-      if (am_rvous_head) {
+    } else {
+      // Poll bound_cq of default domain when AM rendevous or CE are active
+      if (am_rvous_head || gasneti_weakatomic_read(&gasnete_ce_active,0)) {
         gasnetc_poll_local_queue(GASNETC_DEFAULT_DOMAIN);
       }
-      gasnetc_poll_am_queue(GASNETI_THREAD_PASS_ALONE);
+      // Every now and then poll for AMs even from non-default domains:
+      if_pf ((DOMAIN_SPECIFIC_VAL(poll_idx)++ & gasnetc_poll_am_domain_mask) == 0) {
+        gasnetc_poll_am_queue(GASNETI_THREAD_PASS_ALONE);
+      }
     }
     gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
   }
@@ -2856,7 +2917,7 @@ gni_mem_handle_t gasnetc_local_mh(gasneti_EP_t i_ep, void *addr) {
 }
 GASNETI_INLINE(gasnetc_remote_mh)
 gni_mem_handle_t gasnetc_remote_mh(peer_struct_t * const peer, void *addr) {
-  return  gasneti_in_auxsegment(gasneti_THUNK_TM,peer->pe,addr,1) ? peer->aux_handle : peer->mem_handle;
+  return  gasneti_in_auxsegment(peer->pe,addr,1) ? peer->aux_handle : peer->mem_handle;
 }
 
 /* Perform an rdma/fma Put with no concern for local completion.
@@ -2879,7 +2940,7 @@ size_t gasnetc_rdma_put_bulk(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) dest_addr;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, dest_addr);
   pd->length = nbytes;
@@ -2952,7 +3013,7 @@ gasnetc_rdma_put_lc(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) dest_addr;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, dest_addr);
   pd->length = nbytes;
@@ -3045,7 +3106,7 @@ void gasnetc_rdma_put_buff(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) dest_addr;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, dest_addr);
   pd->length = nbytes;
@@ -3104,7 +3165,7 @@ size_t gasnetc_rdma_get(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) source_addr;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, source_addr);
   pd->length = nbytes;
@@ -3176,7 +3237,7 @@ void gasnetc_rdma_get_unaligned(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) source_addr - pre;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, source_addr);
   pd->length = length;
@@ -3231,7 +3292,7 @@ int gasnetc_rdma_get_buff(gex_TM_t tm, gex_Rank_t rank,
 
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) source_addr - pre;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, source_addr);
   pd->length = length;
@@ -3363,7 +3424,7 @@ void gasnetc_rdma_put_long(
 
   gni_post_descriptor_t * pd = &gpd->pd;
   /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->remote_addr = (uint64_t) dest_addr;
   pd->remote_mem_hndl = gasnetc_remote_mh(peer, dest_addr);
   pd->length = nbytes;
@@ -3442,7 +3503,7 @@ void gasnetc_rdma_put_long(
           gpd = gasnetc_alloc_post_descriptor(0 GASNETC_DIDX_PASS);
           pd = &gpd->pd;
           /*  bzero(&pd, sizeof(gni_post_descriptor_t)); */
-          pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+          pd->dlvr_mode = gasnetc_dlvr_mode;
           pd->remote_addr = (uint64_t) dest_addr;
           pd->remote_mem_hndl = remote_mem_hndl;
           buffer = gasnetc_alloc_bounce_buffer(0 GASNETC_DIDX_PASS);
@@ -3522,7 +3583,7 @@ void gasnetc_post_amo(
 
   pd->type = GNI_POST_AMO;
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->local_addr = (uint64_t) gpd->u.immediate;
   pd->local_mem_hndl = my_aux_handle;
   pd->remote_addr = (uint64_t) tgt_addr;
@@ -3824,12 +3885,12 @@ gasnete_ce_result_t *gasnetc_post_ce(gasnetc_post_descriptor_t *gpd)
   // Completion via flag
   result->done = 0;
   gpd->gpd_completion = (uintptr_t) &result->done;
-  gpd->gpd_flags = GC_POST_COMPLETION_FLAG;
+  gpd->gpd_flags = GC_POST_COMPLETION_FLAG | GC_POST_CE_RELEASE;
 
   gni_post_descriptor_t * const pd = &gpd->pd;
   pd->type = GNI_POST_CE;
   pd->cq_mode = GNI_CQMODE_GLOBAL_EVENT;
-  pd->dlvr_mode = GNI_DLVMODE_PERFORMANCE;
+  pd->dlvr_mode = gasnetc_dlvr_mode;
   pd->local_addr = (uint64_t) &result->output;
   pd->local_mem_hndl = my_aux_handle;
 
@@ -3840,6 +3901,9 @@ gasnete_ce_result_t *gasnetc_post_ce(gasnetc_post_descriptor_t *gpd)
   if_pf (status != GNI_RC_SUCCESS) {
     gasnetc_GNIT_Abort("GNI_POST_CE failed with %s", gasnetc_gni_rc_string(status));
   }
+#if GASNETC_USE_MULTI_DOMAIN
+  gasneti_weakatomic_increment(&gasnete_ce_active, 0);
+#endif
 
   return result;
 }

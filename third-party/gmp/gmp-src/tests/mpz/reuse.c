@@ -6,8 +6,8 @@
 	mpz_mul_si
 	mpz_addmul_ui (should this really allow a+=a*c?)
 
-Copyright 1996, 1999-2002, 2009, 2012, 2013, 2016 Free Software Foundation,
-Inc.
+Copyright 1996, 1999-2002, 2009, 2012, 2013, 2016, 2020 Free Software
+Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -174,26 +174,33 @@ struct {
   } while (0)
 
 
+void
+realloc_if_reducing (mpz_ptr r)
+{
+  if (ABSIZ(r) < ALLOC(r))
+      _mpz_realloc (r, ABSIZ(r));
+}
+
 #define INVOKE_RRS(desc,r1,r2,i1)					\
   do {									\
-    if (pass & 1) _mpz_realloc (r1, ABSIZ(r1));				\
-    if (pass & 2) _mpz_realloc (r2, ABSIZ(r2));				\
+    if (pass & 1) realloc_if_reducing (r1);				\
+    if (pass & 2) realloc_if_reducing (r2);				\
     (desc).fptr (r1, r2, i1);						\
   } while (0)
 #define INVOKE_RS(desc,r1,i1)						\
   do {									\
-    if (pass & 1) _mpz_realloc (r1, ABSIZ(r1));				\
+    if (pass & 1) realloc_if_reducing (r1);				\
     (desc).fptr (r1, i1);						\
   } while (0)
 #define INVOKE_RRSS(desc,r1,r2,i1,i2)					\
   do {									\
-    if (pass & 1) _mpz_realloc (r1, ABSIZ(r1));				\
-    if (pass & 2) _mpz_realloc (r2, ABSIZ(r2));				\
+    if (pass & 1) realloc_if_reducing (r1);				\
+    if (pass & 2) realloc_if_reducing (r2);				\
     (desc).fptr (r1, r2, i1, i2);					\
   } while (0)
 #define INVOKE_RSS(desc,r1,i1,i2)					\
   do {									\
-    if (pass & 1) _mpz_realloc (r1, ABSIZ(r1));				\
+    if (pass & 1) realloc_if_reducing (r1);				\
     (desc).fptr (r1, i1, i2);						\
   } while (0)
 
@@ -204,7 +211,6 @@ main (int argc, char **argv)
   unsigned int pass, reps = 400;
   mpz_t in1, in2, in3;
   unsigned long int in2i;
-  mp_size_t size;
   mpz_t res1, res2, res3;
   mpz_t ref1, ref2, ref3;
   mpz_t t;
@@ -238,7 +244,7 @@ main (int argc, char **argv)
   for (pass = 1; pass <= reps; pass++)
     {
 #ifndef VERBOSE
-      if (isatty (fileno (stdout)))
+      if (isatty (STDOUT_FILENO))
 	{
 	  printf ("\r%d/%d passes", pass, reps);
 	  fflush (stdout);
@@ -737,7 +743,7 @@ main (int argc, char **argv)
 	}
     }
 
-  if (isatty (fileno (stdout)))
+  if (isatty (STDOUT_FILENO))
     printf ("\r%20s", "");
 
   mpz_clear (bs);
@@ -752,7 +758,7 @@ main (int argc, char **argv)
   mpz_clear (res3);
   mpz_clear (t);
 
-  if (isatty (fileno (stdout)))
+  if (isatty (STDOUT_FILENO))
     printf ("\r");
 
   tests_end ();
@@ -763,16 +769,16 @@ void
 dump (const char *name, mpz_t in1, mpz_t in2, mpz_t in3)
 {
   printf ("failure in %s (", name);
-  0 && mpz_out_str (stdout, -16, in1);
+  mpz_out_str (stdout, -16, in1);
   if (in2 != NULL)
     {
       printf (" ");
-      0 && mpz_out_str (stdout, -16, in2);
+      mpz_out_str (stdout, -16, in2);
     }
   if (in3 != NULL)
     {
       printf (" ");
-      0 && mpz_out_str (stdout, -16, in3);
+      mpz_out_str (stdout, -16, in3);
     }
   printf (")\n");
 }

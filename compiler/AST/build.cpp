@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -774,6 +774,13 @@ buildLabelStmt(const char* name, Expr* stmt) {
 BlockStmt*
 buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr) {
   return buildChapelStmt(new CondStmt(new CallExpr("_cond_test", condExpr), thenExpr, elseExpr));
+}
+
+CallExpr* buildIfVar(const char* name, Expr* rhs, bool isConst) {
+  VarSymbol* var = new VarSymbol(name);
+  if (isConst) var->addFlag(FLAG_CONST);
+  DefExpr* def = new DefExpr(var);
+  return new CallExpr(PRIM_IF_VAR, def, rhs);
 }
 
 BlockStmt*
@@ -2625,4 +2632,14 @@ void redefiningReservedWordError(const char* name)
 {
   USR_FATAL_CONT(buildErrorStandin(),
                  "attempt to redefine reserved word '%s'", name);
+}
+
+void updateOpThisTagOrErr(FnSymbol* fn) {
+  if (fn->thisTag == INTENT_BLANK) {
+    fn->thisTag = INTENT_TYPE;
+  } else {
+    USR_FATAL_CONT(buildErrorStandin(),
+                   "attempt to declare unsupported this intent tag for operator"
+                   " function '%s'", fn->name);
+  }
 }

@@ -1,0 +1,4 @@
+min_concept_bad_implements.chpl:5: In 'implements LessThan' statement:
+min_concept_bad_implements.chpl:5: error: when checking this implements statement
+min_concept_bad_implements.chpl:5: note: the required function LT is not implemented
+min_concept_bad_implements.chpl:2: note: the required function LT in the interface LessThan is declared here

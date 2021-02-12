@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@
 // parser production into its internal representation.
 // ForLoop objects are also used to represent coforall-statements and zippered
 // iteration.
-class ForLoop : public LoopStmt
+class ForLoop final : public LoopStmt
 {
   //
   // Class interface
@@ -74,24 +74,24 @@ public:
                                  bool       zippered,
                                  bool       isLoweredForall,
                                  bool       isForExpr);
-  virtual               ~ForLoop();
+                        ~ForLoop();
 
-  virtual ForLoop*       copy(SymbolMap* map      = NULL,
-                              bool       internal = false);
-
-  virtual GenRet         codegen();
-  virtual void           verify();
-  virtual void           accept(AstVisitor* visitor);
+  DECLARE_COPY(ForLoop);
+  ForLoop* copyInner(SymbolMap* map) override;
+ 
+  GenRet         codegen()                                         override;
+  void           verify()                                          override;
+  void           accept(AstVisitor* visitor)                       override;
 
   // Interface to Expr
-  virtual void           replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  void           replaceChild(Expr* oldAst, Expr* newAst)          override;
+  Expr*          getFirstExpr()                                    override;
+  Expr*          getNextExpr(Expr* expr)                           override;
 
-  virtual bool           isForLoop()                                  const;
-  virtual bool           isCoforallLoop()                             const;
+  bool           isForLoop()                                 const override;
+  bool           isCoforallLoop()                            const override;
 
-  virtual bool           deadBlockCleanup();
+  bool           deadBlockCleanup()                                override;
 
   // Forall loops start out as ForallStmt but at some point are
   // lowered into a sequence for For loops. This function indicates
@@ -114,8 +114,8 @@ public:
   SymExpr*               iteratorGet()                                const;
   bool                   zipperedGet()                                const;
 
-  virtual CallExpr*      blockInfoGet()                               const;
-  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+  CallExpr*              blockInfoGet()                      const override;
+  CallExpr*              blockInfoSet(CallExpr* expr)              override;
 
 private:
                          ForLoop();

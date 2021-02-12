@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -178,13 +178,13 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
                             bool parallel, bool zippered);
 
-class LowerLoopExprVisitor : public AstVisitorTraverse
+class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
   public:
     LowerLoopExprVisitor() { }
-    virtual ~LowerLoopExprVisitor() { }
+    ~LowerLoopExprVisitor() { }
 
-    virtual bool enterLoopExpr(LoopExpr* node);
+    bool enterLoopExpr(LoopExpr* node) override;
 };
 
 //
@@ -198,7 +198,11 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   if (node->getStmtExpr() == NULL) {
     // Don't touch LoopExprs in DefExprs, they should be copied later into
     // BlockStmts.
-    INT_ASSERT(isDefExpr(node->parentExpr));
+
+    // While this works for correct codes, it results in assertion errors
+    // for incorrect codes that don't generate errors until resolution:
+    //
+    //    INT_ASSERT(isDefExpr(node->parentExpr));
   } else {
     SET_LINENO(node);
 

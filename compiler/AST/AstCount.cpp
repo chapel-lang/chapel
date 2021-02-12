@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,6 +88,10 @@ void AstCount::visitPrimType(PrimitiveType* node) {
   numPrimitiveType++;
 }
 
+void AstCount::visitConstrainedType(ConstrainedType* node) {
+  numConstrainedType++;
+}
+
 bool AstCount::enterArgSym(ArgSymbol* node) {
   numArgSymbol++;
   return true;
@@ -106,6 +110,14 @@ bool AstCount::enterFnSym(FnSymbol* node) {
 }
 
 void AstCount::exitFnSym(FnSymbol* node) {
+}
+
+bool AstCount::enterInterfaceSym(InterfaceSymbol* node) {
+  numInterfaceSymbol++;
+  return true;
+}
+
+void AstCount::exitInterfaceSym(InterfaceSymbol* node) {
 }
 
 void AstCount::visitLabelSym(LabelSymbol* node) {
@@ -162,6 +174,14 @@ bool AstCount::enterNamedExpr(NamedExpr* node) {
 }
 
 void AstCount::exitNamedExpr(NamedExpr* node) {
+}
+
+bool AstCount::enterIfcConstraint(IfcConstraint* node) {
+  numIfcConstraint++;
+  return true;
+}
+
+void AstCount::exitIfcConstraint(IfcConstraint* node) {
 }
 
 bool AstCount::enterIfExpr(IfExpr* node) {
@@ -305,4 +325,10 @@ bool AstCount::enterCatchStmt(CatchStmt* node) {
 void AstCount::exitCatchStmt(CatchStmt* node) {
 }
 
+bool AstCount::enterImplementsStmt(ImplementsStmt* node) {
+  numImplementsStmt++;
+  return true;
+}
 
+void AstCount::exitImplementsStmt(ImplementsStmt* node) {
+}

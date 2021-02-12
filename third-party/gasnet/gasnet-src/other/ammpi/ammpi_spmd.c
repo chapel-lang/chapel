@@ -13,12 +13,12 @@
 #include <ammpi_spmd.h>
 #include "ammpi_internal.h" /* must come after any other headers */
 
-#ifndef FREEZE_SLAVE
-  #define FREEZE_SLAVE  0
+#ifndef FREEZE_WORKER
+  #define FREEZE_WORKER  0
 #endif
 
 #if AMX_DEBUG_VERBOSE
-  #define DEBUG_MSG(msg)  do { fprintf(stderr,"slave %i: %s\n", AMMPI_SPMDMYPROC, msg); fflush(stderr); } while(0)
+  #define DEBUG_MSG(msg)  do { fprintf(stderr,"worker %i: %s\n", AMMPI_SPMDMYPROC, msg); fflush(stderr); } while(0)
 #else
   #define DEBUG_MSG(msg)  do {} while(0) /* prevent silly warnings about empty statements */
 #endif
@@ -200,7 +200,7 @@ extern int AMMPI_SPMDStartup(int *argc, char ***argv,
     if (networkdepth <= 0) networkdepth = AMMPI_DEFAULT_NETWORKDEPTH;
   }
 
-  #if FREEZE_SLAVE
+  #if FREEZE_WORKER
     AMX_freezeForDebugger();
   #else
     if (getenv("AMMPI_FREEZE")) AMX_freezeForDebugger();
@@ -240,7 +240,7 @@ extern int AMMPI_SPMDStartup(int *argc, char ***argv,
   }
 
   #if AMX_DEBUG_VERBOSE
-    fprintf(stderr, "slave %i/%i starting...\n", AMMPI_SPMDMYPROC, AMMPI_SPMDNUMPROCS);
+    fprintf(stderr, "worker %i/%i starting...\n", AMMPI_SPMDMYPROC, AMMPI_SPMDNUMPROCS);
     fflush(stderr);
   #endif
 
@@ -336,7 +336,7 @@ extern int AMMPI_SPMDStartup(int *argc, char ***argv,
   { char temp[80];
     tag_t tag;
     AM_GetTag(AMMPI_SPMDEndpoint, &tag);
-    fprintf(stderr, "Slave %i/%i starting (tag=%s)...\n", 
+    fprintf(stderr, "worker %i/%i starting (tag=%s)...\n", 
       AMMPI_SPMDMyProc(), AMMPI_SPMDNumProcs(), AMMPI_tagStr(tag, temp));
     fflush(stderr);
   }

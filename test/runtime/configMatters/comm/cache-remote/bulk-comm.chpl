@@ -1,4 +1,4 @@
-// Test that writes to array elemnets are fenced before a large transfer
+// Test that writes to array elements are fenced before a large transfer
 // containing those elements is issued.
 proc testArr(A) {
   on Locales[numLocales-1] {

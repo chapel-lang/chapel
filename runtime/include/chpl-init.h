@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -21,12 +21,16 @@
 #ifndef _CHPL_INIT_H_
 #define _CHPL_INIT_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef LAUNCHER
 
 void chpl_rt_preUserCodeHook(void);
 void chpl_rt_postUserCodeHook(void);
 
-#endif // LAUNCHER
+#endif // ifndef LAUNCHER
 
 void chpl_rt_init(int argc, char* argv[]);
 void chpl_rt_finalize(int return_value);
@@ -38,5 +42,9 @@ void chpl_library_init(int argc, char* argv[]);
 void chpl_library_finalize(void);
 
 void chpl_std_module_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _CHPL_INIT_H_

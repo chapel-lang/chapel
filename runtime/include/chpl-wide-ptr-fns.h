@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 
 // chpl_error needed for some of the packed wide pointer error cases.
 #include "error.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // Methods for working with wide pointers and localeID_t.
 // There are several variants of many of these in order to simplify
@@ -103,5 +107,8 @@ wide_ptr_t chpl_return_wide_ptr_add(wide_ptr_t ptr, size_t amt)
   return ptr;
 }
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,7 +33,7 @@ public:
   static Stmt*           findEnclosingLoopOrForall(Expr* expr);
 
 public:
-  virtual bool           isLoopStmt()                                    const;
+  bool           isLoopStmt()                                   const override;
 
   LabelSymbol*           breakLabelGet()                                 const;
   void                   breakLabelSet(LabelSymbol* sym);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,6 +24,10 @@
 #include <stdint.h>
 
 #include "chpl-mem-desc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // This is the comm layer sub-interface for dynamic allocation and
@@ -65,10 +69,18 @@ void chpl_comm_impl_regMemPostRealloc(void* oldp, size_t oldSize,
         chpl_comm_impl_regMemFree(p, size)
 chpl_bool chpl_comm_impl_regMemFree(void* p, size_t size);
 
+#ifdef __cplusplus
+}
+#endif
+
 //
 // Network atomic operations.
 //
 #include "chpl-comm-native-atomics.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Remote memory consistency release/acquire hooks.
@@ -86,5 +98,9 @@ void chpl_comm_impl_task_end(void);
 //
 void chpl_comm_statsStartHere(void);
 void chpl_comm_statsReport(chpl_bool);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_comm_impl_h_

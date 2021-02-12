@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -132,6 +132,11 @@ module NetworkAtomics {
       x <~> read();
     }
 
+  }
+
+  proc _cast(type t:RAtomicBool, rhs: bool) {
+    var lhs: RAtomicBool = rhs; // use init=
+    return lhs;
   }
 
   pragma "atomic type"
@@ -329,6 +334,10 @@ module NetworkAtomics {
 
   }
 
+  proc _cast(type t:RAtomicT(?T), rhs: T) {
+    var lhs: RAtomicT(T) = rhs; // use init=
+    return lhs;
+  }
 
   inline proc =(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());

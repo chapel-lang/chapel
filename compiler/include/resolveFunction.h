@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,6 +33,7 @@ void  resolveFunction(FnSymbol* fn, CallExpr* forCall = 0);
 
 bool  isParallelIterator(FnSymbol* fn);
 bool  isLeaderIterator(FnSymbol* fn);
+bool  isFollowerIterator(FnSymbol* fn);
 bool  isStandaloneIterator(FnSymbol* fn);
 
 // If yieldType is not NULL, the type yielded by an iterator will

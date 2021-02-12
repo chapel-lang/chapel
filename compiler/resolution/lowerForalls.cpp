@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,7 @@
 #include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "passes.h"
@@ -327,7 +328,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
 
 /////////// ExpandVisitor visitor ///////////
 
-class ExpandVisitor : public AstVisitorTraverse {
+class ExpandVisitor final : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
   SymbolMap& svar2clonevar;
@@ -337,7 +338,7 @@ public:
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
   ~ExpandVisitor();
 
-  virtual bool enterCallExpr(CallExpr* node) {
+  bool enterCallExpr(CallExpr* node) override {
     if (node->isPrimitive(PRIM_YIELD)) {
       expandYield(this, node);
     }
@@ -353,7 +354,7 @@ public:
     return false;
   }
 
-  virtual bool enterForallStmt(ForallStmt* node) {
+  bool enterForallStmt(ForallStmt* node) override {
 
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
@@ -364,13 +365,13 @@ public:
     return false;
   }
 
-  virtual bool enterCForLoop(CForLoop* node) {
+  bool enterCForLoop(CForLoop* node) override {
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
     }
     return true;
   }
-  virtual bool enterForLoop(ForLoop* node) {
+  bool enterForLoop(ForLoop* node) override {
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
     }
@@ -493,6 +494,9 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
   currTPV->qual = TPV->qual;
   if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
   if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  if (TPV->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+    currTPV->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+  }
   return currTPV;
 }
 
@@ -1137,6 +1141,10 @@ static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
   SET_LINENO(parIterCall);
+
+  // aggregation uses task-private variables, we can't have them with a
+  // recursive iterator
+  removeAggregationFromRecursiveForall(fs);
 
   // Check for non-ref intents.
   SymbolMap sv2ov;

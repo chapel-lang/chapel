@@ -1,11 +1,11 @@
 param-detuple.chpl:8: In function 'p2':
 param-detuple.chpl:9: warning: param proc
-  param-detuple.chpl:12: called as p2(param args(0) = "a": _any)
+  param-detuple.chpl:12: called as p2(param args(0) = "a")
 param-detuple.chpl:8: In function 'p2':
 param-detuple.chpl:9: warning: param proc
-  param-detuple.chpl:13: called as p2(param args(0) = "a": string, param args(1) = "b": string)
-$CHPL_HOME/modules/standard/Builtins.chpl:83: In function 'compilerError':
-$CHPL_HOME/modules/standard/Builtins.chpl:84: warning: compiler diagnostic depth value exceeds call stack depth
-  $CHPL_HOME/modules/standard/Builtins.chpl:145: called as compilerError(param msg(0) = "assert failed - ": string, param msg(1) = "done": string, param errorDepth = 3) from function 'compilerAssert'
-  param-detuple.chpl:14: called as compilerAssert(param test = 0, param msg(0) = "done": string, param errorDepth = 2)
+  param-detuple.chpl:13: called as p2(param args(0) = "a", param args(1) = "b")
+$CHPL_HOME/modules/standard/Builtins.chpl:nnn: In function 'compilerError':
+$CHPL_HOME/modules/standard/Builtins.chpl:nnn: warning: compiler diagnostic depth value exceeds call stack depth
+  $CHPL_HOME/modules/standard/Builtins.chpl:nnn: called as compilerError(param msg(0) = "assert failed - ", param msg(1) = "done", param errorDepth = 3) from function 'compilerAssert'
+  param-detuple.chpl:14: called as compilerAssert(param test = false, param msg(0) = "done", param errorDepth = 2)
 param-detuple.chpl:14: error: assert failed - done

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,7 +49,7 @@ public:
   virtual       ~Stmt();
 
   // Interface to Expr
-  virtual bool   isStmt()                                      const;
+  bool isStmt()  const override;
 };
 
 /************************************* | **************************************
@@ -58,16 +58,18 @@ public:
 ************************************** | *************************************/
 class ResolveScope;
 
-class VisibilityStmt: public Stmt {
+// parent base class for UseStmt and ImportStmt
+class VisibilityStmt : public Stmt {
  public:
-  VisibilityStmt(AstTag astTag);
-
+           VisibilityStmt(AstTag astTag);
   virtual ~VisibilityStmt();
 
   bool isARename() const;
   bool isARenamedSym(const char* name) const;
   const char* getRename() const;
   const char* getRenamedSym(const char* name) const;
+
+  virtual std::set<const char*> typeWasNamed(Type* t) const = 0;
 
   virtual bool skipSymbolSearch(const char* name) const = 0;
 
@@ -112,6 +114,7 @@ enum BlockTag {
   BLOCK_EXTERN_TYPE = BLOCK_EXTERN    | BLOCK_TYPE
 };
 
+// Parent class for LoopStmt and various loops as well
 class BlockStmt : public Stmt {
 public:
                       BlockStmt(Expr*    initBody     = NULL,
@@ -119,16 +122,17 @@ public:
                       BlockStmt(BlockTag initBlockTag);
 
   DECLARE_COPY(BlockStmt);
+  BlockStmt* copyInner(SymbolMap* map)             override;
 
   // Interface to BaseAST
-  virtual GenRet      codegen();
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
+  GenRet codegen()                                 override;
+  void   verify()                                  override;
+  void   accept(AstVisitor* visitor)               override;
 
   // Interface to Expr
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*       getFirstExpr();
-  virtual Expr*       getNextExpr(Expr* expr);
+  void   replaceChild(Expr* oldAst, Expr* newAst)  override;
+  Expr*  getFirstExpr()                            override;
+  Expr*  getNextExpr(Expr* expr)                   override;
 
   // New interface
   virtual bool        isLoopStmt()                                 const;
@@ -195,33 +199,34 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-class CondStmt : public Stmt {
+class CondStmt final : public Stmt {
 public:
-                      CondStmt(Expr*    iCondExpr,
-                               BaseAST* iThenStmt,
-                               BaseAST* iElseStmt = NULL,
-                               bool     isIfExpr = false);
+  CondStmt(Expr*    iCondExpr,
+           BaseAST* iThenStmt,
+           BaseAST* iElseStmt = NULL,
+           bool     isIfExpr = false);
 
-                      DECLARE_COPY(CondStmt);
+  DECLARE_COPY(CondStmt);
+  CondStmt*  copyInner(SymbolMap* map)                  override;
 
-  virtual GenRet      codegen();
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
+  GenRet     codegen()                                  override;
+  void       replaceChild(Expr* oldAst, Expr* newAst)   override;
+  void       verify()                                   override;
+  void       accept(AstVisitor* visitor)                override;
 
-  virtual Expr*       getFirstExpr();
-  virtual Expr*       getNextExpr(Expr* expr);
+  Expr*      getFirstExpr()                             override;
+  Expr*      getNextExpr(Expr* expr)                    override;
 
-  CallExpr*           foldConstantCondition(bool addEndOfStatement);
+  CallExpr*  foldConstantCondition(bool addEndOfStatement);
 
-  Expr*               condExpr;
-  BlockStmt*          thenStmt;
-  BlockStmt*          elseStmt;
+  Expr*      condExpr;
+  BlockStmt* thenStmt;
+  BlockStmt* elseStmt;
 
-  bool                isIfExpr() const;
+  bool       isIfExpr() const;
 
 private:
-  bool                fIsIfExpr;
+  bool       fIsIfExpr;
 };
 
 /************************************* | **************************************
@@ -243,7 +248,7 @@ enum GotoTag {
 };
 
 
-class GotoStmt : public Stmt {
+class GotoStmt final : public Stmt {
  public:
   GotoTag gotoTag;
   Expr* label;
@@ -252,54 +257,100 @@ class GotoStmt : public Stmt {
   GotoStmt(GotoTag init_gotoTag, Symbol* init_label);
   GotoStmt(GotoTag init_gotoTag, Expr* init_label);
 
-  virtual GenRet      codegen();
+  GenRet codegen()                                   override;
 
   DECLARE_COPY(GotoStmt);
+  GotoStmt* copyInner(SymbolMap* map)                override;
 
-  virtual void        replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
+  void   replaceChild(Expr* old_ast, Expr* new_ast)  override;
+  void   verify()                                    override;
+  void   accept(AstVisitor* visitor)                 override;
+  Expr*  getFirstExpr()                              override;
 
-  virtual Expr*       getFirstExpr();
+  const char*  getName();
 
-  const char*         getName();
-
-  bool                isGotoReturn()                                   const;
-  LabelSymbol*        gotoTarget()                                     const;
+  bool         isGotoReturn()                           const;
+  LabelSymbol* gotoTarget()                             const;
 };
 
+/************************************* | **************************************
+*                                                                             *
+* An ImplementsStmt states that an interface is implemented by given type(s). *
+* Syntactically it is similar to an interface constraint (see IfcConstraint), *
+* and also allows a block statement, ex.                                      *
+*   implements InterfaceName(actualType...);                                  *
+*   actualType implements InterfaceName;                                      *
+*   actualType implements InterfaceName { proc defaultImplementation... }     *
+*                                                                             *
+************************************** | *************************************/
+
+class ImplementsStmt final : public Stmt {
+public:
+  static ImplementsStmt* build(const char* name,
+                               CallExpr* actuals,
+                               BlockStmt* body);
+  ImplementsStmt(IfcConstraint* con, BlockStmt* body);
+
+  DECLARE_COPY(ImplementsStmt);
+  ImplementsStmt* copyInner(SymbolMap* map)         override;
+  GenRet codegen()                                  override;
+  void   verify()                                   override;
+  void   accept(AstVisitor* visitor)                override;
+
+  void   replaceChild(Expr* oldAst, Expr* newAst)   override;
+  Expr*  getFirstExpr()                             override;
+  Expr*  getNextExpr(Expr* expr)                    override;
+
+  int    numActuals() const { return iConstraint->numActuals(); }
+
+  // the constraint being implemented, always non-null
+  IfcConstraint* iConstraint;
+
+  // (possibly empty) body of this statement, always non-null
+  BlockStmt*     implBody;
+
+  // mapping: required interface function -> its implementation
+  SymbolMap      witnesses;
+};
+
+// support for implements wrapper functions
+const char*     implementsStmtWrapperName(InterfaceSymbol* isym);
+const char*     interfaceNameForWrapperFn(FnSymbol* fn);
+ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess);
+FnSymbol*       wrapperFnForImplementsStmt(ImplementsStmt* istm);
 
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-class ExternBlockStmt : public Stmt {
+class ExternBlockStmt final : public Stmt {
 public:
-                      ExternBlockStmt(const char* c_code);
+  ExternBlockStmt(const char* c_code);
 
   // Interface to BaseAST
-  virtual GenRet      codegen();
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
+  GenRet codegen()                                 override;
+  void   verify()                                  override;
+  void   accept(AstVisitor* visitor)               override;
 
   DECLARE_COPY(ExternBlockStmt);
+  ExternBlockStmt* copyInner(SymbolMap* map)       override;
+
 
   // Interface to Expr
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*       getFirstExpr();
+  void   replaceChild(Expr* oldAst, Expr* newAst)  override;
+  Expr*  getFirstExpr()                            override;
 
   // Local interface
-  const char*         c_code;
+  const char* c_code;
 };
-
 
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
 ************************************** | *************************************/
 
-class ForwardingStmt : public Stmt {
+class ForwardingStmt final : public Stmt {
 public:
                       ForwardingStmt(DefExpr* toFnDef);
                       ForwardingStmt(DefExpr* toFnDef,
@@ -308,15 +359,16 @@ public:
                                    std::map<const char*, const char*>* renames);
 
   // Interface to BaseAST
-  virtual GenRet      codegen();
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
+  GenRet              codegen()                                 override;
+  void                verify()                                  override;
+  void                accept(AstVisitor* visitor)               override;
 
   DECLARE_COPY(ForwardingStmt);
+  ForwardingStmt* copyInner(SymbolMap* map)                     override;
 
   // Interface to Expr
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*       getFirstExpr();
+  void                replaceChild(Expr* oldAst, Expr* newAst)  override;
+  Expr*               getFirstExpr()                            override;
 
   // forwarding function - contains forwarding expression; used during parsing
   DefExpr*            toFnDef;

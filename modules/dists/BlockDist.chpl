@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -1001,6 +1001,14 @@ override proc BlockArr.dsiDisplayRepresentation() {
 
 override proc BlockArr.dsiGetBaseDom() return dom;
 
+override proc BlockArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
+override proc BlockDom.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 //
 // NOTE: Each locale's myElems array must be initialized prior to
 // setting up the RAD cache.
@@ -1067,8 +1075,9 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
-    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(idx) then
-      return _to_nonnil(myLocArr).this(idx);
+    if const myLocArrNN = myLocArr then
+      if myLocArrNN.locDom.contains(idx) then
+        return myLocArrNN.this(idx);
   }
   return nonLocalAccess(idx);
 }
@@ -1080,8 +1089,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
-    if this.myLocArr {
-      const myLocArr = _to_nonnil(this.myLocArr);
+    if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1442,15 +1450,15 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
 ////// more /////////////////////////////////////////////////////////////////
 
-proc BlockArr.dsiTargetLocales() {
+proc BlockArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc BlockDom.dsiTargetLocales() {
+proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Block.dsiTargetLocales() {
+proc Block.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1471,8 +1479,8 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
-    if myLocArr != nil then
-      return _to_nonnil(myLocArr).locDom.myBlock;
+    if const myLocArrNN = myLocArr then
+      return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;
@@ -1724,14 +1732,14 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // The result of this scan, which will be Block-distributed as well
   type resType = op.generate().type;
-  var res: [dom] resType;
+  var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
   // writing it.  This domain really wants an easier way to express
   // it...
   use ReplicatedDist;
-  ref targetLocs = this.dsiTargetLocales();
+  const ref targetLocs = this.dsiTargetLocales();
   const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
   var elemPerLoc: [elemPerLocDom] resType;
   var inputReady$: [elemPerLocDom] sync bool;
@@ -1800,6 +1808,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       delete myop;
     }
   }
+  if isPOD(resType) then res.dsiElementInitializationComplete();
 
   delete op;
   return res;

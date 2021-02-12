@@ -28,7 +28,7 @@ def get():
         libfabric_val = 'none'
 
     if libfabric_val == 'libfabric':
-        sys.stdout.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
+        sys.stderr.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
                          "Use CHPL_LIBFABRIC=bundled instead.\n")
         libfabric_val = 'bundled'
 

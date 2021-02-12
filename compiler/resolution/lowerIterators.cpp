@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -215,10 +215,11 @@ static bool isCallVectorHazard(CallExpr* call,
                                std::map<FnSymbol*, bool> &fnHasVectorHazard);
 
 namespace {
-  class VectorHazardVisitor : public AstVisitorTraverse {
+  class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
       VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
-      virtual bool enterCallExpr (CallExpr*  node);
+
+      bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;
@@ -2234,7 +2235,8 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
-      if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
         return true;
       else
         return false;

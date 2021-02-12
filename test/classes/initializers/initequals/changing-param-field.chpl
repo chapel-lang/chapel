@@ -27,6 +27,11 @@ proc =(ref lhs:R, const ref rhs:R) {
   lhs.x = rhs.x;
 }
 
+proc _cast(type t: R, rhs: R) {
+  var tmp: t = rhs;
+  return tmp;
+}
+
 proc main() {
   var start = new R(true, true, 1);
   writeln(start.type:string, " ", start);

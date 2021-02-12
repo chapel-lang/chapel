@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -166,10 +166,21 @@ void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
 void setupAndResolveShadowVars(ForallStmt* fs);
 bool preserveShadowVar(Symbol* var);
-void adjustVoidShadowVariables();
+void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
+
+// interface constraints
+void resolveInterfaceSymbol(InterfaceSymbol* isym);
+void resolveImplementsStmt(ImplementsStmt* istm);
+void resolveConstrainedGenericFun(FnSymbol* fn);
+void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
+ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
+                                                IfcConstraint* constraint,
+                                                SymbolMap& substitutions);
+void cleanupInstantiatedCGfun(FnSymbol* fn,
+                              std::vector<ImplementsStmt*>& witnesses);
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
@@ -307,6 +318,7 @@ void removeCopyFns(Type* t);
 std::set<Type*> getWellKnownTypesSet();
 bool isUnusedClass(Type* t, const std::set<Type*>& wellknown);
 
+void saveGenericSubstitutions();
 void pruneResolvedTree();
 
 void resolveTypeWithInitializer(AggregateType* at, FnSymbol* fn);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -397,17 +397,17 @@ module DistributedBag {
       Clear all bags across all nodes in a best-effort approach. Elements added or
       moved around from concurrent additions or removals may be missed while clearing.
     */
-    proc clear() {
+    override proc clear() {
       var localThis = getPrivatizedThis;
       coforall loc in localThis.targetLocales do on loc {
         var instance = getPrivatizedThis;
         forall segmentIdx in 0 .. #here.maxTaskPar {
-          ref segment = instance.bag.segments[segmentIdx];
+          ref segment = instance.bag!.segments[segmentIdx];
           if segment.acquireIfNonEmpty(STATUS_REMOVE) {
             var block = segment.headBlock;
             while block != nil {
               var tmp = block;
-              block = block.next;
+              block = block!.next;
               delete tmp;
             }
 

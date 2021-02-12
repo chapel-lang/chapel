@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1801,6 +1801,25 @@ module List {
   proc !=(a: list(?t, ?), b: list(t, ?)): bool {
     return !(a == b);
   }
+
+  proc _cast(type t:list, rhs:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:[]) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:range(?)) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:_iteratorRecord) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+
+
 
 } // End module "Lists".
 

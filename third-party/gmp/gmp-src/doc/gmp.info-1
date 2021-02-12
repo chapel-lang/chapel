@@ -1,9 +1,9 @@
-This is gmp.info, produced by makeinfo version 6.6 from gmp.texi.
+This is gmp.info, produced by makeinfo version 6.7 from gmp.texi.
 
 This manual describes how to install and use the GNU multiple precision
-arithmetic library, version 6.2.0.
+arithmetic library, version 6.2.1.
 
-   Copyright 1991, 1993-2016, 2018 Free Software Foundation, Inc.
+   Copyright 1991, 1993-2016, 2018-2020 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -24,9 +24,9 @@ GNU MP
 ******
 
 This manual describes how to install and use the GNU multiple precision
-arithmetic library, version 6.2.0.
+arithmetic library, version 6.2.1.
 
-   Copyright 1991, 1993-2016, 2018 Free Software Foundation, Inc.
+   Copyright 1991, 1993-2016, 2018-2020 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -230,7 +230,7 @@ Build Directory
      directory.  For example
 
           cd /my/build/dir
-          /my/sources/gmp-6.2.0/configure
+          /my/sources/gmp-6.2.1/configure
 
      Not all 'make' programs have the necessary features ('VPATH') to
      support this.  In particular, SunOS and Slowaris 'make' have bugs
@@ -1503,7 +1503,7 @@ File: gmp.info,  Node: Useful Macros and Constants,  Next: Compatibility with ol
 
  -- Global Constant: const char * const gmp_version
      The GMP version number, as a null-terminated string, in the form
-     "i.j.k".  This release is "6.2.0".  Note that the format "i.j" was
+     "i.j.k".  This release is "6.2.1".  Note that the format "i.j" was
      used, before version 4.3.0, when k was zero.
 
  -- Macro: __GMP_CC
@@ -1723,8 +1723,8 @@ Rational Arithmetic
 Number Sequences
      Functions like 'mpz_fac_ui', 'mpz_fib_ui' and 'mpz_bin_uiui' are
      designed for calculating isolated values.  If a range of values is
-     wanted it's probably best to call to get a starting point and
-     iterate from there.
+     wanted it's probably best to get a starting point and iterate from
+     there.
 
 Text Input/Output
      Hexadecimal or octal are suggested for input or output in text
@@ -1805,7 +1805,7 @@ Source File Paths
      to the source directory.
 
           cd /my/build/dir
-          /my/source/dir/gmp-6.2.0/configure
+          /my/source/dir/gmp-6.2.1/configure
 
      This works via 'VPATH', and might require GNU 'make'.  Alternately
      it might be possible to change the '.c.lo' rules appropriately.

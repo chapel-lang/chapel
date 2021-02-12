@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -67,8 +67,6 @@ Flag pragma2flag(const char* str);
 void initFlags();
 void viewFlags(BaseAST* sym);
 void writeFlags(FILE* fp, Symbol* sym);
-TypeSymbol* getDataClassType(TypeSymbol* ts);
-void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 // For the purposes of gdb support
 bool hasFlag(BaseAST* ast, int flag);

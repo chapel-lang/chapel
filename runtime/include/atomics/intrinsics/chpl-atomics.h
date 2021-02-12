@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 #include "chpl-comp-detect-macros.h"
 #include "chpl-tasks.h"
 #include <assert.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // SIZE_ALIGN_TYPE:  Declare a version of a type aligned to at least its size.
@@ -378,5 +382,9 @@ static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
 static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
   __sync_lock_release(lock);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_atomics_h_

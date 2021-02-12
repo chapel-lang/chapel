@@ -489,7 +489,8 @@ CHPL_GMP
        system   use a system install of GMP
                 (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
-       gmp      use the GMP distribution bundled with Chapel in third-party
+       bundled  use the GMP distribution bundled with Chapel in third-party
+       gmp      deprecated - use bundled instead
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
@@ -500,7 +501,7 @@ CHPL_GMP
        ======= ====================================================
        Value   Description
        ======= ====================================================
-       gmp     if the build was successful
+       bundled if the build was successful
        system  if unsuccessful and :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is cray-x*
        none    otherwise
        ======= ====================================================
@@ -523,10 +524,11 @@ CHPL_HWLOC
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
-       hwloc    use the hwloc distribution bundled with Chapel in third-party
+       bundled  use the hwloc distribution bundled with Chapel in third-party
+       hwloc    deprecated - use bundled instead
        ======== ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if
+   If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
    :ref:`readme-chplenv.CHPL_TASKS` is ``qthreads``.  In all other cases
    it defaults to ``none``.  In the unlikely event the bundled hwloc
    distribution does not build successfully, it should still be possible
@@ -556,10 +558,11 @@ CHPL_HWLOC
           Value    Description
           ======== ==============================================================
           none     do not build or use jemalloc
-          jemalloc use the jemalloc distribution bundled with Chapel in third-party
+          bundled  use the jemalloc distribution bundled with Chapel in third-party
+          jemalloc deprecated - use bundled instead
           ======== ==============================================================
 
-      If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
       defaults to ``none``.
 
@@ -585,10 +588,11 @@ CHPL_HWLOC
           Value     Description
           ========= ==============================================================
           none      do not build or use libfabric
-          libfabric use the libfabric distribution bundled with Chapel in third-party
+          bundled   use the libfabric distribution bundled with Chapel in third-party
+          libfabric deprecated - use bundled instead
           ========= ==============================================================
 
-      If unset, ``CHPL_LIBFABRIC`` defaults to ``libfabric`` if
+      If unset, ``CHPL_LIBFABRIC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
       defaults to ``none``.
 
@@ -659,6 +663,7 @@ CHPL_LLVM
        Value          Description
        ============== ======================================================
        bundled        use the llvm/clang distribution in third-party
+       llvm           deprecated - use bundled instead
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
@@ -671,11 +676,11 @@ CHPL_LLVM
    If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 10.0.
+   Chapel currently supports LLVM 11.0.
 
    .. note::
 
-       We have had success with this procedure to install LLVM 10.0
+       We have had success with this procedure to install LLVM 11.0
        dependencies on Ubuntu.
 
        First, follow the instructions at ``https://apt.llvm.org`` that
@@ -685,7 +690,7 @@ CHPL_LLVM
 
         .. code-block:: sh
 
-            apt-get install llvm-10-dev llvm-10 llvm-10-tools clang-10 libclang-10-dev libedit-dev
+            apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -697,7 +702,8 @@ CHPL_UNWIND
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       libunwind use the libunwind bundled with Chapel in third-party
+       bundled   use the libunwind bundled with Chapel in third-party
+       libunwind deprecated - use bundled instead
        system    assume libunwind is already installed on the system
        none      don't use an unwind library, disabling stack tracing
        ========= =======================================================

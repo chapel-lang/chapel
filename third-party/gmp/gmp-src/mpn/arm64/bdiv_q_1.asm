@@ -61,15 +61,9 @@ PROLOGUE(mpn_bdiv_q_1)
 	clz	cnt, x6
 	lsr	d, d, cnt
 
-ifdef(`PIC',`
-	adrp	x7, :got:__gmp_binvert_limb_table
+	LEA_HI(	x7, binvert_limb_table)
 	ubfx	x6, d, 1, 7
-	ldr	x7, [x7, #:got_lo12:__gmp_binvert_limb_table]
-',`
-	adrp	x7, __gmp_binvert_limb_table
-	ubfx	x6, d, 1, 7
-	add	x7, x7, :lo12:__gmp_binvert_limb_table
-')
+	LEA_LO(	x7, binvert_limb_table)
 	ldrb	w6, [x7, x6]
 	ubfiz	x7, x6, 1, 8
 	umull	x6, w6, w6
@@ -81,7 +75,7 @@ ifdef(`PIC',`
 	mul	x6, x6, x6
 	msub	di, x6, d, x7
 
-	b	mpn_pi1_bdiv_q_1
+	b	GSYM_PREFIX`'mpn_pi1_bdiv_q_1
 EPILOGUE()
 
 PROLOGUE(mpn_pi1_bdiv_q_1)

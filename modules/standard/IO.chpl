@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2012,6 +2012,12 @@ proc channel.init=(x: channel) {
   }
 }
 
+pragma "no doc"
+proc _cast(type t: channel, rhs: channel) {
+  var tmp: t = rhs; // just run init=
+  return tmp;
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer
@@ -2212,7 +2218,7 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
-inline proc channel.lock() throws {
+proc channel.lock() throws {
   var err:syserr = ENOERR;
 
   if is_c_nil(_channel_internal) then
@@ -2229,7 +2235,7 @@ inline proc channel.lock() throws {
 /*
    Release a channel's lock.
  */
-inline proc channel.unlock() {
+proc channel.unlock() {
   if locking {
     on this.home {
       qio_channel_unlock(_channel_internal);
@@ -2329,7 +2335,7 @@ proc channel.advancePastByte(byte:uint(8)) throws {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-inline proc channel.mark() throws where this.locking == false {
+proc channel.mark() throws where this.locking == false {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2401,7 +2407,7 @@ proc channel.seek(start:int, end:int = max(int)) throws {
    For a channel locked with :proc:`channel.lock`, return the offset
    of that channel.
  */
-inline proc channel._offset():int(64) {
+proc channel._offset():int(64) {
   var ret:int(64);
   on this.home {
     ret = qio_channel_offset_unlocked(_channel_internal);
@@ -2423,7 +2429,7 @@ inline proc channel._offset():int(64) {
   :returns: The offset that was marked
   :throws: SystemError: if marking the channel failed
  */
-inline proc channel._mark() throws {
+proc channel._mark() throws {
   const offset = this.offset();
   const err = qio_channel_mark(false, _channel_internal);
 
@@ -2874,7 +2880,7 @@ private proc _write_text_internal(_channel_internal:qio_channel_ptr_t,
   return EINVAL;
 }
 
-private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, out x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var got:int(32);
     got = qio_channel_read_byte(false, _channel_internal);
@@ -2970,7 +2976,7 @@ private inline proc _read_binary_internal(_channel_internal:qio_channel_ptr_t, p
   return EINVAL;
 }
 
-private inline proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
+private proc _write_binary_internal(_channel_internal:qio_channel_ptr_t, param byteorder:iokind, x:?t):syserr where _isIoPrimitiveType(t) {
   if isBoolType(t) {
     var zero_one:uint(8) = if x then 1:uint(8) else 0:uint(8);
     return qio_channel_write_byte(false, _channel_internal, zero_one);
@@ -3087,11 +3093,10 @@ proc channel._writeOne(param kind: iokind, const x:?t, loc:locale) throws {
     try _ch_ioerror(err, msg);
   }
 }
-
-private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
-                                       param kind:iokind,
-                                       ref x:?t,
-                                       loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+private proc _read_io_type_internal(_channel_internal:qio_channel_ptr_t,
+                                    param kind:iokind,
+                                    ref x:?t,
+                                    loc:locale): syserr throws {
   var e:syserr = ENOERR;
   if t == ioNewline {
     return qio_channel_skip_past_newline(false, _channel_internal, x.skipWhitespaceOnly);
@@ -3120,9 +3125,29 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   }
 
   return e;
+
 }
 
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
+                                param kind:iokind,
+                                ref x:?t,
+                                loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
+
+  var e:syserr = ENOERR;
+
+  if x.locale == here {
+    e = _read_io_type_internal(_channel_internal, kind, x, loc);
+  } else {
+    // use a temporary to avoid passing a remote wide pointer to a C function
+    var tmp: t;
+    e = _read_io_type_internal(_channel_internal, kind, tmp, loc);
+    x = tmp;
+  }
+
+  return e;
+}
+
+private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
                                         loc:locale): syserr throws where _isIoPrimitiveTypeOrNewline(t) {
@@ -3154,7 +3179,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
   return e;
 }
 
-private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
+private proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
                                        param kind:iokind,
                                        ref x:?t,
                                        loc:locale): syserr throws {
@@ -3171,13 +3196,40 @@ private inline proc _read_one_internal(_channel_internal:qio_channel_ptr_t,
   // (it shouldn't release anything since it's a local copy).
   defer { reader._channel_internal = QIO_CHANNEL_PTR_NULL; }
 
-  try x.readThis(reader);
+  if isNilableClassType(t) {
+    // future - write class IDs, have serialization format, handle binary
+    var st = reader.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
+    var iolit:ioLiteral;
+    if st == QIO_AGGREGATE_FORMAT_JSON {
+      iolit = new ioLiteral("null");
+    } else {
+      iolit = new ioLiteral("nil");
+    }
+    var e:syserr = ENOERR;
+    e = try _read_one_internal(_channel_internal, iokind.dynamic, iolit, loc);
+    if !e {
+      x = nil;
+      return ENOERR;
+    }
+  }
+
+  if isClassType(t) {
+    if x == nil then
+      throw new IllegalArgumentError("cannot read into a nil class");
+
+    var tmp = x!;
+    try tmp.readThis(reader);
+    // the read cannot change the class pointer
+    if tmp != x! then halt ("internal error - class pointer changed");
+  } else {
+    try x.readThis(reader);
+  }
 
   return ENOERR;
 }
 
 pragma "suppress lvalue error"
-private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
+private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
                                         param kind:iokind,
                                         const x:?t,
                                         loc:locale): syserr throws {
@@ -3198,7 +3250,7 @@ private inline proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
     if x == nil {
-      // future - write class IDs, have serialization format
+      // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
       var iolit:ioLiteral;
       if st == QIO_AGGREGATE_FORMAT_JSON {
@@ -3523,7 +3575,7 @@ private proc _args_to_proto(const args ...?k, preArg:string) {
 
 // better documented in the style= version
 /* returns true if read successfully, false if we encountered EOF */
-inline proc channel.read(ref args ...?k):bool throws {
+proc channel.read(ref args ...?k):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -3531,13 +3583,7 @@ inline proc channel.read(ref args ...?k):bool throws {
     on this.home {
       try this.lock(); defer { this.unlock(); }
       for param i in 0..k-1 {
-        if args[i].locale == here {
-          _readOne(kind, args[i], origLocale);
-        } else {
-          var tmp = args[i];
-          _readOne(kind, tmp, origLocale);
-          args[i] = tmp;
-        }
+        _readOne(kind, args[i], origLocale);
       }
     }
   } catch err: SystemError {
@@ -3781,7 +3827,7 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
 
    :throws SystemError: Thrown if the bits could not be read from the channel.
  */
-inline proc channel.readbits(out v:integral, nbits:integral):bool throws {
+proc channel.readbits(out v:integral, nbits:integral):bool throws {
   if castChecking {
     // Error if reading more bits than fit into v
     if numBits(v.type) < nbits then
@@ -3944,7 +3990,7 @@ proc channel.read(type t ...?numTypes) throws where numTypes > 1 {
 
 // documented in style= error= version
 pragma "no doc"
-inline proc channel.write(const args ...?k):bool throws {
+proc channel.write(const args ...?k):bool throws {
   if !writing then compilerError("write on read-only channel");
 
   const origLocale = this.getLocaleOfIoRequest();
@@ -5166,7 +5212,7 @@ proc _toIntegral(x:?t) where isIntegralType(t)
 {
   return (x, true);
 }
-private inline
+private
 proc _toIntegral(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
@@ -5208,7 +5254,7 @@ proc _toSigned(x:uint(64))
   return (x:int(64), true);
 }
 
-private inline
+private
 proc _toSigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (int, bool);
@@ -5225,7 +5271,7 @@ proc _toSigned(x:?t) where !_isIoPrimitiveType(t)
 }
 
 private inline
-proc _toUnsigned(x:?t) where isUintType(t)
+proc _toUnsigned(x:uint(?w))
 {
   return (x, true);
 }
@@ -5251,7 +5297,7 @@ proc _toUnsigned(x:int(64))
 }
 
 
-private inline
+private
 proc _toUnsigned(x:?t) throws where _isIoPrimitiveType(t) && !isIntegralType(t)
 {
   var ret: (uint, bool);
@@ -5273,7 +5319,7 @@ proc _toReal(x:?t) where isRealType(t)
 {
   return (x, true);
 }
-private inline
+private
 proc _toReal(x:?t) throws where _isIoPrimitiveType(t) && !isRealType(t)
 {
   var ret: (real, bool);
@@ -5294,7 +5340,7 @@ proc _toImag(x:?t) where isImagType(t)
 {
   return (x, true);
 }
-private inline
+private
 proc _toImag(x:?t) throws where _isIoPrimitiveType(t) && !isImagType(t)
 {
   var ret: (imag, bool);
@@ -5316,7 +5362,7 @@ proc _toComplex(x:?t) where isComplexType(t)
 {
   return (x, true);
 }
-private inline
+private
 proc _toComplex(x:?t) throws where _isIoPrimitiveType(t) && !isComplexType(t)
 {
   var ret: (complex, bool);
@@ -5358,7 +5404,7 @@ proc _toNumeric(x:?t) where isNumericType(t)
 {
   return (x, true);
 }
-private inline
+private
 proc _toNumeric(x:?t) throws where _isIoPrimitiveType(t) && !isNumericType(t)
 {
   // enums, bools get cast to int.
@@ -5421,7 +5467,7 @@ proc _toChar(x:?t) where isIntegralType(t)
 {
   return (x:int(32), true);
 }
-private inline
+private
 proc _toChar(x:?t) where t == string
 {
   var chr:int(32);
@@ -5440,7 +5486,7 @@ proc _toChar(x:?t) where !(t==string || isIntegralType(t))
 // If we wanted to give ERANGE if (for example
 // var x:int(8); readf("%i", x);
 // was given the input 1000, this would be the place to do it.
-private inline
+private
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t==bool&&_isIoPrimitiveType(t2)
 {
   var empty:t2;
@@ -5451,7 +5497,7 @@ proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t==bool&&_isIoP
   }
   return ENOERR;
 }
-private inline
+private
 proc _setIfPrimitive(ref lhs:?t, rhs:?t2, argi:int):syserr where t!=bool&&_isIoPrimitiveType(t)
 {
   try {
@@ -5612,7 +5658,7 @@ proc channel._match_regexp_if_needed(cur:size_t, len:size_t, ref error:syserr,
       // EFORMAT means the pattern did not match.
     }
   } else {
-    error = qio_format_error_bad_regexp();;
+    error = qio_format_error_bad_regexp();
   }
 }
 
@@ -6730,7 +6776,7 @@ proc bytes.format(args ...?k): bytes throws {
   return b"";
 }
 
-private inline proc chpl_do_format(fmt:?t, args ...?k): t throws
+private proc chpl_do_format(fmt:?t, args ...?k): t throws
     where isStringType(t) || isBytesType(t) {
 
   // Open a memory buffer to store the result

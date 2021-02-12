@@ -1,0 +1,115 @@
+Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:17)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:19)
+|  Potential source aggregation (lastStmtIsConditional.chpl:19)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:22)
+|  Potential source aggregation (lastStmtIsConditional.chpl:22)
+End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:17)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:31)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:33)
+|  Potential source aggregation (lastStmtIsConditional.chpl:33)
+End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:31)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:42)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:44)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:44)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:47)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:47)
+End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:42)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:56)
+| Found an aggregation candidate (lastStmtIsConditional.chpl:58)
+|  Potential destination aggregation (lastStmtIsConditional.chpl:58)
+End analyzing forall for automatic aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:56)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:17)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:31)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:42)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
+End analyzing forall for automatic aggregation [no ALA clone]  (lastStmtIsConditional.chpl:56)
+
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:19)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (lastStmtIsConditional.chpl:19)
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:22)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (lastStmtIsConditional.chpl:22)
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:33)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (lastStmtIsConditional.chpl:33)
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:44)
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (lastStmtIsConditional.chpl:44)
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:47)
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (lastStmtIsConditional.chpl:47)
+Aggregation candidate has confirmed local child [static only ALA clone] (lastStmtIsConditional.chpl:58)
+LHS is nonlocal, RHS is local. Will use destination aggregation [static only ALA clone] (lastStmtIsConditional.chpl:58)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:19)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:22)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:33)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:44)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:47)
+Replaced assignment with aggregation [static only ALA clone]  (lastStmtIsConditional.chpl:58)
+
+Loop 1 -- expecting source aggregation
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 1
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 2 -- expecting source aggregation
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+End Loop 2
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 3 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 3
+10 9 8 7 6 5 4 3 2 1 0
+
+Loop 4 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 4
+10 9 8 7 6 5 4 3 2 1 0
+

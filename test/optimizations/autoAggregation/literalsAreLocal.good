@@ -1,0 +1,60 @@
+Start analyzing forall for automatic aggregation (literalsAreLocal.chpl:11)
+| Found an aggregation candidate (literalsAreLocal.chpl:12)
+|  Potential destination aggregation (literalsAreLocal.chpl:12)
+End analyzing forall for automatic aggregation (literalsAreLocal.chpl:11)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:20)
+End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:20)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:30)
+End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:30)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:41)
+End analyzing forall for automatic aggregation [static only ALA clone]  (literalsAreLocal.chpl:41)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:20)
+| Found an aggregation candidate (literalsAreLocal.chpl:21)
+|  Potential destination aggregation (literalsAreLocal.chpl:21)
+End analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:20)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:30)
+| Found an aggregation candidate (literalsAreLocal.chpl:32)
+|  Potential destination aggregation (literalsAreLocal.chpl:32)
+End analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:30)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:41)
+| Found an aggregation candidate (literalsAreLocal.chpl:43)
+|  Potential destination aggregation (literalsAreLocal.chpl:43)
+End analyzing forall for automatic aggregation [no ALA clone]  (literalsAreLocal.chpl:41)
+
+LHS is nonlocal, RHS is local. Will use destination aggregation  (literalsAreLocal.chpl:12)
+Replaced assignment with aggregation (literalsAreLocal.chpl:12)
+
+Loop 1 -- expecting destination aggregation
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+End Loop 1
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 2 -- expecting no aggregation
+End Loop 2
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 3 -- expecting no aggregation
+End Loop 3
+1 1 1 1 1 1 1 1 1 1 1
+
+Loop 4 -- expecting no aggregation
+End Loop 4
+1 1 1 1 1 1 1 1 1 1 1
+5 5 5 5 5 5 5 5 5 5 5
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -33,14 +33,18 @@
 
   All forms of communication reporting and counting are done between
   pairs of function calls that turn it on and off.  On-the-fly
-  reporting across all locales is done like this::
+  reporting across all locales is done like this:
+
+  .. code-block:: chapel
 
     startVerboseComm();
     // between start/stop calls, report comm ops initiated on any locale
     stopVerboseComm();
 
   On-the-fly reporting for just the calling locale is similar.  Only
-  the procedure names change::
+  the procedure names change:
+
+  .. code-block:: chapel
 
     startVerboseCommHere();
     // between start/stop calls, report comm ops initiated on this locale
@@ -51,7 +55,9 @@
   the file associated with the process, not the Chapel channel with the
   same name.)
 
-  Consider this little example program::
+  Consider this little example program:
+
+  .. code-block:: chapel
 
     use CommDiagnostics;
     proc main() {
@@ -64,7 +70,9 @@
     }
 
   Executing this on two locales with the ``-nl 2`` command line
-  option results in the following output::
+  option results in the following output:
+
+  .. code-block:: bash
 
     0: remote task created on 1
     1: t.chpl:6: remote get from 0, 8 bytes
@@ -81,7 +89,9 @@
   reporting them does.  In particular, the counts have to be retrieved
   after they are collected and, if they have been used previously, the
   internal counters have to be reset before counting is turned on.
-  Counting across all locales is done like this::
+  Counting across all locales is done like this:
+
+  .. code-block:: chapel
 
     // (optional) if we counted previously, reset the counters to zero
     resetCommDiagnostics();
@@ -92,7 +102,9 @@
     writeln(getCommDiagnostics());
 
   Counting on just the calling locale is similar.  Just as for
-  on-the-fly reporting, only the procedure names change::
+  on-the-fly reporting, only the procedure names change:
+
+  .. code-block:: chapel
 
     // (optional) if we counted previously, reset the counters to zero
     resetCommDiagnosticsHere();
@@ -114,7 +126,9 @@
   trying to do both at once may lead to surprising turn-on/turn-off
   behavior and/or incorrect results.
 
-  Consider this little example program::
+  Consider this little example program:
+
+  .. code-block:: chapel
 
     use CommDiagnostics;
     proc main() {
@@ -128,7 +142,9 @@
     }
 
   Executing this on two locales with the ``-nl 2`` command line
-  option results in the following output::
+  option results in the following output:
+
+  .. code-block:: bash
 
     (execute_on = 1) (get = 1, put = 1)
 
@@ -237,6 +253,11 @@ module CommDiagnostics
       non-blocking remote executions
      */
     var execute_on_nb: uint(64);
+
+    var cache_get_hits: uint(64);
+    var cache_get_misses: uint(64);
+    var cache_put_hits: uint(64);
+    var cache_put_misses: uint(64);
 
     proc writeThis(c) throws {
       use Reflection;

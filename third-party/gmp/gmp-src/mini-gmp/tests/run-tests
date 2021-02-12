@@ -1,6 +1,6 @@
 #! /bin/sh
 
-# Copyright (C) 2000-2002, 2004, 2005, 2011, 2012, 2016  Niels Möller
+# Copyright (C) 2000-2002, 2004, 2005, 2011, 2012, 2016, 2020  Niels Möller
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,22 @@ fi
 
 export srcdir
 
+if [ -n "$TEST_SHLIB_DIR" ] ; then
+  # Prepend to LD_LIBRARY_PATH, if it is alredy set.
+  LD_LIBRARY_PATH="${TEST_SHLIB_DIR}${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+  # For MACOS
+  DYLD_LIBRARY_PATH="$TEST_SHLIB_DIR"
+  # For Windows
+  PATH="${TEST_SHLIB_DIR}:${PATH}"
+  # For Wine
+  WINEPATH="${TEST_SHLIB_DIR}${WINEPATH:+;$WINEPATH}"
+
+  export LD_LIBRARY_PATH
+  export DYLD_LIBRARY_PATH
+  export PATH
+  export WINEPATH
+fi
+
 # When used in make rules, we sometimes get the filenames VPATH
 # expanded, but usually not.
 find_program () {
@@ -38,6 +54,8 @@ find_program () {
 	*)
 	  if [ -x "$1" ] ; then
 	      echo "./$1"
+	  elif [ -x "$1.exe" ] ; then
+	      echo "./$1.exe"
 	  else
 	      echo "$srcdir/$1"
 	  fi
@@ -54,20 +72,10 @@ env_program () {
   fi
 }
 
-TEST_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
-TEST_DYLD_LIBRARY_PATH="$DYLD_LIBRARY_PATH"
-
-if [ "$TEST_LIBRARY_PATH" ] ; then
-  TEST_LD_LIBRARY_PATH="$TEST_LIBRARY_PATH:$TEST_LD_LIBRARY_PATH"
-  TEST_DYLD_LIBRARY_PATH="$TEST_LIBRARY_PATH:$TEST_DYLD_LIBRARY_PATH"
-fi
-
 test_program () {
   testname=`basename "$1" .exe`
   testname=`basename "$testname" -test`
   if [ -z "$EMULATOR" ] || head -1 "$1" | grep '^#!' > /dev/null; then
-    LD_LIBRARY_PATH="$TEST_LD_LIBRARY_PATH" \
-    DYLD_LIBRARY_PATH="$TEST_DYLD_LIBRARY_PATH" \
     "$1" $testflags
   else
     $EMULATOR "$1" $testflags

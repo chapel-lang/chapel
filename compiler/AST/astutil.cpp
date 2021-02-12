@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -53,7 +53,6 @@
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
-static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
 
 
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
@@ -926,7 +925,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 
   // Mark exported symbols and module init/deinit functions as visible.
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT))
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
       pruneVisit(fn, fns, types);
 
   // Mark well-known functions as visible
@@ -951,7 +950,7 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
 
   pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
-  changeDeadTypesToVoid(types);
+  cleanupAfterTypeRemoval();
 }
 
 
@@ -1035,7 +1034,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
 }
 
 
-static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
+void cleanupAfterTypeRemoval()
 {
   //
   // change symbols with dead types to void (important for baseline)
@@ -1045,8 +1044,30 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
         def->sym->type                   != NULL  &&
         isAggregateType(def->sym->type)  ==  true &&
         isTypeSymbol(def->sym)           == false &&
-        !types.set_in(def->sym->type->symbol))
+        def->sym->type->symbol->inTree() == false)
       def->sym->type = dtNothing;
+  }
+
+  // Clear out any uses of removed types in Type::substitutionsPostResolve
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      for (size_t i = 0; i < at->substitutionsPostResolve.size(); i++) {
+        NameAndSymbol& ns = at->substitutionsPostResolve[i];
+        if (ns.value && !ns.value->inTree()) {
+          ns.value = dtNothing->symbol;
+        }
+      }
+    }
+  }
+
+  // and in FnSymbol::substitutionsPostResolve
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    for (size_t i = 0; i < fn->substitutionsPostResolve.size(); i++) {
+      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
+      if (ns.value && !ns.value->inTree()) {
+        ns.value = dtNothing->symbol;
+      }
+    }
   }
 }
 

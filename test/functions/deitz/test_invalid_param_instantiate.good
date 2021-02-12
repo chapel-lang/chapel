@@ -1,4 +1,4 @@
 test_invalid_param_instantiate.chpl:6: error: unresolved call 'foo(int(64))'
 test_invalid_param_instantiate.chpl:1: note: this candidate did not match: foo(param p: int = 4)
-test_invalid_param_instantiate.chpl:6: note: because non-param call actual argument #1
+test_invalid_param_instantiate.chpl:6: note: because non-param actual argument #1
 test_invalid_param_instantiate.chpl:1: note: is passed to param formal 'param p: int(64)'

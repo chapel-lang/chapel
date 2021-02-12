@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,7 +35,7 @@
 #include "initializerRules.h"
 #include "library.h"
 #include "LoopExpr.h"
-#include "preNormalizeOptimizations.h"
+#include "forallOptimizations.h"
 #include "scopeResolve.h"
 #include "splitInit.h"
 #include "stlUtil.h"
@@ -53,6 +53,7 @@ bool normalized = false;
 static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
+static void        moveInterfaceConstraints();
 static void        transformLogicalShortCircuit();
 static void        checkReduceAssign();
 
@@ -98,6 +99,7 @@ static bool        isCallToTypeConstructor(CallExpr* call);
 static void        normalizeCallToTypeConstructor(CallExpr* call);
 
 static void        applyGetterTransform(CallExpr* call);
+static void        transformIfVar(CallExpr* call);
 static void        insertCallTemps(CallExpr* call);
 static Symbol*     insertCallTempsWithStmt(CallExpr* call, Expr* stmt);
 
@@ -127,6 +129,9 @@ void normalize() {
   insertModuleInit();
 
   doPreNormalizeArrayOptimizations();
+
+  moveInterfaceConstraints();
+  wrapImplementsStatements();
 
   transformLogicalShortCircuit();
 
@@ -250,12 +255,6 @@ void normalize() {
         fn->name = astrDeinit;
       }
 
-    // make sure methods don't attempt to overload operators
-    } else if (isalpha(fn->name[0])         == 0   &&
-               fn->name[0]                  != '_' &&
-               fn->formals.length           >  1   &&
-               fn->getFormal(1)->typeInfo() == gMethodToken->typeInfo()) {
-      USR_FATAL(fn, "invalid method name");
     }
   }
 
@@ -387,6 +386,60 @@ static bool isInLifetimeClause(CallExpr* call) {
 }
 
 /************************************* | **************************************
+*
+* Move each 'implements' constraint in a where clause, ex.
+*   proc constrainedGenericFun(...) where implements MyIFC(T1,T2) {...}
+* to the enclosing FnSymbol's interfaceConstraints list.
+*
+* CG TODO: handle the case where the actuals of the implements constraints
+* undergo normalization.
+*
+* CG TODO: handle the case where the 'where' clause has non-interface
+* constraints.
+*
+************************************** | *************************************/
+
+static bool isInWhereBlock(FnSymbol* fn, Expr* expr) {
+  while (expr->parentExpr != NULL)
+    expr = expr->parentExpr;
+  return fn->where == expr;
+}
+
+static void moveInterfaceConstraints() {
+  forv_Vec(IfcConstraint, icon, gIfcConstraints) {
+    if (isImplementsStmt(icon->parentExpr))
+      continue;  // this node is part of an ImplementsStmt, do not move it
+
+    FnSymbol* fn = toFnSymbol(icon->parentSymbol);
+    if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
+      if (fn != NULL && fn->where == block) {
+        icon->remove();
+        fn->addInterfaceConstraint(icon);
+        if (block->body.empty())
+          block->remove();
+        continue;
+      }
+    } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
+      if (isInWhereBlock(fn, call)) {
+        if (! call->isNamed("&&")) {
+          USR_FATAL_CONT(icon, "combining an 'implements' constraint"
+                " with others is currently supported only using '&&'");
+          continue;
+        }
+        INT_ASSERT(call->numActuals() == 2);
+        icon->remove();
+        fn->addInterfaceConstraint(icon);
+        call->replace(call->get(1)->remove());
+        continue;
+      }
+    }
+
+    USR_FATAL_CONT(icon, "'implements %s()' is not supported in this context",
+                   icon->ifcSymbol()->name);
+  }
+}
+
+/************************************* | **************************************
 *                                                                             *
 * Historically, parser/build converted                                        *
 *                                                                             *
@@ -405,7 +458,7 @@ static void transformLogicalShortCircuit() {
   std::set<Expr*>::iterator iter;
 
   // Collect the distinct stmts that contain logical AND/OR expressions
-  forv_Vec(CallExpr, call, gCallExprs) {
+  for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->primitive == 0) {
       if (UnresolvedSymExpr* expr = toUnresolvedSymExpr(call->baseExpr)) {
         if (strcmp(expr->unresolved, "&&") == 0 ||
@@ -591,6 +644,7 @@ static void normalizeBase(BaseAST* base, bool addEndOfStatements) {
   for_vector(CallExpr, call, calls2) {
     applyGetterTransform(call);
     insertCallTemps(call);
+    transformIfVar(call);
   }
 
   insertCallTempsForRiSpecs(base);
@@ -801,6 +855,12 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 
 static std::set<VarSymbol*> globalTemps;
 
+static void insertResolutionPoint(Expr* ref, Symbol* sym) {
+  SET_LINENO(sym);
+  ref->insertBefore(new CallExpr(PRIM_RESOLUTION_POINT, sym));
+  ref->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
+}
+
 static void moveGlobalDeclarationsToModuleScope() {
 
   forv_Vec(ModuleSymbol, mod, allModules) {
@@ -817,12 +877,27 @@ static void moveGlobalDeclarationsToModuleScope() {
           if (vs->hasFlag(FLAG_TEMP))
             continue;
 
-          // move the DefExpr
-          mod->block->insertAtTail(def->remove());
-        } else if (isTypeSymbol(def->sym) || isFnSymbol(def->sym)) {
-          // All type and function symbols are moved out to module scope.
-          mod->block->insertAtTail(def->remove());
+          // otherwise, move this DefExpr
+
+        } else if (FnSymbol* fn = toFnSymbol(def->sym)) {
+          // move all function symbols out to module scope
+
+          // retain a proxy for implements declarations and CG functions
+          // so that resolution sees them and resolves them in program order
+          if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER) ||
+              fn->isConstrainedGeneric())
+            insertResolutionPoint(def, fn);
+
+        } else if (isTypeSymbol(def->sym)) {
+          // move all type symbols out to module scope
+
+        } else if (InterfaceSymbol* isym = toInterfaceSymbol(def->sym)) {
+          // move all interface symbols out to module scope
+          // retaining a proxy so resolution sees it
+          insertResolutionPoint(def, isym);
         }
+
+        mod->block->insertAtTail(def->remove());
       }
     }
   }
@@ -883,13 +958,13 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
 // temporary will take the place of the IfExpr, and the CondStmt will be
 // inserted before the IfExpr's parent statement.
 //
-class LowerIfExprVisitor : public AstVisitorTraverse
+class LowerIfExprVisitor final : public AstVisitorTraverse
 {
   public:
     LowerIfExprVisitor() { }
-    virtual ~LowerIfExprVisitor() { }
+    ~LowerIfExprVisitor() { }
 
-    virtual void exitIfExpr(IfExpr* node);
+    void exitIfExpr(IfExpr* node) override;
 };
 
 static bool isInsideDefExpr(Expr* expr) {
@@ -1267,13 +1342,13 @@ static CallExpr* destructureErr() {
 
 
 
-class AddEndOfStatementMarkers : public AstVisitorTraverse
+class AddEndOfStatementMarkers final : public AstVisitorTraverse
 {
   public:
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual bool enterDefExpr(DefExpr* node);
-    virtual bool enterIfExpr(IfExpr* node);
-    virtual bool enterLoopExpr(LoopExpr* node);
+    bool enterCallExpr(CallExpr* node) override;
+    bool enterDefExpr(DefExpr* node) override;
+    bool enterIfExpr(IfExpr* node) override;
+    bool enterLoopExpr(LoopExpr* node) override;
 };
 
 // Note, this might be called also during resolution
@@ -2167,6 +2242,48 @@ static void applyGetterTransform(CallExpr* call) {
   }
 }
 
+//
+// Handle Chapel code like this:
+//   if var X = RHS then
+//     ....
+// Represented as:
+//   if PRIM_IF_VAR(def X, RHS) then
+//     ....
+// Transform it to:
+//   def ifvar_borrow
+//   move ifvar_borrow <- chpl_checkBorrowIfVar(RHS)
+//   if ifvar_borrow then
+//     def X
+//     move X <- PRIM_TO_NON_NILABLE_CLASS(ifvar_borrow)
+//     ....
+//
+static void transformIfVar(CallExpr* primIfVar) {
+  if (! primIfVar->isPrimitive(PRIM_IF_VAR)) return;
+  SET_LINENO(primIfVar);
+
+  CondStmt* cond = toCondStmt(primIfVar->parentExpr);
+  if (cond == NULL) {
+    CallExpr* parentCall = toCallExpr(primIfVar->parentExpr);
+    INT_ASSERT(parentCall->isNamed("_cond_test"));
+    cond = toCondStmt(parentCall->parentExpr);
+  }
+
+  DefExpr* varDef = toDefExpr(primIfVar->get(1)->remove());
+  Expr*   rhsExpr = primIfVar->get(1)->remove();
+
+  VarSymbol* borrow = newTemp("ifvar_borrow");
+  cond->insertBefore(new DefExpr(borrow));
+  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E))", borrow, rhsExpr);
+
+  primIfVar->replace(new SymExpr(borrow));
+
+  INT_ASSERT(! varDef->init && ! varDef->exprType); // already normalized
+  cond->thenStmt->insertAtHead(varDef);
+  varDef->insertAfter("'move'(%S,'to non nilable class'(%S))",
+                      varDef->sym, borrow);
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -2250,6 +2367,7 @@ static bool shouldInsertCallTemps(CallExpr* call) {
       call == stmt                                       ||
       call->partialTag                                   ||
       call->isPrimitive(PRIM_TUPLE_EXPAND)               ||
+      call->isPrimitive(PRIM_IF_VAR)                     ||
       (parentCall && parentCall->isPrimitive(PRIM_MOVE)) ||
       (parentCall && parentCall->isPrimitive(PRIM_NEW)) )
     return false;
@@ -3080,6 +3198,11 @@ static void hack_resolve_types(ArgSymbol* arg) {
           }
         }
 
+        if (type == NULL)
+          if (SymExpr* se = toSymExpr(only))
+            if (InterfaceSymbol* isym = toInterfaceSymbol(se->symbol()))
+              type = desugarInterfaceAsType(arg, se, isym);
+
         if (type != dtUnknown && type != dtAny) {
           // This test ensures that we are making progress.
           arg->type = type;
@@ -3783,6 +3906,10 @@ static void addToWhereClause(FnSymbol*  fn,
                              Expr*      test);
 
 static void fixupQueryFormals(FnSymbol* fn) {
+  if (fn->isConstrainedGeneric()) {
+    introduceConstrainedTypes(fn);
+    return;
+  }
   for_formals(formal, fn) {
     if (BlockStmt* typeExpr = formal->typeExpr) {
       Expr* tail = typeExpr->body.tail;

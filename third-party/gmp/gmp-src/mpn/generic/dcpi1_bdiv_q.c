@@ -37,13 +37,14 @@ see https://www.gnu.org/licenses/.  */
 
 #include "gmp-impl.h"
 
-
+#if 0				/* unused, so leave out for now */
 static mp_size_t
 mpn_dcpi1_bdiv_q_n_itch (mp_size_t n)
 {
   /* NOTE: Depends on mullo_n and mpn_dcpi1_bdiv_qr_n interface */
   return n;
 }
+#endif
 
 /* Computes Q = - N / D mod B^n, destroys N.
 

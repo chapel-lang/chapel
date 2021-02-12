@@ -22,7 +22,7 @@ AMUDP_BEGIN_EXTERNC
 
 /* AMUDP system configuration parameters */
 #ifndef DISABLE_STDSOCKET_REDIRECT
-#define DISABLE_STDSOCKET_REDIRECT  0   /* disable redirection of slave stdin/stdout/stderr to master */
+#define DISABLE_STDSOCKET_REDIRECT  0   /* disable redirection of worker stdin/stdout/stderr to master */
 #endif
 #ifndef USE_SOCKET_RECVBUFFER_GROW
 #define USE_SOCKET_RECVBUFFER_GROW  1   /* grow RCVBUF on UDP sockets */
@@ -76,13 +76,13 @@ extern void AMUDP_InitRetryCache();
 
 /* AMUDP-SPMD system configuration parameters */
 #ifndef USE_NUMERIC_MASTER_ADDR
-#define USE_NUMERIC_MASTER_ADDR     0   /* pass a numeric IP on slave command line */
+#define USE_NUMERIC_MASTER_ADDR     0   /* pass a numeric IP on worker command line */
 #endif
 #ifndef USE_COORD_KEEPALIVE
 #define USE_COORD_KEEPALIVE         1   /* set SO_KEEPALIVE on TCP coord sockets */
 #endif
 #ifndef ABORT_JOB_ON_NODE_FAILURE
-#define ABORT_JOB_ON_NODE_FAILURE   1   /* kill everyone if any slave drops the TCP coord */
+#define ABORT_JOB_ON_NODE_FAILURE   1   /* kill everyone if any worker drops the TCP coord */
 #endif
 #ifndef USE_BLOCKING_SPMD_BARRIER
 #define USE_BLOCKING_SPMD_BARRIER   1   /* use blocking AM calls in SPMDBarrier() */
@@ -470,10 +470,6 @@ extern char *AMUDP_getenv_prefixed_withdefault(const char *basekey, const char *
   #define ASYNC_TCP_DISABLE()            ((void)0)
   #define ASYNC_TCP_DISABLE_IGNOREERR()  ((void)0)
 #endif
-//------------------------------------------------------------------------------------
-// checkpoint/restart
-extern int AMUDP_SPMDRestartActive;
-
 //------------------------------------------------------------------------------------
 
 AMUDP_END_EXTERNC

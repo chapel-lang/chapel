@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -873,6 +873,10 @@ class BlockCyclicArr: BaseRectangularArr {
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
+override proc BlockCyclicArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 override proc BlockCyclicArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
@@ -1045,13 +1049,13 @@ proc BlockCyclicArr.dsiSerialWrite(f) {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-proc BlockCyclicArr.dsiTargetLocales() {
+proc BlockCyclicArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
-proc BlockCyclicDom.dsiTargetLocales() {
+proc BlockCyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
-proc BlockCyclic.dsiTargetLocales() {
+proc BlockCyclic.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

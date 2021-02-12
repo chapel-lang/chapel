@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -26,6 +26,10 @@
 #include "sys_basic.h"
 
 #include "sys/stat.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 qioerr chpl_fs_chdir(const char* name);
 
@@ -76,5 +80,9 @@ qioerr chpl_fs_symlink(const char* orig, const char* linkName);
 mode_t chpl_fs_umask(mode_t mask);
 
 qioerr chpl_fs_viewmode(int* ret, const char* name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -1,6 +1,6 @@
 /* Test mpz_get_d.
 
-Copyright 2002, 2012 Free Software Foundation, Inc.
+Copyright 2002, 2012, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -37,6 +37,13 @@ check_onebit (void)
 #endif
 
   mpz_init (z);
+
+  got = mpz_get_d (z);
+  if (got != 0)
+    {
+      printf    ("mpz_get_d wrong on zero\n");
+      abort();
+    }
 
   mpz_set_ui (z, 1L);
   want = 1.0;

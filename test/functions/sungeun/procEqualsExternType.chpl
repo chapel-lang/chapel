@@ -6,6 +6,10 @@ proc =(ref a: myExternRecord, b: int) {
   a.x = b;
 }
 
+proc _cast(type t: myExternRecord, b: int) {
+  var tmp = new myExternRecord(b);
+}
+
 var ex0: myExternRecord;
 var ex1: myExternRecord;
 ex0;

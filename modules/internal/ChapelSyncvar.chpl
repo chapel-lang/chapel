@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -281,6 +281,10 @@ module ChapelSyncvar {
 
   proc   = (ref lhs : _syncvar(?t), rhs : t) {
     lhs.wrapped.writeEF(rhs);
+  }
+
+  inline proc _cast(type t:_syncvar(?valType), rhs:valType) {
+    return new _syncvar(rhs);
   }
 
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
@@ -784,6 +788,10 @@ module ChapelSyncvar {
 
   proc =(ref lhs : _singlevar(?t), rhs : t) {
     lhs.wrapped.writeEF(rhs);
+  }
+
+  inline proc _cast(type t:_singlevar(?valType), rhs:valType) {
+    return new _singlevar(rhs);
   }
 
   pragma "init copy fn"

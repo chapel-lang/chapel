@@ -1,4 +1,4 @@
 paramExample2.chpl:14: error: unresolved call 'widthOfResult(real(64), int(64))'
 paramExample2.chpl:6: note: this candidate did not match: widthOfResult(param x, param y)
-paramExample2.chpl:14: note: because non-param call actual argument #1
+paramExample2.chpl:14: note: because non-param actual argument #1
 paramExample2.chpl:6: note: is passed to param formal 'param x'

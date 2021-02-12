@@ -6,7 +6,7 @@ See runTest() calls for what the number of reps and
 the arrays' domains being measured.
 */
 
-use BlockDist, Time, Memory;
+use BlockDist, Time, Memory.Diagnostics;
 
 config param useBlockDist = CHPL_COMM != "none";
 config const perf = false; // performance or --fast mode

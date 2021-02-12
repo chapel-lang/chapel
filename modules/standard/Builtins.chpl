@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,9 +21,8 @@
 /*
   This module contains built-in functions.
 
-  .. note:: All Chapel programs automatically ``use`` this module by default.
-            An explicit ``use`` statement is not necessary.
 */
+pragma "module included by default"
 module Builtins {
 
   /*

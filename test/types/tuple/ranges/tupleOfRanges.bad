@@ -1,0 +1,2 @@
+tupleOfRanges.chpl:6: error: cannot initialize 'rngs' of type '1*range(int(64),bounded,true)' from a '1*range(int(64),bounded,false)'
+tupleOfRanges.chpl:13: error: cannot initialize 'rngs' of type '1*range(int(64),bounded,true)' from a '1*range(int(64),bounded,false)'

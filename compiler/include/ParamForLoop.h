@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 
 #include "LoopStmt.h"
 
-class ParamForLoop : public LoopStmt
+class ParamForLoop final : public LoopStmt
 {
   //
   // Class interface
@@ -48,22 +48,22 @@ public:
                                       LabelSymbol* continueLabel,
                                       LabelSymbol* breakLabel,
                                       BlockStmt*   initBody);
-  virtual               ~ParamForLoop();
+                        ~ParamForLoop();
 
-  virtual ParamForLoop*  copy(SymbolMap* map      = NULL,
-                              bool       internal = false);
+  DECLARE_COPY(ParamForLoop);
+  ParamForLoop* copyInner(SymbolMap* map) override;
 
-  virtual GenRet         codegen();
-  virtual void           verify();
-  virtual void           accept(AstVisitor* visitor);
+  GenRet                 codegen()                                 override;
+  void                   verify()                                  override;
+  void                   accept(AstVisitor* visitor)               override;
 
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  Expr*                  getFirstExpr()                            override;
+  Expr*                  getNextExpr(Expr* expr)                   override;
 
-  virtual bool           isParamForLoop()                             const;
+  bool                   isParamForLoop()                    const override;
 
-  virtual CallExpr*      blockInfoGet()                               const;
-  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+  CallExpr*              blockInfoGet()                      const override;
+  CallExpr*              blockInfoSet(CallExpr* expr)              override;
 
   SymExpr*               indexExprGet()                               const;
   SymExpr*               lowExprGet()                                 const;

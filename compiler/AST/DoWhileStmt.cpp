@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -85,13 +85,13 @@ DoWhileStmt::~DoWhileStmt()
 
 }
 
-DoWhileStmt* DoWhileStmt::copy(SymbolMap* map, bool internal)
+DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
 {
   Expr*        cond   = NULL;
   BlockStmt*   body   = NULL;
   DoWhileStmt* retval = new DoWhileStmt(cond, body);
 
-  retval->copyShare(*this, map, internal);
+  retval->copyInnerShare(*this, map);
 
   return retval;
 }

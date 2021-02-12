@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -520,7 +520,7 @@ static chpl_bool provCtl_readAmoNeedsOpnd; // READ AMO needs operand (RxD)
 //
 
 typedef enum {
-  txnTrkNone,  // no tracking, ptr is ignored
+  txnTrkId,    // no tracking as such, context "ptr" is just an id value
   txnTrkDone,  // *ptr is atomic bool 'done' flag
   txnTrkTypeCount
 } txnTrkType_t;
@@ -541,6 +541,16 @@ void* txnTrkEncode(txnTrkType_t typ, void* p) {
   assert((((uint64_t) p) & ~TXNTRK_ADDR_MASK) == 0UL);
   return (void*) (  ((uint64_t) typ << TXNTRK_ADDR_BITS)
                   | ((uint64_t) p & TXNTRK_ADDR_MASK));
+}
+
+static inline
+void* txnTrkEncodeId(intptr_t id) {
+  return txnTrkEncode(txnTrkId, (void*) id);
+}
+
+static inline
+void* txnTrkEncodeDone(void* pDone) {
+  return txnTrkEncode(txnTrkDone, pDone);
 }
 
 static inline
@@ -1008,6 +1018,38 @@ void debugOverrideHints(struct fi_info* hints) {
   uint64_t val;
 
   {
+    struct cfgHint hintVals[] = { CFG_HINT(FI_ATOMIC),
+                                  CFG_HINT(FI_DIRECTED_RECV),
+                                  CFG_HINT(FI_FENCE),
+                                  CFG_HINT(FI_HMEM),
+                                  CFG_HINT(FI_LOCAL_COMM),
+                                  CFG_HINT(FI_MSG),
+                                  CFG_HINT(FI_MULTICAST),
+                                  CFG_HINT(FI_MULTI_RECV),
+                                  CFG_HINT(FI_NAMED_RX_CTX),
+                                  CFG_HINT(FI_READ),
+                                  CFG_HINT(FI_RECV),
+                                  CFG_HINT(FI_REMOTE_COMM),
+                                  CFG_HINT(FI_REMOTE_READ),
+                                  CFG_HINT(FI_REMOTE_WRITE),
+                                  CFG_HINT(FI_RMA),
+                                  CFG_HINT(FI_RMA_EVENT),
+                                  CFG_HINT(FI_RMA_PMEM),
+                                  CFG_HINT(FI_SEND),
+                                  CFG_HINT(FI_SHARED_AV),
+                                  CFG_HINT(FI_SOURCE),
+                                  CFG_HINT(FI_SOURCE_ERR),
+                                  CFG_HINT(FI_TAGGED),
+                                  CFG_HINT(FI_TRIGGER),
+                                  CFG_HINT(FI_VARIABLE_MSG),
+                                  CFG_HINT(FI_WRITE), };
+    if (getCfgHint("COMM_OFI_HINTS_CAPS",
+                   hintVals, false /*justOne*/, &val)) {
+      hints->caps = val;
+    }
+  }
+
+  {
     struct cfgHint hintVals[] = { CFG_HINT(FI_COMMIT_COMPLETE),
                                   CFG_HINT(FI_COMPLETION),
                                   CFG_HINT(FI_DELIVERY_COMPLETE),
@@ -1196,8 +1238,9 @@ void init_ofiFabricDomain(void) {
 
   hints->caps = (FI_MSG | FI_MULTI_RECV
                  | FI_RMA | FI_LOCAL_COMM | FI_REMOTE_COMM);
-  if (strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
-      && (prov_name == NULL || isInProvName("gni", prov_name))) {
+  if ((strcmp(CHPL_TARGET_PLATFORM, "cray-xc") == 0
+       && (prov_name == NULL || isInProvName("gni", prov_name)))
+      || chpl_env_rt_get_bool("COMM_OFI_HINTS_CAPS_ATOMIC", false)) {
     hints->caps |= FI_ATOMIC;
   }
   hints->tx_attr->op_flags = FI_COMPLETION;
@@ -1466,14 +1509,17 @@ void init_ofiDoProviderChecks(void) {
     //   It uses the AV attribute 'count' member to size the data
     //   structure in which it stores those.  So, that member will need
     //   to account for all transmitting endpoints.
-    // - Based on analyzing a segfault, RxD has to have a non-NULL
-    //   buf arg for fi_fetch_atomic(FI_ATOMIC_READ) even though the
-    //   fi_atomic man page says buf is ignored for that operation
-    //   and may be NULL.
     //
     provCtl_sizeAvsByNumEps = true;
-    provCtl_readAmoNeedsOpnd = true;
   }
+
+  //
+  // RxD and perhaps other providers must have a non-NULL buf arg for
+  // fi_fetch_atomic(FI_ATOMIC_READ) or they segfault, even though the
+  // fi_atomic man page says buf is ignored for that operation and may
+  // be NULL.
+  //
+  provCtl_readAmoNeedsOpnd = true;
 }
 
 
@@ -2011,13 +2057,13 @@ void init_ofiForAms(void) {
                                       .desc = NULL,
                                       .iov_count = 1,
                                       .addr = FI_ADDR_UNSPEC,
-                                      .context = NULL,
+                                      .context = txnTrkEncodeId(__LINE__),
                                       .data = 0x0, };
   ofi_msg_reqs[1] = (struct fi_msg) { .msg_iov = &ofi_iov_reqs[1],
                                       .desc = NULL,
                                       .iov_count = 1,
                                       .addr = FI_ADDR_UNSPEC,
-                                      .context = NULL,
+                                      .context = txnTrkEncodeId(__LINE__),
                                       .data = 0x0, };
   ofi_msg_i = 0;
   OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
@@ -2521,7 +2567,7 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
   if (tcip->txCQ != NULL) {
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    void* ctx = txnTrkEncodeDone(&txnDone);
     ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
     waitForTxnComplete(tcip, ctx);
     atomic_destroy_bool(&txnDone);
@@ -3063,7 +3109,7 @@ void amRequestCommon(c_nodeid_t node,
   } else {
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+    void* ctx = txnTrkEncodeDone(&txnDone);
 
     if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
         || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
@@ -3613,7 +3659,7 @@ void amSendDone(c_nodeid_t node, amDone_t* pAmDone) {
   // now.
   //
   ofi_put_ll(amDone, node, pAmDone, sizeof(*pAmDone),
-             txnTrkEncode(txnTrkNone, NULL), amTcip, true /*useInject*/);
+             txnTrkEncodeId(__LINE__), amTcip, true /*useInject*/);
 }
 
 
@@ -4151,7 +4197,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
         || size > ofi_info->tx_attr->inject_size) {
       atomic_bool txnDone;
       atomic_init_bool(&txnDone, false);
-      void* ctx = txnTrkEncode(txnTrkDone, &txnDone);
+      void* ctx = txnTrkEncodeDone(&txnDone);
 
       DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
                  "tx write: %d:%p <= %p, size %zd, key 0x%" PRIx64 ", ctx %p",
@@ -4310,7 +4356,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
                               .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
-                              .context = NULL,
+                              .context = txnTrkEncodeId(__LINE__),
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
                "tx writemsg: %d:%p <= %p, size %zd, key 0x%" PRIx64,
@@ -4386,7 +4432,7 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   memcpy(&info->src_v[vi], addr, size);
   info->src_addr_v[vi] = &info->src_v[vi];
   info->locale_v[vi] = node;
-  info->tgt_addr_v[vi] = raddr;
+  info->tgt_addr_v[vi] = (void*) mrRaddr;
   info->size_v[vi] = size;
   info->remote_mr_v[vi] = mrKey;
   info->local_mr_v[vi] = mrDesc;
@@ -4453,8 +4499,8 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     atomic_bool txnDone;
     atomic_init_bool(&txnDone, false);
     void* ctx = (tcip->txCQ == NULL)
-                ? NULL
-                : txnTrkEncode(txnTrkDone, &txnDone);
+                ? txnTrkEncodeId(__LINE__)
+                : txnTrkEncodeDone(&txnDone);
 
     DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
                "tx read: %p <= %d:%p(0x%" PRIx64 "), size %zd, key 0x%" PRIx64
@@ -4587,7 +4633,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                               .addr = rxRmaAddr(tcip, locale_v[vi]),
                               .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
-                              .context = NULL,
+                              .context = txnTrkEncodeId(__LINE__),
                               .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMA_READ,
                "tx readmsg: %p <= %d:%p, size %zd, key 0x%" PRIx64,
@@ -4656,7 +4702,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
   info->tgt_addr_v[vi] = addr;
   info->locale_v[vi] = node;
   info->remote_mr_v[vi] = mrKey;
-  info->src_addr_v[vi] = raddr;
+  info->src_addr_v[vi] = (void*) mrRaddr;
   info->size_v[vi] = size;
   info->local_mr_v[vi] = mrDesc;
   info->vi++;
@@ -4717,8 +4763,8 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   atomic_bool txnDone;
   atomic_init_bool(&txnDone, false);
   void* ctx = (tcip->txCQ == NULL)
-              ? NULL
-              : txnTrkEncode(txnTrkDone, &txnDone);
+              ? txnTrkEncodeId(__LINE__)
+              : txnTrkEncodeDone(&txnDone);
 
   DBG_PRINTF((ofiOp == FI_ATOMIC_READ) ? DBG_AMO_READ : DBG_AMO,
              "tx AMO: obj %d:%" PRIx64 ", opnd1 <%s>, opnd2 <%s>, "
@@ -4735,8 +4781,9 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                               ofiType, ofiOp, ctx));
   } else if (result != NULL) {
     void* bufArg = myOpnd1;
+    // Workaround for bug wherein operand1 is unused but nevertheless
+    // must not be NULL.
     if (provCtl_readAmoNeedsOpnd) {
-      // Workaround for RxD bug.
       if (ofiOp == FI_ATOMIC_READ && bufArg == NULL) {
         static int64_t dummy;
         bufArg = &dummy;
@@ -4838,7 +4885,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
                                  .rma_iov_count = 1,
                                  .datatype = type_v[vi],
                                  .op = cmd_v[vi],
-                                 .context = NULL,
+                                 .context = txnTrkEncodeId(__LINE__),
                                  .data = 0 };
     DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE,
                "tx atomicmsg: obj %d:%p, opnd1 <%s>, op %s, typ %s, sz %zd, "
@@ -4928,16 +4975,14 @@ void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
   tcip->numTxnsOut -= numEvents;
   for (int i = 0; i < numEvents; i++) {
     struct fi_cq_msg_entry* cqe = &cqes[i];
-    DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", ctx %p",
-               cqe->flags, cqe->op_context);
-    if (cqe->op_context != NULL) {
-      const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
-      if (trk.typ == txnTrkDone) {
-        atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
-                                   memory_order_release);
-      } else {
-        INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
-      }
+    const txnTrkCtx_t trk = txnTrkDecode(cqe->op_context);
+    DBG_PRINTF(DBG_ACK, "CQ ack tx, flags %#" PRIx64 ", ctx %d:%p",
+               cqe->flags, trk.typ, trk.ptr);
+    if (trk.typ == txnTrkDone) {
+      atomic_store_explicit_bool((atomic_bool*) trk.ptr, true,
+                                 memory_order_release);
+    } else if (trk.typ != txnTrkId) {
+      INTERNAL_ERROR_V("unexpected trk.typ %d", trk.typ);
     }
   }
 }
@@ -4969,8 +5014,12 @@ size_t readCQ(struct fid_cq* cq, void* buf, size_t count) {
 
 static
 void reportCQError(struct fid_cq* cq) {
-  struct fi_cq_err_entry err = { 0 };
+  char err_data[ofi_info->domain_attr->max_err_data];
+  struct fi_cq_err_entry err = (struct fi_cq_err_entry)
+                               { .err_data = err_data,
+                                 .err_data_size = sizeof(err_data) };
   fi_cq_readerr(cq, &err, 0);
+  const txnTrkCtx_t trk = txnTrkDecode(err.op_context);
   if (err.err == FI_ETRUNC) {
     //
     // This only happens when reading from the CQ associated with the
@@ -4983,14 +5032,15 @@ void reportCQError(struct fid_cq* cq) {
     // aid failure analysis.
     //
     INTERNAL_ERROR_V("fi_cq_readerr(): AM recv buf FI_ETRUNC: "
-                     "flags %#" PRIx64 ", len %zd, olen %zd",
-                     err.flags, err.len, err.olen);
+                     "flags %#" PRIx64 ", len %zd, olen %zd, ctx %d:%p",
+                     err.flags, err.len, err.olen, trk.typ, trk.ptr);
   } else {
-    char bufProv[100];
-    (void) fi_cq_strerror(cq, err.prov_errno, err.err_data,
-                          bufProv, sizeof(bufProv));
-    INTERNAL_ERROR_V("fi_cq_read(): err %d, strerror %s",
-                     err.err, bufProv);
+    char buf[100];
+    const char* errStr = fi_cq_strerror(cq, err.prov_errno, err.err_data,
+                                        buf, sizeof(buf));
+    INTERNAL_ERROR_V("fi_cq_read(): err %d, prov_errno %d, errStr %s, "
+                     "ctx %d:%p",
+                     err.err, err.prov_errno, errStr, trk.typ, trk.ptr);
   }
 }
 
@@ -4998,8 +5048,8 @@ void reportCQError(struct fid_cq* cq) {
 static inline
 void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
   (*tcip->ensureProgressFn)(tcip);
-  if (ctx != NULL) {
-    const txnTrkCtx_t trk = txnTrkDecode(ctx);
+  const txnTrkCtx_t trk = txnTrkDecode(ctx);
+  if (trk.typ == txnTrkDone) {
     while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
                                       memory_order_acquire)) {
       sched_yield();
@@ -5426,7 +5476,7 @@ int isAtomicValid(enum fi_datatype ofiType) {
   if (!inited) {
     validByType[FI_INT32]  = computeAtomicValid(FI_INT32);
     validByType[FI_UINT32] = computeAtomicValid(FI_UINT32);
-    validByType[FI_INT32]  = computeAtomicValid(FI_INT64);
+    validByType[FI_INT64]  = computeAtomicValid(FI_INT64);
     validByType[FI_UINT64] = computeAtomicValid(FI_UINT64);
     validByType[FI_FLOAT]  = computeAtomicValid(FI_FLOAT);
     validByType[FI_DOUBLE] = computeAtomicValid(FI_DOUBLE);
@@ -6198,8 +6248,8 @@ const char* amo_typeName(enum fi_datatype ofiType) {
   case FI_UINT32: return "uint32";
   case FI_INT64: return "int64";
   case FI_UINT64: return "uint64";
-  case FI_FLOAT: return "_real32";
-  case FI_DOUBLE: return "_real64";
+  case FI_FLOAT: return "real32";
+  case FI_DOUBLE: return "real64";
   default: return "amoType???";
   }
 }

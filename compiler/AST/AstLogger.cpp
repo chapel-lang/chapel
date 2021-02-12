@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,6 +55,9 @@ void AstLogger::exitEnumType(EnumType* node) {
 void AstLogger::visitPrimType(PrimitiveType* node) {
 }
 
+void AstLogger::visitConstrainedType(ConstrainedType* node) {
+}
+
 bool AstLogger::enterArgSym(ArgSymbol* node) {
   return true;
 }
@@ -70,6 +73,13 @@ bool AstLogger::enterFnSym(FnSymbol* node) {
 }
 
 void AstLogger::exitFnSym(FnSymbol* node) {
+}
+
+bool AstLogger::enterInterfaceSym(InterfaceSymbol* node) {
+  return true;
+}
+
+void AstLogger::exitInterfaceSym(InterfaceSymbol* node) {
 }
 
 void AstLogger::visitLabelSym(LabelSymbol* node) {
@@ -118,6 +128,13 @@ bool AstLogger::enterNamedExpr(NamedExpr* node) {
 }
 
 void AstLogger::exitNamedExpr(NamedExpr* node) {
+}
+
+bool AstLogger::enterIfcConstraint(IfcConstraint* node) {
+  return true;
+}
+
+void AstLogger::exitIfcConstraint(IfcConstraint* node) {
 }
 
 bool AstLogger::enterIfExpr(IfExpr* node) {
@@ -231,6 +248,13 @@ bool AstLogger::enterCatchStmt(CatchStmt* node) {
 }
 
 void AstLogger::exitCatchStmt(CatchStmt* node) {
+}
+
+bool AstLogger::enterImplementsStmt(ImplementsStmt* node) {
+  return true;
+}
+
+void AstLogger::exitImplementsStmt(ImplementsStmt* node) {
 }
 
 

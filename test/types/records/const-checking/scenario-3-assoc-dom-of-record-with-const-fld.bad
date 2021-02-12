@@ -1,4 +1,5 @@
 $CHPL_HOME/modules/internal/ChapelHashtable.chpl: In method 'clearSlot':
 $CHPL_HOME/modules/internal/ChapelHashtable.chpl: error: cannot assign to a record of the type Node using the default assignment operator because it has 'const' field(s)
+  $CHPL_HOME/modules/internal/DefaultAssociative.chpl: called as (chpl__hashtable(Node,nothing)).clearSlot(tableEntry: chpl_TableEntry(Node,nothing), key: Node, val: nothing)
   within internal functions (use --print-callstack-on-error to see)
 scenario-3-assoc-dom-of-record-with-const-fld.chpl: error: cannot assign to a record of the type Coeff using the default assignment operator because it has 'const' field(s)

@@ -1,4 +1,4 @@
 tupleTypeAccess.chpl:16: In method 'accept':
 tupleTypeAccess.chpl:18: error: unresolved call '(GoodStudent,ExcellentStudent)(1)'
 tupleTypeAccess.chpl:18: note: because no functions named (GoodStudent,ExcellentStudent) found in scope
-  tupleTypeAccess.chpl:25: called as borrowed AdvancedBasketWeaving((GoodStudent,ExcellentStudent)).accept(student: owned Student)
+  tupleTypeAccess.chpl:25: called as (AdvancedBasketWeaving((GoodStudent,ExcellentStudent))).accept(student: owned Student)

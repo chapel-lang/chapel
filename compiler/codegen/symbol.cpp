@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -895,8 +895,30 @@ void VarSymbol::codegenDef() {
       }
       info->lvt->addGlobalValue(cname, globalValue, GEN_VAL, ! is_signed(type));
     }
+
+#if HAVE_LLVM_VER >= 100
+    llvm::MaybeAlign alignment;
+#else
+    unsigned alignment = 0;
+#endif
+
+    alignment = getAlignment(type);
+
     llvm::Type *varType = type->codegen().type;
-    llvm::Value *varAlloca = createVarLLVM(varType, cname);
+    llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
+
+    // Update the alignment if necessary
+#if HAVE_LLVM_VER >= 100
+    if (alignment.hasValue()) {
+      varAlloca->setAlignment(alignment.getValue());
+    }
+#else
+    if (alignment > 1) {
+      varAlloca->setAlignment(alignment);
+    }
+#endif
+
+
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
     if(AggregateType *ctype = toAggregateType(type)) {
@@ -2195,11 +2217,11 @@ namespace {
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
     void handleLoopStmt(LoopStmt* loop);
     bool exprPointsToNonStack(Expr* e);
-    bool enterCallExpr(CallExpr* call);
-    bool enterWhileDoStmt(WhileDoStmt* loop);
-    bool enterDoWhileStmt(DoWhileStmt* loop);
-    bool enterCForLoop(CForLoop* loop);
-    bool enterForLoop(ForLoop* loop);
+    bool enterCallExpr(CallExpr* call) override;
+    bool enterWhileDoStmt(WhileDoStmt* loop) override;
+    bool enterDoWhileStmt(DoWhileStmt* loop) override;
+    bool enterCForLoop(CForLoop* loop) override;
+    bool enterForLoop(ForLoop* loop) override;
   };
 }
 
@@ -2367,6 +2389,7 @@ void FnSymbol::codegenDef() {
       llvm::DISubprogram* dbgScope = debug_info->get_function(this);
       info->irBuilder->SetCurrentDebugLocation(
         llvm::DebugLoc::get(linenum(),0,dbgScope));
+      func->setSubprogram(dbgScope);
     }
 
     // ABI support in this function is inspired by clang's

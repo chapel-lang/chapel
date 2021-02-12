@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -414,6 +414,47 @@ static void expandVarArgsLifetimeConstraints(FnSymbol* fn,
     USR_FATAL_CONT(se, "this use of the varargs formal %s is currently unsupported", formal->name);
 }
 
+// When the formal intent is `in`, build the varargs tuple using moves instead
+// of a call to `chpl__init_tuple`. The compiler decides to build a value
+// tuple for some reason, and the `in` formals are not elided when passed to
+// the `chpl__init_tuple` call, which means we end up copying them twice
+// (once due to `in` intent, once due to `chpl__tuple_init`).
+// TODO (dlongnecke): Is there a better way to compute the type of the
+// varargs tuple?
+static void moveInitializeVarArgsTuple(FnSymbol* fn, ArgSymbol* formal,
+                                       const Formals& formals,
+                                       VarSymbol* var) {
+  BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+
+  fn->insertAtHead(block);
+  fn->insertAtHead(new DefExpr(var));
+
+  // Get the return type of the `buildTupleCall` function.
+  CallExpr* buildCall = buildTupleCall(formal, formals);
+  CallExpr* getTupleType = new CallExpr(PRIM_TYPEOF, buildCall);
+
+  // We need to call PRIM_DEFAULT_INIT_VAR for the compiler to properly
+  // compute the type of the varargs tuple, but we don't actually want
+  // to initialize it (adding FLAG_NO_INIT will convert this to a NOP
+  // when the default init is lowered).
+  CallExpr* init = new CallExpr(PRIM_DEFAULT_INIT_VAR, var, getTupleType);
+  var->addFlag(FLAG_NO_INIT);
+  block->insertAtTail(init);
+
+  // Now we finish up by moving the formals into the tuple.
+  for (size_t i = 0; i < formals.size(); i++) {
+    size_t fieldIdx = i + 2;
+    CallExpr* to = new CallExpr(PRIM_FIELD_NUM_TO_NAME, var,
+                                new_IntSymbol(fieldIdx));
+    Symbol* from = formals[i];
+    CallExpr* set = new CallExpr(PRIM_SET_MEMBER, var, to, from);
+    block->insertAtTail(set);
+  }
+
+  normalize(block);
+  block->flattenAndRemove();
+}
+
 static void expandVarArgsBody(FnSymbol*      fn,
                               ArgSymbol*     formal,
                               const Formals& formals) {
@@ -437,10 +478,10 @@ static void expandVarArgsBody(FnSymbol*      fn,
 
     if (isString(formal->type) == true && formal->intent == INTENT_BLANK) {
       tupleCall = expandVarArgString(fn, var, formal, formals);
-
+    } else if (formal->intent == INTENT_IN) {
+      moveInitializeVarArgsTuple(fn, formal, formals, var);
     } else {
       tupleCall = buildTupleCall(formal, formals);
-
       fn->insertAtHead(new CallExpr(PRIM_MOVE, var, tupleCall));
       fn->insertAtHead(new DefExpr(var));
     }
@@ -456,6 +497,7 @@ static void expandVarArgsBody(FnSymbol*      fn,
     }
 
     if (formal->intent == INTENT_OUT || formal->intent == INTENT_INOUT) {
+      INT_ASSERT(tupleCall != NULL);
       insertEpilogueTemps(fn, var, tupleCall);
     }
 
@@ -592,7 +634,7 @@ static VarSymbol* buildTupleVariable(ArgSymbol* formal) {
 
   if (formal->hasFlag(FLAG_TYPE_VARIABLE) == true) {
     retval->addFlag(FLAG_TYPE_VARIABLE);
-  } else {
+  } else if (!formal->hasFlag(FLAG_NO_AUTO_DESTROY)) {
     retval->addFlag(FLAG_INSERT_AUTO_DESTROY);
   }
 

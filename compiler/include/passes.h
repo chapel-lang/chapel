@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -115,6 +115,14 @@ void checkTypeParamTaskIntent(SymExpr* outerSE);
 
 // inlineFunctions.cpp
 BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
+
+// interfaces.cpp
+void  introduceConstrainedTypes(FnSymbol* fn);
+Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
+                             InterfaceSymbol* isym);
+void  markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);
+void  wrapImplementsStatements();
+FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm);
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,

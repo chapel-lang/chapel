@@ -1,3 +1,3 @@
---filename=lmeshes/sedov15oct.lmesh --doTiming=false
---doTiming=false                                      # lulesh-noargs.good
---elemsPerEdge=2 --doTiming=false                     # lulesh.good
+--filename=lmeshes/sedov15oct.lmesh --doTiming=false --coordsStdout=true
+--doTiming=false --coordsStdout=true                                      # lulesh-noargs.good
+--elemsPerEdge=2 --doTiming=false --coordsStdout=true                     # lulesh.good

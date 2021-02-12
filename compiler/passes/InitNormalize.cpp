@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -458,7 +458,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       if ((isParam || isTypeVar) && initCall->isPrimitive(PRIM_NEW) == true) {
         const char* kind = isTypeVar ? "type" : "param";
         USR_FATAL(initExpr,
-                  "Cannot initialize %s field '%s' with 'new' expression",
+                  "cannot initialize %s field '%s' with 'new' expression",
                   kind, field->sym->name);
       }
     }
@@ -942,17 +942,17 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
   return retval;
 }
 
-class ProcessThisUses : public AstVisitorTraverse
+class ProcessThisUses final : public AstVisitorTraverse
 {
   public:
     ProcessThisUses(const InitNormalize* state) {
       this->state = state;
     }
-    virtual ~ProcessThisUses() { }
+    ~ProcessThisUses() { }
 
-    virtual void visitSymExpr(SymExpr* node);
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual bool enterFnSym(FnSymbol* node);
+    void visitSymExpr(SymExpr* node) override;
+    bool enterCallExpr(CallExpr* node) override;
+    bool enterFnSym(FnSymbol* node) override;
 
   private:
     const InitNormalize* state;

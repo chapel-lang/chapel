@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: functionArgDefaultWithParens.doc
+
+functionArgDefaultWithParens.doc
+================================
+**Usage**
+
+.. code-block:: chapel
+
+   use functionArgDefaultWithParens.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import functionArgDefaultWithParens.doc;
+
+.. function:: proc foo(arg = 1+2*(3+4))
+

@@ -1,1 +1,4 @@
 CHPL_COMM == none
+# Skip with --llvm until we resolve the #1677/#1681/#1682 weirdness
+# and can make verbose mem logging work predictably.
+COMPOPTS <= --llvm

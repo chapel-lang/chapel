@@ -16,8 +16,8 @@ var gridLocales: [gridDom] locale = setupGridLocales();
 type elType = real;
 
 record localInfo {
-  var domA = {1..n, 1..m};  // does not change
-  var domB = {1..m, 1..n};  // does not change
+  const domA = {1..n, 1..m};  // does not change
+  const domB = {1..m, 1..n};  // does not change
 
   var A: [domA] elType;
   var B: [domB] elType;

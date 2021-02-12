@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -63,10 +63,10 @@ public:
                               bool       internal = false)                 = 0;
 
   // Interface for BaseAST
-  virtual GenRet         codegen();
-          bool           inTree();
-  virtual QualifiedType  qualType();
-  virtual void           verify();
+  GenRet         codegen()   override;
+  bool           inTree()    override;
+  QualifiedType  qualType()  override;
+  void           verify()    override;
 
   virtual void           codegenDef();
   virtual void           codegenPrototype();
@@ -84,6 +84,12 @@ public:
   bool                   hasDestructor()                                 const;
   FnSymbol*              getDestructor()                                 const;
   void                   setDestructor(FnSymbol* fn);
+
+  Symbol*                getSubstitutionWithName(const char* name)       const;
+  void                   setSubstitutionWithName(const char* name,
+                                                 Symbol* value);
+
+
 
   TypeSymbol*            symbol;
 
@@ -103,6 +109,7 @@ public:
   Type*                  scalarPromotionType;
 
   SymbolMap              substitutions;
+  SymbolNameVec          substitutionsPostResolve;
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;
@@ -113,6 +120,7 @@ protected:
 
 private:
   virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+  virtual Type*    copyInner(SymbolMap* map) = 0;
 
   FnSymbol*        destructor;
 };
@@ -302,10 +310,9 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-class EnumType : public Type {
+class EnumType final : public Type {
  public:
   AList constants; // EnumSymbols
-
 
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
@@ -314,23 +321,26 @@ class EnumType : public Type {
  public:
   const char* doc;
 
-  EnumType();
+   EnumType();
   ~EnumType();
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
-  DECLARE_COPY(EnumType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
 
-  void codegenDef();
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
+  DECLARE_COPY(EnumType);
+  EnumType* copyInner(SymbolMap* map)                   override;
+
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+
+  void codegenDef()                                     override;
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  void printDocs(std::ostream *file, unsigned int tabs);
 
 private:
-  virtual std::string docsDirective();
+  std::string docsDirective();
 };
 
 
@@ -348,19 +358,47 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-class PrimitiveType : public Type {
+class PrimitiveType final : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
   DECLARE_COPY(PrimitiveType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef();
+  PrimitiveType* copyInner(SymbolMap* map)              override;
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef()                                     override;
+
+  void printDocs(std::ostream *file, unsigned int tabs);
 
 private:
-  virtual std::string docsDirective();
+  std::string docsDirective();
+};
+
+
+/************************************* | **************************************
+*                                                                             *
+* a ConstrainedType is the type of:                                           *
+* (1) a formal of a CG function if it is subject to interface constraint(s)   *
+*     ex. T in: proc cgFun(arg: ?T) where T implements IFC {....}             *
+* (2) a formal of an InterfaceSymbol                                          *
+*     ex. Q in: interface IFC(Q) {....}                                       *
+*                                                                             *
+************************************** | *************************************/
+
+class ConstrainedType final : public Type {
+public:
+  ConstrainedType();
+  void verify()                                          override;
+  void accept(AstVisitor* visitor)                       override;
+  DECLARE_COPY(ConstrainedType);
+  ConstrainedType* copyInner(SymbolMap* map)             override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
+  void codegenDef()                                      override;
+
+  static TypeSymbol* build(const char* name);
+
+  void printDocs(std::ostream *file, unsigned int tabs);
 };
 
 
@@ -518,6 +556,9 @@ VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 bool isPOD(Type* t);
 
 bool isNumericParamDefaultType(Type* type);
+
+TypeSymbol* getDataClassType(TypeSymbol* ts);
+void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);

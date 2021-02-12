@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -49,6 +49,7 @@
 //
 #define foreach_ast_sep(macro, sep)                \
   macro(PrimitiveType) sep                         \
+  macro(ConstrainedType) sep                       \
   macro(EnumType) sep                              \
   macro(AggregateType) sep                         \
   macro(DecoratedClassType) sep                    \
@@ -59,6 +60,7 @@
   macro(ShadowVarSymbol) sep                       \
   macro(TypeSymbol)   sep                          \
   macro(FnSymbol)     sep                          \
+  macro(InterfaceSymbol) sep                       \
   macro(EnumSymbol)   sep                          \
   macro(LabelSymbol)  sep                          \
                                                    \
@@ -67,8 +69,9 @@
   macro(DefExpr) sep                               \
   macro(CallExpr) sep                              \
   macro(ContextCallExpr) sep                       \
-  macro(LoopExpr) sep                            \
+  macro(LoopExpr) sep                              \
   macro(NamedExpr) sep                             \
+  macro(IfcConstraint) sep                         \
   macro(IfExpr) sep                                \
                                                    \
   macro(UseStmt) sep                               \
@@ -81,6 +84,7 @@
   macro(TryStmt) sep                               \
   macro(ForwardingStmt) sep                        \
   macro(CatchStmt) sep                             \
+  macro(ImplementsStmt) sep                        \
   macro(ExternBlockStmt)
 
 #define foreach_ast(macro)                         \
@@ -141,6 +145,15 @@ foreach_ast(decl_gvecs);
 typedef Map<Symbol*,Symbol*>     SymbolMap;
 typedef MapElem<Symbol*,Symbol*> SymbolMapElem;
 
+typedef struct {
+  const char* name; //key
+  Symbol* value;
+  bool isParam;
+  bool isType;
+} NameAndSymbol;
+
+typedef std::vector<NameAndSymbol> SymbolNameVec;
+
 //
 // enumerated type of all AST node types
 //
@@ -153,6 +166,7 @@ enum AstTag {
   E_LoopExpr,
   E_ForwardingStmt,
   E_NamedExpr,
+  E_IfcConstraint,
   E_IfExpr,
 
   E_UseStmt,
@@ -164,6 +178,7 @@ enum AstTag {
   E_CondStmt,
   E_GotoStmt,
   E_ForallStmt,
+  E_ImplementsStmt,
   E_ExternBlockStmt,
 
   E_ModuleSymbol,
@@ -172,10 +187,12 @@ enum AstTag {
   E_ShadowVarSymbol,
   E_TypeSymbol,
   E_FnSymbol,
+  E_InterfaceSymbol,
   E_EnumSymbol,
   E_LabelSymbol,
 
   E_PrimitiveType,
+  E_ConstrainedType,
   E_EnumType,
   E_AggregateType,
   E_DecoratedClassType
@@ -200,7 +217,7 @@ static inline bool isType(AstTag tag)
 // implement the recursive copy.
 //
 #define DECLARE_COPY(type)                                              \
-  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
@@ -209,14 +226,13 @@ static inline bool isType(AstTag tag)
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
     return _this;                                                       \
-  }                                                                     \
-  virtual type* copyInner(SymbolMap* map)
+  }
 
 // This should be expanded verbatim and overloaded, so we don't create a map if
 // internal is false.
 // copyInner must now copy flags.
 #define DECLARE_SYMBOL_COPY(type)                                       \
-  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
@@ -226,8 +242,7 @@ static inline bool isType(AstTag tag)
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
     return _this;                                                       \
-  }                                                                     \
-  virtual type* copyInner(SymbolMap* map)
+  }
 
 //
 // macro used to call copy from inside the copyInner method
@@ -264,10 +279,10 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
-  void                printTabs(std::ostream *file, unsigned int tabs);
-  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+  void              printTabs(std::ostream *file, unsigned int tabs);
+  void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
 
-  static  const       std::string tabText;
+  static  const     std::string tabText;
 
 protected:
                     BaseAST(AstTag type);
@@ -325,6 +340,7 @@ def_is_ast(DefExpr)
 def_is_ast(ContextCallExpr)
 def_is_ast(LoopExpr)
 def_is_ast(NamedExpr)
+def_is_ast(IfcConstraint)
 def_is_ast(IfExpr)
 def_is_ast(UseStmt)
 def_is_ast(ImportStmt)
@@ -336,15 +352,18 @@ def_is_ast(ForallStmt)
 def_is_ast(TryStmt)
 def_is_ast(ForwardingStmt)
 def_is_ast(CatchStmt)
+def_is_ast(ImplementsStmt)
 def_is_ast(ExternBlockStmt)
 def_is_ast(ModuleSymbol)
 def_is_ast(ArgSymbol)
 def_is_ast(ShadowVarSymbol)
 def_is_ast(TypeSymbol)
 def_is_ast(FnSymbol)
+def_is_ast(InterfaceSymbol)
 def_is_ast(EnumSymbol)
 def_is_ast(LabelSymbol)
 def_is_ast(PrimitiveType)
+def_is_ast(ConstrainedType)
 def_is_ast(EnumType)
 def_is_ast(AggregateType)
 def_is_ast(DecoratedClassType)
@@ -374,6 +393,7 @@ def_to_ast(DefExpr)
 def_to_ast(ContextCallExpr)
 def_to_ast(LoopExpr)
 def_to_ast(NamedExpr)
+def_to_ast(IfcConstraint)
 def_to_ast(IfExpr)
 def_to_ast(UseStmt)
 def_to_ast(ImportStmt)
@@ -385,6 +405,7 @@ def_to_ast(ForallStmt)
 def_to_ast(TryStmt)
 def_to_ast(ForwardingStmt)
 def_to_ast(CatchStmt)
+def_to_ast(ImplementsStmt)
 def_to_ast(ExternBlockStmt)
 def_to_ast(Expr)
 def_to_ast(ModuleSymbol)
@@ -393,10 +414,12 @@ def_to_ast(ArgSymbol)
 def_to_ast(ShadowVarSymbol)
 def_to_ast(TypeSymbol)
 def_to_ast(FnSymbol)
+def_to_ast(InterfaceSymbol)
 def_to_ast(EnumSymbol)
 def_to_ast(LabelSymbol)
 def_to_ast(Symbol)
 def_to_ast(PrimitiveType)
+def_to_ast(ConstrainedType)
 def_to_ast(EnumType)
 def_to_ast(AggregateType)
 def_to_ast(DecoratedClassType)
@@ -430,6 +453,7 @@ def_less_ast(DefExpr)
 def_less_ast(ContextCallExpr)
 def_less_ast(LoopExpr)
 def_less_ast(NamedExpr)
+def_less_ast(IfcConstraint)
 def_less_ast(IfExpr)
 def_less_ast(UseStmt)
 def_less_ast(ImportStmt)
@@ -441,6 +465,7 @@ def_less_ast(ForallStmt)
 def_less_ast(TryStmt)
 def_less_ast(ForwardingStmt)
 def_less_ast(CatchStmt)
+def_less_ast(ImplementsStmt)
 def_less_ast(ExternBlockStmt)
 def_less_ast(Expr)
 def_less_ast(ModuleSymbol)
@@ -449,10 +474,12 @@ def_less_ast(ArgSymbol)
 def_less_ast(ShadowVarSymbol)
 def_less_ast(TypeSymbol)
 def_less_ast(FnSymbol)
+def_less_ast(InterfaceSymbol)
 def_less_ast(EnumSymbol)
 def_less_ast(LabelSymbol)
 def_less_ast(Symbol)
 def_less_ast(PrimitiveType)
+def_less_ast(ConstrainedType)
 def_less_ast(EnumType)
 def_less_ast(AggregateType)
 def_less_ast(DecoratedClassType)
@@ -540,6 +567,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
   case E_NamedExpr:                                                     \
     AST_CALL_CHILD(_a, NamedExpr, actual, call, __VA_ARGS__);           \
     break;                                                              \
+  case E_IfcConstraint:                                                 \
+    AST_CALL_CHILD(_a, IfcConstraint, interfaceExpr, call, __VA_ARGS__);\
+    AST_CALL_LIST(_a,  IfcConstraint, consActuals,   call, __VA_ARGS__);\
+    break;                                                              \
   case E_IfExpr:                                                        \
     AST_CALL_CHILD(_a, IfExpr, getCondition(), call, __VA_ARGS__);      \
     AST_CALL_CHILD(_a, IfExpr, getThenStmt(), call, __VA_ARGS__);       \
@@ -618,6 +649,10 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, CatchStmt, _type, call, __VA_ARGS__);            \
     AST_CALL_CHILD(_a, CatchStmt, _body, call, __VA_ARGS__);            \
     break;                                                              \
+  case E_ImplementsStmt:                                                \
+    AST_CALL_CHILD(_a, ImplementsStmt, iConstraint, call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, ImplementsStmt, implBody, call, __VA_ARGS__);    \
+    break;                                                              \
   case E_ForallStmt:                                                          \
     AST_CALL_LIST (_a, ForallStmt, inductionVariables(),  call, __VA_ARGS__); \
     AST_CALL_LIST (_a, ForallStmt, iteratedExpressions(), call, __VA_ARGS__); \
@@ -650,7 +685,17 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_CHILD(_a, FnSymbol, body, call, __VA_ARGS__);              \
     AST_CALL_CHILD(_a, FnSymbol, where, call, __VA_ARGS__);             \
     AST_CALL_CHILD(_a, FnSymbol, lifetimeConstraints, call, __VA_ARGS__); \
+    if (InterfaceInfo* ifcInfo = ((FnSymbol*)_a)->interfaceInfo) {      \
+      AST_CALL_LIST(ifcInfo, InterfaceInfo,                             \
+                    constrainedTypes,         call, __VA_ARGS__);       \
+      AST_CALL_LIST(ifcInfo, InterfaceInfo,                             \
+                    interfaceConstraints,     call, __VA_ARGS__);       \
+    }                                                                   \
     AST_CALL_CHILD(_a, FnSymbol, retExprType, call, __VA_ARGS__);       \
+    break;                                                              \
+  case E_InterfaceSymbol:                                               \
+    AST_CALL_LIST(_a,  InterfaceSymbol, ifcFormals, call, __VA_ARGS__); \
+    AST_CALL_CHILD(_a, InterfaceSymbol, ifcBody,    call, __VA_ARGS__); \
     break;                                                              \
   case E_EnumType:                                                      \
     AST_CALL_LIST(_a, EnumType, constants, call, __VA_ARGS__);          \
@@ -660,7 +705,7 @@ static inline const CallExpr* toConstCallExpr(const BaseAST* a)
     AST_CALL_LIST(_a, AggregateType, inherits, call, __VA_ARGS__);      \
     AST_CALL_LIST(_a, AggregateType, forwardingTo, call, __VA_ARGS__);  \
     break;                                                              \
-  case E_DecoratedClassType:                                              \
+  case E_DecoratedClassType:                                            \
     break;                                                              \
   default:                                                              \
     break;                                                              \

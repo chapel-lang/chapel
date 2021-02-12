@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 
 #include "WhileStmt.h"
 
-class WhileDoStmt : public WhileStmt
+class WhileDoStmt final : public WhileStmt
 {
   //
   // Class interface
@@ -40,17 +40,18 @@ private:
   //
 public:
                          WhileDoStmt(Expr*      cond, BlockStmt* body);
-  virtual               ~WhileDoStmt();
+                        ~WhileDoStmt();
 
-  virtual WhileDoStmt*   copy(SymbolMap* map = NULL, bool internal = false);
+  DECLARE_COPY(WhileDoStmt);
+  WhileDoStmt*           copyInner(SymbolMap* map)                   override;
 
-  virtual bool           isWhileDoStmt()                              const;
+  bool                   isWhileDoStmt()                       const override;
 
-  virtual GenRet         codegen();
-  virtual void           accept(AstVisitor* visitor);
+  GenRet                 codegen()                                   override;
+  void                   accept(AstVisitor* visitor)                 override;
 
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  Expr*                  getFirstExpr()                              override;
+  Expr*                  getNextExpr(Expr* expr)                     override;
 
 private:
                          WhileDoStmt();

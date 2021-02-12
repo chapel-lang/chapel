@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 #include "chpl-cache-task-decls.h"
 #define HAS_CHPL_CACHE_FNS
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct {
     chpl_cache_taskPrvData_t cache_data;
 } chpl_comm_taskPrvData_t;
@@ -40,5 +44,9 @@ typedef struct {
 
 // The type of the communication handle.
 typedef void* chpl_comm_nb_handle_t;
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

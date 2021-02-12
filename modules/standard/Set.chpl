@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -184,7 +184,7 @@ module Set {
       this.complete();
 
       if !isCopyableType(eltType) then
-        compilerError('Cannot initialize ' + this.type:string + ' from ' +
+        compilerError('cannot initialize ' + this.type:string + ' from ' +
                       other.type:string + ' because element type ' +
                       eltType:string + ' is not copyable');
 

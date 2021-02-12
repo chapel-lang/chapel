@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -82,6 +82,7 @@ DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
+CallExpr*  buildIfVar(const char* name, Expr* rhs, bool isConst);
 
 ModuleSymbol* buildModule(const char* name,
                           ModTag      modTag,
@@ -211,5 +212,9 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
 // The string name will be used in the error message.
 void redefiningReservedTypeError(const char* name);
 void redefiningReservedWordError(const char* name);
+
+// Emits an error for an attempt to provide an unexpected this intent tag
+// when defining an explicit operator.
+void updateOpThisTagOrErr(FnSymbol* fn);
 
 #endif

@@ -1,0 +1,4 @@
+error-two-ifc-one-arg-reqfun.chpl:31: In function 'cgFun':
+error-two-ifc-one-arg-reqfun.chpl:37: error: ambiguous call 'reqFunB(Q, real(64))'
+error-two-ifc-one-arg-reqfun.chpl:10: note: candidates are: reqFunB(cgFormal: Q, formal2: real(64))
+error-two-ifc-one-arg-reqfun.chpl:21: note:                 reqFunB(cgFormal: Q, formal2: real(64))

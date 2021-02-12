@@ -1,0 +1,3 @@
+assign-other-type-no-copy-init.chpl:26: In function 'main':
+assign-other-type-no-copy-init.chpl:29: error: an init= initializing 'R' from 'int(64)' is missing
+assign-other-type-no-copy-init.chpl:13: note: expected because assignment is defined here between these two types

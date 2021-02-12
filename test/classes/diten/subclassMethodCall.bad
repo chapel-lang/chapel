@@ -1,6 +1,6 @@
 subclassMethodCall.chpl:17: In method 'method':
 subclassMethodCall.chpl:18: error: unresolved call 'C2.foo()'
 subclassMethodCall.chpl:9: note: this candidate did not match: C1.foo()
-subclassMethodCall.chpl:18: note: because method call receiver with type C2
+subclassMethodCall.chpl:18: note: because method call receiver with type 'C2'
 subclassMethodCall.chpl:7: note: is passed to formal 'this: C1'
-  subclassMethodCall.chpl:1: called as borrowed Sub1.method(c: C2)
+  subclassMethodCall.chpl:1: called as Sub1.method(c: C2)

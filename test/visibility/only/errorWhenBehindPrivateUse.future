@@ -1,0 +1,2 @@
+bug: only list verification should not allow symbols hidden behind private uses
+#16982

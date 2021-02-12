@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,6 +45,7 @@ static void checkRecordInheritance(AggregateType* at);
 static void setupForCheckExplicitDeinitCalls();
 static void warnUnstableUnions(AggregateType* at);
 static void warnUnstableLeadingUnderscores();
+static void checkOperator(FnSymbol* fn);
 
 void
 checkParsed() {
@@ -97,6 +98,7 @@ checkParsed() {
 
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     checkFunction(fn);
+    checkOperator(fn);
   }
 
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
@@ -350,7 +352,8 @@ checkFunction(FnSymbol* fn) {
   // empty body instead.  This is consistent with the current draft
   // of the spec as well.
   if (fn->hasFlag(FLAG_NO_FN_BODY) && !fn->hasFlag(FLAG_EXTERN))
-    USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
+    if (!isInterfaceSymbol(fn->defPoint->parentSymbol))
+      USR_FATAL_CONT(fn, "no-op procedures are only legal for extern functions");
 
   if (fn->hasFlag(FLAG_EXTERN) && !fn->hasFlag(FLAG_NO_FN_BODY))
     USR_FATAL_CONT(fn, "Extern functions cannot have a body");
@@ -440,6 +443,32 @@ checkFunction(FnSymbol* fn) {
       } else if (formal->intent == INTENT_INOUT) {
         USR_FATAL_CONT(formal, "inout intent is not yet supported for iterators");
       }
+    }
+  }
+}
+
+static void checkOperator(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
+    if (fn->name == astrSassign || fn->name == astrSeq || fn->name == astrSne ||
+        fn->name == astrSgt || fn->name == astrSgte || fn->name == astrSlt ||
+        fn->name == astrSlte || fn->name == astrSswap ||
+        strcmp(fn->name, "&") == 0 || strcmp(fn->name, "|") == 0 ||
+        strcmp(fn->name, "^") == 0 || strcmp(fn->name, "~") == 0 ||
+        strcmp(fn->name, "+") == 0 || strcmp(fn->name, "-") == 0 ||
+        strcmp(fn->name, "*") == 0 || strcmp(fn->name, "/") == 0 ||
+        strcmp(fn->name, "<<") == 0 || strcmp(fn->name, ">>") == 0 ||
+        strcmp(fn->name, "%") == 0 || strcmp(fn->name, "**") == 0 ||
+        strcmp(fn->name, "!") == 0 || strcmp(fn->name, "<~>") == 0 ||
+        strcmp(fn->name, "+=") == 0 || strcmp(fn->name, "-=") == 0 ||
+        strcmp(fn->name, "*=") == 0 || strcmp(fn->name, "/=") == 0 ||
+        strcmp(fn->name, "%=") == 0 || strcmp(fn->name, "**=") == 0 ||
+        strcmp(fn->name, "&=") == 0 || strcmp(fn->name, "|=") == 0 ||
+        strcmp(fn->name, "^=") == 0 || strcmp(fn->name, ">>=") == 0 ||
+        strcmp(fn->name, "<<=") == 0 || strcmp(fn->name, "#") == 0 ||
+        strcmp(fn->name, "by") == 0 || strcmp(fn->name, "align") == 0) {
+      // When deprecate non-operator keyword declarations, add deprecation
+      // warning here.
+      fn->addFlag(FLAG_OPERATOR);
     }
   }
 }

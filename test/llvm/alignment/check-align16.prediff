@@ -1,0 +1,11 @@
+#!/bin/sh
+TESTNAME=$1
+OUTFILE=$2
+
+TMPFILE="$outfile.prediff.tmp"
+mv $OUTFILE $TMPFILE
+cat $TMPFILE | grep aligned16test | grep alloca | \
+               grep -ve 'struct.aligned16test[*]' | \
+               sed -s 's/%.* = /%r = /' |
+               sort -u > $OUTFILE
+rm $TMPFILE

@@ -1,6 +1,8 @@
 arr-slice-too.chpl:24: In function 'returnsArrayElt1':
 arr-slice-too.chpl:27: error: Scoped variable cannot be returned
 arr-slice-too.chpl:25: note: consider scope of A
+  arr-slice-too.chpl:40: called as returnsArrayElt1(i: int(64))
 arr-slice-too.chpl:30: In function 'returnsArrayElt2':
 arr-slice-too.chpl:33: error: Scoped variable cannot be returned
 arr-slice-too.chpl:31: note: consider scope of A
+  arr-slice-too.chpl:41: called as returnsArrayElt2(i: int(64), j: int(64))

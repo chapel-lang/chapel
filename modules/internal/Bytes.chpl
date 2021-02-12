@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -308,6 +308,12 @@ module Bytes {
     proc init=(b: string) {
       this.complete();
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
+    }
+
+    proc init=(b: c_string) {
+      this.complete();
+      var length = b.size;
+      initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
 
     inline proc byteIndices return 0..<size;
@@ -1042,6 +1048,12 @@ module Bytes {
   inline proc _cast(type t: bytes, x: string) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
+  pragma "no doc"
+  inline proc _cast(type t: bytes, x: c_string) {
+    var length = x.size;
+    return createBytesWithNewBuffer(x: bufferType, length=length, size=length+1);
+  }
+
 
   /*
      Appends the :mod:`bytes <Bytes>` `rhs` to the :mod:`bytes <Bytes>` `lhs`.

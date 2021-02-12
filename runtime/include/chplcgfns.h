@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -36,6 +36,10 @@
 #include "chpltypes.h"
 
 /* This header file is for routines that are in the generated code */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* defined in chpl_compilation_config.c: */
 extern const char* chpl_compileCommand;
@@ -102,5 +106,9 @@ extern int64_t chpl_gen_main(chpl_main_argument* const _arg);
 
 /* used for config vars: */
 extern void CreateConfigVarTable(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

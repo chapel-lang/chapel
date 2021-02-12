@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1168,7 +1168,7 @@ void readMacrosClang(void) {
 // 3: keep the code generator open until we finish generating Chapel code,
 //    since we might need to code generate called functions.
 // 4: get LLVM values for code generated C things (e.g. types, function ptrs)
-class CCodeGenConsumer : public ASTConsumer {
+class CCodeGenConsumer final : public ASTConsumer {
   private:
     GenInfo* info;
     clang::DiagnosticsEngine* Diags;
@@ -1222,6 +1222,40 @@ class CCodeGenConsumer : public ASTConsumer {
       adjustLayoutForGlobalToWide();
     }
 
+    void doHandleDecl(Decl* d) {
+      if (TypedefDecl *td = dyn_cast<TypedefDecl>(d)) {
+        const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
+        if(ctype != NULL) {
+          info->lvt->addGlobalCDecl(td);
+        }
+      } else if (FunctionDecl *fd = dyn_cast<FunctionDecl>(d)) {
+        info->lvt->addGlobalCDecl(fd);
+      } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
+        info->lvt->addGlobalCDecl(vd);
+      } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
+        if( rd->getName().size() > 0 ) {
+          // Handle forward declaration for structs
+          info->lvt->addGlobalCDecl(rd);
+        }
+      } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
+        for (auto shadow : ud->shadows()) {
+          NamedDecl* nd = shadow->getTargetDecl();
+          doHandleDecl(nd);
+        }
+      } else if (LinkageSpecDecl* ld = dyn_cast<LinkageSpecDecl>(d)) {
+        // Handles extern "C" { }
+        for (auto sub : ld->decls()) {
+          doHandleDecl(sub);
+        }
+      } else if (ExternCContextDecl *ed = dyn_cast<ExternCContextDecl>(d)) {
+        // TODO: is this an alternative extern "C"?
+        // do we need to handle it?
+        for (auto sub : ed->decls()) {
+          doHandleDecl(sub);
+        }
+      }
+    }
+
     // HandleTopLevelDecl - Handle the specified top-level declaration.
     // This is called by the parser to process every top-level Decl*.
     //
@@ -1231,21 +1265,7 @@ class CCodeGenConsumer : public ASTConsumer {
       if (Diags->hasErrorOccurred()) return true;
 
       for (DeclGroupRef::iterator I = DG.begin(), E = DG.end(); I != E; ++I) {
-        if(TypedefDecl *td = dyn_cast<TypedefDecl>(*I)) {
-          const clang::Type *ctype= td->getUnderlyingType().getTypePtrOrNull();
-          if(ctype != NULL) {
-            info->lvt->addGlobalCDecl(td);
-          }
-        } else if(FunctionDecl *fd = dyn_cast<FunctionDecl>(*I)) {
-          info->lvt->addGlobalCDecl(fd);
-        } else if(VarDecl *vd = dyn_cast<VarDecl>(*I)) {
-          info->lvt->addGlobalCDecl(vd);
-        } else if(clang::RecordDecl *rd = dyn_cast<RecordDecl>(*I)) {
-          if( rd->getName().size() > 0 ) {
-            // Handle forward declaration for structs
-            info->lvt->addGlobalCDecl(rd);
-          }
-        }
+        doHandleDecl(*I);
       }
 
       if (parseOnly) return true;
@@ -1377,7 +1397,7 @@ class CCodeGenConsumer : public ASTConsumer {
 };
 
 
-class CCodeGenAction : public ASTFrontendAction {
+class CCodeGenAction final : public ASTFrontendAction {
  public:
   CCodeGenAction() { }
  protected:
@@ -2352,22 +2372,13 @@ llvm::Type* codegenCType(const TypeDecl* td)
   clang::CodeGenerator* cCodeGen = clangInfo->cCodeGen;
   INT_ASSERT(cCodeGen);
 
-  //CodeGen::CodeGenTypes & cdt = info->cgBuilder->getTypes();
   QualType qType;
 
   // handle TypedefDecl
   if( const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td) ) {
     qType = tnd->getCanonicalDecl()->getUnderlyingType();
-    // had const Type *ctype = td->getUnderlyingType().getTypePtrOrNull();
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const EnumDecl* ed = dyn_cast<EnumDecl>(td) ) {
     qType = ed->getCanonicalDecl()->getIntegerType();
-    // could also use getPromotionType()
-    //could also do:
-    //  qType =
-    //   tnd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
     INT_ASSERT(def);
@@ -2469,9 +2480,10 @@ void LayeredValueTable::addGlobalValue(StringRef name, GenRet gend) {
   addGlobalValue(name, gend.val, gend.isLVPtr, gend.isUnsigned);
 }
 
-void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
+void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isUnsigned) {
   Storage store;
   store.u.type = type;
+  store.isUnsigned = isUnsigned;
   /*fprintf(stderr, "Adding global type %s ", name.str().c_str());
   type->dump();
   fprintf(stderr, "\n");
@@ -2480,6 +2492,13 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type) {
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
+  if (cdecl->getIdentifier() == nullptr) {
+    // Certain C++ things such as constructors can have
+    // special compound names. In this case getName() will
+    // fail.
+    return;
+  }
+
   addGlobalCDecl(cdecl->getName(), cdecl);
 
   // Also file structs under 'struct struct_name'
@@ -2588,8 +2607,12 @@ llvm::BasicBlock *LayeredValueTable::getBlock(StringRef name) {
   return NULL;
 }
 
-llvm::Type *LayeredValueTable::getType(StringRef name) {
+llvm::Type *LayeredValueTable::getType(StringRef name, bool *isUnsigned) {
   if(Storage *store = get(name)) {
+    if (isUnsigned != NULL) {
+      *isUnsigned = store->isUnsigned;
+    }
+
     if( store->u.type ) {
       INT_ASSERT(isa<llvm::Type>(store->u.type));
       return store->u.type;
@@ -2601,6 +2624,10 @@ llvm::Type *LayeredValueTable::getType(StringRef name) {
 
       // Convert it to an LLVM type.
       store->u.type = codegenCType(store->u.cTypeDecl);
+      const clang::Type *type = store->u.cTypeDecl->getTypeForDecl();
+      if (type != NULL) {
+        store->isUnsigned = type->isUnsignedIntegerOrEnumerationType();
+      }
       return store->u.type;
     }
   }
@@ -2930,6 +2957,66 @@ getCGArgInfo(const clang::CodeGen::CGFunctionInfo* CGI, int curCArg)
   return argInfo;
 }
 
+static unsigned helpGetCTypeAlignment(const clang::QualType& qType) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  ClangInfo* clangInfo = info->clangInfo;
+  INT_ASSERT(clangInfo);
+
+  unsigned alignInBits = clangInfo->Ctx->getTypeAlignIfKnown(qType);
+
+  unsigned alignInBytes = alignInBits / 8;
+  // round it up to a power of 2
+  unsigned rounded = 1;
+  while (rounded < alignInBytes) rounded *= 2;
+
+  return rounded;
+}
+
+static unsigned helpGetCTypeAlignment(const clang::TypeDecl* td) {
+  QualType qType;
+
+  if (const TypedefNameDecl* tnd = dyn_cast<TypedefNameDecl>(td)) {
+    qType = tnd->getCanonicalDecl()->getUnderlyingType();
+  } else if (const EnumDecl* ed = dyn_cast<EnumDecl>(td)) {
+    qType = ed->getCanonicalDecl()->getIntegerType();
+  } else if (const RecordDecl* rd = dyn_cast<RecordDecl>(td)) {
+    RecordDecl *def = rd->getDefinition();
+    INT_ASSERT(def);
+    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+  } else {
+    INT_FATAL("Unknown clang type declaration");
+  }
+
+  return helpGetCTypeAlignment(qType);
+}
+static unsigned helpGetAlignment(::Type* type) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+
+  if (type->symbol->hasFlag(FLAG_EXTERN)) {
+    clang::TypeDecl* cType = NULL;
+    clang::ValueDecl* cVal = NULL;
+    info->lvt->getCDecl(type->symbol->cname, &cType, &cVal);
+    if (cType) {
+      return helpGetCTypeAlignment(cType);
+    }
+  }
+
+  // use the maximum alignment of all the fields
+  unsigned maxAlign = 1;
+
+  if (isRecord(type) || isUnion(type)) {
+    AggregateType* at = toAggregateType(type);
+    for_fields(field, at) {
+      unsigned fieldAlign = helpGetAlignment(field->type);
+      if (maxAlign < fieldAlign)
+        maxAlign = fieldAlign;
+    }
+  }
+
+  return maxAlign;
+}
 
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
@@ -2941,6 +3028,31 @@ llvm::MaybeAlign getPointerAlign(int addrSpace) {
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
   return llvm::MaybeAlign(align);
 }
+llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td) {
+  unsigned rounded = helpGetCTypeAlignment(td);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+llvm::MaybeAlign getCTypeAlignment(const clang::QualType& qt) {
+  unsigned rounded = helpGetCTypeAlignment(qt);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+llvm::MaybeAlign getAlignment(::Type* type) {
+  unsigned rounded = helpGetAlignment(type);
+  if (rounded > 1) {
+    return llvm::MaybeAlign(rounded);
+  } else {
+    return llvm::MaybeAlign();
+  }
+}
+
 #else
 uint64_t getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
@@ -2951,7 +3063,17 @@ uint64_t getPointerAlign(int addrSpace) {
   uint64_t align = clangInfo->Clang->getTarget().getPointerAlign(0);
   return align;
 }
+unsigned getCTypeAlignment(const clang::TypeDecl* td) {
+  return helpGetCTypeAlignment(td);
+}
+unsigned getCTypeAlignment(const clang::QualType& qt) {
+  return helpGetCTypeAlignment(qt);
+}
+unsigned getAlignment(::Type* type) {
+  return helpGetAlignment(type);
+}
 #endif
+
 
 bool isBuiltinExternCFunction(const char* cname)
 {
@@ -3867,6 +3989,32 @@ static std::string getLibraryOutputPath() {
 static void moveGeneratedLibraryFile(const char* tmpbinname) {
   std::string outputPath = getLibraryOutputPath();
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
+}
+
+void print_clang(clang::Decl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
+}
+
+void print_clang(clang::TypeDecl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
+}
+void print_clang(clang::ValueDecl* d) {
+  if (d == NULL)
+    fprintf(stderr, "NULL");
+  else
+    d->print(llvm::dbgs());
+
+  fprintf(stderr, "\n");
 }
 
 #endif

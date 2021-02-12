@@ -1,0 +1,3 @@
+bug: chpldoc outputs incorrect documentation for an initialization usecase
+#17110
+

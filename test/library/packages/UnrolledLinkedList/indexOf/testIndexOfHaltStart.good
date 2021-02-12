@@ -1,0 +1,1 @@
+testIndexOfHaltStart.chpl:10: error: halt reached - Start index for "unrolledLinkedList.indexOf" out of bounds: -1

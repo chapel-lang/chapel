@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -973,7 +973,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
       leadForLoop->insertAtTail("'move'(%S, chpl__staticFastFollowCheckZip(%S))", T1, iterRec);
 
       // override the dynamic check if the compiler can prove it's safe
-      if (pfs->optInfo.confirmedFastFollower) {
+      if (pfs->optInfo.hasAlignedFollowers) {
         leadForLoop->insertAtTail(new_Expr("'move'(%S, %S)", T2, T1));
       }
       else {

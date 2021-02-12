@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include <stdint.h>
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void chpl_privatization_init(void);
 
 void chpl_newPrivatizedClass(void*, int64_t);
@@ -43,6 +47,10 @@ extern chpl_privateObject_t* chpl_privateObjects;
 void chpl_clearPrivatizedClass(int64_t);
 
 int64_t chpl_numPrivatizedClasses(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // LAUNCHER
 #endif // _chpl_privatization_h_

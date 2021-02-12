@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -920,6 +920,7 @@ static void addKnownWides() {
   forv_Vec(ArgSymbol, arg, gArgSymbols) {
     // Skip args we removed already in this pass.
     if (!arg->defPoint->parentSymbol) continue;
+
     if (!typeCanBeWide(arg)) continue;
 
     FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);

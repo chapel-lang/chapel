@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -78,9 +78,16 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName, bool& isCAr
 
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace);
+llvm::MaybeAlign getCTypeAlignment(const clang::TypeDecl* td);
+llvm::MaybeAlign getCTypeAlignment(const clang::QualType &qt);
+llvm::MaybeAlign getAlignment(Type* type);
 #else
 uint64_t getPointerAlign(int addrSpace);
+unsigned getCTypeAlignment(const clang::TypeDecl* td);
+unsigned getCTypeAlignment(const clang::QualType &qt);
+unsigned getAlignment(Type* type);
 #endif
+
 
 const clang::CodeGen::CGFunctionInfo& getClangABIInfoFD(clang::FunctionDecl* FD);
 const clang::CodeGen::CGFunctionInfo& getClangABIInfo(FnSymbol* fn);
@@ -105,6 +112,10 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name);
 void checkAdjustedDataLayout();
 
 extern fileinfo gAllExternCode;
+
+void print_clang(clang::Decl* d);
+void print_clang(clang::TypeDecl* td);
+void print_clang(clang::ValueDecl* vd);
 
 #endif // HAVE_LLVM
 

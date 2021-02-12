@@ -72,6 +72,8 @@ Optimization Control Options:
       --[no-]dynamic-auto-local-access
                                       Enable [disable] using local access
                                       automatically (dynamic only)
+      --[no-]auto-aggregation         Enable [disable] automatically
+                                      aggregating remote accesses in foralls
 
 Run-time Semantic Check Options:
       --[no-]checks                   Enable [disable] all following run-time

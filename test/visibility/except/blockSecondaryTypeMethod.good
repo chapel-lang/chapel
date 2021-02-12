@@ -1,0 +1,2 @@
+blockSecondaryTypeMethod.chpl:9: error: unresolved call 'type Foo.newMethod(1)'
+blockSecondaryTypeMethod.chpl:9: note: because no functions named newMethod found in scope

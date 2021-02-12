@@ -876,7 +876,7 @@ int main(int argc, char **argv) {
   gex_Rank_t self = gex_TM_QueryRank(myteam);
   if (seedoffset == 0) {
     seedoffset = (((unsigned int)TIME()) & 0xFFFF);
-    TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(&seedoffset));
+    TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(seedoffset));
   }
   TEST_SRAND(self+seedoffset);
 
