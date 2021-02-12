@@ -221,7 +221,7 @@ module CPtr {
   /* Copy the elements from one c_array to another.
      Raises an error at compile time if the array sizes or
      element types do not match. */
-  proc =(ref lhs:c_array, rhs:c_array) {
+  operator =(ref lhs:c_array, rhs:c_array) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_array assignment");
     if lhs.size != rhs.size then
@@ -231,7 +231,7 @@ module CPtr {
       lhs[i] = rhs[i];
     }
   }
-  proc =(ref lhs:c_ptr, ref rhs:c_array) {
+  operator =(ref lhs:c_ptr, ref rhs:c_array) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_array assignment");
     lhs = c_ptrTo(rhs[0]);
@@ -243,14 +243,14 @@ module CPtr {
   }
 
   pragma "no doc"
-  inline proc =(ref lhs:c_ptr, rhs:c_ptr) {
+  inline operator =(ref lhs:c_ptr, rhs:c_ptr) {
     if lhs.eltType != rhs.eltType then
       compilerError("element type mismatch in c_ptr assignment");
     __primitive("=", lhs, rhs);
   }
 
   pragma "no doc"
-  inline proc =(ref lhs:c_ptr, rhs:_nilType) {
+  inline operator =(ref lhs:c_ptr, rhs:_nilType) {
     __primitive("=", lhs, nil);
   }
 
@@ -364,36 +364,36 @@ module CPtr {
     return __primitive("cast", t, x);
 
   pragma "no doc"
-  inline proc =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
+  inline operator =(ref a:c_fn_ptr, b:c_fn_ptr) { __primitive("=", a, b); }
 
 
 
   pragma "no doc"
-  inline proc ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator ==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_eq", a, b);
   }
 
   pragma "no doc"
-  inline proc ==(a: c_ptr, b: c_void_ptr) {
+  inline operator ==(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_eq", a, b);
   }
   pragma "no doc"
-  inline proc ==(a: c_void_ptr, b: c_ptr) {
+  inline operator ==(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_eq", a, b);
   }
   // Don't need _nilType versions -
   // Rely on coercions from nil to c_ptr / c_void_ptr
 
   pragma "no doc"
-  inline proc !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
+  inline operator !=(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
-  inline proc !=(a: c_ptr, b: c_void_ptr) {
+  inline operator !=(a: c_ptr, b: c_void_ptr) {
     return __primitive("ptr_neq", a, b);
   }
   pragma "no doc"
-  inline proc !=(a: c_void_ptr, b: c_ptr) {
+  inline operator !=(a: c_void_ptr, b: c_ptr) {
     return __primitive("ptr_neq", a, b);
   }
 
@@ -401,16 +401,16 @@ module CPtr {
   inline proc _cond_test(x: c_ptr) return x != c_nil;
 
   pragma "no doc"
-  inline proc !(x: c_ptr) return x == c_nil;
+  inline operator !(x: c_ptr) return x == c_nil;
 
   pragma "no doc"
-  inline proc +(a: c_ptr, b: integral) return __primitive("+", a, b);
+  inline operator +(a: c_ptr, b: integral) return __primitive("+", a, b);
 
   pragma "no doc"
-  inline proc -(a: c_ptr, b: integral) return __primitive("-", a, b);
+  inline operator -(a: c_ptr, b: integral) return __primitive("-", a, b);
 
   pragma "no doc"
-  inline proc -(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
+  inline operator -(a: c_ptr(?t), b: c_ptr(t)):c_ptrdiff {
     return c_pointer_diff(a, b, c_sizeof(a.eltType):c_ptrdiff);
   }
 
