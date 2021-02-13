@@ -650,6 +650,9 @@ static void noteUse(VarSymbol* var, VarToCopyElisionState& map) {
 }
 
 static void noteUses(Expr* e, VarToCopyElisionState& map) {
+  if (isForallStmt(e)) {
+    gdbShouldBreakHere();
+  }
   std::vector<SymExpr*> symExprs;
   collectSymExprs(e, symExprs);
   for_vector (SymExpr, se, symExprs) {

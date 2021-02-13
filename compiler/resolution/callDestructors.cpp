@@ -1965,6 +1965,9 @@ static void insertAutoDestroyPrimsForLoopExprTemps() {
 }
 
 static void removeZipPrimitives() {
+  // we keep PRIM_ZIPs after resolution as markers to avoid copy elision for
+  // symbols that are used in zip clauses. At this point, we no longer need
+  // those
   forv_Vec(ForallStmt, forall, gForallStmts) {
     if (CallExpr *prevCall = toCallExpr(forall->prev)) {
       if (prevCall->isPrimitive(PRIM_ZIP)) {

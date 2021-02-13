@@ -1113,7 +1113,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
       pfs->insertZipSym(actualSymExpr->symbol());
     }
-    pfs->zipCall->remove();
+    //pfs->zipCall->remove();
   }
 }
 
