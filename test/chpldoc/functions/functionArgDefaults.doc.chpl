@@ -11,6 +11,7 @@ proc varDefault(arg=x) {}
 
 proc notDefault(arg=!x) {}
 proc negDefault(arg=-x) {}
+proc plusDefault(arg=+x) {}
 proc bitwiseNegDefault(arg=~x) {}
 
 proc notNilDefault(arg=c!) {}

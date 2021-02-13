@@ -33,6 +33,8 @@ or
 
 .. function:: proc negDefault(arg = -x)
 
+.. function:: proc plusDefault(arg = +x)
+
 .. function:: proc bitwiseNegDefault(arg = ~x)
 
 .. function:: proc notNilDefault(arg = c!)

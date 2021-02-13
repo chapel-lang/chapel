@@ -31,6 +31,8 @@ or
 
 .. data:: var negDefault = -x
 
+.. data:: var plusDefault = +x
+
 .. data:: var bitwiseNegDefault = ~x
 
 .. data:: var notNilDefault = c!

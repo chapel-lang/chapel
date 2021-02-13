@@ -11,6 +11,7 @@ module variableDefaultValues {
 
   var notDefault = !x;
   var negDefault = -x;
+  var plusDefault = +x;
   var bitwiseNegDefault = ~x;
 
   var notNilDefault = c!;
