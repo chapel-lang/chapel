@@ -137,6 +137,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
    * filtering and disambiguation processes.
    */
   fn = instantiateSignature(fn, substitutions, visInfo);
+  adjustForCGinstantiation(fn, substitutions);
 
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -148,9 +149,6 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
   if (fn == oldFn)
     return true;
 
-  if (! witnesses.empty()) // i.e. when CG
-    cleanupInstantiatedCGfun(fn, witnesses);
-
   return isApplicable(info, visInfo);
 }
 
@@ -159,13 +157,18 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
 // Should this be entirely in interfaceResolution.cpp ?
 bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
+  int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
     if (ImplementsStmt* istm =
           constraintIsSatisfiedAtCallSite(info.call, icon, substitutions))
-      witnesses.push_back(istm); // success
-    else
+    {
+      // success
+      witnesses.push_back(istm);
+      copyIfcRepsToSubstitutions(fn, indx++, istm, substitutions);
+    } else {
       return false;
+    }
   }
 
   return true; // all constraints are satisfied
@@ -960,6 +963,16 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
             reason = classifyTypeMismatch(actual->type, formal->type);
             return false;
           }
+
+        } else if (isConstrainedType(formal->type, CT_CGFUN_ASSOC_TYPE)) {
+          // At this point we have not yet recorded the instantiations for
+          // interface types. So we cannot compute their associated types.
+          // So allow anything to match an associated type for now.
+          // Correctness will be checked later in isApplicableConcrete().
+          //
+          // CG TODO: also enable the case when such an AT is nested.
+          // Ex. actual: [1..3] int, formal: [1..3] AT,
+          // where AT is 'int' for the current call.
 
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||

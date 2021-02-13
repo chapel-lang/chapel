@@ -595,6 +595,13 @@ public:
   // the body block of the interface declaration, always non-null
   BlockStmt* ifcBody;
 
+  // maps name to the ConstrainedType for an associated type
+  // their DefExprs are in ifcBody
+  std::map<const char*, ConstrainedType*> associatedTypes;
+
+  // constraints to be checked for each implementation
+  std::vector<ImplementsStmt*> associatedConstraints;
+
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise

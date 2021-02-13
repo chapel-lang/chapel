@@ -301,7 +301,8 @@ public:
   Expr*  getFirstExpr()                             override;
   Expr*  getNextExpr(Expr* expr)                    override;
 
-  int    numActuals() const { return iConstraint->numActuals(); }
+  InterfaceSymbol* ifcSymbol()  const { return iConstraint->ifcSymbol(); }
+  int              numActuals() const { return iConstraint->numActuals(); }
 
   // the constraint being implemented, always non-null
   IfcConstraint* iConstraint;
@@ -309,7 +310,8 @@ public:
   // (possibly empty) body of this statement, always non-null
   BlockStmt*     implBody;
 
-  // mapping: required interface function -> its implementation
+  // for each associated type or required function in the interface,
+  // the map points to its implementation for this ImplementsStmt
   SymbolMap      witnesses;
 };
 

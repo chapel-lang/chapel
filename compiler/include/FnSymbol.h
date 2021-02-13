@@ -58,14 +58,18 @@ public:
   // an interface constraint of this function
   AList interfaceConstraints;
 
-  // contains one SymbolMap per IfcConstraint in 'interfaceConstraints'
-  // with mapping: the FnSymbol for a required function in the interface def
-  //   -> the FnSymbol used to represent calls to that required function
-  //      throughout the body of this function
+  //
+  // Contains one SymbolMap per IfcConstraint in 'interfaceConstraints'.
+  // If IFC is the constraint's interface, the corresponding SymbolMap
+  // is a mapping:
+  // - from each symbol defined in IFC body, such as a required function or
+  //   an associated type,
+  // - to the symbol that represents that throughout the body of this function
   //
   // a single SymbolMap for all constraints in a CG function is not sufficient
   // when the same interface is implemented by different ConstrainedTypes
-  std::vector<SymbolMap> repsForRequiredFns;
+  //
+  std::vector<SymbolMap> repsForIfcSymbols;
 };
 
 class FnSymbol final : public Symbol {
