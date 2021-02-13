@@ -890,6 +890,7 @@ static void addKnownWides() {
           widenSubAggregateTypes(fn, fi->type);
         } else {
           DEBUG_PRINTF("Field %s (%d) is in an on bundle, must be wide\n", fi->cname, fi->id);
+          //if (fi->id == 2804720) { gdbShouldBreakHere(); }
           setWide(fn, fi);
         }
       }
@@ -1228,6 +1229,9 @@ static void propagateVar(Symbol* sym) {
         // TODO: Duplicate functions here.
 
         ArgSymbol* arg = actual_to_formal(use);
+        if (sym->id == 2804890) {
+          //gdbShouldBreakHere();
+        }
         debug(sym, "Default widening of arg %s (%d)\n", arg->cname, arg->id);
         matchWide(use, arg);
       }
@@ -1331,7 +1335,11 @@ static void propagateField(Symbol* sym) {
                 if (fIgnoreLocalClasses || !isLocalField) {
                   DEBUG_PRINTF("\t"); debug(lhs, "widened gmv\n");
                   // this was matchWide(use, lhs); -- Ben, FIXME
+
+                  if (lhs->id == 1923118) { gdbShouldBreakHere(); }
+
                   matchWide(sym, lhs);
+                  //matchWide(use, lhs);
                 }
                 break;
               default:
@@ -2175,6 +2183,7 @@ static void fixAST() {
             if (!isFullyWide(lhs) && !same) {
               SET_LINENO(lhs);
               VarSymbol* tmp = newTemp(field->symbol()->type);
+              if (tmp->id == 3292950) { gdbShouldBreakHere(); }
               DEBUG_PRINTF("Temp %d for get_member_value\n", tmp->id);
 
               call->insertBefore(new DefExpr(tmp));

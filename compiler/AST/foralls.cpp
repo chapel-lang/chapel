@@ -957,8 +957,8 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
   INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
   INT_ASSERT(iterCall->numActuals() > 1);
 
-  const char *fnName = isStatic ? "chpl__staticFastFollowCheckNew" :
-                                  "chpl__dynamicFastFollowCheckNew";
+  const char *fnName = isStatic ? "chpl__staticFastFollowCheck" :
+                                  "chpl__dynamicFastFollowCheck";
 
   Expr *lead = iterCall->get(1);
   INT_ASSERT(isSymExpr(lead));
@@ -975,6 +975,7 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
 
   return ret;
 }
+
 
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
