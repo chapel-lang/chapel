@@ -1,0 +1,2 @@
+bug: chpldoc doesn't format chpl_by and chpl_align correctly
+#17163

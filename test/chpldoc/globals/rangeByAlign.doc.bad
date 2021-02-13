@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: rangeByAlign.doc
+
+rangeByAlign.doc
+================
+**Usage**
+
+.. code-block:: chapel
+
+   use rangeByAlign.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import rangeByAlign.doc;
+
+.. data:: var r1 = chpl_by(1..10, 2)
+
+.. data:: var r2 = chpl_align(chpl_by(1..10, 2), 1)
+
