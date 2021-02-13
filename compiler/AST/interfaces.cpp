@@ -51,6 +51,14 @@ static FnSymbol* toInterfaceFunDecl(Expr* expr) {
   return NULL;
 }
 
+static VarSymbol* toAssociatedTypeDecl(Expr* expr) {
+  if (DefExpr* def = toDefExpr(expr))
+    if (VarSymbol* AT = toVarSymbol(def->sym))
+      if (AT->hasFlag(FLAG_TYPE_VARIABLE))
+        return AT;
+  return NULL;
+}
+
 DefExpr* InterfaceSymbol::buildDef(const char* name,
                                    CallExpr*   formals,
                                    BlockStmt*  body)
@@ -68,12 +76,41 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
                    "  at least one formal argument is required", isym->name);
 
   // ifcBody can be empty; check that the content is appropriate
-  for_alist(expr, isym->ifcBody->body)
-    if (toInterfaceFunDecl(expr) == NULL) {
-      USR_FATAL_CONT(expr, "not a 'proc' or 'iter' declaration");
-      USR_PRINT(expr,"  only function declarations"
-                     " are currently allowed in an interface");
+  for_alist(expr, isym->ifcBody->body) {
+    SET_LINENO(expr); // does not matter since we are parsing?
+
+    if (toInterfaceFunDecl(expr) != NULL) {
+      // ok
+
+    } else if (VarSymbol* AT = toAssociatedTypeDecl(expr)) {
+      // not allowing defaults for now
+      if (AT->defPoint->init != NULL || AT->defPoint->exprType != NULL)
+        USR_FATAL_CONT(expr, "an associated type at present cannot have"
+                             " a default value");
+      // support for multi-argument inferfaces is pending #17008
+      if (isym->ifcFormals.length > 1)
+        USR_FATAL_CONT(expr, "associated types at present are not allowed"
+                       " for multi-argument interfaces");
+      // replace with a fresh ConstrainedType
+      TypeSymbol* ACT = ConstrainedType::build(AT->name, CT_IFC_ASSOC_TYPE);
+      isym->associatedTypes[ACT->name] = (ConstrainedType*)ACT->type;
+      reset_ast_loc(ACT, expr);
+      AT->defPoint->replace(new DefExpr(ACT));
+
+    } else if (ImplementsStmt* istm = toImplementsStmt(expr)) {
+      if (istm->implBody->body.length != 0)
+        USR_FATAL_CONT(istm, "an associated constraint is not allowed"
+                       " to have a block statement");
+      isym->associatedConstraints.push_back(istm);
+
+    } else {
+      USR_FATAL_CONT(expr,
+        "this statement is illegal in an interface declaration");
+      USR_PRINT(expr,
+        "only functions, associated types, and associated constraints"
+        " are allowed at this point");
     }
+  }
 
   return new DefExpr(isym);
 }
@@ -83,7 +120,7 @@ DefExpr* InterfaceSymbol::buildFormal(const char* name,
 {
   Symbol* formal = NULL;
   if (intent == INTENT_TYPE) {
-    formal = ConstrainedType::build(name);
+    formal = ConstrainedType::build(name, CT_IFC_FORMAL);
   } else {
     INT_FATAL(formal, "unexpected intent");
   }
@@ -236,11 +273,11 @@ ImplementsStmt* ImplementsStmt::copyInner(SymbolMap* map) {
                             COPY_INT(implBody));
 }
 
-static void verifyWitnesses(ImplementsStmt* istmt) {
+static void verifyWitnesses(ImplementsStmt* istm) {
   if (!normalized) return;
-  IfcConstraint* icon = istmt->iConstraint;
+  IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
-  form_Map(SymbolMapElem, witn, istmt->witnesses) {
+  form_Map(SymbolMapElem, witn, istm->witnesses) {
     INT_ASSERT(witn->key->defPoint->parentSymbol == isym);
     // witn->value can be defined anywhere
   }
@@ -310,7 +347,7 @@ void introduceConstrainedTypes(FnSymbol* fn) {
       SET_LINENO(def);
       Symbol* queryT = def->sym;
       // introduce a ConstrainedType
-      TypeSymbol* CT = ConstrainedType::build(queryT->name);
+      TypeSymbol* CT = ConstrainedType::build(queryT->name, CT_CGFUN_FORMAL);
       fn->interfaceInfo->addConstrainedType(new DefExpr(CT));
 
       // replace queryT with CT throughout
@@ -342,7 +379,8 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   SET_LINENO(se);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::build(astr("t_", isym->name));
+  TypeSymbol* CT = ConstrainedType::build(astr("t_", isym->name),
+                                          CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 
   // add an interface constraint
@@ -418,22 +456,25 @@ FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
   return toFnSymbol(istm->parentSymbol);
 }
 
-void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn) {
-  AList& body = wrapFn->body->body;
-  INT_ASSERT(isImplementsStmt(body.head));
-  body.insertAtHead(new CallExpr(PRIM_ERROR));
-}
-
 // Verify that the above functions work correctly.
-static void verifyWrapImplementsStmt(ImplementsStmt* istm,
-                                     FnSymbol* wrapFn) {
-  InterfaceSymbol* isym = istm->iConstraint->ifcSymbol();
+static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
+                                     bool successful) {
+  InterfaceSymbol* isym = istm->ifcSymbol();
 
   INT_ASSERT(wrapFn->name == implementsStmtWrapperName(isym));
   INT_ASSERT(interfaceNameForWrapperFn(wrapFn) == isym->name);
   bool isSuccess;
   INT_ASSERT(implementsStmtForWrapperFn(wrapFn, isSuccess) == istm);
+  INT_ASSERT(isSuccess == successful);
   INT_ASSERT(wrapperFnForImplementsStmt(istm) == wrapFn);
+}
+
+void markImplStmtWrapFnAsFailure(FnSymbol* wrapFn) {
+  AList& body = wrapFn->body->body;
+  ImplementsStmt* istm = toImplementsStmt(body.head);
+  INT_ASSERT(istm != NULL);
+  body.insertAtHead(new CallExpr(PRIM_ERROR));
+  if (fVerify) verifyWrapImplementsStmt(wrapFn, istm, false);
 }
 
 FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
@@ -442,12 +483,13 @@ FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
     INT_ASSERT(! normalized); // will report "undeclared" error later
     return NULL;
   }
-  InterfaceSymbol* isym = istm->iConstraint->ifcSymbol();
+  InterfaceSymbol* isym = istm->ifcSymbol();
   FnSymbol* wrapFn = new FnSymbol(implementsStmtWrapperName(isym));
   wrapFn->addFlag(FLAG_IMPLEMENTS_WRAPPER);
   istm->insertBefore(new DefExpr(wrapFn));
   wrapFn->insertAtTail(istm->remove());
   wrapFn->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  if (fVerify) verifyWrapImplementsStmt(wrapFn, istm, true);
   return wrapFn;
 }
 
@@ -455,9 +497,6 @@ FnSymbol* wrapOneImplementsStatement(ImplementsStmt* istm) {
 // Places this wrapper function where the implements statement used to be.
 // Currently the wrapper function has a formal for each interface formal.
 void wrapImplementsStatements() {
-  forv_Vec(ImplementsStmt, istm, gImplementsStmts) {
-    FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
-    if (!wrapFn) continue; // there was an error
-    if (fVerify) verifyWrapImplementsStmt(istm, wrapFn);
-  }
+  forv_Vec(ImplementsStmt, istm, gImplementsStmts)
+    wrapOneImplementsStatement(istm);
 }

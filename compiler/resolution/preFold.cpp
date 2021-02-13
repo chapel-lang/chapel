@@ -2309,6 +2309,12 @@ static Expr* preFoldNamed(CallExpr* call) {
       if (retval != NULL)
         call->replace(retval);
     }
+  } else if (call->numActuals() == 2  &&
+             call->get(1)->typeInfo() == dtMethodToken ) {
+    // Handle a reference to an interface associated type, if applicable.
+    if (ConstrainedType* recv = toConstrainedType(call->get(2)->typeInfo())) {
+      retval = resolveCallToAssociatedType(call, recv);
+    }
   }
 
   return retval;

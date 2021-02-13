@@ -64,6 +64,7 @@ public:
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;
+  const char*                 aggregateString()                          const;
 
   // is it a generic type (e.g. contains a type field with or without default)
   // e.g. this would return true for
