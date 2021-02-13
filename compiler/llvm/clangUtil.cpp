@@ -1402,7 +1402,7 @@ class CCodeGenAction final : public ASTFrontendAction {
   CCodeGenAction() { }
  protected:
   std::unique_ptr<ASTConsumer>
-  CreateASTConsumer(CompilerInstance &CI, StringRef InFile);
+  CreateASTConsumer(CompilerInstance &CI, StringRef InFile) override;
 };
 
 std::unique_ptr<ASTConsumer>
