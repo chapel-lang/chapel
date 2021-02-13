@@ -1115,9 +1115,12 @@ static int sys_getcwd(char** path_out)
  * sys_getcwd() if you need error reports.
  */
 const char* getCwd() {
-  const char* result = getcwd(NULL, PATH_MAX);
-  if (result) {
-    return result;
+  char *ret;
+  int rc;
+
+  rc = sys_getcwd(&ret);
+  if (rc == 0) {
+    return ret;
   } else {
     return "";
   }
