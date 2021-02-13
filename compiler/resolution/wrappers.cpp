@@ -2885,8 +2885,8 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
   }
 
   forward = generateFastFollowCheck(fieldSymExprs, fnName, zipOp, lead);
-  std::cout << "Generated the forward call\n";
-  nprint_view(forward);
+  //std::cout << "Generated the forward call\n";
+  //nprint_view(forward);
 
   //checkFn->insertAtTail(new DefExpr(pTup));
   //checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
@@ -2897,6 +2897,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
+  // TODO move this part to the forward call generator?
   TransformLogicalShortCircuit handleAndsOrs;
   checkFn->accept(&handleAndsOrs);
   normalize(checkFn);
