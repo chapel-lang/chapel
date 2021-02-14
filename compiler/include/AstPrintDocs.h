@@ -31,7 +31,7 @@
 class AstPrintDocs final : public AstVisitorTraverse {
 public:
    AstPrintDocs(std::string moduleName, std::string path, std::string parentName);
-  ~AstPrintDocs();
+  ~AstPrintDocs() override;
 
   bool   enterAggrType    (AggregateType*     node) override;
   void   exitAggrType     (AggregateType*     node) override;

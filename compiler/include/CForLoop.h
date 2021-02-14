@@ -42,7 +42,7 @@ public:
   // Instance Interface
   //
 public:
-  ~CForLoop();
+  ~CForLoop() override = default;
 
   DECLARE_COPY(CForLoop);
   CForLoop* copyInner(SymbolMap* map) override;
@@ -83,4 +83,3 @@ private:
 };
 
 #endif
-

@@ -68,7 +68,7 @@ public:
   //
 public:
    AstDumpToNode(FILE* fp, int offset = 0);
-  ~AstDumpToNode();
+  ~AstDumpToNode() override;
 
   void offsetSet(int offset);
 

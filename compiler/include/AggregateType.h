@@ -48,7 +48,7 @@ public:
 
 public:
                               AggregateType(AggregateTag initTag);
-                             ~AggregateType();
+                             ~AggregateType() override;
 
   DECLARE_COPY(AggregateType);
   AggregateType*      copyInner(SymbolMap* map) override;

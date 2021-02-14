@@ -35,7 +35,8 @@ public:
 
   TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
           bool isSyncTry = false);
- ~TryStmt();
+ ~TryStmt() override = default;
+
   BlockStmt*          body() const;
   bool                tryBang() const;
   bool                isSyncTry() const;

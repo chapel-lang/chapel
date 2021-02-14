@@ -28,16 +28,6 @@
 #include "IfExpr.h"
 #include "LoopExpr.h"
 
-AstToText::AstToText()
-{
-
-}
-
-AstToText::~AstToText()
-{
-
-}
-
 const std::string& AstToText::text() const
 {
   return mText;
@@ -626,7 +616,7 @@ bool AstToText::isTypeDefault(Expr* expr) const
 void AstToText::appendDomain(CallExpr* expr, bool printingType)
 {
   mText += "domain(";
-              
+
   for(int i=2; i<=expr->numActuals(); i++)
   {
     if (i != 2)
@@ -959,7 +949,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       {
         mText += "{";
         appendExpr(expr->get(1), printingType);
-        
+
         // last argument to chpl__buildDomainExpr is definedConst
         for (int index = 2; index <= expr->numActuals()-1; index++)
         {

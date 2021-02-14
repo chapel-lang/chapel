@@ -961,8 +961,8 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
 class LowerIfExprVisitor final : public AstVisitorTraverse
 {
   public:
-    LowerIfExprVisitor() { }
-    ~LowerIfExprVisitor() { }
+    LowerIfExprVisitor()          = default;
+   ~LowerIfExprVisitor() override = default;
 
     void exitIfExpr(IfExpr* node) override;
 };

@@ -48,7 +48,8 @@ public:
                                       LabelSymbol* continueLabel,
                                       LabelSymbol* breakLabel,
                                       BlockStmt*   initBody);
-                        ~ParamForLoop();
+
+                        ~ParamForLoop() override = default;
 
   DECLARE_COPY(ParamForLoop);
   ParamForLoop* copyInner(SymbolMap* map) override;
@@ -60,7 +61,8 @@ public:
   Expr*                  getFirstExpr()                            override;
   Expr*                  getNextExpr(Expr* expr)                   override;
 
-  bool                   isParamForLoop()                    const override;
+  bool                   isParamForLoop()                    const override
+                         { return true; }
 
   CallExpr*              blockInfoGet()                      const override;
   CallExpr*              blockInfoSet(CallExpr* expr)              override;
@@ -98,4 +100,3 @@ private:
 };
 
 #endif
-

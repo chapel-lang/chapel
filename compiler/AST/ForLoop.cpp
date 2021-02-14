@@ -348,11 +348,6 @@ ForLoop::ForLoop(VarSymbol* index,
   mIsForExpr = isForExpr;
 }
 
-ForLoop::~ForLoop()
-{
-
-}
-
 ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
   ForLoop*   retval         = new ForLoop();
@@ -415,12 +410,6 @@ void ForLoop::copyBodyHelper(Expr* beforeHere, int64_t i, SymbolMap* map,
   map->put(continueSym, continueLabel);
 
   defContinueLabel->insertBefore(copyBody(map));
-}
-
-
-bool ForLoop::isForLoop() const
-{
-  return true;
 }
 
 // TODO (Elliot 03/03/15): coforall loops are currently represented

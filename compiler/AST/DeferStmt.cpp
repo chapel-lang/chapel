@@ -46,11 +46,6 @@ DeferStmt::DeferStmt(CallExpr* call)
   gDeferStmts.add(this);
 }
 
-
-DeferStmt::~DeferStmt() {
-
-}
-
 BlockStmt* DeferStmt::body() const {
   return _body;
 }
@@ -205,7 +200,7 @@ namespace {
 void checkDefersAfterParsing()
 {
   forv_Vec(DeferStmt, defer, gDeferStmts) {
-  
+
     // Check that there are no top-level defers;
     // each defer must be in a function (other than module init).
     ModuleSymbol* mod = toModuleSymbol(defer->parentSymbol);

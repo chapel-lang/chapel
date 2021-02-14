@@ -183,11 +183,6 @@ ParamForLoop::ParamForLoop(VarSymbol*   indexVar,
                               strideVar);
 }
 
-ParamForLoop::~ParamForLoop()
-{
-
-}
-
 ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
 {
   ParamForLoop* retval    = new ParamForLoop();
@@ -204,11 +199,6 @@ ParamForLoop* ParamForLoop::copyInner(SymbolMap* map)
     retval->insertAtTail(expr->copy(map, true));
 
   return retval;
-}
-
-bool ParamForLoop::isParamForLoop() const
-{
-  return true;
 }
 
 SymExpr* ParamForLoop::indexExprGet() const

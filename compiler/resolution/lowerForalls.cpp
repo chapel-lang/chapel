@@ -336,7 +336,7 @@ public:
 
   ExpandVisitor(ForallStmt* fs, SymbolMap& map);
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
-  ~ExpandVisitor();
+ ~ExpandVisitor() override;
 
   bool enterCallExpr(CallExpr* node) override {
     if (node->isPrimitive(PRIM_YIELD)) {
@@ -1300,7 +1300,7 @@ static Symbol* inlineRetArgFunction(CallExpr* defCall, FnSymbol* defFn,
     INT_ASSERT(fn->hasFlag(FLAG_AUTO_DESTROY_FN));
     retAssign = toCallExpr(prev->prev);
     prev->remove();
-  }    
+  }
 
   INT_ASSERT(retAssign && retAssign->isPrimitive(PRIM_ASSIGN));
 

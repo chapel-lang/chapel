@@ -46,7 +46,7 @@ public:
   static  void     view(const char* passName, int passNum);
 
                    AstDump(FILE* fp);
-                  ~AstDump();
+                  ~AstDump() override;
 
   //
   // These functions are the "implementation" interface for the

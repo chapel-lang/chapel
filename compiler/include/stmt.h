@@ -45,11 +45,11 @@
 
 class Stmt : public Expr {
 public:
-                 Stmt(AstTag astTag);
-  virtual       ~Stmt();
+  Stmt(AstTag astTag) : Expr(astTag) {}
+ ~Stmt() override = default;
 
   // Interface to Expr
-  bool isStmt()  const override;
+  bool isStmt() const override { return true; }
 };
 
 /************************************* | **************************************
@@ -61,8 +61,8 @@ class ResolveScope;
 // parent base class for UseStmt and ImportStmt
 class VisibilityStmt : public Stmt {
  public:
-           VisibilityStmt(AstTag astTag);
-  virtual ~VisibilityStmt();
+  VisibilityStmt(AstTag astTag);
+ ~VisibilityStmt() override = default;
 
   bool isARename() const;
   bool isARenamedSym(const char* name) const;

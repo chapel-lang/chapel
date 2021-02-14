@@ -232,11 +232,9 @@ protected:
                             const char* init_name,
                             Type*       init_type = dtUnknown);
 
-  virtual           ~Symbol();
+                    ~Symbol() override;
 
 private:
-                     Symbol();
-
   virtual void       codegenPrototype(); // ie type decl
   virtual Symbol*    copyInner(SymbolMap* map) = 0;
 
@@ -285,10 +283,9 @@ protected:
                       const char* initName,
                       Type*       initType);
 
-  virtual  ~LcnSymbol();
+           ~LcnSymbol() override = default;
 
 private:
-            LcnSymbol();
 
   int       mDepth;                // Lexical depth relative to root
   int       mOffset;               // Byte offset within frame
@@ -309,7 +306,7 @@ public:
   //changed isconstant flag to reflect var, const, param: 0, 1, 2
   VarSymbol(const char* init_name, Type* init_type = dtUnknown);
   VarSymbol(const char* init_name, QualifiedType qType);
-  virtual ~VarSymbol();
+ ~VarSymbol() override;
 
   void   verify()                                            override;
   void   accept(AstVisitor* visitor)                         override;

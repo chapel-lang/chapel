@@ -43,7 +43,7 @@ foreach_ast(decl_members);
   int numParamForLoop;
 
    AstCount();
-  ~AstCount();
+  ~AstCount() override = default;
 
   int total();
 
