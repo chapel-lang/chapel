@@ -1205,7 +1205,7 @@ class CCodeGenConsumer final : public ASTConsumer {
       }
     }
 
-    ~CCodeGenConsumer() { }
+    ~CCodeGenConsumer() override = default;
 
     // Start ASTVisitor Overrides
     void Initialize(ASTContext &Context) override {
@@ -1913,7 +1913,7 @@ struct ExternBlockInfo {
   GenInfo* gen_info;
   fileinfo file;
   ExternBlockInfo() : gen_info(NULL), file() { }
-  ~ExternBlockInfo() { }
+ ~ExternBlockInfo() = default;
 };
 
 typedef std::set<ModuleSymbol*> module_set_t;

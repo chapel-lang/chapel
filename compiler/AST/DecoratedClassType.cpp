@@ -132,10 +132,6 @@ DecoratedClassType::DecoratedClassType(AggregateType* cls, ClassTypeDecorator d)
   gDecoratedClassTypes.add(this);
 }
 
-
-DecoratedClassType::~DecoratedClassType() {
-}
-
 void DecoratedClassType::accept(AstVisitor* visitor) {
   if (visitor->enterDecoratedClassType(this)) {
     visitor->exitDecoratedClassType(this);

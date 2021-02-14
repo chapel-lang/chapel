@@ -133,16 +133,16 @@ public:
 
 
                              FnSymbol(const char* initName);
-                            ~FnSymbol();
+                            ~FnSymbol() override;
 
   void                       verify() override;
-  void               accept(AstVisitor* visitor) override;
+  void                       accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(FnSymbol);
   FnSymbol* copyInner(SymbolMap* map) override;
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  void               replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
   FnSymbol*                  partialCopy(SymbolMap* map);
   void                       finalizeCopy();

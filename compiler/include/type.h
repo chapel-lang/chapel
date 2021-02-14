@@ -115,8 +115,8 @@ public:
   std::map<std::string, int> GEPMap;
 
 protected:
-                   Type(AstTag astTag, Symbol* init_defaultVal);
-  virtual         ~Type();
+  Type(AstTag astTag, Symbol* init_defaultVal);
+ ~Type() override = default;
 
 private:
   virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
@@ -321,8 +321,8 @@ class EnumType final : public Type {
  public:
   const char* doc;
 
-   EnumType();
-  ~EnumType();
+  EnumType();
+ ~EnumType() override = default;
 
   void verify()                                         override;
   void accept(AstVisitor* visitor)                      override;

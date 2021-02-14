@@ -286,7 +286,7 @@ public:
 
 protected:
                     BaseAST(AstTag type);
-  virtual          ~BaseAST();
+  virtual          ~BaseAST() = default;
 
 private:
                     BaseAST();

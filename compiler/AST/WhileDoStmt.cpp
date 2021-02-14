@@ -86,23 +86,6 @@ bool WhileDoStmt::isPrimitiveCForLoop(Expr* cond)
 *                                                                           *
 ************************************* | ************************************/
 
-WhileDoStmt::WhileDoStmt(Expr* cond, BlockStmt* body) :
-WhileStmt(cond, body)
-{
-
-}
-
-WhileDoStmt::WhileDoStmt(VarSymbol* var, BlockStmt* body) :
-  WhileStmt(var, body)
-{
-
-}
-
-WhileDoStmt::~WhileDoStmt()
-{
-
-}
-
 WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
 {
   Expr*        condExpr = 0;
@@ -112,11 +95,6 @@ WhileDoStmt* WhileDoStmt::copyInner(SymbolMap* map)
   retval->copyInnerShare(*this, map);
 
   return retval;
-}
-
-bool WhileDoStmt::isWhileDoStmt() const
-{
-  return true;
 }
 
 void WhileDoStmt::accept(AstVisitor* visitor)

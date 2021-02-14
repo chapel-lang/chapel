@@ -36,11 +36,6 @@ WhileStmt::WhileStmt(VarSymbol* var, BlockStmt* body) :
   mCondExpr = (var != 0) ? new SymExpr(var) : 0;
 }
 
-WhileStmt::~WhileStmt()
-{
-
-}
-
 void WhileStmt::copyInnerShare(const WhileStmt& ref,
                                SymbolMap*       map)
 {

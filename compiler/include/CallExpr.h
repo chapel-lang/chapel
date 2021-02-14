@@ -69,7 +69,7 @@ public:
            BaseAST*     arg4 = NULL,
            BaseAST*     arg5 = NULL);
 
-  ~CallExpr();
+  ~CallExpr() override = default;
 
   void    verify() override;
 

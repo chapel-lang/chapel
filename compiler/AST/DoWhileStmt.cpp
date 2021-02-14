@@ -80,11 +80,6 @@ DoWhileStmt::DoWhileStmt(VarSymbol* var, BlockStmt* body) :
 
 }
 
-DoWhileStmt::~DoWhileStmt()
-{
-
-}
-
 DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
 {
   Expr*        cond   = NULL;
@@ -94,11 +89,6 @@ DoWhileStmt* DoWhileStmt::copyInner(SymbolMap* map)
   retval->copyInnerShare(*this, map);
 
   return retval;
-}
-
-bool DoWhileStmt::isDoWhileStmt() const
-{
-  return true;
 }
 
 void DoWhileStmt::accept(AstVisitor* visitor)

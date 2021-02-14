@@ -899,7 +899,7 @@ static bool isThisDot(CallExpr* call) {
       retval = true;
     }
   }
-  
+
   return retval;
 }
 
@@ -945,10 +945,10 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
 class ProcessThisUses final : public AstVisitorTraverse
 {
   public:
-    ProcessThisUses(const InitNormalize* state) {
-      this->state = state;
+    ProcessThisUses(const InitNormalize* state)
+      : state(state) {
     }
-    ~ProcessThisUses() { }
+    ~ProcessThisUses() override = default;
 
     void visitSymExpr(SymExpr* node) override;
     bool enterCallExpr(CallExpr* node) override;

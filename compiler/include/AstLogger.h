@@ -29,8 +29,8 @@
 
 class AstLogger : public AstVisitor {
 public:
-                 AstLogger();
-  virtual       ~AstLogger();
+   AstLogger()          = default;
+  ~AstLogger() override = default;
 
   //
   // The sub-classes of Type

@@ -181,8 +181,8 @@ static void addIterRecShape(CallExpr* forallExprCall,
 class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
   public:
-    LowerLoopExprVisitor() { }
-    ~LowerLoopExprVisitor() { }
+    LowerLoopExprVisitor()          = default;
+   ~LowerLoopExprVisitor() override = default;
 
     bool enterLoopExpr(LoopExpr* node) override;
 };

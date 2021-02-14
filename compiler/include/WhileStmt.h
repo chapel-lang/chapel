@@ -33,7 +33,7 @@ public:
 protected:
   WhileStmt(Expr*      sym, BlockStmt* initBody);
   WhileStmt(VarSymbol* sym, BlockStmt* initBody);
-  virtual ~WhileStmt();
+ ~WhileStmt() override = default;
 
   void      copyInnerShare(const WhileStmt& ref, SymbolMap* map);
 
@@ -51,7 +51,6 @@ protected:
   CallExpr* blockInfoSet(CallExpr* expr)             override;
 
 private:
-  WhileStmt();
 
   // Helper functions for checkConstLoops()
   SymExpr*               getWhileCondDef(VarSymbol* condSym);

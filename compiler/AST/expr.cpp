@@ -64,10 +64,6 @@ Expr::Expr(AstTag astTag) :
   next(NULL)
 { }
 
-Expr::~Expr() {
-
-}
-
 bool Expr::isStmt() const {
   return false;
 }

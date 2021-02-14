@@ -511,11 +511,6 @@ LcnSymbol::LcnSymbol(AstTag      astTag,
   mOffset = -1;
 }
 
-LcnSymbol::~LcnSymbol()
-{
-
-}
-
 void LcnSymbol::locationSet(int depth, int offset)
 {
   mDepth  = depth;

@@ -39,13 +39,15 @@ private:
   // Instance interface
   //
 public:
-                         WhileDoStmt(Expr*      cond, BlockStmt* body);
-                        ~WhileDoStmt();
+                        ~WhileDoStmt() override = default;
+                         WhileDoStmt(Expr* cond, BlockStmt* body)
+                           : WhileStmt(cond, body) { }
 
   DECLARE_COPY(WhileDoStmt);
   WhileDoStmt*           copyInner(SymbolMap* map)                   override;
 
-  bool                   isWhileDoStmt()                       const override;
+  bool                   isWhileDoStmt()                             const override
+                         { return true; }
 
   GenRet                 codegen()                                   override;
   void                   accept(AstVisitor* visitor)                 override;
@@ -54,10 +56,9 @@ public:
   Expr*                  getNextExpr(Expr* expr)                     override;
 
 private:
-                         WhileDoStmt();
-
-                         WhileDoStmt(VarSymbol* var,  BlockStmt* body);
+                         WhileDoStmt(VarSymbol* var,  BlockStmt* body)
+                           : WhileStmt(var, body) {
+                         }
 };
 
 #endif
-

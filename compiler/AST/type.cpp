@@ -54,10 +54,6 @@ Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
   scalarPromotionType = NULL;
 }
 
-Type::~Type() {
-
-}
-
 const char* Type::name() const {
   return symbol->name;
 }
@@ -75,7 +71,6 @@ bool Type::inTree() {
   else
     return false;
 }
-
 
 QualifiedType Type::qualType() {
   return QualifiedType(this);
@@ -510,10 +505,6 @@ EnumType::EnumType() :
   gEnumTypes.add(this);
   constants.parent = this;
 }
-
-
-EnumType::~EnumType() { }
-
 
 void EnumType::verify() {
   Type::verify();

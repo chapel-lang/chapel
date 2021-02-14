@@ -54,7 +54,7 @@ public:
                                        ModTag      iModTag,
                                        BlockStmt*  iBlock);
 
-                         ~ModuleSymbol();
+                         ~ModuleSymbol() override = default;
 
   // Interface to BaseAST
   void            verify() override;

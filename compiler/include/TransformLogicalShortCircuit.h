@@ -41,8 +41,8 @@ class Expr;
 class TransformLogicalShortCircuit final : public AstVisitorTraverse
 {
 public:
-                 TransformLogicalShortCircuit();
-                ~TransformLogicalShortCircuit();
+  TransformLogicalShortCircuit() = default;
+ ~TransformLogicalShortCircuit() override = default;
 
   // Transform performed pre-order
   bool   enterCallExpr (CallExpr* node) override;
