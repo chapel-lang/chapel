@@ -661,7 +661,7 @@ static bool inferRefToConst(Symbol* sym) {
             SymExpr *rhsSE = toSymExpr(call->get(2));
             if (rhsSE->symbol() == actual) {
               if (actual->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-                continue;
+                //continue;  // TODO -- this shouldn't be handled here
               }
             }
           }

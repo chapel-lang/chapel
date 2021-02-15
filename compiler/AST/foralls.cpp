@@ -32,6 +32,7 @@
 #include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "view.h"
 
 
 
@@ -304,6 +305,7 @@ buildFollowLoop(VarSymbol* iter,
   followBlock->insertAtTail(new DefExpr(followIter));
 
   followIdx->addFlag(FLAG_FOLLOWER_INDEX);
+  followIdx->addFlag(FLAG_INDEX_OF_INTEREST);
 
   if (fast) {
 
