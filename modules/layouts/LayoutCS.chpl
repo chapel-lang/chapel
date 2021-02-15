@@ -112,7 +112,7 @@ class CSDom: BaseSparseDomImpl {
   var colRange: range(idxType, stridable=stridable);
 
   /* (row|col) startIdxDom */
-  var startIdxDom: domain(0, idxType);
+  var startIdxDom: domain(1, idxType);
 
   var _nnz = 0;
 

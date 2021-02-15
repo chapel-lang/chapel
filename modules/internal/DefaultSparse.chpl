@@ -164,6 +164,7 @@ module DefaultSparse {
       // if the index already existed, then return
       if (found) then return 0;  // ?fromMMS: magic number for dsiAdd retval?
 
+writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       if boundsChecking then
         this.boundsCheck(ind);
 
