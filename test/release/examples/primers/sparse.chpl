@@ -25,7 +25,7 @@ config var n = 9;
 // see, it will also be useful for operations that want to treat our
 // sparse domain as though it was a dense ``n x n`` set of values.
 //
-const dnsDom = {1..n, 1..n};
+const dnsDom = {0..#n, 0..#n};
 
 //
 // Here we declare our sparse domain.  The sparse keyword indicates
@@ -64,7 +64,7 @@ writeln();
 proc writeSpsArr() {
   for (i,j) in dnsDom {
     write(spsArr(i,j), " ");
-    if (j == n) then writeln();
+    if (j == (n-1)) then writeln();
   }
   writeln();
 }
@@ -97,10 +97,11 @@ writeSpsArr();
 // OK, now let's actually add some sparse indices to the ``spsDom`` domain
 // and see what happens:
 //
-spsDom += (1,n);
-spsDom += (n,n);
-spsDom += (1,1);
-spsDom += (n,1);
+writeln("spsDom = ", spsDom);
+spsDom += (0,n-1);
+spsDom += (n-1,n-1);
+spsDom += (0,0);
+spsDom += (n-1,0);
 
 writeln("Printing spsArr after adding the corner indices:");
 writeSpsArr();
@@ -127,10 +128,10 @@ writeln();
 //
 proc computeVal(row, col) return row + col/10.0;
 
-spsArr(1,1) = computeVal(1,1);
-spsArr(1,n) = computeVal(1,n);
-spsArr(n,1) = computeVal(n,1);
-spsArr(n,n) = computeVal(n,n);
+spsArr(0,0) = computeVal(0,0);
+spsArr(0,n-1) = computeVal(0,n-1);
+spsArr(n-1,0) = computeVal(n-1,0);
+spsArr(n-1,n-1) = computeVal(n-1,n-1);
 
 writeln("Printing spsArr after assigning the corner elements:");
 writeSpsArr();
@@ -198,7 +199,7 @@ writeln();
 spsDom.clear();     // empty the sparse index set
 spsArr.IRV = 0.0;   // reset the IRV
 
-for i in 1..n do
+for i in 0..#n do
   spsDom += (i,i);
 
 [(i,j) in spsDom] spsArr(i,j) = computeVal(i,j);
@@ -213,7 +214,7 @@ writeSpsArr();
 //
 
 spsDom.clear();
-spsDom = ((1,1), (n/2, n/2), (n,n));
+spsDom = ((0,0), (n/2, n/2), (n-1,n-1));
 
 [(i,j) in spsDom] spsArr(i,j) = computeVal(i,j);
 
@@ -227,7 +228,7 @@ writeSpsArr();
 //
 
 iter antiDiag(n) {
-  for i in 1..n do
+  for i in 0..#n do
     yield (i, n-i+1);
 }
 
