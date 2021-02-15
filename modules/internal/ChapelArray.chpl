@@ -2577,7 +2577,6 @@ module ChapelArray {
     proc checkAccess(indices, value) {
       if isRectangularArr(this) {
         if !value.dsiBoundsCheck(indices) {
-writeln("this = ", this);
           if rank == 1 {
             halt("array index out of bounds\n",
                  "note: index was ", indices(0),

@@ -566,7 +566,6 @@ module ChapelDistribution {
     }
 
     proc add(idx: idxType) {
-writeln("ChapelDistribution:569, add, getting here?");
       buf[cur] = idx;
       cur += 1;
 

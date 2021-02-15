@@ -43,7 +43,6 @@ module DefaultSparse {
     proc init(param rank, type idxType, dist: unmanaged DefaultDist,
         parentDom: domain) {
       super.init(rank, idxType, parentDom);
-//writeln("parentDom = ", parentDom);
       this.dist = dist;
     }
 
@@ -164,7 +163,6 @@ module DefaultSparse {
       // if the index already existed, then return
       if (found) then return 0;  // ?fromMMS: magic number for dsiAdd retval?
 
-writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       if boundsChecking then
         this.boundsCheck(ind);
 
@@ -176,7 +174,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       _grow(_nnz);
 
       // shift indices up
-      for i in insertPt.._nnz-1 by -1 {
+      for i in insertPt.._nnz-2 by -1 {
         _indices(i+1) = _indices(i);
       }
 
@@ -190,7 +188,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       // this second initialization of any new values in the array.
       // we could also eliminate the oldNNZDomSize variable
       for a in _arrs {
-        a.sparseShiftArray(insertPt.._nnz-1, oldNNZDomSize+1..nnzDom.size);
+        a.sparseShiftArray(insertPt.._nnz-2, oldNNZDomSize..nnzDom.size-1);
       }
 
       return 1;
@@ -437,7 +435,6 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
     }
     // value version
     proc dsiAccess(ind: idxType) const ref where rank == 1 {
-//writeln("dsiAccess:439, dom.parentDom = ", dom.parentDom);
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
@@ -454,7 +451,6 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
 
     // ref version
     proc dsiAccess(ind: rank*idxType) ref {
-//writeln("dsiAccess:456, dom.parentDom = ", dom.parentDom);
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
@@ -470,7 +466,6 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
     // value version for POD types
     proc dsiAccess(ind: rank*idxType)
     where shouldReturnRvalueByValue(eltType) {
-//writeln("dsiAccess:471, dom.parentDom = ", dom.parentDom);
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
@@ -486,7 +481,6 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
     // const ref version for types with copy ctors
     proc dsiAccess(ind: rank*idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
-//writeln("dsiAccess:487, dom.parentDom = ", dom.parentDom);
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then
@@ -571,7 +565,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       if printBrackets then f <~> "{";
       if (_nnz >= 1) {
         f <~> _indices(0);
-        for i in 1..#_nnz { // ?fromMMS, this used to be 2.._nnz, why?
+        for i in 1.._nnz-1 {
           f <~> " " <~> _indices(i);
         }
       }
@@ -581,7 +575,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       if (_nnz >= 1) {
         var prevInd = _indices(0);
         f <~> " " <~> prevInd;
-        for i in 1..#_nnz {
+        for i in 1.._nnz-1 {
           if (prevInd(0) != _indices(i)(0)) {
             f <~> "\n";
           }
@@ -599,7 +593,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
     if (rank == 1) {
       if (dom._nnz >= 1) {
         f <~> data(0);
-        for i in 1..#dom._nnz {
+        for i in 1..dom._nnz-1 {
           f <~> " " <~> data(i);
         }
       }
@@ -607,7 +601,7 @@ writeln("DefaultSparse, 167, ind=",ind,", _nnz=", _nnz, "insertPt=", insertPt);
       if (dom._nnz >= 1) {
         var prevInd = dom._indices(0);
         f <~> data(0);
-        for i in 1..#dom._nnz {
+        for i in 1..dom._nnz-1 {
           if (prevInd(0) != dom._indices(i)(0)) {
             f <~> "\n";
           } else {
