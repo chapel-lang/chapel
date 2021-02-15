@@ -62,6 +62,7 @@
 module Random {
 
   public use RandomSupport;
+  use ChapelArray;
   public use NPBRandom;
   public use PCGRandom;
   import Set.set;
@@ -240,9 +241,6 @@ module Random {
   proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
-    if X.rank != 1 {
-      compilerError('choice() argument x must be 1 dimensional');
-    }
     if X.size < 1 {
       throw new owned IllegalArgumentError('choice() x.size must be greater than 0');
     }
@@ -253,9 +251,6 @@ module Random {
         compilerError('choice() prob must be an array');
       if !(isIntegralType(prob.eltType) || isRealType(prob.eltType)) then
         compilerError('choice() prob.eltType must be real or integral');
-      if prob.rank != 1 {
-        compilerError('choice() prob array must be 1 dimensional');
-      }
       if prob.size != X.size {
         throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
       }
@@ -284,18 +279,45 @@ module Random {
     }
   }
 
+  /*
+    Returns an array of size 'numElements' of type: 'int' if rank == 1, else
+    returns an array of size 'numElements' of type: tuple of int of size rank
+  */
+  proc getSampleDefinition(param rank, numElements: int) {
+    if rank == 1 {
+      var samples: [0..<numElements] int;
+      return samples;
+    }
+    else {
+      var samples: [0..<numElements] rank * int;
+      return samples;
+    }
+  }
+
+  /*
+    Returns a domain of dimensions of shape of type: 'int' if rank == 1, else
+    returns a domain of dimensions of shape of type: tuple of int of size rank
+  */
+  proc getIndicesDefinition(shape: domain, param rank) {
+    if rank == 1 {
+      var indices: [shape] int;
+      return indices;
+    }
+    else {
+      var indices: [shape] rank * int;
+      return indices;
+    }
+  }
+
   pragma "no doc"
   /* _choice branch for uniform distribution */
   proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
   {
 
-    const low = X.alignedLow,
-          stride = abs(X.stride);
-
     if isNothingType(sizeType) {
       // Return 1 sample
       var randVal = stream.getNext(resultType=int, 0, X.size-1);
-      var randIdx = X.dim(0).orderToIndex(randVal);
+      var randIdx = X.orderToIndex(randVal);
       return randIdx;
     } else {
       // Return numElements samples
@@ -309,12 +331,12 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [0..<numElements] int;
+      var samples = getSampleDefinition(X.rank, numElements);
 
       if replace {
         for sample in samples {
           var randVal = stream.getNext(resultType=int, 0, X.size-1);
-          var randIdx = X.dim(0).orderToIndex(randVal);
+          var randIdx = X.orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
@@ -324,17 +346,18 @@ module Random {
           while i < numElements {
             var randVal = stream.getNext(resultType=int, 0, X.size-1);
             if !indices.contains(randVal) {
-              var randIdx = X.dim(0).orderToIndex(randVal);
+              var randIdx = X.orderToIndex(randVal);
               samples[i] = randIdx;
               indices.add(randVal);
               i += 1;
             }
           }
         } else {
-          var indices: [X] int = X;
+          var indices = getIndicesDefinition(X, X.rank);
+          indices = X;
           shuffle(indices);
           for i in samples.domain {
-            samples[i] = (indices[X.dim(0).orderToIndex(i)]);
+            samples[i] = (indices[X.orderToIndex(i)]);
           }
         }
       }
@@ -352,17 +375,15 @@ module Random {
   {
     import Search;
     import Sort;
-    
+
     if prob.size != X.size {
       throw new owned IllegalArgumentError('choice() x.size must be equal to prob.size');
     }
-    
+
     if prob.size == 0 then
       throw new owned IllegalArgumentError('choice() prob array cannot be empty');
 
-    const low = X.alignedLow,
-          stride = abs(X.stride);
-    ref P = prob.reindex(0..<X.size);
+    ref P = reshape(prob, {0..<X.size});
 
     // Construct cumulative sum array
     var cumulativeArr = (+ scan P): real;
@@ -383,7 +404,7 @@ module Random {
       // Return 1 sample
       var randNum = stream.getNext(resultType=real);
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-      return X.dim(0).orderToIndex(idx);
+      return X.orderToIndex(idx);
     } else {
       // Return numElements samples
 
@@ -396,13 +417,13 @@ module Random {
                         else compilerError('choice() size type must be integral or tuple of ranges');
 
       // Return N samples
-      var samples: [0..<numElements] int;
+      var samples = getSampleDefinition(X.rank, numElements);
 
       if replace {
         for sample in samples {
           var randNum = stream.getNext(resultType=real);
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
-          sample = X.dim(0).orderToIndex(idx);
+          sample = X.orderToIndex(idx);
         }
       } else {
         var indicesChosen: domain(int);
@@ -423,7 +444,7 @@ module Random {
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
             if !indicesChosen.contains(indexChosen) {
               indicesChosen += indexChosen;
-              samples[i] = X.dim(0).orderToIndex(indexChosen);;
+              samples[i] = X.orderToIndex(indexChosen);
               i += 1;
             }
             P[indexChosen] = 0;
@@ -560,9 +581,9 @@ module Random {
     }
 
     /*
-     Returns a random sample from a given 1-D array, ``x``.
+     Returns a random sample from a given N-D array, ``x``.
 
-     :arg x: a 1-D array with values that will be sampled from.
+     :arg x: a N-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -570,7 +591,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -603,7 +624,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -627,9 +648,9 @@ module Random {
      }
 
     /*
-     Returns a random sample from a given 1-D domain, ``x``.
+     Returns a random sample from a given N-D domain, ``x``.
 
-     :arg x: a 1-D dom with values that will be sampled from.
+     :arg x: a N-D dom with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -637,7 +658,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -1056,9 +1077,9 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D array, ``x``.
+     Returns a random sample from a given N-D array, ``x``.
 
-     :arg x: a 1-D array with values that will be sampled from.
+     :arg x: a N-D array with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -1066,7 +1087,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -1101,7 +1122,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -1121,7 +1142,7 @@ module Random {
      */
       proc choice(x: range(stridable=?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
-      { 
+      {
         var dom: domain(1,stridable=true);
 
         if !isBoundedRange(x) {
@@ -1134,9 +1155,9 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D domain, ``x``.
+     Returns a random sample from a given N-D domain, ``x``.
 
-     :arg x: a 1-D dom with values that will be sampled from.
+     :arg x: a N-D dom with values that will be sampled from.
      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
@@ -1144,7 +1165,7 @@ module Random {
      :arg replace: an optional ``bool`` specifying whether or not to sample with
                    replacement, i.e. elements will only be chosen up to one
                    time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
+     :arg prob: an optional N-D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
@@ -1173,11 +1194,6 @@ module Random {
         if(!isRectangularArr(arr)) then
           compilerError("shuffle does not support non-rectangular arrays");
 
-        if D.rank != 1 then
-          compilerError("Shuffle requires 1-D array");
-
-        const low = D.alignedLow,
-              stride = abs(D.stride);
 
         _lock();
 
@@ -1188,19 +1204,10 @@ module Random {
                                  seed, PCGRandomStreamPrivate_count,
                                  0, i);
 
-          var j = i;
+          var lastInd = D.orderToIndex(i);
 
-          // Strided case
-          if stride > 1 {
-            k *= stride;
-            j *= stride;
-          }
-
-          // Alignment offsets
-          k += low;
-          j += low;
-
-          arr[k] <=> arr[j];
+          var randInd = D.orderToIndex(k);
+          arr[lastInd] <=> arr[randInd];
         }
 
         PCGRandomStreamPrivate_count += D.size;
@@ -2627,7 +2634,7 @@ module Random {
       proc getNth(n: integral): eltType throws {
         if (n < 0) then
           throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock(); 
+        _lock();
         NPBRandomStreamPrivate_skipToNth_noLock(n);
         const result = NPBRandomStreamPrivate_getNext_noLock();
         _unlock();
