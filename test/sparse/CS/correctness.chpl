@@ -42,6 +42,7 @@ proc main() {
         cscuD: sparse subdomain(D) dmapped cscuDmap;
 
     // Empty domain
+    // ?fromMMS: now that we are 0-indexed it doesn't seem like we want these defaults
     assert(csrsD.first == (0,0));
     assert(cscsD.first == (0,0));
     assert(csrsD.last == (0,0));
