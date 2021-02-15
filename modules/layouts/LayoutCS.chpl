@@ -55,7 +55,7 @@ defaults to ``true`` if omitted. For example:
   .. code-block:: chapel
 
     use LayoutCS;
-    var D = {1..n, 1..m};  // a default-distributed domain
+    var D = {0..#n, 0..#m};  // a default-distributed domain
     var CSR_Domain: sparse subdomain(D) dmapped CS(compressRows=true); // Default argument
     var CSC_Domain : sparse subdomain(D) dmapped CS(compressRows=false);
 
@@ -112,7 +112,7 @@ class CSDom: BaseSparseDomImpl {
   var colRange: range(idxType, stridable=stridable);
 
   /* (row|col) startIdxDom */
-  var startIdxDom: domain(1, idxType);
+  var startIdxDom: domain(0, idxType);
 
   var _nnz = 0;
 
@@ -143,7 +143,7 @@ class CSDom: BaseSparseDomImpl {
 
     this.complete();
 
-    nnzDom = {1.._nnz};
+    nnzDom = {0..#_nnz};
     dsiClear();
   }
 
@@ -187,7 +187,7 @@ class CSDom: BaseSparseDomImpl {
   pragma "not order independent yielding loops"
   iter dsiIndsIterSafeForRemoving() {
     var cursor = if this.compressRows then rowRange.high else colRange.high;
-    for i in 1.._nnz by -1 {
+    for i in 0..#_nnz by -1 {
       while (startIdx(cursor) > i) {
         cursor -= 1;
       }
@@ -696,7 +696,7 @@ class CSArr: BaseSparseArrImpl {
 
   pragma "order independent yielding loops"
   iter these() ref {
-    for i in 1..dom._nnz do yield data[i];
+    for i in 0..#dom._nnz do yield data[i];
   }
 
   iter these(param tag: iterKind) where tag == iterKind.leader {

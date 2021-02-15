@@ -419,7 +419,7 @@ module ChapelDistribution {
       const oldNNZDomSize = nnzDom.size;
       if (size > oldNNZDomSize) {
         const _newNNZDomSize = if (oldNNZDomSize) then ceil(factor*oldNNZDomSize):int else 1;
-        nnzDom = {1..#_newNNZDomSize};
+        nnzDom = {0..#_newNNZDomSize};
       }
     }
 
@@ -434,7 +434,7 @@ module ChapelDistribution {
         const shrinkThreshold = (nnzDom.size / (factor**2)): int;
         if (size < shrinkThreshold) {
           const _newNNZDomSize = (nnzDom.size / factor): int;
-          nnzDom = {1.._newNNZDomSize};
+          nnzDom = {0..#_newNNZDomSize};
         }
       }
     }
@@ -448,7 +448,7 @@ module ChapelDistribution {
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
 
-        nnzDom = {1.._newNNZDomSize};
+        nnzDom = {0..#_newNNZDomSize};
       }
     }
 
@@ -566,6 +566,7 @@ module ChapelDistribution {
     }
 
     proc add(idx: idxType) {
+writeln("ChapelDistribution:569, add, getting here?");
       buf[cur] = idx;
       cur += 1;
 
@@ -978,7 +979,7 @@ module ChapelDistribution {
       // fill all new indices i s.t. i > indices[oldnnz]
       forall i in shiftMap.domain.high+1..dom.nnzDom.high do data[i] = irv;
 
-      for (i, _newIdx) in zip(1..oldnnz by -1, shiftMap.domain.dim(0) by -1) {
+      for (i, _newIdx) in zip(0..#oldnnz by -1, shiftMap.domain.dim(0) by -1) {
         newIdx = shiftMap[_newIdx];
         data[newIdx] = data[i];
 
@@ -987,7 +988,7 @@ module ChapelDistribution {
         prevNewIdx = newIdx;
       }
       //fill the initial added space with IRV
-      for i in 1..prevNewIdx-1 do data[i] = irv;
+      for i in 0..prevNewIdx-1 do data[i] = irv;
     }
 
     // shift data array after single index addition. Fills the new index with irv
