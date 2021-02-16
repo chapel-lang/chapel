@@ -2025,6 +2025,8 @@ void runClang(const char* just_parse_filename) {
   }
 
   // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
+  // They are settings from the runtime build and we want to
+  // use flags appropriate to the compilation instead of the runtime build
   std::vector<std::string>::iterator pos =
     std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
   if (pos != args.end())
