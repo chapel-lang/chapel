@@ -460,7 +460,7 @@ module ChapelIteratorSupport {
     return _toLeader(x(0));
 
   pragma "fn returns iterator"
-  inline proc _toLeaderNew(x ...) {
+  inline proc _toLeaderNew(const ref x ...) {
     return _toLeaderZip(x);
   }
 

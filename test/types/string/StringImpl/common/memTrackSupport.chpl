@@ -38,7 +38,7 @@ proc allMemoryUsed(first=true) {
 
 proc checkMemLeaks(m0) {
   const m1 = allMemoryUsed(false);
-  const memLeaked = if CHPL_COMM=="none" then m1-m0 else + reduce (m1-m0);
+  const memLeaked =  + reduce (m1-m0);
   if memLeaked != 0 {
     if doMemLeaksTest then writeln(memLeaked, " bytes leaked");
     totalMemLeaked += memLeaked;
