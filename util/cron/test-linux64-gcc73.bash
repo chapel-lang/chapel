@@ -10,6 +10,7 @@ source /data/cf/chapel/setup_gcc73.bash     # host-specific setup for target com
 gcc_version=$(gcc -dumpversion)
 if [ "$gcc_version" != "7.3.0" ]; then
   echo "Wrong gcc version"
+  echo "Expected Version: 7.3.0 Actual Version: $gcc_version"
   exit 2
 fi
 
