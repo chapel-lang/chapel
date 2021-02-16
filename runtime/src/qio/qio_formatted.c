@@ -3245,7 +3245,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
           //It can also be done starting from the number itself
           //but this way avoids to deal with the loss of precision
           //caused by floating point representation
-          if(buf_sz > 0)
+          if(got >= 0 && got < buf_sz)
             got = snprintf(buf, buf_sz, "%.*E",_find_prec(buf, got), num);
         }
         else
@@ -3253,7 +3253,7 @@ int _ftoa_core(char* buf, size_t buf_sz, double num,
       } else {
         if(num >= 100000.0 && num < 1000000.0){
           got = snprintf(buf, buf_sz, "%.5e", num);
-          if(buf_sz > 0)
+          if(got >= 0 && got < buf_sz)
             got = snprintf(buf, buf_sz, "%.*e",_find_prec(buf, got), num);
         }
         else
