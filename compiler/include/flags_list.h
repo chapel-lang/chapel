@@ -170,6 +170,7 @@ symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this
 
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
+symbolFlag( FLAG_GPU_CODEGEN , ypr, "codegen for GPU" , "generate GPU code" )
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
