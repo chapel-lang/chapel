@@ -2024,6 +2024,21 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
+  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
+  std::vector<std::string>::iterator pos =
+    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
+  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
+  if (pos != args.end())
+    args.erase(pos);
+
+
+  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
   std::string dashImodules = "-I";
   dashImodules += CHPL_HOME;
   dashImodules += "/modules";
