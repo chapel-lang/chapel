@@ -30,12 +30,6 @@ module NetworkAtomics {
     if isReal(T) then return "chpl_comm_atomic_" + s + "_real" + numBits(T):string;
   }
 
-  // A comm layer may not support all of these but this function
-  // should return `true` for all atomic types supported somewhere.
-  private proc isSupportedNetworkAtomicEltType(type T) param {
-    return T == bool || isInt(T) || isUint(T) || isReal(T);
-  }
-
   pragma "atomic type"
   pragma "ignore noinit"
   record RAtomicBool {
@@ -340,16 +334,9 @@ module NetworkAtomics {
 
   }
 
-  private proc supportedNetworkAtomicEltTypeOrInt(type T) type {
-    if isSupportedNetworkAtomicEltType(T) then return T;
-    else return int;
-  }
-  // supportedAtomicEltTypeOrInt / isSupported work around the fact
-  // that currently constructing Atomic(c_void_ptr) etc causes errors
-  // and this function will try to instantiate AtomicT as a candidate.
-  operator :(rhs: ?T, type t:RAtomicT(supportedNetworkAtomicEltTypeOrInt(T)))
-  where isSupportedNetworkAtomicEltType(T) {
-    var lhs: RAtomicT(T) = rhs; // use init=
+  operator :(rhs, type t:RAtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
     return lhs;
   }
 
