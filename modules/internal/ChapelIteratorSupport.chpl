@@ -754,10 +754,10 @@ module ChapelIteratorSupport {
     return _toFastFollower(x, leaderIndex);
   }
 
-  pragma "fn returns iterator"
-  inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
-    return _toFastFollowerZip(x, leaderIndex, 0);
-  }
+  //pragma "fn returns iterator"
+  //inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
+    //return _toFastFollowerZip(x, leaderIndex, 0);
+  //}
 
   pragma "fn returns iterator"
   inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
