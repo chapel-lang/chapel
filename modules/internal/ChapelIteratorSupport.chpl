@@ -744,30 +744,30 @@ module ChapelIteratorSupport {
       return _toFollower(_getIterator(x), leaderIndex);
   }
 
-  pragma "fn returns iterator"
-  inline proc _toFastFollowerZipNew(const ref x ..., leaderIndex) {
-    return _toFastFollowerZip(x, leaderIndex, dim=0);
-  }
-
-  pragma "fn returns iterator"
-  inline proc _toFastFollowerZip(x, leaderIndex) {
-    return _toFastFollower(x, leaderIndex);
-  }
-
   //pragma "fn returns iterator"
-  //inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
-    //return _toFastFollowerZip(x, leaderIndex, 0);
+  //inline proc _toFastFollowerZipNew(const ref x ..., leaderIndex) {
+    //return _toFastFollowerZip(x, leaderIndex, dim=0);
   //}
 
-  pragma "fn returns iterator"
-  inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-2 then
-      return (_toFastFollowerZip(x(dim), leaderIndex),
-              _toFastFollowerZip(x(dim+1), leaderIndex));
-    else
-      return (_toFastFollowerZip(x(dim), leaderIndex),
-              (..._toFastFollowerZip(x, leaderIndex, dim+1)));
-  }
+  //pragma "fn returns iterator"
+  //inline proc _toFastFollowerZip(x, leaderIndex) {
+    //return _toFastFollower(x, leaderIndex);
+  //}
+
+  ////pragma "fn returns iterator"
+  ////inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
+    ////return _toFastFollowerZip(x, leaderIndex, 0);
+  ////}
+
+  //pragma "fn returns iterator"
+  //inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
+    //if dim == x.size-2 then
+      //return (_toFastFollowerZip(x(dim), leaderIndex),
+              //_toFastFollowerZip(x(dim+1), leaderIndex));
+    //else
+      //return (_toFastFollowerZip(x(dim), leaderIndex),
+              //(..._toFastFollowerZip(x, leaderIndex, dim+1)));
+  //}
 
 
 

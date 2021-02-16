@@ -280,20 +280,41 @@ static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
          pfs->requireSerialIterator();
 }
 
-
-static CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
-                                             VarSymbol *leadIdxCopy) {
-
+static CallExpr *generateFollowersForZipHelp(CallExpr *iterCall,
+                                             Symbol *leadIdxCopy,
+                                             SymbolMap *map,
+                                             bool getIterator,
+                                             const char *fnName) {
   INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
   CallExpr *tupler = new CallExpr("_build_tuple_always_allow_ref");
 
   for_actuals(actual, iterCall) {
-    tupler->insertAtTail(new CallExpr("_getIterator", new CallExpr("_toFastFollower", actual->copy(), leadIdxCopy)));
+    if (getIterator) {
+      tupler->insertAtTail(new CallExpr("_getIterator", new CallExpr(fnName, actual->copy(map), leadIdxCopy)));
+    }
+    else {
+      tupler->insertAtTail(new CallExpr(fnName, actual->copy(map), leadIdxCopy));
+    }
   }
 
   return tupler;
+}
 
+CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
+                                             Symbol *leadIdxCopy,
+                                             SymbolMap *map,
+                                             bool getIterator) {
+  return generateFollowersForZipHelp(iterCall, leadIdxCopy, map, getIterator,
+                                     "_toFastFollower");
+}
+
+CallExpr *generateRegularFollowersForZip(CallExpr *iterCall,
+                                                Symbol *leadIdxCopy,
+                                                SymbolMap *map,
+                                                bool getIterator) {
+  return generateFollowersForZipHelp(iterCall, leadIdxCopy, map, getIterator,
+                                     "_toFollower");
 }
 
 // Like in build.cpp, here for ForallStmt.
@@ -346,10 +367,15 @@ buildFollowLoop(VarSymbol* iter,
   } else {
 
     if (zippered) {
-      CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFollowerZipInternalNew");
-      toFollowerCall->insertAtTail(leadIdxCopy);
-      toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
-      CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
+      CallExpr *iterCall = toCallExpr(iterExpr);
+      INT_ASSERT(iterCall);
+      INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+      //CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFollowerZipInternalNew");
+      //toFollowerCall->insertAtTail(leadIdxCopy);
+      //toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
+      //CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
+
+      CallExpr *getIteratorCall = generateRegularFollowersForZip(iterCall, leadIdxCopy);
 
       CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
       followBlock->insertAtTail(moveCall);
