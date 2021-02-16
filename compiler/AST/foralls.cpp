@@ -32,6 +32,7 @@
 #include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "TransformLogicalShortCircuit.h"
 #include "view.h"
 
 
@@ -953,6 +954,37 @@ CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName,
   return ret;
 }
 
+static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
+                                             const char *fnName,
+                                             bool addLead) {
+
+  Expr *lead = iterCall->get(1);
+  INT_ASSERT(isSymExpr(lead));
+  
+  const char *prim;
+  if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
+    prim = "||";
+  }
+  else {
+    prim = "&&";
+  }
+  CallExpr *ret = new CallExpr(prim);
+
+  for_actuals(actual, iterCall) {
+    if (ret->numActuals() == 2) {
+      ret = new CallExpr("&&", ret);
+    }
+    INT_ASSERT(isSymExpr(actual));
+    CallExpr *newCall = new CallExpr(fnName, actual->copy());
+    if (addLead) {
+      newCall->insertAtTail(lead->copy());
+    }
+    ret->insertAtTail(newCall);
+  }
+
+  return ret;
+}
+
 static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
 
   CallExpr *iterCall = toCallExpr(e);
@@ -962,22 +994,25 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
   const char *fnName = isStatic ? "chpl__staticFastFollowCheck" :
                                   "chpl__dynamicFastFollowCheck";
 
-  Expr *lead = iterCall->get(1);
-  INT_ASSERT(isSymExpr(lead));
+  CallExpr *checkCall = generateFastFollowCheckHelp(iterCall, fnName,
+                                                    /*addLead=*/true);
+  CallExpr *retCall = NULL;
+  if (isStatic) {
+     //we also need to check whether any of the iterands can actually have fast
+     //followers
+    CallExpr *canHave = generateFastFollowCheckHelp(iterCall,
+                                                    "chpl__canHaveFastFollowers",
+                                                    /*addLead=*/false);
 
-  CallExpr *ret = new CallExpr(PRIM_AND);
-
-  for_actuals(actual, iterCall) {
-    if (ret->numActuals() == 2) {
-      ret = new CallExpr(PRIM_AND, ret);
-    }
-    INT_ASSERT(isSymExpr(actual));
-    ret->insertAtTail(new CallExpr(fnName, actual->copy(), lead->copy()));
+    retCall = new CallExpr("&&", canHave, checkCall);
+    //retCall = checkCall;
+  }
+  else {
+    retCall = checkCall;
   }
 
-  return ret;
+  return retCall;
 }
-
 
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
@@ -1066,7 +1101,15 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
       CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/true);
       CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T1, checkCall);
       leadForLoop->insertAtTail(moveToFlag);
-      normalize(checkCall);
+
+      TransformLogicalShortCircuit handleAndsOrs;
+      //leadForLoop->accept(&handleAndsOrs);
+      moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
+
+      //if (checkCall->inTree()) {
+        //normalize(checkCall);
+      //}
+      normalize(leadForLoop);
 
       // override the dynamic check if the compiler can prove it's safe
       if (pfs->optInfo.hasAlignedFollowers) {
@@ -1074,10 +1117,20 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
       }
       else {
         CallExpr *checkCall = generateFastFollowCheck(iterExpr, /*isStatic=*/false);
+        CallExpr *moveToFlag = new CallExpr(PRIM_MOVE, T2, checkCall);
         leadForLoop->insertAtTail(new CondStmt(new SymExpr(T1),
-                                               new CallExpr(PRIM_MOVE, T2, checkCall),
+                                               moveToFlag,
                                                new CallExpr(PRIM_MOVE, T2, gFalse)));
-        normalize(checkCall);
+
+        TransformLogicalShortCircuit handleAndsOrs;
+        //checkCall->accept(&handleAndsOrs);
+        moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
+
+        //if (checkCall->inTree()) {
+          //normalize(checkCall);
+        //}
+
+        normalize(leadForLoop);
       }
     }
 
