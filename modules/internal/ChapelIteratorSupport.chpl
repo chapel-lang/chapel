@@ -604,19 +604,19 @@ module ChapelIteratorSupport {
     return false;
   }
 
-  proc chpl__hasInertFastFollowersZip(x: _tuple) param {
-    return chpl__hasInertFastFollowersZipHelp(x, 0);
-  }
+  //proc chpl__hasInertFastFollowersZip(x: _tuple) param {
+    //return chpl__hasInertFastFollowersZipHelp(x, 0);
+  //}
 
-  proc chpl__hasInertFastFollowersZipHelp(x: _tuple, param dim) param {
-    if x.size-1 == dim {
-      return chpl__hasInertFastFollowers(x(dim));
-    }
-    else {
-      return chpl__hasInertFastFollowers(x(dim)) &&
-             chpl__hasInertFastFollowersZipHelp(x, dim+1);
-    }
-  }
+  //proc chpl__hasInertFastFollowersZipHelp(x: _tuple, param dim) param {
+    //if x.size-1 == dim {
+      //return chpl__hasInertFastFollowers(x(dim));
+    //}
+    //else {
+      //return chpl__hasInertFastFollowers(x(dim)) &&
+             //chpl__hasInertFastFollowersZipHelp(x, dim+1);
+    //}
+  //}
 
   //
   // return true if any iterator supports fast followers
@@ -624,7 +624,7 @@ module ChapelIteratorSupport {
   proc chpl__staticFastFollowCheck(x) param {
     pragma "no copy" const lead = x;
     if chpl__canHaveFastFollowers(lead) then
-      return __chpl__staticFastFollowCheck(x, lead);
+      return chpl__staticFastFollowCheck(x, lead);
     else {
       return false;
     }
@@ -632,19 +632,16 @@ module ChapelIteratorSupport {
 
   proc chpl__staticFastFollowCheck(x, lead) param {
     if chpl__canLeadFastFollowers(lead) {
-      return __chpl__staticFastFollowCheck(x, lead);
+      if (isArray(x)) {
+        return x._value.dsiStaticFastFollowCheck(lead._value.type);
+      }
+      else {
+        return chpl__hasInertFastFollowers(x);
+      }
     }
     else {
       return false;
     }
-  }
-
-  private proc __chpl__staticFastFollowCheck(x, lead) param {
-    return chpl__hasInertFastFollowers(x);
-  }
-
-  private proc __chpl__staticFastFollowCheck(x: [], lead) param {
-    return x._value.dsiStaticFastFollowCheck(lead._value.type);
   }
 
   //
@@ -653,7 +650,7 @@ module ChapelIteratorSupport {
   //
   proc chpl__dynamicFastFollowCheck(x) {
     if chpl__canHaveFastFollowers(x) {
-      return __chpl__dynamicFastFollowCheck(x, x);
+      return chpl__dynamicFastFollowCheck(x, x);
     }
     else {
       return false;
@@ -662,22 +659,21 @@ module ChapelIteratorSupport {
 
   proc chpl__dynamicFastFollowCheck(x, lead) {
     if chpl__canLeadFastFollowers(lead) {
-      return __chpl__dynamicFastFollowCheck(x, lead);
+      if (isArray(x)) {
+        if chpl__staticFastFollowCheck(x, lead) {
+          return x._value.dsiDynamicFastFollowCheck(lead);
+        }
+        else {
+          return false;
+        }
+      }
+      else {
+        return chpl__hasInertFastFollowers(x);
+      }
     }
     else {
       return false;
     }
-  }
-
-  private proc __chpl__dynamicFastFollowCheck(x, lead) {
-    return chpl__hasInertFastFollowers(x);
-  }
-
-  private proc __chpl__dynamicFastFollowCheck(x: [], lead) {
-    if __chpl__staticFastFollowCheck(x, lead) then
-      return x._value.dsiDynamicFastFollowCheck(lead);
-    else
-      return false;
   }
 
   pragma "no implicit copy"
