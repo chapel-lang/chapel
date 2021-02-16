@@ -2058,6 +2058,23 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
+  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
+  // They are settings from the runtime build and we want to
+  // use flags appropriate to the compilation instead of the runtime build
+  std::vector<std::string>::iterator pos =
+    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
+  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
+  if (pos != args.end())
+    args.erase(pos);
+
+
+  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
+  if (pos != args.end())
+    args.erase(pos);
+
   std::string dashImodules = "-I";
   dashImodules += CHPL_HOME;
   dashImodules += "/modules";
@@ -2088,11 +2105,15 @@ void runClang(const char* just_parse_filename) {
     }
   }
 
-  if (debugCCode)
+  if (debugCCode) {
     args.push_back(clang_debug);
+    args.push_back("-DCHPL_DEBUG");
+  }
 
-  if (optimizeCCode)
+  if (optimizeCCode) {
     args.push_back(clang_opt);
+    args.push_back("-DCHPL_OPTIMIZE");
+  }
 
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
