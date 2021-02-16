@@ -746,7 +746,7 @@ module ChapelIteratorSupport {
 
   pragma "fn returns iterator"
   inline proc _toFastFollowerZipNew(const ref x ..., leaderIndex) {
-    return _toFastFollowerZip(x, leaderIndex);
+    return _toFastFollowerZip(x, leaderIndex, dim=0);
   }
 
   pragma "fn returns iterator"

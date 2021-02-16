@@ -281,6 +281,21 @@ static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
 }
 
 
+static CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
+                                             VarSymbol *leadIdxCopy) {
+
+  INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+
+  CallExpr *tupler = new CallExpr("_build_tuple_always_allow_ref");
+
+  for_actuals(actual, iterCall) {
+    tupler->insertAtTail(new CallExpr("_getIterator", new CallExpr("_toFastFollower", actual->copy(), leadIdxCopy)));
+  }
+
+  return tupler;
+
+}
+
 // Like in build.cpp, here for ForallStmt.
 static BlockStmt*
 buildFollowLoop(VarSymbol* iter,
@@ -311,10 +326,17 @@ buildFollowLoop(VarSymbol* iter,
   if (fast) {
 
     if (zippered) {
-      CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFastFollowerZipNew");
-      toFollowerCall->insertAtTail(leadIdxCopy);
-      //toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
-      CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
+      CallExpr *iterCall = toCallExpr(iterExpr);
+      INT_ASSERT(iterCall);
+      INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+      //CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFastFollowerZipNew");
+      //toFollowerCall->insertAtTail(leadIdxCopy);
+      ////toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
+
+      //CallExpr *toFollowerCall = generateFastFollowersForZip(iterCall, leadIdxCopy);
+      //CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
+      CallExpr *getIteratorCall = generateFastFollowersForZip(iterCall, leadIdxCopy);
+
 
       CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
       followBlock->insertAtTail(moveCall);
