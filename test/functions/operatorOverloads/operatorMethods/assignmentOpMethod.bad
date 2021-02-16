@@ -1,0 +1,3 @@
+assignmentOpMethod.chpl:4: In initializer:
+assignmentOpMethod.chpl:6: error: cannot call a method on a record before this.complete()
+assignmentOpMethod.chpl:6: error: field "x" used before it is initialized
