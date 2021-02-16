@@ -104,7 +104,7 @@ module Atomics {
     atomic_fence(c_memory_order(order));
   }
 
-  private proc isSupported(type T) param {
+  private proc isSupportedProcessorAtomicEltType(type T) param {
     return T == bool || isInt(T) || isUint(T) || isReal(T);
   }
 
@@ -158,8 +158,10 @@ module Atomics {
 
   pragma "no doc"
   proc chpl__processorAtomicType(type T) type {
-    if T == bool           then return AtomicBool;
-    else if isSupported(T) then return AtomicT(T);
+    if T == bool then
+      return AtomicBool;
+    else if isSupportedProcessorAtomicEltType(T) then
+      return AtomicT(T);
     else compilerError("Unsupported atomic type: " + T:string);
   }
 
@@ -352,7 +354,7 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicBool, rhs: bool) {
+  operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
   }
@@ -684,7 +686,15 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicT(?T), rhs: T) {
+  private proc supportedProcessorAtomicEltTypeOrInt(type T) type {
+    if isSupportedProcessorAtomicEltType(T) then return T;
+    else return int;
+  }
+  // supportedAtomicEltTypeOrInt / isSupported work around the fact
+  // that currently constructing Atomic(c_void_ptr) etc causes errors
+  // and this function will try to instantiate AtomicT as a candidate.
+  operator :(rhs: ?T, type t:AtomicT(supportedProcessorAtomicEltTypeOrInt(T)))
+  where isSupportedProcessorAtomicEltType(T) {
     var lhs: AtomicT(T) = rhs; // use init=
     return lhs;
   }

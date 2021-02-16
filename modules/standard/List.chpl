@@ -1802,19 +1802,19 @@ module List {
     return !(a == b);
   }
 
-  proc _cast(type t:list, rhs:list) {
+  operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:[]) {
+  operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:range(?)) {
+  operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
-  proc _cast(type t:list, rhs:_iteratorRecord) {
+  operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }

@@ -79,6 +79,10 @@ module ChapelSyncvar {
            isStringType(t)        ||    // Should this be allowed?
            t == chpl_taskID_t;
 
+  private proc supportedFETypeOrInt(type t) type {
+    if isSupported(t) then return t;
+    else return int;
+  }
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
@@ -283,7 +287,11 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline proc _cast(type t:_syncvar(?valType), rhs:valType) {
+  // supportedFETypeOrInt / isSupported here work around the fact
+  // that currently constructing Atomic(c_void_ptr) etc causes errors
+  // and this function will try to instantiate AtomicT as a candidate.
+  inline operator :(rhs:?T, type t:_syncvar(supportedFETypeOrInt(T)))
+  where isSupported(T) {
     return new _syncvar(rhs);
   }
 
@@ -790,7 +798,11 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline proc _cast(type t:_singlevar(?valType), rhs:valType) {
+  // supportedFETypeOrInt / isSupported here work around the fact
+  // that currently constructing Atomic(c_void_ptr) etc causes errors
+  // and this function will try to instantiate AtomicT as a candidate.
+  inline operator :(rhs:?T, type t:_singlevar(supportedFETypeOrInt(T)))
+  where isSupported(T) {
     return new _singlevar(rhs);
   }
 

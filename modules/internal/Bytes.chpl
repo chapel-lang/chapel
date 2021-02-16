@@ -1049,7 +1049,7 @@ module Bytes {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
   pragma "no doc"
-  inline proc _cast(type t: bytes, x: c_string) {
+  inline operator :(x: c_string, type t: bytes) {
     var length = x.size;
     return createBytesWithNewBuffer(x: bufferType, length=length, size=length+1);
   }

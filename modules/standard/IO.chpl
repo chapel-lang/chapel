@@ -2013,7 +2013,7 @@ proc channel.init=(x: channel) {
 }
 
 pragma "no doc"
-proc _cast(type t: channel, rhs: channel) {
+operator :(rhs: channel, type t: channel) {
   var tmp: t = rhs; // just run init=
   return tmp;
 }
