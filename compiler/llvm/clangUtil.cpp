@@ -1531,10 +1531,6 @@ void setupClang(GenInfo* info, std::string mainFile)
   if (job == NULL)
     USR_FATAL("Could not find cc1 command from clang driver");
 
-  if ( gCodegenGPU == false && localeUsesGPU() == true && clangInfo->parseOnly == false) {
-    bool isGPUBinaryFlag = false;
-  }
-
   if( printSystemCommands && developer ) {
     printf("<internal clang cc> ");
     for ( auto a : job->getArguments() ) {
