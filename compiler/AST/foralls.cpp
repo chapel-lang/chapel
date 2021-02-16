@@ -970,7 +970,7 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
   Expr *lead = iterCall->get(1);
   INT_ASSERT(isSymExpr(lead));
   
-  const char *prim;
+  const char *prim = NULL;
   if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
     prim = "||";
   }
@@ -981,7 +981,7 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
 
   for_actuals(actual, iterCall) {
     if (ret->numActuals() == 2) {
-      ret = new CallExpr("&&", ret);
+      ret = new CallExpr(prim, ret);
     }
     INT_ASSERT(isSymExpr(actual));
     CallExpr *newCall = new CallExpr(fnName, actual->copy());
