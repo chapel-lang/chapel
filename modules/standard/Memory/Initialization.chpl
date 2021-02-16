@@ -32,14 +32,6 @@ module Initialization {
     __primitive("=", dst, src);
   }
 
-  private inline proc _destroy(ref r) {
-    chpl__autoDestroy(r);
-  }
-
-  private inline proc _needsAutoDestroy(type t) param: bool {
-    return __primitive("needs auto destroy", t);
-  }
-
   /*
     Check to see if a given type supports deinitialization.
 
@@ -50,7 +42,7 @@ module Initialization {
     :rtype: param bool
   */
   proc needsDeinit(type t) param {
-    return _needsAutoDestroy(t);
+    return __primitive("needs auto destroy", t);
   }
 
   /*
@@ -67,7 +59,7 @@ module Initialization {
   */
   proc explicitDeinit(ref arg: ?t) {
     if needsDeinit(t) then
-      _destroy(arg);
+      chpl__autoDestroy(arg);
   }
 
   /*
