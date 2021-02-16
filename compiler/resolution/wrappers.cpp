@@ -2372,29 +2372,29 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
                                 VarSymbol* followerIterator,
                                 SymbolMap& followerMap,
                                 ArgSymbol* fiFnFollower) {
-  CallExpr*   call1 = NULL;
-  CallExpr*   move1 = NULL;
+  CallExpr*   callFast = NULL;
+  CallExpr*   moveFast = NULL;
 
-  CallExpr*   call2 = NULL;
-  CallExpr*   move2 = NULL;
+  CallExpr*   callSlow = NULL;
+  CallExpr*   moveSlow = NULL;
 
   if (isCallExpr(iterator) == true) {
-    call1 = generateModuleCallFromZip(iterator, "_toFastFollowerZipNew", &followerMap);
-    call1->insertAtTail(fiFnFollower);
+    callFast = generateModuleCallFromZip(iterator, "_toFastFollowerZipNew", &followerMap);
+    callFast->insertAtTail(fiFnFollower);
 
-    call2 = generateModuleCallFromZip(iterator, "_toFollowerZipInternalNew", &followerMap);
-    call2->insertAtTail(fiFnFollower);
-    call2->insertAtTail(new_IntSymbol(0));
+    callSlow = generateModuleCallFromZip(iterator, "_toFollowerZipInternalNew", &followerMap);
+    callSlow->insertAtTail(fiFnFollower);
+    callSlow->insertAtTail(new_IntSymbol(0));
   } else {
-    call1 = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
-    call2 = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
+    callFast = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
+    callSlow = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
   }
 
 
-  move1 = new CallExpr(PRIM_MOVE, followerIterator, call1);
-  move2 = new CallExpr(PRIM_MOVE, followerIterator, call2);
+  moveFast = new CallExpr(PRIM_MOVE, followerIterator, callFast);
+  moveSlow = new CallExpr(PRIM_MOVE, followerIterator, callSlow);
 
-  return new CondStmt(new SymExpr(fastFollower), move1, move2);
+  return new CondStmt(new SymExpr(fastFollower), moveFast, moveSlow);
 }
 
 static BlockStmt* followerForLoop(PromotionInfo& promotion,
