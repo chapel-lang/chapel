@@ -23,7 +23,7 @@ proc TupleType.init=(from: AnonTuple) {
   this.f = from.f;
   this.complete();
 }
-proc _cast(type t: TupleType, from: AnonTuple) {
+operator :(from: AnonTuple, type t: TupleType) {
   var tmp: t = from;
   return tmp;
 }

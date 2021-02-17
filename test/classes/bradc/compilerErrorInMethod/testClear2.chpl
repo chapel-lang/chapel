@@ -15,7 +15,7 @@ proc =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }
 
-proc _cast(type t: Wrap, rhs) {
+operator :(rhs, type t: Wrap, rhs) {
   var tmp: t = rhs;
   return tmp;
 }
