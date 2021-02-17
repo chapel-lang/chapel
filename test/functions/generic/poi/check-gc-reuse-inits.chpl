@@ -21,8 +21,8 @@ module Lib {
   proc MyRecord.deinit()      { workDI(); }
   proc =(ref lhs:MyRecord, rhs:MyRecord) { workAS(); }
   proc <(lhs:MyRecord,     rhs:MyRecord) { workLT(); return true; }
-  proc _cast(type t:int,   rhs:MyRecord) { workCF(); return 1; }
-  proc _cast(type t:MyRecord,   rhs:int) { workCT(); return new MyRecord(0); }
+  operator :(rhs:MyRecord, type t:int)      { workCF(); return 1; }
+  operator :(rhs: int,     type t:MyRecord) { workCT(); return new MyRecord(0); }
 }
 
 module User {

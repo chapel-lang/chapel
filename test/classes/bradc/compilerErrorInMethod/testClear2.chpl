@@ -15,7 +15,7 @@ proc =(ref lhs:Wrap, rhs) {
   lhs._value.clearHelp();
 }
 
-operator :(rhs, type t: Wrap, rhs) {
+operator :(rhs, type t: Wrap) {
   var tmp: t = rhs;
   return tmp;
 }

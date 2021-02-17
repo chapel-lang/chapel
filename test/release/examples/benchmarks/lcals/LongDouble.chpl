@@ -6,7 +6,7 @@ require "longdouble.h";
 
 extern type longdouble;
 
-proc _cast(type t, ld: longdouble) where t == real(64) || t == real(32) ||
+operator :(ld: longdouble, type t) where t == real(64) || t == real(32) ||
                                          t == int(64)  || t == uint(64) ||
                                          t == int(32)  || t == uint(32) ||
                                          t == int(16)  || t == uint(16) ||
@@ -14,7 +14,7 @@ proc _cast(type t, ld: longdouble) where t == real(64) || t == real(32) ||
   return __primitive("cast", t, ld);
 }
 
-proc _cast(type t:longdouble, d:?tt) where tt == real(64) || tt == real(32) ||
+operator :(d:?tt, type t:longdouble) where tt == real(64) || tt == real(32) ||
                                            tt == int(64)  || tt == uint(64) ||
                                            tt == int(32)  || tt == uint(32) ||
                                            tt == int(16)  || tt == uint(16) ||

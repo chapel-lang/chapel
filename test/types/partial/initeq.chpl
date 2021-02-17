@@ -13,7 +13,7 @@ proc R.init=(param p : this.type.T) {
   this.T = p.type;
   this.p = p;
 }
-proc _cast(type t: R, from: t.T) {
+operator :(from, type t: R(from.type)) {
   var tmp: t = from;
   return tmp;
 }

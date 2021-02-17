@@ -19,7 +19,7 @@ proc =(ref d : D, c : C) {
 proc D.init=(other : C) {
   this.j = other.i;
 }
-proc _cast(type t:D, other: C) {
+operator :(other: C, type t:D) {
   var tmp: t = other;
   return tmp;
 }

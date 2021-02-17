@@ -27,7 +27,7 @@ proc =(ref lhs:R, const ref rhs:R) {
   lhs.x = rhs.x;
 }
 
-proc _cast(type t: R, rhs: R) {
+operator :(rhs: R, type t: R) {
   var tmp: t = rhs;
   return tmp;
 }
