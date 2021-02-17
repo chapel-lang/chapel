@@ -448,15 +448,29 @@ static found_init_t doFindInitPoints(Symbol* sym,
 void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
   const char* name = toString(sym, false);
   ArgSymbol* arg = toArgSymbol(sym);
+  Type* t = sym->getValType();
 
   if (unresolved) {
-    USR_PRINT(sym->defPoint,
-                   "because '%s' is not initialized and has no type",
-                   name);
+    if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_PRINT(sym->defPoint,
+                "because '%s' is not initialized and has no type",
+                name);
+    } else {
+      USR_PRINT(sym->defPoint,
+                "because '%s' has generic type '%s'",
+                name, toString(t));
+    }
   } else {
-    USR_FATAL_CONT(sym->defPoint,
-                   "'%s' is not initialized and has no type",
-                   name);
+    if (t == dtSplitInitType || !t->symbol->hasFlag(FLAG_GENERIC)) {
+      USR_FATAL_CONT(sym->defPoint,
+                     "'%s' is not initialized and has no type",
+                     name);
+    } else {
+      USR_FATAL_CONT(sym->defPoint,
+                     "cannot default-initialize a variable with generic type");
+      USR_PRINT(sym->defPoint, "'%s' has generic type '%s'",
+                name, toString(t));
+    }
   }
 
   if (sym->hasFlag(FLAG_FORMAL_TEMP_OUT) ||

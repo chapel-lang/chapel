@@ -56,6 +56,7 @@
 #include "resolveFunction.h"
 #include "resolveIntents.h"
 #include "scopeResolve.h"
+#include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TryStmt.h"
@@ -4300,40 +4301,42 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   const char* str  = NULL;
 
   // Check for uninitialized values (with type dtSplitInitType)
-  bool foundUninitedSplitInit = false;
-  for_actuals(actual, call) {
-    if (actual->getValType() == dtSplitInitType) {
-      if (SymExpr* se = toSymExpr(actual)) {
-        if (DefExpr* def = se->symbol()->defPoint) {
-          const char* name = toString(se->symbol(), false);
-          USR_FATAL_CONT(def,
-                         "variable '%s' is not initialized and has no type",
-                         name);
-          USR_PRINT(call, "'%s' use here "
-                          "prevents split-init from establishing the type",
-                          name);
-          foundUninitedSplitInit = true;
-        }
-      }
+  bool foundUnknownTypeActual = false;
+  for_actuals(actual, info.call) {
+    Type* t = actual->getValType();
+    if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+      foundUnknownTypeActual = true;
     }
   }
 
-  if (foundUninitedSplitInit) {
-    // Check for functions with out intent formals. If there are none,
-    // dont' bother to show candidates or even say it's a resolution error.
-    bool anyOutIntent = false;
+  if (foundUnknownTypeActual) {
+    // Are all of the failures due to not having an established type?
+    bool allTypeNotEstablished = true;
+    bool anyTypeNotEstablished = false;
     forv_Vec(FnSymbol, fn, visibleFns) {
-      for_formals(formal, fn) {
-        if (formal->originalIntent == INTENT_OUT) {
-          anyOutIntent = true;
+      ResolutionCandidate* rc = new ResolutionCandidate(fn);
+      rc->isApplicable(info, NULL);
+
+      if (rc->reason >= RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED) {
+        anyTypeNotEstablished = true;
+      } else {
+        allTypeNotEstablished = false;
+      }
+
+      delete rc;
+    }
+
+    if (anyTypeNotEstablished && allTypeNotEstablished) {
+      for_actuals(actual, info.call) {
+        Type* t = actual->getValType();
+        if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
+          if (SymExpr* se = toSymExpr(actual)) {
+            splitInitMissingTypeError(se->symbol(), call, false);
+            return; // don't print out candidates - probably irrelevant
+          }
         }
       }
     }
-    if (anyOutIntent == false)
-      return;
-
-    // otherwise, show candidates as normal.
-    // TODO: we could filter the candidates down to ones with out intent...
   }
 
   if (info.scope != NULL) {
