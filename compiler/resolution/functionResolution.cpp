@@ -5545,8 +5545,18 @@ static void testArgMapping(FnSymbol*                    fn1,
   // Give up early for out intent arguments
   // (these don't impact candidate selection)
   if (formal1->originalIntent == INTENT_OUT ||
-      formal2->originalIntent == INTENT_OUT)
+      formal2->originalIntent == INTENT_OUT) {
+    // If one of them is an expanded vararg, prefer that,
+    // since we should be matching arguments into the vararg until
+    // it runs out.
+    if (formal1->hasFlag(FLAG_EXPANDED_VARARGS) &&
+        !formal2->hasFlag(FLAG_EXPANDED_VARARGS))
+      DS.fn1MoreSpecific = true;
+    else if (!formal1->hasFlag(FLAG_EXPANDED_VARARGS) &&
+             formal2->hasFlag(FLAG_EXPANDED_VARARGS))
+      DS.fn2MoreSpecific = true;
     return;
+  }
 
   // We only want to deal with the value types here, avoiding odd overloads
   // working (or not) due to _ref.

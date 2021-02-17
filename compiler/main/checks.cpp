@@ -461,7 +461,7 @@ static void check_afterScopeResolve()
       // a previous out formal.
       for_formals(formal, fn) {
 
-        if (formal->variableExpr != NULL)
+        if (formal->intent == INTENT_OUT && formal->variableExpr != NULL)
           USR_FATAL_CONT(formal, "out intent varargs are not supported");
 
         for_formals(earlierFormal, fn) {
