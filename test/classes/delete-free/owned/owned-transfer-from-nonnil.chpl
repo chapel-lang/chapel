@@ -221,7 +221,7 @@ record R1 {
     this.field = rhs.field;
   }
 }
-proc =(ref lhs: R1, ref rhs: R1) {
+operator =(ref lhs: R1, ref rhs: R1) {
   lhs.field = rhs.field;
 }
 
@@ -254,7 +254,7 @@ record R2 {
     this.field = new owned MyClass(rhs.field.x);
   }
 }
-proc =(ref lhs: R2, const ref rhs: R2) {
+operator =(ref lhs: R2, const ref rhs: R2) {
   lhs.field = new owned MyClass(rhs.field.x);
 }
 
