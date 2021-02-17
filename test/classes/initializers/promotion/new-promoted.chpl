@@ -180,7 +180,7 @@ record CR {
     writeln("CR.postinit: ", x);
   }
 }
-proc =(ref lhs:CR, rhs:CR) {
+operator =(ref lhs:CR, rhs:CR) {
   writeln("CR ", lhs.x, " = ", rhs.x);
   lhs.x = rhs.x;
 }
@@ -208,7 +208,7 @@ record GR {
       writeln("GR.postinit: ", x);
   }
 }
-proc =(ref lhs:GR, rhs:GR) {
+operator =(ref lhs:GR, rhs:GR) {
   writeln("GR ", lhs.x, " = ", rhs.x);
   lhs.x = rhs.x;
 }
