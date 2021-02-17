@@ -1170,7 +1170,9 @@ FnSymbol* createTupleSignature(FnSymbol* fn, SymbolMap& subs, CallExpr* call) {
             IntentTag intent = concreteIntentForArg(arg);
 
             if ((intent & INTENT_FLAG_REF) != 0) {
-              t = t->getRefType();
+              Type* refType = t->getRefType();
+              INT_ASSERT(refType != NULL);
+              t = refType;
             }
           }
         }
