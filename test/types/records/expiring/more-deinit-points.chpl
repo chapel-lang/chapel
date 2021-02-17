@@ -10,7 +10,7 @@ record R {
 proc acceptsIn(in arg) {
 }
 
-proc acceptsOut(out arg) {
+proc acceptsOut(out arg:R) {
 }
 
 proc makeR() {
@@ -21,7 +21,7 @@ proc acceptsInAndReturnsNew(in arg) {
   return makeR();
 }
 
-proc acceptsOutAndReturnsNew(out arg) {
+proc acceptsOutAndReturnsNew(out arg:R) {
   return makeR();
 }
 
@@ -29,7 +29,7 @@ proc acceptTwoAndReturnNew(a, b) {
   return makeR();
 }
 
-proc acceptOutAndTwo(out arg, a, b) {
+proc acceptOutAndTwo(out arg:R, a, b) {
 }
 
 proc testIn1() {
