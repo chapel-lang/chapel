@@ -569,54 +569,16 @@ module ChapelIteratorSupport {
   //
   //    Domains and other iterators are in this category
   proc chpl__canHaveFastFollowers(x) param {
-    return false;
+    return isArray(x);
   }
-
-  proc chpl__canHaveFastFollowers(x: []) param {
-    return true;
-  }
-
-  //proc chpl__canHaveFastFollowers(x: []) param {
-    //private proc __chpl__canHaveFastFollowers(x: []) param {
-
-  //}
-  //proc chpl__canHaveFastFollowersZip(x: _tuple) param {
-    //return chpl__canHaveFastFollowersZipHelp(x, 0);
-  //}
-
-  //proc chpl__canHaveFastFollowersZipHelp(x: _tuple, param dim) param {
-    //if x.size-1 == dim then
-      //return chpl__canHaveFastFollowers(x(dim));
-    //else
-      //return chpl__canHaveFastFollowers(x(dim)) ||
-             //chpl__canHaveFastFollowersZipHelp(x, dim+1);
-  //}
 
   proc chpl__canLeadFastFollowers(x) param {
     return isDomain(x) || isArray(x);
   }
 
   proc chpl__hasInertFastFollowers(x) param {
-    return true;
+    return !isArray(x);
   }
-
-  proc chpl__hasInertFastFollowers(x: []) param { 
-    return false;
-  }
-
-  //proc chpl__hasInertFastFollowersZip(x: _tuple) param {
-    //return chpl__hasInertFastFollowersZipHelp(x, 0);
-  //}
-
-  //proc chpl__hasInertFastFollowersZipHelp(x: _tuple, param dim) param {
-    //if x.size-1 == dim {
-      //return chpl__hasInertFastFollowers(x(dim));
-    //}
-    //else {
-      //return chpl__hasInertFastFollowers(x(dim)) &&
-             //chpl__hasInertFastFollowersZipHelp(x, dim+1);
-    //}
-  //}
 
   //
   // return true if any iterator supports fast followers
@@ -696,30 +658,6 @@ module ChapelIteratorSupport {
     return _toFollower(x.these(), leaderIndex);
   }
 
-  pragma "fn returns iterator"
-  inline proc _toFollowerZip(x, leaderIndex) {
-    return _toFollower(x, leaderIndex);
-  }
-
-  pragma "fn returns iterator"
-  inline proc _toFollowerZip(x: _tuple, leaderIndex) {
-    return _toFollowerZipInternal(x, leaderIndex, 0);
-  }
-
-  pragma "fn returns iterator"
-  inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
-    if dim == x.size-1 then
-      return (_toFollower(x(dim), leaderIndex),);
-    else
-      return (_toFollower(x(dim), leaderIndex),
-              (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
-  }
-
-  pragma "fn returns iterator"
-  inline proc _toFollowerZipInternalNew(const ref x ..., leaderIndex, param dim: int) {
-    return _toFollowerZipInternal(x, leaderIndex, dim);
-  }
-
   pragma "no implicit copy"
   pragma "fn returns iterator"
   inline proc _toFastFollower(iterator: _iteratorClass, leaderIndex, fast: bool) {
@@ -743,34 +681,6 @@ module ChapelIteratorSupport {
     else
       return _toFollower(_getIterator(x), leaderIndex);
   }
-
-  //pragma "fn returns iterator"
-  //inline proc _toFastFollowerZipNew(const ref x ..., leaderIndex) {
-    //return _toFastFollowerZip(x, leaderIndex, dim=0);
-  //}
-
-  //pragma "fn returns iterator"
-  //inline proc _toFastFollowerZip(x, leaderIndex) {
-    //return _toFastFollower(x, leaderIndex);
-  //}
-
-  ////pragma "fn returns iterator"
-  ////inline proc _toFastFollowerZip(x: _tuple, leaderIndex) {
-    ////return _toFastFollowerZip(x, leaderIndex, 0);
-  ////}
-
-  //pragma "fn returns iterator"
-  //inline proc _toFastFollowerZip(x: _tuple, leaderIndex, param dim: int) {
-    //if dim == x.size-2 then
-      //return (_toFastFollowerZip(x(dim), leaderIndex),
-              //_toFastFollowerZip(x(dim+1), leaderIndex));
-    //else
-      //return (_toFastFollowerZip(x(dim), leaderIndex),
-              //(..._toFastFollowerZip(x, leaderIndex, dim+1)));
-  //}
-
-
-
 
   // helper functions used by the below iterators to check if the argument is a
   // value or reference iterator.

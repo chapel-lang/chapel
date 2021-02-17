@@ -350,16 +350,10 @@ buildFollowLoop(VarSymbol* iter,
       CallExpr *iterCall = toCallExpr(iterExpr);
       INT_ASSERT(iterCall);
       INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-      //CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFastFollowerZipNew");
-      //toFollowerCall->insertAtTail(leadIdxCopy);
-      ////toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
 
-      //CallExpr *toFollowerCall = generateFastFollowersForZip(iterCall, leadIdxCopy);
-      //CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
       CallExpr *getIteratorCall = generateFastFollowersForZip(iterCall, leadIdxCopy);
-
-
       CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
+
       followBlock->insertAtTail(moveCall);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFastFollower(%S, %S)))",       followIter, iter, leadIdxCopy);
@@ -370,14 +364,10 @@ buildFollowLoop(VarSymbol* iter,
       CallExpr *iterCall = toCallExpr(iterExpr);
       INT_ASSERT(iterCall);
       INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-      //CallExpr *toFollowerCall = generateModuleCallFromZip(iterExpr, "_toFollowerZipInternalNew");
-      //toFollowerCall->insertAtTail(leadIdxCopy);
-      //toFollowerCall->insertAtTail(new SymExpr(new_IntSymbol(0)));
-      //CallExpr *getIteratorCall = new CallExpr("_getIteratorZip", toFollowerCall);
 
       CallExpr *getIteratorCall = generateRegularFollowersForZip(iterCall, leadIdxCopy);
-
       CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
+
       followBlock->insertAtTail(moveCall);
     } else {
       followBlock->insertAtTail("'move'(%S, _getIterator(_toFollower(%S, %S)))",           followIter, iter, leadIdxCopy);
