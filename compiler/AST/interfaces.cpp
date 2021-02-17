@@ -101,7 +101,7 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
       if (istm->implBody->body.length != 0)
         USR_FATAL_CONT(istm, "an associated constraint is not allowed"
                        " to have a block statement");
-      isym->associatedConstraints.push_back(istm);
+      isym->associatedConstraints.push_back(istm->iConstraint);
 
     } else {
       USR_FATAL_CONT(expr,

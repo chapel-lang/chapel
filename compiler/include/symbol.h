@@ -597,7 +597,7 @@ public:
   std::map<const char*, ConstrainedType*> associatedTypes;
 
   // constraints to be checked for each implementation
-  std::vector<ImplementsStmt*> associatedConstraints;
+  std::vector<IfcConstraint*> associatedConstraints;
 
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation
