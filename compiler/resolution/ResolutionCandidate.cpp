@@ -967,7 +967,7 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
         }
 
       // type dependent checks
-      if (formal->type != dtUnknown) {
+      if (formal->type != dtUnknown && formal->originalIntent != INTENT_OUT) {
         if (formal->type->symbol->hasFlag(FLAG_GENERIC)) {
           Type* t = getInstantiationType(actual, formal, ctx);
           if (t == NULL) {

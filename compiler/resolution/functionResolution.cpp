@@ -3227,12 +3227,22 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
   resolveGenericActuals(call);
 
   if (call->isNamedAstr(astrSassign)) {
-    // adjustment needed for = methods
+    // TODO: adjustment will be needed for = methods
     INT_ASSERT(call->get(1)->typeInfo() != dtMethodToken);
     // Adjust the type for formal_temp_out before trying to resolve '='
-    if (SymExpr* lhsSe = toSymExpr(call->get(1)))
-      if (lhsSe->symbol()->type == dtSplitInitType)
-        lhsSe->symbol()->type = call->get(2)->getValType();
+    if (SymExpr* lhsSe = toSymExpr(call->get(1))) {
+      Type* targetType = lhsSe->symbol()->type;
+      Type* srcType = call->get(2)->getValType();
+      if (targetType == dtSplitInitType) {
+        targetType = srcType;
+      } else if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
+        targetType = getInstantiationType(srcType, NULL, targetType, NULL, call,
+                                          /* allowCoercion */ true,
+                                          /* implicitBang */ false,
+                                          /* inOrOtherValue */ true);
+      }
+      lhsSe->symbol()->type = targetType;
+    }
   }
 
   if (isGenericRecordInit(call) == true) {
