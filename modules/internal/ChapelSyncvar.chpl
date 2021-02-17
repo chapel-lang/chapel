@@ -283,9 +283,13 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline operator :(rhs, type t:_syncvar)
-  where rhs.type == t.valType {
-    return new _syncvar(rhs);
+  inline operator :(from, type t:_syncvar)
+  where from.type == t.valType {
+    return new _syncvar(from);
+  }
+
+  inline operator :(from: _syncvar, type toType:_syncvar) {
+    return new _syncvar(from);
   }
 
   proc  += (ref lhs : _syncvar(?t), rhs : t) {
@@ -791,10 +795,14 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  inline operator :(rhs, type t:_singlevar)
-  where rhs.type == t.valType {
-    return new _singlevar(rhs);
+  inline operator :(from, type t:_singlevar)
+  where from.type == t.valType {
+    return new _singlevar(from);
   }
+  inline operator :(from: _singlevar, type toType:_singlevar) {
+    return new _singlevar(from);
+  }
+
 
   pragma "init copy fn"
   proc chpl__initCopy(ref sv : _singlevar(?t), definedConst: bool) {
