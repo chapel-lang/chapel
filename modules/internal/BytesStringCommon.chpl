@@ -72,7 +72,9 @@ module BytesStringCommon {
     if _local == false && x.locale_id != chpl_nodeID then
       halt("Cannot call .c_str() on a remote " + t:string);
 
-    return __primitive("cast", c_string, x.buff);
+    var buff: bufferType = x.buff;
+    var asCString = __primitive("cast", c_string, buff);
+    return asCString;
   }
 
   /*
