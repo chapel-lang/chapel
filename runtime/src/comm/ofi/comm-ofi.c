@@ -116,8 +116,6 @@ static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
 static int pollSetSize = 0;             // number of fids in the poll set
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
-static int haveDeliveryComplete;        // delivery-complete? (vs. msg order)
-
 //
 // We direct RMA traffic and AM traffic to different endpoints so we can
 // spread the progress load across all the threads when we're doing
@@ -212,6 +210,24 @@ static void* amLZs[2];
 static struct iovec ofi_iov_reqs[2];
 static struct fi_msg ofi_msg_reqs[2];
 static int ofi_msg_i;
+
+//
+// These are the major modes in which we can operate in order to
+// achieve Chapel MCM conformance.
+//
+enum mcmMode_t {
+  mcmm_undef,
+  mcmm_dlvrCmplt,                       // delivery-complete
+  mcmm_msgOrd,                          // RAW, WAW, SAW, SAS
+};
+
+static enum mcmMode_t mcmMode;          // overall operational mode
+
+#ifdef CHPL_COMM_DEBUG
+static const char* mcmModeNames[] = { "undefined",
+                                      "delivery-complete",
+                                      "message orderings", };
+#endif
 
 
 ////////////////////////////////////////
@@ -1179,13 +1195,13 @@ chpl_bool isGoodCoreProvider(struct fi_info* info) {
 
 static inline
 struct fi_info* findProvInList(struct fi_info* info,
-                               chpl_bool skip_ungood_provs,
-                               chpl_bool skip_RxD_provs,
-                               chpl_bool skip_RxM_provs) {
+                               chpl_bool accept_ungood_provs,
+                               chpl_bool accept_RxD_provs,
+                               chpl_bool accept_RxM_provs) {
   while (info != NULL
-         && (   (skip_ungood_provs && !isGoodCoreProvider(info))
-             || (skip_RxD_provs && isInProvider("ofi_rxd", info))
-             || (skip_RxM_provs && isInProvider("ofi_rxm", info)))) {
+         && (   (!accept_ungood_provs && !isGoodCoreProvider(info))
+             || (!accept_RxD_provs && isInProvider("ofi_rxd", info))
+             || (!accept_RxM_provs && isInProvider("ofi_rxm", info)))) {
     info = info->next;
   }
   return (info == NULL) ? NULL : fi_dupinfo(info);
@@ -1193,114 +1209,223 @@ struct fi_info* findProvInList(struct fi_info* info,
 
 
 static
-struct fi_info* findProvider(struct fi_info** p_infoList,
-                             struct fi_info* hints,
-                             chpl_bool skip_RxD_provs,
-                             chpl_bool skip_RxM_provs,
-                             const char* feature) {
-  chpl_bool skip_ungood_provs;
+chpl_bool findProvGivenHints(struct fi_info** p_infoOut,
+                             struct fi_info* infoIn,
+                             chpl_bool accept_RxD_provs,
+                             chpl_bool accept_RxM_provs,
+                             enum mcmMode_t mcmm) {
+  struct fi_info* infoList;
+  int ret;
+  OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, infoIn, &infoList),
+            ret, -FI_ENODATA);
 
-  if (hints != NULL) {
-    int ret;
-    OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints,
-                         p_infoList),
-              ret, -FI_ENODATA);
-    skip_ungood_provs = (getProviderName() == NULL);
-  } else {
-    skip_ungood_provs = false;
+  struct fi_info* info;
+  info = findProvInList(infoList,
+                        (getProviderName() != NULL) /*accept_ungood_provs*/,
+                        accept_RxD_provs, accept_RxM_provs);
+
+  DBG_PRINTF_NODE0(DBG_PROV,
+                   "** %s desirable provider with %s",
+                   (info == NULL) ? "no" : "found", mcmModeNames[mcmm]);
+
+  if (info == NULL) {
+    *p_infoOut = infoList;
+    return false;
   }
 
-  struct fi_info* infoFound = NULL;
-  if (*p_infoList != NULL
-      && ((infoFound = findProvInList(*p_infoList, skip_ungood_provs,
-                                      skip_RxD_provs, skip_RxM_provs))
-          != NULL)) {
-    DBG_PRINTF_NODE0(DBG_PROV,
-                     "** found %sdesirable provider with %s",
-                     (hints != NULL) ? "" : "less-", feature);
-  } else {
-    DBG_PRINTF_NODE0(DBG_PROV,
-                     "** no %sdesirable provider with %s",
-                     (hints != NULL) ? "" : "less-", feature);
-  }
-
-  return infoFound;
+  fi_freeinfo(infoList);
+  *p_infoOut = info;
+  return true;
 }
 
 
 static
-struct fi_info* findDlvrCmpltProv(struct fi_info** p_infoList,
-                                  struct fi_info* hints) {
-  //
-  // We're looking for a provider that supports FI_DELIVERY_COMPLETE.
-  // If we're given hints, then we don't have any candidates yet.  In
-  // that case we're asked to get a provider list using those hints,
-  // modified with delivery-complete, and from that select the first
-  // "good" (or forced) provider, which is assumed to be the one that
-  // will perform best.  Otherwise, we're just asked to find the best
-  // less-good provider from the given list.
-  //
-  const char* prov_name = getProviderName();
-  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
-  const chpl_bool forced_RxM = isInProvName("ofi_rxm", prov_name);
-  struct fi_info* infoFound;
+chpl_bool findProvGivenList(struct fi_info** p_infoOut,
+                            struct fi_info* infoIn,
+                            chpl_bool accept_RxD_provs,
+                            chpl_bool accept_RxM_provs,
+                            enum mcmMode_t mcmm) {
+  struct fi_info* info;
+  info = findProvInList(infoIn,
+                        true /*accept_ungood_provs*/,
+                        accept_RxD_provs, accept_RxM_provs);
 
-  uint64_t op_flags_saved = 0;
-  if (hints != NULL) {
-    op_flags_saved = hints->tx_attr->op_flags;
-    hints->tx_attr->op_flags = FI_DELIVERY_COMPLETE;
+  DBG_PRINTF_NODE0(DBG_PROV,
+                   "** %s less-desirable provider with %s",
+                   (info == NULL) ? "no" : "found", mcmModeNames[mcmm]);
+
+  if (info == NULL) {
+    return false;
   }
 
-  infoFound = findProvider(p_infoList, hints,
-                           !forced_RxD /*skip_RxD_provs*/,
-                           !forced_RxM /*skip_RxM_provs*/,
-                           "delivery-complete");
+  *p_infoOut = info;
+  return true;
+}
 
-  if (hints != NULL) {
-    hints->tx_attr->op_flags = op_flags_saved;
+
+//
+// The find*Prov() functions operate in one of two ways, as selected by
+// the inputIsHints flag.  We call them in some order the first time to
+// try to find a fabric with a "good" provider, and then if all those
+// attempts fail we call them again in the same order to find a fabric
+// with a not-so-good-but-acceptable provider.  To save a little time,
+// we use the candidate list resulting from the first call as the input
+// for the second one.
+//
+// If inputIsHints is true, then infoIn contains basic hints that are to
+// be adjusted appropriately for the major mode the function tries to
+// match, and then passed to fi_getinfo() to get a list of candidate
+// fabrics.  If the candidate list contains a fabric instance with a
+// good provider, output variables *p_infoOut and *p_modeOut are set to
+// that fabric and the resulting major operational mode, respectively,
+// and the function returns true.  Otherwise, *p_infoOut is set to the
+// entire candidate list, *p_modeOut is unchanged, and the function
+// returns false.
+//
+// If inputIsHints is false, then infoIn is the candidate list from the
+// first call.  If that list contains a fabric instance with any usable
+// provider, output variables *p_infoOut and *p_modeOut are set to that
+// fabric and the resulting major operational mode, respectively, and
+// the function returns true.  Otherwise *p_infoOut and *p_modeOut are
+// unchanged and the function returns false.
+//
+// Each find*Prov() function has companion is*Prov() and setCheck*Prov()
+// functions.  The is*Prov() functions return the corresponding MCM mode
+// constant iff the given fabric instance has the capabilities that the
+// find*Prov() function looks for.  These functions are used in setting
+// the MCM conformance mode when the provider is forced rather than
+// chosen.  The setCheck*Prov() functions either add the appropriate
+// capabilities to existing hints ("set") or determine whether a given
+// fabric instance has all the capabilities needed ("check").  These
+// functions are building blocks for both the find*Prov() and is*Prov()
+// functions, and serve to encapsulate in just one place the specific
+// capabilities needed for each MCM conformance mode.
+//
+typedef chpl_bool (fnFindProv_t)(struct fi_info**, enum mcmMode_t*,
+                                 struct fi_info*, chpl_bool);
+static fnFindProv_t findDlvrCmpltProv;
+static fnFindProv_t findMsgOrderProv;
+
+typedef enum mcmMode_t (fnIsProv_t)(struct fi_info*);
+static fnIsProv_t isDlvrCmpltProv;
+static fnIsProv_t isMsgOrderProv;
+
+
+static
+struct fi_info* setCheckDlvrCmpltProv(struct fi_info* info,
+                                      chpl_bool set) {
+  uint64_t need_op_flags = FI_DELIVERY_COMPLETE;
+  if (set) {
+    info = fi_dupinfo(info);
+    info->tx_attr->op_flags |= need_op_flags;
+    return info;
+  } else {
+    return ((info->tx_attr->op_flags & need_op_flags) == need_op_flags)
+           ? info
+           : NULL;
   }
-
-  return infoFound;
 }
 
 
 static
-struct fi_info* findMsgOrderProv(struct fi_info** p_infoList,
-                                 struct fi_info* hints) {
+chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
+                            enum mcmMode_t* p_modeOut,
+                            struct fi_info* infoIn,
+                            chpl_bool inputIsHints) {
   //
-  // We're looking for a provider that supports the message orderings
-  // that are sufficient for us to adhere to the MCM.  If we're given
-  // hints, then we don't have any candidates yet.  In that case we're
-  // asked to get a provider list using those hints, modified with the
-  // needed message orderings, and from that select the first "good" (or
-  // forced) provider, which is assumed to be the one that will perform
-  // best.  Otherwise, we're just asked to find the best less-good
-  // provider from the given list.
+  // Try to find a provider that supports delivery-complete.
   //
   const char* prov_name = getProviderName();
-  const chpl_bool forced_RxD = isInProvName("ofi_rxd", prov_name);
-  struct fi_info* infoFound;
+  const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  enum mcmMode_t mcmm = mcmm_dlvrCmplt;
+  chpl_bool ret;
 
-  uint64_t tx_msg_order_saved = 0;
-  uint64_t rx_msg_order_saved = 0;
-  if (hints != NULL) {
-    tx_msg_order_saved = hints->tx_attr->msg_order;
-    rx_msg_order_saved = hints->rx_attr->msg_order;
-    hints->tx_attr->msg_order |= FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
-    hints->rx_attr->msg_order |= FI_ORDER_RAW  | FI_ORDER_WAW | FI_ORDER_SAW;
+  if (inputIsHints) {
+    struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
+    ret = findProvGivenHints(p_infoOut, infoAdj,
+                             accept_RxD_provs, accept_RxM_provs, mcmm);
+    fi_freeinfo(infoAdj);
+  } else {
+    ret = findProvGivenList(p_infoOut, infoIn,
+                            accept_RxD_provs, accept_RxM_provs, mcmm);
   }
 
-  infoFound = findProvider(p_infoList, hints,
-                           !forced_RxD /*skip_RxD_provs*/,
-                           false /*skip_RxM_provs*/,
-                           "message orderings");
-
-  if (hints != NULL) {
-    hints->tx_attr->msg_order = tx_msg_order_saved;
-    hints->rx_attr->msg_order = rx_msg_order_saved;
+  if (ret) {
+    *p_modeOut = mcmm;
   }
 
-  return infoFound;
+  return ret;
+}
+
+
+static
+enum mcmMode_t isDlvrCmpltProv(struct fi_info* info) {
+  return (setCheckDlvrCmpltProv(info, false /*check*/) == info)
+         ? mcmm_dlvrCmplt
+         : mcmm_undef;
+}
+
+
+static
+struct fi_info* setCheckMsgOrderProv(struct fi_info* info,
+                                     chpl_bool set) {
+  uint64_t need_msg_orders = FI_ORDER_RAW
+                             | FI_ORDER_WAW
+                             | FI_ORDER_SAW
+                             | FI_ORDER_SAS;
+  if (set) {
+    info = fi_dupinfo(info);
+    info->tx_attr->msg_order = need_msg_orders;
+    info->rx_attr->msg_order = need_msg_orders;
+    return info;
+  } else {
+    return ((info->tx_attr->msg_order & need_msg_orders) == need_msg_orders
+            && (info->rx_attr->msg_order & need_msg_orders) == need_msg_orders)
+           ? info
+           : NULL;
+  }
+}
+
+
+static
+chpl_bool findMsgOrderProv(struct fi_info** p_infoOut,
+                           enum mcmMode_t* p_modeOut,
+                           struct fi_info* infoIn,
+                           chpl_bool inputIsHints) {
+  //
+  // Try to find a provider that supports message orderings sufficient
+  // for our MCM, all by themselves.
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool accept_RxM_provs = true;
+  enum mcmMode_t mcmm = mcmm_msgOrd;
+  chpl_bool ret;
+
+  if (inputIsHints) {
+    struct fi_info* infoAdj = setCheckMsgOrderProv(infoIn, true /*set*/);
+    ret = findProvGivenHints(p_infoOut, infoAdj,
+                             accept_RxD_provs, accept_RxM_provs, mcmm);
+    fi_freeinfo(infoAdj);
+  } else {
+    ret = findProvGivenList(p_infoOut, infoIn,
+                            accept_RxD_provs, accept_RxM_provs, mcmm);
+  }
+
+  if (ret) {
+    *p_modeOut = mcmm;
+  }
+
+  return ret;
+}
+
+
+static
+enum mcmMode_t isMsgOrderProv(struct fi_info* info) {
+  return (setCheckMsgOrderProv(info, false /*check*/) == info)
+         ? mcmm_msgOrd
+         : mcmm_undef;
 }
 
 
@@ -1409,7 +1534,7 @@ void init_ofiFabricDomain(void) {
   //   Explicitly including ofi_rxm in FI_PROVIDER overrides this.
   //
 
-  int ret;
+  mcmMode = mcmm_undef;
 
   //
   // Take manually overridden hints as forcing provider selection if
@@ -1418,6 +1543,7 @@ void init_ofiFabricDomain(void) {
   // below.
   //
   if (ord_cmplt_forced) {
+    int ret;
     OFI_CHK_2(fi_getinfo(COMM_OFI_FI_VERSION, NULL, NULL, 0, hints, &ofi_info),
               ret, -FI_ENODATA);
     if (ret != FI_SUCCESS) {
@@ -1426,40 +1552,49 @@ void init_ofiFabricDomain(void) {
     }
   }
 
-  //
-  // Try to find a good provider, then settle for a not-so-good one. By
-  // default try delivery-complete first, then message ordering, but
-  // allow that order to be swapped via the environment.
-  //
-  if (ofi_info == NULL) {
-    const chpl_bool
-      preferDlvrCmplt = chpl_env_rt_get_bool("COMM_OFI_DO_DELIVERY_COMPLETE",
-                                             true);
-    struct {
-      struct fi_info* (*fn)(struct fi_info**, struct fi_info*);
-      struct fi_info* infoList;
-    } capTry[] = { { findDlvrCmpltProv, NULL },
-                   { findMsgOrderProv, NULL }, };
-    size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
+  struct {
+    fnFindProv_t* fnFind;
+    fnIsProv_t* fnIs;
+    struct fi_info* infoList;
+  } capTry[] = { { findDlvrCmpltProv, isDlvrCmpltProv, NULL },
+                 { findMsgOrderProv, isMsgOrderProv, NULL }, };
+  size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
 
-    if (!preferDlvrCmplt) {
-      capTry[0].fn = findMsgOrderProv;
-      capTry[1].fn = findDlvrCmpltProv;
-    }
+  if (ofi_info == NULL) {
 
     // Search for a good provider.
     for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
-      ofi_info = (*capTry[i].fn)(&capTry[i].infoList, hints);
+      struct fi_info* info;
+      enum mcmMode_t mcmm;
+      if ((*capTry[i].fnFind)(&info, &mcmm, hints, true /*inputIsHints*/)) {
+        ofi_info = info;
+        mcmMode = mcmm;
+      } else {
+        capTry[i].infoList = info;
+      }
     }
 
     // If necessary, search for a less-good provider.
     for (int i = 0; ofi_info == NULL && i < capTryLen; i++) {
-      ofi_info = (*capTry[i].fn)(&capTry[i].infoList, NULL);
+      (void) (*capTry[i].fnFind)(&ofi_info, &mcmMode, capTry[i].infoList,
+                                 false /*inputIsHints*/);
     }
 
-    // ofi_info has the result; free intermediate list(s).
+    // ofi_info has the result, if any.  Free intermediate list(s).
     for (int i = 0; i < capTryLen && capTry[i].infoList != NULL; i++) {
       fi_freeinfo(capTry[i].infoList);
+    }
+  } else {
+    //
+    // The capability set, and provider, were forced upon us.  Figure out
+    // what capability set we'll be using.
+    //
+    for (int i = 0; mcmMode == mcmm_undef && i < capTryLen; i++) {
+      mcmMode = (*capTry[i].fnIs)(ofi_info);
+    }
+
+    if (mcmMode == mcmm_undef) {
+      chpl_warning("Forced provider has unknown capability set", 0, 0);
     }
   }
 
@@ -1476,9 +1611,6 @@ void init_ofiFabricDomain(void) {
   // If we get here, we have a provider in ofi_info.
   //
   fi_freeinfo(hints);
-
-  haveDeliveryComplete =
-    (ofi_info->tx_attr->op_flags & FI_DELIVERY_COMPLETE) != 0;
 
   if (DBG_TEST_MASK(DBG_PROV_ALL)) {
     if (chpl_nodeID == 0) {
@@ -4276,7 +4408,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
     //
     assert(tcip->txCQ != NULL);  // PUTs require a CQ, at least for now
 
-    if (haveDeliveryComplete
+    if (mcmMode == mcmm_dlvrCmplt
         || !tcip->bound
         || size > ofi_info->tx_attr->inject_size) {
       atomic_bool txnDone;
@@ -4290,11 +4422,11 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                           fi_write(tcip->txCtx, myAddr, size,
                                    mrDesc, rxRmaAddr(tcip, node),
                                    mrRaddr, mrKey,
-                                   haveDeliveryComplete ? ctx : NULL));
+                                   (mcmMode == mcmm_dlvrCmplt) ? ctx : NULL));
       tcip->numTxnsOut++;
       tcip->numTxnsSent++;
 
-      if (!haveDeliveryComplete) {
+      if (mcmMode != mcmm_dlvrCmplt) {
         DBG_PRINTF(DBG_ORDER,
                    "dummy GET from %d for PUT ordering", (int) node);
         ofi_get_ll(orderDummy, node, orderDummyMap[node], 1, ctx, tcip);
@@ -4601,7 +4733,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     // This GET will force any outstanding PUT to the same node
     // to be visible.
     //
-    if (!haveDeliveryComplete && tcip->bound) {
+    if (mcmMode != mcmm_dlvrCmplt && tcip->bound) {
       chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
       assert(prvData != NULL);
       if (prvData->putBitmap != NULL) {
@@ -5153,12 +5285,11 @@ void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
                            chpl_comm_taskPrvData_t* prvData) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.  Note that
-  // we can only have PUTs outstanding if we're forced to use message
-  // ordering because the provider lacks delivery-complete and we've
-  // got a bound tx context.
+  // PUTs have actually completed on their target nodes.  We can only
+  // have any PUTs outstanding here if we're using message ordering
+  // for MCM conformance and we've got a bound tx context.
   //
-  if (!haveDeliveryComplete && tcip->bound) {
+  if (mcmMode != mcmm_dlvrCmplt && tcip->bound) {
     chpl_comm_taskPrvData_t* myPrvData = prvData;
     if (myPrvData == NULL) {
       CHK_TRUE((myPrvData = get_comm_taskPrvdata()) != NULL);
@@ -5179,12 +5310,11 @@ void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
                             chpl_bool taskIsEnding) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
-  // PUTs have actually completed on their target nodes.  Note that
-  // we can only have PUTs outstanding if we're forced to use message
-  // ordering because the provider lacks delivery-complete and we've
-  // got a bound tx context.
+  // PUTs have actually completed on their target nodes.  We can only
+  // have any PUTs outstanding here if we're using message ordering
+  // for MCM conformance and we've got a bound tx context.
   //
-  if (chpl_numNodes > 1 && !haveDeliveryComplete) {
+  if (chpl_numNodes > 1 && mcmMode != mcmm_dlvrCmplt) {
     struct perTxCtxInfo_t* myTcip = tcip;
     if (myTcip == NULL) {
       CHK_TRUE((myTcip = tciAlloc()) != NULL);
