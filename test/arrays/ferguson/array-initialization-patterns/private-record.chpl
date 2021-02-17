@@ -38,7 +38,7 @@ record R {
     return this;
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator =(ref lhs:R, rhs:R) {
   if printInitDeinit then writeln("d lhs", lhs.toString(), " = rhs", rhs.toString());
   lhs.x = rhs.x;
   lhs.ptr = new shared C(rhs.ptr.xx);

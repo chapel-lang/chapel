@@ -42,55 +42,55 @@ class K {
   var x: int;
 }
 
-proc =(lhs: A, rhs: A) {
+operator A.=(lhs: A, rhs: A) {
   lhs.x = rhs.x;
 }
 
-proc =(lhs: unmanaged B, rhs: B) {
+operator B.=(lhs: unmanaged B, rhs: B) {
   lhs.x = rhs.x;
 }
 
-proc =(lhs: borrowed C, rhs: C) {
+operator C.=(lhs: borrowed C, rhs: C) {
   lhs.x = rhs.x;
 }
 
-proc =(lhs: shared D, rhs: D) {
+operator D.=(lhs: shared D, rhs: D) {
   lhs.x = rhs.x;
 }
 
-proc =(lhs: owned E, rhs: E) {
+operator E.=(lhs: owned E, rhs: E) {
   lhs.x = rhs.x;
 }
 
-proc =(ref lhs: F, rhs: F) {
+operator F.=(ref lhs: F, rhs: F) {
   lhs.x = rhs.x;
 }
 
-proc =(ref lhs: owned G, rhs: G) {
+operator G.=(ref lhs: owned G, rhs: G) {
   lhs.x = rhs.x;
 }
 
-proc =(ref lhs: borrowed H, rhs: H) {
+operator H.=(ref lhs: borrowed H, rhs: H) {
   lhs.x = rhs.x;
 }
 
-proc =(ref lhs: I?, rhs: I) {
+operator I.=(ref lhs: I?, rhs: I) {
   lhs!.x = rhs.x;
 }
 
-proc =(ref lhs: owned J?, rhs: J) {
+operator J.=(ref lhs: owned J?, rhs: J) {
   lhs!.x = rhs.x;
 }
 
-proc =(ref lhs: borrowed K?, rhs: K) {
+operator K.=(ref lhs: borrowed K?, rhs: K) {
   lhs!.x = rhs.x;
 }
 
-proc =(ref lhs: A, rhs: int) {
+operator =(ref lhs: A, rhs: int) {
   lhs.x = rhs;
 }
 
-proc =(ref lhs: A, rhs: R) {
+operator =(ref lhs: A, rhs: R) {
   lhs.x = rhs.x;
 }
 
