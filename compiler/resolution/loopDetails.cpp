@@ -706,50 +706,16 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        if (true) {
-          INT_ASSERT(fs->zipSymbols().size() > 1);
-          //CallExpr *prevCall = toCallExpr(fs->prev);
-          //INT_ASSERT(prevCall);
-          //INT_ASSERT(prevCall->isPrimitive(PRIM_ZIP));
-
-          //for_actuals(actual, zipCall) {
-          for_vector(Symbol, s, fs->zipSymbols()) {
-            SET_LINENO(fs);
-            //SymExpr* se = toSymExpr(e);
-            //INT_ASSERT(se); // otherwise not normalized
-            // se is the iterable in this case
-            IteratorDetails details;
-            details.iterable = new SymExpr(s);
-            // Other details set below.
-            detailsVector.push_back(details);
-          }
-
-          fs->zipSymbols().clear();
+        INT_ASSERT(fs->zipSymbols().size() > 1);
+        for_vector(Symbol, s, fs->zipSymbols()) {
+          SET_LINENO(fs);
+          IteratorDetails details;
+          details.iterable = new SymExpr(s);
+          // Other details set below.
+          detailsVector.push_back(details);
         }
-        else {
-          INT_ASSERT(false);
-          FnSymbol* buildTupleFn = NULL;
-          CallExpr* buildTupleCall = toCallExpr(findExprProducing(newIterLF));
-          if (buildTupleCall)
-            buildTupleFn = buildTupleCall->resolvedOrVirtualFunction();
 
-          if (buildTupleFn && buildTupleFn->hasFlag(FLAG_BUILD_TUPLE)) {
-            // build up the detailsVector
-            for_formals_actuals(formal, actual, buildTupleCall) {
-              // Ignore the RETARG
-              if (formal->hasFlag(FLAG_RETARG))
-                continue;
-
-              SymExpr* actualSe = toSymExpr(actual);
-              INT_ASSERT(actualSe); // otherwise not normalized
-              // actualSe is the iterable in this case
-              IteratorDetails details;
-              details.iterable = actualSe;
-              // Other details set below.
-              detailsVector.push_back(details);
-            }
-          }
-        }
+        fs->zipSymbols().clear();
       }
 
       leaderDetails.iterable = detailsVector[0].iterable;

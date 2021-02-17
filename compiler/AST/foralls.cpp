@@ -33,7 +33,6 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
-#include "view.h"
 
 
 
@@ -351,8 +350,8 @@ buildFollowLoop(VarSymbol* iter,
       INT_ASSERT(iterCall);
       INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
-      CallExpr *getIteratorCall = generateFastFollowersForZip(iterCall, leadIdxCopy);
-      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
+      CallExpr *genIterTuple = generateFastFollowersForZip(iterCall, leadIdxCopy);
+      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, genIterTuple);
 
       followBlock->insertAtTail(moveCall);
     } else {
@@ -365,8 +364,8 @@ buildFollowLoop(VarSymbol* iter,
       INT_ASSERT(iterCall);
       INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
-      CallExpr *getIteratorCall = generateRegularFollowersForZip(iterCall, leadIdxCopy);
-      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, getIteratorCall);
+      CallExpr *genIterTuple = generateRegularFollowersForZip(iterCall, leadIdxCopy);
+      CallExpr *moveCall = new CallExpr(PRIM_MOVE, followIter, genIterTuple);
 
       followBlock->insertAtTail(moveCall);
     } else {
@@ -1072,8 +1071,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
     pfs->zipCall = iterCall->copy();
     preFS->insertAtTail(pfs->zipCall);
-    //resolveExpr(pfs->zipCall);
-    //pfs->zipCall->remove();
   }
   else {
     preFS->insertAtTail(new DefExpr(iterRec));
@@ -1081,12 +1078,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   Expr* toNormalize = preFS->body.tail;
-  //if (toNormalize == NULL) {
-    //toNormalize = pfs->zipCall;
-    //INT_ASSERT(toNormalize);
-  //}
-
-
 
   followBlock = buildFollowLoop(iterRec,
                                 leadIdxCopy,
@@ -1128,12 +1119,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
       leadForLoop->insertAtTail(moveToFlag);
 
       TransformLogicalShortCircuit handleAndsOrs;
-      //leadForLoop->accept(&handleAndsOrs);
       moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
-
-      //if (checkCall->inTree()) {
-        //normalize(checkCall);
-      //}
       normalize(leadForLoop);
 
       // override the dynamic check if the compiler can prove it's safe
@@ -1148,13 +1134,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                                new CallExpr(PRIM_MOVE, T2, gFalse)));
 
         TransformLogicalShortCircuit handleAndsOrs;
-        //checkCall->accept(&handleAndsOrs);
         moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
-
-        //if (checkCall->inTree()) {
-          //normalize(checkCall);
-        //}
-
         normalize(leadForLoop);
       }
     }
@@ -1180,7 +1160,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   pfs->insertBefore(preFS);
-  if (toNormalize != NULL) {
+  if (toNormalize != NULL) {  // TODO: do we still need this check?
     normalize(toNormalize); // requires inTree()
   }
   resolveBlockStmt(preFS);
@@ -1193,7 +1173,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
 
       pfs->insertZipSym(actualSymExpr->symbol());
     }
-    //pfs->zipCall->remove();
   }
 }
 

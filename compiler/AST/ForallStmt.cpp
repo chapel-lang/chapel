@@ -60,7 +60,6 @@ ForallStmt::ForallStmt(BlockStmt* body):
 {
   fIterVars.parent = this;
   fIterExprs.parent = this;
-  //fZipSyms.parent = this;
   fShadowVars.parent = this;
   INT_ASSERT(fLoopBody != NULL);
 
@@ -72,7 +71,6 @@ ForallStmt::ForallStmt(BlockStmt* body):
 }
 
 void ForallStmt::insertZipSym(Symbol *sym) {
-  //INT_ASSERT(isVarSymbol(sym));
   this->fZipSyms.push_back(sym);
 }
 
@@ -82,10 +80,6 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
     _this->fIterVars.insertAtTail(COPY_INT(expr));
   for_alist(expr, fIterExprs)
     _this->fIterExprs.insertAtTail(COPY_INT(expr));
-  //for_alist(expr, fZipSyms)
-    //_this->fZipSyms.insertAtTail(COPY_INT(expr));
-  //for_vector(Symbol, sym, fZipSyms)
-    //_this->fZipSyms.push_back(COPY_INT(sym));
   for_alist(expr, fShadowVars)
     _this->fShadowVars.insertAtTail(COPY_INT(expr));
 
@@ -98,8 +92,6 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fVectorizationHazard   = fVectorizationHazard;
   _this->fIsForallExpr          = fIsForallExpr;
   // todo: fContinueLabel, fErrorHandlerLabel
-
-  //_this->zipCall = COPY_INT(zipCall);
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);
   _this->fRecIterICdef        = COPY_INT(fRecIterICdef);
@@ -192,8 +184,6 @@ void ForallStmt::accept(AstVisitor* visitor) {
     for_alist(expr, inductionVariables())  expr->accept(visitor);
     for_alist(expr, iteratedExpressions()) expr->accept(visitor);
     for_alist(expr, shadowVariables())     expr->accept(visitor);
-
-    //if (zipCall) zipCall->accept(visitor);
 
     if (fRecIterIRdef)        fRecIterIRdef->accept(visitor);
     if (fRecIterICdef)        fRecIterICdef->accept(visitor);

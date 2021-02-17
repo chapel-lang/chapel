@@ -2262,9 +2262,6 @@ static void buildLeaderIterator(PromotionInfo& promotion,
   else {
     toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
   }
-  //const char* leaderName = zippered ? "_toLeaderZip" : "_toLeader";
-  //CallExpr*  toLeader = new CallExpr(leaderName, iterator->copy(&leaderMap));
-
 
   BlockStmt* loopBody = new BlockStmt(new CallExpr(PRIM_YIELD, liIndex));
 
@@ -2772,16 +2769,6 @@ static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
                                          const char *primOp,
                                          ArgSymbol *lead) {
 
-  //CallExpr *iterCall = toCallExpr(e);
-  //INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-  //INT_ASSERT(iterCall->numActuals() > 1);
-
-  //const char *fnName = isStatic ? "chpl__staticFastFollowCheck" :
-                                  //"chpl__dynamicFastFollowCheck";
-
-  //Expr *lead = exprs[0];
-  //INT_ASSERT(isSymExpr(lead));
-
   if (exprs.size() == 1) {
     CallExpr *ret = new CallExpr(fnName, exprs[0]->copy());
     if (lead != NULL) {
@@ -2793,12 +2780,10 @@ static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
 
     CallExpr *ret = new CallExpr(primOp);
 
-    //for_actuals(actual, iterCall) {
     for_vector(SymExpr, se, exprs) {
       if (ret->numActuals() == 2) {
         ret = new CallExpr(primOp, ret);
       }
-      //INT_ASSERT(isSymExpr(e));
       CallExpr *newCall = new CallExpr(fnName, se->copy());
       if (lead != NULL) {
         newCall->insertAtTail(new SymExpr(lead));
@@ -2824,11 +2809,8 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   ArgSymbol*  x          = new ArgSymbol(INTENT_BLANK, "x", IRtype);
 
-  //CallExpr*   buildTuple = new CallExpr("_build_tuple_always_allow_ref");
-
   std::vector<SymExpr *> fieldSymExprs;
 
-  //Symbol*     pTup       = newTemp("p_tup");
   Symbol*     returnTmp  = newTemp("p_ret");
   CallExpr*   forward    = NULL;
 
@@ -2876,7 +2858,6 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
       checkFn->insertAtTail(moveToField);
 
-      //buildTuple->insertAtTail(new SymExpr(field));
       fieldSymExprs.push_back(new SymExpr(field));
     }
   }
@@ -2891,11 +2872,6 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
   }
 
   forward = generateFastFollowCheck(fieldSymExprs, fnName, zipOp, lead);
-  //std::cout << "Generated the forward call\n";
-  //nprint_view(forward);
-
-  //checkFn->insertAtTail(new DefExpr(pTup));
-  //checkFn->insertAtTail(new CallExpr(PRIM_MOVE, pTup, buildTuple));
 
   checkFn->insertAtTail(new DefExpr(returnTmp));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));

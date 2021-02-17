@@ -1507,10 +1507,6 @@ static void lowerOneForallStmt(ForallStmt* fs) {
   if (parIterFn->firstSymExpr() == NULL)
     // We have inlined all uses. So, remove the iterator as well.
     parIterFn->defPoint->remove();
-
-  //if (fs->zipCall != NULL) {
-    //fs->zipCall->remove();
-  //}
 }
 
 

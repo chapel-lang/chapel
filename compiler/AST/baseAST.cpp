@@ -587,9 +587,6 @@ void registerModule(ModuleSymbol* mod) {
 
 void update_symbols(BaseAST* ast, SymbolMap* map) {
   if (SymExpr* sym_expr = toSymExpr(ast)) {
-    if (sym_expr->id == 1755826) {
-      gdbShouldBreakHere();
-    }
     if (sym_expr->symbol()) {
       if (Symbol* y = map->get(sym_expr->symbol())) {
         bool skip = false;

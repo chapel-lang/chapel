@@ -124,25 +124,15 @@ module ArrayViewSlice {
     // to them.
     //
     proc type chpl__deserialize(data) {
-
-      local {
-      //writeln(here.id, " Slice deserialization data: ", data);
       type domType = __primitive("static field type", this, "dom");
       type arrType = __primitive("static field type", this, "_ArrInstance");
       const dom = _to_borrowed(domType).chpl__deserialize(data(0));
       const arr = _to_borrowed(arrType).chpl__deserialize(data(1));
-      //writeln(here.id, " Array locale = ", arr.locale.id);
-      //writeln(here.id, " Domain locale = ", dom.locale.id);
-      //writeln(here.id, " Array pid = ", arr.pid);
-      //writeln(here.id, " domain pid = ", dom.pid);
-
-
       return new unmanaged ArrayViewSliceArr(eltType=arr.eltType,
                                              _DomPid=data(0),
                                              dom = dom,
                                              _ArrPid=data(1),
                                              _ArrInstance=arr);
-      }
     }
 
 
