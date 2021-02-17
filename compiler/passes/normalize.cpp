@@ -3612,7 +3612,7 @@ static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
 static void fixupOutArrayFormals(FnSymbol* fn) {
   for_formals(formal, fn) {
-    if (isArrayFormal(formal)) {
+    if (formal->intent == INTENT_OUT && isArrayFormal(formal)) {
       fixupOutArrayFormal(fn, formal);
     }
   }
