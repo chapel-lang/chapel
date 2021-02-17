@@ -3969,7 +3969,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     CallExpr* call = userCall(info.call);
 
     if (call->isCast() == true) {
-      if (info.actuals.head()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
+      if (info.actuals.tail()->hasFlag(FLAG_TYPE_VARIABLE) == false) {
         USR_FATAL_CONT(call, "illegal cast to non-type");
       } else {
         Type* srcType = info.actuals.v[0]->type;
