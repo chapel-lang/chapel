@@ -4,11 +4,11 @@ extern {
 
   #define FATBIN_FILE "tmp/chpl__gpu.fatbin"
 
-  void checkCudaErrors(CUresult err) {
+  static void checkCudaErrors(CUresult err) {
     assert(err == CUDA_SUCCESS);
   }
 
-  double launchKernel(){
+  static double launchKernel(){
     CUdevice    device;
     CUmodule    cudaModule;
     CUcontext   context;
