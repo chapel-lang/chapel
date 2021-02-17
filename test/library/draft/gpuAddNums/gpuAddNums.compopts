@@ -1,0 +1,1 @@
+--llvm --ccflags --cuda-gpu-arch=sm_61 --savec=tmp -L/usr/local/cuda-11.0/lib64 -lcuda
