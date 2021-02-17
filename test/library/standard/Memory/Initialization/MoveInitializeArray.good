@@ -9,11 +9,11 @@ T2
 1 2 3 4
 
 T3
-(ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 3}) (ptr = {x = 4})
-(ptr = {x = 3}) (ptr = {x = 4}) (ptr = {x = 3}) (ptr = {x = 4})
+(ptr = {x = 0}) (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3})
+(ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 0}) (ptr = {x = 0})
 
 T4
 (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0})
 (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 4})
 (ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 4})
-(ptr = {x = 1}) (ptr = {x = 2}) (ptr = {x = 3}) (ptr = {x = 4})
+(ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0}) (ptr = {x = 0})
