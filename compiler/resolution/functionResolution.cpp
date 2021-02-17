@@ -4299,6 +4299,43 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
   CallExpr*   call = userCall(info.call);
   const char* str  = NULL;
 
+  // Check for uninitialized values (with type dtSplitInitType)
+  bool foundUninitedSplitInit = false;
+  for_actuals(actual, call) {
+    if (actual->getValType() == dtSplitInitType) {
+      if (SymExpr* se = toSymExpr(actual)) {
+        if (DefExpr* def = se->symbol()->defPoint) {
+          const char* name = toString(se->symbol(), false);
+          USR_FATAL_CONT(def,
+                         "variable '%s' is not initialized and has no type",
+                         name);
+          USR_PRINT(call, "'%s' use here "
+                          "prevents split-init from establishing the type",
+                          name);
+          foundUninitedSplitInit = true;
+        }
+      }
+    }
+  }
+
+  if (foundUninitedSplitInit) {
+    // Check for functions with out intent formals. If there are none,
+    // dont' bother to show candidates or even say it's a resolution error.
+    bool anyOutIntent = false;
+    forv_Vec(FnSymbol, fn, visibleFns) {
+      for_formals(formal, fn) {
+        if (formal->originalIntent == INTENT_OUT) {
+          anyOutIntent = true;
+        }
+      }
+    }
+    if (anyOutIntent == false)
+      return;
+
+    // otherwise, show candidates as normal.
+    // TODO: we could filter the candidates down to ones with out intent...
+  }
+
   if (info.scope != NULL) {
     ModuleSymbol* mod = toModuleSymbol(info.scope->parentSymbol);
 
