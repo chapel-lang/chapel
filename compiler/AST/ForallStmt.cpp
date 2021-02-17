@@ -291,6 +291,18 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
 ForallStmt* isForallIterExpr(Expr* expr) {
+  if (CallExpr *iterCall = toCallExpr(expr)) {
+    if (iterCall->isPrimitive(PRIM_ZIP)) {
+      // this should be fine as long as this is called before iterator lowering
+      // otherwise, there might be some reduce-intent related code that comes in
+      // between the zip expression and the forall statement
+      ForallStmt* pfs = toForallStmt(expr->next);
+      INT_ASSERT(pfs);
+      INT_ASSERT(pfs->zipCall == iterCall);
+
+      return pfs;
+    }
+  }
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->iteratedExpressions())

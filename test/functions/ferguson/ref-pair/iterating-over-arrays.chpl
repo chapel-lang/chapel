@@ -57,10 +57,10 @@ tupleIndexForall(getter(), getter());
 writeln("tupleZipFor sets 2nd");  
 tupleZipFor( (getter(), getter()) );
 writeln("tupleZipForall sets 2nd");  
-tupleZipForall( (getter(), getter()) );
+tupleZipForall( (getter(), getter()) );  // 2nd is getting const ref (should be ref)
 
 writeln("tupleIndexZipFor sets all");  
 tupleIndexZipFor( (getter(), getter()) );
 writeln("tupleIndexZipForall sets all");  
-tupleIndexZipForall( (getter(), getter()) );
+tupleIndexZipForall( (getter(), getter()) );  // 2nd is getting const ref (shoudl be ref)
 

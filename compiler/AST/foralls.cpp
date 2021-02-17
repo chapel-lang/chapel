@@ -286,7 +286,7 @@ static CallExpr *generateFollowersForZipHelp(CallExpr *iterCall,
                                              const char *fnName) {
   INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
 
-  CallExpr *tupler = new CallExpr("_build_tuple_always_allow_ref");
+  CallExpr *tupler = new CallExpr("_build_tuple");
 
   for_actuals(actual, iterCall) {
     if (getIterator) {
