@@ -863,7 +863,7 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     }
 
     if (formal->originalIntent == INTENT_OUT) {
-      // out intent formals are never generic
+      // out intent formals never make a function generic
       // (type is inferred from the function body)
 
     } else if (formal->intent == INTENT_PARAM) {
