@@ -33,12 +33,12 @@ module Initialization {
   }
 
   /*
-    Check to see if a given type supports deinitialization.
+    Check to see if a given type needs to be deinitialized.
 
-    :arg t: A type to check for a deinitializer
+    :arg t: A type to check for deinitialization
     :type t: `type`
 
-    :return: ``true`` if ``t`` supports deinitialization
+    :return: ``true`` if ``t`` needs to be deinitialized 
     :rtype: param bool
   */
   proc needsDeinit(type t) param {
@@ -46,16 +46,16 @@ module Initialization {
   }
 
   /*
-    Explicitly deinitialize a reference. The memory referred to by ``arg``
+    Explicitly deinitialize a variable. The variable referred to by ``arg``
     should be considered uninitialized after a call to this function.
 
     .. warning::
 
-      Chapel is not aware of a call to ``explicitDeinit()``, which means
-      that the deinitializer of ``arg`` may run again once it goes out of
-      scope.
+      At present the compiler does not account for deinitialization performed
+      upon a call to :proc:`explicitDeinit()`. It should only be called
+      when deinitialization would not occur otherwise.
 
-    :arg: A value to deinitialize
+    :arg: A variable to deinitialize
   */
   proc explicitDeinit(ref arg: ?t) {
     if needsDeinit(t) then
@@ -63,20 +63,21 @@ module Initialization {
   }
 
   /*
-    Move-initialize a reference from a value. No assignment is performed
-    when moving ``rhs`` into the memory referred to by ``lhs``.
+    Move-initialize ``lhs`` with the value in ``rhs``. The contents of ``lhs``
+    are not deinitialized before the move, and ``rhs`` is not deinitialized
+    after the move.
 
     .. warning::
 
-      If the value at ``lhs`` is already initialized memory, it will be
-      overwritten by the contents of ``rhs`` without being deinitialized.
-      Call :proc:`explicitDeinit()` to deinitialize ``lhs`` first if
+      If ``lhs`` references an already initialized variable, it will be
+      overwritten by the contents of ``rhs`` without being deinitialized
+      first. Call :proc:`explicitDeinit()` to deinitialize ``lhs`` if
       necessary.
 
-    :arg lhs: A reference to move-initialize
+    :arg lhs: A variable to move-initialize
     :type lhs: `?t`
 
-    :arg rhs: A 
+    :arg rhs: A value to move-initialize from
     :type rhs: `t`
   */
   proc moveInitialize(ref lhs: ?t, pragma "no auto destroy" in rhs: t) {
@@ -85,17 +86,18 @@ module Initialization {
   }
 
   /*
-    Move the memory referred to by a reference into a new value.
+    Move the contents of the variable or constant referred to by ``arg`` into
+    a new value.
 
     .. warning::
 
-      The memory referred to by ``arg`` should be considered uninitialized
-      after a call to this function.
+      The variable or constant referred to by ``arg`` should be considered
+      uninitialized after a call to this function.
 
-    :arg arg: A reference to consume
+    :arg arg: A variable or constant to move
     :type arg: `?t`
 
-    :return: A reference moved into a new value
+    :return: The contents of ``arg`` moved into a new value
     :rtype: `t`
   */
   proc moveToValue(const ref arg: ?t) {
@@ -112,13 +114,15 @@ module Initialization {
   }
 
   /*
-    Swap the values referred to by two references. No assignment takes
-    place when swapping ``lhs`` and ``rhs``.
+    Swap the contents of the variables referred to by ``lhs`` and ``rhs``.
+    This function does not call the ``<=>`` operator. Unlike the ``<=>``
+    operator, :proc:`moveSwap()` does not perform assignment or
+    initialization.
 
-    :arg lhs: A value to swap
+    :arg lhs: A variable to swap
     :type lhs: `?t`
 
-    :arg rhs: A value to swap
+    :arg rhs: A variable to swap
     :type rhs: `t`
   */
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
@@ -177,10 +181,18 @@ module Initialization {
   }
 
   /*
-    Move-initialize a group of array elements from a different group of
-    elements in the same array.
+    Move-initialize a group of array elements from a group of elements in the
+    same array. This function is equivalent to a sequence of individual calls
+    to :proc:`moveInitialize()`.
 
-    :arg a: An array to move-initialize
+    .. warning::
+
+      This function will halt if the value of ``numElements`` is negative
+      or is greater than `a.size`. It will also halt if any indices in
+      the range `dstStartIndex..(dstStartIndex + numElements)` or
+      `srcStartIndex..(srcStartIndex + numElements)` are out of bounds.
+
+    :arg a: The array with source and destination elements
     :type a: `[]`
 
     :arg dstStartIndex: Destination index of elements to move-initialize
@@ -222,20 +234,28 @@ module Initialization {
   }
 
   /*
-    Move-initialize a group of array elements from a different group of
-    elements in another array.
+    Move-initialize a group of array elements from a group of elements in
+    another array. This function is equivalent to a sequence of individual
+    calls to :proc:`moveInitialize()`.
 
-    :arg dstA: An array to move-initialize
+    .. warning::
+
+      This function will halt if the value of ``numElements`` is negative.
+      or is greater than `a.size` or `b.size`. It will also halt if any
+      indices in the range `dstStartIndex..(dstStartIndex + numElements)`
+      or `srcStartIndex..(srcStartIndex + numElements)` are out of bounds.
+
+    :arg dstA: The array with destination elements
     :type dstA: `[] ?t`
 
     :arg dstStartIndex: Destination index of elements to move-initialize
-    :type dstStartIndex: ``dstA.idxType``
+    :type dstStartIndex: `dstA.idxType`
 
-    :arg srcA: An array to move-initialize from
+    :arg srcA: The array with source elements 
     :type srcA: `[] t`
 
     :arg srcStartIndex: Source index of elements to move-initialize from
-    :type srcStartIndex: ``srcA.idxType``
+    :type srcStartIndex: `srcA.idxType`
 
     :arg numElements: The number of elements to move-initialize
     :type numElements: int
