@@ -2,7 +2,7 @@ record R {
   var x:int;
 }
 
-proc =(ref lhs:R, rhs:R) {
+operator =(ref lhs:R, rhs:R) {
   compilerError("boo");
 }
 

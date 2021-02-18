@@ -13,7 +13,7 @@ record Set {
   var keys: domain(keyType);
 }
 
-proc +(a:Set(?t), b:Set(t)) {
+operator Set.+(a:Set(?t), b:Set(t)) {
   var sum = new Set(t);
   sum.keys += a.keys;
   sum.keys += b.keys;
@@ -30,7 +30,7 @@ record Map {
   }
 }
 
-proc +(a:Map(?t,?u), b:Map(t,u)) {
+operator Map.+(a:Map(?t,?u), b:Map(t,u)) {
   var sum = new Map(t,u);
   sum.keys += a.keys;
   sum.keys += b.keys;

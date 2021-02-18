@@ -33,7 +33,7 @@ module FileHashing {
   }
 
   /* Called when assigning between SHA256Hash values */
-  proc =(ref lhs: SHA256Hash, rhs: SHA256Hash) {
+  operator =(ref lhs: SHA256Hash, rhs: SHA256Hash) {
     lhs.hash = rhs.hash;
   }
 
@@ -55,22 +55,22 @@ module FileHashing {
     return 0;
   }
 
-  proc <(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.<(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) < 0;
   }
-  proc <=(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.<=(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) <= 0;
   }
-  proc ==(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.==(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) == 0;
   }
-  proc !=(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.!=(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) != 0;
   }
-  proc >=(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.>=(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) >= 0;
   }
-  proc >(a: SHA256Hash, b: SHA256Hash) {
+  operator SHA256Hash.>(a: SHA256Hash, b: SHA256Hash) {
     return compare(a, b) > 0;
   }
 

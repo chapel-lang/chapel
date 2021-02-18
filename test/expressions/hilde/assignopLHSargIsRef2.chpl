@@ -12,11 +12,11 @@ record R {
 proc R.init=(other:R) {
   this.x = other.x;
 }
-proc =(a:R, b:R) {
+operator =(a:R, b:R) {
   writeln("in R's = operator");
 }
 
-proc *=(a:R, b:R) {
+operator R.*=(a:R, b:R) {
   writeln("in R's *= operator");
 }
 

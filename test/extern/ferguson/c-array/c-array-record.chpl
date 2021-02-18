@@ -17,7 +17,7 @@ record R {
     writeln("R.deinit ", this.x);
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator =(ref lhs:R, rhs:R) {
   writeln(lhs.x, " = ", rhs.x);
   lhs.x = rhs.x;
 }

@@ -2,7 +2,7 @@ extern record myExternRecord {
   var x: int;
 }
 
-proc =(ref a: myExternRecord, b: int) {
+operator =(ref a: myExternRecord, b: int) {
   a.x = b;
 }
 

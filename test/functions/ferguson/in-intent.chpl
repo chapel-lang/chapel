@@ -13,7 +13,7 @@ record R {
   }
 }
 
-proc =(ref lhs:R, const ref rhs:R) {
+operator =(ref lhs:R, const ref rhs:R) {
   writeln("assign ", rhs.x);
   lhs.x = rhs.x;
 }

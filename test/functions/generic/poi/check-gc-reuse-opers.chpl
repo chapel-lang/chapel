@@ -31,10 +31,18 @@ module User {
   use Lib;
   proc MyRecord.init(param p)            { note("User.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("User.init=", 2); rp = 0; }
+<<<<<<< HEAD
   proc =(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
   proc <(lhs:MyRecord,     rhs:MyRecord) { note("User.<", 2);  return true; }
   operator :(rhs:MyRecord, type t:int)   { note("User._castF", 2); return 1; }
   operator :(rhs:int,      type t:MyRecord) { note("User._castT", 2);
+=======
+  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("User.=", 2); }
+  operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("User.<", 2);
+                                                    return true; }
+  proc _cast(type t:int,   rhs:MyRecord) { note("User._castF", 2); return 1; }
+  proc _cast(type t:MyRecord,   rhs:int) { note("User._castT", 2);
+>>>>>>> 01eff9913a... Update these tests and helper files to use the new operator keyword
                                            return new MyRecord(0); }
   proc u1() {
     note("User.u1", 1);
@@ -59,8 +67,9 @@ module User {
   proc u3() {
     proc MyRecord.init(param p)            { note("u3.init", 2); rp = 0; }
     proc MyRecord.init=(other)             { note("u3.init=", 2); rp = 0; }
-    proc =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
-    proc <(lhs:MyRecord,     rhs:MyRecord) { note("u3.<", 2); return true; }
+    operator =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
+    operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("u3.<", 2);
+                                                      return true; }
     proc _cast(type t:int,   rhs:MyRecord) { note("u3._castF", 2); return 1; }
     proc _cast(type t:MyRecord,   rhs:int) { note("u3._castT", 2);
                                              return new MyRecord(0); }
@@ -103,8 +112,9 @@ module More1 {
   use Lib;
   proc MyRecord.init(param p)            { note("More1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("More1.init=", 2); rp = 0; }
-  proc =(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
-  proc <(lhs:MyRecord,     rhs:MyRecord) { note("More1.<", 2); return true; }
+  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
+  operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("More1.<", 2);
+                                                    return true; }
   proc _cast(type t:int,   rhs:MyRecord) { note("More1._castF", 2); return 1; }
   proc _cast(type t:MyRecord,   rhs:int) { note("More1._castT", 2);
                                            return new MyRecord(0); }
@@ -150,8 +160,9 @@ module Combo1 {
   use Lib;
   proc MyRecord.init(param p)            { note("Combo1.init", 2); rp = 0; }
   proc MyRecord.init=(other)             { note("Combo1.init=", 2); rp = 0; }
-  proc =(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
-  proc <(lhs:MyRecord,     rhs:MyRecord) { note("Combo1.<", 2); return true; }
+  operator =(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
+  operator MyRecord.<(lhs:MyRecord, rhs:MyRecord) { note("Combo1.<", 2);
+                                                    return true; }
   proc _cast(type t:int,   rhs:MyRecord) { note("Combo1._castF", 2); return 1; }
   proc _cast(type t:MyRecord,   rhs:int) { note("Combo1._castT", 2);
                                            return new MyRecord(0); }
