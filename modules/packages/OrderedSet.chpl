@@ -334,7 +334,7 @@ module OrderedSet {
     :arg lhs: The orderedSet to assign to.
     :arg rhs: The orderedSet to assign from. 
   */
-  proc =(ref lhs: orderedSet(?t), rhs: orderedSet(t)) {
+  operator =(ref lhs: orderedSet(?t), rhs: orderedSet(t)) {
     lhs.clear();
     for x in rhs {
       lhs.add(x);
@@ -350,7 +350,7 @@ module OrderedSet {
     :return: A new orderedSet containing the union between `a` and `b`.
     :rtype: `orderedSet(?t)`
   */
-  proc |(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
+  operator |(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
     var result: orderedSet(t, (a.parSafe || b.parSafe));
 
     result = a;
@@ -365,7 +365,7 @@ module OrderedSet {
     :arg lhs: An orderedSet to take the union of and then assign to.
     :arg rhs: An orderedSet to take the union of.
   */
-  proc |=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
+  operator |=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
     for x in rhs do
       lhs.add(x);
   }
@@ -380,7 +380,7 @@ module OrderedSet {
     :return: A new orderedSet containing the union between `a` and `b`.
     :rtype: `orderedSet(?t)`
   */
-  proc +(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
+  operator +(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
     return a | b;
   }
 
@@ -390,7 +390,7 @@ module OrderedSet {
     :arg lhs: An orderedSet to take the union of and then assign to.
     :arg rhs: An orderedSet to take the union of.
   */
-  proc +=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
+  operator +=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
     lhs |= rhs;
   }
 
@@ -403,7 +403,7 @@ module OrderedSet {
     :return: A new orderedSet containing the difference between `a` and `b`.
     :rtype: `orderedSet(t)`
   */
-  proc -(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
+  operator -(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
     var result = new orderedSet(t, (a.parSafe || b.parSafe));
 
     for x in a do
@@ -424,7 +424,7 @@ module OrderedSet {
     :arg lhs: An orderedSet to take the difference of and then assign to.
     :arg rhs: An orderedSet to take the difference of.
   */
-  proc -=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
+  operator -=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
     for x in rhs do
       lhs.remove(x);
   }
@@ -438,7 +438,7 @@ module OrderedSet {
     :return: A new orderedSet containing the intersection of `a` and `b`.
     :rtype: `orderedSet(t)`
   */
-  proc &(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
+  operator &(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
     var result: orderedSet(t, (a.parSafe || b.parSafe));
 
     /* Iterate over the smaller orderedSet */
@@ -467,7 +467,7 @@ module OrderedSet {
     :arg lhs: An orderedSet to take the intersection of and then assign to.
     :arg rhs: An orderedSet to take the intersection of.
   */
-  proc &=(ref lhs: orderedSet(?t, ?), const ref rhs: orderedSet(t, ?)) {
+  operator &=(ref lhs: orderedSet(?t, ?), const ref rhs: orderedSet(t, ?)) {
     /* We can't remove things from lhs while iterating over it, so
      * use a temporary. */
     var result: orderedSet(t, (lhs.parSafe || rhs.parSafe));
@@ -488,7 +488,7 @@ module OrderedSet {
     :return: A new orderedSet containing the symmetric difference of `a` and `b`.
     :rtype: `orderedSet(?t)`
   */
-  proc ^(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
+  operator ^(const ref a: orderedSet(?t), const ref b: orderedSet(t)): orderedSet(t) {
     var result: orderedSet(t, (a.parSafe || b.parSafe));
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
@@ -516,7 +516,7 @@ module OrderedSet {
     :arg lhs: An orderedSet to take the symmetric difference of and then assign to.
     :arg rhs: An orderedSet to take the symmetric difference of.
   */
-  proc ^=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
+  operator ^=(ref lhs: orderedSet(?t), const ref rhs: orderedSet(t)) {
     for x in rhs {
       if lhs.contains(x) {
         lhs.remove(x);
@@ -536,7 +536,7 @@ module OrderedSet {
     :return: `true` if two sets are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator ==(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     if a.size != b.size then
       return false;
 
@@ -556,7 +556,7 @@ module OrderedSet {
     :return: `true` if two sets are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator !=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     return !(a == b);
   }
 
@@ -569,7 +569,7 @@ module OrderedSet {
     :return: `true` if `a` is a proper subset of `b`.
     :rtype: `bool`
   */
-  proc <(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator <(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     if a.size >= b.size then
       return false;
     return a <= b;
@@ -584,7 +584,7 @@ module OrderedSet {
     :return: `true` if `a` is a subset of `b`.
     :rtype: `bool`
   */
-  proc <=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator <=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     if a.size > b.size then
       return false;
 
@@ -604,7 +604,7 @@ module OrderedSet {
     :return: `true` if `a` is a proper superset of `b`.
     :rtype: `bool`
   */
-  proc >(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator >(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     if a.size <= b.size then
       return false;
     return a >= b;
@@ -619,7 +619,7 @@ module OrderedSet {
     :return: `true` if `a` is a superset of `b`.
     :rtype: `bool`
   */
-  proc >=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
+  operator >=(const ref a: orderedSet(?t), const ref b: orderedSet(t)): bool {
     if a.size < b.size then
       return false;
 

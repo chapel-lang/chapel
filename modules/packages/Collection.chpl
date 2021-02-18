@@ -190,7 +190,7 @@ module Collection {
   /*
     Syntactic sugar for :proc:`CollectionImpl.add`.
   */
-  inline proc +=(ref c : CollectionImpl(?eltType), elt : eltType) {
+  inline operator +=(ref c : CollectionImpl(?eltType), elt : eltType) {
     c.add(elt);
   }
 }
