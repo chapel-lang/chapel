@@ -204,7 +204,7 @@ log_debug "Generate Lua modulefile ..."
     else
         platform_prefix=/opt
     fi
-    $cwd/process-template.py _dollar_pkg_version_="$pkg_version" \
+    $cwd/process-template.py pkg_version="$pkg_version" \
                              platform_prefix="$platform_prefix" \
         --template $cwd/chapel.modulefile.lua.template \
         --output $rpmbuild_dir/modulefile-lua-$pkg_version

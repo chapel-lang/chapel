@@ -131,7 +131,7 @@ if { [string match hpe-cray-ex $CHPL_HOST_PLATFORM] } {
 }
 
 set BASE_INSTALL_DIR    [BASE_INSTALL_DIR]
-set CHPL_LEVEL          _dollar_pkg_version_
+set CHPL_LEVEL          @@{pkg_version}
 set CHPL_LOC            $BASE_INSTALL_DIR/chapel/$CHPL_LEVEL/$CHPL_HOST_PLATFORM
 set is_module_rm        [module-info mode remove]
 
@@ -200,4 +200,3 @@ setenv CHPL_MODULE_HOME $CHPL_LOC
 prepend-path PATH ${CHPL_LOC}/bin/${CHPL_HOST_PLATFORM}-${CHPL_HOST_ARCH}
 prepend-path MANPATH    ${CHPL_LOC}/man
 append-path             PE_PRODUCT_LIST CHAPEL
-EOF
