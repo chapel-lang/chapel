@@ -1,3 +1,5 @@
+split-init-oops2.chpl:15: warning: real(64)
 split-init-oops2.chpl:5: In function 'test':
-split-init-oops2.chpl:6: error: variable 'b' is not initialized and has no type
-split-init-oops2.chpl:8: note: 'b' is used here before it is initialized
+split-init-oops2.chpl:6: error: 'b' is not initialized and has no type
+split-init-oops2.chpl:6: note: cannot find initialization point to split-init this variable
+split-init-oops2.chpl:7: note: 'b' is used here before it is initialized

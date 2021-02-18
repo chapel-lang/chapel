@@ -1,1 +1,2 @@
-error-never-initialized-values-global1.chpl:1: error: variable 'b' is not initialized and has no type
+error-never-initialized-values-global1.chpl:1: error: 'b' is not initialized and has no type
+error-never-initialized-values-global1.chpl:1: note: cannot find initialization point to split-init this variable
