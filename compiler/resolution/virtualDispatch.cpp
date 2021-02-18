@@ -1141,7 +1141,7 @@ static void checkMethodsOverride() {
                 }
 
                 if (typeParamDiffers == false &&
-                    signatureMatch(fn, pfn) &&
+                    signatureMatch(pfn, fn) &&
                     evaluateWhereClause(pfn)) {
                   foundMatch = true;
                 }
@@ -1149,7 +1149,7 @@ static void checkMethodsOverride() {
                 // pfn generic
                 FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
                 resolveSignature(pInst);
-                if (signatureMatch(fn, pInst) && evaluateWhereClause(pInst)) {
+                if (signatureMatch(pInst, fn) && evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
