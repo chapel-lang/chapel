@@ -279,8 +279,6 @@ void lvalueCheck(CallExpr* call);
 
 void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn);
 
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn);
-
 bool isSubtypeOrInstantiation(Type* sub, Type* super, Expr* ctx);
 bool isCoercibleOrInstantiation(Type* sub, Type* super, Expr* ctx);
 

@@ -2281,42 +2281,6 @@ static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-/************************************* | **************************************
-*                                                                             *
-* Checks that types match.                                                    *
-* Note - does not currently check that instantiated params match.             *
-*                                                                             *
-************************************** | *************************************/
-
-bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
-  bool retval = true;
-
-  if (fn->name != gn->name) {
-    retval = false;
-
-  } else if (fn->numFormals() != gn->numFormals()) {
-    retval = false;
-
-  } else {
-    for (int i = 3; i <= fn->numFormals() && retval == true; i++) {
-      ArgSymbol* fa = fn->getFormal(i);
-      ArgSymbol* ga = gn->getFormal(i);
-
-      if (fa->type != ga->type || strcmp(fa->name, ga->name) != 0) {
-        retval = false;
-      }
-    }
-  }
-
-  return retval;
-}
-
-/************************************* | **************************************
-*                                                                             *
-*                                                                             *
-*                                                                             *
-************************************** | *************************************/
-
 static FnSymbol* resolveUninsertedCall(BlockStmt* insert, CallExpr* call,
                                        bool errorOnFailure);
 static FnSymbol* resolveUninsertedCall(Expr*      insert, CallExpr* call,
