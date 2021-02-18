@@ -1,0 +1,4 @@
+const1.chpl:40: In function 'test':
+const1.chpl:55: error: ambiguous call 'f2(R, R)'
+const1.chpl:7: note: candidates are: f2(_e0_x, error: int(64))
+const1.chpl:10: note:                 f2(_e0_x, _e1_x)
