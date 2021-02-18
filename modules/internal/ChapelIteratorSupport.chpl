@@ -674,7 +674,7 @@ module ChapelIteratorSupport {
 
   pragma "suppress lvalue error"
   pragma "fn returns iterator"
-  inline proc _toFollower(x, leaderIndex) {
+  inline proc _toFollower(const ref x, leaderIndex) {
     return _toFollower(x.these(), leaderIndex);
   }
 
