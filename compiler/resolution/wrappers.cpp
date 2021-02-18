@@ -2252,11 +2252,8 @@ static void buildLeaderIterator(PromotionInfo& promotion,
     INT_ASSERT(iterCall);
     INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
     
-    toLeader = new CallExpr("_toLeaderNew");
-
-    for_actuals(actual, iterCall) {
-      toLeader->insertAtTail(actual->copy(&leaderMap));
-    }
+    toLeader = new CallExpr("_toLeader",
+                            iterCall->get(1)->copy(&leaderMap));
   }
   else {
     toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
