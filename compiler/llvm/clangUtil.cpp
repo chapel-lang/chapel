@@ -3671,15 +3671,15 @@ void makeBinaryLLVM(void) {
 
 
       std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
-                           std::string("sm_61 --output-file ") + ptxObjectFilename.c_str() +
+                           std::string("sm_60 --output-file ") + ptxObjectFilename.c_str() +
                            " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                                  std::string("--create ") + fatbinFilename.c_str() +
-                                 std::string(" --image=profile=sm_61,file=") + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=compute_61,file=") + asmFilename.c_str();
+                                 std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
