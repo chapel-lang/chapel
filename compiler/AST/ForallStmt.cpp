@@ -293,16 +293,20 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 ForallStmt* isForallIterExpr(Expr* expr) {
   if (CallExpr *iterCall = toCallExpr(expr)) {
     if (iterCall->isPrimitive(PRIM_ZIP)) {
-      // this should be fine as long as this is called before iterator lowering
-      // otherwise, there might be some reduce-intent related code that comes in
-      // between the zip expression and the forall statement
-      ForallStmt* pfs = toForallStmt(expr->next);
-      INT_ASSERT(pfs);
-      INT_ASSERT(pfs->zipCall == iterCall);
-
-      return pfs;
+      // in many cases PRIM_ZIP is right before the pertinent forall stmt.
+      // However, when the forall has a reduce intent, its setup comes in
+      // between the PRIM_ZIP and the forall statement.
+      Expr *cur = expr->next;
+      while(cur) {
+        if (ForallStmt* pfs = toForallStmt(cur)) {
+          INT_ASSERT(pfs->zipCall == iterCall);
+          return pfs;
+        }
+        cur = cur->next;
+      }
     }
   }
+
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
       if (expr->list == &pfs->iteratedExpressions())
