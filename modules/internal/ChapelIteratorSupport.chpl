@@ -464,6 +464,26 @@ module ChapelIteratorSupport {
     return _toLeaderZip(x);
   }
 
+  pragma "fn returns iterator"
+    inline proc _toFollowerZip(x, leaderIndex) {
+      return _toFollower(x, leaderIndex);
+  }
+
+  pragma "fn returns iterator"
+    inline proc _toFollowerZip(x: _tuple, leaderIndex) {
+      return _toFollowerZipInternal(x, leaderIndex, 0);
+  }
+
+  pragma "fn returns iterator"
+    inline proc _toFollowerZipInternal(x: _tuple, leaderIndex, param dim: int) {
+      if dim == x.size-1 then
+	return (_toFollower(x(dim), leaderIndex),);
+      else
+	return (_toFollower(x(dim), leaderIndex),
+	       (..._toFollowerZipInternal(x, leaderIndex, dim+1)));
+  }
+
+
 
   pragma "no implicit copy"
   pragma "fn returns iterator"

@@ -30,6 +30,7 @@
 #include "expr.h"
 #include "ForLoop.h"
 #include "IfExpr.h"
+#include "iterator.h"
 #include "LoopExpr.h"
 #include "passes.h"
 #include "scopeResolve.h"
