@@ -382,7 +382,7 @@ static bool ignoreOverrides(FnSymbol* fn) {
 static bool typeMatch(ArgSymbol* pa, ArgSymbol* ca) {
   if (pa->originalIntent == INTENT_OUT &&
       ca->originalIntent == INTENT_OUT) {
-    return isSubType(ca->type, pa->type); // covariant is OK
+    return isSubType(ca->getValType(), pa->getValType()); // covariant is OK
   } else {
     return (pa->type == ca->type);
   }

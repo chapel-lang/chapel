@@ -30,10 +30,6 @@ override-intents.chpl:88: error: Child.out_in override keyword present but no su
 override-intents.chpl:88: note: intent for argument 'arg' does not match
 override-intents.chpl:14: note: base method uses 'out' intent
 override-intents.chpl:88: note: overriding method uses 'in' intent
-override-intents.chpl:89: error: Child.out_out override keyword present but no superclass method matches signature to override
-override-intents.chpl:89: note: type for argument 'arg' does not match
-override-intents.chpl:15: note: base method uses 'string'
-override-intents.chpl:89: note: overriding method uses 'string'
 override-intents.chpl:90: error: Child.out_inout override keyword present but no superclass method matches signature to override
 override-intents.chpl:90: note: intent for argument 'arg' does not match
 override-intents.chpl:16: note: base method uses 'out' intent
