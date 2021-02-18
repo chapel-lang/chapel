@@ -372,7 +372,48 @@ static bool ignoreOverrides(FnSymbol* fn) {
     fn->isPostInitializer();
 }
 
-static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
+/************************************* | **************************************
+*                                                                             *
+* Checks that types match.                                                    *
+* Note - does not currently check that instantiated params match.             *
+*                                                                             *
+************************************** | *************************************/
+
+static bool typeMatch(ArgSymbol* pa, ArgSymbol* ca) {
+  if (pa->originalIntent == INTENT_OUT &&
+      ca->originalIntent == INTENT_OUT) {
+    return isSubType(ca->type, pa->type); // covariant is OK
+  } else {
+    return (pa->type == ca->type);
+  }
+}
+
+static bool signatureMatch(FnSymbol* pfn, FnSymbol* cfn) {
+  if (pfn->name != cfn->name)
+    return false;
+
+  if (pfn->numFormals() != cfn->numFormals())
+    return false;
+
+  for (int i = 3; i <= pfn->numFormals(); i++) {
+    ArgSymbol* pa = pfn->getFormal(i);
+    ArgSymbol* ca = cfn->getFormal(i);
+
+    if (pa->name != ca->name)
+      return false;
+
+    if (pa->originalIntent != ca->originalIntent)
+      return false; // intents do not match
+
+    if (!typeMatch(pa, ca))
+      return false; // type is not compatible
+  }
+
+  // all the checks have passed, so return OK
+  return true;
+}
+
+static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
   AggregateType* ct = toAggregateType(cfn->_this->getValType());
   // these are really a preconditions for the following code
   int nUserFormals = getNumUserFormals(pfn);
@@ -383,51 +424,29 @@ static void checkIntentsMatch(FnSymbol* pfn, FnSymbol* cfn) {
     ArgSymbol* pa = getUserFormal(pfn, i);
     ArgSymbol* ca = getUserFormal(cfn, i);
 
+    if (pa->name != ca->name) {
+      USR_PRINT(cfn, "argument %i name does not match", i);
+      USR_PRINT(pa, "base method uses '%s'", pa->name);
+      USR_PRINT(ca, "overriding method uses '%s'", ca->name);
+      return;
+    }
+
     if (pa->originalIntent != ca->originalIntent) {
-      USR_FATAL_CONT(cfn, "%s.%s conflicting intent for argument '%s' "
-                          "in overriding method",
-                           ct->symbol->name, cfn->name, ca->name);
-      USR_FATAL_CONT(pa, "base method uses %s",
-                          intentDescrString(pa->originalIntent));
-      USR_FATAL_CONT(ca, "overriding method uses %s",
-                          intentDescrString(ca->originalIntent));
+      USR_PRINT(cfn, "intent for argument '%s' does not match", pa->name);
+      USR_PRINT(pa, "base method uses %s",
+                     intentDescrString(pa->originalIntent));
+      USR_PRINT(ca, "overriding method uses %s",
+                     intentDescrString(ca->originalIntent));
+      return;
+    }
 
-      // "fix" the intent to report errors only once.
-      // This would be totally unreasonable if the compiler were
-      // to continue compiling beyond this pass.
-      ca->originalIntent = pa->originalIntent;
+    if (!typeMatch(pa, ca)) {
+      USR_PRINT(cfn, "type for argument '%s' does not match", pa->name);
+      USR_PRINT(pa, "base method uses '%s'", toString(pa->getValType()));
+      USR_PRINT(ca, "overriding method uses '%s'", toString(ca->getValType()));
+      return;
     }
   }
-}
-
-/************************************* | **************************************
-*                                                                             *
-* Checks that types match.                                                    *
-* Note - does not currently check that instantiated params match.             *
-*                                                                             *
-************************************** | *************************************/
-
-static bool signatureMatch(FnSymbol* fn, FnSymbol* gn) {
-  bool retval = true;
-
-  if (fn->name != gn->name) {
-    retval = false;
-
-  } else if (fn->numFormals() != gn->numFormals()) {
-    retval = false;
-
-  } else {
-    for (int i = 3; i <= fn->numFormals() && retval == true; i++) {
-      ArgSymbol* fa = fn->getFormal(i);
-      ArgSymbol* ga = gn->getFormal(i);
-
-      if (fa->type != ga->type || strcmp(fa->name, ga->name) != 0) {
-        retval = false;
-      }
-    }
-  }
-
-  return retval;
 }
 
 
@@ -494,10 +513,6 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       USR_STOP();
 
     } else {
-
-      // check that the intents match
-      checkIntentsMatch(pfn, cfn);
-
       virtualDispatchUpdate(pfn, cfn);
     }
   }
@@ -1231,8 +1246,8 @@ static void checkMethodsOverride() {
             FnSymbol* eFn = getOverrideCandidateGenericFn(fn);
             if (erroredFunctions.count(eFn) == 0) {
               if (fn->hasFlag(FLAG_OVERRIDE)) {
-                USR_FATAL_CONT(fn, "%s.%s override keyword present but no "
-                                    "superclass method matches signature "
+                USR_FATAL_CONT(fn, "%s.%s override keyword present but "
+                                    "no superclass method matches signature "
                                     "to override",
                                      ct->symbol->name, fn->name);
 
@@ -1240,7 +1255,7 @@ static void checkMethodsOverride() {
                 // that was the cause of the override mismatch.
                 if (matches.size() > 0) {
                   FnSymbol* pfn = matches[0];
-                  checkIntentsMatch(pfn, fn);
+                  printMismatchNote(pfn, fn);
                 }
 
               } else {
