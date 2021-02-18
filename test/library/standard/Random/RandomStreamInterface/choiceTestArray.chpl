@@ -8,6 +8,53 @@ proc main() {
 }
 
 proc runTests(stream) {
+  const vec = 1..7 by 2;
+  const vec1 = 2..8 by 3;
+  const vec2 = 1..3;
+  var D1 = {vec,vec1,vec2};
+  var testDom = {vec2,vec2};
+  var C:[D1] int;
+  var G:[1..30] int;
+  var Prob:[D1] real;
+  var sum = 0: real;
+
+  for i in 1..30 do
+    G[i] = i;
+
+  forall (i,j,k) in D1 do
+    C(i,j,k) = i*100 + j*10 + k;
+
+  for (i,j,k) in D1 {
+    Prob(i,j,k) = (i + j + k + 1): real;
+    sum += Prob(i,j,k);
+  }
+
+  for (i,j,k) in D1 do
+    Prob(i,j,k)/=sum;
+
+  //Multi Dimensional Array
+  test(stream, C, size=testDom, false, prob=Prob);
+  test(stream, C, size=testDom, true, prob=Prob);
+
+  test(stream, C, size=2, false, prob=Prob);
+  test(stream, C, size=2, false, prob=Prob);
+  test(stream, C, size=5, true, prob=Prob);
+
+  test(stream, C, size=testDom, false);
+  test(stream, C, size=testDom);
+
+  test(stream, C, size=3);
+  test(stream, C, size=2, false);
+  test(stream, C, size=8, false);
+
+  //Single Dimensional Array
+  test(stream, G, size=testDom, false);
+  test(stream, G, size=testDom);
+
+  test(stream, G, size=3);
+  test(stream, G, size=2, false);
+  test(stream, G, size=8, false);
+
   test(stream, [1], trials=10);
   test(stream, [1, 2, 3]);
 

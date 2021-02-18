@@ -6,7 +6,11 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
   var counts;
   if isArrayValue(X) {
     counts = new map(X.eltType, int);
-  } else {
+  }
+  else if X.rank > 1 {
+    counts = new map(X.rank * int, int);
+  }
+  else {
     counts = new map(int, int);
   }
 
@@ -48,7 +52,7 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
   var m = 1;
   if isDomainType(sizeType) then m = size.size;
   else if isIntegralType(sizeType) then m = size;
-  
+
   var actualRatios = new map(int, real);
   for (k,v) in actualRatios.items() {
     if isNothingType(sizeType) then
@@ -56,12 +60,12 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
     else
       actualRatios[k] = v / (trials*m): real;
   }
-  
+
   var dom: domain(1) = {1..X.size};
   var ones: [dom] real = 1;
 
   var probabilities = if isNothingType(prob.type) then ones
-                      else prob.reindex(1..X.size);
+                      else reshape(prob, {1..X.size});
 
   // Get expected ratios
   var expectedRatios = new map(int, real);
