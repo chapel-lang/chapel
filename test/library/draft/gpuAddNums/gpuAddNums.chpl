@@ -52,7 +52,8 @@ extern {
 
     checkCudaErrors(cuMemAlloc(&devBufferX, sizeof(double)));
 
-    X = 5.0;
+    srand(0);
+    X = rand() % 100;
 
     checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)));
 
