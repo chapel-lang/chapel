@@ -62,8 +62,8 @@
 
 
 // Used for debugging this pass.
-static const int breakOnId1 = 724903;
-static const int breakOnId2 = 1372822;
+static const int breakOnId1 = 0;
+static const int breakOnId2 = 0;
 static const int breakOnId3 = 0;
 
 #define DEBUG_SYMBOL(sym) \
@@ -610,8 +610,6 @@ public:
 
   bool isCallApplicableLoop(SymExpr*, CallExpr*, GraphNode, LoopInfo&);
   bool checkLoopForDependencies(GraphNode, LoopInfo&, bool&);
-  //bool checkPrimZip(CallExpr*, bool&);
-  //bool checkIteratorHelper(SymExpr*, CallExpr*, GraphNode, bool&);
   bool checkBuildTupleCall(SymExpr*, CallExpr*, GraphNode, bool&);
   bool checkContextCallExpr(CallExpr*, GraphNode, bool&);
   bool checkTupleCastCall(SymExpr*, CallExpr*, GraphNode, bool&);
@@ -880,39 +878,6 @@ bool CullRefCtx::checkLoopForDependencies(GraphNode node, LoopInfo &info,
 
   return false;
 }
-
-//bool CullRefCtx::checkPrimZip(CallExpr *call, bool &revisit) {
-  //if (call->isPrimitive(PRIM_ZIP)) {
-    //revisit = true;
-    //return true;
-  //}
-  //return false;
-//}
-
-//bool CullRefCtx::checkIteratorHelper(SymExpr* se, CallExpr* call,
-                                     //GraphNode node, bool &revisit) {
-  //if (FnSymbol *calledFn = call->resolvedFunction()) {
-    //if (calledFn->hasFlag(FLAG_FN_RETURNS_ITERATOR)) {
-      //CallExpr *parentCall = toCallExpr(call->parentExpr);
-      //INT_ASSERT(parentCall);
-      //INT_ASSERT(parentCall->isPrimitive(PRIM_MOVE));
-
-      //SymExpr *lhsSE = toSymExpr(parentCall->get(1));
-      //INT_ASSERT(lhsSE);
-
-      //Symbol *lhsSymbol = lhsSE->symbol();
-
-      //GraphNode srcNode = makeNode(lhsSymbol, 0);
-      //collectedSymbols.push_back(srcNode);
-      //addDependency(revisitGraph, srcNode, node);
-      //revisit = true;
-
-      //return true;
-    //}
-  //}
-
-  //return false;
-//}
 
 // Is the SymExpr passed to a `_build_tuple` call for a tuple that stores
 // the SymExpr in a ref field? If so, add the tuple as a dependency.
@@ -1393,12 +1358,6 @@ void CullRefCtx::visitCollectedSymbol(GraphNode node) {
           }
         }
       }
-
-      //if (checkPrimZip(call, revisit))
-        //continue;
-
-      //if (checkIteratorHelper(se, call, node, revisit))
-        //continue;
 
       // Case: 'call' invokes build_tuple().
       if (checkBuildTupleCall(se, call, node, revisit))

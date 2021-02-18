@@ -64,7 +64,6 @@
 #include "symbol.h"
 #include "TransformLogicalShortCircuit.h"
 #include "visibleFunctions.h"
-#include "view.h"
 
 #include <map>
 #include <utility>
@@ -2377,17 +2376,11 @@ static CondStmt* selectFollower(ArgSymbol* fastFollower,
 
   if (CallExpr *iterCall = toCallExpr(iterator)) {
     INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-    //callFast = generateModuleCallFromZip(iterator, "_toFastFollowerZipNew", &followerMap);
-    //callFast->insertAtTail(fiFnFollower);
 
     callFast = generateFastFollowersForZip(iterCall, fiFnFollower, &followerMap,
                                            /*getIterator=*/false);
     callSlow = generateRegularFollowersForZip(iterCall, fiFnFollower, &followerMap,
                                            /*getIterator=*/false);
-
-    //callSlow = generateModuleCallFromZip(iterator, "_toFollowerZipInternalNew", &followerMap);
-    //callSlow->insertAtTail(fiFnFollower);
-    //callSlow->insertAtTail(new_IntSymbol(0));
   } else {
     callFast = new CallExpr("_toFastFollower", iterator->copy(&followerMap), fiFnFollower);
     callSlow = new CallExpr("_toFollower", iterator->copy(&followerMap), fiFnFollower);
@@ -2798,7 +2791,6 @@ static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
   return NULL;
 }
 
-
 static void buildFastFollowerCheck(FastFollowerCheckType checkType,
                                    bool                  addLead,
                                    FnSymbol*             wrapper,
@@ -2879,11 +2871,9 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
 
   wrapper->defPoint->getModule()->block->insertAtHead(new DefExpr(checkFn));
 
-  // TODO move this part to the forward call generator?
   TransformLogicalShortCircuit handleAndsOrs;
   checkFn->accept(&handleAndsOrs);
   normalize(checkFn);
-
   checkFn->setGeneric(addLead);
   INT_ASSERT(! wrapper->isGeneric()); //fyi
 }
