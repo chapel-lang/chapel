@@ -1552,7 +1552,8 @@ module DefaultRectangular {
         const second = info.getDataIndex(viewDom.chpl_intToIdx(chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices-1) * step;
-        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step)
+                     with (ref info) {
           yield info.theData(i);
         }
       } else {

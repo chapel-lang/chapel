@@ -1400,7 +1400,7 @@ iter DimensionalArr._dsiIteratorHelper(alDom, (f1, f2)) ref {
   // more than once? Can we create a more efficient interface?
   //
   for (l1,i1) in alDom.dom1.dsiFollowerArrayIterator1d(f1) do
-    foreach (l2,i2) in alDom.dom2.dsiFollowerArrayIterator1d(f2) do
+    for (l2,i2) in alDom.dom2.dsiFollowerArrayIterator1d(f2) do
       {
         // reuse the cache or index into the array?
         if l1 != lastl1 || l2 != lastl2 {
