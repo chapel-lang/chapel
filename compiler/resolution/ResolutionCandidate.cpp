@@ -273,6 +273,18 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
             skippedThisActual = true;
             skipNextActual = false;
             break;
+          } else if (formal->typeInfo() == dtMethodToken &&
+                     info.actuals.v[i]->typeInfo() == dtMethodToken) {
+            // both the actual and the formal were method tokens, but the this
+            // args could still be different.  Since this is an operator call,
+            // we don't actually care if the this args are different, so skip
+            // them, as well as the method tokens.
+            skipNextFormal = true;
+            formal = next_formal(formal);
+            j++;
+            skipNextActual = true;
+            skippedThisActual = true;
+            continue;
           }
         }
 
