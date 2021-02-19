@@ -24,7 +24,7 @@ record R {
 // List currently uses a primitive move instead of an assignment internally,
 // so this routine is unused.
 //
-proc =(ref LHS : R, rhs : R) {
+operator =(ref LHS : R, rhs : R) {
   if LHS.c then delete LHS.c;
   LHS.c = new unmanaged C(rhs.c!.x);
 }
