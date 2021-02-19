@@ -963,21 +963,6 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
   return result;
 }
 
-CallExpr *generateModuleCallFromZip(Expr *e, const char *fnName,
-                                           SymbolMap* map) {
-  CallExpr *iterCall = toCallExpr(e);
-  INT_ASSERT(iterCall);
-  INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-
-  CallExpr *ret = new CallExpr(fnName);
-
-  for_actuals(actual, iterCall) {
-    ret->insertAtTail(actual->copy(map));
-  }
-
-  return ret;
-}
-
 static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
                                              const char *fnName,
                                              bool addLead) {

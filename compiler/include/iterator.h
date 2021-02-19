@@ -86,9 +86,6 @@ void cleanupPrimIRFieldValByFormal();
 
 void lowerIterator(FnSymbol* fn);
 
-CallExpr* generateModuleCallFromZip(Expr *e, const char *fName,
-                                    SymbolMap *map = NULL);
-
 CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
                                              Symbol *leadIdxCopy,
                                              SymbolMap *map = NULL,
