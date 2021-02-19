@@ -1156,6 +1156,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
   if (initsExist) {
     // build the integral value to enumerated type cast function
     fn = new FnSymbol(astrScolon);
+    fn->addFlag(FLAG_OPERATOR);
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     from = new ArgSymbol(INTENT_BLANK, "from", dtIntegral);
@@ -1215,6 +1216,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
 
     // build the enumerated to integer cast
     fn = new FnSymbol(astrScolon);
+    fn->addFlag(FLAG_OPERATOR);
     fn->addFlag(FLAG_COMPILER_GENERATED);
     fn->addFlag(FLAG_LAST_RESORT);
     from = new ArgSymbol(INTENT_BLANK, "from", et);
@@ -1826,10 +1828,10 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
     return;
 
   FnSymbol* fn = new FnSymbol(astrScolon);
+  fn->addFlag(FLAG_OPERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* arg = new ArgSymbol(INTENT_BLANK, "from", et);
-  //arg->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(arg);
   ArgSymbol* t = new ArgSymbol(INTENT_BLANK, "t", otherType);
   t->addFlag(FLAG_TYPE_VARIABLE);
@@ -1857,6 +1859,7 @@ static void buildEnumStringOrBytesCastFunctions(EnumType* et,
 
   // string to enumerated type cast function
   fn = new FnSymbol(astrScolon);
+  fn->addFlag(FLAG_OPERATOR);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol* from = new ArgSymbol(INTENT_BLANK, "from", otherType);
