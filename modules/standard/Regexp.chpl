@@ -1054,19 +1054,6 @@ inline proc _cast(type t:bytes, x: regexp(bytes)) {
   return pattern;
 }
 
-
-// Cast string to regexp
-pragma "no doc"
-inline proc _cast(type t: regexp(string), x: string) throws {
-  return compile(x);
-}
-
-// Cast bytes to regexp
-pragma "no doc"
-inline proc _cast(type t: regexp(bytes), x: bytes) throws {
-  return compile(x);
-}
-
 /*
 
    Compile a regular expression and search the receiving string for matches at
