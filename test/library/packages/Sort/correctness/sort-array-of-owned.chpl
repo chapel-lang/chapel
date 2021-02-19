@@ -51,7 +51,7 @@ record Wrapper {
 proc Wrapper.init=(ref other: Wrapper) {
   this.elt = other.elt;
 }
-proc =(ref lhs: Wrapper, ref rhs: Wrapper) {
+operator =(ref lhs: Wrapper, ref rhs: Wrapper) {
   lhs.elt = rhs.elt;
 }
 
