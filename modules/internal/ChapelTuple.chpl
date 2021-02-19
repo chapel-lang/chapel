@@ -195,7 +195,9 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
-  inline proc =(ref x: _tuple, y: _tuple) where x.size == y.size {
+  inline proc =(ref x: _tuple,
+                pragma "intent ref maybe const formal" y: _tuple)
+  where x.size == y.size {
     for param i in 0..x.size-1 do
       x(i) = y(i);
   }
