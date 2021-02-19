@@ -3582,6 +3582,11 @@ static CondStmt* makeCondToTransformArr(ArgSymbol* formal, VarSymbol* newArr,
   return cond;
 }
 
+static void outFormalQueryError(ArgSymbol* formal) {
+  USR_FATAL(formal, "type query for out intent formals is "
+                    "not implemented yet");
+}
+
 static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   BlockStmt*            typeExpr = formal->typeExpr;
   CallExpr*             call     = toCallExpr(typeExpr->body.tail);
@@ -3642,6 +3647,8 @@ static void fixupArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
 
   if (formal->intent == INTENT_OUT) {
     // handled in fixupOutArrayFormals, called elsewhere
+    if (isDefExpr(domExpr) || isDefExpr(eltExpr))
+      outFormalQueryError(formal);
     return;
   }
 
@@ -3993,9 +4000,15 @@ static void fixupQueryFormals(FnSymbol* fn) {
       Expr* tail = typeExpr->body.tail;
 
       if  (isDefExpr(tail) == true) {
+        if (formal->intent == INTENT_OUT)
+          outFormalQueryError(formal);
+
         replaceUsesWithPrimTypeof(fn, formal);
 
       } else if (isQueryForGenericTypeSpecifier(formal) == true) {
+        if (formal->intent == INTENT_OUT)
+          outFormalQueryError(formal);
+
         fixDecoratedTypePrimitives(fn, formal);
         expandQueryForGenericTypeSpecifier(fn, formal);
       } else if (SymExpr* se = toSymExpr(tail)) {

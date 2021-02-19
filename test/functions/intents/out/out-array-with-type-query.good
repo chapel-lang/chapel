@@ -1,0 +1,1 @@
+out-array-with-type-query.chpl:1: error: type query for out intent formals is not implemented yet
