@@ -72,39 +72,8 @@ struct cache_elem {
 struct re_cache {
   int64_t date;
   cache_elem elems[REGEXP_CACHE_SIZE];
+  ~re_cache();
 };
-static pthread_key_t key;
-static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-
-static void local_cache_destroy_elts(re_cache* c);
-
-static
-void destroy_key(void* ptr)
-{
-  re_cache* c = (re_cache*) ptr;
-  local_cache_destroy_elts(c);
-  qio_free(c);
-}
-
-static
-void make_key(void)
-{
-  (void) pthread_key_create(&key, &destroy_key);
-}
-
-
-static inline
-re_cache* local_cache(void)
-{
-  re_cache* ptr;
-  (void) pthread_once(&key_once, make_key);
-  if((ptr = (re_cache*) pthread_getspecific(key)) == NULL) {
-    ptr = (re_cache*) qio_malloc(sizeof(re_cache));
-    memset(ptr, 0, sizeof(re_cache));
-    (void) pthread_setspecific(key, ptr);
-  }
-  return ptr;
-}
 
 static
 void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Options *opts)
@@ -152,10 +121,10 @@ void re_free(re_t* re)
   delete re;
 }
 
-
 static
 re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options_t* options) {
-  re_cache* c = local_cache();
+  thread_local re_cache cache;
+  re_cache* c = &cache;
   int oldest;
   int64_t oldest_date;
   c->date++;
@@ -201,21 +170,15 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   return re;
 }
 
-static
-void local_cache_destroy_elts(re_cache* c) {
-  if (c) {
-    // Destroy all of the elements in the local cache.
-    for( int i = 0; i < REGEXP_CACHE_SIZE; i++ ) {
-      re_t* re = c->elems[i].re;
-      if (re) {
-        DO_RELEASE(re, re_free);
-      }
+re_cache::~re_cache() {
+  // Destroy all of the elements in the local cache.
+  for(auto& e : elems) {
+    re_t* re = e.re;
+    if (re) {
+      DO_RELEASE(re, re_free);
     }
   }
 }
-
-
-
 
 void qio_regexp_init_default_options(qio_regexp_options_t* opt)
 {
@@ -252,7 +215,7 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
     if( flags[i] == 's' ) opt.dotnl = true;
     if( flags[i] == 'U' ) opt.nongreedy = true;
   }
-  opt.utf8 = isUtf8; 
+  opt.utf8 = isUtf8;
 
   return qio_regexp_create_compile(str, str_len, &opt, compiled);
 }
@@ -418,7 +381,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   void* bufend = NULL;
   RE2::Anchor ranchor = RE2::UNANCHORED;
   int64_t need;
-  int64_t start_offset, offset, end_offset; 
+  int64_t start_offset, offset, end_offset;
   int64_t end;
   int64_t match_start = -1;
   int64_t match_len = 0;
@@ -498,7 +461,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   if( err ) goto error;
 
   // We never call end_peek_cached. (should be OK since we do unlock)
- 
+
   if( qio_ptr_diff(bufend, bufstart) > maxlen ) {
     bufend = qio_ptr_add(bufstart, maxlen);
   }
@@ -535,7 +498,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 
 error:
 
-  // Get channel errors from within MatchSpecial1/qio_channel_read_byte 
+  // Get channel errors from within MatchSpecial1/qio_channel_read_byte
   if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
   if( ! err ) err = qio_channel_error(ch);
   if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
@@ -580,5 +543,3 @@ markerror:
 
   return err;
 }
-
-
