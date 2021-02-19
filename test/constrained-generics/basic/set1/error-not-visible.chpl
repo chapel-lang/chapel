@@ -1,6 +1,8 @@
 /*
 This is module-with-ifc.chpl
 with the "import" declaration removed.
+
+While there, also check an incorrect symbol in an 'implements'.
 */
 module Library {
   interface IFC(T) {
@@ -17,7 +19,17 @@ module Library {
   }
 }
 
+module Confused {
+  class MyClass { }
+  int implements MyClass;
+
+  record MyRecord { }
+  proc cgFun(cgArg: ?Q) where Q implements MyRecord { }
+}
+
 module User {
+  use Confused;
+
   proc reqFun(arg1: real, arg2: int) {
     writeln("in reqFun/real*int", (arg1, arg2));
   }

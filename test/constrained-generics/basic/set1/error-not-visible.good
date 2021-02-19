@@ -1,1 +1,8 @@
-error-not-visible.chpl:25: error: 'IFC' undeclared (first use this function)
+error-not-visible.chpl:24: error: 'MyClass' is not an interface
+error-not-visible.chpl:24: note: an 'implements' keyword must be followed by an interface name
+error-not-visible.chpl:23: note: 'MyClass' is defined here
+error-not-visible.chpl:27: In function 'cgFun':
+error-not-visible.chpl:27: error: 'MyRecord' is not an interface
+error-not-visible.chpl:27: note: an 'implements' keyword must be followed by an interface name
+error-not-visible.chpl:26: note: 'MyRecord' is defined here
+error-not-visible.chpl:37: error: 'IFC' is undeclared
