@@ -18,7 +18,7 @@ proc R.init=(from:R) {
   this.ptr = new unmanaged Impl(from.ptr.x);
 }
 
-proc =(ref lhs:R, rhs:R) {
+operator =(ref lhs:R, rhs:R) {
   lhs.ptr = new unmanaged Impl(rhs.ptr.x);
 }
 

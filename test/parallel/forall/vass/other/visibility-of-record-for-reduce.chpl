@@ -2,7 +2,7 @@
 module B {
 
   record foo { var v:int; }
-  proc +(a:foo,b:foo):foo { return new foo(a.v+b.v); }
+  operator foo.+(a:foo,b:foo):foo { return new foo(a.v+b.v); }
 
   proc doB() {
     var r:foo;
@@ -16,7 +16,7 @@ module B {
 module C {
   
   record bar { var v:int; }
-  proc +(a:bar,b:bar):bar{ return new bar(a.v+b.v); }
+  operator bar.+(a:bar,b:bar):bar{ return new bar(a.v+b.v); }
 
   proc doC() {
     var r:bar;
@@ -33,7 +33,7 @@ module D {
   use C;
 
   record baz { var v:int; }
-  proc +(a:baz,b:baz):baz { return new baz(a.v+b.v); }
+  operator baz.+(a:baz,b:baz):baz { return new baz(a.v+b.v); }
 
   proc main() {
     doB();
