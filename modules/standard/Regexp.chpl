@@ -574,6 +574,7 @@ record regexp {
   pragma "no doc"
   var _regexp:qio_regexp_t = qio_regexp_null();
 
+  pragma "no doc"
   proc init(type exprType) {
     this.exprType = exprType;
   }
