@@ -1,4 +1,0 @@
-# TODO this should be based off whether we can find `nvcc` or on Cray-X* a `cc`
-# wrapper that's similar to `nvcc`. However, I'm not sure how we detect if
-# we're going to launch onto a compute node that has GPUS
-CHPL_TEST_GPU != true
