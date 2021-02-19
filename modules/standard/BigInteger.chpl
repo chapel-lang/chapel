@@ -1451,7 +1451,7 @@ module BigInteger {
 
   // Equality
   operator bigint.==(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) == 0;
+    return BigInteger.cmp(a, b) == 0;
   }
 
   operator ==(const ref a: bigint, b: int) {
@@ -1474,7 +1474,7 @@ module BigInteger {
 
   // Inequality
   operator bigint.!=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) != 0;
+    return BigInteger.cmp(a, b) != 0;
   }
 
   operator !=(const ref a: bigint, b: int) {
@@ -1497,7 +1497,7 @@ module BigInteger {
 
   // Greater than
   operator bigint.>(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) > 0;
+    return BigInteger.cmp(a, b) > 0;
   }
 
   operator >(const ref a: bigint, b: int) {
@@ -1520,7 +1520,7 @@ module BigInteger {
 
   // Less than
   operator bigint.<(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) < 0;
+    return BigInteger.cmp(a, b) < 0;
   }
 
   operator <(const ref a: bigint, b: int) {
@@ -1542,7 +1542,7 @@ module BigInteger {
 
   // Greater than or equal
   operator bigint.>=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) >= 0;
+    return BigInteger.cmp(a, b) >= 0;
   }
 
   operator >=(const ref a: bigint, b: int) {
@@ -1565,7 +1565,7 @@ module BigInteger {
 
   // Less than or equal
   operator bigint.<=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) <= 0;
+    return BigInteger.cmp(a, b) <= 0;
   }
 
   operator <=(const ref a: bigint, b: int) {
