@@ -453,7 +453,7 @@ pragma "no doc"
  private use fieldtag;
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, s: string) {
+ operator =(ref t: unmanaged Toml, s: string) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(s);
@@ -464,7 +464,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, i: int) {
+ operator =(ref t: unmanaged Toml, i: int) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(i);
@@ -475,7 +475,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, b: bool) {
+ operator =(ref t: unmanaged Toml, b: bool) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(b);
@@ -486,7 +486,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, r: real) {
+ operator =(ref t: unmanaged Toml, r: real) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(r);
@@ -497,7 +497,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ld: date) {
+ operator =(ref t: unmanaged Toml, ld: date) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ld);
@@ -508,7 +508,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, ti: time) {
+ operator =(ref t: unmanaged Toml, ti: time) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(ti);
@@ -519,7 +519,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, dt: datetime) {
+ operator =(ref t: unmanaged Toml, dt: datetime) {
    compilerWarning("= overloads for Toml are deprecated");
    if t == nil {
      t = new unmanaged Toml(dt);
@@ -530,7 +530,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ operator =(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
@@ -558,7 +558,7 @@ pragma "no doc"
 
 
  pragma "no doc"
- proc =(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ operator =(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
  }

@@ -471,42 +471,42 @@ module DateTime {
 
   /* Operators on date values */
   pragma "no doc"
-  proc +(d: date, t: timedelta): date {
+  operator +(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() + t.days);
   }
 
   pragma "no doc"
-  proc +(t: timedelta, d: date): date {
+  operator +(t: timedelta, d: date): date {
     return d + t;
   }
 
   pragma "no doc"
-  proc -(d: date, t: timedelta): date {
+  operator -(d: date, t: timedelta): date {
     return date.fromordinal(d.toordinal() - t.days);
   }
 
   pragma "no doc"
-  proc -(d1: date, d2: date): timedelta {
+  operator -(d1: date, d2: date): timedelta {
     return new timedelta(days=d1.toordinal() - d2.toordinal());
   }
 
   pragma "no doc"
-  proc <(d1: date, d2: date) {
+  operator <(d1: date, d2: date) {
     return d1.toordinal() < d2.toordinal();
   }
 
   pragma "no doc"
-  proc <=(d1: date, d2: date) {
+  operator <=(d1: date, d2: date) {
     return d1.toordinal() <= d2.toordinal();
   }
 
   pragma "no doc"
-  proc >(d1: date, d2: date) {
+  operator >(d1: date, d2: date) {
     return d1.toordinal() > d2.toordinal();
   }
 
   pragma "no doc"
-  proc >=(d1: date, d2: date) {
+  operator >=(d1: date, d2: date) {
     return d1.toordinal() >= d2.toordinal();
   }
 
@@ -721,19 +721,19 @@ module DateTime {
   /* Operators on time values */
 
   pragma "no doc"
-  proc ==(t1: time, t2: time): bool {
+  operator ==(t1: time, t2: time): bool {
     var dt1 = datetime.combine(d=new date(2000, 1, 1), t=t1);
     var dt2 = datetime.combine(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
   pragma "no doc"
-  proc !=(t1: time, t2: time) {
+  operator !=(t1: time, t2: time) {
     return !(t1 == t2);
   }
 
   pragma "no doc"
-  proc <(t1: time, t2: time): bool {
+  operator <(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -771,7 +771,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(t1: time, t2: time): bool {
+  operator <=(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -794,7 +794,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >(t1: time, t2: time): bool {
+  operator >(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -817,7 +817,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(t1: time, t2: time): bool {
+  operator >=(t1: time, t2: time): bool {
     if (t1.tzinfo.borrow() != nil && t2.tzinfo.borrow() == nil) ||
         (t1.tzinfo.borrow() == nil && t2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1281,7 +1281,7 @@ module DateTime {
   /* Operators on datetime values */
 
   pragma "no doc"
-  proc +(td: timedelta, dt: datetime) {
+  operator +(td: timedelta, dt: datetime) {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
     var newmin = dt.minute;
@@ -1308,12 +1308,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc +(dt: datetime, td: timedelta) {
+  operator +(dt: datetime, td: timedelta) {
     return td + dt;
   }
 
   pragma "no doc"
-  proc -(dt: datetime, td: timedelta) {
+  operator -(dt: datetime, td: timedelta) {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -1348,7 +1348,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc -(dt1: datetime, dt2: datetime): timedelta {
+  operator -(dt1: datetime, dt2: datetime): timedelta {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
        (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1369,7 +1369,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc ==(dt1: datetime, dt2: datetime): bool {
+  operator ==(dt1: datetime, dt2: datetime): bool {
     if dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil ||
        dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil {
       halt("Cannot compare naive datetime to aware datetime");
@@ -1391,12 +1391,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc !=(dt1: datetime, dt2: datetime) {
+  operator !=(dt1: datetime, dt2: datetime) {
     return !(dt1 == dt2);
   }
 
   pragma "no doc"
-  proc <(dt1: datetime, dt2: datetime): bool {
+  operator <(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1413,7 +1413,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(dt1: datetime, dt2: datetime): bool {
+  operator <=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1430,7 +1430,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >(dt1: datetime, dt2: datetime): bool {
+  operator >(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1447,7 +1447,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(dt1: datetime, dt2: datetime): bool {
+  operator >=(dt1: datetime, dt2: datetime): bool {
     if (dt1.tzinfo.borrow() != nil && dt2.tzinfo.borrow() == nil) ||
         (dt1.tzinfo.borrow() == nil && dt2.tzinfo.borrow() != nil) {
       halt("both datetimes must both be either naive or aware");
@@ -1580,17 +1580,17 @@ module DateTime {
   /* Operators on timedelta values */
 
   pragma "no doc"
-  proc *(i: int, t: timedelta) {
+  operator *(i: int, t: timedelta) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  proc *(t: timedelta, i: int) {
+  operator *(t: timedelta, i: int) {
     return new timedelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   pragma "no doc"
-  proc /(t: timedelta, i: int) {
+  operator /(t: timedelta, i: int) {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
     var microsecond = t.microseconds + (second % i)*1000000;
@@ -1605,31 +1605,31 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc +(t: timedelta) {
+  operator +(t: timedelta) {
     return t;
   }
 
   pragma "no doc"
-  proc -(t: timedelta) {
+  operator -(t: timedelta) {
     return new timedelta(days=-t.days, seconds=-t.seconds, microseconds=-t.microseconds);
   }
 
   pragma "no doc"
-  proc +(lhs: timedelta, rhs: timedelta) {
+  operator +(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days+rhs.days,
                          seconds=lhs.seconds+rhs.seconds,
                          microseconds=lhs.microseconds+rhs.microseconds);
   }
 
   pragma "no doc"
-  proc -(lhs: timedelta, rhs: timedelta) {
+  operator -(lhs: timedelta, rhs: timedelta) {
     return new timedelta(days=lhs.days-rhs.days,
                          seconds=lhs.seconds-rhs.seconds,
                          microseconds=lhs.microseconds-rhs.microseconds);
   }
 
   pragma "no doc"
-  proc >(lhs: timedelta, rhs: timedelta) {
+  operator >(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -1638,12 +1638,12 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc >=(lhs: timedelta, rhs: timedelta) {
+  operator >=(lhs: timedelta, rhs: timedelta) {
     return lhs > rhs || lhs == rhs;
   }
 
   pragma "no doc"
-  proc <(lhs: timedelta, rhs: timedelta) {
+  operator <(lhs: timedelta, rhs: timedelta) {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls < rs then return true;
@@ -1652,7 +1652,7 @@ module DateTime {
   }
 
   pragma "no doc"
-  proc <=(lhs: timedelta, rhs: timedelta) {
+  operator <=(lhs: timedelta, rhs: timedelta) {
     return lhs < rhs || lhs == rhs;
   }
 
