@@ -2018,6 +2018,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Refactor string iterators to reduce generated code size (#16266)
   09/03/20:
     - Improve string to numerical casts' compilation and execution performance (#16278)
+  02/17/21:
+    - GPU code generation (#17116)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2064,6 +2066,17 @@ arkouda: &arkouda-base
     - Optimize scans by using noinit for the result array (#16919)
   01/15/21:
     - Optimize int64 prod reduce (mhmerrill/arkouda#628)
+  02/12/21:
+    - 624 convert message format to json (mhmerrill/arkouda#639)
+  02/16/21:
+    - Optimize string argsort (mhmerrill/arkouda#671)
+  02/18/21:
+    - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
+  02/19/21:
+    - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+
+arkouda-string:
+  <<: *arkouda-base
 
 
 arkouda-comp:
