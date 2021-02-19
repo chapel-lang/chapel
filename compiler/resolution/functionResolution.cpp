@@ -4280,22 +4280,18 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
 
   if (foundUnknownTypeActual) {
     // Are all of the failures due to not having an established type?
-    bool allTypeNotEstablished = true;
     bool anyTypeNotEstablished = false;
     forv_Vec(FnSymbol, fn, visibleFns) {
       ResolutionCandidate* rc = new ResolutionCandidate(fn);
       rc->isApplicable(info, NULL);
 
-      if (rc->reason >= RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED) {
+      if (rc->reason == RESOLUTION_CANDIDATE_ACTUAL_TYPE_NOT_ESTABLISHED) {
         anyTypeNotEstablished = true;
-      } else {
-        allTypeNotEstablished = false;
       }
-
       delete rc;
     }
 
-    if (anyTypeNotEstablished && allTypeNotEstablished) {
+    if (anyTypeNotEstablished) {
       for_actuals(actual, info.call) {
         Type* t = actual->getValType();
         if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
