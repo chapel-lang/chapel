@@ -1217,7 +1217,7 @@ module UnrolledLinkedList {
       `lhs`.
 
   */
-  proc =(ref lhs: unrolledLinkedList(?t, ?), rhs: unrolledLinkedList(t, ?)) {
+  operator =(ref lhs: unrolledLinkedList(?t, ?), rhs: unrolledLinkedList(t, ?)) {
     lhs.clear();
     lhs.extend(rhs);
   }
@@ -1228,7 +1228,8 @@ module UnrolledLinkedList {
     :return: `true` if the contents of two unrolledLinkedLists are equal.
     :rtype: `bool`
   */
-  proc ==(a: unrolledLinkedList(?t, ?), b: unrolledLinkedList(t, ?)): bool {
+  operator unrolledLinkedList.==(a: unrolledLinkedList(?t, ?),
+                                 b: unrolledLinkedList(t, ?)): bool {
     if a.size != b.size then
       return false;
 
@@ -1244,7 +1245,8 @@ module UnrolledLinkedList {
     :return: `true` if the contents of two unrolledLinkedLists are not equal.
     :rtype: `bool`
   */
-  proc !=(a: unrolledLinkedList(?t, ?), b: unrolledLinkedList(t, ?)): bool {
+  operator unrolledLinkedList.!=(a: unrolledLinkedList(?t, ?),
+                                 b: unrolledLinkedList(t, ?)): bool {
     return !(a == b);
   }
 

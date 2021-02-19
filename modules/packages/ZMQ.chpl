@@ -538,7 +538,7 @@ module ZMQ {
   } // record Context
 
   pragma "no doc"
-  proc =(ref lhs: Context, rhs: Context) {
+  operator =(ref lhs: Context, rhs: Context) {
     // Retain
     rhs.classRef.incRefCount();
     // Release
@@ -1086,7 +1086,7 @@ module ZMQ {
   } // record Socket
 
   pragma "no doc"
-  proc =(ref lhs: Socket, rhs: Socket) {
+  operator =(ref lhs: Socket, rhs: Socket) {
     if lhs.classRef == rhs.classRef then return;
     // Retain
     rhs.classRef.incRefCount();
