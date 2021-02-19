@@ -191,7 +191,8 @@ module Version {
 
   // Comparisons between sourceVersions
 
-  proc ==(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.==(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) param : bool {
     return spaceship(v1, v2) == 0;
   }
 
@@ -200,25 +201,29 @@ module Version {
     :type:`sourceVersion` check whether or not the two values
     have identical major, minor, update, and commit values.
   */
-  proc !=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.!=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) param : bool {
     return spaceship(v1, v2) != 0;
   }
 
-  proc <(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.<(v1: sourceVersion(?),
+                           v2: sourceVersion(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval < 0;
   }
 
-  proc <=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.<=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
     return retval <= 0;
   }
 
-  proc >(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.>(v1: sourceVersion(?),
+                           v2: sourceVersion(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
@@ -238,7 +243,8 @@ module Version {
     the former is considered an official release and the latter a
     pre-release.
   */
-  proc >=(v1: sourceVersion(?), v2: sourceVersion(?)) param : bool {
+  operator sourceVersion.>=(v1: sourceVersion(?),
+                            v2: sourceVersion(?)) param : bool {
     param retval = spaceship(v1, v2);
     if (retval == 2) then
       compilerError("can't compare versions that only differ by commit IDs");
