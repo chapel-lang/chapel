@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
@@ -288,6 +289,10 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
   // designs (including privatization and the DSI interface).
   } else if (isRecordWrappedType(arg->getValType())) {
     // If it is passed by value already, forwarding would add nothing.
+    retval = arg->isRef();
+
+  // Similar arguments should hold for iterator records, as well.
+  } else if (arg->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
     retval = arg->isRef();
 
   // If this function accesses sync vars and the argument is not

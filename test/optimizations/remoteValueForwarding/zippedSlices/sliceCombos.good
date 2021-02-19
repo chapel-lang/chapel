@@ -34,7 +34,7 @@ zip(slice, arr, arr)
 	No excess fast on
 	No excess non-blocking on
 promotion(slice, arr, arr)
-	Excess comm detected
+	No excess comm
 	No excess slow on
 	No excess fast on
 	No excess non-blocking on

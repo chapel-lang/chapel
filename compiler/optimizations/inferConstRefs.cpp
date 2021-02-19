@@ -657,14 +657,6 @@ static bool inferRefToConst(Symbol* sym) {
             isRefToConst = false;
           }
         } else {
-          if (call->isNamed("=") || call->isPrimitive(PRIM_MOVE)) {
-            SymExpr *rhsSE = toSymExpr(call->get(2));
-            if (rhsSE->symbol() == actual) {
-              if (actual->getValType()->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-                //continue;  // TODO -- this shouldn't be handled here
-              }
-            }
-          }
           // Passing a non-ref actual to a reference formal is currently
           // considered to be the same as an addr-of
           // BHARSH TODO: we shouldn't be seeing QUAL_CONST here.
