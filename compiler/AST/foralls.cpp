@@ -952,8 +952,7 @@ static Expr* rebuildIterableCall(ForallStmt* pfs,
     return origExprFlw;
   }
 
-  CallExpr *result = NULL;
-  result = new CallExpr(PRIM_ZIP, origExprFlw);
+  CallExpr *result = new CallExpr(PRIM_ZIP, origExprFlw);
 
   while (Expr* curr = iterCall->next)
     result->insertAtTail(curr->remove());
@@ -1026,9 +1025,11 @@ static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {
 static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   VarSymbol* leadIdxCopy = parIdxVar(pfs);
   bool       zippered    = false;
-  if (CallExpr* buildTup = toCallExpr(iterExpr)) {
-    //INT_ASSERT(buildTup->isNamed("_build_tuple"));
-    if (buildTup->numActuals() > 1)
+  CallExpr*  iterCall = toCallExpr(iterExpr);
+
+  if (iterCall) {
+    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
+    if (iterCall->numActuals() > 1)
       zippered = true;
   }
 
@@ -1050,10 +1051,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
   if (zippered) {
-    CallExpr *iterCall = toCallExpr(iterExpr);
-    INT_ASSERT(iterCall);
-    INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
-
     pfs->zipCall = iterCall->copy();
     preFS->insertAtTail(pfs->zipCall);
   }
@@ -1145,9 +1142,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   pfs->insertBefore(preFS);
-  if (toNormalize != NULL) {  // TODO: do we still need this check?
-    normalize(toNormalize); // requires inTree()
-  }
+  normalize(toNormalize); // requires inTree()
   resolveBlockStmt(preFS);
   preFS->flattenAndRemove();
 

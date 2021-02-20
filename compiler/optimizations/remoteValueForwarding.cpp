@@ -27,7 +27,6 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "view.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 

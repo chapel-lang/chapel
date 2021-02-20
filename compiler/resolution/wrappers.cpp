@@ -2252,8 +2252,7 @@ static void buildLeaderIterator(PromotionInfo& promotion,
     INT_ASSERT(iterCall);
     INT_ASSERT(iterCall->isPrimitive(PRIM_ZIP));
     
-    toLeader = new CallExpr("_toLeader",
-                            iterCall->get(1)->copy(&leaderMap));
+    toLeader = new CallExpr("_toLeader", iterCall->get(1)->copy(&leaderMap));
   }
   else {
     toLeader = new CallExpr("_toLeader", iterator->copy(&leaderMap));
@@ -2754,10 +2753,10 @@ enum FastFollowerCheckType {
   DYNAMIC_FF_CHECK
 };
 
-static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
-                                         const char *fnName,
-                                         const char *primOp,
-                                         ArgSymbol *lead) {
+static CallExpr *generateForwardCallForFF(std::vector<SymExpr *> exprs,
+                                          const char *fnName,
+                                          const char *primOp,
+                                          ArgSymbol *lead) {
 
   if (exprs.size() == 1) {
     CallExpr *ret = new CallExpr(fnName, exprs[0]->copy());
@@ -2767,7 +2766,6 @@ static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
     return ret;
   }
   else {
-
     CallExpr *ret = new CallExpr(primOp);
 
     for_vector(SymExpr, se, exprs) {
@@ -2777,14 +2775,12 @@ static CallExpr *generateFastFollowCheck(std::vector<SymExpr *> exprs,
       CallExpr *newCall = new CallExpr(fnName, se->copy());
       if (lead != NULL) {
         newCall->insertAtTail(new SymExpr(lead));
-
       }
       ret->insertAtTail(newCall);
     }
 
     return ret;
   }
-
   return NULL;
 }
 
@@ -2860,7 +2856,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
     INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
   }
 
-  forward = generateFastFollowCheck(fieldSymExprs, fnName, zipOp, lead);
+  forward = generateForwardCallForFF(fieldSymExprs, fnName, zipOp, lead);
 
   checkFn->insertAtTail(new DefExpr(returnTmp));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));

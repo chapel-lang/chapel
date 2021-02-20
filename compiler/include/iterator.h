@@ -87,11 +87,11 @@ void cleanupPrimIRFieldValByFormal();
 void lowerIterator(FnSymbol* fn);
 
 CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
-                                             Symbol *leadIdxCopy,
-                                             SymbolMap *map = NULL,
-                                             bool getIterator = true);
+                                      Symbol *leadIdxCopy,
+                                      SymbolMap *map = NULL,
+                                      bool getIterator = true);
 CallExpr *generateRegularFollowersForZip(CallExpr *iterCall,
-                                             Symbol *leadIdxCopy,
-                                             SymbolMap *map = NULL,
-                                             bool getIterator = true);
+                                         Symbol *leadIdxCopy,
+                                         SymbolMap *map = NULL,
+                                         bool getIterator = true);
 #endif

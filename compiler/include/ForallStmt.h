@@ -139,7 +139,6 @@ public:
 
   void insertZipSym(Symbol *sym);
 
-
 private:
   AList          fIterVars;
   AList          fIterExprs;
@@ -189,7 +188,7 @@ Same idea as fFromForLoop.
 
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
-inline std::vector<Symbol *> ForallStmt::zipSymbols()             { return fZipSyms;   }
+inline std::vector<Symbol *> ForallStmt::zipSymbols() { return fZipSyms;   }
 inline const AList& ForallStmt::constInductionVariables() const {
   return fIterVars;
 }
