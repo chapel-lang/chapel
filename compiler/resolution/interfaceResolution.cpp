@@ -73,10 +73,6 @@ static void cgprintAssocConstraint(IfcConstraint* icon) {
 #endif
 
 
-static bool resolveImplementsStmt(ImplementsStmt* istm,
-                                  bool nested, //used only for debugging output
-                                  bool reportErrors);
-
 static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm);
 
 
@@ -110,9 +106,16 @@ static void resolveISymRequiredFun(InterfaceSymbol* isym, FnSymbol* fn) {
   else
     isym->requiredFns.put(fn, fn); // with a default implementation
 
+  if (fn->retTag == RET_PARAM || fn->retTag == RET_TYPE)
+    USR_FATAL_CONT(fn, "interface functions with 'param' or 'type'"
+                   " return intent are currently not allowed");
+
   if (fn->where != NULL)
     USR_FATAL_CONT(fn->where, "the interface function %s%s", fn->name,
           " contains a where clause, which is currently not supported");
+
+  if (fn->retExprType != NULL && fn->retType == dtUnknown)
+    resolveSpecifiedReturnType(fn);  // like in isApplicable()
 
   resolveFunction(fn);
 }
@@ -269,6 +272,8 @@ static void cleanupHolder(BlockStmt* holder) {
   do { holder->body.tail->remove(); } while (holder->body.tail != NULL);
 }
 
+// resolveAssociatedTypes() and helpers
+
 // Computes and stores the associated type for this implementations
 // that corresponds to the associated type 'ifcAT' in the interface, ex.
 //
@@ -348,25 +353,32 @@ static bool resolveAssociatedTypes(InterfaceSymbol* isym, ImplementsStmt* istm,
   return atSuccess;
 }
 
+// checkAssocConstraints()
+
 static bool checkAssocConstraints(InterfaceSymbol* isym, ImplementsStmt* istm,
                                   SymbolMap& fml2act, BlockStmt* holder,
                                   //bool nested, const char* indent,
                                   CallExpr* callsite, bool reportErrors) {
   bool acSuccess = true;
 
-  for (ImplementsStmt* assocIS: isym->associatedConstraints) {
-    cgprintAssocConstraint(assocIS->iConstraint);
-    ImplementsStmt* instantiated = toImplementsStmt(assocIS->copy(&fml2act));
+  for (IfcConstraint* assocCons: isym->associatedConstraints) {
+    cgprintAssocConstraint(assocCons);
+    IfcConstraint* instantiated = toIfcConstraint(assocCons->copy(&fml2act));
     holder->insertAtTail(instantiated);
     ImplementsStmt* resolved = constraintIsSatisfiedAtCallSite(callsite,
-                                       instantiated->iConstraint, fml2act);
+                                                   instantiated, fml2act);
     //CG TODO: incorporate resolved->witnesses
     cleanupHolder(holder);
 
-    if (resolved == NULL) {
+    if (resolved != NULL) {
+      auto insertVal = std::make_pair(assocCons, resolved);
+      auto insertResult = istm->aconsWitnesses.insert(insertVal);
+      INT_ASSERT(insertResult.second); // no prior mapping for 'assocCon'
+
+    } else {
       if (! reportErrors) return false;
       USR_FATAL_CONT(istm, "when checking this implements statement");
-      USR_PRINT(assocIS, "this associated constraint is not satisfied");
+      USR_PRINT(assocCons, "this associated constraint is not satisfied");
       acSuccess = false;
     }
   }
@@ -374,10 +386,74 @@ static bool checkAssocConstraints(InterfaceSymbol* isym, ImplementsStmt* istm,
   return acSuccess;
 }
 
+// resolveWitnesses() and helpers
+
+static bool checkNonemptyHolder(InterfaceSymbol* isym, ImplementsStmt* istm,
+                                BlockStmt* holder, FnSymbol* target,
+                                FnSymbol* reqFn, bool reportErrors) {
+  if (holder->body.tail != NULL) {
+    if (reportErrors) {
+      USR_FATAL_CONT(istm, "when checking this implements statement");
+      USR_PRINT(target, "this implementation of the required function %s"
+        " requires implicit conversion(s), which is currently disallowed",
+        reqFn->name);
+      USR_PRINT(reqFn, "the required function %s in the interface %s"
+                       " is declared here", reqFn->name, isym->name);
+    }
+    cleanupHolder(holder);
+    return false;
+  }
+  return true;
+}
+
+static bool checkReturnType(InterfaceSymbol* isym, ImplementsStmt* istm,
+                            FnSymbol* target, SymbolMap& fml2act,
+                            FnSymbol* reqFn, bool reportErrors) {
+  Type* implType = target->retType->getValType();
+  Type* reqType = reqFn->retType->getValType();
+  if (Symbol* actualType = fml2act.get(reqType->symbol))
+    reqType = actualType->type->getValType();
+
+  if (reqType != implType) {
+    if (reportErrors) {
+      USR_FATAL_CONT(istm, "when checking this implements statement");
+      USR_PRINT(target, "this implementation of the required function %s",
+                        reqFn->name);
+      USR_PRINT(target, "has return type '%s'", toString(implType));
+      USR_PRINT(reqFn, "which does not match the expected return type '%s'",
+                        toString(reqType));
+      USR_PRINT(reqFn, "the required function %s in the interface %s"
+                       " is declared here", reqFn->name, isym->name);
+    }
+    return false;
+  }
+  return true;
+}
+
+static bool checkReturnIntent(InterfaceSymbol* isym, ImplementsStmt* istm,
+                              FnSymbol* target, FnSymbol* reqFn,
+                              bool reportErrors) {
+  if (target->retTag != reqFn->retTag) {
+    if (reportErrors) {
+      USR_FATAL_CONT(istm, "when checking this implements statement");
+      USR_PRINT(target, "this implementation of the required function %s",
+                         reqFn->name);
+      USR_PRINT(target, "has return intent '%s'",
+                        retTagDescrString(target->retTag));
+      USR_PRINT(reqFn, "which does not match the required intent '%s'",
+                        retTagDescrString(reqFn->retTag));
+      USR_PRINT(reqFn, "the required function %s in the interface %s"
+                       " is declared here", reqFn->name, isym->name);
+    }
+    return false;
+  }
+  return true;
+}
 
 // Returns whether a witness has been established successfully.
 static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
                               SymbolMap& fml2act, BlockStmt* holder,
+                              std::vector<FnSymbol*>& instantiatedDefaults,
                               const char* indent, bool reportErrors,
                               FnSymbol* reqFn, Symbol*& implRef) {
   INT_ASSERT(holder->body.empty());
@@ -391,24 +467,18 @@ static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
 
   // Resolve the call and see if we got a witness.
   FnSymbol* target = tryResolveCall(call);
+  call->remove();
+
   if (target != NULL) {
     cgprint("%s           -> %s  %s\n", indent,
             symstring(target), debugLoc(target));
     resolveFunction(target); // aborts if there are errors
 
-    call->remove();
-    if (holder->body.tail != NULL) {
-      if (reportErrors) {
-        USR_FATAL_CONT(istm, "when checking this implements statement");
-        USR_PRINT(target, "this implementation of the required function %s"
-          " requires implicit conversion(s), which is currently disallowed",
-          reqFn->name);
-        USR_PRINT(reqFn, "the required function %s in the interface %s"
-                         " is declared here", reqFn->name, isym->name);
-      }
-      target = NULL;
-      cleanupHolder(holder);
-    }
+    if (!( checkNonemptyHolder(isym, istm, holder, target, reqFn, reportErrors)
+           & checkReturnType(isym, istm, target, fml2act, reqFn, reportErrors)
+           & checkReturnIntent(isym, istm, target, reqFn, reportErrors) ))
+      target = NULL;  // if one or more of the above checks fail
+
   } else {
     if (implRef == gDummyWitness) {
       if (reportErrors) {
@@ -422,14 +492,14 @@ static bool resolveOneWitness(InterfaceSymbol* isym, ImplementsStmt* istm,
       SymbolMap fml2actDup = fml2act; // avoid fml2act updates by copy()
       target = toFnSymbol(implRef->copy(&fml2actDup));
       holder->insertBefore(new DefExpr(target));
+      instantiatedDefaults.push_back(target);
       INT_ASSERT(target->isResolved()); // the dflt impl was resolved with isym
       cgprint("%s      dflt -> %s  %s\n", indent,
               symstring(target), debugLoc(target));
     }
-    call->remove();
   }
 
-  implRef = target; // aka istm->witnesses[indx].put(reqFn, target)
+  implRef = target; // aka istm->witnesses.put(reqFn, target)
   return target != NULL;
 }
 
@@ -437,13 +507,21 @@ static bool resolveWitnesses(InterfaceSymbol* isym, ImplementsStmt* istm,
                              SymbolMap& fml2act, BlockStmt* holder,
                              const char* indent, bool reportErrors) {
   bool witSuccess = true;
+  std::vector<FnSymbol*> instantiatedDefaults;
 
   form_Map(SymbolMapElem, wit, istm->witnesses) {
     if (FnSymbol* reqFn = toFnSymbol(wit->key))
       witSuccess &= resolveOneWitness(isym, istm, fml2act, holder,
-                                   indent, reportErrors, reqFn, wit->value);
+        instantiatedDefaults, indent, reportErrors, reqFn, wit->value);
     else
       INT_ASSERT(isConstrainedTypeSymbol(wit->key, CT_IFC_ASSOC_TYPE));
+  }
+
+  if (witSuccess) {
+    for(FnSymbol* iDflt: instantiatedDefaults)
+      // Update references to now-instantiated required functions
+      // within default implementations.
+      update_symbols(iDflt, &(istm->witnesses));
   }
 
   return witSuccess;
@@ -458,17 +536,24 @@ static bool resolveWitnesses(InterfaceSymbol* isym, ImplementsStmt* istm,
 // * resolve each witness
 // Returns true if so, false otherwise.
 //
-static bool resolveImplementsStmt(ImplementsStmt* istm,
+static bool resolveImplementsStmt(FnSymbol* wrapFn,
+                                  ImplementsStmt* istm,
                                   bool nested, //used only for debugging output
                                   bool reportErrors) {
   if (istm->id == breakOnResolveID) gdbShouldBreakHere();
   IfcConstraint* icon = istm->iConstraint;
   InterfaceSymbol* isym = icon->ifcSymbol();
-  FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
 
   INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
   if (wrapFn->isResolved()) {
-    // no need to resolve again
+    // We can get here because we have already resolved 'istm'.
+    // If so, no need to resolve it again.
+    //
+    // We can also get here while resolving 'istm' recursively,
+    // because wrapFn gets marked resolved before checkAssocConstraints().
+    // If so, we return successful implementation, i.e. we break recursion
+    // by assuming success.
+
     bool isSuccess;
     implementsStmtForWrapperFn(wrapFn, isSuccess);
     // if isSuccess can legitimately be false, return it and remove the assert
@@ -486,7 +571,7 @@ static bool resolveImplementsStmt(ImplementsStmt* istm,
   wrapFn->defPoint->insertBefore(callsite);
   callStack.add(callsite);
 
-  resolveIStmActuals(wrapFn, istm);
+  resolveIStmActuals(wrapFn, istm);  // marks wrapFn with FLAG_RESOLVED
 
   SET_LINENO(istm->implBody);
   BlockStmt* holder = new BlockStmt();
@@ -499,36 +584,33 @@ static bool resolveImplementsStmt(ImplementsStmt* istm,
   buildAndCheckFormals2Actuals(isym, icon, "implements statement", fml2act);
 
   // check each category of istm contents
-  bool rSuccess = true;
 
-  if (rSuccess)
-    rSuccess = resolveAssociatedTypes(isym, istm, fml2act, holder,
-                                      nested, indent, reportErrors);
-  if (rSuccess)
-    rSuccess = checkAssocConstraints(isym, istm, fml2act, holder,
-                                     callsite, reportErrors);
-
-  if (rSuccess)
-    rSuccess = resolveWitnesses(isym, istm, fml2act, holder,
-                                indent, reportErrors);
+  bool success =
+     resolveAssociatedTypes(isym, istm, fml2act, holder, nested, indent,
+                                reportErrors)
+     && checkAssocConstraints(isym, istm, fml2act, holder, callsite,
+                                reportErrors)
+     && resolveWitnesses(isym, istm, fml2act, holder, indent,
+                                reportErrors);
 
   cgprint(nested ? "    ...done\n" : "\n");
   holder->remove();
-  wrapFn->addFlag(FLAG_RESOLVED);
+  INT_ASSERT(wrapFn->hasFlag(FLAG_RESOLVED));
   CallExpr* popped = callStack.pop();
   INT_ASSERT(popped == callsite);
   callsite->remove();  
 
-  if (!rSuccess) {
+  if (!success) {
     if (reportErrors) USR_STOP();
     markImplStmtWrapFnAsFailure(wrapFn);
   }
 
-  return rSuccess;
+  return success;
 }
 
 void resolveImplementsStmt(ImplementsStmt* istm) {
-  resolveImplementsStmt(istm, false, true);
+  FnSymbol* wrapFn = wrapperFnForImplementsStmt(istm);
+  resolveImplementsStmt(wrapFn, istm, false, true);
 }
 
 
@@ -565,6 +647,8 @@ static ImplementsStmt* matchingImplStm(FnSymbol* wrapFn,
                                        CallExpr* call2wf,
                                        bool& isSuccess) {
   ImplementsStmt* istm = implementsStmtForWrapperFn(wrapFn, isSuccess);
+  if (isSuccess) // do we need this restriction?
+    resolveImplementsStmt(wrapFn, istm, true, true);
 
   for (Expr *consArg = call2wf->argList.head,
             *implArg = istm->iConstraint->consActuals.head;
@@ -587,7 +671,6 @@ static void pickMatchingImplementsStmt(Vec<FnSymbol*>&  visibleFns,
     bool isSuccess;
     if (ImplementsStmt* match = matchingImplStm(wrapFn, call2wf, isSuccess)) {
       if (isSuccess) {
-        resolveImplementsStmt(match, true, true);
         firstSuccess = match;
         return;
       } else {
@@ -607,7 +690,8 @@ static void cgprintCheckedConstraint(InterfaceSymbol* isym,
           symstring(isym), debugLoc(constraint));
 
   if (UnresolvedSymExpr* use = toUnresolvedSymExpr(callsite->baseExpr))
-    cgprint("  for call to %s  at %s\n", use->unresolved, debugLoc(callsite));
+    cgprint("  for call [%d]  to %s  at %s\n", callsite->id,
+            use->unresolved, debugLoc(callsite));
   else {
     FnSymbol* wrapFn = toFnSymbol(toSymExpr(callsite->baseExpr)->symbol());
     if (wrapFn != NULL) {
@@ -702,8 +786,8 @@ static ImplementsStmt* checkInferredImplStmt(CallExpr* callsite,
 
   ImplementsStmt* istm = buildInferredImplStmt(isym, call2wf);
   anchor->insertBefore(istm);
-  wrapOneImplementsStatement(istm);
-  bool success = resolveImplementsStmt(istm, true, false);
+  FnSymbol* wrapFn = wrapOneImplementsStatement(istm);
+  bool success = resolveImplementsStmt(wrapFn, istm, true, false);
 
   return success ? istm : NULL;
 }
@@ -849,7 +933,7 @@ void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG) {
       bool isSuccess;
       ImplementsStmt* istm = implementsStmtForWrapperFn(fn, isSuccess);
       INT_ASSERT(isSuccess); // remove this if there is a legitimate case
-      resolveImplementsStmt(istm);
+      resolveImplementsStmt(fn, istm, false, true);
       return;
     }
     if (fn->isConstrainedGeneric()) {
