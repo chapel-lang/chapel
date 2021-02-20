@@ -433,27 +433,27 @@ const char* interfaceNameForWrapperFn(FnSymbol* fn) {
 }
 
 // isSuccess=false when 'wrapFn' is a result of a failed attempt to infer.
-ImplementsStmt* implementsStmtForWrapperFn(FnSymbol* wrapFn, bool& isSuccess) {
+IstmAndSuccess implementsStmtForWrapperFn(FnSymbol* wrapFn) {
   INT_ASSERT(wrapFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER));
-  isSuccess = true;
+  IstmAndSuccess result = {nullptr, true};
 
   // wrapFn body can contain computations of the actuals of its implements
   // stmt, due to normalization and resolution. Skip those.
   for_alist(expr, wrapFn->body->body) {
-    if (ImplementsStmt* istm = toImplementsStmt(expr))
-      return istm; // found it
+    if ((result.istm = toImplementsStmt(expr)))
+      return result; // found it
 
     if (CallExpr* call = toCallExpr(expr)) {
       if (call->isPrimitive(PRIM_ERROR)) {
         INT_ASSERT(call->numActuals() == 0); // we inserted it
-        isSuccess = false;
+        result.isSuccess = false;
       }
     }
   }
 
   // We should have found the ImplementsStmt.
   INT_FATAL(wrapFn, "invalid implements wrapper function");
-  return NULL; //dummy
+  return result; //dummy
 }
 
 FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
@@ -462,14 +462,14 @@ FnSymbol* wrapperFnForImplementsStmt(ImplementsStmt* istm) {
 
 // Verify that the above functions work correctly.
 static void verifyWrapImplementsStmt(FnSymbol* wrapFn, ImplementsStmt* istm,
-                                     bool successful) {
+                                     bool isSuccess) {
   InterfaceSymbol* isym = istm->ifcSymbol();
 
   INT_ASSERT(wrapFn->name == implementsStmtWrapperName(isym));
   INT_ASSERT(interfaceNameForWrapperFn(wrapFn) == isym->name);
-  bool isSuccess;
-  INT_ASSERT(implementsStmtForWrapperFn(wrapFn, isSuccess) == istm);
-  INT_ASSERT(isSuccess == successful);
+  IstmAndSuccess iss = implementsStmtForWrapperFn(wrapFn);
+  INT_ASSERT(iss.istm == istm);
+  INT_ASSERT(iss.isSuccess == isSuccess);
   INT_ASSERT(wrapperFnForImplementsStmt(istm) == wrapFn);
 }
 

@@ -460,6 +460,11 @@ void ConstrainedType::verify() {
     // These arise during resolution and are pruned at resolution end.
     INT_FATAL(this, "unexpected");
     break;
+  }
+  case CT_GENERIC_STANDIN: {
+    // This/these arise during resolution and are pruned at resolution end.
+    INT_FATAL(this, "unexpected");
+    break;
   }}
 }
 
@@ -469,6 +474,7 @@ const char* ConstrainedType::useString() const {
   case CT_IFC_ASSOC_TYPE:   return "CT_IFC_ASSOC_TYPE";
   case CT_CGFUN_FORMAL:     return "CT_CGFUN_FORMAL";
   case CT_CGFUN_ASSOC_TYPE: return "CT_CGFUN_ASSOC_TYPE";
+  case CT_GENERIC_STANDIN:  return "CT_GENERIC_STANDIN";
   }
   INT_FATAL(this, "unknown ConstrainedType use");
   return NULL;
@@ -485,6 +491,13 @@ void ConstrainedType::accept(AstVisitor* visitor) {
 TypeSymbol* ConstrainedType::build(const char* name, ConstrainedTypeUse use) {
   Type* ct = new ConstrainedType(use);
   return new TypeSymbol(name, ct);
+}
+
+ConstrainedType* ConstrainedType::buildT(const char* name,
+                                         ConstrainedTypeUse use) {
+  ConstrainedType* ct = new ConstrainedType(use);
+  new TypeSymbol(name, ct); // attaches to 'ct'
+  return ct;
 }
 
 bool isConstrainedType(Type* t, ConstrainedTypeUse use) {
