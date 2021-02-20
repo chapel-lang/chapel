@@ -25,6 +25,13 @@
   The functionality provided by this module can be used to implement
   collections in a manner similar to those implemented by the Chapel standard
   modules (such as :mod:`List` or :mod:`Map`).
+
+  .. note::
+
+    Throughout documentation, the term `variable` also includes non-const
+    formals, array elements, record or class fields, and tuple components.
+
+
 */
 module Initialization {
 
@@ -75,10 +82,8 @@ module Initialization {
       necessary.
 
     :arg lhs: A variable to move-initialize
-    :type lhs: `?t`
 
     :arg rhs: A value to move-initialize from
-    :type rhs: `t`
   */
   proc moveInitialize(ref lhs: ?t, pragma "no auto destroy" in rhs: t) {
     if lhs.type != nothing then
@@ -95,10 +100,8 @@ module Initialization {
       uninitialized after a call to this function.
 
     :arg arg: A variable or constant to move
-    :type arg: `?t`
 
     :return: The contents of ``arg`` moved into a new value
-    :rtype: `t`
   */
   proc moveToValue(const ref arg: ?t) {
     if t == nothing {
@@ -120,15 +123,11 @@ module Initialization {
     initialization.
 
     :arg lhs: A variable to swap
-    :type lhs: `?t`
 
     :arg rhs: A variable to swap
-    :type rhs: `t`
   */
   proc moveSwap(ref lhs: ?t, ref rhs: t) {
-    if t == nothing {
-      return none;
-    } else {
+    if t != nothing {
       pragma "no init"
       pragma "no copy"
       pragma "no auto destroy"
@@ -164,13 +163,18 @@ module Initialization {
 
     if hi > a.size then
       boundsCheckHalt('Cannot move-initialize array because one or ' +
-                      'more indices are outside its domain');
+                      'more indices fall outside its domain');
   }
 
-  private inline proc _errorNonCopyableType(type t) {
-    if !isCopyableType(t) then
-      compilerError('Cannot move-initialize array with non-copyable ',
-                    'element type: ', t:string, 2);
+  private inline proc _haltRangeOverlap(dstIndex, srcIndex, numElements) {
+    import HaltWrappers.boundsCheckHalt;
+
+    const dstRange = dstIndex..#numElements;
+    const srcRange = srcIndex..#numElements;
+
+    if dstRange[srcRange].size != 0 then
+      boundsCheckHalt('Cannot move-initialize array because source and ' +
+                      'destination ranges intersect');
   }
 
   // TODO: Relax this restriction in the future.
@@ -187,13 +191,16 @@ module Initialization {
 
     .. warning::
 
-      This function will halt if the value of ``numElements`` is negative
-      or is greater than `a.size`. It will also halt if any indices in
-      the range `dstStartIndex..(dstStartIndex + numElements)` or
-      `srcStartIndex..(srcStartIndex + numElements)` are out of bounds.
+      This function will halt if the value of ``numElements`` is negative,
+      or if any of the elements in ``dstStartIndex..#numElements`` or
+      ``srcStartIndex..#numElements`` are out of bounds.
+
+      This function will halt if the ranges ``dstStartIndex..#numElements``
+      and ``srcStartIndex..#numElements`` intersect.
+
+      No checks will occur when the `--fast` or `--no-checks` flags are used.
 
     :arg a: The array with source and destination elements
-    :type a: `[]`
 
     :arg dstStartIndex: Destination index of elements to move-initialize
     :type dstStartIndex: `a.idxType`
@@ -207,13 +214,13 @@ module Initialization {
   proc moveInitializeArrayElements(ref a: [?d], dstStartIndex: a.idxType,
                                    srcStartIndex: a.idxType,
                                    numElements: int) {
-    _errorNonCopyableType(a.eltType);
     _errorNot1DRectangularArray(a);
 
     if boundsChecking { 
       _haltBadElementRange(a, dstStartIndex, numElements);
       _haltBadIndex(a, dstStartIndex, 'dstStartIndex');
       _haltBadIndex(a, srcStartIndex, 'srcStartIndex');
+      _haltRangeOverlap(dstStartIndex, srcStartIndex, numElements);
     }
 
     if dstStartIndex == srcStartIndex then
@@ -229,7 +236,7 @@ module Initialization {
       const srcIdx = d.orderToIndex(srcLo + i);
       ref dst = a[dstIdx];
       ref src = a[srcIdx];
-      moveInitialize(dst, src);
+      _move(dst, src);
     }
   }
 
@@ -240,19 +247,23 @@ module Initialization {
 
     .. warning::
 
-      This function will halt if the value of ``numElements`` is negative.
-      or is greater than `a.size` or `b.size`. It will also halt if any
-      indices in the range `dstStartIndex..(dstStartIndex + numElements)`
-      or `srcStartIndex..(srcStartIndex + numElements)` are out of bounds.
+      This function will halt if the value of ``numElements`` is negative,
+      or if any of the elements in ``dstStartIndex..#numElements`` or
+      ``srcStartIndex..#numElements`` are out of bounds.
+
+      This function will halt if ``dstA`` and ``srcA`` are the same array
+      and the ranges ``dstStartIndex..#numElements`` and
+      ``srcStartIndex..#numElements`` intersect.
+
+      No checks will occur when the `--fast` or `--no-checks` flags are used.
 
     :arg dstA: The array with destination elements
-    :type dstA: `[] ?t`
 
     :arg dstStartIndex: Destination index of elements to move-initialize
     :type dstStartIndex: `dstA.idxType`
 
     :arg srcA: The array with source elements 
-    :type srcA: `[] t`
+    :type srcA: An array with the same element type as `dstA.eltType`
 
     :arg srcStartIndex: Source index of elements to move-initialize from
     :type srcStartIndex: `srcA.idxType`
@@ -267,7 +278,6 @@ module Initialization {
                                    numElements: int) {
     _errorNot1DRectangularArray(dstA);
     _errorNot1DRectangularArray(srcA);
-    _errorNonCopyableType(t);
 
     if boundsChecking {
       _haltBadElementRange(dstA, dstStartIndex, numElements);
@@ -277,6 +287,10 @@ module Initialization {
     }
 
     const isSameArray = dstA._instance == srcA._instance;
+
+    if boundsChecking && isSameArray {
+      _haltRangeOverlap(dstStartIndex, srcStartIndex, numElements);
+    }
 
     if isSameArray && dstStartIndex == srcStartIndex then
       return;
@@ -293,7 +307,7 @@ module Initialization {
       const srcIdx = srcD.orderToIndex(srcLo + i);
       ref dst = dstA[dstIdx];
       ref src = srcA[srcIdx];
-      moveInitialize(dst, src);
+      _move(dst, src);
     }
   }
 
