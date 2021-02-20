@@ -279,6 +279,33 @@ static bool acceptUnmodifiedIterCall(ForallStmt* pfs, CallExpr* iterCall)
          pfs->requireSerialIterator();
 }
 
+// We use this in writing promotion wrappers and foralls to generate calls to:
+//   - chpl__canHaveFastFollowers
+//   - chpl__staticFastFollowerCheck
+//   - chpl__dynamicFastFollowerCheck
+//
+// lead can be NULL, in which case it won't be added to the arg list of the call
+// boolOp can be `||` or `&&` and determines the operation between calls
+CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
+                                                 const char *fnName,
+                                                 const char *boolOp,
+                                                 Symbol *lead) {
+  CallExpr *ret = new CallExpr(boolOp);
+
+  for_vector(SymExpr, se, exprs) {
+    if (ret->numActuals() == 2) {
+      ret = new CallExpr(boolOp, ret);
+    }
+    CallExpr *newCall = new CallExpr(fnName, se->copy());
+    if (lead != NULL) {
+      newCall->insertAtTail(new SymExpr(lead));
+    }
+    ret->insertAtTail(newCall);
+  }
+
+  return ret;
+}
+
 static CallExpr *generateFollowersForZipHelp(CallExpr *iterCall,
                                              Symbol *leadIdxCopy,
                                              SymbolMap *map,
@@ -966,31 +993,45 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
                                              const char *fnName,
                                              bool addLead) {
 
-  Expr *lead = iterCall->get(1);
-  INT_ASSERT(isSymExpr(lead));
+  Symbol *leadSym = NULL;
+
+  if (addLead) {
+    SymExpr *leadSE = toSymExpr(iterCall->get(1));
+    INT_ASSERT(leadSE);
+
+    leadSym = leadSE->symbol();
+  }
   
-  const char *prim = NULL;
+  const char *zipOp = NULL;
   if (strcmp(fnName, "chpl__canHaveFastFollowers") == 0) {
-    prim = "||";
+    zipOp = "||";
   }
   else {
-    prim = "&&";
+    zipOp = "&&";
   }
-  CallExpr *ret = new CallExpr(prim);
 
+
+  //CallExpr *ret = new CallExpr(prim);
+
+  std::vector<SymExpr *> zippedExprs;
   for_actuals(actual, iterCall) {
-    if (ret->numActuals() == 2) {
-      ret = new CallExpr(prim, ret);
-    }
-    INT_ASSERT(isSymExpr(actual));
-    CallExpr *newCall = new CallExpr(fnName, actual->copy());
-    if (addLead) {
-      newCall->insertAtTail(lead->copy());
-    }
-    ret->insertAtTail(newCall);
+    //if (ret->numActuals() == 2) {
+      //ret = new CallExpr(prim, ret);
+    //}
+    SymExpr *actualSE = toSymExpr(actual);
+    INT_ASSERT(actualSE);
+    //CallExpr *newCall = new CallExpr(fnName, actual->copy());
+    //if (addLead) {
+      //newCall->insertAtTail(lead->copy());
+    //}
+    //ret->insertAtTail(newCall);
+    zippedExprs.push_back(actualSE);
   }
 
-  return ret;
+  return buildFastFollowerCheckCallForZipOrProm(zippedExprs,
+                                                fnName,
+                                                zipOp,
+                                                leadSym);
 }
 
 static CallExpr *generateFastFollowCheck(Expr *e, bool isStatic) {

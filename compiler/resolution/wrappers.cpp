@@ -2753,11 +2753,10 @@ enum FastFollowerCheckType {
   DYNAMIC_FF_CHECK
 };
 
-static CallExpr *generateForwardCallForFF(std::vector<SymExpr *> exprs,
-                                          const char *fnName,
-                                          const char *primOp,
-                                          ArgSymbol *lead) {
-
+static CallExpr *buildFastFollowerCheckForward(std::vector<SymExpr *> exprs,
+                                               const char *fnName,
+                                               const char *boolOp,
+                                               ArgSymbol *lead) {
   if (exprs.size() == 1) {
     CallExpr *ret = new CallExpr(fnName, exprs[0]->copy());
     if (lead != NULL) {
@@ -2766,20 +2765,7 @@ static CallExpr *generateForwardCallForFF(std::vector<SymExpr *> exprs,
     return ret;
   }
   else {
-    CallExpr *ret = new CallExpr(primOp);
-
-    for_vector(SymExpr, se, exprs) {
-      if (ret->numActuals() == 2) {
-        ret = new CallExpr(primOp, ret);
-      }
-      CallExpr *newCall = new CallExpr(fnName, se->copy());
-      if (lead != NULL) {
-        newCall->insertAtTail(new SymExpr(lead));
-      }
-      ret->insertAtTail(newCall);
-    }
-
-    return ret;
+    return buildFastFollowerCheckCallForZipOrProm(exprs, fnName, boolOp, lead);
   }
   return NULL;
 }
@@ -2802,25 +2788,25 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
   returnTmp->addFlag(FLAG_EXPR_TEMP);
   returnTmp->addFlag(FLAG_MAYBE_PARAM);
 
-  const char *zipOp = NULL;
+  const char *boolOp = NULL;
   switch (checkType) {
     case CAN_HAVE_FF:
       fnName          = "chpl__canHaveFastFollowers";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_PARAM;
-      zipOp           = "||";
+      boolOp           = "||";
       break;
     case STATIC_FF_CHECK:
       fnName          = "chpl__staticFastFollowCheck";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_PARAM;
-      zipOp           = "&&";
+      boolOp           = "&&";
       break;
     case DYNAMIC_FF_CHECK:
       fnName          = "chpl__dynamicFastFollowCheck";
       checkFn         = new FnSymbol(fnName);
       checkFn->retTag = RET_VALUE;
-      zipOp           = "&&";
+      boolOp           = "&&";
       break;
     default:
       INT_FATAL("Unknown FastFollowerCheckType");
@@ -2856,7 +2842,7 @@ static void buildFastFollowerCheck(FastFollowerCheckType checkType,
     INT_ASSERT(! x->type->symbol->hasFlag(FLAG_GENERIC));
   }
 
-  forward = generateForwardCallForFF(fieldSymExprs, fnName, zipOp, lead);
+  forward = buildFastFollowerCheckForward(fieldSymExprs, fnName, boolOp, lead);
 
   checkFn->insertAtTail(new DefExpr(returnTmp));
   checkFn->insertAtTail(new CallExpr(PRIM_MOVE,   returnTmp, forward));

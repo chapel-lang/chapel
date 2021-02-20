@@ -86,6 +86,10 @@ void cleanupPrimIRFieldValByFormal();
 
 void lowerIterator(FnSymbol* fn);
 
+CallExpr *buildFastFollowerCheckCallForZipOrProm(std::vector<SymExpr *> exprs,
+                                                 const char *fnName,
+                                                 const char *boolOp,
+                                                 Symbol *lead);
 CallExpr *generateFastFollowersForZip(CallExpr *iterCall,
                                       Symbol *leadIdxCopy,
                                       SymbolMap *map = NULL,
