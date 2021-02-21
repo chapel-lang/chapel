@@ -1,2 +1,2 @@
 param-real-init-imag-error.chpl:1: error: Could not coerce param into requested type
-param-real-init-imag-error.chpl:1: error: Cannot assign to imag(32) from real(64)
+param-real-init-imag-error.chpl:1: error: cannot initialize 'neg32' of type 'imag(32)' from '-1.0'

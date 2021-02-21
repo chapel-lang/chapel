@@ -23,6 +23,8 @@ msgs = (
 """,
 """cp: cannot create regular file .*/[.]module/PrgEnv-.*: File exists
 """,
+"""diff: .*/[.]module/PrgEnv-.*: No such file or directory
+""",
 )
 
 outfname = sys.argv[2]

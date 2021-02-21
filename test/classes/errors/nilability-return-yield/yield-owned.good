@@ -1,2 +1,2 @@
 yield-owned.chpl:3: In iterator 'I':
-yield-owned.chpl:3: error: cannot yield 'owned C?' when the declared return type is 'owned C'
+yield-owned.chpl:3: error: cannot initialize 'owned C' from a 'owned C?'

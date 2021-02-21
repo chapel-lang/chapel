@@ -1,1 +1,2 @@
-init-field-dflt-nonnil-unmanaged-from-oknil-shared.chpl:8: error: Cannot initialize lhs of non-nilable type 'unmanaged MyClass' from a nilable 'shared MyClass?'
+init-field-dflt-nonnil-unmanaged-from-oknil-shared.chpl:8: error: cannot initialize 'lhs' of type 'unmanaged MyClass' from a 'shared MyClass?'
+init-field-dflt-nonnil-unmanaged-from-oknil-shared.chpl:13: error: done

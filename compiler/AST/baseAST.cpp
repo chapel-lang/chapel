@@ -362,12 +362,7 @@ BaseAST::BaseAST(AstTag type) :
   }
 }
 
-
 const std::string BaseAST::tabText = "   ";
-
-
-BaseAST::~BaseAST() {
-}
 
 int BaseAST::linenum() const {
   return astloc.lineno;

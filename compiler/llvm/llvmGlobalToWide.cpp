@@ -311,7 +311,7 @@ namespace {
   public:
     /// remapType - The client should implement this method if they want to
     /// remap types while mapping values.
-    virtual Type *remapType(Type *SrcTy) = 0;
+    Type *remapType(Type *SrcTy) override = 0;
 
     // When remapping things with remapped types, these functions
     // provide an opportunity to do the remapping. They should return
@@ -971,13 +971,13 @@ namespace {
       }
     }
 
-    Type *remapType(Type *SrcTy) {
+    Type *remapType(Type *SrcTy) override {
       return convertTypeGlobalToWide(&M, info, SrcTy);
     }
 
     Constant* remapConstant(const Constant* C,
                           ValueToValueMapTy &VM,
-                          RemapFlags Flags) {
+                          RemapFlags Flags) override {
       Type* CT = C->getType();
       if( isa<PointerType>(CT) &&
           CT->getPointerAddressSpace() == info->globalSpace) {
@@ -1159,7 +1159,7 @@ namespace {
 
 
   // GlobalToWide - The first implementation, without getAnalysisUsage.
-  struct GlobalToWide : public ModulePass {
+  struct GlobalToWide final : public ModulePass {
     static char ID; // Pass identification, replacement for typeid
 
     GlobalToWideInfo * info;
@@ -1191,7 +1191,7 @@ namespace {
 
 
 
-    virtual bool runOnModule(Module &M) {
+    bool runOnModule(Module &M) override {
       bool madeInfo = false;
 
       if( debugThisFn[0] || debugAllPassOne || debugAllPassTwo ) {

@@ -4054,7 +4054,7 @@ void printResolutionErrorUnresolved(CallInfo&       info,
     } else if (info.name == astr_coerceCopy || info.name == astr_coerceMove) {
 
         USR_FATAL_CONT(call,
-                       "Cannot initialize %s from %s",
+                       "cannot initialize %s from %s",
                        toString(info.actuals.v[0]->type),
                        toString(info.actuals.v[1]->type));
 
@@ -4142,16 +4142,16 @@ static bool defaultValueMismatch(CallInfo& info) {
 
         if (isNonNilableClassType(formalType) &&
             actualType == dtNil) {
-          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from nil",
+          USR_FATAL_CONT(call, "cannot initialize %s of non-nilable type '%s' from nil",
                          userVariable->name,
                          toString(formalType));
         } else if (isNonNilableClassType(formalType) &&
             isNilableClassType(actualType)) {
-          USR_FATAL_CONT(call, "Cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
+          USR_FATAL_CONT(call, "cannot initialize %s of non-nilable type '%s' from a nilable '%s'",
                          userVariable->name,
                          toString(formalType), toString(actualType));
         } else {
-          USR_FATAL_CONT(call, "Cannot initialize '%s' of type %s from a '%s'",
+          USR_FATAL_CONT(call, "cannot initialize '%s' of type %s from a '%s'",
                          userVariable->name,
                          toString(formalType), toString(actualType));
         }
@@ -6111,6 +6111,11 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
                                calleeFn->isCopyInit());
     bool isInitParam = actSym->hasFlag(FLAG_PARAM) && isInit;
 
+    if (isInit && formal->hasFlag(FLAG_ARG_THIS)) {
+      // Ignore lvalue errors for 'this' in initializer calls
+      return;
+    }
+
     bool isAssign = false;
     if (calleeFn && calleeFn->hasFlag(FLAG_ASSIGNOP))
       isAssign = true;
@@ -6593,7 +6598,8 @@ static void resolveInitField(CallExpr* call) {
           VarSymbol* srcVar = toVarSymbol(srcParam);
           if (dstVar != NULL && srcVar != NULL)
             USR_PRINT(call, "field '%s' has value '%s' but is set to '%s'",
-                            fs->name, toString(dstVar), toString(srcVar));
+                            fs->name,
+                            toString(dstVar, false), toString(srcVar, false));
           USR_STOP();
         }
       }
@@ -10730,7 +10736,6 @@ void lowerPrimInit(CallExpr* call, Expr* preventingSplitInit) {
   //
   if (call->isPrimitive(PRIM_DEFAULT_INIT_VAR) &&
       val->type->symbol->hasFlag(FLAG_ARRAY)   &&
-      ! val->hasFlag(FLAG_INITIALIZED_LATER)   &&
       ! val->hasFlag(FLAG_UNSAFE)              &&
       ! isInDefaultActualFunction(call)        ) {
     const char* name = NULL;
@@ -10829,16 +10834,13 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
   if (val->hasFlag(FLAG_NO_INIT))
     return;
 
-  // Allow default-init assign to work around current compiler oddities.
-  // In a future where init= is always used, we can remove this case.
   // Skip this error for a param - it will get "not of a supported param type"
-  if (val->hasFlag(FLAG_INITIALIZED_LATER) ||
-      val->hasFlag(FLAG_PARAM))
+  if (val->hasFlag(FLAG_PARAM))
     return;
 
   const char* descr = val->name;
   if (VarSymbol* v = toVarSymbol(val))
-    descr = toString(v);
+    descr = toString(v, true);
 
   CallExpr* uCall = call;
   if (isTupleComponent(val, call)) {

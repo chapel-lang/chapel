@@ -215,10 +215,11 @@ static bool isCallVectorHazard(CallExpr* call,
                                std::map<FnSymbol*, bool> &fnHasVectorHazard);
 
 namespace {
-  class VectorHazardVisitor : public AstVisitorTraverse {
+  class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
       VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
-      virtual bool enterCallExpr (CallExpr*  node);
+
+      bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;

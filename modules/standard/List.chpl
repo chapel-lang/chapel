@@ -1802,5 +1802,24 @@ module List {
     return !(a == b);
   }
 
+  proc _cast(type t:list, rhs:list) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:[]) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:range(?)) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+  proc _cast(type t:list, rhs:_iteratorRecord) {
+    var lst: list = rhs; // use init=
+    return lst;
+  }
+
+
+
 } // End module "Lists".
 

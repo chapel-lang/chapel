@@ -44,6 +44,7 @@ init 1 1
 init= 1 1
 done makeTuple
 init (default)
+init= 1 1
 (x = 1, ptr = {xx = 1})
 -
 testr4

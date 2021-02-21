@@ -124,14 +124,21 @@ void FnSymbol::verify() {
     INT_ASSERT(ifcInfo->constrainedTypes.parent == this);
     for_alist(ctExpr, ifcInfo->constrainedTypes) {
       Symbol* ctSym = toDefExpr(ctExpr)->sym;
-      Type*  ctType = toTypeSymbol(ctSym)->type;
-      INT_ASSERT(isConstrainedType(ctType));
+      ConstrainedType* ctType = toConstrainedType((toTypeSymbol(ctSym)->type));
+      INT_ASSERT(ctType->ctUse == CT_CGFUN_FORMAL);
     }
 
     // interfaceConstraints: AList of IfcConstraint
     INT_ASSERT(ifcInfo->interfaceConstraints.parent == this);
     for_alist(ic, ifcInfo->interfaceConstraints)
       INT_ASSERT(isIfcConstraint(ic));
+
+    // ifcInfo->repsForIfcSymbols is created during resolution
+    // and disappears together with its parent function at the end of
+    // resolution, so we never see it here.
+
+    // CG functions are generic and should be pruned at end of resolution
+    INT_ASSERT(!resolved);
   }
 
   if (retExprType && retExprType->parentSymbol != this) {
@@ -204,6 +211,16 @@ FnSymbol* FnSymbol::copyInner(SymbolMap* map) {
     copy->substitutionsPostResolve.push_back(ns);
   }
 
+  if (InterfaceInfo* ifcInfoOld = this->interfaceInfo) {
+    InterfaceInfo* ifcInfoCopy = new InterfaceInfo(copy);
+
+    for_alist(ct, ifcInfoOld->constrainedTypes)
+      ifcInfoCopy->addConstrainedType(toDefExpr(COPY_INT(ct)));
+
+    for_alist(icon, ifcInfoOld->interfaceConstraints)
+      ifcInfoCopy->addInterfaceConstraint(toIfcConstraint(COPY_INT(icon)));
+  }
+
   return copy;
 }
 
@@ -228,16 +245,6 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
 
   for_formals(formal, this) {
     newFn->insertFormalAtTail(COPY_INT(formal->defPoint));
-  }
-
-  if (InterfaceInfo* ifcInfoOld = this->interfaceInfo) {
-    InterfaceInfo* ifcInfoNew = new InterfaceInfo(newFn);
-
-    for_alist(ct, ifcInfoOld->constrainedTypes)
-      ifcInfoNew->addConstrainedType(toDefExpr(COPY_INT(ct)));
-
-    for_alist(icon, ifcInfoOld->interfaceConstraints)
-      ifcInfoNew->addInterfaceConstraint(toIfcConstraint(COPY_INT(icon)));
   }
 
   // Copy members that are needed by both copyInner and partialCopy.
@@ -275,6 +282,10 @@ FnSymbol* FnSymbol::partialCopy(SymbolMap* map) {
   PartialCopyData& pci   = addPartialCopyData(newFn);
 
   pci.partialCopySource  = this;
+
+  if (this->hasFlag(FLAG_RESOLVED))
+    // Ensure 'newFn' is pruned if finalizeCopy() is never invoked.
+    newFn->removeFlag(FLAG_RESOLVED);
 
   if (this->_this == NULL) {
     // Case 1: No _this pointer.
@@ -381,6 +392,9 @@ void FnSymbol::finalizeCopy() {
 
     // Make sure that the source has been finalized.
     partialCopySource->finalizeCopy();
+
+    if (partialCopySource->hasFlag(FLAG_RESOLVED))
+      this->addFlag(FLAG_RESOLVED);
 
     SET_LINENO(this);
 
@@ -777,6 +791,10 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
     // generic-ness has already been established
     return TGR_ALREADY_TAGGED;
 
+  } else if (isConstrainedGeneric()) {
+    setGeneric(true);
+    return TGR_NEWLY_TAGGED;
+
   } else {
     // avoid recursing for the function.
     static std::set<Symbol*> seen;
@@ -852,10 +870,12 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
-    } else if (isConstrainedType(formal->type)) {
-      if (isConstrainedGeneric())
-        isGeneric = true;
-      // otherwise it is a required function in an 'interface' declaration
+    } else if (toConstrainedType(formal->type)) {
+      // A CG function is known to be generic, so we should not be
+      // querying hasGenericFormals(). The only other functions
+      // with CT formals are those in 'interface' declarations.
+      INT_ASSERT(! isConstrainedGeneric());
+      INT_ASSERT(isInterfaceSymbol(defPoint->parentSymbol));
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;

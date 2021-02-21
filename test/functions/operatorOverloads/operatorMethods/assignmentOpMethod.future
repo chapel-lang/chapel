@@ -1,0 +1,2 @@
+bug: Cannot define = operator as method if have explicit initializer on type
+#17156

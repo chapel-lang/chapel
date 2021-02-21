@@ -588,19 +588,6 @@ record regexp {
     }
   }
 
-  /* did this regular expression compile ? */
-  proc ok:bool {
-    return qio_regexp_ok(_regexp);
-  }
-  /*
-
-     :returns: a string describing any error encountered when compiling this
-               regular expression
-   */
-  proc error():string {
-    return qio_regexp_error(_regexp):string;
-  }
-
   // note - more = overloads are below.
   pragma "no doc"
   proc ref deinit() {

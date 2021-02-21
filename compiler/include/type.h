@@ -63,10 +63,10 @@ public:
                               bool       internal = false)                 = 0;
 
   // Interface for BaseAST
-  virtual GenRet         codegen();
-          bool           inTree();
-  virtual QualifiedType  qualType();
-  virtual void           verify();
+  GenRet         codegen()   override;
+  bool           inTree()    override;
+  QualifiedType  qualType()  override;
+  void           verify()    override;
 
   virtual void           codegenDef();
   virtual void           codegenPrototype();
@@ -115,11 +115,12 @@ public:
   std::map<std::string, int> GEPMap;
 
 protected:
-                   Type(AstTag astTag, Symbol* init_defaultVal);
-  virtual         ~Type();
+  Type(AstTag astTag, Symbol* init_defaultVal);
+ ~Type() override = default;
 
 private:
   virtual void     replaceChild(BaseAST* old_ast, BaseAST* new_ast) = 0;
+  virtual Type*    copyInner(SymbolMap* map) = 0;
 
   FnSymbol*        destructor;
 };
@@ -309,10 +310,9 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-class EnumType : public Type {
+class EnumType final : public Type {
  public:
   AList constants; // EnumSymbols
-
 
   // what integer type contains all of this enum values?
   // if this is NULL it will just be recomputed when needed.
@@ -322,22 +322,25 @@ class EnumType : public Type {
   const char* doc;
 
   EnumType();
-  ~EnumType();
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
-  DECLARE_COPY(EnumType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
+ ~EnumType() override = default;
 
-  void codegenDef();
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
+  DECLARE_COPY(EnumType);
+  EnumType* copyInner(SymbolMap* map)                   override;
+
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+
+  void codegenDef()                                     override;
 
   bool isAbstract();  // is the enum abstract?  (has no associated values)
   bool isConcrete();  // is the enum concrete?  (all have associated values)
   PrimitiveType* getIntegerType();
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  void printDocs(std::ostream *file, unsigned int tabs);
 
 private:
-  virtual std::string docsDirective();
+  std::string docsDirective();
 };
 
 
@@ -355,44 +358,61 @@ private:
 *                                                                             *
 ************************************** | *************************************/
 
-class PrimitiveType : public Type {
+class PrimitiveType final : public Type {
  public:
   PrimitiveType(Symbol *init_defaultVal = NULL, bool internalType=false);
-  void verify();
-  virtual void    accept(AstVisitor* visitor);
+  void verify()                                         override;
+  void accept(AstVisitor* visitor)                      override;
   DECLARE_COPY(PrimitiveType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef();
+  PrimitiveType* copyInner(SymbolMap* map)              override;
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast) override;
+  void codegenDef()                                     override;
+
+  void printDocs(std::ostream *file, unsigned int tabs);
 
 private:
-  virtual std::string docsDirective();
+  std::string docsDirective();
 };
 
 
 /************************************* | **************************************
 *                                                                             *
-* a ConstrainedType is the type of:                                           *
-* (1) a formal of a CG function if it is subject to interface constraint(s)   *
-*     ex. T in: proc cgFun(arg: ?T) where T implements IFC {....}             *
-* (2) a formal of an InterfaceSymbol                                          *
-*     ex. Q in: interface IFC(Q) {....}                                       *
+* a ConstrainedType can be used as indicated by its 'ctUse' field:            *
+* CT_IFC_FORMAL: a formal of an interface declaration                         *
+*                ex. 'Q' in interface IFC(Q) { ..... }                        *
+* CT_IFC_ASSOC_TYPE: an associated type in an interface declaration           *
+*                    ex. 'AT' in interface IFC(Q) { type AT; ..... }          *
+* CT_CGFUN_FORMAL: the type of a formal of a CG function that is subject to   *
+*                  interface constraint(s), ex. 'T' in                        *
+*                  proc cgFun(arg: ?T) where T implements IFC { ..... }       *
+* CT_CGFUN_ASSOC_TYPE: an assoc. type of a CT_CGFUN_FORMAL type, ex. 'arg.AT' *
+*                      in proc cgFun(arg: ?T, arg2: arg.AT) where .....       *
 *                                                                             *
 ************************************** | *************************************/
 
-class ConstrainedType : public Type {
+enum ConstrainedTypeUse {
+  CT_IFC_FORMAL,
+  CT_IFC_ASSOC_TYPE,
+  CT_CGFUN_FORMAL,
+  CT_CGFUN_ASSOC_TYPE
+};
+
+class ConstrainedType final : public Type {
 public:
-  ConstrainedType();
-  void verify();
-  virtual void accept(AstVisitor* visitor);
+  ConstrainedTypeUse ctUse;
+  ConstrainedType(ConstrainedTypeUse use);
+  void verify()                                          override;
+  void accept(AstVisitor* visitor)                       override;
   DECLARE_COPY(ConstrainedType);
-  void replaceChild(BaseAST* old_ast, BaseAST* new_ast);
-  void codegenDef();
+  ConstrainedType* copyInner(SymbolMap* map)             override;
+  void replaceChild(BaseAST* old_ast, BaseAST* new_ast)  override;
+  void codegenDef()                                      override;
+  const char* useString() const;
 
-  static TypeSymbol* build(const char* name);
+  static TypeSymbol* build(const char* name, ConstrainedTypeUse use);
 
-  virtual void printDocs(std::ostream *file, unsigned int tabs);
+  void printDocs(std::ostream *file, unsigned int tabs);
 };
 
 
@@ -548,6 +568,9 @@ bool needsCapture(Type* t);
 VarSymbol* resizeImmediate(VarSymbol* s, PrimitiveType* t);
 
 bool isPOD(Type* t);
+
+bool isConstrainedType(Type* t, ConstrainedTypeUse use);
+bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use);
 
 bool isNumericParamDefaultType(Type* type);
 

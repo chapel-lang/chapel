@@ -1,2 +1,2 @@
 init-var-nonnil-shared-from-oknil-unmanaged.chpl:9: error: invalid copy-initialization
-init-var-nonnil-shared-from-oknil-unmanaged.chpl:9: error: cannot create a shared variable from an unmanaged class instance
+init-var-nonnil-shared-from-oknil-unmanaged.chpl:9: error: cannot initialize 'shared MyClass' from a 'unmanaged MyClass?'

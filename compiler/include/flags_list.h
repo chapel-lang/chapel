@@ -170,6 +170,7 @@ symbolFlag( FLAG_GET_MODULE_NAME, ypr, "get module name", "replace calls to this
 
 symbolFlag( FLAG_GLOBAL_TYPE_SYMBOL, ypr, "global type symbol", "is accessible through a global type variable")
 symbolFlag( FLAG_GLOBAL_VAR_BUILTIN, ypr, "global var builtin", "is accessible through a global symbol variable")
+symbolFlag( FLAG_GPU_CODEGEN , ypr, "codegen for GPU" , "generate GPU code" )
 symbolFlag( FLAG_HAS_POSTINIT , ypr, "has postinit" , "type that has a postinit method" )
 symbolFlag( FLAG_HAS_RUNTIME_TYPE , ypr, "has runtime type" , "type that has an associated runtime type" )
 
@@ -189,7 +190,6 @@ symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 // into loop index variables.
 symbolFlag( FLAG_INDEX_OF_INTEREST , npr, "an _indexOfInterest or chpl__followIdx variable" , ncm )
 symbolFlag( FLAG_INIT_COPY_FN,  ypr, "init copy fn" , "init copy function" )
-symbolFlag( FLAG_INITIALIZED_LATER,  ypr, "initialized later" , "initialized in subsequent statement" )
 symbolFlag( FLAG_INIT_TUPLE, ypr, "tuple init fn", ncm)
 symbolFlag( FLAG_INLINE , npr, "inline" , ncm )
 symbolFlag( FLAG_INLINED_FN , npr, "inlined function" , ncm )

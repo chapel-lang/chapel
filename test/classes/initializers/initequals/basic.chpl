@@ -38,6 +38,11 @@ proc R.init=(x : int) {
   writeln("init= from integer");
   this.x = x;
 }
+proc _cast(type t:R, other: int)
+{
+  var tmp: R = other;
+  return tmp;
+}
 
 {
   var A : R = 5;

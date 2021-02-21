@@ -61,10 +61,6 @@ TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
   gTryStmts.add(this);
 }
 
-TryStmt::~TryStmt() {
-
-}
-
 BlockStmt* TryStmt::body() const {
   return _body;
 }

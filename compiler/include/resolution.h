@@ -176,11 +176,14 @@ void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
+Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
 ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
                                                 IfcConstraint* constraint,
                                                 SymbolMap& substitutions);
-void cleanupInstantiatedCGfun(FnSymbol* fn,
-                              std::vector<ImplementsStmt*>& witnesses);
+void copyIfcRepsToSubstitutions(FnSymbol* fn, int indx,
+                                ImplementsStmt* istm,
+                                SymbolMap& substitutions);
+void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions);
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,

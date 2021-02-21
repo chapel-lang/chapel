@@ -23,7 +23,7 @@
 
 #include "LoopStmt.h"
 
-class ParamForLoop : public LoopStmt
+class ParamForLoop final : public LoopStmt
 {
   //
   // Class interface
@@ -48,22 +48,24 @@ public:
                                       LabelSymbol* continueLabel,
                                       LabelSymbol* breakLabel,
                                       BlockStmt*   initBody);
-  virtual               ~ParamForLoop();
 
-  virtual ParamForLoop*  copy(SymbolMap* map      = NULL,
-                              bool       internal = false);
+                        ~ParamForLoop() override = default;
 
-  virtual GenRet         codegen();
-  virtual void           verify();
-  virtual void           accept(AstVisitor* visitor);
+  DECLARE_COPY(ParamForLoop);
+  ParamForLoop* copyInner(SymbolMap* map) override;
 
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  GenRet                 codegen()                                 override;
+  void                   verify()                                  override;
+  void                   accept(AstVisitor* visitor)               override;
 
-  virtual bool           isParamForLoop()                             const;
+  Expr*                  getFirstExpr()                            override;
+  Expr*                  getNextExpr(Expr* expr)                   override;
 
-  virtual CallExpr*      blockInfoGet()                               const;
-  virtual CallExpr*      blockInfoSet(CallExpr* expr);
+  bool                   isParamForLoop()                    const override
+                         { return true; }
+
+  CallExpr*              blockInfoGet()                      const override;
+  CallExpr*              blockInfoSet(CallExpr* expr)              override;
 
   SymExpr*               indexExprGet()                               const;
   SymExpr*               lowExprGet()                                 const;
@@ -98,4 +100,3 @@ private:
 };
 
 #endif
-

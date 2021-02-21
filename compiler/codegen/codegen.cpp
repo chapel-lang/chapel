@@ -64,6 +64,9 @@
 #include <cstdio>
 #include <vector>
 
+#include <sys/types.h>
+#include <sys/wait.h>
+
 // function prototypes
 static bool compareSymbol(const void* v1, const void* v2);
 
@@ -72,6 +75,7 @@ static bool compareSymbol(const void* v1, const void* v2);
 GenInfo* gGenInfo   =  0;
 int      gMaxVMT    = -1;
 int      gStmtCount =  0;
+bool     gCodegenGPU = false;
 
 std::map<std::string, int> commIDMap;
 
@@ -213,13 +217,15 @@ genGlobalString(const char* cname, const char* value) {
     fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
   } else {
 #ifdef HAVE_LLVM
-    llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
-        info->module->getOrInsertGlobal(
-          cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
-    globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
-          new_CStringSymbol(value)->codegen().val)->getInitializer());
-    globalString->setConstant(true);
-    info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    if(gCodegenGPU == false) {
+      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
+          info->module->getOrInsertGlobal(
+            cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
+            new_CStringSymbol(value)->codegen().val)->getInitializer());
+      globalString->setConstant(true);
+      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    }
 #endif
   }
 }
@@ -548,9 +554,13 @@ genFtable(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
   const char* eltType = "chpl_fn_p";
   const char* name = "chpl_ftable";
 
-  if(isHeader) {
+  if (isHeader) {
     // Just pass NULL when generating header
     codegenGlobalConstArray(name, eltType, NULL, true);
+    return;
+  }
+
+  if (gCodegenGPU == true) {
     return;
   }
 
@@ -717,31 +727,33 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
         if (Vec<FnSymbol*>* vfns = virtualMethodTable.get(ct)) {
           int i = 0;
           forv_Vec(FnSymbol, vfn, *vfns) {
-            int classId = ct->classId;
-            int fnId = i;
-            int index = gMaxVMT * classId + fnId;
+            if (vfn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU) {
+              int classId = ct->classId;
+              int fnId = i;
+              int index = gMaxVMT * classId + fnId;
 
-            INT_ASSERT(classId > 0);
+              INT_ASSERT(classId > 0);
 
-            GenRet fnAddress;
+              GenRet fnAddress;
 
-            if( info->cfile ) {
-              fnAddress.c = "(" + funcPtrType.c + ")";
-              fnAddress.c += vfn->cname;
-            } else {
+              if( info->cfile ) {
+                fnAddress.c = "(" + funcPtrType.c + ")";
+                fnAddress.c += vfn->cname;
+              } else {
 #ifdef HAVE_LLVM
-              INT_ASSERT(funcPtrType.type);
-              llvm::Function *func = getFunctionLLVM(vfn->cname);
-              fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
+                INT_ASSERT(funcPtrType.type);
+                llvm::Function *func = getFunctionLLVM(vfn->cname);
+                fnAddress.val = info->irBuilder->CreatePointerCast(func, funcPtrType.type);
 #endif
+              }
+
+              if (vmt_elts.size() <= (size_t) index)
+                vmt_elts.resize(index+1);
+
+              vmt_elts[index] = fnAddress;
+
+              i++;
             }
-
-            if (vmt_elts.size() <= (size_t) index)
-              vmt_elts.resize(index+1);
-
-            vmt_elts[index] = fnAddress;
-
-            i++;
           }
         }
       }
@@ -1199,8 +1211,10 @@ static void codegen_header_compilation_config() {
 
   if (fLlvmCodegen) {
     info->cfile = NULL;
-    genConfigGlobalsAndAbout();
-    genFunctionTables();
+    if ( gCodegenGPU == false ) {
+      genConfigGlobalsAndAbout();
+      genFunctionTables();
+    }
   }
 
   // Generate the about info and function tables for the C backend and for the launcher
@@ -1452,10 +1466,10 @@ static void codegen_defn(std::set<const char*> & cnames, std::vector<TypeSymbol*
   }
 }
 
-static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbol*> & types,
-  std::vector<FnSymbol*> & functions, std::vector<VarSymbol*> & globals) {
-  GenInfo* info = gGenInfo;
-
+static void uniquify_names(std::set<const char*> & cnames,
+                           std::vector<TypeSymbol*> & types,
+                           std::vector<FnSymbol*> & functions,
+                           std::vector<VarSymbol*> & globals) {
   // reserved symbol names that require renaming to compile
 #include "reservedSymbolNames.h"
 
@@ -1628,6 +1642,49 @@ static void codegen_header(std::set<const char*> & cnames, std::vector<TypeSymbo
     }
     uniquifyNameCounts.clear();
   }
+}
+
+static void codegen_header(std::set<const char*> & cnames,
+                           std::vector<TypeSymbol*> & types,
+                           std::vector<FnSymbol*> & functions,
+                           std::vector<VarSymbol*> & globals) {
+  GenInfo* info = gGenInfo;
+
+  //
+  // collect types and apply canonical sort
+  //
+  forv_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (ts->defPoint->parentExpr != rootModule->block) {
+      legalizeName(ts);
+      types.push_back(ts);
+    }
+  }
+  std::sort(types.begin(), types.end(), compareSymbol);
+
+  //
+  // collect globals and apply canonical sort
+  //
+  forv_Vec(VarSymbol, var, gVarSymbols) {
+    if (var->defPoint->parentExpr != rootModule->block &&
+        toModuleSymbol(var->defPoint->parentSymbol)) {
+      legalizeName(var);
+      if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
+        globals.push_back(var);
+      }
+    }
+  }
+  std::sort(globals.begin(), globals.end(), compareSymbol);
+
+  //
+  // collect functions and apply canonical sort
+  //
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    legalizeName(fn);
+    if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
+      functions.push_back(fn);
+    }
+  }
+  std::sort(functions.begin(), functions.end(), compareSymbol);
 
   codegen_header_compilation_config();
 
@@ -1913,7 +1970,7 @@ codegen_config() {
 
   // LLVM backend need _config.c generated for the launcher,
   // so we produce the C for it either way.
-  {
+  if (gCodegenGPU == false) {
     FILE* mainfile = info->cfile;
     if( mainfile ) fprintf(mainfile, "#include \"_config.c\"\n");
     fileinfo configFile;
@@ -2296,10 +2353,13 @@ Type* getNamedTypeDuringCodegen(const char* name) {
 }
 
 
-void codegen() {
-  if (no_codegen)
-    return;
+// Return true if the current locale model needs GPU code generation
+bool localeUsesGPU() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
+}
 
+// Do this once for CPU and GPU
+static void codegenPartOne() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
@@ -2312,6 +2372,35 @@ void codegen() {
   gatherTypesForCodegen();
   setupDefaultFilenames();
 
+  SET_LINENO(rootModule);
+
+  adjustArgSymbolTypesForIntent();
+
+  convertToRefTypes();
+
+  // Wrap calls to chosen functions from c library
+  if (fLlvmCodegen) {
+#ifdef HAVE_LLVM
+    forv_Vec(FnSymbol, fn, gFnSymbols) {
+      if (fn->hasFlag(FLAG_EXTERN)) {
+        if(hasWrapper(fn->cname))
+          fn->cname = getClangBuiltinWrappedName(fn->cname);
+      }
+    }
+#endif
+  }
+
+  // Vectors to store different symbol names to be used while uniquifying
+  std::set<const char*> cnames;
+  std::vector<TypeSymbol*> types;
+  std::vector<FnSymbol*> functions;
+  std::vector<VarSymbol*> globals;
+
+  uniquify_names(cnames, types, functions, globals);
+}
+
+// Do this for GPU and then do for CPU
+static void codegenPartTwo() {
   if( fLlvmCodegen ) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
@@ -2335,22 +2424,6 @@ void codegen() {
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
-
-  adjustArgSymbolTypesForIntent();
-
-  convertToRefTypes();
-
-  // Wrap calls to chosen functions from c library
-  if( fLlvmCodegen ) {
-#ifdef HAVE_LLVM
-    forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->hasFlag(FLAG_EXTERN)) {
-          if(hasWrapper(fn->cname))
-            fn->cname = getClangBuiltinWrappedName(fn->cname);
-      }
-    }
-#endif
-  }
 
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
@@ -2408,7 +2481,7 @@ void codegen() {
         }
       }
     }
-    
+
     codegen_makefile(&mainfile, NULL, false, userFileName);
   }
 
@@ -2433,9 +2506,10 @@ void codegen() {
 
   info->cfile = defnfile.fptr;
   codegen_defn(cnames, types, functions, globals);
-
   info->cfile = mainfile.fptr;
-  codegen_config();
+  if ( gCodegenGPU == false ) {
+    codegen_config();
+  }
 
   // Don't need to do most of the rest of the function for LLVM;
   // just codegen the modules.
@@ -2478,7 +2552,7 @@ void codegen() {
     codegen_header_addons();
 
     fprintf(hdrfile.fptr, "\n#endif");
-    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n"); 
+    fprintf(hdrfile.fptr, " /* END CHPL_GEN_HEADER_INCLUDE_GUARD */\n");
 
     closeCFile(&hdrfile);
     fprintf(mainfile.fptr, "/* last line not #include to avoid gcc bug */\n");
@@ -2491,11 +2565,6 @@ void codegen() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
-}
-
-void makeBinary(void) {
-  if (no_codegen)
-    return;
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
@@ -2509,9 +2578,48 @@ void makeBinary(void) {
     mysystem(command, "compiling generated source");
   }
 
-  if (fLibraryCompile && fLibraryPython) {
-    codegen_make_python_module();
+  if (gCodegenGPU == false) {
+    if (fLibraryCompile && fLibraryPython) {
+      codegen_make_python_module();
+    }
   }
+}
+
+void codegen() {
+  if (no_codegen)
+    return;
+
+  codegenPartOne();
+
+  if (localeUsesGPU()) {
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+      // child process
+      gCodegenGPU = true;
+      codegenPartTwo();
+      gCodegenGPU = false;
+      clean_exit(0);
+    } else {
+      // parent process
+      int status = 0;
+      while (wait(&status) != pid) {
+        // wait for child process
+      }
+    }
+  }
+
+  codegenPartTwo();
+
+}
+
+//TODO: remove makeBinary
+void makeBinary(void) {
+  // moved to codegenPartTwo
+
+  // TODO: make runLLVMLinking to here so we can get just 1 executable
+  // Question: where does the GPU kernel go? Is it even in the executable?
 }
 
 GenInfo::GenInfo()

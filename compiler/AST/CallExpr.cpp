@@ -144,10 +144,6 @@ static void callExprHelper(CallExpr* call, BaseAST* arg) {
   }
 }
 
-CallExpr::~CallExpr() {
-}
-
-
 bool CallExpr::isEmpty() const {
   return primitive == NULL && baseExpr == NULL;
 }

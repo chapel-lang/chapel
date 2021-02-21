@@ -23,7 +23,7 @@
 
 #include "WhileStmt.h"
 
-class DoWhileStmt : public WhileStmt
+class DoWhileStmt final : public WhileStmt
 {
   //
   // Class interface
@@ -36,24 +36,23 @@ public:
   // Instance interface
   //
 public:
-  virtual               ~DoWhileStmt();
+  ~DoWhileStmt() override = default;
 
-  virtual DoWhileStmt*   copy(SymbolMap* map = NULL, bool internal = false);
+  DECLARE_COPY(DoWhileStmt);
+  DoWhileStmt*   copyInner(SymbolMap* map)                          override;
 
-  virtual bool           isDoWhileStmt()                              const;
+  bool           isDoWhileStmt()                              const override
+                 { return true; }
 
-  virtual GenRet         codegen();
-  virtual void           accept(AstVisitor* visitor);
+  GenRet         codegen()                                          override;
+  void           accept(AstVisitor* visitor)                        override;
 
-  virtual Expr*          getFirstExpr();
-  virtual Expr*          getNextExpr(Expr* expr);
+  Expr*          getFirstExpr()                                     override;
+  Expr*          getNextExpr(Expr* expr)                            override;
 
 private:
-                         DoWhileStmt();
-
-                         DoWhileStmt(Expr*      cond, BlockStmt* body);
-                         DoWhileStmt(VarSymbol* var,  BlockStmt* body);
+                 DoWhileStmt(Expr*      cond, BlockStmt* body);
+                 DoWhileStmt(VarSymbol* var,  BlockStmt* body);
 };
 
 #endif
-

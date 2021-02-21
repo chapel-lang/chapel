@@ -1,0 +1,4 @@
+recursive-ifc-3-error1.chpl:23: In 'implements Ifc2' statement:
+recursive-ifc-3-error1.chpl:23: error: when checking this implements statement
+recursive-ifc-3-error1.chpl:23: note: the associated type AT2 is not implemented
+recursive-ifc-3-error1.chpl:13: note: the associated type AT2 in the interface Ifc2 is declared here

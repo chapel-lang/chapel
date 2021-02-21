@@ -54,10 +54,6 @@ Type::Type(AstTag astTag, Symbol* iDefaultVal) : BaseAST(astTag) {
   scalarPromotionType = NULL;
 }
 
-Type::~Type() {
-
-}
-
 const char* Type::name() const {
   return symbol->name;
 }
@@ -75,7 +71,6 @@ bool Type::inTree() {
   else
     return false;
 }
-
 
 QualifiedType Type::qualType() {
   return QualifiedType(this);
@@ -422,44 +417,85 @@ void PrimitiveType::accept(AstVisitor* visitor) {
 }
 
 
-ConstrainedType::ConstrainedType() :
-  Type(E_ConstrainedType, NULL)
+ConstrainedType::ConstrainedType(ConstrainedTypeUse use) :
+  Type(E_ConstrainedType, NULL), ctUse(use)
 {
   gConstrainedTypes.add(this);
 }
 
-
 ConstrainedType* ConstrainedType::copyInner(SymbolMap* map) {
-  return new ConstrainedType();
+  return new ConstrainedType(ctUse);
 }
-
 
 void ConstrainedType::replaceChild(BaseAST* old_ast, BaseAST* new_ast) {
   INT_FATAL(this, "Unexpected case in ConstrainedType::replaceChild");
 }
 
-
 void ConstrainedType::verify() {
   Type::verify();
   INT_ASSERT(astTag == E_ConstrainedType);
+
+  DefExpr* def = symbol->defPoint;  // assumes this->inTree()
+  switch (ctUse) {
+  case CT_IFC_FORMAL: {
+    InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
+    INT_ASSERT(def->list == &(isym->ifcFormals));
+    break;
+  }
+  case CT_IFC_ASSOC_TYPE: {
+    InterfaceSymbol* isym = toInterfaceSymbol(def->parentSymbol);
+    INT_ASSERT(def->parentExpr == isym->ifcBody);
+    break;
+  }
+  case CT_CGFUN_FORMAL: {
+    FnSymbol* fn = toFnSymbol(def->parentSymbol);
+    INT_ASSERT(def->list == &(fn->interfaceInfo->constrainedTypes));
+    break;
+  }
+  case CT_CGFUN_ASSOC_TYPE: {
+    // These arise during resolution and are pruned at resolution end.
+    INT_FATAL(this, "unexpected");
+    break;
+  }}
 }
 
+const char* ConstrainedType::useString() const {
+  switch (ctUse) {
+  case CT_IFC_FORMAL:       return "CT_IFC_FORMAL";
+  case CT_IFC_ASSOC_TYPE:   return "CT_IFC_ASSOC_TYPE";
+  case CT_CGFUN_FORMAL:     return "CT_CGFUN_FORMAL";
+  case CT_CGFUN_ASSOC_TYPE: return "CT_CGFUN_ASSOC_TYPE";
+  }
+  INT_FATAL(this, "unknown ConstrainedType use");
+  return NULL;
+}
 
 void ConstrainedType::printDocs(std::ostream *file, unsigned int tabs) {
   return;  // not to be printed
 }
 
-
 void ConstrainedType::accept(AstVisitor* visitor) {
   visitor->visitConstrainedType(this);
 }
 
-
-TypeSymbol* ConstrainedType::build(const char* name) {
-  Type* ct = new ConstrainedType();
+TypeSymbol* ConstrainedType::build(const char* name, ConstrainedTypeUse use) {
+  Type* ct = new ConstrainedType(use);
   return new TypeSymbol(name, ct);
 }
 
+bool isConstrainedType(Type* t, ConstrainedTypeUse use) {
+  if (ConstrainedType* ct = toConstrainedType(t))
+    if (ct->ctUse == use)
+      return true;
+  return false;
+}
+
+bool isConstrainedTypeSymbol(Symbol* s, ConstrainedTypeUse use) {
+  if (TypeSymbol* ts = toTypeSymbol(s))
+    if (isConstrainedType(ts->type, use))
+      return true;
+  return false;
+}
 
 EnumType::EnumType() :
   Type(E_EnumType, NULL),
@@ -469,10 +505,6 @@ EnumType::EnumType() :
   gEnumTypes.add(this);
   constants.parent = this;
 }
-
-
-EnumType::~EnumType() { }
-
 
 void EnumType::verify() {
   Type::verify();
@@ -1527,7 +1559,7 @@ bool typeNeedsCopyInitDeinit(Type* type) {
   if (AggregateType* aggr = toAggregateType(type)) {
     Symbol*     sym  = aggr->symbol;
 
-    // Must be a record type
+    // Must be a record or union type
     if (aggr->aggregateTag != AGGREGATE_RECORD &&
         aggr->aggregateTag != AGGREGATE_UNION) {
       retval = false;

@@ -134,6 +134,11 @@ module NetworkAtomics {
 
   }
 
+  proc _cast(type t:RAtomicBool, rhs: bool) {
+    var lhs: RAtomicBool = rhs; // use init=
+    return lhs;
+  }
+
   pragma "atomic type"
   pragma "ignore noinit"
   record RAtomicT {
@@ -329,6 +334,10 @@ module NetworkAtomics {
 
   }
 
+  proc _cast(type t:RAtomicT(?T), rhs: T) {
+    var lhs: RAtomicT(T) = rhs; // use init=
+    return lhs;
+  }
 
   inline proc =(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());

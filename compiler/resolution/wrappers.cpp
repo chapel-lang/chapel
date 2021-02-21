@@ -462,12 +462,12 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
       if (fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           (fn->name == astrNew ||
            fn->name == astrInit || fn->name == astrInitEquals)) {
-        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
                        toString(formalValType), toString(actualValType));
         USR_PRINT(formal, "when initializing %s with default value for %s",
                   toString(fn->getFormal(1)->getValType()), formal->name);
       } else {
-        USR_FATAL_CONT(call, "Cannot initialize %s from %s",
+        USR_FATAL_CONT(call, "cannot initialize %s from %s",
                        toString(formalValType), toString(actualValType));
         USR_PRINT(formal, "when calling %s with a default value for %s",
                   fn->name, formal->name);
