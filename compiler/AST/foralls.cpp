@@ -33,6 +33,8 @@
 #include "stlUtil.h"
 #include "stringutil.h"
 
+#include "view.h"
+
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:       return "default";
@@ -986,6 +988,18 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     SymbolMap map;
     map.put(followIdx, fastFollowIdx);
     BlockStmt* userBodyForFast = userBody->copy(&map);
+
+    if (strcmp(userBodyForFast->fname(), "ffLocal.chpl") == 0) {
+      nprint_view(userBodyForFast);
+
+      std::vector<CallExpr *> calls;
+      collectCallExprs(userBodyForFast, calls);
+      for_vector(CallExpr, call, calls) {
+        if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+          call->get(3)->replace(new SymExpr(gTrue));
+        }
+      }
+    }
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,

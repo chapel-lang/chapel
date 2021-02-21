@@ -144,10 +144,14 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
   SymExpr *maybeArrElemSymExpr = toSymExpr(call->get(1));
   INT_ASSERT(maybeArrElemSymExpr);
 
-  SymExpr *controlSymExp = toSymExpr(call->get(2));
-  INT_ASSERT(controlSymExp);
+  SymExpr *controlSymExpr = toSymExpr(call->get(2));
+  INT_ASSERT(controlSymExpr);
 
-  bool confirmed = (controlSymExp->symbol() == gTrue);
+  SymExpr *ffControlSymExpr = toSymExpr(call->get(3));
+  INT_ASSERT(ffControlSymExpr);
+
+  bool confirmed = (controlSymExpr->symbol() == gTrue &&
+                    ffControlSymExpr->symbol() == gTrue);
 
   if (fAutoAggregation) {
     findAndUpdateMaybeAggAssign(call, confirmed);
@@ -1512,7 +1516,7 @@ void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      if (childCall->numActuals() == 3) {
+      if (childCall->numActuals() == 4) {
         childCall->get(2)->remove();
       }
     }
@@ -1520,7 +1524,7 @@ void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(2))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      if (childCall->numActuals() == 3) {
+      if (childCall->numActuals() == 4) {
         childCall->get(2)->remove();
       }
     }
@@ -1808,7 +1812,8 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   info->transformCandidate();
 }
 
-static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall) {
+static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall,
+                                               bool *onlyIfFastFollower) {
   AList &iterExprs = forall->iteratedExpressions();
   AList &indexVars = forall->inductionVariables();
 
@@ -1818,6 +1823,18 @@ static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall) 
     if (DefExpr *idxDef = toDefExpr(indexVars.get(1))) {
       if (sym == idxDef->sym) {
         return iterExprs.get(1);
+      }
+    }
+
+    // TODO what happens if `forall (i,j) in D`?
+    if (indexVars.length >= 2) {
+      for (int i = 2 ; i <= indexVars.length ; i++){
+        if (DefExpr *idxDef = toDefExpr(indexVars.get(i))) {
+          if (sym == idxDef->sym) {
+            *onlyIfFastFollower = true;
+            return iterExprs.get(i);
+          }
+        }
       }
     }
   }
@@ -1855,12 +1872,15 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   SymExpr *lhsSymExpr = toSymExpr(call->get(1));
   SymExpr *rhsSymExpr = toSymExpr(call->get(2));
 
+  bool onlyIfFastFollower = false;
+
   // note that if we hit both inner if's below, that would mean we have
   // something like `a=a`. We check for this case right after and don't continue
   // with the optimization
   if (lhsSymExpr) {
     Symbol *tmpSym = lhsSymExpr->symbol();
-    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
+                                                     &onlyIfFastFollower);
     if (maybeArrExpr != NULL) {
       lhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
@@ -1868,7 +1888,8 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   }
   if (rhsSymExpr) {
     Symbol *tmpSym = rhsSymExpr->symbol();
-    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
+                                                     &onlyIfFastFollower);
     if (maybeArrExpr != NULL) {
       rhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
@@ -1911,13 +1932,22 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
   forall->insertBefore(checkSymDef);
 
+  // if `onlyIfFastFollower` is set, we want to revert this flag to true for the
+  // fast follower copy, if not, we really don't care and pass true so that it
+  // doesn't prevent optimization
+  SymExpr *fastFollowerControl = new SymExpr(onlyIfFastFollower ? gFalse:gTrue);
+
   // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
   // we are adding `maybeArrExpr` that may have side effects, but we'll remove
   // it before we start normalization
   CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
                                     new SymExpr(maybeArrElemSym),
                                     maybeArrExpr->copy(),
-                                    new SymExpr(checkSym));
+                                    new SymExpr(checkSym),
+                                    fastFollowerControl);
+
+  nprint_view(primCall);
+
   symExprToReplace->replace(primCall);
 
   return true;
@@ -1945,14 +1975,37 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
 
 // called during resolution when we revert an aggregation
 static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
-  // remove the definition
-  aggregator->defPoint->remove();
 
   // find and remove other SymExprs within the function
+  std::vector<SymExpr *> symExprsToCheck;
   std::vector<SymExpr *> symExprsToRemove;
-  collectSymExprsFor(parent, aggregator, symExprsToRemove);
-  for_vector(SymExpr, se, symExprsToRemove) {
-    se->remove();
+  collectSymExprsFor(parent, aggregator, symExprsToCheck);
+
+  bool shouldRemove = true;
+
+  for_vector(SymExpr, se, symExprsToCheck) {
+    if (CallExpr *parentCall = toCallExpr(se->parentExpr)) {
+      if (parentCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
+        shouldRemove = false;
+      }
+
+      if (parentCall->isNamed("copy")) {
+        shouldRemove = false;
+      }
+    }
+
+    symExprsToRemove.push_back(se);
+  }
+  
+  // TODO are we leaving some behind in PRIM_END_OF_STATEMENT ?
+
+  if (shouldRemove) {
+    // remove the definition
+    aggregator->defPoint->remove();
+
+    for_vector(SymExpr, se, symExprsToRemove) {
+      se->remove();
+    }
   }
 }
 
