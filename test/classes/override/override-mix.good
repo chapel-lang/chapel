@@ -1,4 +1,10 @@
 override-mix.chpl:9: error: Child.f override keyword present but no superclass method matches signature to override
 override-mix.chpl:11: error: Child.g override keyword present but no superclass method matches signature to override
+override-mix.chpl:11: note: type for argument 'arg' does not match
+override-mix.chpl:3: note: base method uses 'int(32)'
+override-mix.chpl:11: note: overriding method uses 'int(16)'
 override-mix.chpl:12: error: Child.g override keyword present but no superclass method matches signature to override
+override-mix.chpl:12: note: type for argument 'arg' does not match
+override-mix.chpl:3: note: base method uses 'int(32)'
+override-mix.chpl:12: note: overriding method uses 'int(64)'
 override-mix.chpl:14: error: Child.h override keyword required for method matching signature of superclass method

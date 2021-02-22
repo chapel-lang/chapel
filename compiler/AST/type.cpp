@@ -169,7 +169,13 @@ void Type::setSubstitutionWithName(const char* name, Symbol* value) {
 const char* toString(Type* type, bool decorateAllClasses) {
   const char* retval = NULL;
 
-  if (type != NULL) {
+  if (type == NULL ||
+      type == dtUnknown ||
+      type == dtSplitInitType) {
+    retval = "<type unknown>";
+  } else if (type == dtAny) {
+    retval = "<any type>";
+  } else {
     Type* vt = type->getValType();
 
     if (AggregateType* at = toAggregateType(vt)) {
@@ -250,8 +256,6 @@ const char* toString(Type* type, bool decorateAllClasses) {
     if (retval == NULL)
       retval = vt->symbol->name;
 
-  } else {
-    retval = "null type";
   }
 
   return retval;
@@ -749,7 +753,8 @@ void initPrimitiveTypes() {
   // This type should not be visible past normalize.
   CREATE_DEFAULT_SYMBOL (dtVoid, gNoInit, "_gnoinit");
 
-  CREATE_DEFAULT_SYMBOL (dtVoid, gSplitInit, "_gsplitinit");
+  dtSplitInitType = createInternalType("_splitInitType", "_splitInitType");
+  CREATE_DEFAULT_SYMBOL (dtSplitInitType, gSplitInit, "_gsplitinit");
 
   dtUnknown = createInternalType ("_unknown", "_unknown");
   CREATE_DEFAULT_SYMBOL (dtUnknown, gUnknown, "_gunknown");
@@ -903,18 +908,16 @@ void initPrimitiveTypes() {
 
 
   dtMethodToken = createInternalType ("_MT", "_MT");
-  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
-
   CREATE_DEFAULT_SYMBOL(dtMethodToken, gMethodToken, "_mt");
+
+  dtDummyRef = createInternalType ("_DummyRef", "_DummyRef");
   CREATE_DEFAULT_SYMBOL(dtDummyRef, gDummyRef, "_dummyRef");
   CREATE_DEFAULT_SYMBOL(dtVoid, gDummyWitness, "_dummyWitness");
 
   dtTypeDefaultToken = createInternalType("_TypeDefaultT", "_TypeDefaultT");
-
   CREATE_DEFAULT_SYMBOL(dtTypeDefaultToken, gTypeDefaultToken, "_typeDefaultT");
 
   dtModuleToken = createInternalType("tmodule=", "tmodule=");
-
   CREATE_DEFAULT_SYMBOL(dtModuleToken, gModuleToken, "module=");
 
   dtUninstantiated = createInternalType("_uninstantiated", "_uninstantiated");

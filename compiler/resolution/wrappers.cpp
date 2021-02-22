@@ -406,12 +406,6 @@ static void handleDefaultArg(FnSymbol *fn, CallExpr* call,
     return;
   }
 
-  if (formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT)) {
-    // leave it for out intent processing
-    actual->setSymbol(gTypeDefaultToken);
-    return;
-  }
-
   // Create a Block to store the default values
   // We'll flatten this back out again in a minute.
   BlockStmt* body = new BlockStmt(BLOCK_SCOPELESS);
@@ -1786,6 +1780,20 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
   Expr* currActual = call->get(1);
   Expr* nextActual = NULL;
 
+  bool anyGenericOut = false;
+  for_formals(formal, fn) {
+    if (formal->intent == INTENT_OUT ||
+        formal->originalIntent == INTENT_OUT)
+      if (formal->getValType()->symbol->hasFlag(FLAG_GENERIC))
+        anyGenericOut = true;
+  }
+  if (anyGenericOut) {
+    // resolve out functions now, to infer any types of out arguments,
+    // so that the call-site temporaries have proper types.
+    resolveFunction(fn, call);
+  }
+
+ 
   for_formals(formal, fn) {
     SET_LINENO(currActual);
     nextActual = currActual->next;
@@ -1805,23 +1813,13 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
       Symbol* assignFrom = NULL;
 
       if (out) {
-        // For untyped out formals with runtime types, pass the type
-        // as the previous argument.
         Type* formalType = formal->type->getValType();
-        if (formal->typeExpr == NULL &&
-            inout == false &&
-            formalType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          const char* dummyName = astr("_formal_type_tmp_", formal->name);
-          VarSymbol* typeTmp = newTemp(dummyName, formalType);
-          typeTmp->addFlag(FLAG_MAYBE_TYPE);
-          typeTmp->addFlag(FLAG_TYPE_FORMAL_FOR_OUT);
 
-          anchor->insertBefore(new DefExpr(typeTmp));
-
-          SymExpr* prevActual = toSymExpr(currActual->prev);
-          INT_ASSERT(prevActual != NULL && j > 0);
-          prevActual->setSymbol(typeTmp);
-        }
+        // If the actual argument has generic or dtSplitInitType type,
+        // update it to infer the type from the called function.
+        if (actualSe->symbol()->type == dtSplitInitType ||
+            actualSe->symbol()->type->symbol->hasFlag(FLAG_GENERIC))
+          actualSe->symbol()->type = formalType;
 
         VarSymbol* tmp = newTemp(astr("_formal_tmp_out_", formal->name),
                                  formal->getValType());

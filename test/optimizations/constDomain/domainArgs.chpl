@@ -11,7 +11,7 @@ proc inIntent(in d) {
   writef(fmt, "in", d.definedConst);
 }
 
-proc outIntent(out d) {
+proc outIntent(type t, out d:t) {
   writef(fmt, "out", d.definedConst);
 }
 
@@ -57,7 +57,7 @@ writef(fmt, "-"*colWidth, "-"*colWidth);
 var varDom = {1..10};
 defIntent(varDom);
 inIntent(varDom);
-outIntent(varDom);
+outIntent(varDom.type, varDom);
 inoutIntent(varDom);
 constIntent(varDom);
 constInIntent(varDom);

@@ -814,13 +814,8 @@ TagGenericResult FnSymbol::tagIfGeneric(SymbolMap* map, bool abortOK) {
 
 
 //
-// Scan the formals and return:
-//   2 is there is at least 1 generic formal and every generic
-//     formal has a default value
-//
-//   1 if there is at least 1 generic formal
-//
-//   0 if there are no generic formals
+// Scan the formals and return true if there are any
+// generic formals.
 //
 // 'map' is expected to be non-NULL if this function has been instantiated.
 //
@@ -867,7 +862,11 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
       formal->type = formal->typeExpr->body.tail->getValType();
     }
 
-    if (formal->intent == INTENT_PARAM) {
+    if (formal->originalIntent == INTENT_OUT) {
+      // out intent formals never make a function generic
+      // (type is inferred from the function body)
+
+    } else if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
     } else if (toConstrainedType(formal->type)) {
@@ -1542,8 +1541,7 @@ std::string FnSymbol::nameAndArgsToString(const char* sep,
     // Skip method token
     // Ignore arguments added by the compiler
     if (formal && (formal->type == dtMethodToken ||
-                   formal->hasFlag(FLAG_RETARG) ||
-                   formal->hasFlag(FLAG_TYPE_FORMAL_FOR_OUT))) {
+                   formal->hasFlag(FLAG_RETARG))) {
       formalNames[i] = NULL;
       formal = NULL;
       substitution = NULL;
