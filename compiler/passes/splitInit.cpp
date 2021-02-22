@@ -475,8 +475,8 @@ void splitInitMissingTypeError(Symbol* sym, Expr* mention, bool unresolved) {
 
   if (sym->hasFlag(FLAG_FORMAL_TEMP_OUT) ||
       (arg && arg->originalIntent == INTENT_OUT)) {
-    USR_PRINT(arg, "the type for a generic out intent argument "
-                   "is inferred from the function body");
+    USR_PRINT(arg, "the type for a generic out-intent formal "
+                   "is inferred in the function body");
   } else {
     USR_PRINT(sym->defPoint,
              "cannot find initialization point to split-init this variable");

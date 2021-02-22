@@ -6,5 +6,6 @@ proc initViaOut(out arg: ?T) {
 }
 
 proc main() {
-  initViaOut(1);
+  var x = 1;
+  initViaOut(x);
 }

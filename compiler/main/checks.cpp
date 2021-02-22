@@ -472,7 +472,8 @@ static void check_afterScopeResolve()
             // check that earlierFormal is not used in formal's defExpr
             if (findSymExprFor(formal->defPoint, earlierFormal))
               USR_FATAL_CONT(formal,
-                             "out formal '%s' is used in later formal '%s'",
+                             "out-intent formal '%s' is used within "
+                             "later formal '%s'",
                              earlierFormal->name, formal->name);
           }
         }

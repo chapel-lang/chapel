@@ -3174,23 +3174,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
 }
 
 static
-FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
-  CallInfo  info;
-  FnSymbol* retval = NULL;
-
-  if (checkState != CHECK_NORMAL_CALL) {
-    inTryResolve++;
-    tryResolveStates.push_back(checkState);
-  }
-
-  if (call->id == breakOnResolveID) {
-    printf("breaking on resolve call %d:\n", call->id);
-    print_view(call);
-    gdbShouldBreakHere();
-  }
-
-  resolveGenericActuals(call);
-
+void resolveNormalCallAdjustAssignType(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
     int i = 1;
     if (call->get(1)->typeInfo() == dtMethodToken) {
@@ -3214,6 +3198,28 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
       }
     }
   }
+}
+
+
+static
+FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
+  CallInfo  info;
+  FnSymbol* retval = NULL;
+
+  if (checkState != CHECK_NORMAL_CALL) {
+    inTryResolve++;
+    tryResolveStates.push_back(checkState);
+  }
+
+  if (call->id == breakOnResolveID) {
+    printf("breaking on resolve call %d:\n", call->id);
+    print_view(call);
+    gdbShouldBreakHere();
+  }
+
+  resolveGenericActuals(call);
+
+  resolveNormalCallAdjustAssignType(call);
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
@@ -4219,10 +4225,9 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
 
 
   // This condition is not exact
-  // (the ambiguity could be due to do with something other than the out
-  //  formals).
+  // (the ambiguity could be due to something other than the out formals).
   if (nFnsWithOutIntentFormals == candidates.n) {
-    USR_PRINT(call, "out intent formals do not participate in overload resolution");
+    USR_PRINT(call, "out-intent formals do not participate in overload resolution");
   }
 
   if (developer == true) {
@@ -4265,10 +4270,9 @@ static bool obviousMismatch(CallExpr* call, FnSymbol* fn) {
   return (isMethodCall != isMethodFn);
 }
 
-static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
-  CallExpr*   call = userCall(info.call);
-  const char* str  = NULL;
-
+// returns true if the error was issued
+static bool maybeIssueSplitInitMissingTypeError(CallInfo& info,
+                                                Vec<FnSymbol*>& visibleFns) {
   // Check for uninitialized values (with type dtSplitInitType)
   bool foundUnknownTypeActual = false;
   for_actuals(actual, info.call) {
@@ -4296,12 +4300,24 @@ static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
         Type* t = actual->getValType();
         if (t == dtSplitInitType || t->symbol->hasFlag(FLAG_GENERIC)) {
           if (SymExpr* se = toSymExpr(actual)) {
+            CallExpr* call = userCall(info.call);
             splitInitMissingTypeError(se->symbol(), call, false);
-            return; // don't print out candidates - probably irrelevant
+            return true; // don't print out candidates - probably irrelevant
           }
         }
       }
     }
+  }
+  return false;
+}
+
+static void generateUnresolvedMsg(CallInfo& info, Vec<FnSymbol*>& visibleFns) {
+  CallExpr*   call = userCall(info.call);
+  const char* str  = NULL;
+
+  if (maybeIssueSplitInitMissingTypeError(info, visibleFns)) {
+    // don't show additional unresolved error in addition to missing init
+    return;
   }
 
   if (info.scope != NULL) {

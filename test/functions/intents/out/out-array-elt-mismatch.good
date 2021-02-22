@@ -1,2 +1,2 @@
 out-array-elt-mismatch.chpl:1: In function 'f':
-out-array-elt-mismatch.chpl:1: error: array element type mismatch in return from real(64) to int(64)
+out-array-elt-mismatch.chpl:1: error: array element type mismatch in initializing out formal with element type int(64) from array with element type real(64)

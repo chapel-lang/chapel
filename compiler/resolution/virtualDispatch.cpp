@@ -282,26 +282,15 @@ static void collectMethods(FnSymbol*               pfn,
 // skips the first 2 formals (for method token and `this`)
 static int getNumUserFormals(FnSymbol* fn) {
   int fnN = fn->numFormals();
-  int count = 0;
-  for (int i = 3; i <= fnN; i++) {
-    count++;
-  }
-  return count;
+  if (fnN < 2)
+    INT_FATAL("expected method token and this");
+  return fnN-2;
 }
 
 // formal index starts from 1 but skips the first 2 formals
 // (for method token and `this`)
 static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
-  int fnN = fn->numFormals();
-  int count = 0;
-  for (int i = 3; i <= fnN; i++) {
-    ArgSymbol* fa = fn->getFormal(i);
-    count++;
-    if (count == idx)
-      return fa;
-  }
-  INT_FATAL("formal index out of bounds");
-  return NULL;
+  return fn->getFormal(idx+2);
 }
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
@@ -379,7 +368,7 @@ static bool ignoreOverrides(FnSymbol* fn) {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool typeMatch(ArgSymbol* pa, ArgSymbol* ca) {
+static bool argTypesMatch(ArgSymbol* pa, ArgSymbol* ca) {
   if (pa->originalIntent == INTENT_OUT &&
       ca->originalIntent == INTENT_OUT) {
     return isSubType(ca->getValType(), pa->getValType()); // covariant is OK
@@ -388,7 +377,7 @@ static bool typeMatch(ArgSymbol* pa, ArgSymbol* ca) {
   }
 }
 
-static bool signatureMatch(FnSymbol* pfn, FnSymbol* cfn) {
+static bool signaturesMatch(FnSymbol* pfn, FnSymbol* cfn) {
   if (pfn->name != cfn->name)
     return false;
 
@@ -405,7 +394,7 @@ static bool signatureMatch(FnSymbol* pfn, FnSymbol* cfn) {
     if (pa->originalIntent != ca->originalIntent)
       return false; // intents do not match
 
-    if (!typeMatch(pa, ca))
+    if (!argTypesMatch(pa, ca))
       return false; // type is not compatible
   }
 
@@ -440,7 +429,7 @@ static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
       return;
     }
 
-    if (!typeMatch(pa, ca)) {
+    if (!argTypesMatch(pa, ca)) {
       USR_PRINT(cfn, "type for argument '%s' does not match", pa->name);
       USR_PRINT(pa, "base method uses '%s'", toString(pa->getValType()));
       USR_PRINT(ca, "overriding method uses '%s'", toString(ca->getValType()));
@@ -453,7 +442,7 @@ static void printMismatchNote(FnSymbol* pfn, FnSymbol* cfn) {
 static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
   resolveSignature(cfn);
 
-  if (signatureMatch(pfn, cfn) &&
+  if (signaturesMatch(pfn, cfn) &&
       evaluateWhereClause(cfn) &&
       evaluateWhereClause(pfn)) {
 
@@ -1186,7 +1175,7 @@ static void checkMethodsOverride() {
                 }
 
                 if (typeParamDiffers == false &&
-                    signatureMatch(pfn, fn) &&
+                    signaturesMatch(pfn, fn) &&
                     evaluateWhereClause(pfn)) {
                   foundMatch = true;
                 }
@@ -1194,7 +1183,7 @@ static void checkMethodsOverride() {
                 // pfn generic
                 FnSymbol* pInst = getInstantiatedFunction(fn, ct, pfn);
                 resolveSignature(pInst);
-                if (signatureMatch(pInst, fn) && evaluateWhereClause(pInst)) {
+                if (signaturesMatch(pInst, fn) && evaluateWhereClause(pInst)) {
                   foundMatch = true;
                 }
               } else if (!fn->isResolved() && pfn->isResolved()) {
@@ -1209,7 +1198,7 @@ static void checkMethodsOverride() {
                   if (possibleSignatureMatch(pfn, fn)) {
                     FnSymbol* fnIns = getInstantiatedFunction(pfn, ct, fn);
                     resolveSignature(fnIns);
-                    if (signatureMatch(pfn, fnIns) && evaluateWhereClause(pfn)) {
+                    if (signaturesMatch(pfn, fnIns) && evaluateWhereClause(pfn)) {
                       foundMatch = true;
                     }
                   }

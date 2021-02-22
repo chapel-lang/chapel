@@ -992,7 +992,7 @@ module ChapelArray {
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular element
   // type but not the domain
-  proc chpl__checkEltTypeMatch(a: [], type b) {
+  proc chpl__checkRetEltTypeMatch(a: [], type b) {
     if (a.eltType != b) {
       compilerError("array element type mismatch in return from ",
                     a.eltType: string,
@@ -1001,13 +1001,33 @@ module ChapelArray {
     }
   }
 
-  proc chpl__checkEltTypeMatch(a: _iteratorRecord, type b) {
+  proc chpl__checkRetEltTypeMatch(a: _iteratorRecord, type b) {
     type eltType = iteratorToArrayElementType(a.type);
     if (eltType != b) {
       compilerError("array element type mismatch in return from ",
                     eltType: string,
                     " to ",
                     b: string);
+    }
+  }
+  proc chpl__checkOutEltTypeMatch(a: [], type b) {
+    if (a.eltType != b) {
+      compilerError("array element type mismatch in initializing out formal ",
+                    "with element type ",
+                    b: string,
+                    " from array with element type ",
+                    a.eltType: string);
+    }
+  }
+
+  proc chpl__checkOutEltTypeMatch(a: _iteratorRecord, type b) {
+    type eltType = iteratorToArrayElementType(a.type);
+    if (eltType != b) {
+      compilerError("array element type mismatch in initializing out formal ",
+                    "with element type ",
+                    b: string,
+                    " from iterator with element type ",
+                    eltType: string);
     }
   }
 

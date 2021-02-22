@@ -1900,7 +1900,7 @@ static void insertDomainCheck(Expr* actualRet, CallExpr* retVar,
 // Validates the declared element type, if it exists
 static void insertElementTypeCheck(Expr* declaredRet, Expr* actualRet,
                                    CallExpr* retVar) {
-  CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
+  CallExpr* checkEltType = new CallExpr("chpl__checkRetEltTypeMatch",
                                         actualRet->copy(),
                                         declaredRet->copy());
   retVar->insertBefore(checkEltType);
@@ -3608,7 +3608,7 @@ static void fixupOutArrayFormal(FnSymbol* fn, ArgSymbol* formal) {
   }
 
   if (eltExpr != NULL) {
-    CallExpr* checkEltType = new CallExpr("chpl__checkEltTypeMatch",
+    CallExpr* checkEltType = new CallExpr("chpl__checkOutEltTypeMatch",
                                           formal,
                                           eltExpr->copy());
     fn->insertIntoEpilogue(checkEltType);
