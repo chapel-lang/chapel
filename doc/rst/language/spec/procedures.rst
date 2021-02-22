@@ -1304,9 +1304,12 @@ Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
 An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument of :math:`F_X` according to the following rules.
+a formal argument :math:`F_X` according to the following rules.
 
-First, if :math:`F_X` is a generic argument:
+First, if :math:`F_X` uses the ``out`` intent, it is always a legal argument
+mapping. ``out`` intent arguments do not impact candidate selection.
+
+Then, if :math:`F_X` is a generic argument:
 
  * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
    ``param``
@@ -1321,7 +1324,7 @@ formal argument :math:`F_X` if it is concrete or the instantiated type if
 :math:`F_X` is generic - must be compatible with the type :math:`T_A`
 according to the concrete intent of :math:`F_X`:
 
- * if :math:`F_X` uses ``ref`` or ``out`` intent, then :math:`T_A`
+ * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
    must be the same type as :math:`T_X`
  * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
    :math:`T_X` must be the same type or a subtype of :math:`T_X`
