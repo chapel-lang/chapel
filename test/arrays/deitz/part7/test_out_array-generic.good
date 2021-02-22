@@ -1,4 +1,4 @@
 test_out_array-generic.chpl:1: In function 'bar':
 test_out_array-generic.chpl:1: error: 'B' is not initialized and has no type
-note: the type for a generic out intent argument is inferred from the function body
+note: the type for a generic out-intent formal is inferred in the function body
 test_out_array-generic.chpl:2: note: 'B' is used here before it is initialized
