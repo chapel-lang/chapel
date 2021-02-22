@@ -167,7 +167,6 @@ private proc checkCanMakeDefaultValue(type eltType) param {
 }
 
 class PrivateArr: BaseRectangularArr {
-  param initElts: bool;
 
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
 
@@ -177,6 +176,7 @@ class PrivateArr: BaseRectangularArr {
   var data: eltType;
 
   var isPrivatizedCopy: bool;
+  var defaultInitDataOnPrivatize: bool;
 
   proc init(type eltType,
             param rank,
@@ -186,10 +186,10 @@ class PrivateArr: BaseRectangularArr {
             param initElts: bool) {
     super.init(eltType=eltType, rank=rank, idxType=idxType,
                stridable=stridable);
-    this.initElts = initElts;
     this.dom = dom;
     // this.data not initialized
     this.isPrivatizedCopy = false;
+    this.defaultInitDataOnPrivatize = initElts;
 
     if initElts {
       pragma "no auto destroy"
@@ -203,14 +203,14 @@ class PrivateArr: BaseRectangularArr {
                                          toPrivatize.dom.pid);
     super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
                idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
-    this.initElts = toPrivatize.initElts;
     this.dom = privdom;
     // this.data not initialized
     this.isPrivatizedCopy = true;
+    this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
     this.complete();
 
-    if initElts {
-      pragma "no auto destroy"
+    if defaultInitDataOnPrivatize {
+      pragma "no auto destroy" pragma "unsafe"
       var default: eltType;
       __primitive("=", this.data, default);
     }
