@@ -1010,21 +1010,11 @@ static CallExpr *generateFastFollowCheckHelp(CallExpr *iterCall,
     zipOp = "&&";
   }
 
-
-  //CallExpr *ret = new CallExpr(prim);
-
   std::vector<SymExpr *> zippedExprs;
   for_actuals(actual, iterCall) {
-    //if (ret->numActuals() == 2) {
-      //ret = new CallExpr(prim, ret);
-    //}
     SymExpr *actualSE = toSymExpr(actual);
     INT_ASSERT(actualSE);
-    //CallExpr *newCall = new CallExpr(fnName, actual->copy());
-    //if (addLead) {
-      //newCall->insertAtTail(lead->copy());
-    //}
-    //ret->insertAtTail(newCall);
+
     zippedExprs.push_back(actualSE);
   }
 
