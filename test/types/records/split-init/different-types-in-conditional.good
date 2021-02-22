@@ -1,4 +1,12 @@
 different-types-in-conditional.chpl:3: In function 'test':
 different-types-in-conditional.chpl:9: error: Split initialization uses multiple types; another initialization has type int(64) but this initialization has type string
 different-types-in-conditional.chpl:16: error: Split initialization uses multiple types; another initialization has type real(64) but this initialization has type int(64)
-different-types-in-conditional.chpl:21: error: Cannot assign to int(64) from real(64)
+different-types-in-conditional.chpl:14: error: cannot initialize 'b' of type 'int(64)' from '1.0'
+different-types-in-conditional.chpl:21: error: cannot initialize 'c' of type 'int(64)' from '1.0'
+different-types-in-conditional.chpl:23: error: cannot initialize 'c' of type 'int(64)' from '"hello"'
+different-types-in-conditional.chpl:7: error: could not find a copy initializer ('init=') for type 'string' from type 'int(64)'
+$CHPL_HOME/modules/internal/String.chpl:735: note: this candidate did not match: string.init=(s: string)
+different-types-in-conditional.chpl:7: note: because actual argument #1 with type 'int(64)'
+$CHPL_HOME/modules/internal/String.chpl:735: note: is passed to formal 's: string'
+different-types-in-conditional.chpl:7: note: other candidates are:
+$CHPL_HOME/modules/internal/String.chpl:740: note:   string.init=(cs: c_string)

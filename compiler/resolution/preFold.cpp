@@ -1981,6 +1981,17 @@ static Expr* unrollHetTupleLoop(CallExpr* call, Expr* tupExpr, Type* iterType) {
 }
 
 
+static bool isMethodCall(CallExpr* call) {
+  // The first argument could be DefExpr for a query expr, see
+  //   test/arrays/formals/queryArrOfArr2.chpl
+  if (call->numActuals() == 2)
+    if (SymExpr* arg1 = toSymExpr(call->get(1)))
+      if (arg1->typeInfo() == dtMethodToken )
+        return true;
+  return false;
+}
+
+
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
 
@@ -2308,6 +2319,11 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       if (retval != NULL)
         call->replace(retval);
+    }
+  } else if (isMethodCall(call)) {
+    // Handle a reference to an interface associated type, if applicable.
+    if (ConstrainedType* recv = toConstrainedType(call->get(2)->typeInfo())) {
+      retval = resolveCallToAssociatedType(call, recv);
     }
   }
 

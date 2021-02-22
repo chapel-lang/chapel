@@ -134,6 +134,11 @@ module NetworkAtomics {
 
   }
 
+  operator :(rhs: bool, type t:RAtomicBool) {
+    var lhs: RAtomicBool = rhs; // use init=
+    return lhs;
+  }
+
   pragma "atomic type"
   pragma "ignore noinit"
   record RAtomicT {
@@ -329,6 +334,11 @@ module NetworkAtomics {
 
   }
 
+  operator :(rhs, type t:RAtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
+    return lhs;
+  }
 
   inline proc =(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());

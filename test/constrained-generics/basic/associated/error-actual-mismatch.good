@@ -1,0 +1,4 @@
+error-actual-mismatch.chpl:31: error: unresolved call 'cgFun(RR(int(64)), 66, 77, 1)'
+error-actual-mismatch.chpl:12: note: this candidate did not match: cgFun(cgArg: ?Q, arg1: Q.AT3, arg2: Q.AT2, arg3: cgArg.AT1)
+error-actual-mismatch.chpl:31: note: because actual argument #2 with type 'int(64)'
+error-actual-mismatch.chpl:12: note: is passed to formal 'arg1: bool'

@@ -217,7 +217,7 @@ static inline bool isType(AstTag tag)
 // implement the recursive copy.
 //
 #define DECLARE_COPY(type)                                              \
-  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
@@ -226,14 +226,13 @@ static inline bool isType(AstTag tag)
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
     return _this;                                                       \
-  }                                                                     \
-  virtual type* copyInner(SymbolMap* map)
+  }
 
 // This should be expanded verbatim and overloaded, so we don't create a map if
 // internal is false.
 // copyInner must now copy flags.
 #define DECLARE_SYMBOL_COPY(type)                                       \
-  type* copy(SymbolMap* map = NULL, bool internal = false) {            \
+  type* copy(SymbolMap* map = NULL, bool internal = false) override {   \
     SymbolMap localMap;                                                 \
     if (!map)                                                           \
       map = &localMap;                                                  \
@@ -243,8 +242,7 @@ static inline bool isType(AstTag tag)
     if (!internal)                                                      \
       update_symbols(_this, map);                                       \
     return _this;                                                       \
-  }                                                                     \
-  virtual type* copyInner(SymbolMap* map)
+  }
 
 //
 // macro used to call copy from inside the copyInner method
@@ -281,14 +279,14 @@ public:
   int               id;         // Unique ID
   astlocT           astloc;     // Location of this node in the source code
 
-  void                printTabs(std::ostream *file, unsigned int tabs);
-  virtual void        printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
+  void              printTabs(std::ostream *file, unsigned int tabs);
+  void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
 
-  static  const       std::string tabText;
+  static  const     std::string tabText;
 
 protected:
                     BaseAST(AstTag type);
-  virtual          ~BaseAST();
+  virtual          ~BaseAST() = default;
 
 private:
                     BaseAST();

@@ -7,6 +7,10 @@ proc InitEqOtherOnly.init=(other:int) {
 proc =(ref lhs:InitEqOtherOnly, rhs:InitEqOtherOnly) {
   lhs.x = rhs.x;
 }
+operator :(from: int, type t: InitEqOtherOnly) {
+  var tmp: t = from;
+  return tmp;
+}
 
 proc main() {
   var a: InitEqOtherOnly = 1;

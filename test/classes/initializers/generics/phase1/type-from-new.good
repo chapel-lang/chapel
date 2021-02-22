@@ -1,1 +1,1 @@
-type-from-new.chpl:11: error: Cannot initialize type field 't' with 'new' expression
+type-from-new.chpl:11: error: cannot initialize type field 't' with 'new' expression

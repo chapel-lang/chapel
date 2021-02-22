@@ -69,7 +69,7 @@ class ForallOptimizationInfo {
     // forall loop statement //
 ///////////////////////////////////
 
-class ForallStmt : public Stmt
+class ForallStmt final : public Stmt
 {
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
@@ -92,14 +92,16 @@ public:
   bool requireSerialIterator()  const;  // do not seek standalone or leader
 
   DECLARE_COPY(ForallStmt);
+  ForallStmt* copyInner(SymbolMap* map) override;
 
-  virtual void        verify();
-  virtual void        accept(AstVisitor* visitor);
-  virtual GenRet      codegen();
 
-  virtual void        replaceChild(Expr* oldAst, Expr* newAst);
-  virtual Expr*       getFirstExpr();
-  virtual Expr*       getNextExpr(Expr* expr);
+  void        verify() override;
+  void        accept(AstVisitor* visitor) override;
+  GenRet      codegen() override;
+
+  void        replaceChild(Expr* oldAst, Expr* newAst) override;
+  Expr*       getFirstExpr() override;
+  Expr*       getNextExpr(Expr* expr) override;
 
   static ForallStmt* buildHelper(Expr* indices, Expr* iterator,
                                  CallExpr* intents, BlockStmt* body,

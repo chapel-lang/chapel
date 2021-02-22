@@ -29,122 +29,122 @@
 
 class AstLogger : public AstVisitor {
 public:
-                 AstLogger();
-  virtual       ~AstLogger();
+   AstLogger()          = default;
+  ~AstLogger() override = default;
 
   //
   // The sub-classes of Type
   //
-  virtual bool   enterAggrType       (AggregateType*     node);
-  virtual void   exitAggrType        (AggregateType*     node);
+  bool   enterAggrType       (AggregateType*     node) override;
+  void   exitAggrType        (AggregateType*     node) override;
 
-  virtual bool   enterDecoratedClassType(DecoratedClassType*  node);
-  virtual void   exitDecoratedClassType (DecoratedClassType*  node);
+  bool   enterDecoratedClassType(DecoratedClassType*  node) override;
+  void   exitDecoratedClassType (DecoratedClassType*  node) override;
 
-  virtual bool   enterEnumType       (EnumType*          node);
-  virtual void   exitEnumType        (EnumType*          node);
-  virtual void   visitConstrainedType(ConstrainedType*   node);
-  virtual void   visitPrimType       (PrimitiveType*     node);
+  bool   enterEnumType       (EnumType*          node) override;
+  void   exitEnumType        (EnumType*          node) override;
+  void   visitConstrainedType(ConstrainedType*   node) override;
+  void   visitPrimType       (PrimitiveType*     node) override;
 
   //
   // The sub-classes of Symbol
   //
-  virtual bool   enterArgSym         (ArgSymbol*         node);
-  virtual void   exitArgSym          (ArgSymbol*         node);
+  bool   enterArgSym         (ArgSymbol*         node) override;
+  void   exitArgSym          (ArgSymbol*         node) override;
 
-  virtual void   visitEnumSym        (EnumSymbol*        node);
+  void   visitEnumSym        (EnumSymbol*        node) override;
 
-  virtual bool   enterFnSym          (FnSymbol*          node);
-  virtual void   exitFnSym           (FnSymbol*          node);
+  bool   enterFnSym          (FnSymbol*          node) override;
+  void   exitFnSym           (FnSymbol*          node) override;
 
-  virtual bool   enterInterfaceSym   (InterfaceSymbol*   node);
-  virtual void   exitInterfaceSym    (InterfaceSymbol*   node);
+  bool   enterInterfaceSym   (InterfaceSymbol*   node) override;
+  void   exitInterfaceSym    (InterfaceSymbol*   node) override;
 
-  virtual void   visitLabelSym       (LabelSymbol*       node);
+  void   visitLabelSym       (LabelSymbol*       node) override;
 
-  virtual bool   enterModSym         (ModuleSymbol*      node);
-  virtual void   exitModSym          (ModuleSymbol*      node);
+  bool   enterModSym         (ModuleSymbol*      node) override;
+  void   exitModSym          (ModuleSymbol*      node) override;
 
-  virtual bool   enterTypeSym        (TypeSymbol*        node);
-  virtual void   exitTypeSym         (TypeSymbol*        node);
+  bool   enterTypeSym        (TypeSymbol*        node) override;
+  void   exitTypeSym         (TypeSymbol*        node) override;
 
-  virtual void   visitVarSym         (VarSymbol*         node);
+  void   visitVarSym         (VarSymbol*         node) override;
 
   //
   // The sub-classes of Expr
   //
-  virtual bool   enterCallExpr       (CallExpr*          node);
-  virtual void   exitCallExpr        (CallExpr*          node);
+  bool   enterCallExpr       (CallExpr*          node) override;
+  void   exitCallExpr        (CallExpr*          node) override;
 
-  virtual bool   enterContextCallExpr(ContextCallExpr*   node);
-  virtual void   exitContextCallExpr (ContextCallExpr*   node);
+  bool   enterContextCallExpr(ContextCallExpr*   node) override;
+  void   exitContextCallExpr (ContextCallExpr*   node) override;
 
-  virtual bool   enterDefExpr        (DefExpr*           node);
-  virtual void   exitDefExpr         (DefExpr*           node);
+  bool   enterDefExpr        (DefExpr*           node) override;
+  void   exitDefExpr         (DefExpr*           node) override;
 
-  virtual bool   enterNamedExpr      (NamedExpr*         node);
-  virtual void   exitNamedExpr       (NamedExpr*         node);
+  bool   enterNamedExpr      (NamedExpr*         node) override;
+  void   exitNamedExpr       (NamedExpr*         node) override;
 
-  virtual bool   enterIfcConstraint  (IfcConstraint*     node);
-  virtual void   exitIfcConstraint   (IfcConstraint*     node);
+  bool   enterIfcConstraint  (IfcConstraint*     node) override;
+  void   exitIfcConstraint   (IfcConstraint*     node) override;
 
-  virtual bool   enterIfExpr         (IfExpr*            node);
-  virtual void   exitIfExpr          (IfExpr*            node);
+  bool   enterIfExpr         (IfExpr*            node) override;
+  void   exitIfExpr          (IfExpr*            node) override;
 
-  virtual void   visitSymExpr        (SymExpr*           node);
+  void   visitSymExpr        (SymExpr*           node) override;
 
-  virtual void   visitUsymExpr       (UnresolvedSymExpr* node);
+  void   visitUsymExpr       (UnresolvedSymExpr* node) override;
 
   //
   // The sub-classes of Stmt
   //
-  virtual void   visitUseStmt        (UseStmt*           node);
+  void   visitUseStmt        (UseStmt*           node) override;
 
-  virtual void   visitImportStmt     (ImportStmt*        node);
+  void   visitImportStmt     (ImportStmt*        node) override;
 
-  virtual bool   enterBlockStmt      (BlockStmt*         node);
-  virtual void   exitBlockStmt       (BlockStmt*         node);
+  bool   enterBlockStmt      (BlockStmt*         node) override;
+  void   exitBlockStmt       (BlockStmt*         node) override;
 
-  virtual bool   enterForallStmt     (ForallStmt*        node);
-  virtual void   exitForallStmt      (ForallStmt*        node);
+  bool   enterForallStmt     (ForallStmt*        node) override;
+  void   exitForallStmt      (ForallStmt*        node) override;
 
-  virtual bool   enterWhileDoStmt    (WhileDoStmt*       node);
-  virtual void   exitWhileDoStmt     (WhileDoStmt*       node);
+  bool   enterWhileDoStmt    (WhileDoStmt*       node) override;
+  void   exitWhileDoStmt     (WhileDoStmt*       node) override;
 
-  virtual bool   enterDoWhileStmt    (DoWhileStmt*       node);
-  virtual void   exitDoWhileStmt     (DoWhileStmt*       node);
+  bool   enterDoWhileStmt    (DoWhileStmt*       node) override;
+  void   exitDoWhileStmt     (DoWhileStmt*       node) override;
 
-  virtual bool   enterCForLoop       (CForLoop*          node);
-  virtual void   exitCForLoop        (CForLoop*          node);
+  bool   enterCForLoop       (CForLoop*          node) override;
+  void   exitCForLoop        (CForLoop*          node) override;
 
-  virtual bool   enterForLoop        (ForLoop*           node);
-  virtual void   exitForLoop         (ForLoop*           node);
+  bool   enterForLoop        (ForLoop*           node) override;
+  void   exitForLoop         (ForLoop*           node) override;
 
-  virtual bool   enterParamForLoop   (ParamForLoop*      node);
-  virtual void   exitParamForLoop    (ParamForLoop*      node);
+  bool   enterParamForLoop   (ParamForLoop*      node) override;
+  void   exitParamForLoop    (ParamForLoop*      node) override;
 
-  virtual bool   enterCondStmt       (CondStmt*          node);
-  virtual void   exitCondStmt        (CondStmt*          node);
+  bool   enterCondStmt       (CondStmt*          node) override;
+  void   exitCondStmt        (CondStmt*          node) override;
 
-  virtual void   visitEblockStmt     (ExternBlockStmt*   node);
+  void   visitEblockStmt     (ExternBlockStmt*   node) override;
 
-  virtual bool   enterGotoStmt       (GotoStmt*          node);
-  virtual void   exitGotoStmt        (GotoStmt*          node);
+  bool   enterGotoStmt       (GotoStmt*          node) override;
+  void   exitGotoStmt        (GotoStmt*          node) override;
 
-  virtual bool   enterForwardingStmt (ForwardingStmt*    node);
-  virtual void   exitForwardingStmt  (ForwardingStmt*    node);
+  bool   enterForwardingStmt (ForwardingStmt*    node) override;
+  void   exitForwardingStmt  (ForwardingStmt*    node) override;
 
-  virtual bool   enterDeferStmt      (DeferStmt*         node);
-  virtual void   exitDeferStmt       (DeferStmt*         node);
+  bool   enterDeferStmt      (DeferStmt*         node) override;
+  void   exitDeferStmt       (DeferStmt*         node) override;
 
-  virtual bool   enterTryStmt        (TryStmt*           node);
-  virtual void   exitTryStmt         (TryStmt*           node);
+  bool   enterTryStmt        (TryStmt*           node) override;
+  void   exitTryStmt         (TryStmt*           node) override;
 
-  virtual bool   enterCatchStmt      (CatchStmt*         node);
-  virtual void   exitCatchStmt       (CatchStmt*         node);
+  bool   enterCatchStmt      (CatchStmt*         node) override;
+  void   exitCatchStmt       (CatchStmt*         node) override;
 
-  virtual bool   enterImplementsStmt (ImplementsStmt*    node);
-  virtual void   exitImplementsStmt  (ImplementsStmt*    node);
+  bool   enterImplementsStmt (ImplementsStmt*    node) override;
+  void   exitImplementsStmt  (ImplementsStmt*    node) override;
 
 protected:
   bool outputVector (FILE* fp, std::vector<const char*> vec);

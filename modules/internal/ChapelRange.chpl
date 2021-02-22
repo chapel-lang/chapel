@@ -887,7 +887,7 @@ proc range.safeCast(type t: range(?)) {
    new type is not stridable, then force the new stride to be 1.
  */
 pragma "no doc"
-proc _cast(type t: range(?), r: range(?)) {
+operator :(r: range(?), type t: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != r.boundedType {
@@ -896,9 +896,9 @@ proc _cast(type t: range(?), r: range(?)) {
   }
 
   if tmp.stridable {
-    tmp._stride = r._stride;
-    tmp._alignment = r._alignment: tmp.intIdxType;
-    tmp._aligned = r._aligned;
+    tmp._stride = r.stride;
+    tmp._alignment = r.alignment: tmp.intIdxType;
+    tmp._aligned = r.aligned;
   }
 
   tmp._low = r.low: tmp.intIdxType;
@@ -2383,7 +2383,7 @@ proc _cast(type t: range(?), r: range(?)) {
   //# Utilities
   //#
 
-  proc _cast(type t: string, x: range(?)) {
+  operator :(x: range(?), type t: string) {
     var ret: string;
 
     if x.hasLowBound() then

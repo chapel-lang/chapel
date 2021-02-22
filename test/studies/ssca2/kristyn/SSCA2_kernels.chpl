@@ -48,7 +48,7 @@ module SSCA2_kernels
   // edges, all of which have the largest weight.
   // ========================================================
   
-  proc largest_edges ( G, heavy_edge_list :domain )
+  proc largest_edges ( G, ref heavy_edge_list :domain )
     
     // edge_weights can be either an array over an associative
     // domain or over a sparse domain.  the output  heavy_edge_list
@@ -157,9 +157,9 @@ module SSCA2_kernels
   
 	for path_length in 1 .. max_path_length do {
 	    
-	  forall v in Active_Level do {
+	  forall v in Active_Level with(ref Next_Level) do {
 
-	    forall w in G.Neighbors (v) do { // eventually, will be forall
+	    forall w in G.Neighbors (v) with(ref Next_Level) do {
 
 	      if min_distance$ (w).readXX () < 0 then {
 

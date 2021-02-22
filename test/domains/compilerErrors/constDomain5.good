@@ -1,0 +1,2 @@
+constDomain5.chpl:2: error: const actual is passed to 'ref' formal 'this' of clear()
+note: to formal of type domain(2,int(64),true)

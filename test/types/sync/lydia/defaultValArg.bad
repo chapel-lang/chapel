@@ -1,2 +1,2 @@
-defaultValArg.chpl:6: error: Cannot initialize sync int(64) from int(64)
+defaultValArg.chpl:6: error: cannot initialize sync int(64) from int(64)
 defaultValArg.chpl:1: note: when calling foo with a default value for x$

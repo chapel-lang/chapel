@@ -53,7 +53,7 @@ bool normalized = false;
 static void        insertModuleInit();
 static FnSymbol*   toModuleDeinitFn(ModuleSymbol* mod, Expr* stmt);
 static void        handleModuleDeinitFn(ModuleSymbol* mod);
-static void        moveInterfaceConstraints();
+static void        moveAndCheckInterfaceConstraints();
 static void        transformLogicalShortCircuit();
 static void        checkReduceAssign();
 
@@ -130,7 +130,7 @@ void normalize() {
 
   doPreNormalizeArrayOptimizations();
 
-  moveInterfaceConstraints();
+  moveAndCheckInterfaceConstraints();
   wrapImplementsStatements();
 
   transformLogicalShortCircuit();
@@ -405,8 +405,25 @@ static bool isInWhereBlock(FnSymbol* fn, Expr* expr) {
   return fn->where == expr;
 }
 
-static void moveInterfaceConstraints() {
+// Ensure we can invoke icon->ifcSymbol() from now on.
+static void checkInterfaceConstraint(IfcConstraint* icon) {
+  if (SymExpr* ifcSE = toSymExpr(icon->interfaceExpr)) {
+    Symbol* ifc = ifcSE->symbol();
+    if (! isInterfaceSymbol(ifc)) {
+      USR_FATAL_CONT(ifcSE, "'%s' is not an interface", ifc->name);
+      USR_PRINT(ifcSE, "an 'implements' keyword must be followed"
+                      " by an interface name");
+      USR_PRINT(ifc, "'%s' is defined here", ifc->name);
+    }
+  } else {
+    UnresolvedSymExpr* ifcU = toUnresolvedSymExpr(icon->interfaceExpr);
+    USR_FATAL_CONT(ifcU, "'%s' is undeclared", ifcU->unresolved);
+  }
+}
+
+static void moveAndCheckInterfaceConstraints() {
   forv_Vec(IfcConstraint, icon, gIfcConstraints) {
+    checkInterfaceConstraint(icon);
     if (isImplementsStmt(icon->parentExpr))
       continue;  // this node is part of an ImplementsStmt, do not move it
 
@@ -437,6 +454,7 @@ static void moveInterfaceConstraints() {
     USR_FATAL_CONT(icon, "'implements %s()' is not supported in this context",
                    icon->ifcSymbol()->name);
   }
+  USR_STOP();
 }
 
 /************************************* | **************************************
@@ -958,13 +976,13 @@ static void normalizeIfExprBranch(VarSymbol* cond, VarSymbol* result, BlockStmt*
 // temporary will take the place of the IfExpr, and the CondStmt will be
 // inserted before the IfExpr's parent statement.
 //
-class LowerIfExprVisitor : public AstVisitorTraverse
+class LowerIfExprVisitor final : public AstVisitorTraverse
 {
   public:
-    LowerIfExprVisitor() { }
-    virtual ~LowerIfExprVisitor() { }
+    LowerIfExprVisitor()          = default;
+   ~LowerIfExprVisitor() override = default;
 
-    virtual void exitIfExpr(IfExpr* node);
+    void exitIfExpr(IfExpr* node) override;
 };
 
 static bool isInsideDefExpr(Expr* expr) {
@@ -1342,13 +1360,13 @@ static CallExpr* destructureErr() {
 
 
 
-class AddEndOfStatementMarkers : public AstVisitorTraverse
+class AddEndOfStatementMarkers final : public AstVisitorTraverse
 {
   public:
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual bool enterDefExpr(DefExpr* node);
-    virtual bool enterIfExpr(IfExpr* node);
-    virtual bool enterLoopExpr(LoopExpr* node);
+    bool enterCallExpr(CallExpr* node) override;
+    bool enterDefExpr(DefExpr* node) override;
+    bool enterIfExpr(IfExpr* node) override;
+    bool enterLoopExpr(LoopExpr* node) override;
 };
 
 // Note, this might be called also during resolution

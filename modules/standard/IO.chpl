@@ -2012,6 +2012,12 @@ proc channel.init=(x: channel) {
   }
 }
 
+pragma "no doc"
+operator :(rhs: channel, type t: channel) {
+  var tmp: t = rhs; // just run init=
+  return tmp;
+}
+
 //
 // Note that this is effectively the initializer that the compiler
 // would typically provide and that, by providing the next initializer
@@ -2072,7 +2078,7 @@ record ioChar {
 }
 
 pragma "no doc"
-inline proc _cast(type t:string, x: ioChar) {
+inline operator :(x: ioChar, type t:string) {
   var csc: c_string =  qio_encode_to_string(x.ch);
   // The caller has responsibility for freeing the returned string.
   try! {
@@ -2109,7 +2115,7 @@ record ioNewline {
 }
 
 pragma "no doc"
-inline proc _cast(type t:string, x: ioNewline) {
+inline operator :(x: ioNewline, type t:string) {
   return "\n";
 }
 
@@ -2138,7 +2144,7 @@ record ioLiteral {
 }
 
 pragma "no doc"
-inline proc _cast(type t:string, x: ioLiteral) {
+inline operator :(x: ioLiteral, type t:string) {
   return x.val;
 }
 
@@ -2161,7 +2167,7 @@ record ioBits {
 }
 
 pragma "no doc"
-inline proc _cast(type t:string, x: ioBits) {
+inline operator :(x: ioBits, type t:string) {
   const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
   return ret;
 }

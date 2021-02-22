@@ -1,1 +1,1 @@
-tupleInt16.chpl:2: error: Cannot assign to int(16) from int(64)
+tupleInt16.chpl:2: error: cannot initialize 't' of type '3*int(16)' from a '3*int(64)'

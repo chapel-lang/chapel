@@ -137,6 +137,7 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
    * filtering and disambiguation processes.
    */
   fn = instantiateSignature(fn, substitutions, visInfo);
+  adjustForCGinstantiation(fn, substitutions);
 
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -148,9 +149,6 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
   if (fn == oldFn)
     return true;
 
-  if (! witnesses.empty()) // i.e. when CG
-    cleanupInstantiatedCGfun(fn, witnesses);
-
   return isApplicable(info, visInfo);
 }
 
@@ -159,13 +157,18 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
 // Should this be entirely in interfaceResolution.cpp ?
 bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
+  int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
     if (ImplementsStmt* istm =
           constraintIsSatisfiedAtCallSite(info.call, icon, substitutions))
-      witnesses.push_back(istm); // success
-    else
+    {
+      // success
+      witnesses.push_back(istm);
+      copyIfcRepsToSubstitutions(fn, indx++, istm, substitutions);
+    } else {
       return false;
+    }
   }
 
   return true; // all constraints are satisfied
@@ -961,6 +964,16 @@ bool ResolutionCandidate::checkGenericFormals(Expr* ctx) {
             return false;
           }
 
+        } else if (isConstrainedType(formal->type, CT_CGFUN_ASSOC_TYPE)) {
+          // At this point we have not yet recorded the instantiations for
+          // interface types. So we cannot compute their associated types.
+          // So allow anything to match an associated type for now.
+          // Correctness will be checked later in isApplicableConcrete().
+          //
+          // CG TODO: also enable the case when such an AT is nested.
+          // Ex. actual: [1..3] int, formal: [1..3] AT,
+          // where AT is 'int' for the current call.
+
         } else {
           bool formalIsParam = formal->hasFlag(FLAG_INSTANTIATED_PARAM) ||
                                formal->intent == INTENT_PARAM;
@@ -1134,7 +1147,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                     failingActualDesc,
                     toString(failingActual->getValType()));
       USR_PRINT(failingFormal, "is passed to formal '%s'",
-                               toString(failingFormal));
+                               toString(failingFormal, true));
       if (isNilableClassType(failingActual->getValType()) &&
           isNonNilableClassType(failingFormal->getValType()))
         USR_PRINT(call, "try to apply the postfix ! operator to %s",
@@ -1161,13 +1174,13 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_NOT_PARAM:
       USR_PRINT(call, "because non-param %s", failingActualDesc);
       USR_PRINT(failingFormal, "is passed to param formal '%s'",
-                               toString(failingFormal));
+                               toString(failingFormal, true));
       break;
     case RESOLUTION_CANDIDATE_NOT_TYPE:
       if (failingFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
         USR_PRINT(call, "because non-type %s", failingActualDesc);
         USR_PRINT(failingFormal, "is passed to formal '%s'",
-                                 toString(failingFormal));
+                                 toString(failingFormal, true));
       } else {
         USR_PRINT(call, "because %s is a type", failingActualDesc);
         if (failingFormal->hasFlag(FLAG_EXPANDED_VARARGS)) {
@@ -1175,7 +1188,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
                     failingFormal->demungeVarArgName().c_str());
         } else {
           USR_PRINT(fn, "but is passed to non-type formal '%s'",
-                    toString(failingFormal));
+                    toString(failingFormal, true));
         }
       }
       break;
@@ -1188,7 +1201,7 @@ void explainCandidateRejection(CallInfo& info, FnSymbol* fn) {
     case RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS:
       USR_PRINT(call, "because call does not supply enough arguments");
       USR_PRINT(failingFormal, "it is missing a value for formal '%s'",
-                               toString(failingFormal));
+                               toString(failingFormal, true));
       break;
     case RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT:
       {

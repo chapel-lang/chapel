@@ -1,1 +1,1 @@
-param-from-new.chpl:11: error: Cannot initialize param field 't' with 'new' expression
+param-from-new.chpl:11: error: cannot initialize param field 't' with 'new' expression
