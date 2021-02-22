@@ -1015,7 +1015,7 @@ proc =(ref ret:regexp(?t), x:regexp(t))
 
 // Cast regexp to string.
 pragma "no doc"
-inline proc _cast(type t: string, x: regexp(string)) {
+inline operator :(x: regexp(string), type t: string) {
   var pattern: t;
   on x.home {
     var cs: c_string;
@@ -1031,7 +1031,7 @@ inline proc _cast(type t: string, x: regexp(string)) {
 
 // Cast regexp to bytes.
 pragma "no doc"
-inline proc _cast(type t:bytes, x: regexp(bytes)) {
+inline operator :(x: regexp(bytes), type t: bytes) {
   var pattern: t;
   on x.home {
     var cs: c_string;
@@ -1044,13 +1044,13 @@ inline proc _cast(type t:bytes, x: regexp(bytes)) {
 
 // Cast string to regexp
 pragma "no doc"
-inline proc _cast(type t: regexp(string), x: string) throws {
+inline operator :(x: string, type t: regexp(string)) throws {
   return compile(x);
 }
 
 // Cast bytes to regexp
 pragma "no doc"
-inline proc _cast(type t: regexp(bytes), x: bytes) throws {
+inline operator :(x: bytes, type t: regexp(bytes)) throws {
   return compile(x);
 }
 

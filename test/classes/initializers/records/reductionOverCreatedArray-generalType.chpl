@@ -31,7 +31,7 @@ proc *(a: Foo, b: Foo) {
 }
 
 // Compiles and runs when I want the error to turn up
-inline proc _cast(type t, const x: int) where t == Foo {
+inline operator :(const x: int, type t) where t == Foo {
   var ret = new Foo(x);
   return ret;
 }

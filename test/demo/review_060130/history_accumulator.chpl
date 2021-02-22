@@ -31,7 +31,7 @@ proc =(ref x : history_real, y : x.type) {
   x.h = y.h;
   x.f = y.f;
 }
-proc _cast(type t: history_real, y: real) {
+operator :(y: real, type t: history_real) {
   var tmp: t = y;
   return tmp;
 }

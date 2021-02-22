@@ -1078,8 +1078,8 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
         return false;
       }
     }
-  } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astr_cast)) {
-    if (SymExpr* se = toSymExpr(node->get(2))) {
+  } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astrScolon)) {
+    if (SymExpr* se = toSymExpr(node->get(1))) {
       if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
         USR_FATAL_CONT(node, "cannot cast \"this\" before this.complete()");
         return false;

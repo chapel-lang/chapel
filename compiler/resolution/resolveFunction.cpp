@@ -771,7 +771,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     forCall->insertBefore(block);
 
     VarSymbol* fromTmp = newTemp("_check_from", fromType);
-    CallExpr* c = new CallExpr(astr_cast, toType->symbol, fromTmp);
+    CallExpr* c = new CallExpr(astrScolon, fromTmp, toType->symbol);
     block->insertAtTail(new DefExpr(fromTmp));
     block->insertAtTail(c);
     tryResolveCall(c);

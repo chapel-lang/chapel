@@ -30,10 +30,10 @@ module ChapelTaskID {
   inline proc ==(a: chpl_taskID_t, b: chpl_taskID_t)
     return __primitive("==", a, b);
 
-  inline proc _cast(type t: int(64), x: chpl_taskID_t)
+  inline operator :(x: chpl_taskID_t, type t: int(64))
     return __primitive("cast", t, x);
 
-  inline proc _cast(type t: uint(64), x: chpl_taskID_t)
+  inline operator :(x: chpl_taskID_t, type t: uint(64))
     return __primitive("cast", t, x);
 
 }

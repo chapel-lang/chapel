@@ -352,7 +352,7 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicBool, rhs: bool) {
+  operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=
     return lhs;
   }
@@ -684,8 +684,9 @@ module Atomics {
 
   }
 
-  proc _cast(type t:AtomicT(?T), rhs: T) {
-    var lhs: AtomicT(T) = rhs; // use init=
+  operator :(rhs, type t:AtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
     return lhs;
   }
 

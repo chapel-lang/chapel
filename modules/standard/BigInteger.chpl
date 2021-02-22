@@ -445,17 +445,17 @@ module BigInteger {
   // Cast operators
   //
   pragma "no doc"
-  inline proc _cast(type toType: bigint, src: integral): bigint {
+  inline operator :(src: integral, type toType: bigint): bigint {
     return new bigint(src);
   }
 
   pragma "no doc"
-  inline proc _cast(type toType: bigint, src: string): bigint {
+  inline operator :(src: string, type toType: bigint): bigint {
     return new bigint(src);
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isIntType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isIntType(t) {
     var ret: c_long;
 
     if _local {
@@ -476,7 +476,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isUintType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isUintType(t) {
     var ret: c_ulong;
 
     if _local {
@@ -497,7 +497,7 @@ module BigInteger {
   }
 
   pragma "no doc"
-  inline proc _cast(type t, const ref x: bigint) where isRealType(t) {
+  inline operator :(const ref x: bigint, type t:numeric) where isRealType(t) {
     var ret: c_double;
 
     if _local {
