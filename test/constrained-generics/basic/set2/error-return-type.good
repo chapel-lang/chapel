@@ -1,31 +1,31 @@
+error-return-type.chpl:13: note: the required function dfltInt in the interface IFC is declared here
+error-return-type.chpl:13: note: which does not match the expected return type 'int(64)'
+error-return-type.chpl:17: note: the required function implicitSelf in the interface IFC is declared here
+error-return-type.chpl:17: note: which does not match the expected return type 'string'
+error-return-type.chpl:21: note: the required function implicitInt in the interface IFC is declared here
+error-return-type.chpl:21: note: which does not match the expected return type 'int(64)'
 error-return-type.chpl:27: In 'implements IFC' statement:
 error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:32: note: this implementation of the required function dfltInt
-error-return-type.chpl:32: note: has return type 'string'
-error-return-type.chpl:13: note: which does not match the expected return type 'int(64)'
-error-return-type.chpl:13: note: the required function dfltInt in the interface IFC is declared here
 error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:31: note: this implementation of the required function dfltSelf
-error-return-type.chpl:31: note: has return type 'int(64)'
-error-return-type.chpl:9: note: which does not match the expected return type 'string'
-error-return-type.chpl:9: note: the required function dfltSelf in the interface IFC is declared here
 error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:30: note: this implementation of the required function reqInt
-error-return-type.chpl:30: note: has return type 'string'
-error-return-type.chpl:8: note: which does not match the expected return type 'int(64)'
-error-return-type.chpl:8: note: the required function reqInt in the interface IFC is declared here
 error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:29: note: this implementation of the required function reqSelf
+error-return-type.chpl:27: error: when checking this implements statement
+error-return-type.chpl:27: error: when checking this implements statement
 error-return-type.chpl:29: note: has return type 'int(64)'
-error-return-type.chpl:7: note: which does not match the expected return type 'string'
-error-return-type.chpl:7: note: the required function reqSelf in the interface IFC is declared here
-error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:34: note: this implementation of the required function implicitInt
-error-return-type.chpl:34: note: has return type 'string'
-error-return-type.chpl:21: note: which does not match the expected return type 'int(64)'
-error-return-type.chpl:21: note: the required function implicitInt in the interface IFC is declared here
-error-return-type.chpl:27: error: when checking this implements statement
-error-return-type.chpl:33: note: this implementation of the required function implicitSelf
+error-return-type.chpl:29: note: this implementation of the required function reqSelf
+error-return-type.chpl:30: note: has return type 'string'
+error-return-type.chpl:30: note: this implementation of the required function reqInt
+error-return-type.chpl:31: note: has return type 'int(64)'
+error-return-type.chpl:31: note: this implementation of the required function dfltSelf
+error-return-type.chpl:32: note: has return type 'string'
+error-return-type.chpl:32: note: this implementation of the required function dfltInt
 error-return-type.chpl:33: note: has return type 'int(64)'
-error-return-type.chpl:17: note: which does not match the expected return type 'string'
-error-return-type.chpl:17: note: the required function implicitSelf in the interface IFC is declared here
+error-return-type.chpl:33: note: this implementation of the required function implicitSelf
+error-return-type.chpl:34: note: has return type 'string'
+error-return-type.chpl:34: note: this implementation of the required function implicitInt
+error-return-type.chpl:7: note: the required function reqSelf in the interface IFC is declared here
+error-return-type.chpl:7: note: which does not match the expected return type 'string'
+error-return-type.chpl:8: note: the required function reqInt in the interface IFC is declared here
+error-return-type.chpl:8: note: which does not match the expected return type 'int(64)'
+error-return-type.chpl:9: note: the required function dfltSelf in the interface IFC is declared here
+error-return-type.chpl:9: note: which does not match the expected return type 'string'
