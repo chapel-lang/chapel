@@ -1,4 +1,4 @@
 split-init-out-formal-no-type-used.chpl:2: In function 'f':
 split-init-out-formal-no-type-used.chpl:2: error: 'arg' is not initialized and has no type
-note: the type for a generic out intent argument is inferred from the function body
+note: the type for a generic out-intent formal is inferred in the function body
 split-init-out-formal-no-type-used.chpl:3: note: 'arg' is used here before it is initialized
