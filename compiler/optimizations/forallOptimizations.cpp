@@ -1946,8 +1946,6 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
                                     new SymExpr(checkSym),
                                     fastFollowerControl);
 
-  nprint_view(primCall);
-
   symExprToReplace->replace(primCall);
 
   return true;
