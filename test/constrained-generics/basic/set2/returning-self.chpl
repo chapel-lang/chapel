@@ -6,6 +6,9 @@ This code tests the following features:
 * constrained-generic function invoking such functions
 * default implementations returning Self-typed values
 * Self-typed values get passed around
+
+The following test has a more sophisticated version of this:
+ call-reqfns-from-dfltimpls.chpl
 */
 
 interface IFC {
@@ -19,11 +22,14 @@ interface IFC {
     writeln("in dfltInt");
     return 22;
   }
-  proc implicitSelf(formal5: Self) {
+  // These used to have inferred return types. This is no longer allowed,
+  // so these do not differ from dfltSelf/dfltInt significantly.
+  // They are left around to avoid editing the .good file.
+  proc implicitSelf(formal5: Self): Self {
     writeln("in implicitSelf");
     return formal5;
   }
-  proc implicitInt(formal6: Self) {
+  proc implicitInt(formal6: Self): int {
     writeln("in implicitInt");
     return 33;
   }
