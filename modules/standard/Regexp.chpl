@@ -439,7 +439,7 @@ class BadRegexpError : Error {
                    of a line instead of just the beginning and end of the text.
                    Note that this can be set inside a regular expression
                    with ``(?m)``.
-   :arg dotnl: (optional, default false) set to true in order to allow ``.``
+   :arg dotAll: (optional) set to true in order to allow ``.``
                to match a newline. Note that this can be set inside the
                regular expression with ``(?s)``.
    :arg nonGreedy: (optional) set to true in order to prefer shorter matches for
@@ -452,7 +452,7 @@ class BadRegexpError : Error {
 
  */
 proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
-             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotAll=false,
              /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
 
   if CHPL_REGEXP == "none" {
@@ -470,7 +470,7 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
   opts.nocapture = noCapture;
   opts.ignorecase = ignoreCase;
   opts.multiline = multiLine;
-  opts.dotnl = dotnl;
+  opts.dotnl = dotAll;
   opts.nongreedy = nonGreedy;
 
   var ret: regexp(t);
@@ -481,12 +481,21 @@ proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
     var err_str = qio_regexp_error(ret._regexp);
     var err_msg: string;
     try! {
-      err_msg = createStringWithNewBuffer(err_str) + 
+      err_msg = createStringWithNewBuffer(err_str) +
                   " when compiling regexp '" + patternStr + "'";
     }
     throw new owned BadRegexpError(err_msg);
   }
   return ret;
+}
+
+pragma "no doc"
+pragma "last resort"
+proc compile(pattern: ?t, posix=false, literal=false, noCapture=false,
+             /*i*/ ignoreCase=false, /*m*/ multiLine=false, /*s*/ dotnl=false,
+             /*U*/ nonGreedy=false): regexp(t) throws where t==string || t==bytes {
+  compilerWarning("Regexp.compile: 'dotnl' is deprecated. Use 'dotAll' instead.");
+  return compile(pattern, posix, literal, noCapture, ignoreCase, multiLine, dotnl, nonGreedy);
 }
 
 /*  The reMatch record records a regular expression search match
@@ -955,7 +964,7 @@ record regexp {
         try! {
           pattern = createStringWithNewBuffer(patternTemp);
         }
-      } 
+      }
       else {
         pattern = createBytesWithNewBuffer(patternTemp);
       }
