@@ -81,8 +81,7 @@ public:
   BlockStmt* loopBody()       const; // the body of the forall loop
   std::vector<BlockStmt*> loopBodies() const; // body or bodies of followers
   LabelSymbol* continueLabel();      // create it if not already
-
-  CallExpr*  zipCall;
+  CallExpr* zipCall() const;
 
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
@@ -104,6 +103,7 @@ public:
   void        replaceChild(Expr* oldAst, Expr* newAst) override;
   Expr*       getFirstExpr() override;
   Expr*       getNextExpr(Expr* expr) override;
+  void        setZipCall(CallExpr *call);
 
   static ForallStmt* buildHelper(Expr* indices, Expr* iterator,
                                  CallExpr* intents, BlockStmt* body,
@@ -144,6 +144,7 @@ private:
   AList          fShadowVars;  // may be empty
   BlockStmt*     fLoopBody;    // always present
   bool           fZippered;
+  CallExpr*      fZipCall;
   bool           fFromForLoop; // see comment below
   bool           fFromReduce;
   bool           fOverTupleExpand;
@@ -195,6 +196,8 @@ inline const AList& ForallStmt::constIteratedExpressions() const {
 }
 inline AList& ForallStmt::shadowVariables()        { return fShadowVars; }
 inline BlockStmt* ForallStmt::loopBody()     const { return fLoopBody;   }
+
+inline CallExpr* ForallStmt::zipCall()       const { return fZipCall;    }
 
 inline bool ForallStmt::needToHandleOuterVars() const { return !fFromForLoop; }
 inline bool ForallStmt::createdFromForLoop()    const { return  fFromForLoop; }

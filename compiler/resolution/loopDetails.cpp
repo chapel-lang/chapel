@@ -659,9 +659,9 @@ void gatherLoopDetails(ForallStmt* fs,
   if (fs->zippered()) {
     zippered = true;
 
-    INT_ASSERT(fs->zipCall);
+    INT_ASSERT(fs->zipCall());
 
-    if (fs->zipCall && fs->zipCall->numActuals() > 1) {
+    if (fs->zipCall()->numActuals() > 1) {
       isLeader = true;  // zipCall implies this
     }
   }
@@ -711,7 +711,7 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        for_actuals(actual, fs->zipCall) {
+        for_actuals(actual, fs->zipCall()) {
           SET_LINENO(fs);
 
           SymExpr *actualSE = toSymExpr(actual);

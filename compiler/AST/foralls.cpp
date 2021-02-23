@@ -1082,8 +1082,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   iterRec->addFlag(FLAG_CHPL__ITER_NEWSTYLE);
 
   if (zippered) {
-    pfs->zipCall = iterCall->copy();
-    preFS->insertAtTail(pfs->zipCall);
+    pfs->setZipCall(iterCall->copy());
   }
   else {
     preFS->insertAtTail(new DefExpr(iterRec));
@@ -1173,7 +1172,9 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   }
 
   pfs->insertBefore(preFS);
-  normalize(toNormalize); // requires inTree()
+  if (toNormalize) {
+    normalize(toNormalize); // requires inTree()
+  }
   resolveBlockStmt(preFS);
   preFS->flattenAndRemove();
 
