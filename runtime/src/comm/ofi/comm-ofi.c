@@ -160,7 +160,7 @@ static int tciTabLen;
 static struct perTxCtxInfo_t* tciTab;
 static chpl_bool tciTabFixedAssignments;
 
-static int txCQLen;
+static size_t txCQLen;
 
 //
 // Memory registration support.
@@ -243,6 +243,7 @@ static inline struct perTxCtxInfo_t* tciAlloc(void);
 static inline struct perTxCtxInfo_t* tciAllocForAmHandler(void);
 static inline chpl_bool tciAllocTabEntry(struct perTxCtxInfo_t*);
 static inline void tciFree(struct perTxCtxInfo_t*);
+static inline void waitForCQSpace(struct perTxCtxInfo_t*, size_t);
 static inline chpl_comm_nb_handle_t ofi_put(const void*, c_nodeid_t,
                                             void*, size_t);
 static inline void ofi_put_ll(const void*, c_nodeid_t,
@@ -2876,10 +2877,7 @@ void mcmReleaseAllNodes(struct bitmap_t* b, struct perTxCtxInfo_t* tcip,
     bitmapClear(b, node);
     (*myTcip->checkTxCmplsFn)(myTcip);
     // If using CQ, need room for at least 1 txn.
-    while (myTcip->txCQ != NULL && myTcip->numTxnsOut >= txCQLen) {
-      sched_yield();
-      (*myTcip->checkTxCmplsFn)(myTcip);
-    }
+    waitForCQSpace(myTcip, 1);
     mcmReleaseOneNode(node, myTcip, dbgOrderStr);
   } BITMAP_FOREACH_SET_END
 
@@ -4417,6 +4415,21 @@ void tciFree(struct perTxCtxInfo_t* tcip) {
 
 
 static inline
+void waitForCQSpace(struct perTxCtxInfo_t* tcip, size_t len) {
+  //
+  // Make sure we have at least the given number of free CQ entries.
+  //
+  if (tcip->txCQ != NULL && txCQLen - tcip->numTxnsOut < len) {
+    (*tcip->checkTxCmplsFn)(tcip);
+    while (txCQLen - tcip->numTxnsOut < len) {
+      sched_yield();
+      (*tcip->checkTxCmplsFn)(tcip);
+    }
+  }
+}
+
+
+static inline
 chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                               void* raddr, size_t size) {
   //
@@ -4616,13 +4629,7 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
-    (*tcip->checkTxCmplsFn)(tcip);
-    while (v_len > txCQLen - tcip->numTxnsOut) {
-      sched_yield();
-      (*tcip->checkTxCmplsFn)(tcip);
-    }
-  }
+  waitForCQSpace(tcip, v_len);
 
   //
   // Initiate the batch.  Record which nodes we PUT to, so that we can
@@ -4898,13 +4905,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
-    (*tcip->checkTxCmplsFn)(tcip);
-    while (v_len > txCQLen - tcip->numTxnsOut) {
-      sched_yield();
-      (*tcip->checkTxCmplsFn)(tcip);
-    }
-  }
+  waitForCQSpace(tcip, v_len);
 
   for (int vi = 0; vi < v_len; vi++) {
     struct iovec msg_iov = (struct iovec)
@@ -5145,13 +5146,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd1_v, void* local_mr,
   // Make sure we have enough free CQ entries to initiate the entire
   // batch of transactions.
   //
-  if (tcip->txCQ != NULL && v_len > txCQLen - tcip->numTxnsOut) {
-    (*tcip->checkTxCmplsFn)(tcip);
-    while (v_len > txCQLen - tcip->numTxnsOut) {
-      sched_yield();
-      (*tcip->checkTxCmplsFn)(tcip);
-    }
-  }
+  waitForCQSpace(tcip, v_len);
 
   //
   // Initiate the batch.
