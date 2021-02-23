@@ -47,12 +47,12 @@ void INTERNAL qt_affinity_balanced(int num_workers,
     } else {
       // No children
       workers.binds[start] = hwloc_bitmap_alloc();
-      hwloc_bitmap_copy(workers.binds[start], obj->allowed_cpuset);
+      hwloc_bitmap_copy(workers.binds[start], obj->cpuset);
       if (num_workers > 1) {
         printf("warning: PU oversubscribed\n");
       }
-      if (hwloc_bitmap_weight(obj->allowed_cpuset) != 1) {
-        printf("error: expected pu, got weight %d\n", hwloc_bitmap_weight(obj->allowed_cpuset));
+      if (hwloc_bitmap_weight(obj->cpuset) != 1) {
+        printf("error: expected pu, got weight %d\n", hwloc_bitmap_weight(obj->cpuset));
         exit(-1);
       } 
     }
@@ -73,9 +73,9 @@ int INTERNAL qt_affinity_compact(int num_workers,
   } else {
     // No children, should be PU
     workers.binds[workers.num - n] = hwloc_bitmap_alloc();
-    hwloc_bitmap_copy(workers.binds[workers.num - n], obj->allowed_cpuset);
-    if (hwloc_bitmap_weight(obj->allowed_cpuset) != 1){
-      printf("error: expected pu, got weight %d\n", hwloc_bitmap_weight(obj->allowed_cpuset));
+    hwloc_bitmap_copy(workers.binds[workers.num - n], obj->cpuset);
+    if (hwloc_bitmap_weight(obj->cpuset) != 1){
+      printf("error: expected pu, got weight %d\n", hwloc_bitmap_weight(obj->cpuset));
       exit(-1);
     } 
     return n - 1;
