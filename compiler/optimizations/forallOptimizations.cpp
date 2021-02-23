@@ -1743,6 +1743,21 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   return replacement;
 }
 
+// 3rd argument of PRIM_MAYBE_LOCAL_ARR_ELEM controls the optimization and it is
+// initially set to `false` if the optimization can be done only in a fast
+// follower body.  This function takes that body as an argument, and adjusts
+// such primitives' 3rd arguments to enable optimization
+void adjustPrimsInFastFollowerBody(BlockStmt *body) {
+  std::vector<CallExpr *> calls;
+  collectCallExprs(body, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      call->get(3)->replace(new SymExpr(gTrue));
+    }
+  }
+}
+
 void AggregationCandidateInfo::transformCandidate() {
   SET_LINENO(this->candidate);
   Expr *rhs = this->candidate->get(2)->remove();
@@ -1818,22 +1833,15 @@ static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall,
   AList &indexVars = forall->inductionVariables();
 
   if (!forall->optInfo.hasAlignedFollowers) {
-    // either not zippered, or followers are not aligned:
-    //   only check if the symbol is the same as the one yielded by the leader
-    if (DefExpr *idxDef = toDefExpr(indexVars.get(1))) {
-      if (sym == idxDef->sym) {
-        return iterExprs.get(1);
-      }
-    }
-
-    // TODO what happens if `forall (i,j) in D`?
-    if (indexVars.length >= 2) {
-      for (int i = 2 ; i <= indexVars.length ; i++){
-        if (DefExpr *idxDef = toDefExpr(indexVars.get(i))) {
-          if (sym == idxDef->sym) {
-            *onlyIfFastFollower = true;
-            return iterExprs.get(i);
-          }
+    // either not zippered, or followers are not statically aligned:
+    // we set `onlyIfFastFollower` to true only if the iterand is a follower.
+    // We can argue about this symbols locality only dynamically if it is in a
+    // fast follower body.
+    for (int i = 1 ; i <= indexVars.length ; i++){
+      if (DefExpr *idxDef = toDefExpr(indexVars.get(i))) {
+        if (sym == idxDef->sym) {
+          *onlyIfFastFollower = (i>1);
+          return iterExprs.get(i);
         }
       }
     }
@@ -1974,29 +1982,31 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
 // called during resolution when we revert an aggregation
 static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
 
-  // find and remove other SymExprs within the function
+  // find other SymExprs within the function and remove the aggregator if it is
+  // not being used by other primitives, or its `copy` function.
+  
   std::vector<SymExpr *> symExprsToCheck;
-  std::vector<SymExpr *> symExprsToRemove;
   collectSymExprsFor(parent, aggregator, symExprsToCheck);
 
+  std::vector<SymExpr *> symExprsToRemove;
   bool shouldRemove = true;
 
   for_vector(SymExpr, se, symExprsToCheck) {
     if (CallExpr *parentCall = toCallExpr(se->parentExpr)) {
       if (parentCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
         shouldRemove = false;
+        break;
       }
 
       if (parentCall->isNamed("copy")) {
         shouldRemove = false;
+        break;
       }
     }
 
     symExprsToRemove.push_back(se);
   }
   
-  // TODO are we leaving some behind in PRIM_END_OF_STATEMENT ?
-
   if (shouldRemove) {
     // remove the definition
     aggregator->defPoint->remove();

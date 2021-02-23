@@ -66,6 +66,7 @@ Symbol *earlyNormalizeForallIterand(CallExpr *call, ForallStmt *forall);
 Expr *preFoldMaybeLocalThis(CallExpr *call);
 Expr *preFoldMaybeLocalArrElem(CallExpr *call);
 Expr *preFoldMaybeAggregateAssign(CallExpr *call);
+void adjustPrimsInFastFollowerBody(BlockStmt *body);
 
 // interface for lowerForalls
 void removeAggregationFromRecursiveForall(ForallStmt *forall);

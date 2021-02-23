@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -987,14 +988,7 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     map.put(followIdx, fastFollowIdx);
     BlockStmt* userBodyForFast = userBody->copy(&map);
 
-
-    std::vector<CallExpr *> calls;
-    collectCallExprs(userBodyForFast, calls);
-    for_vector(CallExpr, call, calls) {
-      if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-        call->get(3)->replace(new SymExpr(gTrue));
-      }
-    }
+    adjustPrimsInFastFollowerBody(userBodyForFast);
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,
