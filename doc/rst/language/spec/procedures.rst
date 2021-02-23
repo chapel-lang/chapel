@@ -458,11 +458,11 @@ The Out Intent
 
 When ``out`` is specified as the intent, the actual argument is ignored
 when the call is made, but when the function returns, the actual argument
-is assigned to the value of the formal argument.  An implicit conversion
-occurs from the type of the formal to the type of the actual. The actual
-argument must be a valid lvalue. Within the function body, the formal
-argument is initialized to its default value if one is supplied, or to
-its type’s default value otherwise. The formal argument can be modified
+is assigned to the value of the formal argument. The actual argument must
+be a valid lvalue. Within the function body, the formal argument is
+initialized according :ref:`Split_Initialization`.  It will start with
+its default value if one is supplied and can use the type's default value
+if no initialization point is found.  The formal argument can be modified
 within the function.
 
 The assignment implementing the ``out`` intent is a candidate for
@@ -477,8 +477,7 @@ The Inout Intent
 When ``inout`` is specified as the intent, the actual argument is copied
 into the formal argument as with the ``in`` intent and then copied back
 out as with the ``out`` intent. The actual argument must be a valid
-lvalue. The formal argument can be modified within the function. The
-type of the actual argument must be the same as the type of the formal.
+lvalue. The formal argument can be modified within the function.
 
 .. _The_Ref_Intent:
 
@@ -1306,8 +1305,8 @@ Legal Argument Mapping
 An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
 a formal argument :math:`F_X` according to the following rules.
 
-First, if :math:`F_X` uses the ``out`` intent, it is always a legal argument
-mapping. ``out`` intent arguments do not impact candidate selection.
+First, if :math:`A` is a ``type`` but :math:`F_X` does not use the
+``type`` intent, then it is not a legal argument mapping.
 
 Then, if :math:`F_X` is a generic argument:
 
@@ -1331,14 +1330,15 @@ according to the concrete intent of :math:`F_X`:
  * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
    must be the same type, a subtype of, or implicitly convertible to
    :math:`T_X`.
+ * if :math:`F_X` uses  the ``out`` intent, it is always a legal
+   argument mapping regardless of the type of the actual and formal.
 
 Finally, if the above compatibility cannot be established, the mapping is
-checked for promotion.  Then, the mapping is checked for promotion. If
-:math:`T_A` is scalar promotable to :math:`T_X` (see :ref:`Promotion`),
-then the above rules are checked with the element type, index type, or
-yielded type.  For example, if :math:`T_A` is an array of ``int`` and
-:math:`T_X` is ``int``, then promotion occurs and the above rules will be
-checked with :math:`T_A` == ``int``.
+checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+(see :ref:`Promotion`), then the above rules are checked with the element
+type, index type, or yielded type.  For example, if :math:`T_A` is an
+array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T_A` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
