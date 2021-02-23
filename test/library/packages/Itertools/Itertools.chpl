@@ -170,8 +170,7 @@ module Itertools {
       else
         coforall tid in 0..#numTasks {
           const workingIters = chunk(0..#times, numTasks, tid);
-          yield((workingIters.low * arg.size)..(((workingIters.high + 1) * 
-                arg.size) -1),);
+          yield(workingIters.low * arg.size..#workingIters.size * arg.size,);
         }
     }
   }
