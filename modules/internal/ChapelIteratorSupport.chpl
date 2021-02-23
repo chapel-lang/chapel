@@ -570,17 +570,14 @@ module ChapelIteratorSupport {
     return isDomain(x) || isArray(x);
   }
 
-  proc chpl__hasInertFastFollowers(x) param {
-    return !isArray(x);
-  }
-
   //
   // return true if any iterator supports fast followers
   //
   proc chpl__staticFastFollowCheck(x) param {
     pragma "no copy" const lead = x;
-    if chpl__canHaveFastFollowers(lead) then
+    if chpl__canHaveFastFollowers(lead) {
       return chpl__staticFastFollowCheck(x, lead);
+    }
     else {
       return false;
     }
@@ -592,7 +589,7 @@ module ChapelIteratorSupport {
         return x._value.dsiStaticFastFollowCheck(lead._value.type);
       }
       else {
-        return chpl__hasInertFastFollowers(x);
+        return true;
       }
     }
     else {
@@ -624,7 +621,7 @@ module ChapelIteratorSupport {
         }
       }
       else {
-        return chpl__hasInertFastFollowers(x);
+        return true;
       }
     }
     else {
