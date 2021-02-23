@@ -217,16 +217,16 @@ static int ofi_msg_i;
 //
 enum mcmMode_t {
   mcmm_undef,
-  mcmm_dlvrCmplt,                       // delivery-complete
   mcmm_msgOrd,                          // RAW, WAW, SAW, SAS
+  mcmm_dlvrCmplt,                       // delivery-complete
 };
 
 static enum mcmMode_t mcmMode;          // overall operational mode
 
 #ifdef CHPL_COMM_DEBUG
 static const char* mcmModeNames[] = { "undefined",
-                                      "delivery-complete",
-                                      "message orderings", };
+                                      "message orderings",
+                                      "delivery-complete", };
 #endif
 
 
@@ -1303,68 +1303,12 @@ chpl_bool findProvGivenList(struct fi_info** p_infoOut,
 //
 typedef chpl_bool (fnFindProv_t)(struct fi_info**, enum mcmMode_t*,
                                  struct fi_info*, chpl_bool);
-static fnFindProv_t findDlvrCmpltProv;
 static fnFindProv_t findMsgOrderProv;
+static fnFindProv_t findDlvrCmpltProv;
 
 typedef enum mcmMode_t (fnIsProv_t)(struct fi_info*);
-static fnIsProv_t isDlvrCmpltProv;
 static fnIsProv_t isMsgOrderProv;
-
-
-static
-struct fi_info* setCheckDlvrCmpltProv(struct fi_info* info,
-                                      chpl_bool set) {
-  uint64_t need_op_flags = FI_DELIVERY_COMPLETE;
-  if (set) {
-    info = fi_dupinfo(info);
-    info->tx_attr->op_flags |= need_op_flags;
-    return info;
-  } else {
-    return ((info->tx_attr->op_flags & need_op_flags) == need_op_flags)
-           ? info
-           : NULL;
-  }
-}
-
-
-static
-chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
-                            enum mcmMode_t* p_modeOut,
-                            struct fi_info* infoIn,
-                            chpl_bool inputIsHints) {
-  //
-  // Try to find a provider that supports delivery-complete.
-  //
-  const char* prov_name = getProviderName();
-  const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
-  const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
-  enum mcmMode_t mcmm = mcmm_dlvrCmplt;
-  chpl_bool ret;
-
-  if (inputIsHints) {
-    struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
-    ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
-    fi_freeinfo(infoAdj);
-  } else {
-    ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
-  }
-
-  if (ret) {
-    *p_modeOut = mcmm;
-  }
-
-  return ret;
-}
-
-
-static
-enum mcmMode_t isDlvrCmpltProv(struct fi_info* info) {
-  return (setCheckDlvrCmpltProv(info, false /*check*/) == info)
-         ? mcmm_dlvrCmplt
-         : mcmm_undef;
-}
+static fnIsProv_t isDlvrCmpltProv;
 
 
 static
@@ -1425,6 +1369,62 @@ static
 enum mcmMode_t isMsgOrderProv(struct fi_info* info) {
   return (setCheckMsgOrderProv(info, false /*check*/) == info)
          ? mcmm_msgOrd
+         : mcmm_undef;
+}
+
+
+static
+struct fi_info* setCheckDlvrCmpltProv(struct fi_info* info,
+                                      chpl_bool set) {
+  uint64_t need_op_flags = FI_DELIVERY_COMPLETE;
+  if (set) {
+    info = fi_dupinfo(info);
+    info->tx_attr->op_flags |= need_op_flags;
+    return info;
+  } else {
+    return ((info->tx_attr->op_flags & need_op_flags) == need_op_flags)
+           ? info
+           : NULL;
+  }
+}
+
+
+static
+chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
+                            enum mcmMode_t* p_modeOut,
+                            struct fi_info* infoIn,
+                            chpl_bool inputIsHints) {
+  //
+  // Try to find a provider that supports delivery-complete.
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  enum mcmMode_t mcmm = mcmm_dlvrCmplt;
+  chpl_bool ret;
+
+  if (inputIsHints) {
+    struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
+    ret = findProvGivenHints(p_infoOut, infoAdj,
+                             accept_RxD_provs, accept_RxM_provs, mcmm);
+    fi_freeinfo(infoAdj);
+  } else {
+    ret = findProvGivenList(p_infoOut, infoIn,
+                            accept_RxD_provs, accept_RxM_provs, mcmm);
+  }
+
+  if (ret) {
+    *p_modeOut = mcmm;
+  }
+
+  return ret;
+}
+
+
+static
+enum mcmMode_t isDlvrCmpltProv(struct fi_info* info) {
+  return (setCheckDlvrCmpltProv(info, false /*check*/) == info)
+         ? mcmm_dlvrCmplt
          : mcmm_undef;
 }
 
@@ -1556,8 +1556,8 @@ void init_ofiFabricDomain(void) {
     fnFindProv_t* fnFind;
     fnIsProv_t* fnIs;
     struct fi_info* infoList;
-  } capTry[] = { { findDlvrCmpltProv, isDlvrCmpltProv, NULL },
-                 { findMsgOrderProv, isMsgOrderProv, NULL }, };
+  } capTry[] = { { findMsgOrderProv, isMsgOrderProv, NULL },
+                 { findDlvrCmpltProv, isDlvrCmpltProv, NULL }, };
   size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
 
   if (ofi_info == NULL) {
