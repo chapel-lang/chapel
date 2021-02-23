@@ -529,8 +529,8 @@ intents:
 ================================ ====== ========= ========= =========== ============ =============
 \                                ``in`` ``out``   ``inout`` ``ref``     ``const in`` ``const ref``
 ================================ ====== ========= ========= =========== ============ =============
-copied in on function call?      yes    no        yes       no          yes          no
-copied out on function return?   no     yes       yes       no          no           no
+can copy in on function call?    yes    no        yes       no          yes          no
+can copy out on function return? no     yes       yes       no          no           no
 refers to actual argument?       no     no        no        yes         no           yes
 formal can be read?              yes    yes       yes       yes         yes          yes
 formal can be modified?          yes    yes       yes       yes         no           no
@@ -1332,6 +1332,9 @@ according to the concrete intent of :math:`F_X`:
    :math:`T_X`.
  * if :math:`F_X` uses  the ``out`` intent, it is always a legal
    argument mapping regardless of the type of the actual and formal.
+   In the event that assignment to :math:`T_A` from :math:`F_X` is not
+   possible then a compilation error will be emitted if this function
+   is chosen as the best candidate.
 
 Finally, if the above compatibility cannot be established, the mapping is
 checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
