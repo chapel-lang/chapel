@@ -6,6 +6,10 @@ This code tests these features:
   invokes other interface functions.
 * Test the above when the interface function has
   a default implementation or not.
+
+The following test has a simpler version of this,
+where default implementations do not invoke other required functions:
+ returning-self.chpl
 */
 
 interface IFC {
