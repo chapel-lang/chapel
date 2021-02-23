@@ -2567,6 +2567,39 @@ static void codegenPartTwo() {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
 
+
+}
+
+void codegen() {
+  if (no_codegen)
+    return;
+
+  codegenPartOne();
+
+  if (localeUsesGPU()) {
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+      // child process
+      gCodegenGPU = true;
+      codegenPartTwo();
+      makeBinary();
+      gCodegenGPU = false;
+      clean_exit(0);
+    } else {
+      // parent process
+      int status = 0;
+      while (wait(&status) != pid) {
+        // wait for child process
+      }
+    }
+  }
+
+  codegenPartTwo();
+}
+
+void makeBinary(void) {
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
     makeBinaryLLVM();
@@ -2584,43 +2617,6 @@ static void codegenPartTwo() {
       codegen_make_python_module();
     }
   }
-}
-
-void codegen() {
-  if (no_codegen)
-    return;
-
-  codegenPartOne();
-
-  if (localeUsesGPU()) {
-
-    pid_t pid = fork();
-
-    if (pid == 0) {
-      // child process
-      gCodegenGPU = true;
-      codegenPartTwo();
-      gCodegenGPU = false;
-      clean_exit(0);
-    } else {
-      // parent process
-      int status = 0;
-      while (wait(&status) != pid) {
-        // wait for child process
-      }
-    }
-  }
-
-  codegenPartTwo();
-
-}
-
-//TODO: remove makeBinary
-void makeBinary(void) {
-  // moved to codegenPartTwo
-
-  // TODO: make runLLVMLinking to here so we can get just 1 executable
-  // Question: where does the GPU kernel go? Is it even in the executable?
 }
 
 GenInfo::GenInfo()
