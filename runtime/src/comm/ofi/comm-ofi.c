@@ -217,6 +217,7 @@ static int ofi_msg_i;
 //
 enum mcmMode_t {
   mcmm_undef,
+  mcmm_msgOrdFence,                     // ATOMIC_{RAW,WAR,WAW}, SAS, fences
   mcmm_msgOrd,                          // RAW, WAW, SAW, SAS
   mcmm_dlvrCmplt,                       // delivery-complete
 };
@@ -225,6 +226,7 @@ static enum mcmMode_t mcmMode;          // overall operational mode
 
 #ifdef CHPL_COMM_DEBUG
 static const char* mcmModeNames[] = { "undefined",
+                                      "atomic message orderings w/ fences",
                                       "message orderings",
                                       "delivery-complete", };
 #endif
@@ -1303,12 +1305,81 @@ chpl_bool findProvGivenList(struct fi_info** p_infoOut,
 //
 typedef chpl_bool (fnFindProv_t)(struct fi_info**, enum mcmMode_t*,
                                  struct fi_info*, chpl_bool);
+static fnFindProv_t findMsgOrderFenceProv;
 static fnFindProv_t findMsgOrderProv;
 static fnFindProv_t findDlvrCmpltProv;
 
 typedef enum mcmMode_t (fnIsProv_t)(struct fi_info*);
+static fnIsProv_t isMsgOrderFenceProv;
 static fnIsProv_t isMsgOrderProv;
 static fnIsProv_t isDlvrCmpltProv;
+
+
+static
+struct fi_info* setCheckMsgOrderFenceProv(struct fi_info* info,
+                                          chpl_bool set) {
+  uint64_t need_caps = FI_ATOMIC | FI_FENCE;
+  uint64_t need_msg_orders = FI_ORDER_ATOMIC_RAW
+                             | FI_ORDER_ATOMIC_WAR
+                             | FI_ORDER_ATOMIC_WAW
+                             | FI_ORDER_SAS;
+  if (set) {
+    info = fi_dupinfo(info);
+    info->caps |= need_caps;
+    info->tx_attr->msg_order = need_msg_orders;
+    info->rx_attr->msg_order = need_msg_orders;
+    return info;
+  } else {
+    return ((info->caps & need_caps) == need_caps
+            && (info->tx_attr->msg_order & need_msg_orders) == need_msg_orders
+            && (info->rx_attr->msg_order & need_msg_orders) == need_msg_orders)
+           ? info
+           : NULL;
+  }
+}
+
+
+static
+chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
+                                enum mcmMode_t* p_modeOut,
+                                struct fi_info* infoIn,
+                                chpl_bool inputIsHints) {
+  //
+  // Try to find a provider that can conform to the MCM using atomic
+  // message orderings plus fences.  We try to avoid using either the
+  // RxD or RxM utility providers here, because we really only want
+  // to use atomics where the network can do them natively.
+  //
+  const char* prov_name = getProviderName();
+  const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
+  const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  enum mcmMode_t mcmm = mcmm_msgOrdFence;
+  chpl_bool ret;
+
+  if (inputIsHints) {
+    struct fi_info* infoAdj = setCheckMsgOrderFenceProv(infoIn, true /*set*/);
+    ret = findProvGivenHints(p_infoOut, infoAdj,
+                             accept_RxD_provs, accept_RxM_provs, mcmm);
+    fi_freeinfo(infoAdj);
+  } else {
+    ret = findProvGivenList(p_infoOut, infoIn,
+                            accept_RxD_provs, accept_RxM_provs, mcmm);
+  }
+
+  if (ret) {
+    *p_modeOut = mcmm;
+  }
+
+  return ret;
+}
+
+
+static
+enum mcmMode_t isMsgOrderFenceProv(struct fi_info* info) {
+  return (setCheckMsgOrderFenceProv(info, false /*check*/) == info)
+         ? mcmm_msgOrdFence
+         : mcmm_undef;
+}
 
 
 static
@@ -1556,7 +1627,8 @@ void init_ofiFabricDomain(void) {
     fnFindProv_t* fnFind;
     fnIsProv_t* fnIs;
     struct fi_info* infoList;
-  } capTry[] = { { findMsgOrderProv, isMsgOrderProv, NULL },
+  } capTry[] = { { findMsgOrderFenceProv, isMsgOrderFenceProv, NULL },
+                 { findMsgOrderProv, isMsgOrderProv, NULL },
                  { findDlvrCmpltProv, isDlvrCmpltProv, NULL }, };
   size_t capTryLen = sizeof(capTry) / sizeof(capTry[0]);
 
