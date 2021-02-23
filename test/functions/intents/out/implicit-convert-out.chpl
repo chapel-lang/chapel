@@ -54,9 +54,9 @@ proc foo_out(out x: int) {
 proc test3() {
   writeln("test3");
   var c:R;
-  foo_out(c); // Doesn't resolve today due to arg mismatch
+  foo_out(c);
   var d:R = new R();
-  foo_out(d); // Doesn't resolve today due to arg mismatch
+  foo_out(d);
   writeln(c);
   writeln(d);
 }

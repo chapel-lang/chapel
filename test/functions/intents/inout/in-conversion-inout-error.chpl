@@ -19,7 +19,7 @@ proc i(inout arg: int) {
 proc test2() {
   writeln("test2");
   var x: int(8) = 2;
-  i(x);
+  i(x); // error: cannot assign to int(8) from int(64)
   writeln(x);
 }
 test2();

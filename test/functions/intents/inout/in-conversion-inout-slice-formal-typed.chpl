@@ -6,6 +6,6 @@ proc g(inout arg: [1..3] int) {
 {
   var A:[1..10] int;
   ref slice = A[1..3];
-  g(slice); // error: value from coercion passed to ref formal 'arg'
+  g(slice);
   writeln(slice);
 }

@@ -19,7 +19,8 @@ proc i(inout arg: bool) {
 proc test2() {
   writeln("test2");
   var x: bool(8) = false;
-  i(x);
+  i(x); // works because bool(8) can be converted to bool, and then
+        // x: bool(8) can be assigned to a bool
   writeln(x);
 }
 test2();
