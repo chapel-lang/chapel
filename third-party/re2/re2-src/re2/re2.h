@@ -30,6 +30,19 @@
 //   "(?i)hello"           -- (?i) turns on case-insensitive matching
 //   "/\\*(.*?)\\*/"       -- .*? matches . minimum no. of times possible
 //
+// The double backslashes are needed when writing C++ string literals.
+// However, they should NOT be used when writing C++11 raw string literals:
+//
+//   R"(hello (\w+) world)"  -- \w matches a "word" character
+//   R"(version (\d+))"      -- \d matches a digit
+//   R"(hello\s+world)"      -- \s matches any whitespace character
+//   R"(\b(\w+)\b)"          -- \b matches non-empty string at word boundary
+//   R"((?i)hello)"          -- (?i) turns on case-insensitive matching
+//   R"(/\*(.*?)\*/)"        -- .*? matches . minimum no. of times possible
+//
+// When using UTF-8 encoding, case-insensitive matching will perform
+// simple case folding, not full case folding.
+//
 // -----------------------------------------------------------------------
 // MATCHING INTERFACE:
 //
@@ -53,13 +66,23 @@
 //    CHECK(RE2::FullMatch(latin1_string, RE2(latin1_pattern, RE2::Latin1)));
 //
 // -----------------------------------------------------------------------
-// MATCHING WITH SUB-STRING EXTRACTION:
+// MATCHING WITH SUBSTRING EXTRACTION:
 //
-// You can supply extra pointer arguments to extract matched subpieces.
+// You can supply extra pointer arguments to extract matched substrings.
+// On match failure, none of the pointees will have been modified.
+// On match success, the substrings will be converted (as necessary) and
+// their values will be assigned to their pointees until all conversions
+// have succeeded or one conversion has failed.
+// On conversion failure, the pointees will be in an indeterminate state
+// because the caller has no way of knowing which conversion failed.
+// However, conversion cannot fail for types like string and StringPiece
+// that do not inspect the substring contents. Hence, in the common case
+// where all of the pointees are of such types, failure is always due to
+// match failure and thus none of the pointees will have been modified.
 //
 // Example: extracts "ruby" into "s" and 1234 into "i"
 //    int i;
-//    string s;
+//    std::string s;
 //    CHECK(RE2::FullMatch("ruby:1234", "(\\w+):(\\d+)", &s, &i));
 //
 // Example: fails because string cannot be stored in integer
@@ -121,10 +144,10 @@
 // which represents a sub-range of a real string.
 //
 // Example: read lines of the form "var = value" from a string.
-//      string contents = ...;          // Fill string somehow
+//      std::string contents = ...;     // Fill string somehow
 //      StringPiece input(contents);    // Wrap a StringPiece around it
 //
-//      string var;
+//      std::string var;
 //      int value;
 //      while (RE2::Consume(&input, "(\\w+) = (\\d+)\n", &var, &value)) {
 //        ...;
@@ -185,6 +208,12 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <type_traits>
+#include <vector>
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 #include "re2/stringpiece.h"
 
@@ -194,9 +223,6 @@ class Regexp;
 }  // namespace re2
 
 namespace re2 {
-
-// TODO(junyer): Get rid of this.
-using std::string;
 
 // Interface for regular expression matching.  Also corresponds to a
 // pre-compiled regular expression.  An "RE2" object is safe for
@@ -222,6 +248,7 @@ class RE2 {
     ErrorBadCharRange,       // bad character class range
     ErrorMissingBracket,     // missing closing ]
     ErrorMissingParen,       // missing closing )
+    ErrorUnexpectedParen,    // unexpected closing )
     ErrorTrailingBackslash,  // trailing \ at end of regexp
     ErrorRepeatArgument,     // repeat argument missing, e.g. "*"
     ErrorRepeatSize,         // bad repetition argument
@@ -244,12 +271,12 @@ class RE2 {
     Quiet // do not log about regexp parse errors
   };
 
-  // Need to have the const char* and const string& forms for implicit
+  // Need to have the const char* and const std::string& forms for implicit
   // conversions when passing string literals to FullMatch and PartialMatch.
   // Otherwise the StringPiece form would be sufficient.
 #ifndef SWIG
   RE2(const char* pattern);
-  RE2(const string& pattern);
+  RE2(const std::string& pattern);
 #endif
   RE2(const StringPiece& pattern);
   RE2(const StringPiece& pattern, const Options& options);
@@ -261,11 +288,11 @@ class RE2 {
   // The string specification for this RE2.  E.g.
   //   RE2 re("ab*c?d+");
   //   re.pattern();    // "ab*c?d+"
-  const string& pattern() const { return pattern_; }
+  const std::string& pattern() const { return pattern_; }
 
   // If RE2 could not be created properly, returns an error string.
   // Else returns the empty string.
-  const string& error() const { return *error_; }
+  const std::string& error() const { return *error_; }
 
   // If RE2 could not be created properly, returns an error code.
   // Else returns RE2::NoError (== 0).
@@ -273,28 +300,23 @@ class RE2 {
 
   // If RE2 could not be created properly, returns the offending
   // portion of the regexp.
-  const string& error_arg() const { return error_arg_; }
+  const std::string& error_arg() const { return error_arg_; }
 
   // Returns the program size, a very approximate measure of a regexp's "cost".
   // Larger numbers are more expensive than smaller numbers.
   int ProgramSize() const;
+  int ReverseProgramSize() const;
 
-  // EXPERIMENTAL! SUBJECT TO CHANGE!
-  // Outputs the program fanout as a histogram bucketed by powers of 2.
+  // If histogram is not null, outputs the program fanout
+  // as a histogram bucketed by powers of 2.
   // Returns the number of the largest non-empty bucket.
-  int ProgramFanout(std::map<int, int>* histogram) const;
+  int ProgramFanout(std::vector<int>* histogram) const;
+  int ReverseProgramFanout(std::vector<int>* histogram) const;
 
   // Returns the underlying Regexp; not for general use.
   // Returns entire_regexp_ so that callers don't need
   // to know about prefix_ and prefix_foldcase_.
   re2::Regexp* Regexp() const { return entire_regexp_; }
-
-  // Return the size in bytes of the prefix
-  int prefix_length_bytes() const { return prefix_.size(); }
-  // Return the minimum number of matched bytes
-  int min_match_length_bytes() const { return min_match_length_; }
-  // Return the maximum number of matched bytes or -1 for unbounded
-  int max_match_length_bytes() const { return max_match_length_; }
 
   /***** The array-based matching interface ******/
 
@@ -303,13 +325,13 @@ class RE2 {
   // useful to invoke them directly, but the syntax is awkward, so the 'N'-less
   // versions should be preferred.
   static bool FullMatchN(const StringPiece& text, const RE2& re,
-                         const Arg* const args[], int argc);
+                         const Arg* const args[], int n);
   static bool PartialMatchN(const StringPiece& text, const RE2& re,
-                            const Arg* const args[], int argc);
+                            const Arg* const args[], int n);
   static bool ConsumeN(StringPiece* input, const RE2& re,
-                       const Arg* const args[], int argc);
+                       const Arg* const args[], int n);
   static bool FindAndConsumeN(StringPiece* input, const RE2& re,
-                              const Arg* const args[], int argc);
+                              const Arg* const args[], int n);
 
 #ifndef SWIG
  private:
@@ -321,8 +343,8 @@ class RE2 {
   template <typename F, typename SP, typename... A>
   static inline bool Apply(F f, SP sp, const RE2& re, const A&... a) {
     const Arg* const args[] = {&a...};
-    const int argc = sizeof...(a);
-    return f(sp, re, args, argc);
+    const int n = sizeof...(a);
+    return f(sp, re, args, n);
   }
 
  public:
@@ -336,23 +358,23 @@ class RE2 {
   // Matches "text" against "re".  If pointer arguments are
   // supplied, copies matched sub-patterns into them.
   //
-  // You can pass in a "const char*" or a "string" for "text".
-  // You can pass in a "const char*" or a "string" or a "RE2" for "re".
+  // You can pass in a "const char*" or a "std::string" for "text".
+  // You can pass in a "const char*" or a "std::string" or a "RE2" for "re".
   //
   // The provided pointer arguments can be pointers to any scalar numeric
   // type, or one of:
-  //    string          (matched piece is copied to string)
+  //    std::string     (matched piece is copied to string)
   //    StringPiece     (StringPiece is mutated to point to matched piece)
   //    T               (where "bool T::ParseFrom(const char*, size_t)" exists)
   //    (void*)NULL     (the corresponding matched sub-pattern is not copied)
   //
   // Returns true iff all of the following conditions are satisfied:
-  //   a. "text" matches "re" exactly
-  //   b. The number of matched sub-patterns is >= number of supplied pointers
+  //   a. "text" matches "re" fully - from the beginning to the end of "text".
+  //   b. The number of matched sub-patterns is >= number of supplied pointers.
   //   c. The "i"th argument has a suitable type for holding the
   //      string captured as the "i"th sub-pattern.  If you pass in
   //      NULL for the "i"th argument, or pass fewer arguments than
-  //      number of sub-patterns, "i"th captured sub-pattern is
+  //      number of sub-patterns, the "i"th captured sub-pattern is
   //      ignored.
   //
   // CAVEAT: An optional sub-pattern that does not exist in the
@@ -366,8 +388,17 @@ class RE2 {
     return Apply(FullMatchN, text, re, Arg(std::forward<A>(a))...);
   }
 
-  // Exactly like FullMatch(), except that "re" is allowed to match
-  // a substring of "text".
+  // Like FullMatch(), except that "re" is allowed to match a substring
+  // of "text".
+  //
+  // Returns true iff all of the following conditions are satisfied:
+  //   a. "text" matches "re" partially - for some substring of "text".
+  //   b. The number of matched sub-patterns is >= number of supplied pointers.
+  //   c. The "i"th argument has a suitable type for holding the
+  //      string captured as the "i"th sub-pattern.  If you pass in
+  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      number of sub-patterns, the "i"th captured sub-pattern is
+  //      ignored.
   template <typename... A>
   static bool PartialMatch(const StringPiece& text, const RE2& re, A&&... a) {
     return Apply(PartialMatchN, text, re, Arg(std::forward<A>(a))...);
@@ -375,7 +406,17 @@ class RE2 {
 
   // Like FullMatch() and PartialMatch(), except that "re" has to match
   // a prefix of the text, and "input" is advanced past the matched
-  // text.  Note: "input" is modified iff this routine returns true.
+  // text.  Note: "input" is modified iff this routine returns true
+  // and "re" matched a non-empty substring of "input".
+  //
+  // Returns true iff all of the following conditions are satisfied:
+  //   a. "input" matches "re" partially - for some prefix of "input".
+  //   b. The number of matched sub-patterns is >= number of supplied pointers.
+  //   c. The "i"th argument has a suitable type for holding the
+  //      string captured as the "i"th sub-pattern.  If you pass in
+  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      number of sub-patterns, the "i"th captured sub-pattern is
+  //      ignored.
   template <typename... A>
   static bool Consume(StringPiece* input, const RE2& re, A&&... a) {
     return Apply(ConsumeN, input, re, Arg(std::forward<A>(a))...);
@@ -385,6 +426,15 @@ class RE2 {
   // the text.  That is, "re" need not start its match at the beginning
   // of "input".  For example, "FindAndConsume(s, "(\\w+)", &word)" finds
   // the next word in "s" and stores it in "word".
+  //
+  // Returns true iff all of the following conditions are satisfied:
+  //   a. "input" matches "re" partially - for some substring of "input".
+  //   b. The number of matched sub-patterns is >= number of supplied pointers.
+  //   c. The "i"th argument has a suitable type for holding the
+  //      string captured as the "i"th sub-pattern.  If you pass in
+  //      NULL for the "i"th argument, or pass fewer arguments than
+  //      number of sub-patterns, the "i"th captured sub-pattern is
+  //      ignored.
   template <typename... A>
   static bool FindAndConsume(StringPiece* input, const RE2& re, A&&... a) {
     return Apply(FindAndConsumeN, input, re, Arg(std::forward<A>(a))...);
@@ -397,21 +447,21 @@ class RE2 {
   // from the pattern.  \0 in "rewrite" refers to the entire matching
   // text.  E.g.,
   //
-  //   string s = "yabba dabba doo";
+  //   std::string s = "yabba dabba doo";
   //   CHECK(RE2::Replace(&s, "b+", "d"));
   //
   // will leave "s" containing "yada dabba doo"
   //
   // Returns true if the pattern matches and a replacement occurs,
   // false otherwise.
-  static bool Replace(string* str,
+  static bool Replace(std::string* str,
                       const RE2& re,
                       const StringPiece& rewrite);
 
   // Like Replace(), except replaces successive non-overlapping occurrences
   // of the pattern in the string with the rewrite. E.g.
   //
-  //   string s = "yabba dabba doo";
+  //   std::string s = "yabba dabba doo";
   //   CHECK(RE2::GlobalReplace(&s, "b+", "d"));
   //
   // will leave "s" containing "yada dada doo"
@@ -421,7 +471,7 @@ class RE2 {
   // replacing "ana" within "banana" makes only one replacement, not two.
   //
   // Returns the number of replacements made.
-  static int GlobalReplace(string* str,
+  static int GlobalReplace(std::string* str,
                            const RE2& re,
                            const StringPiece& rewrite);
 
@@ -436,15 +486,15 @@ class RE2 {
   static bool Extract(const StringPiece& text,
                       const RE2& re,
                       const StringPiece& rewrite,
-                      string* out);
+                      std::string* out);
 
   // Escapes all potentially meaningful regexp characters in
   // 'unquoted'.  The returned string, used as a regular expression,
-  // will exactly match the original string.  For example,
+  // will match exactly the original string.  For example,
   //           1.5-2.0?
   // may become:
   //           1\.5\-2\.0\?
-  static string QuoteMeta(const StringPiece& unquoted);
+  static std::string QuoteMeta(const StringPiece& unquoted);
 
   // Computes range for any strings matching regexp. The min and max can in
   // some cases be arbitrarily precise, so the caller gets to specify the
@@ -460,7 +510,8 @@ class RE2 {
   // do not compile down to infinite repetitions.
   //
   // Returns true on success, false on error.
-  bool PossibleMatchRange(string* min, string* max, int maxlen) const;
+  bool PossibleMatchRange(std::string* min, std::string* max,
+                          int maxlen) const;
 
   // Generic matching interface
 
@@ -474,18 +525,18 @@ class RE2 {
   // Return the number of capturing subpatterns, or -1 if the
   // regexp wasn't valid on construction.  The overall match ($0)
   // does not count: if the regexp is "(a)(b)", returns 2.
-  int NumberOfCapturingGroups() const;
+  int NumberOfCapturingGroups() const { return num_captures_; }
 
   // Return a map from names to capturing indices.
   // The map records the index of the leftmost group
   // with the given name.
   // Only valid until the re is deleted.
-  const std::map<string, int>& NamedCapturingGroups() const;
+  const std::map<std::string, int>& NamedCapturingGroups() const;
 
   // Return a map from capturing indices to names.
   // The map has no entries for unnamed groups.
   // Only valid until the re is deleted.
-  const std::map<int, string>& CapturingGroupNames() const;
+  const std::map<int, std::string>& CapturingGroupNames() const;
 
   // General matching routine.
   // Match against text starting at offset startpos
@@ -496,6 +547,7 @@ class RE2 {
   // I.e. matching RE2("(foo)|(bar)baz") on "barbazbla" will return true, with
   // submatch[0] = "barbaz", submatch[1].data() = NULL, submatch[2] = "bar",
   // submatch[3].data() = NULL, ..., up to submatch[nsubmatch-1].data() = NULL.
+  // Caveat: submatch[] may be clobbered even on match failure.
   //
   // Don't ask for more match information than you will use:
   // runs much faster with nsubmatch == 1 than nsubmatch > 1, and
@@ -514,22 +566,6 @@ class RE2 {
              StringPiece* submatch,
              int nsubmatch) const;
 
-  // Look for a match in something other than a string
-  // (e.g. a FILE*). This function requires a bunch of
-  // support custom to its use in special_strings.h;
-  // consumers of this interface need to update that file
-  // appropriately and link with a modified RE2.
-  //
-  // text is the StringPiece stand-in (e.g. a FILE*).
-  // buffer might be empty, (ie have .data() == NULL). If not,
-  // we assume it is a cached copy of some portion of text,
-  // but not necessarily all of text.
-  bool MatchFile(FilePiece& text,
-                 const StringPiece& buffer,
-                 Anchor anchor,
-                 FilePiece *match,
-                 int nmatch) const;
-
   // Check that the given rewrite string is suitable for use with this
   // regular expression.  It checks that:
   //   * The regular expression has enough parenthesized subexpressions
@@ -538,7 +574,8 @@ class RE2 {
   //     '\' followed by anything other than a digit or '\'.
   // A true return value guarantees that Replace() and Extract() won't
   // fail because of a bad rewrite string.
-  bool CheckRewriteString(const StringPiece& rewrite, string* error) const;
+  bool CheckRewriteString(const StringPiece& rewrite,
+                          std::string* error) const;
 
   // Returns the maximum submatch needed for the rewrite to be done by
   // Replace(). E.g. if rewrite == "foo \\2,\\1", returns 2.
@@ -549,7 +586,7 @@ class RE2 {
   // Returns true on success.  This method can fail because of a malformed
   // rewrite string.  CheckRewriteString guarantees that the rewrite will
   // be sucessful.
-  bool Rewrite(string* out,
+  bool Rewrite(std::string* out,
                const StringPiece& rewrite,
                const StringPiece* vec,
                int veclen) const;
@@ -636,17 +673,6 @@ class RE2 {
     Encoding encoding() const { return encoding_; }
     void set_encoding(Encoding encoding) { encoding_ = encoding; }
 
-    // Legacy interface to encoding.
-    // TODO(rsc): Remove once clients have been converted.
-    bool utf8() const { return encoding_ == EncodingUTF8; }
-    void set_utf8(bool b) {
-      if (b) {
-        encoding_ = EncodingUTF8;
-      } else {
-        encoding_ = EncodingLatin1;
-      }
-    }
-
     bool posix_syntax() const { return posix_syntax_; }
     void set_posix_syntax(bool b) { posix_syntax_ = b; }
 
@@ -706,35 +732,15 @@ class RE2 {
   };
 
   // Returns the options set in the constructor.
-  const Options& options() const { return options_; };
+  const Options& options() const { return options_; }
 
   // Argument converters; see below.
-  static inline Arg CRadix(short* x);
-  static inline Arg CRadix(unsigned short* x);
-  static inline Arg CRadix(int* x);
-  static inline Arg CRadix(unsigned int* x);
-  static inline Arg CRadix(long* x);
-  static inline Arg CRadix(unsigned long* x);
-  static inline Arg CRadix(long long* x);
-  static inline Arg CRadix(unsigned long long* x);
-
-  static inline Arg Hex(short* x);
-  static inline Arg Hex(unsigned short* x);
-  static inline Arg Hex(int* x);
-  static inline Arg Hex(unsigned int* x);
-  static inline Arg Hex(long* x);
-  static inline Arg Hex(unsigned long* x);
-  static inline Arg Hex(long long* x);
-  static inline Arg Hex(unsigned long long* x);
-
-  static inline Arg Octal(short* x);
-  static inline Arg Octal(unsigned short* x);
-  static inline Arg Octal(int* x);
-  static inline Arg Octal(unsigned int* x);
-  static inline Arg Octal(long* x);
-  static inline Arg Octal(unsigned long* x);
-  static inline Arg Octal(long long* x);
-  static inline Arg Octal(unsigned long long* x);
+  template <typename T>
+  static Arg CRadix(T* ptr);
+  template <typename T>
+  static Arg Hex(T* ptr);
+  template <typename T>
+  static Arg Octal(T* ptr);
 
  private:
   void Init(const StringPiece& pattern, const Options& options);
@@ -747,34 +753,27 @@ class RE2 {
 
   re2::Prog* ReverseProg() const;
 
-  string        pattern_;          // string regular expression
-  Options       options_;          // option flags
-  string        prefix_;           // required prefix (before regexp_)
-  bool          prefix_foldcase_;  // prefix is ASCII case-insensitive
-  re2::Regexp*  entire_regexp_;    // parsed regular expression
-  re2::Regexp*  suffix_regexp_;    // parsed regular expression, prefix removed
-  re2::Prog*    prog_;             // compiled program for regexp
-  bool          is_one_pass_;      // can use prog_->SearchOnePass?
+  std::string pattern_;         // string regular expression
+  Options options_;             // option flags
+  re2::Regexp* entire_regexp_;  // parsed regular expression
+  const std::string* error_;    // error indicator (or points to empty string)
+  ErrorCode error_code_;        // error code
+  std::string error_arg_;       // fragment of regexp showing error
+  std::string prefix_;          // required prefix (before suffix_regexp_)
+  bool prefix_foldcase_;        // prefix_ is ASCII case-insensitive
+  re2::Regexp* suffix_regexp_;  // parsed regular expression, prefix_ removed
+  re2::Prog* prog_;             // compiled program for regexp
+  int num_captures_;            // number of capturing groups
+  bool is_one_pass_;            // can use prog_->SearchOnePass?
 
-  mutable re2::Prog*     rprog_;         // reverse program for regexp
-  mutable const string*  error_;         // Error indicator
-                                         // (or points to empty string)
-  mutable ErrorCode      error_code_;    // Error code
-  mutable string         error_arg_;     // Fragment of regexp showing error
-  mutable int            num_captures_;  // Number of capturing groups
-
+  // Reverse Prog for DFA execution only
+  mutable re2::Prog* rprog_;
   // Map from capture names to indices
-  mutable const std::map<string, int>* named_groups_;
-
+  mutable const std::map<std::string, int>* named_groups_;
   // Map from capture indices to names
-  mutable const std::map<int, string>* group_names_;
+  mutable const std::map<int, std::string>* group_names_;
 
-  int           min_match_length_; // min possible match len
-  int           max_match_length_; // max possible match len, -1=unbounded
-
-  // Onces for lazy computations.
   mutable std::once_flag rprog_once_;
-  mutable std::once_flag num_captures_once_;
   mutable std::once_flag named_groups_once_;
   mutable std::once_flag group_names_once_;
 
@@ -784,137 +783,134 @@ class RE2 {
 
 /***** Implementation details *****/
 
-// Hex/Octal/Binary?
+namespace re2_internal {
 
-// Special class for parsing into objects that define a ParseFrom() method
-template <class T>
-class _RE2_MatchObject {
- public:
-  static inline bool Parse(const char* str, size_t n, void* dest) {
-    if (dest == NULL) return true;
-    T* object = reinterpret_cast<T*>(dest);
-    return object->ParseFrom(str, n);
-  }
-};
+// Types for which the 3-ary Parse() function template has specializations.
+template <typename T> struct Parse3ary : public std::false_type {};
+template <> struct Parse3ary<void> : public std::true_type {};
+template <> struct Parse3ary<std::string> : public std::true_type {};
+template <> struct Parse3ary<StringPiece> : public std::true_type {};
+template <> struct Parse3ary<char> : public std::true_type {};
+template <> struct Parse3ary<signed char> : public std::true_type {};
+template <> struct Parse3ary<unsigned char> : public std::true_type {};
+template <> struct Parse3ary<float> : public std::true_type {};
+template <> struct Parse3ary<double> : public std::true_type {};
+
+template <typename T>
+bool Parse(const char* str, size_t n, T* dest);
+
+// Types for which the 4-ary Parse() function template has specializations.
+template <typename T> struct Parse4ary : public std::false_type {};
+template <> struct Parse4ary<long> : public std::true_type {};
+template <> struct Parse4ary<unsigned long> : public std::true_type {};
+template <> struct Parse4ary<short> : public std::true_type {};
+template <> struct Parse4ary<unsigned short> : public std::true_type {};
+template <> struct Parse4ary<int> : public std::true_type {};
+template <> struct Parse4ary<unsigned int> : public std::true_type {};
+template <> struct Parse4ary<long long> : public std::true_type {};
+template <> struct Parse4ary<unsigned long long> : public std::true_type {};
+
+template <typename T>
+bool Parse(const char* str, size_t n, T* dest, int radix);
+
+}  // namespace re2_internal
 
 class RE2::Arg {
- public:
-  // Empty constructor so we can declare arrays of RE2::Arg
-  Arg();
+ private:
+  template <typename T>
+  using CanParse3ary = typename std::enable_if<
+      re2_internal::Parse3ary<T>::value,
+      int>::type;
 
-  // Constructor specially designed for NULL arguments
-  Arg(void*);
-  Arg(std::nullptr_t);
+  template <typename T>
+  using CanParse4ary = typename std::enable_if<
+      re2_internal::Parse4ary<T>::value,
+      int>::type;
+
+#if !defined(_MSC_VER)
+  template <typename T>
+  using CanParseFrom = typename std::enable_if<
+      std::is_member_function_pointer<
+          decltype(static_cast<bool (T::*)(const char*, size_t)>(
+              &T::ParseFrom))>::value,
+      int>::type;
+#endif
+
+ public:
+  Arg() : Arg(nullptr) {}
+  Arg(std::nullptr_t ptr) : arg_(ptr), parser_(DoNothing) {}
+
+  template <typename T, CanParse3ary<T> = 0>
+  Arg(T* ptr) : arg_(ptr), parser_(DoParse3ary<T>) {}
+
+  template <typename T, CanParse4ary<T> = 0>
+  Arg(T* ptr) : arg_(ptr), parser_(DoParse4ary<T>) {}
+
+#if !defined(_MSC_VER)
+  template <typename T, CanParseFrom<T> = 0>
+  Arg(T* ptr) : arg_(ptr), parser_(DoParseFrom<T>) {}
+#endif
 
   typedef bool (*Parser)(const char* str, size_t n, void* dest);
 
-// Type-specific parsers
-#define MAKE_PARSER(type, name)            \
-  Arg(type* p) : arg_(p), parser_(name) {} \
-  Arg(type* p, Parser parser) : arg_(p), parser_(parser) {}
+  template <typename T>
+  Arg(T* ptr, Parser parser) : arg_(ptr), parser_(parser) {}
 
-  MAKE_PARSER(char,               parse_char);
-  MAKE_PARSER(signed char,        parse_schar);
-  MAKE_PARSER(unsigned char,      parse_uchar);
-  MAKE_PARSER(float,              parse_float);
-  MAKE_PARSER(double,             parse_double);
-  MAKE_PARSER(string,             parse_string);
-  MAKE_PARSER(StringPiece,        parse_stringpiece);
-
-  MAKE_PARSER(short,              parse_short);
-  MAKE_PARSER(unsigned short,     parse_ushort);
-  MAKE_PARSER(int,                parse_int);
-  MAKE_PARSER(unsigned int,       parse_uint);
-  MAKE_PARSER(long,               parse_long);
-  MAKE_PARSER(unsigned long,      parse_ulong);
-  MAKE_PARSER(long long,          parse_longlong);
-  MAKE_PARSER(unsigned long long, parse_ulonglong);
-
-#undef MAKE_PARSER
-
-  // Generic constructor templates
-  template <class T> Arg(T* p)
-      : arg_(p), parser_(_RE2_MatchObject<T>::Parse) { }
-  template <class T> Arg(T* p, Parser parser)
-      : arg_(p), parser_(parser) { }
-
-  // Parse the data
-  bool Parse(const char* str, size_t n) const;
-
- private:
-  void*         arg_;
-  Parser        parser_;
-
-  static bool parse_null          (const char* str, size_t n, void* dest);
-  static bool parse_char          (const char* str, size_t n, void* dest);
-  static bool parse_schar         (const char* str, size_t n, void* dest);
-  static bool parse_uchar         (const char* str, size_t n, void* dest);
-  static bool parse_float         (const char* str, size_t n, void* dest);
-  static bool parse_double        (const char* str, size_t n, void* dest);
-  static bool parse_string        (const char* str, size_t n, void* dest);
-  static bool parse_stringpiece   (const char* str, size_t n, void* dest);
-
-#define DECLARE_INTEGER_PARSER(name)                                       \
- private:                                                                  \
-  static bool parse_##name(const char* str, size_t n, void* dest);         \
-  static bool parse_##name##_radix(const char* str, size_t n, void* dest,  \
-                                   int radix);                             \
-                                                                           \
- public:                                                                   \
-  static bool parse_##name##_hex(const char* str, size_t n, void* dest);   \
-  static bool parse_##name##_octal(const char* str, size_t n, void* dest); \
-  static bool parse_##name##_cradix(const char* str, size_t n, void* dest)
-
-  DECLARE_INTEGER_PARSER(short);
-  DECLARE_INTEGER_PARSER(ushort);
-  DECLARE_INTEGER_PARSER(int);
-  DECLARE_INTEGER_PARSER(uint);
-  DECLARE_INTEGER_PARSER(long);
-  DECLARE_INTEGER_PARSER(ulong);
-  DECLARE_INTEGER_PARSER(longlong);
-  DECLARE_INTEGER_PARSER(ulonglong);
-
-#undef DECLARE_INTEGER_PARSER
-
-};
-
-inline RE2::Arg::Arg() : arg_(NULL), parser_(parse_null) { }
-inline RE2::Arg::Arg(void* p) : arg_(p), parser_(parse_null) { }
-inline RE2::Arg::Arg(std::nullptr_t p) : arg_(p), parser_(parse_null) { }
-
-inline bool RE2::Arg::Parse(const char* str, size_t n) const {
-  return (*parser_)(str, n, arg_);
-}
-
-// This part of the parser, appropriate only for ints, deals with bases
-#define MAKE_INTEGER_PARSER(type, name)                    \
-  inline RE2::Arg RE2::Hex(type* ptr) {                    \
-    return RE2::Arg(ptr, RE2::Arg::parse_##name##_hex);    \
-  }                                                        \
-  inline RE2::Arg RE2::Octal(type* ptr) {                  \
-    return RE2::Arg(ptr, RE2::Arg::parse_##name##_octal);  \
-  }                                                        \
-  inline RE2::Arg RE2::CRadix(type* ptr) {                 \
-    return RE2::Arg(ptr, RE2::Arg::parse_##name##_cradix); \
+  bool Parse(const char* str, size_t n) const {
+    return (*parser_)(str, n, arg_);
   }
 
-MAKE_INTEGER_PARSER(short,              short)
-MAKE_INTEGER_PARSER(unsigned short,     ushort)
-MAKE_INTEGER_PARSER(int,                int)
-MAKE_INTEGER_PARSER(unsigned int,       uint)
-MAKE_INTEGER_PARSER(long,               long)
-MAKE_INTEGER_PARSER(unsigned long,      ulong)
-MAKE_INTEGER_PARSER(long long,          longlong)
-MAKE_INTEGER_PARSER(unsigned long long, ulonglong)
+ private:
+  static bool DoNothing(const char* /*str*/, size_t /*n*/, void* /*dest*/) {
+    return true;
+  }
 
-#undef MAKE_INTEGER_PARSER
+  template <typename T>
+  static bool DoParse3ary(const char* str, size_t n, void* dest) {
+    return re2_internal::Parse(str, n, reinterpret_cast<T*>(dest));
+  }
+
+  template <typename T>
+  static bool DoParse4ary(const char* str, size_t n, void* dest) {
+    return re2_internal::Parse(str, n, reinterpret_cast<T*>(dest), 10);
+  }
+
+#if !defined(_MSC_VER)
+  template <typename T>
+  static bool DoParseFrom(const char* str, size_t n, void* dest) {
+    if (dest == NULL) return true;
+    return reinterpret_cast<T*>(dest)->ParseFrom(str, n);
+  }
+#endif
+
+  void*         arg_;
+  Parser        parser_;
+};
+
+template <typename T>
+inline RE2::Arg RE2::CRadix(T* ptr) {
+  return RE2::Arg(ptr, [](const char* str, size_t n, void* dest) -> bool {
+    return re2_internal::Parse(str, n, reinterpret_cast<T*>(dest), 0);
+  });
+}
+
+template <typename T>
+inline RE2::Arg RE2::Hex(T* ptr) {
+  return RE2::Arg(ptr, [](const char* str, size_t n, void* dest) -> bool {
+    return re2_internal::Parse(str, n, reinterpret_cast<T*>(dest), 16);
+  });
+}
+
+template <typename T>
+inline RE2::Arg RE2::Octal(T* ptr) {
+  return RE2::Arg(ptr, [](const char* str, size_t n, void* dest) -> bool {
+    return re2_internal::Parse(str, n, reinterpret_cast<T*>(dest), 8);
+  });
+}
 
 #ifndef SWIG
-
 // Silence warnings about missing initializers for members of LazyRE2.
-// Note that we test for Clang first because it defines __GNUC__ as well.
-#if defined(__clang__)
-#elif defined(__GNUC__) && __GNUC__ >= 6
+#if !defined(__clang__) && defined(__GNUC__) && __GNUC__ >= 6
 #pragma GCC diagnostic ignored "-Wmissing-field-initializers"
 #endif
 
@@ -963,7 +959,52 @@ class LazyRE2 {
 
   void operator=(const LazyRE2&);  // disallowed
 };
-#endif  // SWIG
+#endif
+
+namespace hooks {
+
+// Most platforms support thread_local. Older versions of iOS don't support
+// thread_local, but for the sake of brevity, we lump together all versions
+// of Apple platforms that aren't macOS. If an iOS application really needs
+// the context pointee someday, we can get more specific then...
+#define RE2_HAVE_THREAD_LOCAL
+#if defined(__APPLE__) && !TARGET_OS_OSX
+#undef RE2_HAVE_THREAD_LOCAL
+#endif
+
+// A hook must not make any assumptions regarding the lifetime of the context
+// pointee beyond the current invocation of the hook. Pointers and references
+// obtained via the context pointee should be considered invalidated when the
+// hook returns. Hence, any data about the context pointee (e.g. its pattern)
+// would have to be copied in order for it to be kept for an indefinite time.
+//
+// A hook must not use RE2 for matching. Control flow reentering RE2::Match()
+// could result in infinite mutual recursion. To discourage that possibility,
+// RE2 will not maintain the context pointer correctly when used in that way.
+#ifdef RE2_HAVE_THREAD_LOCAL
+extern thread_local const RE2* context;
+#endif
+
+struct DFAStateCacheReset {
+  int64_t state_budget;
+  size_t state_cache_size;
+};
+
+struct DFASearchFailure {
+  // Nothing yet...
+};
+
+#define DECLARE_HOOK(type)                  \
+  using type##Callback = void(const type&); \
+  void Set##type##Hook(type##Callback* cb); \
+  type##Callback* Get##type##Hook();
+
+DECLARE_HOOK(DFAStateCacheReset)
+DECLARE_HOOK(DFASearchFailure)
+
+#undef DECLARE_HOOK
+
+}  // namespace hooks
 
 }  // namespace re2
 

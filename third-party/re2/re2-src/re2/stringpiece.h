@@ -19,12 +19,20 @@
 //
 // Arghh!  I wish C++ literals were "string".
 
+// Doing this simplifies the logic below.
+#ifndef __has_include
+#define __has_include(x) 0
+#endif
+
 #include <stddef.h>
 #include <string.h>
 #include <algorithm>
 #include <iosfwd>
 #include <iterator>
 #include <string>
+#if __has_include(<string_view>) && __cplusplus >= 201703L
+#include <string_view>
+#endif
 
 namespace re2 {
 
@@ -44,20 +52,15 @@ class StringPiece {
   typedef ptrdiff_t difference_type;
   static const size_type npos = static_cast<size_type>(-1);
 
-  // This for supporting other StringPiece-like things
-  // (e.g. match on a FILE*)
-  typedef const char* ptr_type;
-  typedef const char* ptr_rd_type;
-  static bool can_discard(long diff) { return false; }
-  static int discard_check_period() { return 0; }
-  void discard(bool match, ptr_type match_start, ptr_type match_end, ptr_type min_cap) const { }
-  static const char* null_ptr() { return NULL; }
-
   // We provide non-explicit singleton constructors so users can pass
   // in a "const char*" or a "string" wherever a "StringPiece" is
   // expected.
   StringPiece()
       : data_(NULL), size_(0) {}
+#if __has_include(<string_view>) && __cplusplus >= 201703L
+  StringPiece(const std::string_view& str)
+      : data_(str.data()), size_(str.size()) {}
+#endif
   StringPiece(const std::string& str)
       : data_(str.data()), size_(str.size()) {}
   StringPiece(const char* str)
@@ -127,20 +130,6 @@ class StringPiece {
   void AppendToString(std::string* target) const {
     target->append(data_, size_);
   }
-
-  void set_ptr_end(const char* data, const char* end) {
-    set(data, static_cast<size_t>(end - data));
-  }
-
-  // Find the position where c occurs (ie memchr)
-  // uses begin, end pointers
-  const char* find_c(const char* s, const char* end, int c) const
-  {
-    return reinterpret_cast<const char*>(memchr(s, c, end - s));
-  }
-
-  // Also define begin_reading
-  const_iterator begin_reading() const { return data_; }
 
   size_type copy(char* buf, size_type n, size_type pos = 0) const;
   StringPiece substr(size_type pos = 0, size_type n = npos) const;
@@ -217,7 +206,5 @@ inline bool operator>=(const StringPiece& x, const StringPiece& y) {
 std::ostream& operator<<(std::ostream& o, const StringPiece& p);
 
 }  // namespace re2
-
-#include "file_strings.h"
 
 #endif  // RE2_STRINGPIECE_H_
