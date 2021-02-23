@@ -73,7 +73,6 @@ class ForallStmt final : public Stmt
 {
 public:
   bool       zippered()       const; // 'zip' keyword used and >1 index var
-  std::vector<Symbol *>     zipSymbols();
   AList&     inductionVariables();   // DefExprs, one per iterated expr
   const AList& constInductionVariables() const; // const counterpart
   AList&     iteratedExpressions();  // Exprs, one per iterated expr
@@ -159,7 +158,6 @@ private:
 public:
   LabelSymbol*            fContinueLabel;
   LabelSymbol*            fErrorHandlerLabel;
-  std::vector<Symbol *>   fZipSyms;
 
   // for recursive iterators during lowerIterators
   DefExpr*       fRecIterIRdef;
@@ -188,7 +186,6 @@ Same idea as fFromForLoop.
 
 inline bool   ForallStmt::zippered()         const { return fZippered;   }
 inline AList& ForallStmt::inductionVariables()     { return fIterVars;   }
-inline std::vector<Symbol *> ForallStmt::zipSymbols() { return fZipSyms;   }
 inline const AList& ForallStmt::constInductionVariables() const {
   return fIterVars;
 }

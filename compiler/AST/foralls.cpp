@@ -1177,14 +1177,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
   resolveBlockStmt(preFS);
   preFS->flattenAndRemove();
 
-  if (pfs->zipCall != NULL) {
-    for_actuals (actual, pfs->zipCall) {
-      SymExpr *actualSymExpr = toSymExpr(actual);
-      INT_ASSERT(actualSymExpr);
-
-      pfs->insertZipSym(actualSymExpr->symbol());
-    }
-  }
 }
 
 void static setupRecIterFields(ForallStmt* fs, CallExpr* parIterCall);

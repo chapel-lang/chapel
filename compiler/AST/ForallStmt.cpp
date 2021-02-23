@@ -70,10 +70,6 @@ ForallStmt::ForallStmt(BlockStmt* body):
   gForallStmts.add(this);
 }
 
-void ForallStmt::insertZipSym(Symbol *sym) {
-  this->fZipSyms.push_back(sym);
-}
-
 ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   ForallStmt* _this  = new ForallStmt(COPY_INT(fLoopBody));
   for_alist(expr, fIterVars)

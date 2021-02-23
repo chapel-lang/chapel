@@ -23,6 +23,7 @@
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "resolution.h"
+#include "view.h"
 
 /* This file implements functions allowing
    late resolution passes (late const checking/cull over references
@@ -645,20 +646,24 @@ void gatherLoopDetails(ForallStmt* fs,
   bool zippered = false;
 
   Symbol* newIterLF = findNewIterLF(fs);
+  
   // copied from the other gatherLoopDetails() TODO -- can we remove?
   if (newIterLF) {
+    // we still use newIterLF for zippered reduce expressions
     isLeader = true;
     if (SymExpr* useSE = newIterLF->getSingleUse())
       if (CallExpr* useCall = toCallExpr(useSE->parentExpr))
         if (useCall->isNamed("_toFollowerZip"))
           zippered = true;
   }
-  if (fs->zippered())
+  if (fs->zippered()) {
     zippered = true;
 
-  if (fs->zipSymbols().size() > 1) {
-      isLeader = true;
-      zippered = true;
+    INT_ASSERT(fs->zipCall);
+
+    if (fs->zipCall && fs->zipCall->numActuals() > 1) {
+      isLeader = true;  // zipCall implies this
+    }
   }
 
   INT_ASSERT(isLeader ==
@@ -706,16 +711,16 @@ void gatherLoopDetails(ForallStmt* fs,
         // Other details set below.
         detailsVector.push_back(details);
       } else {
-        INT_ASSERT(fs->zipSymbols().size() > 1);
-        for_vector(Symbol, s, fs->zipSymbols()) {
+        for_actuals(actual, fs->zipCall) {
           SET_LINENO(fs);
+
+          SymExpr *actualSE = toSymExpr(actual);
+
           IteratorDetails details;
-          details.iterable = new SymExpr(s);
+          details.iterable = actualSE->copy();
           // Other details set below.
           detailsVector.push_back(details);
         }
-
-        fs->zipSymbols().clear();
       }
 
       leaderDetails.iterable = detailsVector[0].iterable;

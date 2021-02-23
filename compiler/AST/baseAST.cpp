@@ -639,20 +639,6 @@ void update_symbols(BaseAST* ast, SymbolMap* map) {
       if (LabelSymbol* y = toLabelSymbol(map->get(forall->fErrorHandlerLabel)))
           forall->fErrorHandlerLabel = y;
     }
-
-    if (forall->fZipSyms.size() > 0) {
-      std::vector<Symbol *> newZipSyms;
-      for_vector(Symbol, zipSym, forall->fZipSyms) {
-        if (Symbol *replacement = map->get(zipSym)) {
-          newZipSyms.push_back(replacement);
-        }
-        else {
-          newZipSyms.push_back(zipSym);
-        }
-      }
-      forall->fZipSyms = newZipSyms;
-    }
-
   } else if (VarSymbol* ps = toVarSymbol(ast)) {
     SUB_TYPE(ps->type);
 
