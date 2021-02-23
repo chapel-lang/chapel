@@ -1839,6 +1839,26 @@ void resolveIfExprType(CondStmt* stmt) {
   // resolveFunction() will insert casts later
 }
 
+// Issue an error if this is an interface function whose return type
+// is inferred and is not 'void'. Require explicit return type if so.
+// This does not cater to iterators as currently those are not allowed
+// in an interface.
+static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
+                                          bool isIterator) {
+  if (! isInterfaceSymbol(fn->defPoint->parentSymbol))
+    return; // not an interface function
+
+  if (retType == dtVoid)
+    return; // nothing will be returned
+
+  if (fn->retExprType != nullptr)
+    return; // the return type is declared explicitly - good
+
+  USR_FATAL_CONT(fn, "interface function %s with inferred return type",
+                 fn->name);
+  USR_PRINT(fn, "a non-void return type must be declared explicitly");
+}
+
 // Resolves an inferred return type.
 // resolveSpecifiedReturnType handles the case that the type is
 // specified explicitly.
@@ -1958,6 +1978,8 @@ void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
       }
     }
   }
+
+  checkInterfaceFunctionRetType(fn, retType, isIterator);
 }
 
 void resolveReturnType(FnSymbol* fn) {

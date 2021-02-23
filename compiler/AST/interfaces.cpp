@@ -79,8 +79,12 @@ DefExpr* InterfaceSymbol::buildDef(const char* name,
   for_alist(expr, isym->ifcBody->body) {
     SET_LINENO(expr); // does not matter since we are parsing?
 
-    if (toInterfaceFunDecl(expr) != NULL) {
-      // ok
+    if (FnSymbol* ifun = toInterfaceFunDecl(expr)) {
+      if (ifun->isIterator())
+        // Iterators bring along a lot of complications,
+        // which we do not handle at the moment.
+        USR_FATAL_CONT(ifun, "iterators at present are not allowed"
+                             " in an interface");
 
     } else if (VarSymbol* AT = toAssociatedTypeDecl(expr)) {
       // not allowing defaults for now
