@@ -34,8 +34,6 @@
 #include "stringutil.h"
 #include "TransformLogicalShortCircuit.h"
 
-
-
 const char* forallIntentTagDescription(ForallIntentTag tfiTag) {
   switch (tfiTag) {
     case TFI_DEFAULT:       return "default";
@@ -1145,7 +1143,6 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
                                                moveToFlag,
                                                new CallExpr(PRIM_MOVE, T2, gFalse)));
 
-        TransformLogicalShortCircuit handleAndsOrs;
         moveToFlag->getStmtExpr()->accept(&handleAndsOrs);
         normalize(leadForLoop);
       }
