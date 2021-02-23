@@ -301,21 +301,11 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
 ForallStmt* isForallIterExpr(Expr* expr) {
-  if (CallExpr *iterCall = toCallExpr(expr)) {
-    if (iterCall->isPrimitive(PRIM_ZIP)) {
-      // in many cases PRIM_ZIP is right before the pertinent forall stmt.
-      // However, when the forall has a reduce intent, its setup comes in
-      // between the PRIM_ZIP and the forall statement.
-      Expr *cur = expr->next;
-      while(cur) {
-        if (ForallStmt* pfs = toForallStmt(cur)) {
-          INT_ASSERT(pfs->zipCall() == iterCall);
+  if (CallExpr *iterCall = toCallExpr(expr))
+    if (iterCall->isPrimitive(PRIM_ZIP))
+      if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+        if (pfs->zipCall() == iterCall)
           return pfs;
-        }
-        cur = cur->next;
-      }
-    }
-  }
 
   if (expr->list != NULL)
     if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
