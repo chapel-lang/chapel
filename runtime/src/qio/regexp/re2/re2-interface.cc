@@ -109,7 +109,9 @@ re_cache* local_cache(void)
 static
 void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Options *opts)
 {
-  opts->set_utf8(options->utf8);
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  RE2::Options::Encoding byteE = RE2::Options::Encoding::EncodingLatin1;
+  opts->set_encoding(options->utf8 ? utf8E : byteE);
   opts->set_posix_syntax(options->posix);
   opts->set_literal(options->literal);
   opts->set_never_capture(options->nocapture);
@@ -122,7 +124,9 @@ void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Opt
 static
 void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_t* options)
 {
-  options->utf8 = opts->utf8();
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  RE2::Options::Encoding e = opts->encoding();
+  options->utf8 = (e == utf8E);
   options->posix = opts->posix_syntax();
   options->literal = opts->literal();
   options->nocapture = opts->never_capture();
@@ -135,7 +139,9 @@ void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_
 static
 bool equal_options(const RE2::Options *opts, const qio_regexp_options_t* options)
 {
-  return  options->utf8 == opts->utf8() &&
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  bool optsUtf8 = (opts->encoding() == utf8E);
+  return  options->utf8 == optsUtf8 &&
           options->posix == opts->posix_syntax() &&
           options->literal == opts->literal() &&
           options->nocapture == opts->never_capture() &&
@@ -169,7 +175,7 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
       oldest_date = c->elems[i].date;
     }
     if( ! c->elems[i].re ) continue;
-    const string& pat = c->elems[i].re->re.pattern();
+    const std::string& pat = c->elems[i].re->re.pattern();
     const RE2::Options& opt = c->elems[i].re->re.options();
     if( (uint64_t) pat.length() == (uint64_t) str_len &&
         0 == memcmp(pat.data(), str, str_len ) &&
