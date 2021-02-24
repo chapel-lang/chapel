@@ -243,35 +243,34 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
         }
 
         if (fn->hasFlag(FLAG_OPERATOR)) {
-          if (formal->typeInfo() == dtMethodToken &&
-              info.actuals.v[i]->typeInfo() != dtMethodToken) {
-            // Formal is a method token and the actual is not (but this was an
-            // operator call so that's okay)
+          if (formal->typeInfo() == dtMethodToken) {
+            // Don't care about method token arguments to operator functions,
+            // or the next argument (which should be "this")
             formal = next_formal(formal);
             j++;
             skipNextFormal = true;
-            continue;
+          }
 
-          } else if (skipNextFormal) {
+          if (skipNextFormal) {
             INT_ASSERT(formal->hasFlag(FLAG_ARG_THIS));
             formal = next_formal(formal);
             j++;
             skipNextFormal = false; // clear
             continue;
 
-          } else if (formal->typeInfo() != dtMethodToken &&
-                     info.actuals.v[i]->typeInfo() == dtMethodToken) {
-            // actual is a method token but the formal is not (but this was an
-            // operator call so that's okay)
+          }
+
+          if (info.actuals.v[i]->typeInfo() == dtMethodToken) {
+            // Don't care about method token actuals to operator calls, or
+            // the next actual (which should correspond to the "this" argument)
             skippedThisActual = true;
             skipNextActual = true;
             break;
-          } else if (skipNextActual) {
-            // previous actual was a method token, so this is intended to be for
-            // a "this" argument that doesn't exist (but that's okay because
-            // this is an operator call).
+          }
+
+          if (skipNextActual) {
             skippedThisActual = true;
-            skipNextActual = false;
+            skipNextActual = false; // clear
             break;
           }
         }
