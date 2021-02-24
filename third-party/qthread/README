@@ -24,3 +24,5 @@ as follows:
 
 * We added a simple mechanism to reset the automatic task spawning
   order for better affinity between consecutive parallel loops.
+
+* We fixed a bug in the binders topology layer.
