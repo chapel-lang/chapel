@@ -799,6 +799,11 @@ static bool doFindCopyElisionPoints(Expr* start,
       VariablesSet newEligible;
       doFindCopyElisionPoints(start, map, newEligible);
 
+      // note the uses of symbols in the zip call
+      if (CallExpr *zipCall = forall->zipCall()) {
+        noteUses(zipCall, map);
+      }
+
     // try { ... }
     } else if (isTryStmt(cur)) {
       INT_FATAL("try statement not expected at this point in compilation");
