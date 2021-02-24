@@ -859,7 +859,18 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
 
   // sjd: stopgap to avoid shadowing variables or functions by methods
   } else if (fn->isMethod() == true) {
-    updateMethod(usymExpr);
+    BlockStmt* block = usymExpr->getScopeBlock();
+    FnSymbol* containingFn = usymExpr->getFunction();
+    bool convert = true;
+    if (block != NULL && containingFn != NULL) {
+      if (block == containingFn->lifetimeConstraints) {
+        // This is in a lifetime constraint clause.  Don't make this a method
+        // call
+        convert = false;
+      }
+    }
+    if (convert)
+      updateMethod(usymExpr);
 
   // handle function call without parentheses
   } else if (fn->hasFlag(FLAG_NO_PARENS) == true) {
