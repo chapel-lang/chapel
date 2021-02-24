@@ -1441,26 +1441,32 @@ static void autoAggregation(ForallStmt *forall) {
 
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
-  std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
+  if (loopHasValidInductionVariables(forall)) {
+    std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
 
-  for_vector(Expr, lastStmt, lastStmts) {
-    if (CallExpr *lastCall = toCallExpr(lastStmt)) {
-      if (lastCall->isNamedAstr(astrSassign)) {
-        // no need to do anything if it is array access
-        if (assignmentSuitableForAggregation(lastCall, forall)) {
-          LOG_AA(1, "Found an aggregation candidate", lastCall);
+    for_vector(Expr, lastStmt, lastStmts) {
+      if (CallExpr *lastCall = toCallExpr(lastStmt)) {
+        if (lastCall->isNamedAstr(astrSassign)) {
+          // no need to do anything if it is array access
+          if (assignmentSuitableForAggregation(lastCall, forall)) {
+            LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-          insertAggCandidate(lastCall, forall);
-        }
-        // we need special handling if it is a symbol that is an array element
-        else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
-          LOG_AA(1, "Found an aggregation candidate", lastCall);
+            insertAggCandidate(lastCall, forall);
+          }
+          // we need special handling if it is a symbol that is an array element
+          else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
+            LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-          insertAggCandidate(lastCall, forall);
+            insertAggCandidate(lastCall, forall);
+          }
         }
       }
     }
   }
+  else {
+    LOG_AA(1, "Can't optimize this forall: invalid induction variables", forall);
+  }
+
   LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
   LOGLN_AA(forall);
 }
