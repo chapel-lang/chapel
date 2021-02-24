@@ -44,6 +44,6 @@ foo(real(64), 9.0, 13.0, "real(64)");
 //foo(complex(64), 10.0: complex(64), 14.0: complex(64), "complex(64)");
 //foo(complex(128), 11.0: complex(128), 15.0: complex(128), "complex(128)");
 foo(imag, 12.0i, 16.0i, "imag");
-foo(string, "Hello,", "world!", "string");
+//foo(string, "Hello,", "world!", "string");
 //type r = range;
 //foo(r, 1..3, 4..7, "range");
