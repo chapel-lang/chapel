@@ -656,11 +656,13 @@ void gatherLoopDetails(ForallStmt* fs,
         if (useCall->isNamed("_toFollowerZip"))
           zippered = true;
   }
-  if (fs->zippered()) {
+  if (fs->zippered()) { // TODO this is not true if zip is over tuple expansion?
     zippered = true;
 
-    INT_ASSERT(fs->zipCall());
+  }
 
+  if (fs->zipCall()) {
+    zippered = true;
     if (fs->zipCall()->numActuals() > 1) {
       isLeader = true;  // zipCall implies this
     }
