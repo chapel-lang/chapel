@@ -2278,7 +2278,7 @@ static Expr* preFoldNamed(CallExpr* call) {
         call->replace(retval);
       }
     } else if (call->get(rhsNum)->getValType() == dtUninstantiated) {
-      retval = (call->get(rhsNum)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
+      retval = (call->get(lhsNum)->getValType() != dtUninstantiated) ? new SymExpr(gTrue) : new SymExpr(gFalse);
       call->replace(retval);
     }
 
