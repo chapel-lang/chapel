@@ -1900,12 +1900,18 @@ static void destroyFormalInTaskFn(ArgSymbol* formal, FnSymbol* taskFn) {
 ************************************** | *************************************/
 
 
-static void removeEndOfStatementMarkersElidedCopyPrims() {
+static void removeEndOfStatementMarkersElidedCopyPrimsZips() {
   for_alive_in_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_END_OF_STATEMENT))
       call->remove();
     if (call->isPrimitive(PRIM_ASSIGN_ELIDED_COPY))
       call->primitive = primitives[PRIM_ASSIGN];
+
+    // we keep PRIM_ZIPs after resolution as markers to avoid copy elision for
+    // symbols that are used in zip clauses. At this point, we no longer need
+    // those
+    if (call->isPrimitive(PRIM_ZIP))
+      call->remove();
   }
 }
 
@@ -2001,6 +2007,6 @@ void callDestructors() {
 
   convertClassTypesToCanonical();
 
-  removeEndOfStatementMarkersElidedCopyPrims();
+  removeEndOfStatementMarkersElidedCopyPrimsZips();
   removeElidedOnBlocks();
 }
