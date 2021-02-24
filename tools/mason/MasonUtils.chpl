@@ -21,8 +21,8 @@
 
 
 /* A helper file of utilities for Mason */
-private use List;
-private use Map;
+use List;
+use Map;
 
 public use Spawn;
 public use FileSystem;
@@ -217,35 +217,21 @@ proc runSpackCommand(command) {
 }
 
 
-proc hasOptions(args: list(string), const opts: string ...) {
-  var ret = false;
-
-  for o in opts {
-    const found = args.count(o) != 0;
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
+proc hasHelpOption(args: list(string)) {
+  return args.count("-h") > 0 || args.count("--help");
 }
 
-
-proc hasOptions(args : [] string, const opts : string ...) {
-  var ret = false;
-
-  for o in opts {
-    const (found, idx) = args.find(o);
-    if found {
-      ret = true;
-      break;
-    }
+proc hasHelpOption(args: [] string) {
+  {
+    const (found, idx) = args.find("-h");
+    if found then return true;
   }
-
-  return ret;
+  {
+    const (found, idx) = args.find("---help");
+    if found then return true;
+  }
+  return false;
 }
-
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;

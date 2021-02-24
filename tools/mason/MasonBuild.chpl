@@ -19,12 +19,13 @@
  */
 
 
-private use List;
-private use Map;
+use List;
+use Map;
 
 use TOML;
 use Spawn;
 use FileSystem;
+use MasonArguments;
 use MasonUtils;
 use MasonHelp;
 use MasonEnv;
@@ -33,7 +34,7 @@ use MasonSystem;
 use MasonExternal;
 use MasonExample;
 
-proc masonBuild(args: [] string) throws {
+proc masonBuild(args: list(string)) throws {
   var show = false;
   var release = false;
   var force = false;
@@ -42,50 +43,37 @@ proc masonBuild(args: [] string) throws {
   var example = false;
   var skipUpdate = MASON_OFFLINE;
 
-  if args.size > 2 {
+  var helpFlag = new HelpFlag();
+  var dashFlag = new OtherArgsFlag('--');
+  var releaseFlag = new BooleanFlag('--release');
+  var forceFlag = new BooleanFlag('--force');
+  var showFlag = new BooleanFlag('--show');
+  var updateFlag = new BooleanFlag( '--update', '--no-update', !MASON_OFFLINE);
+  var exampleFlag = new BooleanFlag('--example');
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs,
+                       helpFlag, dashFlag, releaseFlag,
+                       forceFlag, showFlag, updateFlag,
+                       exampleFlag);
 
-    // strip off the first two indices
-    for i in args.indices#-(args.size-2) {
-      var arg = args[i];
-      if opt == true {
-        compopts.append(arg);
-      }
-      else if arg == '-h' || arg == '--help' {
-        masonBuildHelp();
-        exit(0);
-      }
-      else if arg == '--' {
-        if example then
-          throw new owned MasonError("Examples do not support `--` syntax");
-        opt = true;
-      }
-      else if arg == '--release' {
-        release = true;
-      }
-      else if arg == '--force' {
-        force = true;
-      }
-      else if arg == '--show' {
-        show = true;
-      }
-      else if arg.startsWith('--example=') {
-        example = true;
-        compopts.append(arg);
-      }
-      else if arg == '--example' {
-        example = true;
-      }
-      else if arg == '--update' {
-        skipUpdate = false;
-      }
-      else if arg == '--no-update' {
-        skipUpdate = true;
-      }
-      else {
-        compopts.append(arg);
-      }
-    }
+  if !ok || helpFlag.present {
+    masonBuildHelp();
+    exit(0);
   }
+  if dashFlag.present {
+    if exampleFlag.present then
+      throw new owned MasonError("Examples do not support `--` syntax");
+  }
+  release = releaseFlag.value;
+  force = forceFlag.value;
+  show = showFlag.value;
+  example = exampleFlag.value;
+  skipUpdate = !updateFlag.value;
+
+  for otherArg in otherArgs {
+    compopts.append(otherArg);
+  }
+
   if example {
     // compopts become test names. Build never runs examples
     compopts.append("--no-run");
@@ -94,7 +82,7 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
-    masonExample(compopts.toArray());
+    masonExample(compopts);
   }
   else {
     var argsList = new list(string);

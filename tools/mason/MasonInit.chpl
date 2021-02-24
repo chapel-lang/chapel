@@ -22,7 +22,7 @@ use FileSystem;
 use Path;
 use Spawn;
 use TOML;
-private use List;
+use List;
 
 use MasonEnv;
 use MasonNew;
@@ -31,52 +31,58 @@ use MasonHelp;
 use MasonUtils;
 use MasonExample;
 use MasonModify;
+use MasonArguments;
 
 /*
 Initialises a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
-proc masonInit(args: [] string) throws {
+proc masonInit(args: list(string)) throws {
   try! {
     var dirName = '';
     var show = false;
     var packageName = '';
-    var countArgs = args.domain.low + 2;
     var defaultBehavior = false;
-    for arg in args[args.domain.low+2..] {
-      countArgs += 1;
-      select (arg) {
-        when '-h' {
-          masonInitHelp();
-          exit();
-        }
-        when '--help' {
-          masonInitHelp();
-          exit();
-        }
-        when '--show' {
-          show = true;
-        }
-        when '-d' {
-          defaultBehavior = true;
-        }
-        when '--default' {
-          defaultBehavior = true;
-        }
-        when '--name' {
-          packageName = args[countArgs];
-        }
-        otherwise {
-          if arg.startsWith('--name=') {
-            var res = arg.split("=");
-            packageName = res[1];
-          }
-          else {
-            if args[countArgs - 2] != "--name" then dirName = arg;
-          }
-        }
+
+    var packageNameProvided = false;
+    var dirNameProvided = false;
+
+    var helpFlag = new HelpFlag();
+    var showFlag = new BooleanFlag('--show');
+    var defaultFlag = new BooleanFlag( ('-d', '--default'), none, false);
+    var nameFlag = new ValueFlag('--name');
+    var otherArgs: list(string);
+
+    var ok = processArgs(args, otherArgs,
+                         helpFlag, showFlag, defaultFlag);
+    if !ok || helpFlag.present {
+      masonInitHelp();
+      exit(1);
+    }
+
+    show = showFlag.value;
+    defaultBehavior = defaultFlag.value;
+    if nameFlag.present {
+      packageName = nameFlag.value;
+      packageNameProvided = true;
+    }
+    for otherArg in otherArgs {
+      if dirNameProvided {
+        masonInitHelp();
+        exit(1);
       }
+      dirName = otherArg;
+      dirNameProvided = true;
+    }
+
+    if !dirNameProvided {
+      masonInitHelp();
+      exit(1);
+    }
+
+    if !packageNameProvided {
+      packageName = dirName;
     }
 
     if dirName == '' {

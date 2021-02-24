@@ -22,59 +22,39 @@ use Regexp;
 use FileSystem;
 use TOML;
 use MasonUtils;
-private use Map;
+use MasonArguments;
+use List;
+use Map;
 
 /* Modify manifest file */
-proc masonModify(args: [] string) throws {
+proc masonModify(op: string, args: list(string)) throws {
   try! {
+    var helpFlag = new HelpFlag();
+    var systemFlag = new BooleanFlag('--system');
+    var externalFlag = new BooleanFlag('--external');
+    var defaultFlag = new BooleanFlag( ['-d', '--default'], none, false);
+    var nameFlag = new ValueFlag('--name');
+    var otherArgs: list(string);
 
-    // Check for help flags
-    for arg in args[1..] {
-      if arg == '-h' || arg == '--help' {
-        masonModifyHelp();
-        exit(0);
-      }
-    }
-
-    // Check for incorrect usage
-    if args.size < 3 {
+    var ok = processArgs(args, otherArgs,
+                         helpFlag, systemFlag, externalFlag, defaultFlag,
+                         nameFlag);
+    if !ok || helpFlag.present || otherArgs.isEmpty() {
       masonModifyHelp();
-      exit(0);
+      exit(1);
     }
 
-    // Parse arguments
-    var external = false;
-    var system = false;
-    var add = false;
-    var remove = false;
+    var external = externalFlag.value;
+    var system = systemFlag.value;
+    var add = (op == 'add');
+    var remove = (op == 'remove');
     var dep = "";
-    for arg in args[1..] {
+    for arg in args {
       if arg.startsWith('-') {
-        // Parse optional arguments
-        select (arg) {
-          when '--system' {
-            system = true;
-          }
-          when '--external' {
-            external = true;
-          }
-          otherwise {
-            throw new owned MasonError("Unrecognized flag: " + arg);
-          }
-        }
+        throw new owned MasonError("Unrecognized flag: " + arg);
       } else {
-        // Parse positional arguments
-        select (arg) {
-          when 'add' {
-            add = true;
-          }
-          when 'rm' {
-            remove = true;
-          } otherwise {
-            if dep.isEmpty() then dep = arg;
-            else throw new owned MasonError("More than one package specified: " + dep + ', ' + arg);
-          }
-        }
+        if dep.isEmpty() then dep = arg;
+        else throw new owned MasonError("More than one package specified: " + dep + ', ' + arg);
       }
     }
 

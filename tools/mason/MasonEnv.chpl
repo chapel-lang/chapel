@@ -18,9 +18,10 @@
  * limitations under the License.
  */
 
-private use List;
+use List;
 use MasonUtils;
 public use MasonHelp;
+use MasonArguments;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
 
 proc MASON_HOME : string {
@@ -111,13 +112,18 @@ proc MASON_REGISTRY {
   return registries;
 }
 
-proc masonEnv(args) {
-  if hasOptions(args, "-h", "--help") {
+proc masonEnv(args: list(string)) {
+  var helpFlag = new HelpFlag();
+  var debugFlag = new BooleanFlag("--debug");
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs, helpFlag);
+
+  if !ok || helpFlag.present || !otherArgs.isEmpty() {
     masonEnvHelp();
     exit(0);
   }
 
-  const debug = hasOptions(args, "--debug");
+  const debug = debugFlag.value;
 
   proc printVar(name : string, in val : string) {
     if getEnv(name) != "" then

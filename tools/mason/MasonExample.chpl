@@ -20,8 +20,8 @@
 
 
 
-private use List;
-private use Map;
+use List;
+use Map;
 use TOML;
 use Spawn;
 use Path;
@@ -32,10 +32,10 @@ use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
 use MasonEnv;
+use MasonArguments;
 
 /* Runs the .chpl files found within the /example directory */
-proc masonExample(args: [] string) {
-
+proc masonExample(args: list(string)) {
   var show = false;
   var run = true;
   var build = true;
@@ -44,43 +44,31 @@ proc masonExample(args: [] string) {
   var skipUpdate = MASON_OFFLINE;
   var update = false;
   var examples: list(string);
-  for arg in args {
-    if arg == '--show' {
-      show = true;
-    }
-    else if arg == '--no-run' {
-      run = false;
-    }
-    else if arg == '--no-build' {
-      build = false;
-    }
-    else if arg == '--release' {
-      release = true;
-    }
-    else if arg == '--force' {
-      force = true;
-    }
-    else if arg == '--no-update' {
-      skipUpdate = true;
-    }
-    else if arg == '--update' {
-      skipUpdate = false;
-    }
-    else if arg.startsWith('--example=') {
-      var exampleProgram = arg.split("=");
-      examples.append(exampleProgram[1]);
-      continue;
-    }
-    else if arg == '--example' {
-      continue;
-    }
-    else if arg == '--build' {
-      continue;
-    }
-    else {
-      examples.append(arg);
-    }
+
+  var showFlag = new BooleanFlag('--show');
+  var runFlag = new BooleanFlag( none, ('--no-run',), true);
+  var buildFlag = new BooleanFlag( '--build', '--no-build', true);
+  var releaseFlag = new BooleanFlag('--release');
+  var forceFlag = new BooleanFlag('--force');
+  var updateFlag = new BooleanFlag('--update', '--no-update', !MASON_OFFLINE);
+  var otherArgs: list(string);
+  var ok = processArgs(args, otherArgs,
+                       showFlag, runFlag, buildFlag, releaseFlag, forceFlag,
+                       updateFlag);
+
+  if !ok {
+    writeln("error running mason example");
+    exit(0);
   }
+  show = showFlag.value;
+  run = runFlag.value;
+  build = buildFlag.value;
+  release = releaseFlag.value;
+  force = forceFlag.value;
+  skipUpdate = !updateFlag.value;
+
+  examples = otherArgs;
+
   updateLock(skipUpdate);
   runExamples(show, run, build, release, force, examples);
 }

@@ -22,6 +22,9 @@
 use Path;
 use IO;
 use Spawn;
+use List;
+
+use MasonArguments;
 use MasonModify;
 use FileSystem;
 use MasonUtils;
@@ -33,7 +36,7 @@ use MasonEnv;
   Creates a new library project at a given directory
   mason new <projectName/directoryName>
 */
-proc masonNew(args: [] string) throws {
+proc masonNew(args: list(string)) throws {
   var vcs = true;
   var show = false;
   var packageName = '';
@@ -42,51 +45,57 @@ proc masonNew(args: [] string) throws {
   var chplVersion = '';
   var license = 'None';
   try! {
-    if args.size < 3 {
+    if args.size == 0 {
       var metadata = beginInteractiveSession('','','','');
       packageName = metadata[0];
       dirName = packageName;
       version = metadata[1];
       chplVersion = metadata[2];
       license = metadata[3];
-    }
-    else {
-      var countArgs = args.domain.low + 2;
-      for arg in args[args.domain.low+2..] {
-        countArgs += 1;
-        select (arg) {
-          when '-h' {
-            masonNewHelp();
-            exit();
-          }
-          when '--help' {
-            masonNewHelp();
-            exit();
-          }
-          when '--no-vcs' {
-            vcs = false;
-          }
-          when '--show' {
-            show = true;
-          }
-          when '--name' {
-              packageName = args[countArgs];
-          }
-          otherwise {
-            if arg.startsWith('--name=') {
-              var res = arg.split("=");
-              packageName = res[1];
-            }
-            else {
-              if args[countArgs - 2] != '--name' then
-              dirName = arg;
-              if packageName.size == 0 then
-              packageName = arg;
-            }
-          }
+    } else {
+      // consume the arguments
+      var packageNameProvided = false;
+      var dirNameProvided = false;
+
+      var helpFlag = new HelpFlag();
+      var vcsFlag = new BooleanFlag( none, ('--no-vcs',), true);
+      var showFlag = new BooleanFlag('--show');
+      var nameFlag = new ValueFlag('--name');
+      var otherArgs: list(string);
+
+      var ok = processArgs(args, otherArgs,
+                           helpFlag, vcsFlag, showFlag, nameFlag);
+      if !ok || helpFlag.present {
+        masonNewHelp();
+        exit();
+      }
+
+      vcs = vcsFlag.value;
+      show = showFlag.value;
+
+      if nameFlag.present {
+        packageName = nameFlag.value;
+        packageNameProvided = true;
+      }
+      for otherArg in otherArgs {
+        if dirNameProvided {
+          masonNewHelp();
+          exit();
         }
+        dirName = otherArg;
+        dirNameProvided = true;
+      }
+
+      if !dirNameProvided {
+        masonNewHelp();
+        exit();
+      }
+
+      if !packageNameProvided {
+        packageName = dirName;
       }
     }
+
     if validatePackageName(dirName=packageName) {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");

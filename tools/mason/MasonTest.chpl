@@ -18,19 +18,20 @@
  * limitations under the License.
  */
 
-
-private use List;
-private use Map;
-use TOML;
-use Time;
-use Spawn;
 use MasonUtils;
 use MasonHelp;
 use MasonUpdate;
 use MasonBuild;
-use Path;
-use FileSystem;
+use MasonArguments;
 use TestResult;
+
+use FileSystem;
+use List;
+use Map;
+use Path;
+use TOML;
+use Time;
+use Spawn;
 use Sys;
 
 var subdir = false;
@@ -44,71 +45,56 @@ var files: list(string);
 /* Runs the .chpl files found within the /tests directory of Mason packages
    or files which in the path provided.
 */
-proc masonTest(args: [] string) throws {
+proc masonTest(args: list(string)) throws {
+  var helpFlag = new HelpFlag();
+  var showFlag = new BooleanFlag('--show');
+  var runFlag = new BooleanFlag(none, ('--no-run',), true);
+  var parallelFlag = new BooleanFlag('--parallel');
+  var updateFlag = new BooleanFlag('--update', '--no-update', !MASON_OFFLINE);
+  var dashFlag = new OtherArgsFlag('-', '--');
+  var keepBinaryFlag = new BooleanFlag('--keep-binary');
+  var recursiveFlag = new BooleanFlag('--recursive');
+  var commFlag = new ValueFlag('--setComm');
+  var otherArgs: list(string);
 
-  var show = false;
-  var run = true;
-  var parallel = false;
-  var skipUpdate = MASON_OFFLINE;
+  var ok = processArgs(args, otherArgs,
+                       helpFlag, showFlag, runFlag, parallelFlag, updateFlag,
+                       dashFlag, keepBinaryFlag, recursiveFlag, commFlag);
+  if !ok || helpFlag.present {
+    masonRunHelp();
+    exit();
+  }
+
+  var show = showFlag.value;
+  var run = runFlag.value;
+  var parallel = parallelFlag.value;
+  var skipUpdate = !updateFlag.value;
+  keepExec = keepBinaryFlag.value;
+  subdir = recursiveFlag.value;
+  if commFlag.present {
+    setComm = commFlag.value;
+  }
+
   var compopts: list(string);
   var searchSubStrings: list(string);
-  var countArgs = args.indices.low+2;
-  for arg in args[args.indices.low+2..args.indices.high] {
-    countArgs += 1;
-    select (arg) {
-      when '-h'{
-        masonTestHelp();
-        exit(0);
+
+  if dashFlag.present {
+    throw new owned MasonError("Testing does not support -- syntax");
+  }
+
+  for arg in otherArgs {
+    try! {
+      if isFile(arg) && arg.endsWith(".chpl") {
+        files.append(arg);
       }
-      when '--help'{
-        masonTestHelp();
-        exit(0);
+      else if isDir(arg) {
+        dirs.append(arg);
       }
-      when '--show'{
-        show = true;
+      else if arg.startsWith('-') {
+        compopts.append(arg);
       }
-      when '--no-run'{
-        run = false;
-      }
-      when '--parallel' {
-        parallel = true;
-      }
-      when '--' {
-        throw new owned MasonError("Testing does not support -- syntax");
-      }
-      when '--keep-binary' {
-        keepExec = true;
-      }
-      when '--recursive' {
-        subdir = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--setComm' {
-        setComm = args[countArgs];
-      }
-      otherwise {
-        if arg.startsWith('--setComm='){
-          setComm = arg['--setComm='.size..];
-        }
-        try! {
-          if isFile(arg) && arg.endsWith(".chpl") {
-            files.append(arg);
-          }
-          else if isDir(arg) {
-            dirs.append(arg);
-          }
-          else if arg.startsWith('-') {
-            compopts.append(arg);
-          }
-          else {
-            searchSubStrings.append(arg);
-          }
-        }
+      else {
+        searchSubStrings.append(arg);
       }
     }
   }
