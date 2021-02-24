@@ -135,8 +135,8 @@ void doPreNormalizeArrayOptimizations() {
 
 Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
-  // This primitive is created with 3 arguments:
-  // (call "may be local arr elem": elem, arr, paramFlag)
+  // This primitive is created with 4 arguments:
+  // (call "may be local arr elem": elem, arr, paramFlag, fastFollowerControl)
   //
   // But we remove the second argument right after using it, because it can be
   // an expression with side effects
@@ -1940,9 +1940,13 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
   forall->insertBefore(checkSymDef);
 
-  // if `onlyIfFastFollower` is set, we want to revert this flag to true for the
-  // fast follower copy, if not, we really don't care and pass true so that it
-  // doesn't prevent optimization
+  // We want the `fastFollowerControl` flag to be false for the non-fast
+  // follower, and true elsewhere. So, if `onlyIfFastFollower` is set, we
+  // initally set `fastFollowerControl` to be `false`. We will switch it to
+  // `true` when we copy the fast follower body, later on.
+  //
+  // If `onlyIfFastFollower` is unset, this flag shouldn't hinder the
+  // optimization, so we set it to `true`.
   SymExpr *fastFollowerControl = new SymExpr(onlyIfFastFollower ? gFalse:gTrue);
 
   // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
@@ -1993,12 +1997,19 @@ static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
 
   for_vector(SymExpr, se, symExprsToCheck) {
     if (CallExpr *parentCall = toCallExpr(se->parentExpr)) {
+      // is `aggregator used in another `PRIM_MAYBE_AGGREGATE_ASSIGN`?
       if (parentCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
         shouldRemove = false;
         break;
       }
 
+      // is `aggregator` receiver of a `copy` call?
       if (parentCall->isNamed("copy")) {
+        // this check should be enough to make sure that this is an aggregated
+        // copy call. The following asserts make sure of that:
+        INT_ASSERT(toSymExpr(parentCall->get(2))->symbol() == aggregator);
+        INT_ASSERT(parentCall->resolvedFunction()->_this->getValType() ==
+                   aggregator->getValType());
         shouldRemove = false;
         break;
       }
