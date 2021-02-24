@@ -22,7 +22,7 @@ record ComplexR {
     this.bor = other.value();
   }
 }
-proc =(ref lhs: ComplexR, rhs: ComplexR) lifetime lhs=rhs {
+operator =(ref lhs: ComplexR, rhs: ComplexR) lifetime lhs=rhs {
   lhs.own = nil;
   lhs.bor = rhs.value();
 }
