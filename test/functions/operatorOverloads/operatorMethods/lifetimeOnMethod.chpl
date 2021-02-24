@@ -5,16 +5,20 @@ record Foo {
     return lhs.x < rhs.x;
   }
 
-  proc otherMethod(arg1: int) lifetime this < arg1 {
-    x += arg1;
+  proc otherMethod(arg1: Other) lifetime this < arg1 {
+    x += arg1.y;
   }
+}
+
+class Other {
+  var y: int;
 }
 
 proc main() {
   var foo: Foo;
   writeln(foo);
-  var myVal = 3;
-  foo.otherMethod(myVal);
+  var other = new Other(3);
+  foo.otherMethod(other.borrow());
   writeln(foo);
   var foo2: Foo;
   writeln(foo < foo2);
