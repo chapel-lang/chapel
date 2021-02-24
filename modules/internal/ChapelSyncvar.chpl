@@ -75,8 +75,8 @@ module ChapelSyncvar {
            isRealType(t)          ||
            isImagType(t)          ||
            isEnumType(t)          ||
-           isClassType(t)         ||
-           isStringType(t)        ||    // Should this be allowed?
+           isUnmanagedClassType(t) ||
+           isBorrowedClassType(t)  ||
            t == chpl_taskID_t;
 
   private proc ensureFEType(type t) {
