@@ -2600,6 +2600,9 @@ void codegen() {
 }
 
 void makeBinary(void) {
+  if (no_codegen)
+    return;
+
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
     makeBinaryLLVM();
