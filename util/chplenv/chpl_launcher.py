@@ -53,14 +53,10 @@ def get():
                 launcher_val = 'gasnetrun_ibv'
             elif substrate_val == 'ucx':
                 launcher_val = 'gasnetrun_ucx'
-            elif substrate_val == 'mxm':
-                launcher_val = 'gasnetrun_ibv'
             elif substrate_val == 'ofi':
                 launcher_val = 'gasnetrun_ofi'
             elif substrate_val == 'psm':
                 launcher_val = 'gasnetrun_psm'
-        elif comm_val == 'mpi':
-            launcher_val = 'mpirun'
         else:
             launcher_val = 'none'
 
