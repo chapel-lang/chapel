@@ -368,6 +368,34 @@ proc dirname(name: string): string {
   return dirname(path=name);
 }
 
+/*
+  Splits the given path into it's root and extension.
+  Leading periods in the path are ignored.
+
+  :arg path: A string file name, not necessarily valid.
+  :type path: `string`
+
+  :returns: A tuple of the form ``(root, ext)``.
+  :rtype: `(string, string)`
+
+*/
+
+proc splitExt(path:string): (string, string) {
+  var lead = 0;
+  while lead < path.size && path[lead] == "." {
+    lead += 1;
+  }
+
+  var lastIdx = path[lead..].rfind(".") + lead;
+
+  if(lead == path.size || lastIdx == -1) {
+    return (path, "");
+  }
+  else {
+    return (path[..(lastIdx - 1)], path[lastIdx..]);
+  }
+}
+
 /* Expands any environment variables in the path of the form ``$<name>`` or
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
