@@ -1,0 +1,14 @@
+regexp_error.chpl:5: warning: regexp: 'ok' is deprecated; errors are used to detect regexp compile errors
+regexp_error.chpl:12: warning: regexp: 'ok' is deprecated; errors are used to detect regexp compile errors
+regexp_error.chpl:14: warning: regexp: 'error()' is deprecated; errors are used to detect regexp compile errors
+regexp_error.chpl:23: warning: regexp: 'ok' is deprecated; errors are used to detect regexp compile errors
+false
+111111111111111111111
+222222222222222222222
+false
+333333333333333333333
+regexp: 'error()' is deprecated; errors are used to detect regexp compile errors
+444444444444444444444
+no argument for repetition operator: * when compiling regexp '*'
+555555555555555555555
+true

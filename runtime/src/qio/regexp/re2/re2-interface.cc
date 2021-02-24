@@ -88,6 +88,7 @@ void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Opt
   opts->set_one_line(!options->multiline);
   opts->set_dot_nl(options->dotnl);
   opts->set_longest_match(!options->nongreedy);
+  opts->set_log_errors(false);
 }
 
 static
@@ -262,13 +263,13 @@ int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
 qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
-  return re2->ok();
+  return re2 && re2->ok();
 }
 
 const char* qio_regexp_error(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
-  return qio_strdup(re2->error().c_str());
+  return qio_strdup(re2 ? re2->error().c_str() : "");
 }
 
 qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
