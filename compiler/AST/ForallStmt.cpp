@@ -301,16 +301,14 @@ ForallStmt* isForallIterVarDef(Expr* expr) {
 
 // Return a ForallStmt* if 'expr' is its iterable-expression.
 ForallStmt* isForallIterExpr(Expr* expr) {
-  if (CallExpr *iterCall = toCallExpr(expr))
-    if (iterCall->isPrimitive(PRIM_ZIP))
-      if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
-        if (pfs->zipCall() == iterCall)
-          return pfs;
+  if (ForallStmt* pfs = toForallStmt(expr->parentExpr)) {
+    if (expr == pfs->zipCall())
+      return pfs;
 
-  if (expr->list != NULL)
-    if (ForallStmt* pfs = toForallStmt(expr->parentExpr))
+    if (expr->list != NULL)
       if (expr->list == &pfs->iteratedExpressions())
         return pfs;
+  }
   return NULL;
 }
 
