@@ -89,7 +89,8 @@ static void removeNamedExprs(FnSymbol* fn, CallExpr* call);
 
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap);
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap);
 
 static void handleInIntent(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
@@ -225,7 +226,7 @@ FnSymbol* wrapAndCleanUpActuals(FnSymbol*                fn,
 
       // And then handle coercions (in case the default expression
       // needs a coercion to the actual type).
-      handleCoercion(retval, call, formal, actual, copyMap);
+      handleCoercion(retval, call, formal, actual, copyMap, inTmpToActualMap);
 
       // adjust for in intent
       handleInIntent(retval, call, formal, actual, copyMap, inTmpToActualMap);
@@ -1116,7 +1117,8 @@ static void      addArgCoercion(FnSymbol*  fn,
 
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
-                           SymbolMap& copyMap) {
+                           SymbolMap& copyMap,
+                           SymbolMap& inTmpToActualMap) {
 
   if (fn->retTag == RET_PARAM) {
     //
@@ -1140,6 +1142,7 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
   }
 
   {
+    Symbol* origActual = actual->symbol();
     Type*   formalType = formal->type;
     bool    c2         = false;
     int     checksLeft = 6;
@@ -1184,6 +1187,12 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
     } while (c2 && --checksLeft > 0);
 
     INT_ASSERT(c2 == false);
+
+    // record mapping from innermost coercion tmp to original actual
+    if (formal->originalIntent == INTENT_IN ||
+        formal->originalIntent == INTENT_CONST_IN ||
+        formal->originalIntent == INTENT_INOUT)
+      inTmpToActualMap.put(actual->symbol(), origActual);
   }
 }
 
@@ -1233,6 +1242,13 @@ static bool needToAddCoercion(Type*      actualType,
     if (toType == formal->getValType())
       return false; // handled by other wrapper code, e.g. handleInIntent
   }
+
+  // Handle inout argument given a different type (can convert on in,
+  // = on the way back produces error if necessary).
+  if (formal->originalIntent == INTENT_INOUT &&
+      canCoerce(actualType->getValType(), actualSym,
+                formalType->getValType(), formal, fn))
+    return true;
 
   // One day, we shouldn't need coercion if canCoerceAsSubtype
   // returns true. That would cover the above case. However,
@@ -1295,6 +1311,14 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
     return;
   }
 
+  // Not an error for inout our out intent
+  // (the compiler should be managing the conversion on the way in
+  //  to the function with implicit conversion and on the way out
+  //  of the function with = )
+  if (formal->originalIntent == INTENT_INOUT ||
+      formal->originalIntent == INTENT_OUT)
+    return;
+
   // Error for coerce->value passed to ref / out / etc
   if (argumentCanModifyActual(intent) || isRefFormal) {
     USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
@@ -1353,6 +1377,10 @@ static void addArgCoercion(FnSymbol*  fn,
 
   // Add the Def for castTemp
   call->getStmtExpr()->insertBefore(new DefExpr(castTemp));
+
+  // adjust fts for inout to use the value type
+  if (formal->originalIntent == INTENT_INOUT)
+    fts = fts->getValType()->symbol;
 
   // Here we will often strip the type of its sync-ness.
   // After that we may need another coercion(s), e.g.
@@ -1638,6 +1666,13 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
 
   Symbol* origActualSym = actual->symbol();
   Symbol* actualSym = origActualSym;
+  {
+    // update origActualSym to take into account any conversions added
+    Symbol* mapSym = inTmpToActualMap.get(origActualSym);
+    if (mapSym != NULL)
+      origActualSym = mapSym;
+  }
+
 
   // The result of a default argument for 'in' intent is already owned and
   // does not need to be copied.

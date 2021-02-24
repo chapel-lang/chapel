@@ -1652,6 +1652,13 @@ bool doCanDispatch(Type*     actualType,
         fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
 
+  if (formalSym != NULL &&
+      formalSym->originalIntent == INTENT_INOUT &&
+      formalType->symbol->hasFlag(FLAG_REF)) {
+    actualType = actualType->getValType();
+    formalType = formalType->getValType();
+  }
+
   if (paramCoerce == false &&
       canCoerce(actualType, actualSym,
                 formalType, formalSym,

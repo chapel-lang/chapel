@@ -624,7 +624,6 @@ bool inOrOutFormalNeedingCopyType(ArgSymbol* formal) {
 
   return (formal->originalIntent == INTENT_IN ||
           formal->originalIntent == INTENT_CONST_IN ||
-          formal->originalIntent == INTENT_OUT ||
           formal->originalIntent == INTENT_INOUT);
 }
 

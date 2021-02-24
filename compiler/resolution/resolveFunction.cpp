@@ -721,6 +721,18 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     }
   }
 
+  if (fWarnUnstable &&
+      toType->symbol->hasFlag(FLAG_EXTERN) &&
+      have.assign != NULL &&
+      !have.assign->hasFlag(FLAG_COMPILER_GENERATED) &&
+      have.assign->defPoint->getModule()->modTag == MOD_USER) {
+    USR_WARN(have.assign->defPoint,
+             "unstable assignment with extern LHS");
+    USR_PRINT("an init= may also be required in the future");
+  }
+
+
+
   // Don't look for casts to array/domain types
   // (these should probably be added, right?)
   if (toType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
