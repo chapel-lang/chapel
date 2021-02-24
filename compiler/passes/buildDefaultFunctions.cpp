@@ -283,6 +283,16 @@ static FnSymbol* functionExists(const char* name,
                          formalType1, formalType2, formalType3, NULL, kind);
 }
 
+static FnSymbol* functionExists(const char* name,
+                                Type* formalType1,
+                                Type* formalType2,
+                                Type* formalType3,
+                                Type* formalType4,
+                                functionExistsKind kind=FIND_EITHER) {
+  return functionExists(name, 4, formalType1, formalType2, formalType3,
+                        formalType4, kind);
+}
+
 static void fixupAccessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
                            FnSymbol* fn)
@@ -1405,8 +1415,11 @@ static void buildEnumOrderFunctions(EnumType* et) {
 
 
 static void buildRecordAssignmentFunction(AggregateType* ct) {
-  if (functionExists("=", ct, ct))
+  if (functionExists("=", ct, ct)) {
     return;
+  } else if (functionExists("=", dtMethodToken, dtAny, ct, ct)) {
+    return;
+  }
 
   bool externRecord = ct->symbol->hasFlag(FLAG_EXTERN);
 

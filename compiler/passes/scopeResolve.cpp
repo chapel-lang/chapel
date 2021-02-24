@@ -932,6 +932,11 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
           const char* name = usymExpr->unresolved;
           Type*       type = method->_this->type;
 
+          if ((method->name == astrInit || method->name == astrInitEquals) &&
+              matchesOp(name)) {
+            break;
+          }
+
           if (isAggr == true || isMethodName(name, type) == true) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);

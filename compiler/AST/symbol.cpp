@@ -2081,6 +2081,30 @@ void initAstrConsts() {
   astr_coerceMove = astr("chpl__coerceMove");
 }
 
+bool matchesOp(const char* name) {
+  if (name == astrSassign || name == astrSeq || name == astrSne ||
+      name == astrSgt || name == astrSgte || name == astrSlt ||
+      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
+      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
+      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
+      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
+      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
+      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
+      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
+      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
+      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
+      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
+      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
+      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
+      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
+      strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
+      strcmp(name, "align") == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 /************************************* | **************************************
 *                                                                             *
 * Create a temporary, with FLAG_TEMP and (optionally) FLAG_CONST.             *
