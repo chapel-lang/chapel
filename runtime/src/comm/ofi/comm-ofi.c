@@ -154,6 +154,7 @@ struct perTxCtxInfo_t {
   void (*ensureProgressFn)(struct perTxCtxInfo_t*);
   uint64_t numTxnsOut;          // number of transactions in flight now
   uint64_t numTxnsSent;         // number of transactions ever initiated
+  void* putVisBitmap;           // PUT target nodes, for forcing vis. later
 };
 
 static int tciTabLen;
@@ -265,10 +266,8 @@ static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static inline size_t readCQ(struct fid_cq*, void*, size_t);
 static void reportCQError(struct fid_cq*);
 static inline void waitForTxnComplete(struct perTxCtxInfo_t*, void* ctx);
-static inline void waitForPutsVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*,
-                                         chpl_comm_taskPrvData_t*);
-static inline void waitForPutsVisAllNodes(struct perTxCtxInfo_t*,
-                                          chpl_comm_taskPrvData_t*, chpl_bool);
+static inline void waitForPutsVisOneNode(c_nodeid_t, struct perTxCtxInfo_t*);
+static inline void waitForPutsVisAllNodes(struct perTxCtxInfo_t*);
 static void* allocBounceBuf(size_t);
 static void freeBounceBuf(void*);
 static inline void local_yield(void);
@@ -782,27 +781,25 @@ typedef struct {
   size_t        size_v[MAX_CHAINED_PUT_LEN];
   uint64_t      remote_mr_v[MAX_CHAINED_PUT_LEN];
   void*         local_mr_v[MAX_CHAINED_PUT_LEN];
-  struct bitmap_t nodeBitmap;
 } put_buff_task_info_t;
 
 // Acquire a task local buffer, initializing if needed
 static inline
-void* task_local_buff_acquire(enum BuffType t, size_t extra_size) {
+void* task_local_buff_acquire(enum BuffType t) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return NULL;
 
-#define DEFINE_INIT(TYPE, TLS_NAME)                                           \
-  if (t == TLS_NAME) {                                                        \
-    TYPE* info = prvData->TLS_NAME;                                           \
-    if (info == NULL) {                                                       \
-      prvData->TLS_NAME = chpl_mem_alloc(sizeof(TYPE) + extra_size,           \
-                                         CHPL_RT_MD_COMM_PER_LOC_INFO, 0, 0); \
-      info = prvData->TLS_NAME;                                               \
-      info->new = true;                                                       \
-      info->vi = 0;                                                           \
-    }                                                                         \
-    return info;                                                              \
-  }
+#define DEFINE_INIT(TYPE, TLS_NAME)                                     \
+  if (t == TLS_NAME) {                                                  \
+    TYPE* info = prvData->TLS_NAME;                                     \
+    if (info == NULL) {                                                 \
+      CHPL_CALLOC_SZ(prvData->TLS_NAME, 1, sizeof(TYPE));               \
+      info = prvData->TLS_NAME;                                         \
+      info->new = true;                                                 \
+      info->vi = 0;                                                     \
+    }                                                                   \
+    return info;                                                        \
+   }
 
   DEFINE_INIT(amo_nf_buff_task_info_t, amo_nf_buff);
   DEFINE_INIT(get_buff_task_info_t, get_buff);
@@ -822,12 +819,12 @@ void task_local_buff_flush(enum BuffType t) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return;
 
-#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                              \
-  if (t & TLS_NAME) {                                                         \
-    TYPE* info = prvData->TLS_NAME;                                           \
-    if (info != NULL && info->vi > 0) {                                       \
-      FLUSH_NAME(info);                                                       \
-    }                                                                         \
+#define DEFINE_FLUSH(TYPE, TLS_NAME, FLUSH_NAME)                        \
+  if (t & TLS_NAME) {                                                   \
+    TYPE* info = prvData->TLS_NAME;                                     \
+    if (info != NULL && info->vi > 0) {                                 \
+      FLUSH_NAME(info);                                                 \
+    }                                                                   \
   }
 
   DEFINE_FLUSH(amo_nf_buff_task_info_t, amo_nf_buff,
@@ -844,14 +841,14 @@ void task_local_buff_end(enum BuffType t) {
   chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
   if (prvData == NULL) return;
 
-#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                                \
-  if (t & TLS_NAME) {                                                         \
-    TYPE* info = prvData->TLS_NAME;                                           \
-    if (info != NULL && info->vi > 0) {                                       \
-      FLUSH_NAME(info);                                                       \
-      chpl_mem_free(info, 0, 0);                                              \
-      prvData->TLS_NAME = NULL;                                               \
-    }                                                                         \
+#define DEFINE_END(TYPE, TLS_NAME, FLUSH_NAME)                          \
+  if (t & TLS_NAME) {                                                   \
+    TYPE* info = prvData->TLS_NAME;                                     \
+    if (info != NULL && info->vi > 0) {                                 \
+      FLUSH_NAME(info);                                                 \
+      chpl_mem_free(info, 0, 0);                                        \
+      prvData->TLS_NAME = NULL;                                         \
+    }                                                                   \
   }
 
   DEFINE_END(amo_nf_buff_task_info_t, amo_nf_buff,
@@ -2899,7 +2896,7 @@ void chpl_comm_impl_task_create(void) {
   DBG_PRINTF(DBG_IFACE_MCM, "%s()", __func__);
 
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
+  waitForPutsVisAllNodes(NULL);
 }
 
 
@@ -2908,7 +2905,7 @@ void chpl_comm_impl_task_end(void) {
 
   task_local_buff_end(get_buff | put_buff | amo_nf_buff);
   retireDelayedAmDone(true /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL, NULL, true /*taskIsEnding*/);
+  waitForPutsVisAllNodes(NULL);
 }
 
 
@@ -3361,10 +3358,10 @@ void amRequestCommon(c_nodeid_t node,
   if (myReq->b.op == am_opExecOn
       || myReq->b.op == am_opExecOnLrg
       || (myReq->b.op == am_opAMO && myReq->amo.ofiOp != FI_ATOMIC_READ)) {
-    waitForPutsVisAllNodes(myTcip, NULL, false /*taskIsEnding*/);
+    waitForPutsVisAllNodes(myTcip);
   } else if (myReq->b.op == am_opGet
              || myReq->b.op == am_opPut) {
-    waitForPutsVisOneNode(node, myTcip, NULL);
+    waitForPutsVisOneNode(node, myTcip);
   }
 
   //
@@ -4332,6 +4329,9 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
   if (bindToAmHandler
       || (tciTabFixedAssignments && chpl_task_isFixedThread())) {
     _ttcip->bound = true;
+    if (_ttcip->putVisBitmap == NULL) {
+      _ttcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
+    }
   }
   DBG_PRINTF(DBG_TCIPS, "alloc%s tciTab[%td]",
              _ttcip->bound ? " bound" : "", _ttcip - tciTab);
@@ -4528,12 +4528,7 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
                                           rxRmaAddr(tcip, node),
                                           mrRaddr, mrKey));
       tcip->numTxnsSent++;
-      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-      assert(prvData != NULL);
-      if (prvData->putBitmap == NULL) {
-        prvData->putBitmap = bitmapAlloc(chpl_numNodes);
-      }
-      bitmapSet(prvData->putBitmap, node);
+      bitmapSet(tcip->putVisBitmap, node);
     }
 
     tciFree(tcip);
@@ -4614,7 +4609,7 @@ void ofi_put_ll(const void* addr, c_nodeid_t node,
 static
 void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                c_nodeid_t* locale_v, void** raddr_v, uint64_t* remote_mr_v,
-               size_t* size_v, struct bitmap_t* b) {
+               size_t* size_v) {
   DBG_PRINTF(DBG_RMA | DBG_RMA_WRITE | DBG_RMA_UNORD,
              "put_V(%d): %d:%p <= %p, size %zd, key 0x%" PRIx64,
              v_len, (int) locale_v[0], raddr_v[0], addr_v[0], size_v[0],
@@ -4635,7 +4630,10 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
   // Initiate the batch.  Record which nodes we PUT to, so that we can
   // force them to be visible in target memory at the end.
   //
-  bitmapZero(b);
+  if (tcip->putVisBitmap == NULL) {
+    tcip->putVisBitmap = bitmapAlloc(chpl_numNodes);
+  }
+
   for (int vi = 0; vi < v_len; vi++) {
     struct iovec msg_iov = (struct iovec)
                            { .iov_base = addr_v[vi],
@@ -4666,14 +4664,14 @@ void ofi_put_V(int v_len, void** addr_v, void** local_mr_v,
                                     (vi < v_len - 1) ? FI_MORE : 0));
     tcip->numTxnsOut++;
     tcip->numTxnsSent++;
-    bitmapSet(b, locale_v[vi]);
+    bitmapSet(tcip->putVisBitmap, locale_v[vi]);
   }
 
   //
   // Enforce Chapel MCM: force all of the above PUTs to appear in
   // target memory.
   //
-  mcmReleaseAllNodes(b, tcip, "unordered PUT");
+  mcmReleaseAllNodes(tcip->putVisBitmap, tcip, "unordered PUT");
 
   tciFree(tcip);
 }
@@ -4695,7 +4693,7 @@ void put_buff_task_info_flush(put_buff_task_info_t* info) {
                info->vi);
     ofi_put_V(info->vi, info->src_addr_v, info->local_mr_v,
               info->locale_v, info->tgt_addr_v, info->remote_mr_v,
-              info->size_v, &info->nodeBitmap);
+              info->size_v);
     info->vi = 0;
   }
 }
@@ -4707,17 +4705,11 @@ void do_remote_put_buff(void* addr, c_nodeid_t node, void* raddr,
   uint64_t mrKey;
   uint64_t mrRaddr;
   put_buff_task_info_t* info;
-  size_t extra_size = bitmapSizeofMap(chpl_numNodes);
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(put_buff, extra_size)) == NULL) {
+      || (info = task_local_buff_acquire(put_buff)) == NULL) {
     (void) ofi_put(addr, node, raddr, size);
     return;
-  }
-
-  if (info->new) {
-    info->nodeBitmap.len = chpl_numNodes;
-    info->new = false;
   }
 
   void* mrDesc = NULL;
@@ -4813,11 +4805,7 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     // to be visible.
     //
     if (mcmMode != mcmm_dlvrCmplt && tcip->bound) {
-      chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
-      assert(prvData != NULL);
-      if (prvData->putBitmap != NULL) {
-        bitmapClear(prvData->putBitmap, node);
-      }
+      bitmapClear(tcip->putVisBitmap, node);
     }
 
     waitForTxnComplete(tcip, ctx);
@@ -4979,7 +4967,7 @@ void do_remote_get_buff(void* addr, c_nodeid_t node, void* raddr,
   get_buff_task_info_t* info;
   if (size > MAX_UNORDERED_TRANS_SZ
       || mrGetKey(&mrKey, &mrRaddr, node, raddr, size) != 0
-      || (info = task_local_buff_acquire(get_buff, 0)) == NULL) {
+      || (info = task_local_buff_acquire(get_buff)) == NULL) {
     (void) ofi_get(addr, node, raddr, size);
     return;
   }
@@ -5046,7 +5034,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   CHK_TRUE((tcip = tciAlloc()) != NULL);
 
   if (ofiOp != FI_ATOMIC_READ) {
-    waitForPutsVisAllNodes(tcip, NULL, false /*taskIsEnding*/);
+    waitForPutsVisAllNodes(tcip);
   }
 
   atomic_bool txnDone;
@@ -5348,33 +5336,24 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
 
 
 static inline
-void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
-                           chpl_comm_taskPrvData_t* prvData) {
+void waitForPutsVisOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
   // PUTs have actually completed on their target nodes.  We can only
   // have any PUTs outstanding here if we're using message ordering
   // for MCM conformance and we've got a bound tx context.
   //
-  if (mcmMode != mcmm_dlvrCmplt && tcip->bound) {
-    chpl_comm_taskPrvData_t* myPrvData = prvData;
-    if (myPrvData == NULL) {
-      CHK_TRUE((myPrvData = get_comm_taskPrvdata()) != NULL);
-    }
-
-    if (myPrvData->putBitmap != NULL
-        && bitmapTest(myPrvData->putBitmap, node)) {
-      bitmapClear(myPrvData->putBitmap, node);
-      mcmReleaseOneNode(node, tcip, "PUT");
-    }
+  if (mcmMode != mcmm_dlvrCmplt
+      && tcip->bound
+      && bitmapTest(tcip->putVisBitmap, node)) {
+    bitmapClear(tcip->putVisBitmap, node);
+    mcmReleaseOneNode(node, tcip, "PUT");
   }
 }
 
 
 static inline
-void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
-                            chpl_comm_taskPrvData_t* prvData,
-                            chpl_bool taskIsEnding) {
+void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip) {
   //
   // Enforce MCM: at the end of a task, make sure all our outstanding
   // PUTs have actually completed on their target nodes.  We can only
@@ -5388,18 +5367,7 @@ void waitForPutsVisAllNodes(struct perTxCtxInfo_t* tcip,
     }
 
     if (myTcip->bound) {
-      chpl_comm_taskPrvData_t* myPrvData = prvData;
-      if (myPrvData == NULL) {
-        CHK_TRUE((myPrvData = get_comm_taskPrvdata()) != NULL);
-      }
-
-      if (myPrvData->putBitmap != NULL) {
-        mcmReleaseAllNodes(myPrvData->putBitmap, NULL, "PUT");
-        if (taskIsEnding) {
-          bitmapFree(myPrvData->putBitmap);
-          myPrvData->putBitmap = NULL;
-        }
-      }
+      mcmReleaseAllNodes(myTcip->putVisBitmap, NULL, "PUT");
     }
 
     if (myTcip != tcip) {
@@ -5789,7 +5757,7 @@ void doAMO(c_nodeid_t node, void* object,
     //
     if (node == chpl_nodeID) {
       if (ofiOp != FI_ATOMIC_READ) {
-        waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
+        waitForPutsVisAllNodes(NULL);
       }
       doCpuAMO(object, operand1, operand2, result, ofiOp, ofiType, size);
     } else {
@@ -6026,7 +5994,7 @@ void do_remote_amo_nf_buff(void* opnd1, c_nodeid_t node,
     return;
   }
 
-  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff, 0);
+  amo_nf_buff_task_info_t* info = task_local_buff_acquire(amo_nf_buff);
   if (info == NULL) {
     ofi_amo(node, mrRaddr, mrKey, opnd1, NULL, NULL, ofiOp, ofiType, size);
     return;
@@ -6179,7 +6147,7 @@ void chpl_comm_barrier(const char *msg) {
   // the caller's responsibility.)
   //
   retireDelayedAmDone(false /*taskIsEnding*/);
-  waitForPutsVisAllNodes(NULL, NULL, false /*taskIsEnding*/);
+  waitForPutsVisAllNodes(NULL);
 
   //
   // Wait for our child locales to notify us that they have reached the
