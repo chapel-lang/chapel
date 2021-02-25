@@ -1439,6 +1439,10 @@ static void autoAggregation(ForallStmt *forall) {
     autoLocalAccess(forall);
   }
 
+  if (!forall->optInfo.infoGathered) {
+    gatherForallInfo(forall);
+  }
+
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
   if (loopHasValidInductionVariables(forall)) {
