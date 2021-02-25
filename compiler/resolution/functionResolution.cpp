@@ -1551,16 +1551,6 @@ bool canCoerce(Type*     actualType,
     return true;
   }
 
-  /*
-  if (isSyncType(actualType) || isSingleType(actualType)) {
-    Type* baseType = actualType->getField("valType")->type;
-
-    // sync can't store an array or a param, so no need to
-    // propagate promotes / paramNarrows
-    return canDispatch(baseType, NULL, formalType, formalSym, fn);
-  }
-  */
-
   if (canCoerceTuples(actualType, actualSym, formalType, formalSym, fn)) {
     return true;
   }
@@ -1613,8 +1603,6 @@ bool canCoerce(Type*     actualType,
   if (Type* copyType = canCoerceToCopyType(actualType, actualSym,
                                            formalType, formalSym, fn)) {
     if (copyType != actualType) {
-      // TODO: Seems like something needs to be put here to flag
-      // coercions from 'sync t' to 't'
       return canDispatch(copyType, actualSym, formalType, formalSym, fn,
                          promotes, paramNarrows);
     }
@@ -5604,12 +5592,6 @@ static void testArgMapping(FnSymbol*                    fn1,
 
   if (isSyncType(actualScalarType) || isSingleType(actualScalarType)) {
     actualScalarType = actualScalarType->getField("valType")->getValType();
-    // TODO: Is this in too speculative a code path?
-    /*
-    if (fWarnUnstable && !actual->hasFlag(FLAG_TEMP) && !actual->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_WARN(actual, "Automatic coercions from 'sync/single t' to 't' will go away in a future release; consider applying an explicit '.read' method to stabilize your code");
-    }
-    */
   }
 
   const char* reason = "";
