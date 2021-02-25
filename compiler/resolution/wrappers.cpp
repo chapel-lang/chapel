@@ -1996,16 +1996,18 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
 static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
-  int i = 0;
-  if (promotion.formalToActualOpMod > 0) {
-    // Operators might have more formals than provided actuals.  In this case,
-    // the promotedType array access needs to be adjusted to account for the
-    // offset.
-    i = i + promotion.formalToActualOpMod;
-  }
-  for_actuals(actual, call)
+  int i = promotion.formalToActualOpMod;
+  // Operators might have a different number of formals than provided actuals.
+  // In this case, the promotedType array access needs to be adjusted to account
+  // for the offset.
+  for_actuals(actual, call) {
+    if (i < 0) {
+      i++;
+      continue;
+    }
     if (promotion.promotedType[i++] != NULL)
       return symbolForActual(actual);
+  }
 
   INT_ASSERT(false); // did not find any promoted things
   return NULL;
@@ -2121,16 +2123,23 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 {
   int numActuals = actualFormals.size();
 
-  if (numActuals != fn->numFormals()) {
-    INT_ASSERT(fn->hasFlag(FLAG_OPERATOR));
-    formalToActualOpMod = fn->numFormals() - numActuals;
-  }
+  // Operators may mismatch the number of formals and the number of actuals.
+  // Store any difference for later.
+  formalToActualOpMod = fn->numFormals() - numActuals;
 
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
     ArgSymbol* formal  = actualFormals[j];
     Type*   actualType = actual->type;
     bool    promotes   = false;
+
+    if (formal == NULL) {
+      // Operators may mismatch the number of formals and the number of actuals
+      // If there is an actual that is not represented by a formal, skip it, it
+      // will be handled later.
+      INT_ASSERT(fn->hasFlag(FLAG_OPERATOR));
+      continue;
+    }
 
     if (isRecordWrappedType(actualType) == true) {
       makeRefType(actualType);
@@ -2478,6 +2487,10 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
   retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
+  if (fn->hasFlag(FLAG_OPERATOR)) {
+    retval->addFlag(FLAG_OPERATOR);
+  }
+
   int i = 0;
   for_formals(formal, fn) {
 
@@ -2630,8 +2643,17 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
   FnSymbol* leader = NULL;  // non-null for promoted args after the first
   VarSymbol* followme = NULL;
   int i = 0;
+  if (promotion.formalToActualOpMod < 0) {
+    // Operators might have more actuals than there are formals.  In this case,
+    // we need to skip the extra actuals (the "this" actual and method token)
+    i = promotion.formalToActualOpMod;
+  }
 
   for_actuals(actualExpr, call) {
+    if (i < 0) {
+      i++;
+      continue;
+    }
     if (promotion.promotedType[i++] != NULL) {
       Symbol* actual = symbolForActual(actualExpr);
 
