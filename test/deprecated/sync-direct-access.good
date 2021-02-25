@@ -1,0 +1,27 @@
+test2
+a = 2 : int(64)
+test2
+x$ = 3 : sync int(64)
+test3
+in f arg = 1 : int(64)
+x$ = 1 : sync int(64)
+test4
+b = 1 : int(64)
+test5
+a$ = 1 : sync int(64)
+b$ = 1 : sync int(64)
+test6
+a$ = 1 : sync int(64)
+b = 1 : int(64)
+test7
+a$ = 1 : sync int(64)
+b$ = 1 : sync int(64)
+test8
+a$ = 1 : sync int(64)
+b = 1 : int(64)
+test9
+a$ = 1 : sync int(64)
+b = 1 : int(64)
+test10
+a$ = 1 : sync int(64)
+test11
