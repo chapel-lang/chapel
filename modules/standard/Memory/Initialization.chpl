@@ -85,7 +85,9 @@ module Initialization {
 
     :arg rhs: A value to move-initialize from
   */
-  proc moveInitialize(ref lhs: ?t, pragma "no auto destroy" in rhs: t) {
+  proc moveInitialize(ref lhs: ?t,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs: t) {
     if lhs.type != nothing then
       _move(lhs, rhs);
   }

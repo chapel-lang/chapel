@@ -283,6 +283,7 @@ symbolFlag( FLAG_NO_BORROW_CONVERT , ypr, "no borrow convert", "arguments that a
 symbolFlag( FLAG_NO_CAPTURE_FOR_TASKING , npr, "no capture for tasking", "does not need to be captured before spawning tasks" )
 symbolFlag( FLAG_NO_CODEGEN , ypr, "no codegen" , "do not generate e.g. C code defining this symbol" )
 symbolFlag( FLAG_NO_COPY , ypr, "no copy" , "do not apply chpl__initCopy to initialization of a variable" )
+symbolFlag( FLAG_ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsite" )
 symbolFlag( FLAG_NO_COPY_RETURN, ypr, "no copy return", ncm)
 symbolFlag( FLAG_NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 symbolFlag( FLAG_NO_DEFAULT_FUNCTIONS , ypr, "no default functions" , ncm )

@@ -36,6 +36,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -1700,6 +1701,39 @@ static void checkForInvalidGlobalUses() {
 *                                                                             *
 ************************************** | *************************************/
 
+// This function checks to see if the actual argument for a given formal is
+// a temporary that has been copy-initialized. If so, the function tries
+// to return the original actual. Look for a pattern like:
+//    move temp (call chpl__copyInit actual)
+// And return 'actual'.
+static SymExpr* getActualBeforeCopyInit(CallExpr* call, ArgSymbol* formal) {
+  Expr* actual = formal_to_actual(call, formal);
+  SymExpr* se = toSymExpr(actual);
+
+  if (se && se->symbol()->hasFlag(FLAG_TEMP)) {
+    for_SymbolSymExprs(use, se->symbol()) {
+      CallExpr* def = toCallExpr(use->parentExpr);
+
+      if (def && (def->isPrimitive(PRIM_ASSIGN) ||
+                  def->isPrimitive(PRIM_MOVE))) {
+        SymExpr* lhs = toSymExpr(def->get(1));
+        CallExpr* rhs = toCallExpr(def->get(2));
+
+        if (lhs && rhs && (lhs->symbol() == se->symbol())) {
+          FnSymbol* rhsFn = rhs->resolvedFunction();
+
+          if (rhsFn && rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            if (SymExpr* result = toSymExpr(rhs->get(1))) {
+              return result;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
 
 // Function resolution adds "dummy" initCopy functions for types
 // that cannot be copied. These "dummy" initCopy functions are marked
@@ -1710,16 +1744,57 @@ static void checkForInvalidGlobalUses() {
 //
 // This function simply checks that no function marked with that
 // flag is ever called and raises an error if so.
+//
+// Additionally, also collect in formals that are marked with
+// "error on copy", and check their actuals to see if they are
+// initialized with calls to initCopy().
 static void checkForErroneousInitCopies() {
 
   std::map<FnSymbol*, const char*> errors;
+  std::set<ArgSymbol*> errorOnCopyFormals;
 
-  // Store errors in local map
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_ERRONEOUS_COPY)) {
       // Store the error in the local map
       if (const char* err = getErroneousCopyError(fn))
         errors[fn] = err;
+    }
+
+    // Collect in intent formals that are marked "error on copy".
+    for_formals(formal, fn) {
+      if (formal->hasFlag(FLAG_ERROR_ON_COPY)) {
+        if (formal->intent & INTENT_IN ||
+            formal->originalIntent & INTENT_IN) {
+          errorOnCopyFormals.insert(formal);
+        } else {
+          INT_FATAL(formal, "is marked with %s but is not %s",
+                            "error on copy",
+                            intentDescrString(INTENT_IN));
+        }
+      }
+    }
+  }
+
+  // Iterate through "error on copy" formals and check their callsites.
+  // Emit an error if an actual is a copy.
+  for_set(ArgSymbol, formal, errorOnCopyFormals) {
+    FnSymbol* fn = formal->getFunction();
+    INT_ASSERT(fn != NULL);
+
+    if (!fn->inTree())
+      continue;
+
+    forv_Vec(CallExpr, call, *fn->calledBy) {
+      if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
+
+        // TODO: Tweak output if it prints something like 'with <temp>'.
+        // Not sure if that can ever happen, thanks to copy elision, but
+        // leave this comment just in case.
+        USR_FATAL_CONT(call, "calling '%s' with actual '%s' would result "
+                             "in a copy",
+                             fn->name,
+                             toString(actual->symbol(), false));
+      }
     }
   }
 
