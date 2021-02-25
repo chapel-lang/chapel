@@ -36,6 +36,7 @@
 #include "resolveIntents.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "virtualDispatch.h"
 
 #include <vector>
@@ -1700,30 +1701,38 @@ static void checkForInvalidGlobalUses() {
 *                                                                             *
 ************************************** | *************************************/
 
-static bool isActualCopyInitialized(CallExpr* call, ArgSymbol* formal) {
+// This function checks to see if the actual argument for a given formal is
+// a temporary that has been copy-initialized. If so, the function tries
+// to return the original actual. Look for a pattern like:
+//    move temp (call chpl__copyInit actual)
+// And return 'actual'.
+static SymExpr* getActualBeforeCopyInit(CallExpr* call, ArgSymbol* formal) {
   Expr* actual = formal_to_actual(call, formal);
   SymExpr* se = toSymExpr(actual);
 
   if (se && se->symbol()->hasFlag(FLAG_TEMP)) {
     for_SymbolSymExprs(use, se->symbol()) {
-      CallExpr* move = toCallExpr(use->parentExpr);
+      CallExpr* def = toCallExpr(use->parentExpr);
 
-      if (move && move->isPrimitive(PRIM_MOVE)) {
-        SymExpr* lhs = toSymExpr(move->get(1));
-        CallExpr* rhs = toCallExpr(move->get(2));
+      if (def && (def->isPrimitive(PRIM_ASSIGN) ||
+                  def->isPrimitive(PRIM_MOVE))) {
+        SymExpr* lhs = toSymExpr(def->get(1));
+        CallExpr* rhs = toCallExpr(def->get(2));
 
         if (lhs && rhs && (lhs->symbol() == se->symbol())) {
           FnSymbol* rhsFn = rhs->resolvedFunction();
 
-          if (rhsFn != NULL && rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
-            return true;
+          if (rhsFn && rhsFn->hasFlag(FLAG_INIT_COPY_FN)) {
+            if (SymExpr* result = toSymExpr(rhs->get(1))) {
+              return result;
+            }
           }
         }
       }
     }
   }
 
-  return false;
+  return NULL;
 }
 
 // Function resolution adds "dummy" initCopy functions for types
@@ -1768,7 +1777,7 @@ static void checkForErroneousInitCopies() {
 
   // Iterate through "error on copy" formals and check their callsites.
   // Emit an error if an actual is a copy.
-  for (ArgSymbol* formal : errorOnCopyFormals) {
+  for_set(ArgSymbol, formal, errorOnCopyFormals) {
     FnSymbol* fn = formal->getFunction();
     INT_ASSERT(fn != NULL);
 
@@ -1776,10 +1785,15 @@ static void checkForErroneousInitCopies() {
       continue;
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
-      if (isActualCopyInitialized(call, formal)) {
-        USR_FATAL_CONT(call, "actual is copied when passed to '%s' of '%s'",
-                             formal->name,
-                             fn->name);
+      if (SymExpr* actual = getActualBeforeCopyInit(call, formal)) {
+
+        // TODO: Tweak output if it prints something like 'with <temp>'.
+        // Not sure if that can ever happen, thanks to copy elision, but
+        // leave this comment just in case.
+        USR_FATAL_CONT(call, "calling '%s' with actual '%s' would result "
+                             "in a copy",
+                             fn->name,
+                             toString(actual->symbol(), false));
       }
     }
   }

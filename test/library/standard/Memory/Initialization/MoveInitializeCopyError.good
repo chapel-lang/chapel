@@ -1,2 +1,2 @@
 MoveInitializeCopyError.chpl:4: In function 'test1':
-MoveInitializeCopyError.chpl:8: error: actual is copied when passed to 'rhs' of 'moveInitialize'
+MoveInitializeCopyError.chpl:8: error: calling 'moveInitialize' with actual 'r2' would result in a copy
