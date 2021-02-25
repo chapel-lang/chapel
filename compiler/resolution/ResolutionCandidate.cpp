@@ -572,8 +572,15 @@ Type* getInstantiationType(Type* actualType, Symbol* actualSym,
 
   // memoize unaliasing for in/inout/out/value return
   if (inOrOtherValue) {
-    if (Type* copyType = getCopyTypeDuringResolution(actualType)) {
-      actualType = copyType;
+    Type* valType = actualType->getValType();
+    if (Type* copyType = getCopyTypeDuringResolution(valType)) {
+      if (isReferenceType(actualType)) {
+        // make the new actual type also a reference type
+        INT_ASSERT(copyType->refType);
+        actualType = copyType->refType;
+      } else {
+        actualType = copyType;
+      }
     }
   }
 
