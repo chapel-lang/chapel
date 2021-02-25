@@ -356,28 +356,6 @@ module ChapelSyncvar {
     return sv.readFE();
   }
 
-  /*
-  proc <(lhs: _syncvar(?t), rhs: _syncvar(t)) {
-    compilerWarning("Direct comparisons of 'sync' variables are deprecated; apply explicit 'read??' methods");
-    return lhs.readXX() < rhs.readXX();
-  }
-
-  proc >(lhs: _syncvar(?t), rhs: _syncvar(t)) {
-    compilerWarning("Direct comparisons of 'sync' variables are deprecated; apply explicit 'read??' methods");
-    return lhs.readXX() > rhs.readXX();
-  }
-
-  proc <(lhs: _singlevar(?t), rhs: _singlevar(t)) {
-    compilerWarning("Direct comparisons of 'sync' variables are deprecated; apply explicit 'read??' methods");
-    return lhs.readXX() < rhs.readXX();
-  }
-
-  proc >(lhs: _singlevar(?t), rhs: _singlevar(t)) {
-    compilerWarning("Direct comparisons of 'sync' variables are deprecated; apply explicit 'read??' methods");
-    return lhs.readXX() > rhs.readXX();
-  }
-*/
-
   pragma "auto copy fn"
   pragma "no doc"
   proc chpl__autoCopy(const ref rhs : _syncvar, definedConst: bool) {
