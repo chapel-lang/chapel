@@ -3831,12 +3831,21 @@ module ChapelArray {
     return false;
   }
 
+  // these functions avoid spurios warnings related to sync variable
+  // deprecation, so once the deprecation has completed these can be removed.
+  private proc isCopyableOrSyncSingle(type t) param {
+    return isSyncType(t) || isSingleType(t) || isCopyableType(t);
+  }
+  private proc isConstCopyableOrSyncSingle(type t) param {
+    return isSyncType(t) || isSingleType(t) || isConstCopyableType(t);
+  }
+
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
     if !useBulkTransfer then return false;
     if a.eltType != b.eltType then return false;
     if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy && isConstCopyableType(a.eltType) then return true;
+    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) then return true;
     if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
     return true;
   }
@@ -3859,16 +3868,17 @@ module ChapelArray {
       return isPODType(t);
     } else if (isUnionType(t)) {
       return false;
-    } else if (isSyncType(t) || isSingleType(t) || isAtomicType(t)) {
-      return false;
     } else {
       pragma "unsafe" var x:t;
       return chpl__supportedDataTypeForBulkTransfer(x);
     }
   }
 
+  // TODO: should this be returning true for atomic types?
   proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
+  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
   proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
@@ -3953,7 +3963,6 @@ module ChapelArray {
         // move it into the array
         __primitive("=", aa, copy);
       }
-      /*
     } else if isSyncType(a.eltType) {
       forall aa in a {
         pragma "no auto destroy"
@@ -3968,7 +3977,6 @@ module ChapelArray {
         // move it into the array
         __primitive("=", aa, copy);
       }
-*/
     } else {
       forall aa in a {
         pragma "no auto destroy"
@@ -4161,15 +4169,7 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-          /* Not currently necessary, I think
-        } else if isSyncType(a.eltType) {
-          forall aa in a with (in b) {
-            pragma "no auto destroy"
-            var copy: a.eltType = b.readFE(); // make a copy for this iteration
-            // move it into the array
-            __primitive("=", aa, copy);
-          }
-          */
+
         } else {
           forall aa in a with (in b) {
             pragma "no auto destroy"
@@ -4247,13 +4247,16 @@ module ChapelArray {
             // move it into the array
             __primitive("=", aa, copy);
           }
-        } else if isSyncType(a.eltType) {
-          use Reflection;
+        } else {
           [ (aa,bb) in zip(a,b) ] {
-            if (isSyncType(b.type)) {
-              compilerWarning("direct reads of 'sync' vars are deprecated; use '.read??' to access");
+            if isSyncType(bb.type) {
               pragma "no auto destroy"
               var copy: a.eltType = bb.readFE(); // init copy
+              // move it into the array
+              __primitive("=", aa, copy);
+            } else if isSingleType(bb.type) {
+              pragma "no auto destroy"
+              var copy: a.eltType = bb.readFF(); // init copy
               // move it into the array
               __primitive("=", aa, copy);
             } else {
@@ -4261,21 +4264,7 @@ module ChapelArray {
               var copy: a.eltType = bb; // init copy
               // move it into the array
               __primitive("=", aa, copy);
-            }              
-          }
-        } else if isSingleType(a.eltType) {
-         [ (aa,bb) in zip(a,b) ] {
-           pragma "no auto destroy"
-           var copy: a.eltType = bb.readFF(); // init copy
-           // move it into the array
-           __primitive("=", aa, copy);
-         }
-        } else {
-          [ (aa,bb) in zip(a,b) ] {
-            pragma "no auto destroy"
-            var copy: a.eltType = bb; // init copy
-            // move it into the array
-            __primitive("=", aa, copy);
+            }
           }
         }
       } else if kind==_tElt.assign {
@@ -4379,6 +4368,7 @@ module ChapelArray {
     return x.valType;
   }
 
+  /*
   proc _desync_warn(type t:_syncvar) type {
     if chpl_warnUnstable then
       compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'sync' fields will change from taking a formal of type 'sync t' to simply 't'.  You can stabilize your code from such changes by adding an explicit default initializer now.");
@@ -4391,15 +4381,20 @@ module ChapelArray {
     return t;
   }
 
-  proc _desync(type t) type where isAtomicType(t) {
-    var x: t;
-    return x.read().type;
-  }
-
   proc _desync_warn(type t) type where isAtomicType(t) {
     if chpl_warnUnstable then
       compilerWarning("In an upcoming release, compiler-generated default initializers for objects containing 'atomic' fields will change from taking a formal of type 'atomic t' to simply 't'.  You can insulate your code from this change by adding an explicit default initializer now.");
     return t;
+  }
+
+  proc _desync_warn(type t) type {
+    return t;
+  }
+  */
+
+  proc _desync(type t) type where isAtomicType(t) {
+    var x: t;
+    return x.read().type;
   }
 
   /* Or, we could explicitly overload for each atomic type since there
@@ -4416,10 +4411,6 @@ module ChapelArray {
   }
 
   proc _desync(type t) type {
-    return t;
-  }
-
-  proc _desync_warn(type t) type {
     return t;
   }
 
@@ -4809,7 +4800,7 @@ module ChapelArray {
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
-    if !isCopyableType(eltType) then
+    if !isCopyableOrSyncSingle(eltType) then
       compilerError("Cannot copy-initialize array because element type '",
                     eltType:string, "' cannot be copy-initialized");
 
