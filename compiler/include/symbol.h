@@ -775,7 +775,7 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 
-bool matchesOp(const char* name);
+bool isAstrOpName(const char* name);
 
 void initAstrConsts();
 

@@ -449,7 +449,7 @@ checkFunction(FnSymbol* fn) {
 
 static void checkOperator(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
-    if (matchesOp(fn->name)) {
+    if (isAstrOpName(fn->name)) {
       // When deprecate non-operator keyword declarations, add deprecation
       // warning here.
       fn->addFlag(FLAG_OPERATOR);

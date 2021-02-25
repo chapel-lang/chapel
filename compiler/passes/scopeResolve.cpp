@@ -933,7 +933,7 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
           Type*       type = method->_this->type;
 
           if ((method->name == astrInit || method->name == astrInitEquals) &&
-              matchesOp(name)) {
+              isAstrOpName(name)) {
             break;
           }
 

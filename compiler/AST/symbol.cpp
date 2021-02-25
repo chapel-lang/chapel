@@ -2081,7 +2081,7 @@ void initAstrConsts() {
   astr_coerceMove = astr("chpl__coerceMove");
 }
 
-bool matchesOp(const char* name) {
+bool isAstrOpName(const char* name) {
   if (name == astrSassign || name == astrSeq || name == astrSne ||
       name == astrSgt || name == astrSgte || name == astrSlt ||
       name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
