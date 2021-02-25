@@ -498,6 +498,11 @@ AllCompTime: &timecomp-base
     - Remove calls to getUserInstantiationPoint (#15051)
   06/11/20:
     - Fix split init of const variables and update lvalue errors (#15800)
+  02/17/21:
+    - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
 
 allocate:
   06/11/20:
@@ -1371,6 +1376,8 @@ memleaksfull:
     - Fix memory leak for classes/io/classToString (#16949)
   01/26/21:
     - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
+  02/21/21:
+    - CG enable return types and calling required functions (#17197)
 # End memleaksfull
 
 meteor:
@@ -1623,6 +1630,8 @@ regexdna: &regexdna-base
     - Add support for escaping non-UTF8 sequences in strings (#14743)
   06/11/20:
     - Add a field to the string record to store a cached size (#15758)
+  02/24/21:
+    - Upgrade to re2 2021-02-02 (#17230)
 regexdna-redux:
   <<: *regexdna-base
 regexdna-submitted:
@@ -2022,6 +2031,9 @@ compilerAndTestingStats: &compiler-perf-base
     - Improve string to numerical casts' compilation and execution performance (#16278)
   02/17/21:
     - GPU code generation (#17116)
+  02/25/21:
+    - Restore timing for makeBinary (#17253)
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2080,7 +2092,6 @@ arkouda: &arkouda-base
 arkouda-string:
   <<: *arkouda-base
 
-
 arkouda-comp:
   <<: *arkouda-base
   07/29/20:
@@ -2097,3 +2108,5 @@ arkouda-comp:
     - Stop inlining many string casts (#16355)
   09/17/20:
     - Fix some issues with constant domain optimization (#16397)
+  02/25/21:
+    - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
