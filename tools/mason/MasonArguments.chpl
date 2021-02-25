@@ -1,5 +1,25 @@
 use List;
 
+/*
+
+  This is a probably simplistic bunch of classes and a function
+  to help with argument parsing. It would be better if adding the
+  arguments to the processing was the same step as creating them.
+
+  I think we could make something inspired by Python's argparse where
+  the parse method returns a map of string -> Argument objects.
+  Then, you'd call addArgument to the parser
+  passing in something that indicates how to produce the Argument
+  (but isn't actually the Argument).
+
+  future work --
+
+  multi-value flags
+  flags with optional values
+  build the help output from the argument descriptions
+*/
+
+
 class ArgumentError : Error {
   var msg:string;
   proc init(msg:string) {
@@ -28,7 +48,7 @@ class Flag {
 
   // consumes matching arguments starting at args[i]
   // possibly by appending some to otherArgs
-  // returns the number of arguments consumed 
+  // returns the number of arguments consumed
   proc consume(i: int, const args: list(string),
                ref otherArgs: list(string)):int throws {
     return 0;
@@ -52,7 +72,7 @@ class HelpFlag : Flag {
       this.names.append(name);
     }
   }
- 
+
   override proc consume(i: int, const args: list(string),
                         ref otherArgs: list(string)):int throws {
     if this.names.contains(args[i]) {
@@ -127,7 +147,7 @@ class ValueFlag : Flag {
   override proc consume(i: int, const args: list(string),
                         ref otherArgs: list(string)):int throws {
     for name in this.names {
-      const ref arg = args[i]; 
+      const ref arg = args[i];
       if arg == name {
         if !args.indices.contains(i+1) {
           throw new ArgumentError("missing additional argument");
@@ -136,7 +156,7 @@ class ValueFlag : Flag {
           throw new ArgumentError("cannot provide " + name + " more than once");
         }
         this.noteMatch(i);
-        this.value = args[i+1]; 
+        this.value = args[i+1];
         return 2;
       } else if arg.startsWith(name + "=") {
         if this.valueSet {
@@ -169,7 +189,7 @@ class OtherArgsFlag : Flag {
       this.names.append(name);
     }
   }
- 
+
   override proc consume(i: int, const args: list(string),
                         ref otherArgs: list(string)):int throws {
     if this.names.contains(args[i]) {
@@ -195,7 +215,7 @@ class SubcommandFlag : Flag {
       this.names.append(name);
     }
   }
- 
+
   override proc consume(i: int, const args: list(string),
                         ref otherArgs: list(string)):int throws {
     if this.names.contains(args[i]) {
@@ -210,12 +230,6 @@ class SubcommandFlag : Flag {
   }
 }
 
-
-/* future work -- 
-
-  multi-value flags
-  flags with optional values
-*/
 
 // Returns true if the arguments were well formed.
 // In that event, the 'present' and 'values' fields of the flags
