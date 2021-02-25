@@ -1,0 +1,1 @@
+-M $CHPL_HOME/test/release/examples/benchmarks/hpcc --auto-aggregation --report-auto-aggregation -sverboseAggregation=true --no-local
