@@ -789,12 +789,6 @@ static void gatherForallInfo(ForallStmt *forall) {
 
       forall->optInfo.multiDIndices.push_back(multiDIndices);
     }
-
-    if (!forall->optInfo.hasAlignedFollowers) {
-      // this means we couldn't prove that the followers are aligned, so, we'll
-      // not look at the indices yielded by the followers
-      break;
-    }
   }
 
   forall->optInfo.infoGathered = true;
