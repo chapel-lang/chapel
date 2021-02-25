@@ -1,19 +1,14 @@
-Start analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:37)
-| Found an aggregation candidate (autoAggNegativeImpact.chpl:38)
-|  Potential source aggregation (autoAggNegativeImpact.chpl:38)
-End analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:37)
+Start analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:40)
+| Found an aggregation candidate (autoAggNegativeImpact.chpl:41)
+|  Potential source aggregation (autoAggNegativeImpact.chpl:41)
+End analyzing forall for automatic aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:40)
 
-Start analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:37)
-End analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:37)
+Start analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:40)
+End analyzing forall for automatic aggregation [no ALA clone]  (autoAggNegativeImpact.chpl:40)
 
-Aggregation candidate has confirmed local child [static only ALA clone] (autoAggNegativeImpact.chpl:38)
-LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (autoAggNegativeImpact.chpl:38)
-Replaced assignment with aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:38)
-Problem size = 10
-Bytes per array = 80
-Total memory required (GB) = 2.23517e-07
-Number of trials = 1
-
+Aggregation candidate has confirmed local child [static only ALA clone] (autoAggNegativeImpact.chpl:41)
+LHS is local, RHS is nonlocal. Will use source aggregation [static only ALA clone] (autoAggNegativeImpact.chpl:41)
+Replaced assignment with aggregation [static only ALA clone]  (autoAggNegativeImpact.chpl:41)
 SrcAggregator.copy is called
 SrcAggregator.copy is called
 SrcAggregator.copy is called

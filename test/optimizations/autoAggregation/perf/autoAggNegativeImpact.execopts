@@ -1,1 +1,1 @@
---m=10 --numTrials=1 --printStats=false
+--m=10 --numTrials=1 --printStats=false --printParams=false

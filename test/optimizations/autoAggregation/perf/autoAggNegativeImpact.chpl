@@ -1,5 +1,8 @@
-// This is mostly the same as ...
+// This is mostly the same as release/examples/benchmarks/hpcc/stream.chpl
 
+// The sole purpose of this test is to gauge the negative impact of automatic
+// aggregation firing for cases where the data is completely local, and
+// aggregation is redundant
 
 use BlockDist, Time, Types, Random;
 use HPCCProblemSize;
