@@ -1,2 +1,2 @@
--M $CHPL_HOME/test/release/examples/benchmarks/hpcc --auto-aggregation  #auto-aggregation
--M $CHPL_HOME/test/release/examples/benchmarks/hpcc --no-auto-aggregation  #no-auto-aggregation
+-M ../../../release/examples/benchmarks/hpcc --auto-aggregation  #auto-aggregation
+-M ../../../release/examples/benchmarks/hpcc --no-auto-aggregation  #no-auto-aggregation
