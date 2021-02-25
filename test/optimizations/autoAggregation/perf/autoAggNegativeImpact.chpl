@@ -4,7 +4,7 @@
 use BlockDist, Time, Types, Random;
 use HPCCProblemSize;
 
-const numVectors = 3;
+const numVectors = 2;
 type elemType = real(64);
 
 config const m = computeProblemSize(numVectors, elemType),
