@@ -1922,6 +1922,8 @@ namespace {
     // or NULL if that argument isn't promoted.
     std::vector<TypeSymbol*> promotedType;
 
+    int formalToActualOpMod;
+
     std::vector<uint8_t> defaulted;
 
     // for the i'th formal to fn, fnFormals is NULL
@@ -1995,6 +1997,12 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
 
 static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
   int i = 0;
+  if (promotion.formalToActualOpMod > 0) {
+    // Operators might have more formals than provided actuals.  In this case,
+    // the promotedType array access needs to be adjusted to account for the
+    // offset.
+    i = i + promotion.formalToActualOpMod;
+  }
   for_actuals(actual, call)
     if (promotion.promotedType[i++] != NULL)
       return symbolForActual(actual);
@@ -2112,6 +2120,11 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
   resultIsUsed(info.call != info.call->getStmtExpr())
 {
   int numActuals = actualFormals.size();
+
+  if (numActuals != fn->numFormals()) {
+    INT_ASSERT(fn->hasFlag(FLAG_OPERATOR));
+    formalToActualOpMod = fn->numFormals() - numActuals;
+  }
 
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
