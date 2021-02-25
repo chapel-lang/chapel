@@ -449,23 +449,7 @@ checkFunction(FnSymbol* fn) {
 
 static void checkOperator(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_OPERATOR) && !fn->hasFlag(FLAG_METHOD)) {
-    if (fn->name == astrSassign || fn->name == astrSeq || fn->name == astrSne ||
-        fn->name == astrSgt || fn->name == astrSgte || fn->name == astrSlt ||
-        fn->name == astrSlte || fn->name == astrSswap ||
-        strcmp(fn->name, "&") == 0 || strcmp(fn->name, "|") == 0 ||
-        strcmp(fn->name, "^") == 0 || strcmp(fn->name, "~") == 0 ||
-        strcmp(fn->name, "+") == 0 || strcmp(fn->name, "-") == 0 ||
-        strcmp(fn->name, "*") == 0 || strcmp(fn->name, "/") == 0 ||
-        strcmp(fn->name, "<<") == 0 || strcmp(fn->name, ">>") == 0 ||
-        strcmp(fn->name, "%") == 0 || strcmp(fn->name, "**") == 0 ||
-        strcmp(fn->name, "!") == 0 || strcmp(fn->name, "<~>") == 0 ||
-        strcmp(fn->name, "+=") == 0 || strcmp(fn->name, "-=") == 0 ||
-        strcmp(fn->name, "*=") == 0 || strcmp(fn->name, "/=") == 0 ||
-        strcmp(fn->name, "%=") == 0 || strcmp(fn->name, "**=") == 0 ||
-        strcmp(fn->name, "&=") == 0 || strcmp(fn->name, "|=") == 0 ||
-        strcmp(fn->name, "^=") == 0 || strcmp(fn->name, ">>=") == 0 ||
-        strcmp(fn->name, "<<=") == 0 || strcmp(fn->name, "#") == 0 ||
-        strcmp(fn->name, "by") == 0 || strcmp(fn->name, "align") == 0) {
+    if (isAstrOpName(fn->name)) {
       // When deprecate non-operator keyword declarations, add deprecation
       // warning here.
       fn->addFlag(FLAG_OPERATOR);
