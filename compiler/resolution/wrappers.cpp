@@ -2125,7 +2125,11 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 
   // Operators may mismatch the number of formals and the number of actuals.
   // Store any difference for later.
-  formalToActualOpMod = fn->numFormals() - numActuals;
+  if (numActuals != fn->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+    formalToActualOpMod = fn->numFormals() - numActuals;
+  } else {
+    formalToActualOpMod = 0;
+  }
 
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
