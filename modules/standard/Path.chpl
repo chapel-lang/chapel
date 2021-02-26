@@ -52,6 +52,7 @@
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`splitPath`
+   :proc:`splitExt`
 
    Path Properties
    ---------------
@@ -369,7 +370,7 @@ proc dirname(name: string): string {
 }
 
 /*
-  Splits the given path into it's root and extension.
+  Splits the given path into its root and extension.
   Leading periods in the path are ignored.
 
   :arg path: A string file name, not necessarily valid.
@@ -382,7 +383,7 @@ proc dirname(name: string): string {
 
 proc splitExt(path:string): (string, string) {
   var lead = 0;
-  while lead < path.size && path[lead] == "." {
+  while lead < path.size && (path[lead] == "." || path[lead] == "/") {
     lead += 1;
   }
 
