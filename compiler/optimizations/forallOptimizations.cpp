@@ -1416,7 +1416,8 @@ static void autoLocalAccess(ForallStmt *forall) {
 // Resolution support for auto-local-access
 //
 static CallExpr *revertAccess(CallExpr *call) {
-  LOG_ALA(0, "Static check failed. Reverting optimization", call);
+  LOG_ALA(0, "Static check failed. Reverting optimization", call,
+          /*forallDetails=*/true);
 
   CallExpr *repl = new CallExpr(new UnresolvedSymExpr("this"),
                                 gMethodToken);
