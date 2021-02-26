@@ -21,11 +21,13 @@ unittest("LLVMExegesisX86Tests") {
     "//llvm/tools/llvm-exegesis/lib",
   ]
   sources = [
-    "AnalysisTest.cpp",
     "AssemblerTest.cpp",
     "BenchmarkResultTest.cpp",
     "RegisterAliasingTest.cpp",
+    "SchedClassResolutionTest.cpp",
+    "SnippetFileTest.cpp",
     "SnippetGeneratorTest.cpp",
+    "SnippetRepetitorTest.cpp",
     "TargetTest.cpp",
   ]
 }

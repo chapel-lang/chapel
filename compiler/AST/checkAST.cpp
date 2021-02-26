@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -262,7 +262,6 @@ void checkPrimitives()
      case PRIM_CHPL_COMM_GET_STRD:      // Direct calls to the Chapel comm layer for strided comm
      case PRIM_CHPL_COMM_PUT_STRD:      //  may eventually add others (e.g.: non-blocking)
      case PRIM_ARRAY_GET:
-     case PRIM_ARRAY_GET_VALUE:
      case PRIM_ARRAY_SHIFT_BASE_POINTER:
      case PRIM_ARRAY_SET:
      case PRIM_ARRAY_SET_FIRST:

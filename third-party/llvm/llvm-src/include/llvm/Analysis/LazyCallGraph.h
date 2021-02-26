@@ -1,9 +1,8 @@
 //===- LazyCallGraph.h - Analysis of a Module's call graph ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -39,6 +38,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/Optional.h"
 #include "llvm/ADT/PointerIntPair.h"
+#include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallVector.h"
@@ -931,10 +931,14 @@ public:
   /// This sets up the graph and computes all of the entry points of the graph.
   /// No function definitions are scanned until their nodes in the graph are
   /// requested during traversal.
-  LazyCallGraph(Module &M, TargetLibraryInfo &TLI);
+  LazyCallGraph(Module &M,
+                function_ref<TargetLibraryInfo &(Function &)> GetTLI);
 
   LazyCallGraph(LazyCallGraph &&G);
   LazyCallGraph &operator=(LazyCallGraph &&RHS);
+
+  bool invalidate(Module &, const PreservedAnalyses &PA,
+                  ModuleAnalysisManager::Invalidator &);
 
   EdgeSequence::iterator begin() { return EntryEdges.begin(); }
   EdgeSequence::iterator end() { return EntryEdges.end(); }
@@ -1054,6 +1058,13 @@ public:
   /// fully visited by the DFS prior to calling this routine.
   void removeDeadFunction(Function &F);
 
+  /// Introduce a node for the function \p NewF in the SCC \p C.
+  void addNewFunctionIntoSCC(Function &NewF, SCC &C);
+
+  /// Introduce a node for the function \p NewF, as a single node in a
+  /// new SCC, in the RefSCC \p RC.
+  void addNewFunctionIntoRefSCC(Function &NewF, RefSCC &RC);
+
   ///@}
 
   ///@{
@@ -1083,12 +1094,26 @@ public:
         continue;
       }
 
+      // The blockaddress constant expression is a weird special case, we can't
+      // generically walk its operands the way we do for all other constants.
       if (BlockAddress *BA = dyn_cast<BlockAddress>(C)) {
-        // The blockaddress constant expression is a weird special case, we
-        // can't generically walk its operands the way we do for all other
-        // constants.
-        if (Visited.insert(BA->getFunction()).second)
-          Worklist.push_back(BA->getFunction());
+        // If we've already visited the function referred to by the block
+        // address, we don't need to revisit it.
+        if (Visited.count(BA->getFunction()))
+          continue;
+
+        // If all of the blockaddress' users are instructions within the
+        // referred to function, we don't need to insert a cycle.
+        if (llvm::all_of(BA->users(), [&](User *U) {
+              if (Instruction *I = dyn_cast<Instruction>(U))
+                return I->getFunction() == BA->getFunction();
+              return false;
+            }))
+          continue;
+
+        // Otherwise we should go visit the referred to function.
+        Visited.insert(BA->getFunction());
+        Worklist.push_back(BA->getFunction());
         continue;
       }
 
@@ -1145,6 +1170,13 @@ private:
 
   /// Helper to update pointers back to the graph object during moves.
   void updateGraphPtrs();
+
+  /// Helper to insert a new function, add it to the NodeMap, and populate its
+  /// node.
+  Node &createNode(Function &F);
+
+  /// Helper to add the given Node \p N to the SCCMap, mapped to the SCC \p C.
+  void addNodeToSCC(SCC &C, Node &N);
 
   /// Allocates an SCC and constructs it using the graph allocator.
   ///
@@ -1253,7 +1285,12 @@ public:
   /// This just builds the set of entry points to the call graph. The rest is
   /// built lazily as it is walked.
   LazyCallGraph run(Module &M, ModuleAnalysisManager &AM) {
-    return LazyCallGraph(M, AM.getResult<TargetLibraryAnalysis>(M));
+    FunctionAnalysisManager &FAM =
+        AM.getResult<FunctionAnalysisManagerModuleProxy>(M).getManager();
+    auto GetTLI = [&FAM](Function &F) -> TargetLibraryInfo & {
+      return FAM.getResult<TargetLibraryAnalysis>(F);
+    };
+    return LazyCallGraph(M, GetTLI);
   }
 };
 

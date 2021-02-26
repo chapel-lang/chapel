@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,6 +35,7 @@ class CallExpr;
 class DefExpr;
 class Expr;
 class FnSymbol;
+class ImportStmt;
 class ModuleSymbol;
 class Type;
 
@@ -70,10 +71,10 @@ BlockStmt* buildUseStmt(Expr* mod, const char* rename,
 BlockStmt* buildUseStmt(Expr* mod, Expr* rename,
                         std::vector<PotentialRename*>* names, bool except,
                         bool privateUse);
-BlockStmt* buildImportStmt(Expr* mod, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, const char* rename, bool privateImport);
-BlockStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names,
-                           bool privateImport);
+ImportStmt* buildImportStmt(Expr* mod);
+ImportStmt* buildImportStmt(Expr* mod, const char* rename);
+ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
+void setImportPrivacy(BlockStmt* list, bool isPrivate);
 bool processStringInRequireStmt(const char* str, bool parseTime,
                                 const char* modFilename);
 BlockStmt* buildRequireStmt(CallExpr* args);
@@ -81,6 +82,7 @@ DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
 BlockStmt* buildIfStmt(Expr* condExpr, Expr* thenExpr, Expr* elseExpr = NULL);
+CallExpr*  buildIfVar(const char* name, Expr* rhs, bool isConst);
 
 ModuleSymbol* buildModule(const char* name,
                           ModTag      modTag,
@@ -210,5 +212,11 @@ Expr* convertAssignmentAndWarn(Expr* a, const char* op, Expr* b);
 // The string name will be used in the error message.
 void redefiningReservedTypeError(const char* name);
 void redefiningReservedWordError(const char* name);
+
+// Emits an error for an attempt to provide an unexpected this intent tag
+// when defining an explicit operator.
+void updateOpThisTagOrErr(FnSymbol* fn);
+
+BlockStmt* foreachNotImplementedError();
 
 #endif

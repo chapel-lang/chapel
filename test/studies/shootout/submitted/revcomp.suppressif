@@ -1,2 +1,0 @@
-CHPL_LAUNCHER <= slurm
-CHPL_LAUNCHER <= aprun

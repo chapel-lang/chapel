@@ -1,9 +1,8 @@
 //===--- TextNodeDumper.cpp - Printing of AST nodes -----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,10 +11,19 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/TextNodeDumper.h"
+#include "clang/AST/APValue.h"
 #include "clang/AST/DeclFriend.h"
 #include "clang/AST/DeclOpenMP.h"
 #include "clang/AST/DeclTemplate.h"
 #include "clang/AST/LocInfoType.h"
+#include "clang/AST/Type.h"
+#include "clang/Basic/Module.h"
+#include "clang/Basic/SourceManager.h"
+#include "clang/Basic/Specifiers.h"
+#include "clang/Basic/TypeTraits.h"
+
+#include <algorithm>
+#include <utility>
 
 using namespace clang;
 
@@ -48,12 +56,15 @@ static void dumpPreviousDecl(raw_ostream &OS, const Decl *D) {
   llvm_unreachable("Decl that isn't part of DeclNodes.inc!");
 }
 
-TextNodeDumper::TextNodeDumper(raw_ostream &OS, bool ShowColors,
-                               const SourceManager *SM,
-                               const PrintingPolicy &PrintPolicy,
-                               const comments::CommandTraits *Traits)
-    : TextTreeStructure(OS, ShowColors), OS(OS), ShowColors(ShowColors), SM(SM),
-      PrintPolicy(PrintPolicy), Traits(Traits) {}
+TextNodeDumper::TextNodeDumper(raw_ostream &OS, const ASTContext &Context,
+                               bool ShowColors)
+    : TextTreeStructure(OS, ShowColors), OS(OS), ShowColors(ShowColors),
+      Context(&Context), SM(&Context.getSourceManager()),
+      PrintPolicy(Context.getPrintingPolicy()),
+      Traits(&Context.getCommentCommandTraits()) {}
+
+TextNodeDumper::TextNodeDumper(raw_ostream &OS, bool ShowColors)
+    : TextTreeStructure(OS, ShowColors), OS(OS), ShowColors(ShowColors) {}
 
 void TextNodeDumper::Visit(const comments::Comment *C,
                            const comments::FullComment *FC) {
@@ -125,6 +136,11 @@ void TextNodeDumper::Visit(const Stmt *Node) {
   if (const auto *E = dyn_cast<Expr>(Node)) {
     dumpType(E->getType());
 
+    if (E->containsErrors()) {
+      ColorScope Color(OS, ShowColors, ErrorsColor);
+      OS << " contains-errors";
+    }
+
     {
       ColorScope Color(OS, ShowColors, ValueKindColor);
       switch (E->getValueKind()) {
@@ -155,6 +171,9 @@ void TextNodeDumper::Visit(const Stmt *Node) {
         break;
       case OK_VectorComponent:
         OS << " vectorcomponent";
+        break;
+      case OK_MatrixComponent:
+        OS << " matrixcomponent";
         break;
       }
     }
@@ -190,6 +209,11 @@ void TextNodeDumper::Visit(const Type *T) {
       T->getLocallyUnqualifiedSingleStepDesugaredType();
   if (SingleStepDesugar != QualType(T, 0))
     OS << " sugar";
+
+  if (T->containsErrors()) {
+    ColorScope Color(OS, ShowColors, ErrorsColor);
+    OS << " contains-errors";
+  }
 
   if (T->isDependentType())
     OS << " dependent";
@@ -241,7 +265,7 @@ void TextNodeDumper::Visit(const Decl *D) {
              const_cast<NamedDecl *>(ND)))
       AddChild([=] { OS << "also in " << M->getFullModuleName(); });
   if (const NamedDecl *ND = dyn_cast<NamedDecl>(D))
-    if (ND->isHidden())
+    if (!ND->isUnconditionallyVisible())
       OS << " hidden";
   if (D->isImplicit())
     OS << " implicit";
@@ -253,9 +277,25 @@ void TextNodeDumper::Visit(const Decl *D) {
 
   if (D->isInvalidDecl())
     OS << " invalid";
-  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-    if (FD->isConstexpr())
+  if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D)) {
+    if (FD->isConstexprSpecified())
       OS << " constexpr";
+    if (FD->isConsteval())
+      OS << " consteval";
+  }
+
+  if (!isa<FunctionDecl>(*D)) {
+    const auto *MD = dyn_cast<ObjCMethodDecl>(D);
+    if (!MD || !MD->isThisDeclarationADefinition()) {
+      const auto *DC = dyn_cast<DeclContext>(D);
+      if (DC && DC->hasExternalLexicalStorage()) {
+        ColorScope Color(OS, ShowColors, UndeserializedColor);
+        OS << " <undeserialized declarations>";
+      }
+    }
+  }
+
+  ConstDeclVisitor<TextNodeDumper>::Visit(D);
 }
 
 void TextNodeDumper::Visit(const CXXCtorInitializer *Init) {
@@ -292,7 +332,7 @@ void TextNodeDumper::Visit(const OMPClause *C) {
   }
   {
     ColorScope Color(OS, ShowColors, AttrColor);
-    StringRef ClauseName(getOpenMPClauseName(C->getClauseKind()));
+    StringRef ClauseName(llvm::omp::getOpenMPClauseName(C->getClauseKind()));
     OS << "OMP" << ClauseName.substr(/*Start=*/0, /*N=*/1).upper()
        << ClauseName.drop_front() << "Clause";
   }
@@ -300,6 +340,231 @@ void TextNodeDumper::Visit(const OMPClause *C) {
   dumpSourceRange(SourceRange(C->getBeginLoc(), C->getEndLoc()));
   if (C->isImplicit())
     OS << " <implicit>";
+}
+
+void TextNodeDumper::Visit(const GenericSelectionExpr::ConstAssociation &A) {
+  const TypeSourceInfo *TSI = A.getTypeSourceInfo();
+  if (TSI) {
+    OS << "case ";
+    dumpType(TSI->getType());
+  } else {
+    OS << "default";
+  }
+
+  if (A.isSelected())
+    OS << " selected";
+}
+
+static double GetApproxValue(const llvm::APFloat &F) {
+  llvm::APFloat V = F;
+  bool ignored;
+  V.convert(llvm::APFloat::IEEEdouble(), llvm::APFloat::rmNearestTiesToEven,
+            &ignored);
+  return V.convertToDouble();
+}
+
+/// True if the \p APValue \p Value can be folded onto the current line.
+static bool isSimpleAPValue(const APValue &Value) {
+  switch (Value.getKind()) {
+  case APValue::None:
+  case APValue::Indeterminate:
+  case APValue::Int:
+  case APValue::Float:
+  case APValue::FixedPoint:
+  case APValue::ComplexInt:
+  case APValue::ComplexFloat:
+  case APValue::LValue:
+  case APValue::MemberPointer:
+  case APValue::AddrLabelDiff:
+    return true;
+  case APValue::Vector:
+  case APValue::Array:
+  case APValue::Struct:
+    return false;
+  case APValue::Union:
+    return isSimpleAPValue(Value.getUnionValue());
+  }
+  llvm_unreachable("unexpected APValue kind!");
+}
+
+/// Dump the children of the \p APValue \p Value.
+///
+/// \param[in] Value          The \p APValue to visit
+/// \param[in] Ty             The \p QualType passed to \p Visit
+///
+/// \param[in] IdxToChildFun  A function mapping an \p APValue and an index
+///                           to one of the child of the \p APValue
+///
+/// \param[in] NumChildren    \p IdxToChildFun will be called on \p Value with
+///                           the indices in the range \p [0,NumChildren(
+///
+/// \param[in] LabelSingular  The label to use on a line with a single child
+/// \param[in] LabelPlurial   The label to use on a line with multiple children
+void TextNodeDumper::dumpAPValueChildren(
+    const APValue &Value, QualType Ty,
+    const APValue &(*IdxToChildFun)(const APValue &, unsigned),
+    unsigned NumChildren, StringRef LabelSingular, StringRef LabelPlurial) {
+  // To save some vertical space we print up to MaxChildrenPerLine APValues
+  // considered to be simple (by isSimpleAPValue) on a single line.
+  constexpr unsigned MaxChildrenPerLine = 4;
+  unsigned I = 0;
+  while (I < NumChildren) {
+    unsigned J = I;
+    while (J < NumChildren) {
+      if (isSimpleAPValue(IdxToChildFun(Value, J)) &&
+          (J - I < MaxChildrenPerLine)) {
+        ++J;
+        continue;
+      }
+      break;
+    }
+
+    J = std::max(I + 1, J);
+
+    // Print [I,J) on a single line.
+    AddChild(J - I > 1 ? LabelPlurial : LabelSingular, [=]() {
+      for (unsigned X = I; X < J; ++X) {
+        Visit(IdxToChildFun(Value, X), Ty);
+        if (X + 1 != J)
+          OS << ", ";
+      }
+    });
+    I = J;
+  }
+}
+
+void TextNodeDumper::Visit(const APValue &Value, QualType Ty) {
+  ColorScope Color(OS, ShowColors, ValueKindColor);
+  switch (Value.getKind()) {
+  case APValue::None:
+    OS << "None";
+    return;
+  case APValue::Indeterminate:
+    OS << "Indeterminate";
+    return;
+  case APValue::Int:
+    OS << "Int ";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      OS << Value.getInt();
+    }
+    return;
+  case APValue::Float:
+    OS << "Float ";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      OS << GetApproxValue(Value.getFloat());
+    }
+    return;
+  case APValue::FixedPoint:
+    OS << "FixedPoint ";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      OS << Value.getFixedPoint();
+    }
+    return;
+  case APValue::Vector: {
+    unsigned VectorLength = Value.getVectorLength();
+    OS << "Vector length=" << VectorLength;
+
+    dumpAPValueChildren(
+        Value, Ty,
+        [](const APValue &Value, unsigned Index) -> const APValue & {
+          return Value.getVectorElt(Index);
+        },
+        VectorLength, "element", "elements");
+    return;
+  }
+  case APValue::ComplexInt:
+    OS << "ComplexInt ";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      OS << Value.getComplexIntReal() << " + " << Value.getComplexIntImag()
+         << 'i';
+    }
+    return;
+  case APValue::ComplexFloat:
+    OS << "ComplexFloat ";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      OS << GetApproxValue(Value.getComplexFloatReal()) << " + "
+         << GetApproxValue(Value.getComplexFloatImag()) << 'i';
+    }
+    return;
+  case APValue::LValue:
+    (void)Context;
+    OS << "LValue <todo>";
+    return;
+  case APValue::Array: {
+    unsigned ArraySize = Value.getArraySize();
+    unsigned NumInitializedElements = Value.getArrayInitializedElts();
+    OS << "Array size=" << ArraySize;
+
+    dumpAPValueChildren(
+        Value, Ty,
+        [](const APValue &Value, unsigned Index) -> const APValue & {
+          return Value.getArrayInitializedElt(Index);
+        },
+        NumInitializedElements, "element", "elements");
+
+    if (Value.hasArrayFiller()) {
+      AddChild("filler", [=] {
+        {
+          ColorScope Color(OS, ShowColors, ValueColor);
+          OS << ArraySize - NumInitializedElements << " x ";
+        }
+        Visit(Value.getArrayFiller(), Ty);
+      });
+    }
+
+    return;
+  }
+  case APValue::Struct: {
+    OS << "Struct";
+
+    dumpAPValueChildren(
+        Value, Ty,
+        [](const APValue &Value, unsigned Index) -> const APValue & {
+          return Value.getStructBase(Index);
+        },
+        Value.getStructNumBases(), "base", "bases");
+
+    dumpAPValueChildren(
+        Value, Ty,
+        [](const APValue &Value, unsigned Index) -> const APValue & {
+          return Value.getStructField(Index);
+        },
+        Value.getStructNumFields(), "field", "fields");
+
+    return;
+  }
+  case APValue::Union: {
+    OS << "Union";
+    {
+      ColorScope Color(OS, ShowColors, ValueColor);
+      if (const FieldDecl *FD = Value.getUnionField())
+        OS << " ." << *cast<NamedDecl>(FD);
+    }
+    // If the union value is considered to be simple, fold it into the
+    // current line to save some vertical space.
+    const APValue &UnionValue = Value.getUnionValue();
+    if (isSimpleAPValue(UnionValue)) {
+      OS << ' ';
+      Visit(UnionValue, Ty);
+    } else {
+      AddChild([=] { Visit(UnionValue, Ty); });
+    }
+
+    return;
+  }
+  case APValue::MemberPointer:
+    OS << "MemberPointer <todo>";
+    return;
+  case APValue::AddrLabelDiff:
+    OS << "AddrLabelDiff <todo>";
+    return;
+  }
+  llvm_unreachable("Unknown APValue kind!");
 }
 
 void TextNodeDumper::dumpPointer(const void *Ptr) {
@@ -401,25 +666,27 @@ void TextNodeDumper::dumpName(const NamedDecl *ND) {
 }
 
 void TextNodeDumper::dumpAccessSpecifier(AccessSpecifier AS) {
-  switch (AS) {
-  case AS_none:
-    break;
-  case AS_public:
-    OS << "public";
-    break;
-  case AS_protected:
-    OS << "protected";
-    break;
-  case AS_private:
-    OS << "private";
-    break;
-  }
+  const auto AccessSpelling = getAccessSpelling(AS);
+  if (AccessSpelling.empty())
+    return;
+  OS << AccessSpelling;
 }
 
-void TextNodeDumper::dumpCXXTemporary(const CXXTemporary *Temporary) {
-  OS << "(CXXTemporary";
-  dumpPointer(Temporary);
-  OS << ")";
+void TextNodeDumper::dumpCleanupObject(
+    const ExprWithCleanups::CleanupObject &C) {
+  if (auto *BD = C.dyn_cast<BlockDecl *>())
+    dumpDeclRef(BD, "cleanup");
+  else if (auto *CLE = C.dyn_cast<CompoundLiteralExpr *>())
+    AddChild([=] {
+      OS << "cleanup ";
+      {
+        ColorScope Color(OS, ShowColors, StmtColor);
+        OS << CLE->getStmtClassName();
+      }
+      dumpPointer(CLE);
+    });
+  else
+    llvm_unreachable("unexpected cleanup type");
 }
 
 void TextNodeDumper::dumpDeclRef(const Decl *D, StringRef Label) {
@@ -463,6 +730,9 @@ void TextNodeDumper::visitInlineCommandComment(
     break;
   case comments::InlineCommandComment::RenderEmphasized:
     OS << " RenderEmphasized";
+    break;
+  case comments::InlineCommandComment::RenderAnchor:
+    OS << " RenderAnchor";
     break;
   }
 
@@ -611,8 +881,8 @@ static void dumpBasePath(raw_ostream &OS, const CastExpr *Node) {
     if (!First)
       OS << " -> ";
 
-    const CXXRecordDecl *RD =
-        cast<CXXRecordDecl>(Base->getType()->getAs<RecordType>()->getDecl());
+    const auto *RD =
+        cast<CXXRecordDecl>(Base->getType()->castAs<RecordType>()->getDecl());
 
     if (Base->isVirtual())
       OS << "virtual ";
@@ -658,9 +928,23 @@ void TextNodeDumper::VisitCaseStmt(const CaseStmt *Node) {
     OS << " gnu_range";
 }
 
+void TextNodeDumper::VisitConstantExpr(const ConstantExpr *Node) {
+  if (Node->hasAPValueResult())
+    AddChild("value",
+             [=] { Visit(Node->getAPValueResult(), Node->getType()); });
+}
+
 void TextNodeDumper::VisitCallExpr(const CallExpr *Node) {
   if (Node->usesADL())
     OS << " adl";
+}
+
+void TextNodeDumper::VisitCXXOperatorCallExpr(const CXXOperatorCallExpr *Node) {
+  const char *OperatorSpelling = clang::getOperatorSpelling(Node->getOperator());
+  if (OperatorSpelling)
+    OS << " '" << OperatorSpelling << "'";
+
+  VisitCallExpr(Node);
 }
 
 void TextNodeDumper::VisitCastExpr(const CastExpr *Node) {
@@ -686,6 +970,12 @@ void TextNodeDumper::VisitDeclRefExpr(const DeclRefExpr *Node) {
     OS << " (";
     dumpBareDeclRef(Node->getFoundDecl());
     OS << ")";
+  }
+  switch (Node->isNonOdrUse()) {
+  case NOUR_None: break;
+  case NOUR_Unevaluated: OS << " non_odr_use_unevaluated"; break;
+  case NOUR_Constant: OS << " non_odr_use_constant"; break;
+  case NOUR_Discarded: OS << " non_odr_use_discarded"; break;
   }
 }
 
@@ -753,6 +1043,11 @@ void TextNodeDumper::VisitInitListExpr(const InitListExpr *ILE) {
   }
 }
 
+void TextNodeDumper::VisitGenericSelectionExpr(const GenericSelectionExpr *E) {
+  if (E->isResultDependent())
+    OS << " result_dependent";
+}
+
 void TextNodeDumper::VisitUnaryOperator(const UnaryOperator *Node) {
   OS << " " << (Node->isPostfix() ? "postfix" : "prefix") << " '"
      << UnaryOperator::getOpcodeStr(Node->getOpcode()) << "'";
@@ -762,23 +1057,8 @@ void TextNodeDumper::VisitUnaryOperator(const UnaryOperator *Node) {
 
 void TextNodeDumper::VisitUnaryExprOrTypeTraitExpr(
     const UnaryExprOrTypeTraitExpr *Node) {
-  switch (Node->getKind()) {
-  case UETT_SizeOf:
-    OS << " sizeof";
-    break;
-  case UETT_AlignOf:
-    OS << " alignof";
-    break;
-  case UETT_VecStep:
-    OS << " vec_step";
-    break;
-  case UETT_OpenMPRequiredSimdAlign:
-    OS << " __builtin_omp_required_simd_align";
-    break;
-  case UETT_PreferredAlignOf:
-    OS << " __alignof";
-    break;
-  }
+  OS << " " << getTraitSpelling(Node->getKind());
+
   if (Node->isArgumentType())
     dumpType(Node->getArgumentType());
 }
@@ -786,6 +1066,12 @@ void TextNodeDumper::VisitUnaryExprOrTypeTraitExpr(
 void TextNodeDumper::VisitMemberExpr(const MemberExpr *Node) {
   OS << " " << (Node->isArrow() ? "->" : ".") << *Node->getMemberDecl();
   dumpPointer(Node->getMemberDecl());
+  switch (Node->isNonOdrUse()) {
+  case NOUR_None: break;
+  case NOUR_Unevaluated: OS << " non_odr_use_unevaluated"; break;
+  case NOUR_Constant: OS << " non_odr_use_constant"; break;
+  case NOUR_Discarded: OS << " non_odr_use_discarded"; break;
+  }
 }
 
 void TextNodeDumper::VisitExtVectorElementExpr(
@@ -824,6 +1110,8 @@ void TextNodeDumper::VisitCXXBoolLiteralExpr(const CXXBoolLiteralExpr *Node) {
 }
 
 void TextNodeDumper::VisitCXXThisExpr(const CXXThisExpr *Node) {
+  if (Node->isImplicit())
+    OS << " implicit";
   OS << " this";
 }
 
@@ -855,8 +1143,9 @@ void TextNodeDumper::VisitCXXConstructExpr(const CXXConstructExpr *Node) {
 
 void TextNodeDumper::VisitCXXBindTemporaryExpr(
     const CXXBindTemporaryExpr *Node) {
-  OS << " ";
-  dumpCXXTemporary(Node->getTemporary());
+  OS << " (CXXTemporary";
+  dumpPointer(Node);
+  OS << ")";
 }
 
 void TextNodeDumper::VisitCXXNewExpr(const CXXNewExpr *Node) {
@@ -883,6 +1172,18 @@ void TextNodeDumper::VisitCXXDeleteExpr(const CXXDeleteExpr *Node) {
   }
 }
 
+void TextNodeDumper::VisitTypeTraitExpr(const TypeTraitExpr *Node) {
+  OS << " " << getTraitSpelling(Node->getTrait());
+}
+
+void TextNodeDumper::VisitArrayTypeTraitExpr(const ArrayTypeTraitExpr *Node) {
+  OS << " " << getTraitSpelling(Node->getTrait());
+}
+
+void TextNodeDumper::VisitExpressionTraitExpr(const ExpressionTraitExpr *Node) {
+  OS << " " << getTraitSpelling(Node->getTrait());
+}
+
 void TextNodeDumper::VisitMaterializeTemporaryExpr(
     const MaterializeTemporaryExpr *Node) {
   if (const ValueDecl *VD = Node->getExtendingDecl()) {
@@ -893,7 +1194,7 @@ void TextNodeDumper::VisitMaterializeTemporaryExpr(
 
 void TextNodeDumper::VisitExprWithCleanups(const ExprWithCleanups *Node) {
   for (unsigned i = 0, e = Node->getNumObjects(); i != e; ++i)
-    dumpDeclRef(Node->getObject(i), "cleanup");
+    dumpCleanupObject(Node->getObject(i));
 }
 
 void TextNodeDumper::VisitSizeOfPackExpr(const SizeOfPackExpr *Node) {
@@ -1009,6 +1310,23 @@ void TextNodeDumper::VisitObjCBoolLiteralExpr(const ObjCBoolLiteralExpr *Node) {
   OS << " " << (Node->getValue() ? "__objc_yes" : "__objc_no");
 }
 
+void TextNodeDumper::VisitOMPIteratorExpr(const OMPIteratorExpr *Node) {
+  OS << " ";
+  for (unsigned I = 0, E = Node->numOfIterators(); I < E; ++I) {
+    Visit(Node->getIteratorDecl(I));
+    OS << " = ";
+    const OMPIteratorExpr::IteratorRange Range = Node->getIteratorRange(I);
+    OS << " begin ";
+    Visit(Range.Begin);
+    OS << " end ";
+    Visit(Range.End);
+    if (Range.Step) {
+      OS << " step ";
+      Visit(Range.Step);
+    }
+  }
+}
+
 void TextNodeDumper::VisitRValueReferenceType(const ReferenceType *T) {
   if (T->isSpelledAsLValue())
     OS << " written as lvalue reference";
@@ -1096,6 +1414,8 @@ void TextNodeDumper::VisitFunctionProtoType(const FunctionProtoType *T) {
     OS << " volatile";
   if (T->isRestrict())
     OS << " restrict";
+  if (T->getExtProtoInfo().Variadic)
+    OS << " variadic";
   switch (EPI.RefQualifier) {
   case RQ_None:
     break;
@@ -1143,6 +1463,11 @@ void TextNodeDumper::VisitAutoType(const AutoType *T) {
     OS << " decltype(auto)";
   if (!T->isDeduced())
     OS << " undeduced";
+  if (T->isConstrained()) {
+    dumpDeclRef(T->getTypeConstraintConcept());
+    for (const auto &Arg : T->getTypeConstraintArguments())
+      VisitTemplateArgument(Arg);
+  }
 }
 
 void TextNodeDumper::VisitTemplateSpecializationType(
@@ -1165,4 +1490,760 @@ void TextNodeDumper::VisitObjCInterfaceType(const ObjCInterfaceType *T) {
 void TextNodeDumper::VisitPackExpansionType(const PackExpansionType *T) {
   if (auto N = T->getNumExpansions())
     OS << " expansions " << *N;
+}
+
+void TextNodeDumper::VisitLabelDecl(const LabelDecl *D) { dumpName(D); }
+
+void TextNodeDumper::VisitTypedefDecl(const TypedefDecl *D) {
+  dumpName(D);
+  dumpType(D->getUnderlyingType());
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+}
+
+void TextNodeDumper::VisitEnumDecl(const EnumDecl *D) {
+  if (D->isScoped()) {
+    if (D->isScopedUsingClassTag())
+      OS << " class";
+    else
+      OS << " struct";
+  }
+  dumpName(D);
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+  if (D->isFixed())
+    dumpType(D->getIntegerType());
+}
+
+void TextNodeDumper::VisitRecordDecl(const RecordDecl *D) {
+  OS << ' ' << D->getKindName();
+  dumpName(D);
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+  if (D->isCompleteDefinition())
+    OS << " definition";
+}
+
+void TextNodeDumper::VisitEnumConstantDecl(const EnumConstantDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+}
+
+void TextNodeDumper::VisitIndirectFieldDecl(const IndirectFieldDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+
+  for (const auto *Child : D->chain())
+    dumpDeclRef(Child);
+}
+
+void TextNodeDumper::VisitFunctionDecl(const FunctionDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+
+  StorageClass SC = D->getStorageClass();
+  if (SC != SC_None)
+    OS << ' ' << VarDecl::getStorageClassSpecifierString(SC);
+  if (D->isInlineSpecified())
+    OS << " inline";
+  if (D->isVirtualAsWritten())
+    OS << " virtual";
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+
+  if (D->isPure())
+    OS << " pure";
+  if (D->isDefaulted()) {
+    OS << " default";
+    if (D->isDeleted())
+      OS << "_delete";
+  }
+  if (D->isDeletedAsWritten())
+    OS << " delete";
+  if (D->isTrivial())
+    OS << " trivial";
+
+  if (const auto *FPT = D->getType()->getAs<FunctionProtoType>()) {
+    FunctionProtoType::ExtProtoInfo EPI = FPT->getExtProtoInfo();
+    switch (EPI.ExceptionSpec.Type) {
+    default:
+      break;
+    case EST_Unevaluated:
+      OS << " noexcept-unevaluated " << EPI.ExceptionSpec.SourceDecl;
+      break;
+    case EST_Uninstantiated:
+      OS << " noexcept-uninstantiated " << EPI.ExceptionSpec.SourceTemplate;
+      break;
+    }
+  }
+
+  if (const auto *MD = dyn_cast<CXXMethodDecl>(D)) {
+    if (MD->size_overridden_methods() != 0) {
+      auto dumpOverride = [=](const CXXMethodDecl *D) {
+        SplitQualType T_split = D->getType().split();
+        OS << D << " " << D->getParent()->getName()
+           << "::" << D->getNameAsString() << " '"
+           << QualType::getAsString(T_split, PrintPolicy) << "'";
+      };
+
+      AddChild([=] {
+        auto Overrides = MD->overridden_methods();
+        OS << "Overrides: [ ";
+        dumpOverride(*Overrides.begin());
+        for (const auto *Override :
+             llvm::make_range(Overrides.begin() + 1, Overrides.end())) {
+          OS << ", ";
+          dumpOverride(Override);
+        }
+        OS << " ]";
+      });
+    }
+  }
+
+  // Since NumParams comes from the FunctionProtoType of the FunctionDecl and
+  // the Params are set later, it is possible for a dump during debugging to
+  // encounter a FunctionDecl that has been created but hasn't been assigned
+  // ParmVarDecls yet.
+  if (!D->param_empty() && !D->param_begin())
+    OS << " <<<NULL params x " << D->getNumParams() << ">>>";
+}
+
+void TextNodeDumper::VisitLifetimeExtendedTemporaryDecl(
+    const LifetimeExtendedTemporaryDecl *D) {
+  OS << " extended by ";
+  dumpBareDeclRef(D->getExtendingDecl());
+  OS << " mangling ";
+  {
+    ColorScope Color(OS, ShowColors, ValueColor);
+    OS << D->getManglingNumber();
+  }
+}
+
+void TextNodeDumper::VisitFieldDecl(const FieldDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  if (D->isMutable())
+    OS << " mutable";
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+}
+
+void TextNodeDumper::VisitVarDecl(const VarDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  StorageClass SC = D->getStorageClass();
+  if (SC != SC_None)
+    OS << ' ' << VarDecl::getStorageClassSpecifierString(SC);
+  switch (D->getTLSKind()) {
+  case VarDecl::TLS_None:
+    break;
+  case VarDecl::TLS_Static:
+    OS << " tls";
+    break;
+  case VarDecl::TLS_Dynamic:
+    OS << " tls_dynamic";
+    break;
+  }
+  if (D->isModulePrivate())
+    OS << " __module_private__";
+  if (D->isNRVOVariable())
+    OS << " nrvo";
+  if (D->isInline())
+    OS << " inline";
+  if (D->isConstexpr())
+    OS << " constexpr";
+  if (D->hasInit()) {
+    switch (D->getInitStyle()) {
+    case VarDecl::CInit:
+      OS << " cinit";
+      break;
+    case VarDecl::CallInit:
+      OS << " callinit";
+      break;
+    case VarDecl::ListInit:
+      OS << " listinit";
+      break;
+    }
+  }
+  if (D->needsDestruction(D->getASTContext()))
+    OS << " destroyed";
+  if (D->isParameterPack())
+    OS << " pack";
+
+  if (D->hasInit()) {
+    const Expr *E = D->getInit();
+    // Only dump the value of constexpr VarDecls for now.
+    if (E && !E->isValueDependent() && D->isConstexpr()) {
+      const APValue *Value = D->evaluateValue();
+      if (Value)
+        AddChild("value", [=] { Visit(*Value, E->getType()); });
+    }
+  }
+}
+
+void TextNodeDumper::VisitBindingDecl(const BindingDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+}
+
+void TextNodeDumper::VisitCapturedDecl(const CapturedDecl *D) {
+  if (D->isNothrow())
+    OS << " nothrow";
+}
+
+void TextNodeDumper::VisitImportDecl(const ImportDecl *D) {
+  OS << ' ' << D->getImportedModule()->getFullModuleName();
+
+  for (Decl *InitD :
+       D->getASTContext().getModuleInitializers(D->getImportedModule()))
+    dumpDeclRef(InitD, "initializer");
+}
+
+void TextNodeDumper::VisitPragmaCommentDecl(const PragmaCommentDecl *D) {
+  OS << ' ';
+  switch (D->getCommentKind()) {
+  case PCK_Unknown:
+    llvm_unreachable("unexpected pragma comment kind");
+  case PCK_Compiler:
+    OS << "compiler";
+    break;
+  case PCK_ExeStr:
+    OS << "exestr";
+    break;
+  case PCK_Lib:
+    OS << "lib";
+    break;
+  case PCK_Linker:
+    OS << "linker";
+    break;
+  case PCK_User:
+    OS << "user";
+    break;
+  }
+  StringRef Arg = D->getArg();
+  if (!Arg.empty())
+    OS << " \"" << Arg << "\"";
+}
+
+void TextNodeDumper::VisitPragmaDetectMismatchDecl(
+    const PragmaDetectMismatchDecl *D) {
+  OS << " \"" << D->getName() << "\" \"" << D->getValue() << "\"";
+}
+
+void TextNodeDumper::VisitOMPExecutableDirective(
+    const OMPExecutableDirective *D) {
+  if (D->isStandaloneDirective())
+    OS << " openmp_standalone_directive";
+}
+
+void TextNodeDumper::VisitOMPDeclareReductionDecl(
+    const OMPDeclareReductionDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  OS << " combiner";
+  dumpPointer(D->getCombiner());
+  if (const auto *Initializer = D->getInitializer()) {
+    OS << " initializer";
+    dumpPointer(Initializer);
+    switch (D->getInitializerKind()) {
+    case OMPDeclareReductionDecl::DirectInit:
+      OS << " omp_priv = ";
+      break;
+    case OMPDeclareReductionDecl::CopyInit:
+      OS << " omp_priv ()";
+      break;
+    case OMPDeclareReductionDecl::CallInit:
+      break;
+    }
+  }
+}
+
+void TextNodeDumper::VisitOMPRequiresDecl(const OMPRequiresDecl *D) {
+  for (const auto *C : D->clauselists()) {
+    AddChild([=] {
+      if (!C) {
+        ColorScope Color(OS, ShowColors, NullColor);
+        OS << "<<<NULL>>> OMPClause";
+        return;
+      }
+      {
+        ColorScope Color(OS, ShowColors, AttrColor);
+        StringRef ClauseName(
+            llvm::omp::getOpenMPClauseName(C->getClauseKind()));
+        OS << "OMP" << ClauseName.substr(/*Start=*/0, /*N=*/1).upper()
+           << ClauseName.drop_front() << "Clause";
+      }
+      dumpPointer(C);
+      dumpSourceRange(SourceRange(C->getBeginLoc(), C->getEndLoc()));
+    });
+  }
+}
+
+void TextNodeDumper::VisitOMPCapturedExprDecl(const OMPCapturedExprDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+}
+
+void TextNodeDumper::VisitNamespaceDecl(const NamespaceDecl *D) {
+  dumpName(D);
+  if (D->isInline())
+    OS << " inline";
+  if (!D->isOriginalNamespace())
+    dumpDeclRef(D->getOriginalNamespace(), "original");
+}
+
+void TextNodeDumper::VisitUsingDirectiveDecl(const UsingDirectiveDecl *D) {
+  OS << ' ';
+  dumpBareDeclRef(D->getNominatedNamespace());
+}
+
+void TextNodeDumper::VisitNamespaceAliasDecl(const NamespaceAliasDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getAliasedNamespace());
+}
+
+void TextNodeDumper::VisitTypeAliasDecl(const TypeAliasDecl *D) {
+  dumpName(D);
+  dumpType(D->getUnderlyingType());
+}
+
+void TextNodeDumper::VisitTypeAliasTemplateDecl(
+    const TypeAliasTemplateDecl *D) {
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitCXXRecordDecl(const CXXRecordDecl *D) {
+  VisitRecordDecl(D);
+  if (!D->isCompleteDefinition())
+    return;
+
+  AddChild([=] {
+    {
+      ColorScope Color(OS, ShowColors, DeclKindNameColor);
+      OS << "DefinitionData";
+    }
+#define FLAG(fn, name)                                                         \
+  if (D->fn())                                                                 \
+    OS << " " #name;
+    FLAG(isParsingBaseSpecifiers, parsing_base_specifiers);
+
+    FLAG(isGenericLambda, generic);
+    FLAG(isLambda, lambda);
+
+    FLAG(isAnonymousStructOrUnion, is_anonymous);
+    FLAG(canPassInRegisters, pass_in_registers);
+    FLAG(isEmpty, empty);
+    FLAG(isAggregate, aggregate);
+    FLAG(isStandardLayout, standard_layout);
+    FLAG(isTriviallyCopyable, trivially_copyable);
+    FLAG(isPOD, pod);
+    FLAG(isTrivial, trivial);
+    FLAG(isPolymorphic, polymorphic);
+    FLAG(isAbstract, abstract);
+    FLAG(isLiteral, literal);
+
+    FLAG(hasUserDeclaredConstructor, has_user_declared_ctor);
+    FLAG(hasConstexprNonCopyMoveConstructor, has_constexpr_non_copy_move_ctor);
+    FLAG(hasMutableFields, has_mutable_fields);
+    FLAG(hasVariantMembers, has_variant_members);
+    FLAG(allowConstDefaultInit, can_const_default_init);
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "DefaultConstructor";
+      }
+      FLAG(hasDefaultConstructor, exists);
+      FLAG(hasTrivialDefaultConstructor, trivial);
+      FLAG(hasNonTrivialDefaultConstructor, non_trivial);
+      FLAG(hasUserProvidedDefaultConstructor, user_provided);
+      FLAG(hasConstexprDefaultConstructor, constexpr);
+      FLAG(needsImplicitDefaultConstructor, needs_implicit);
+      FLAG(defaultedDefaultConstructorIsConstexpr, defaulted_is_constexpr);
+    });
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "CopyConstructor";
+      }
+      FLAG(hasSimpleCopyConstructor, simple);
+      FLAG(hasTrivialCopyConstructor, trivial);
+      FLAG(hasNonTrivialCopyConstructor, non_trivial);
+      FLAG(hasUserDeclaredCopyConstructor, user_declared);
+      FLAG(hasCopyConstructorWithConstParam, has_const_param);
+      FLAG(needsImplicitCopyConstructor, needs_implicit);
+      FLAG(needsOverloadResolutionForCopyConstructor,
+           needs_overload_resolution);
+      if (!D->needsOverloadResolutionForCopyConstructor())
+        FLAG(defaultedCopyConstructorIsDeleted, defaulted_is_deleted);
+      FLAG(implicitCopyConstructorHasConstParam, implicit_has_const_param);
+    });
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "MoveConstructor";
+      }
+      FLAG(hasMoveConstructor, exists);
+      FLAG(hasSimpleMoveConstructor, simple);
+      FLAG(hasTrivialMoveConstructor, trivial);
+      FLAG(hasNonTrivialMoveConstructor, non_trivial);
+      FLAG(hasUserDeclaredMoveConstructor, user_declared);
+      FLAG(needsImplicitMoveConstructor, needs_implicit);
+      FLAG(needsOverloadResolutionForMoveConstructor,
+           needs_overload_resolution);
+      if (!D->needsOverloadResolutionForMoveConstructor())
+        FLAG(defaultedMoveConstructorIsDeleted, defaulted_is_deleted);
+    });
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "CopyAssignment";
+      }
+      FLAG(hasSimpleCopyAssignment, simple);
+      FLAG(hasTrivialCopyAssignment, trivial);
+      FLAG(hasNonTrivialCopyAssignment, non_trivial);
+      FLAG(hasCopyAssignmentWithConstParam, has_const_param);
+      FLAG(hasUserDeclaredCopyAssignment, user_declared);
+      FLAG(needsImplicitCopyAssignment, needs_implicit);
+      FLAG(needsOverloadResolutionForCopyAssignment, needs_overload_resolution);
+      FLAG(implicitCopyAssignmentHasConstParam, implicit_has_const_param);
+    });
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "MoveAssignment";
+      }
+      FLAG(hasMoveAssignment, exists);
+      FLAG(hasSimpleMoveAssignment, simple);
+      FLAG(hasTrivialMoveAssignment, trivial);
+      FLAG(hasNonTrivialMoveAssignment, non_trivial);
+      FLAG(hasUserDeclaredMoveAssignment, user_declared);
+      FLAG(needsImplicitMoveAssignment, needs_implicit);
+      FLAG(needsOverloadResolutionForMoveAssignment, needs_overload_resolution);
+    });
+
+    AddChild([=] {
+      {
+        ColorScope Color(OS, ShowColors, DeclKindNameColor);
+        OS << "Destructor";
+      }
+      FLAG(hasSimpleDestructor, simple);
+      FLAG(hasIrrelevantDestructor, irrelevant);
+      FLAG(hasTrivialDestructor, trivial);
+      FLAG(hasNonTrivialDestructor, non_trivial);
+      FLAG(hasUserDeclaredDestructor, user_declared);
+      FLAG(hasConstexprDestructor, constexpr);
+      FLAG(needsImplicitDestructor, needs_implicit);
+      FLAG(needsOverloadResolutionForDestructor, needs_overload_resolution);
+      if (!D->needsOverloadResolutionForDestructor())
+        FLAG(defaultedDestructorIsDeleted, defaulted_is_deleted);
+    });
+  });
+
+  for (const auto &I : D->bases()) {
+    AddChild([=] {
+      if (I.isVirtual())
+        OS << "virtual ";
+      dumpAccessSpecifier(I.getAccessSpecifier());
+      dumpType(I.getType());
+      if (I.isPackExpansion())
+        OS << "...";
+    });
+  }
+}
+
+void TextNodeDumper::VisitFunctionTemplateDecl(const FunctionTemplateDecl *D) {
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitClassTemplateDecl(const ClassTemplateDecl *D) {
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitVarTemplateDecl(const VarTemplateDecl *D) {
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitBuiltinTemplateDecl(const BuiltinTemplateDecl *D) {
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitTemplateTypeParmDecl(const TemplateTypeParmDecl *D) {
+  if (const auto *TC = D->getTypeConstraint()) {
+    OS << " ";
+    dumpBareDeclRef(TC->getNamedConcept());
+    if (TC->getNamedConcept() != TC->getFoundDecl()) {
+      OS << " (";
+      dumpBareDeclRef(TC->getFoundDecl());
+      OS << ")";
+    }
+    Visit(TC->getImmediatelyDeclaredConstraint());
+  } else if (D->wasDeclaredWithTypename())
+    OS << " typename";
+  else
+    OS << " class";
+  OS << " depth " << D->getDepth() << " index " << D->getIndex();
+  if (D->isParameterPack())
+    OS << " ...";
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitNonTypeTemplateParmDecl(
+    const NonTypeTemplateParmDecl *D) {
+  dumpType(D->getType());
+  OS << " depth " << D->getDepth() << " index " << D->getIndex();
+  if (D->isParameterPack())
+    OS << " ...";
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitTemplateTemplateParmDecl(
+    const TemplateTemplateParmDecl *D) {
+  OS << " depth " << D->getDepth() << " index " << D->getIndex();
+  if (D->isParameterPack())
+    OS << " ...";
+  dumpName(D);
+}
+
+void TextNodeDumper::VisitUsingDecl(const UsingDecl *D) {
+  OS << ' ';
+  if (D->getQualifier())
+    D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+  OS << D->getNameAsString();
+}
+
+void TextNodeDumper::VisitUnresolvedUsingTypenameDecl(
+    const UnresolvedUsingTypenameDecl *D) {
+  OS << ' ';
+  if (D->getQualifier())
+    D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+  OS << D->getNameAsString();
+}
+
+void TextNodeDumper::VisitUnresolvedUsingValueDecl(
+    const UnresolvedUsingValueDecl *D) {
+  OS << ' ';
+  if (D->getQualifier())
+    D->getQualifier()->print(OS, D->getASTContext().getPrintingPolicy());
+  OS << D->getNameAsString();
+  dumpType(D->getType());
+}
+
+void TextNodeDumper::VisitUsingShadowDecl(const UsingShadowDecl *D) {
+  OS << ' ';
+  dumpBareDeclRef(D->getTargetDecl());
+}
+
+void TextNodeDumper::VisitConstructorUsingShadowDecl(
+    const ConstructorUsingShadowDecl *D) {
+  if (D->constructsVirtualBase())
+    OS << " virtual";
+
+  AddChild([=] {
+    OS << "target ";
+    dumpBareDeclRef(D->getTargetDecl());
+  });
+
+  AddChild([=] {
+    OS << "nominated ";
+    dumpBareDeclRef(D->getNominatedBaseClass());
+    OS << ' ';
+    dumpBareDeclRef(D->getNominatedBaseClassShadowDecl());
+  });
+
+  AddChild([=] {
+    OS << "constructed ";
+    dumpBareDeclRef(D->getConstructedBaseClass());
+    OS << ' ';
+    dumpBareDeclRef(D->getConstructedBaseClassShadowDecl());
+  });
+}
+
+void TextNodeDumper::VisitLinkageSpecDecl(const LinkageSpecDecl *D) {
+  switch (D->getLanguage()) {
+  case LinkageSpecDecl::lang_c:
+    OS << " C";
+    break;
+  case LinkageSpecDecl::lang_cxx:
+    OS << " C++";
+    break;
+  }
+}
+
+void TextNodeDumper::VisitAccessSpecDecl(const AccessSpecDecl *D) {
+  OS << ' ';
+  dumpAccessSpecifier(D->getAccess());
+}
+
+void TextNodeDumper::VisitFriendDecl(const FriendDecl *D) {
+  if (TypeSourceInfo *T = D->getFriendType())
+    dumpType(T->getType());
+}
+
+void TextNodeDumper::VisitObjCIvarDecl(const ObjCIvarDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+  if (D->getSynthesize())
+    OS << " synthesize";
+
+  switch (D->getAccessControl()) {
+  case ObjCIvarDecl::None:
+    OS << " none";
+    break;
+  case ObjCIvarDecl::Private:
+    OS << " private";
+    break;
+  case ObjCIvarDecl::Protected:
+    OS << " protected";
+    break;
+  case ObjCIvarDecl::Public:
+    OS << " public";
+    break;
+  case ObjCIvarDecl::Package:
+    OS << " package";
+    break;
+  }
+}
+
+void TextNodeDumper::VisitObjCMethodDecl(const ObjCMethodDecl *D) {
+  if (D->isInstanceMethod())
+    OS << " -";
+  else
+    OS << " +";
+  dumpName(D);
+  dumpType(D->getReturnType());
+
+  if (D->isVariadic())
+    OS << " variadic";
+}
+
+void TextNodeDumper::VisitObjCTypeParamDecl(const ObjCTypeParamDecl *D) {
+  dumpName(D);
+  switch (D->getVariance()) {
+  case ObjCTypeParamVariance::Invariant:
+    break;
+
+  case ObjCTypeParamVariance::Covariant:
+    OS << " covariant";
+    break;
+
+  case ObjCTypeParamVariance::Contravariant:
+    OS << " contravariant";
+    break;
+  }
+
+  if (D->hasExplicitBound())
+    OS << " bounded";
+  dumpType(D->getUnderlyingType());
+}
+
+void TextNodeDumper::VisitObjCCategoryDecl(const ObjCCategoryDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getClassInterface());
+  dumpDeclRef(D->getImplementation());
+  for (const auto *P : D->protocols())
+    dumpDeclRef(P);
+}
+
+void TextNodeDumper::VisitObjCCategoryImplDecl(const ObjCCategoryImplDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getClassInterface());
+  dumpDeclRef(D->getCategoryDecl());
+}
+
+void TextNodeDumper::VisitObjCProtocolDecl(const ObjCProtocolDecl *D) {
+  dumpName(D);
+
+  for (const auto *Child : D->protocols())
+    dumpDeclRef(Child);
+}
+
+void TextNodeDumper::VisitObjCInterfaceDecl(const ObjCInterfaceDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getSuperClass(), "super");
+
+  dumpDeclRef(D->getImplementation());
+  for (const auto *Child : D->protocols())
+    dumpDeclRef(Child);
+}
+
+void TextNodeDumper::VisitObjCImplementationDecl(
+    const ObjCImplementationDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getSuperClass(), "super");
+  dumpDeclRef(D->getClassInterface());
+}
+
+void TextNodeDumper::VisitObjCCompatibleAliasDecl(
+    const ObjCCompatibleAliasDecl *D) {
+  dumpName(D);
+  dumpDeclRef(D->getClassInterface());
+}
+
+void TextNodeDumper::VisitObjCPropertyDecl(const ObjCPropertyDecl *D) {
+  dumpName(D);
+  dumpType(D->getType());
+
+  if (D->getPropertyImplementation() == ObjCPropertyDecl::Required)
+    OS << " required";
+  else if (D->getPropertyImplementation() == ObjCPropertyDecl::Optional)
+    OS << " optional";
+
+  ObjCPropertyAttribute::Kind Attrs = D->getPropertyAttributes();
+  if (Attrs != ObjCPropertyAttribute::kind_noattr) {
+    if (Attrs & ObjCPropertyAttribute::kind_readonly)
+      OS << " readonly";
+    if (Attrs & ObjCPropertyAttribute::kind_assign)
+      OS << " assign";
+    if (Attrs & ObjCPropertyAttribute::kind_readwrite)
+      OS << " readwrite";
+    if (Attrs & ObjCPropertyAttribute::kind_retain)
+      OS << " retain";
+    if (Attrs & ObjCPropertyAttribute::kind_copy)
+      OS << " copy";
+    if (Attrs & ObjCPropertyAttribute::kind_nonatomic)
+      OS << " nonatomic";
+    if (Attrs & ObjCPropertyAttribute::kind_atomic)
+      OS << " atomic";
+    if (Attrs & ObjCPropertyAttribute::kind_weak)
+      OS << " weak";
+    if (Attrs & ObjCPropertyAttribute::kind_strong)
+      OS << " strong";
+    if (Attrs & ObjCPropertyAttribute::kind_unsafe_unretained)
+      OS << " unsafe_unretained";
+    if (Attrs & ObjCPropertyAttribute::kind_class)
+      OS << " class";
+    if (Attrs & ObjCPropertyAttribute::kind_direct)
+      OS << " direct";
+    if (Attrs & ObjCPropertyAttribute::kind_getter)
+      dumpDeclRef(D->getGetterMethodDecl(), "getter");
+    if (Attrs & ObjCPropertyAttribute::kind_setter)
+      dumpDeclRef(D->getSetterMethodDecl(), "setter");
+  }
+}
+
+void TextNodeDumper::VisitObjCPropertyImplDecl(const ObjCPropertyImplDecl *D) {
+  dumpName(D->getPropertyDecl());
+  if (D->getPropertyImplementation() == ObjCPropertyImplDecl::Synthesize)
+    OS << " synthesize";
+  else
+    OS << " dynamic";
+  dumpDeclRef(D->getPropertyDecl());
+  dumpDeclRef(D->getPropertyIvarDecl());
+}
+
+void TextNodeDumper::VisitBlockDecl(const BlockDecl *D) {
+  if (D->isVariadic())
+    OS << " variadic";
+
+  if (D->capturesCXXThis())
+    OS << " captures_this";
+}
+
+void TextNodeDumper::VisitConceptDecl(const ConceptDecl *D) {
+  dumpName(D);
 }

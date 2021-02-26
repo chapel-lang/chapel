@@ -1,9 +1,8 @@
 //===- PPCBoolRetToInt.cpp ------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -79,9 +78,9 @@ class PPCBoolRetToInt : public FunctionPass {
       Value *Curr = WorkList.back();
       WorkList.pop_back();
       auto *CurrUser = dyn_cast<User>(Curr);
-      // Operands of CallInst are skipped because they may not be Bool type,
-      // and their positions are defined by ABI.
-      if (CurrUser && !isa<CallInst>(Curr))
+      // Operands of CallInst/Constant are skipped because they may not be Bool
+      // type. For CallInst, their positions are defined by ABI.
+      if (CurrUser && !isa<CallInst>(Curr) && !isa<Constant>(Curr))
         for (auto &Op : CurrUser->operands())
           if (Defs.insert(Op).second)
             WorkList.push_back(Op);
@@ -91,6 +90,9 @@ class PPCBoolRetToInt : public FunctionPass {
 
   // Translate a i1 value to an equivalent i32/i64 value:
   Value *translate(Value *V) {
+    assert(V->getType() == Type::getInt1Ty(V->getContext()) &&
+           "Expect an i1 value");
+
     Type *IntTy = ST->isPPC64() ? Type::getInt64Ty(V->getContext())
                                 : Type::getInt32Ty(V->getContext());
 
@@ -221,7 +223,7 @@ class PPCBoolRetToInt : public FunctionPass {
     auto Defs = findAllDefs(U);
 
     // If the values are all Constants or Arguments, don't bother
-    if (llvm::none_of(Defs, isa<Instruction, Value *>))
+    if (llvm::none_of(Defs, [](Value *V) { return isa<Instruction>(V); }))
       return false;
 
     // Presently, we only know how to handle PHINode, Constant, Arguments and
@@ -253,9 +255,9 @@ class PPCBoolRetToInt : public FunctionPass {
       auto *First = dyn_cast<User>(Pair.first);
       auto *Second = dyn_cast<User>(Pair.second);
       assert((!First || Second) && "translated from user to non-user!?");
-      // Operands of CallInst are skipped because they may not be Bool type,
-      // and their positions are defined by ABI.
-      if (First && !isa<CallInst>(First))
+      // Operands of CallInst/Constant are skipped because they may not be Bool
+      // type. For CallInst, their positions are defined by ABI.
+      if (First && !isa<CallInst>(First) && !isa<Constant>(First))
         for (unsigned i = 0; i < First->getNumOperands(); ++i)
           Second->setOperand(i, BoolToIntMap[First->getOperand(i)]);
     }

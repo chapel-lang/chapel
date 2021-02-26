@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -28,31 +28,34 @@
 
 class ResolveScope;
 
-class ImportStmt: public VisibilityStmt {
+class ImportStmt final : public VisibilityStmt {
  public:
-  ImportStmt(BaseAST* source, bool isPrivate);
-  ImportStmt(BaseAST* source, const char* rename, bool isPrivate);
-  ImportStmt(BaseAST* source, bool isPrivate,
-             std::vector<const char*>* namesList,
-             std::map<const char*, const char*>* renamesList);
+  ImportStmt(BaseAST* source, bool isPrivate = true);
+  ImportStmt(BaseAST* source, const char* rename, bool isPrivate = true);
+  ImportStmt(BaseAST* source, std::vector<const char*>* namesList,
+             std::map<const char*, const char*>* renamesList,
+             bool isPrivate = true);
 
   DECLARE_COPY(ImportStmt);
+  ImportStmt* copyInner(SymbolMap* map) override;
 
-  virtual Expr* getFirstExpr();
+  Expr* getFirstExpr() override;
 
-  virtual void replaceChild(Expr* oldAst, Expr* newAst);
+  void replaceChild(Expr* oldAst, Expr* newAst) override;
 
-  virtual void accept(AstVisitor* visitor);
+  void accept(AstVisitor* visitor) override;
 
-  virtual void verify();
+  void verify() override;
 
-  virtual GenRet codegen();
+  GenRet codegen() override;
 
   void scopeResolve(ResolveScope* scope);
 
-  virtual BaseAST* getSearchScope() const;
+  BaseAST* getSearchScope() const override;
 
-  bool skipSymbolSearch(const char* name);
+  std::set<const char*> typeWasNamed(Type* t) const override;
+
+  bool skipSymbolSearch(const char* name) const override;
 
   bool providesQualifiedAccess() const;
   bool providesUnqualifiedAccess() const;
@@ -69,6 +72,8 @@ class ImportStmt: public VisibilityStmt {
   void validateList();
   void validateUnqualified();
   void noRepeats() const;
+
+  void typeWasNamed(Type* t, std::set<const char*>* namedTypes) const;
 
  public:
   std::vector<const char*> unqualified;

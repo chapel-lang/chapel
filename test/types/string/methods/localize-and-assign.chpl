@@ -11,6 +11,9 @@ on Locales[numLocales-1] {
 
   writeln(tx);
 
+  // ENGIN: I am keeping the comment below for record-keeping purposes. But it
+  // is not true anymore; we use the factory functions in the path
+  // described.
   // Since s is on locale 0 and here is numLocales-1, proc =()'s
   // helpMe() goes down the "remote copy" path calling reinitString()
   // with needToCopy=false.

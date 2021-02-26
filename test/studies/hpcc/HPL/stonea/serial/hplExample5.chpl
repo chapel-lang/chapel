@@ -6,7 +6,7 @@
 // - Calculates flops/sec
 
 use Random;
-use Norm;
+use LinearAlgebra;
 use Time;
 
 config const n = 100;

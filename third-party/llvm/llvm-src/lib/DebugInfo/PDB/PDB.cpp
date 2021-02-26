@@ -1,9 +1,8 @@
 //===- PDB.cpp - base header file for creating a PDB reader ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,15 +23,8 @@ using namespace llvm::pdb;
 Error llvm::pdb::loadDataForPDB(PDB_ReaderType Type, StringRef Path,
                                 std::unique_ptr<IPDBSession> &Session) {
   // Create the correct concrete instance type based on the value of Type.
-  if (Type == PDB_ReaderType::Native) {
-    ErrorOr<std::unique_ptr<MemoryBuffer>> ErrorOrBuffer =
-        MemoryBuffer::getFileOrSTDIN(Path, /*FileSize=*/-1,
-                                     /*RequiresNullTerminator=*/false);
-    if (!ErrorOrBuffer)
-      return errorCodeToError(ErrorOrBuffer.getError());
-
-    return NativeSession::createFromPdb(std::move(*ErrorOrBuffer), Session);
-  }
+  if (Type == PDB_ReaderType::Native)
+    return NativeSession::createFromPdbPath(Path, Session);
 
 #if LLVM_ENABLE_DIA_SDK
   return DIASession::createFromPdb(Path, Session);
@@ -44,8 +36,12 @@ Error llvm::pdb::loadDataForPDB(PDB_ReaderType Type, StringRef Path,
 Error llvm::pdb::loadDataForEXE(PDB_ReaderType Type, StringRef Path,
                                 std::unique_ptr<IPDBSession> &Session) {
   // Create the correct concrete instance type based on the value of Type.
-  if (Type == PDB_ReaderType::Native)
-    return NativeSession::createFromExe(Path, Session);
+  if (Type == PDB_ReaderType::Native) {
+    Expected<std::string> PdbPath = NativeSession::searchForPdb({Path});
+    if (!PdbPath)
+      return PdbPath.takeError();
+    return NativeSession::createFromPdbPath(PdbPath.get(), Session);
+  }
 
 #if LLVM_ENABLE_DIA_SDK
   return DIASession::createFromExe(Path, Session);

@@ -1,9 +1,8 @@
 //===-- InstructionPrecedenceTracking.h -------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // Implements a class that is able to define some instructions as "special"
@@ -21,18 +20,18 @@
 #ifndef LLVM_ANALYSIS_INSTRUCTIONPRECEDENCETRACKING_H
 #define LLVM_ANALYSIS_INSTRUCTIONPRECEDENCETRACKING_H
 
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/OrderedInstructions.h"
+#include "llvm/ADT/DenseMap.h"
 
 namespace llvm {
+
+class BasicBlock;
+class Instruction;
 
 class InstructionPrecedenceTracking {
   // Maps a block to the topmost special instruction in it. If the value is
   // nullptr, it means that it is known that this block does not contain any
   // special instructions.
   DenseMap<const BasicBlock *, const Instruction *> FirstSpecialInsts;
-  // Allows to answer queries about precedence of instructions within one block.
-  OrderedInstructions OI;
 
   // Fills information about the given block's special instructions.
   void fill(const BasicBlock *BB);
@@ -50,9 +49,6 @@ class InstructionPrecedenceTracking {
 #endif
 
 protected:
-  InstructionPrecedenceTracking(DominatorTree *DT)
-      : OI(OrderedInstructions(DT)) {}
-
   /// Returns the topmost special instruction from the block \p BB. Returns
   /// nullptr if there is no special instructions in the block.
   const Instruction *getFirstSpecialInstruction(const BasicBlock *BB);
@@ -93,13 +89,10 @@ public:
 /// example, throwing calls and guards do not always do this. If we need to know
 /// for sure that some instruction is guaranteed to execute if the given block
 /// is reached, then we need to make sure that there is no implicit control flow
-/// instruction (ICFI) preceeding it. For example, this check is required if we
+/// instruction (ICFI) preceding it. For example, this check is required if we
 /// perform PRE moving non-speculable instruction to other place.
 class ImplicitControlFlowTracking : public InstructionPrecedenceTracking {
 public:
-  ImplicitControlFlowTracking(DominatorTree *DT)
-      : InstructionPrecedenceTracking(DT) {}
-
   /// Returns the topmost instruction with implicit control flow from the given
   /// basic block. Returns nullptr if there is no such instructions in the block.
   const Instruction *getFirstICFI(const BasicBlock *BB) {
@@ -117,13 +110,11 @@ public:
     return isPreceededBySpecialInstruction(Insn);
   }
 
-  virtual bool isSpecialInstruction(const Instruction *Insn) const;
+  bool isSpecialInstruction(const Instruction *Insn) const override;
 };
 
 class MemoryWriteTracking : public InstructionPrecedenceTracking {
 public:
-  MemoryWriteTracking(DominatorTree *DT) : InstructionPrecedenceTracking(DT) {}
-
   /// Returns the topmost instruction that may write memory from the given
   /// basic block. Returns nullptr if there is no such instructions in the block.
   const Instruction *getFirstMemoryWrite(const BasicBlock *BB) {
@@ -142,7 +133,7 @@ public:
     return isPreceededBySpecialInstruction(Insn);
   }
 
-  virtual bool isSpecialInstruction(const Instruction *Insn) const;
+  bool isSpecialInstruction(const Instruction *Insn) const override;
 };
 
 } // llvm

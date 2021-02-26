@@ -1,8 +1,15 @@
 # Makefile for Sphinx documentation
-#
+
+ifndef CHPL_MAKE_PYTHON
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+endif
+
+CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_utils.py --chpldeps)
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
+
 # You can set these variables from the command line.
 SPHINXOPTS    = -W -n
-SPHINXBUILD   = sphinx-build
+SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) sphinx-build
 PAPER         =
 SOURCEDIR     = rst
 BUILDDIR      = ../build/doc
@@ -12,7 +19,6 @@ BUILDPATH     = $$CHPL_HOME/doc/$(BUILDDIR)
 export CHPLDOC_AUTHOR=Hewlett Packard Enterprise Development LP
 
 # User-friendly check for sphinx-build
-SPHINXTEST=$(shell which $(SPHINXBUILD) >/dev/null 2>&1; echo $$?)
 SPHINXERROR="Error - The '$(SPHINXBUILD)' command was not found. Make sure you \
 have Sphinx installed, then set the SPHINXBUILD environment variable to point \
 to the full path of the '$(SPHINXBUILD)' executable. Alternatively you can add \
@@ -64,16 +70,23 @@ help-sphinx:
 check-sphinxbuild:
 	@echo
 	@echo "Confirming that sphinx-build is available..."
-	@if [ $(SPHINXTEST) -eq 1 ]; then echo $(SPHINXERROR); fi
+	@if $(SPHINXBUILD) --version > /dev/null 2>&1 ; \
+	then \
+	  echo OK ; \
+	else \
+	  echo $(SPHINXERROR) ; \
+	  exit 1 ; \
+	fi
 
-html-release: check-sphinxbuild source clean-build
+html-release: check-sphinxbuild source
 	@echo
 	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@chmod -R ugo+rX $(BUILDDIR)
-	cp util/versionButton.php $(BUILDDIR)/html/
+	@$(COPY_IF_DIFFERENT) util/versionButton.php $(BUILDDIR)/html/versionButton.php
 	@echo "ErrorDocument 404 https://chapel-lang.org/docs/$(WEB_DOC_VERSION)/index.html" > $(BUILDDIR)/html/.htaccess
-	mv $(BUILDDIR)/html .
+	@rm -Rf html
+	@cp -R $(BUILDDIR)/html html
 	@echo
 	@echo "Build finished. The HTML pages are in "'$$CHPL_HOME'"/doc/html."
 
@@ -88,7 +101,7 @@ html-dev:
 	@echo
 	@echo "Build finished. The HTML pages are in ./html."
 
-html: check-sphinxbuild source clean-build
+html: check-sphinxbuild source
 	@echo
 	@echo "Building HTML documentation"
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
@@ -99,7 +112,7 @@ html: check-sphinxbuild source clean-build
 %.html: FORCE
 	$(SPHINXBUILD) . build/html/$* && chmod -R ugo+rX build
 
-check: check-sphinxbuild source clean-build
+check: check-sphinxbuild source
 	@echo "Checking for broken links or cross-references"
 	$(SPHINXBUILD) -n -b linkcheck -d $(BUILDDIR)/doctrees $(SOURCEDIR) $(BUILDDIR)/linkcheck
 	@chmod -R ugo+rX $(BUILDDIR)
@@ -107,33 +120,33 @@ check: check-sphinxbuild source clean-build
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in "'$(BUILDPATH)'"/linkcheck/output.txt."
 
-dirhtml: check-sphinxbuild source clean-build
+dirhtml: check-sphinxbuild source
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 	@echo
 	@echo "Build finished. The HTML pages are in "'$(BUILDPATH)'"/dirhtml."
 
-singlehtml: check-sphinxbuild source clean-build
+singlehtml: check-sphinxbuild source
 	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
 	@echo
 	@echo "Build finished. The HTML page is in "'$(BUILDPATH)'"/singlehtml."
 
-pickle: check-sphinxbuild source clean-build
+pickle: check-sphinxbuild source
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
 	@echo
 	@echo "Build finished; now you can process the pickle files."
 
-json: check-sphinxbuild source clean-build
+json: check-sphinxbuild source
 	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
 	@echo
 	@echo "Build finished; now you can process the JSON files."
 
-htmlhelp: check-sphinxbuild source clean-build
+htmlhelp: check-sphinxbuild source
 	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 	@echo
 	@echo "Build finished; now you can run HTML Help Workshop with the" \
 	      ".hhp project file in "'$(BUILDPATH)'"/htmlhelp."
 
-qthelp: check-sphinxbuild source clean-build
+qthelp: check-sphinxbuild source
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 	@echo
 	@echo "Build finished; now you can run "qcollectiongenerator" with the" \
@@ -142,31 +155,31 @@ qthelp: check-sphinxbuild source clean-build
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/chpldoc.qhc"
 
-latex: check-sphinxbuild source clean-build
+latex: check-sphinxbuild source
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in "'$(BUILDPATH)'"/latex."
 	@echo "Run \`make' in that directory to run these through (pdf)latex" \
 	      "(use \`make latexpdf' here to do that automatically)."
 
-latexpdf: check-sphinxbuild source clean-build
+latexpdf: check-sphinxbuild source
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through pdflatex..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
 	@echo "pdflatex finished; the PDF files are in "'$(BUILDPATH)'"/latex."
 
-latexpdfja: check-sphinxbuild source clean-build
+latexpdfja: check-sphinxbuild source
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@echo "Running LaTeX files through platex and dvipdfmx..."
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf-ja
 	@echo "pdflatex finished; the PDF files are in "'$(BUILDPATH)'"/latex."
 
-text: check-sphinxbuild source clean-build
+text: check-sphinxbuild source
 	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
 	@echo
 	@echo "Build finished. The text files are in "'$(BUILDPATH)'"/text."
 
-man: check-sphinxbuild source clean-build
+man: check-sphinxbuild source
 	@echo
 	@echo "Building man page documentation"
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
@@ -176,41 +189,41 @@ man: check-sphinxbuild source clean-build
 	@echo
 	@echo "Build finished. The manual pages are in "'$(BUILDPATH)'"/man."
 
-texinfo: check-sphinxbuild source clean-build
+texinfo: check-sphinxbuild source
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
 	@echo
 	@echo "Build finished. The Texinfo files are in "'$(BUILDPATH)'"/texinfo."
 	@echo "Run \`make' in that directory to run these through makeinfo" \
 	      "(use \`make info' here to do that automatically)."
 
-info: check-sphinxbuild source clean-build
+info: check-sphinxbuild source
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
 	@echo "Running Texinfo files through makeinfo..."
 	make -C $(BUILDDIR)/texinfo info
 	@echo "makeinfo finished; the Info files are in "'$(BUILDPATH)'"/texinfo."
 
-gettext: check-sphinxbuild source clean-build
+gettext: check-sphinxbuild source
 	$(SPHINXBUILD) -b gettext $(I18NSPHINXOPTS) $(BUILDDIR)/locale
 	@echo
 	@echo "Build finished. The message catalogs are in "'$(BUILDPATH)'"/locale."
 
-changes: check-sphinxbuild source clean-build
+changes: check-sphinxbuild source
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
 	@echo
 	@echo "The overview file is in "'$(BUILDPATH)'"/changes."
 
-linkcheck: check-sphinxbuild source clean-build
+linkcheck: check-sphinxbuild source
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
 	@echo
 	@echo "Link check complete; look for any errors in the above output " \
 	      "or in "'$(BUILDPATH)'"/linkcheck/output.txt."
 
-xml: check-sphinxbuild source clean-build
+xml: check-sphinxbuild source
 	$(SPHINXBUILD) -b xml $(ALLSPHINXOPTS) $(BUILDDIR)/xml
 	@echo
 	@echo "Build finished. The XML files are in "'$(BUILDPATH)'"/xml."
 
-pseudoxml: check-sphinxbuild source clean-build
+pseudoxml: check-sphinxbuild source
 	$(SPHINXBUILD) -b pseudoxml $(ALLSPHINXOPTS) $(BUILDDIR)/pseudoxml
 	@echo
 	@echo "Build finished. The pseudo-XML files are in "'$(BUILDPATH)'"/pseudoxml."

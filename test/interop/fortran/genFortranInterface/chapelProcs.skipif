@@ -5,16 +5,14 @@
 
 launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
 
-[[ $COMPOPTS == *"--llvm"* ]]
-llvm=$?
-
 `command -v gfortran 2>&1 >/dev/null`
 gfortranFound=$?
 
-if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && \
+if [[ $gfortranFound == 0 && $launcher == "none" && \
       $CHPL_TARGET_PLATFORM != "cray-xc" &&
       ($CHPL_TARGET_COMPILER == "gnu" ||
-       $CHPL_TARGET_COMPILER == "clang") ]] ; then
+       $CHPL_TARGET_COMPILER == "clang") &&
+       $CHPL_SANITIZE_EXE == "none" ]]; then
   echo False
 else
   echo True

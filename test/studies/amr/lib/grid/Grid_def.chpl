@@ -40,11 +40,11 @@ class Grid {
 
   const dx: dimension*real;
           
-  const cells:          domain(dimension, stridable=true);
-  const extended_cells: domain(dimension, stridable=true);
+  var cells:          domain(dimension, stridable=true);
+  var extended_cells: domain(dimension, stridable=true);
   
   // const ghost_domains: MultiDomain(dimension, stridable=true);
-  const ghost_domains: unmanaged List( domain(dimension, stridable=true) );
+  var ghost_domains: unmanaged List( domain(dimension, stridable=true) );
 
 
 

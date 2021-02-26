@@ -1,0 +1,27 @@
+test1a
+test1b
+init 1
+init 2
+deinit 1
+deinit 2
+test1c
+init 2
+deinit 2
+test2a
+test2b
+init 1
+init 2
+deinit 1
+deinit 2
+test2c
+init 2
+deinit 2
+test3a
+test3b
+init 1
+init 2
+deinit 1
+deinit 2
+test3c
+init 2
+deinit 2

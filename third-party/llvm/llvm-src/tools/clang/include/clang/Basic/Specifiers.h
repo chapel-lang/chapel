@@ -1,9 +1,8 @@
 //===--- Specifiers.h - Declaration and Type Specifiers ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -21,6 +20,22 @@
 #include "llvm/Support/ErrorHandling.h"
 
 namespace clang {
+
+  /// Define the meaning of possible values of the kind in ExplicitSpecifier.
+  enum class ExplicitSpecKind : unsigned {
+    ResolvedFalse,
+    ResolvedTrue,
+    Unresolved,
+  };
+
+  /// Define the kind of constexpr specifier.
+  enum ConstexprSpecKind {
+    CSK_unspecified,
+    CSK_constexpr,
+    CSK_consteval,
+    CSK_constinit
+  };
+
   /// Specifies the width of a type, e.g., short, long, or long long.
   enum TypeSpecifierWidth {
     TSW_unspecified,
@@ -52,10 +67,12 @@ namespace clang {
     TST_char32,       // C++11 char32_t
     TST_int,
     TST_int128,
+    TST_extint,       // Extended Int types.
     TST_half,         // OpenCL half, ARM NEON __fp16
     TST_Float16,      // C11 extension ISO/IEC TS 18661-3
     TST_Accum,        // ISO/IEC JTC1 SC22 WG14 N1169 Extension
     TST_Fract,
+    TST_BFloat16,
     TST_float,
     TST_double,
     TST_float128,
@@ -138,7 +155,24 @@ namespace clang {
     /// An Objective-C array/dictionary subscripting which reads an
     /// object or writes at the subscripted array/dictionary element via
     /// Objective-C method calls.
-    OK_ObjCSubscript
+    OK_ObjCSubscript,
+
+    /// A matrix component is a single element of a matrix.
+    OK_MatrixComponent
+  };
+
+  /// The reason why a DeclRefExpr does not constitute an odr-use.
+  enum NonOdrUseReason {
+    /// This is an odr-use.
+    NOUR_None = 0,
+    /// This name appears in an unevaluated operand.
+    NOUR_Unevaluated,
+    /// This name appears as a potential result of an lvalue-to-rvalue
+    /// conversion that is a constant expression.
+    NOUR_Constant,
+    /// This name appears as a potential result of a discarded value
+    /// expression.
+    NOUR_Discarded,
   };
 
   /// Describes the kind of template specialization that a
@@ -325,7 +359,30 @@ namespace clang {
     SwiftContext
   };
 
+  /// Assigned inheritance model for a class in the MS C++ ABI. Must match order
+  /// of spellings in MSInheritanceAttr.
+  enum class MSInheritanceModel {
+    Single = 0,
+    Multiple = 1,
+    Virtual = 2,
+    Unspecified = 3,
+  };
+
   llvm::StringRef getParameterABISpelling(ParameterABI kind);
+
+  inline llvm::StringRef getAccessSpelling(AccessSpecifier AS) {
+    switch (AS) {
+    case AccessSpecifier::AS_public:
+      return "public";
+    case AccessSpecifier::AS_protected:
+      return "protected";
+    case AccessSpecifier::AS_private:
+      return "private";
+    case AccessSpecifier::AS_none:
+      return {};
+    }
+    llvm_unreachable("Unknown AccessSpecifier");
+  }
 } // end namespace clang
 
 #endif // LLVM_CLANG_BASIC_SPECIFIERS_H

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,14 +23,50 @@
 
 #include "vec.h"
 
+#include <set>
+
 class BlockStmt;
 class CallExpr;
 class CallInfo;
 class Expr;
 class FnSymbol;
 
-void       findVisibleFunctions(CallInfo&       info,
-                                Vec<FnSymbol*>& visibleFns);
+class VisibilityInfo {
+public:
+  // for proper scope traversal
+  BlockStmt* currStart;
+  BlockStmt* nextPOI;
+
+  // for CalledFunInfo
+  std::vector<BlockStmt*> visitedScopes; // in visited order  
+  std::vector<BlockStmt*> instnPoints;   // one per POI depth
+  int poiDepth;
+  CallExpr* call;
+  bool useMethodVisibility;
+
+  VisibilityInfo(const CallInfo& info);
+  VisibilityInfo(const VisibilityInfo& src);
+
+  bool inPOI() { return poiDepth > 0; }
+};
+
+bool       scopeMayDefineHazard(BlockStmt* scope, const char* fnName);
+bool       scopeDefinesVisibleFunctions(BlockStmt* scope);
+
+void       findVisibleFunctionsAllPOIs(CallInfo&       info,
+                                       Vec<FnSymbol*>& visibleFns);
+
+void       findVisibleFunctions(CallInfo&             info,
+                                VisibilityInfo*       visInfo,
+                                std::set<BlockStmt*>* visited,
+                                int*                  numVisitedP,
+                                Vec<FnSymbol*>&       visibleFns);
+
+void       getMoreVisibleFunctionsOrMethods(const char*  name,
+                                CallExpr*                call,
+                                VisibilityInfo*          visInfo,
+                                std::set<BlockStmt*>*    visited,
+                                Vec<FnSymbol*>&          visibleFns);
 
 void       getVisibleFunctions(const char*      name,
                                CallExpr*        call,
@@ -39,6 +75,7 @@ void       getVisibleFunctions(const char*      name,
 BlockStmt* getVisibilityScope(Expr* expr);
 BlockStmt* getInstantiationPoint(Expr* expr);
 
+void       initTypeHelperNames();
 void       visibleFunctionsClear();
 
 #endif

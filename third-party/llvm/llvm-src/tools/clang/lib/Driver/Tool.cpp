@@ -1,9 +1,8 @@
 //===--- Tool.cpp - Compilation Tools -------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,13 +11,8 @@
 
 using namespace clang::driver;
 
-Tool::Tool(const char *_Name, const char *_ShortName, const ToolChain &TC,
-           ResponseFileSupport _ResponseSupport,
-           llvm::sys::WindowsEncodingMethod _ResponseEncoding,
-           const char *_ResponseFlag)
-    : Name(_Name), ShortName(_ShortName), TheToolChain(TC),
-      ResponseSupport(_ResponseSupport), ResponseEncoding(_ResponseEncoding),
-      ResponseFlag(_ResponseFlag) {}
+Tool::Tool(const char *_Name, const char *_ShortName, const ToolChain &TC)
+    : Name(_Name), ShortName(_ShortName), TheToolChain(TC) {}
 
 Tool::~Tool() {
 }

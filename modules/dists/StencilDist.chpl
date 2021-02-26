@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -355,7 +355,8 @@ class LocStencilArr {
   param stridable: bool;
   const locDom: unmanaged LocStencilDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [locDom.myFluff] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
@@ -363,9 +364,59 @@ class LocStencilArr {
   var recvBufs, sendBufs : [locDom.NeighDom] [locDom.bufDom] eltType;
   var sendRecvFlag : [locDom.NeighDom] atomic bool;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocStencilDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myFluff.buildArray(eltType, initElts=initElts);
+
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the fluff.
+    if initElts == false {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        for fluffDom in this.locDom.recvDest {
+          forall i in fluffDom {
+            pragma "no auto destroy" pragma "unsafe"
+            var def: eltType;
+            __primitive("=", myElems[i], def);
+          }
+        }
+      }
+    }
+  }
+
   proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the fluff.
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+    if needsDestroy {
+      if this.locDom.myBlock != this.locDom.myFluff {
+        for fluffDom in this.locDom.recvDest {
+          forall i in fluffDom {
+            chpl__autoDestroy(myElems[i]);
+          }
+        }
+      }
+    }
+
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+
     if locRAD != nil then
       delete locRAD;
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocStencilArr.writeThis() is not implemented / should not be needed");
   }
 }
 
@@ -590,6 +641,7 @@ proc Stencil.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
+pragma "order independent yielding loops"
 iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -778,12 +830,12 @@ proc StencilDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc StencilDom.dsiBuildArray(type eltType) {
+proc StencilDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLSD = new unmanaged LocStencilDom(rank, idxType, stridable);
   const dummyLSA = new unmanaged LocStencilArr(eltType, rank, idxType,
-                                               stridable, dummyLSD);
+                                               stridable, dummyLSD, false);
   var locArrTemp: [dom.dist.targetLocDom]
         unmanaged LocStencilArr(eltType, rank, idxType, stridable) = dummyLSA;
   var myLocArrTemp: unmanaged LocStencilArr(eltType, rank, idxType, stridable)?;
@@ -792,7 +844,8 @@ proc StencilDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LSA = new unmanaged LocStencilArr(eltType, rank, idxType, stridable,
-                                              dom.getLocDom(localeIdx));
+                                              dom.getLocDom(localeIdx),
+                                              initElts=initElts);
       locArrTemp(localeIdx) = LSA;
       if here.id == creationLocale then
         myLocArrTemp = LSA;
@@ -1077,11 +1130,46 @@ proc StencilArr.setupRADOpt() {
   }
 }
 
-override proc StencilArr.dsiDestroyArr() {
+override proc StencilArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      if !ignoreFluff then
-        delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc StencilArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc StencilArr.dsiDestroyArr(deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if !ignoreFluff {
+        if deinitElts {
+          // only deinitialize non-fluff elements
+          // fluff is always deinited in the LocArr deinit
+          param needsDestroy = __primitive("needs auto destroy", eltType);
+          if needsDestroy {
+            if _deinitElementsIsParallel(eltType) {
+              forall i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            } else {
+              for i in arr.locDom.myBlock {
+                chpl__autoDestroy(arr.myElems[i]);
+              }
+            }
+          }
+        }
+        arr.myElems.dsiElementDeinitializationComplete();
+        delete arr;
+      }
     }
   }
 }
@@ -1186,6 +1274,7 @@ inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.wholeFluff.contains(i);
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1217,6 +1306,7 @@ proc StencilArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1262,6 +1352,7 @@ iter StencilArr.these(param tag: iterKind, followThis, param fast: bool = false)
       arrSection = _to_nonnil(myLocArr);
 
     local {
+      use CPtr; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection =
         __primitive("_wide_get_addr", arrSection):(arrSection.type?);
       ref myElems = _to_nonnil(narrowArrSection).myElems;
@@ -1367,6 +1458,7 @@ iter _array.boundaries(param tag : iterKind) where tag == iterKind.standalone {
   forall d in _value.dsiBoundaries() do yield d;
 }
 
+pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries() {
   for i in dom.dist.targetLocDom {
     var LSA = locArr[i];
@@ -1398,6 +1490,7 @@ iter StencilArr.dsiBoundaries() {
 // Yields any 'fluff' boundary chunks in the StencilArr along with a global coordinate of
 // where the chunk lives relative to the core.
 //
+pragma "order independent yielding loops"
 iter StencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.standalone {
   coforall i in dom.dist.targetLocDom {
     on dom.dist.targetLocales(i) {
@@ -1658,6 +1751,8 @@ inline proc LocStencilArr.this(i) ref {
   return myElems(i);
 }
 
+override proc StencilDom.dsiSupportsAutoLocalAccess() param { return true; }
+
 //
 // Privatization
 //
@@ -1796,15 +1891,15 @@ proc StencilArr.dsiPrivatize(privatizeData) {
 }
 
 
-proc StencilArr.dsiTargetLocales() {
+proc StencilArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc StencilDom.dsiTargetLocales() {
+proc StencilDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Stencil.dsiTargetLocales() {
+proc Stencil.dsiTargetLocales() const ref {
   return targetLocales;
 }
 

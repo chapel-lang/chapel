@@ -1,4 +1,5 @@
 module Structure {
+  use LinkedLists;
 
   class GrandParent {
     var gp_field: int;

@@ -1,9 +1,8 @@
 //===- FormatUtil.h ------------------------------------------- *- C++ --*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -43,8 +42,7 @@ std::string truncateQuotedNameBack(StringRef Label, StringRef Name,
     return Ret;
 
 template <typename T> std::string formatUnknownEnum(T Value) {
-  return formatv("unknown ({0})",
-                 static_cast<typename std::underlying_type<T>::type>(Value))
+  return formatv("unknown ({0})", static_cast<std::underlying_type_t<T>>(Value))
       .str();
 }
 

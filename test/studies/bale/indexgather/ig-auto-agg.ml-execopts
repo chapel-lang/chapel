@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+
+# Run bale index gather with 1 million updates per task. Use a smaller problem
+# size for non-aggregated configurations with low small-messages rates.
+import os
+
+comm = os.getenv('CHPL_COMM')
+comm_sub = os.getenv('CHPL_COMM_SUBSTRATE')
+ugni = comm == 'ugni'
+gn_aries = comm == 'gasnet' and comm_sub  == 'aries'
+
+N  = 10000
+NL = 1000000
+if ugni or gn_aries:
+  N = NL
+
+print('--N={0} --printStats --mode=Mode.ordered    # bale-ig-auto-aggregated'.format(N))

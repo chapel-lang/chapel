@@ -1,9 +1,8 @@
 //===- TreeView.cpp - diagtool tool for printing warning flags ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,36 +20,31 @@ DEF_DIAGTOOL("tree", "Show warning flags in a tree view", TreeView)
 using namespace clang;
 using namespace diagtool;
 
-static bool hasColors(const llvm::raw_ostream &out) {
-  if (&out != &llvm::errs() && &out != &llvm::outs())
-    return false;
-  return llvm::errs().is_displayed() && llvm::outs().is_displayed();
-}
-
 class TreePrinter {
+  using Colors = llvm::raw_ostream::Colors;
+
 public:
   llvm::raw_ostream &out;
-  const bool ShowColors;
   bool Internal;
 
-  TreePrinter(llvm::raw_ostream &out)
-      : out(out), ShowColors(hasColors(out)), Internal(false) {}
-
-  void setColor(llvm::raw_ostream::Colors Color) {
-    if (ShowColors)
-      out << llvm::sys::Process::OutputColor(Color, false, false);
-  }
-
-  void resetColor() {
-    if (ShowColors)
-      out << llvm::sys::Process::ResetColor();
-  }
+  TreePrinter(llvm::raw_ostream &out) : out(out), Internal(false) {}
 
   static bool isIgnored(unsigned DiagID) {
     // FIXME: This feels like a hack.
     static clang::DiagnosticsEngine Diags(new DiagnosticIDs,
                                           new DiagnosticOptions);
     return Diags.isIgnored(DiagID, SourceLocation());
+  }
+
+  static bool unimplemented(const GroupRecord &Group) {
+    if (!Group.diagnostics().empty())
+      return false;
+
+    for (const GroupRecord &GR : Group.subgroups())
+      if (!unimplemented(GR))
+        return false;
+
+    return true;
   }
 
   static bool enabledByDefault(const GroupRecord &Group) {
@@ -70,13 +64,14 @@ public:
   void printGroup(const GroupRecord &Group, unsigned Indent = 0) {
     out.indent(Indent * 2);
 
-    if (enabledByDefault(Group))
-      setColor(llvm::raw_ostream::GREEN);
+    if (unimplemented(Group))
+      out << Colors::RED;
+    else if (enabledByDefault(Group))
+      out << Colors::GREEN;
     else
-      setColor(llvm::raw_ostream::YELLOW);
+      out << Colors::YELLOW;
 
-    out << "-W" << Group.getName() << "\n";
-    resetColor();
+    out << "-W" << Group.getName() << "\n" << Colors::RESET;
 
     ++Indent;
     for (const GroupRecord &GR : Group.subgroups()) {
@@ -85,12 +80,10 @@ public:
 
     if (Internal) {
       for (const DiagnosticRecord &DR : Group.diagnostics()) {
-        if (ShowColors && !isIgnored(DR.DiagID))
-          setColor(llvm::raw_ostream::GREEN);
+        if (!isIgnored(DR.DiagID))
+          out << Colors::GREEN;
         out.indent(Indent * 2);
-        out << DR.getName();
-        resetColor();
-        out << "\n";
+        out << DR.getName() << Colors::RESET << "\n";
       }
     }
   }
@@ -103,9 +96,7 @@ public:
       return 1;
     }
 
-    const GroupRecord *Found =
-        std::lower_bound(AllGroups.begin(), AllGroups.end(), RootGroup);
-
+    const GroupRecord *Found = llvm::lower_bound(AllGroups, RootGroup);
     if (Found == AllGroups.end() || Found->getName() != RootGroup) {
       llvm::errs() << "No such diagnostic group exists\n";
       return 1;
@@ -138,13 +129,10 @@ public:
   }
 
   void showKey() {
-    if (ShowColors) {
-      out << '\n';
-      setColor(llvm::raw_ostream::GREEN);
-      out << "GREEN";
-      resetColor();
-      out << " = enabled by default\n\n";
-    }
+    out << '\n' << Colors::GREEN << "GREEN" << Colors::RESET
+        << " = enabled by default";
+    out << '\n' << Colors::RED << "RED" << Colors::RESET
+        << " = unimplemented (accepted for GCC compatibility)\n\n";
   }
 };
 
@@ -183,6 +171,8 @@ int TreeView::run(unsigned int argc, char **argv, llvm::raw_ostream &out) {
     printUsage();
     return -1;
   }
+
+  out.enable_colors(out.has_colors());
 
   TreePrinter TP(out);
   TP.Internal = Internal;

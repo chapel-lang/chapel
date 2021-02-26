@@ -1,9 +1,8 @@
 //===-- llvm/Support/Timer.h - Interval Timing Support ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -79,18 +78,18 @@ class Timer {
   TimeRecord StartTime;     ///< The time startTimer() was last called.
   std::string Name;         ///< The name of this time variable.
   std::string Description;  ///< Description of this time variable.
-  bool Running;             ///< Is the timer currently running?
-  bool Triggered;           ///< Has the timer ever been triggered?
+  bool Running = false;     ///< Is the timer currently running?
+  bool Triggered = false;   ///< Has the timer ever been triggered?
   TimerGroup *TG = nullptr; ///< The TimerGroup this Timer is in.
 
-  Timer **Prev;             ///< Pointer to \p Next of previous timer in group.
-  Timer *Next;              ///< Next timer in the group.
+  Timer **Prev = nullptr;   ///< Pointer to \p Next of previous timer in group.
+  Timer *Next = nullptr;    ///< Next timer in the group.
 public:
-  explicit Timer(StringRef Name, StringRef Description) {
-    init(Name, Description);
+  explicit Timer(StringRef TimerName, StringRef TimerDescription) {
+    init(TimerName, TimerDescription);
   }
-  Timer(StringRef Name, StringRef Description, TimerGroup &tg) {
-    init(Name, Description, tg);
+  Timer(StringRef TimerName, StringRef TimerDescription, TimerGroup &tg) {
+    init(TimerName, TimerDescription, tg);
   }
   Timer(const Timer &RHS) {
     assert(!RHS.TG && "Can only copy uninitialized timers");
@@ -103,8 +102,8 @@ public:
 
   /// Create an uninitialized timer, client must use 'init'.
   explicit Timer() {}
-  void init(StringRef Name, StringRef Description);
-  void init(StringRef Name, StringRef Description, TimerGroup &tg);
+  void init(StringRef TimerName, StringRef TimerDescription);
+  void init(StringRef TimerName, StringRef TimerDescription, TimerGroup &tg);
 
   const std::string &getName() const { return Name; }
   const std::string &getDescription() const { return Description; }
@@ -175,6 +174,7 @@ class TimerGroup {
     std::string Description;
 
     PrintRecord(const PrintRecord &Other) = default;
+    PrintRecord &operator=(const PrintRecord &Other) = default;
     PrintRecord(const TimeRecord &Time, const std::string &Name,
                 const std::string &Description)
       : Time(Time), Name(Name), Description(Description) {}
@@ -206,8 +206,9 @@ public:
     Description.assign(NewDescription.begin(), NewDescription.end());
   }
 
-  /// Print any started timers in this group.
-  void print(raw_ostream &OS);
+  /// Print any started timers in this group, optionally resetting timers after
+  /// printing them.
+  void print(raw_ostream &OS, bool ResetAfterPrint = false);
 
   /// Clear all timers in this group.
   void clear();
@@ -229,12 +230,17 @@ public:
   /// used by the Statistic code to influence the construction and destruction
   /// order of the global timer lists.
   static void ConstructTimerLists();
+
+  /// This makes the default group unmanaged, and lets the user manage the
+  /// group's lifetime.
+  static std::unique_ptr<TimerGroup> aquireDefaultGroup();
+
 private:
   friend class Timer;
   friend void PrintStatisticsJSON(raw_ostream &OS);
   void addTimer(Timer &T);
   void removeTimer(Timer &T);
-  void prepareToPrintList();
+  void prepareToPrintList(bool reset_time = false);
   void PrintQueuedTimers(raw_ostream &OS);
   void printJSONValue(raw_ostream &OS, const PrintRecord &R,
                       const char *suffix, double Value);

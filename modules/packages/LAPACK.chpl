@@ -1,6 +1,6 @@
 
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -127,6 +127,8 @@ module LAPACK {
   /* Available LAPACK implementations for ``lapackImpl`` */
   enum LapackImpl {lapack, mkl, off};
   use LapackImpl;
+  use SysBasic;
+  use CPtr;
 
   /*
     Specifies which header filename to include, based on the lapack
@@ -216,7 +218,9 @@ pragma "no doc"
 module ClassicLAPACK {
 
 use SysCTypes;
+use CPtr;
 use LAPACK;
+use SysBasic;
 
 pragma "no doc"
 extern proc lapack_make_complex_float(re : c_float, im : c_float) : complex(64);
@@ -19972,97 +19976,97 @@ inline proc gels(matrix_order : lapack_memory_order, trans : string, a : [] comp
 /* 
 Wrapped procedure of LAPACKE_sgelsd for the type real(32).
  */
-inline proc gelsd(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), s : [] real(32), rcond : real(32)): c_int{
+inline proc gelsd(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), s : [] real(32), rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_sgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_sgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_dgelsd for the type real(64).
  */
-inline proc gelsd(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), s : [] real(64), rcond : real(64)): c_int{
+inline proc gelsd(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), s : [] real(64), rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_dgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_dgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_cgelsd for the type complex(64).
  */
-inline proc gelsd(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), s : [] real(32), rcond : real(32)): c_int{
+inline proc gelsd(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), s : [] real(32), rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_cgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_cgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_zgelsd for the type complex(128).
  */
-inline proc gelsd(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), s : [] real(64), rcond : real(64)): c_int{
+inline proc gelsd(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), s : [] real(64), rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_zgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_zgelsd(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_sgelss for the type real(32).
  */
-inline proc gelss(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), s : [] real(32), rcond : real(32)): c_int{
+inline proc gelss(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), s : [] real(32), rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_sgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_sgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_dgelss for the type real(64).
  */
-inline proc gelss(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), s : [] real(64), rcond : real(64)): c_int{
+inline proc gelss(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), s : [] real(64), rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_dgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_dgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_cgelss for the type complex(64).
  */
-inline proc gelss(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), s : [] real(32), rcond : real(32)): c_int{
+inline proc gelss(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), s : [] real(32), rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_cgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_cgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_zgelss for the type complex(128).
  */
-inline proc gelss(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), s : [] real(64), rcond : real(64)): c_int{
+inline proc gelss(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), s : [] real(64), rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_zgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_zgelss(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, s, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_sgelsy for the type real(32).
  */
-inline proc gelsy(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), jpvt : [] c_int, rcond : real(32)): c_int{
+inline proc gelsy(matrix_order : lapack_memory_order, a : [] real(32), b : [] real(32), jpvt : [] c_int, rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_sgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_sgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_dgelsy for the type real(64).
  */
-inline proc gelsy(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), jpvt : [] c_int, rcond : real(64)): c_int{
+inline proc gelsy(matrix_order : lapack_memory_order, a : [] real(64), b : [] real(64), jpvt : [] c_int, rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_dgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_dgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_cgelsy for the type complex(64).
  */
-inline proc gelsy(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), jpvt : [] c_int, rcond : real(32)): c_int{
+inline proc gelsy(matrix_order : lapack_memory_order, a : [] complex(64), b : [] complex(64), jpvt : [] c_int, rcond : real(32), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_cgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_cgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, rank);
 }
 
 /* 
 Wrapped procedure of LAPACKE_zgelsy for the type complex(128).
  */
-inline proc gelsy(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), jpvt : [] c_int, rcond : real(64)): c_int{
+inline proc gelsy(matrix_order : lapack_memory_order, a : [] complex(128), b : [] complex(128), jpvt : [] c_int, rcond : real(64), ref rank: c_int): c_int{
   require header;
-  return ClassicLAPACK.LAPACKE_zgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, (a.domain.dim(0).size) : c_int);
+  return ClassicLAPACK.LAPACKE_zgelsy(matrix_order, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(0).size else a.domain.dim(1).size) : c_int, (if matrix_order == lapack_memory_order.row_major then a.domain.dim(1).size else a.domain.dim(0).size) : c_int, (if matrix_order == lapack_memory_order.row_major then b.domain.dim(1).size else b.domain.dim(0).size) : c_int, a, (a.domain.dim(1).size) : c_int, b, (b.domain.dim(1).size) : c_int, jpvt, rcond, rank);
 }
 
 /* 

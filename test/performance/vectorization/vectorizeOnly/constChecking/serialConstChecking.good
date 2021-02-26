@@ -1,8 +1,8 @@
-serialConstChecking.chpl:7: error: illegal lvalue in assignment
-serialConstChecking.chpl:8: error: illegal lvalue in assignment
-serialConstChecking.chpl:17: error: illegal lvalue in assignment
-serialConstChecking.chpl:22: error: illegal lvalue in assignment
-serialConstChecking.chpl:27: error: illegal lvalue in assignment
-serialConstChecking.chpl:33: error: illegal lvalue in assignment
-serialConstChecking.chpl:38: error: illegal lvalue in assignment
-serialConstChecking.chpl:43: error: illegal lvalue in assignment
+serialConstChecking.chpl:7: error: cannot assign to const variable
+serialConstChecking.chpl:8: error: cannot assign to const variable
+serialConstChecking.chpl:17: error: cannot assign to const variable
+serialConstChecking.chpl:22: error: cannot assign to const variable
+serialConstChecking.chpl:27: error: cannot assign to const variable
+serialConstChecking.chpl:33: error: cannot assign to const variable
+serialConstChecking.chpl:38: error: cannot assign to const variable
+serialConstChecking.chpl:43: error: cannot assign to const variable

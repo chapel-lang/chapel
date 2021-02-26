@@ -1,9 +1,8 @@
 //===-- LanaiTargetTransformInfo.h - Lanai specific TTI ---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -50,7 +49,7 @@ public:
     return TTI::PSK_Software;
   }
 
-  int getIntImmCost(const APInt &Imm, Type *Ty) {
+  int getIntImmCost(const APInt &Imm, Type *Ty, TTI::TargetCostKind CostKind) {
     assert(Ty->isIntegerTy());
     if (Imm == 0)
       return TTI::TCC_Free;
@@ -67,27 +66,31 @@ public:
     return 4 * TTI::TCC_Basic;
   }
 
-  int getIntImmCost(unsigned Opc, unsigned Idx, const APInt &Imm, Type *Ty) {
-    return getIntImmCost(Imm, Ty);
+  int getIntImmCostInst(unsigned Opc, unsigned Idx, const APInt &Imm, Type *Ty,
+                        TTI::TargetCostKind CostKind) {
+    return getIntImmCost(Imm, Ty, CostKind);
   }
 
-  int getIntImmCost(Intrinsic::ID IID, unsigned Idx, const APInt &Imm,
-                    Type *Ty) {
-    return getIntImmCost(Imm, Ty);
+  int getIntImmCostIntrin(Intrinsic::ID IID, unsigned Idx, const APInt &Imm,
+                          Type *Ty, TTI::TargetCostKind CostKind) {
+    return getIntImmCost(Imm, Ty, CostKind);
   }
 
   unsigned getArithmeticInstrCost(
       unsigned Opcode, Type *Ty,
+      TTI::TargetCostKind CostKind = TTI::TCK_RecipThroughput,
       TTI::OperandValueKind Opd1Info = TTI::OK_AnyValue,
       TTI::OperandValueKind Opd2Info = TTI::OK_AnyValue,
       TTI::OperandValueProperties Opd1PropInfo = TTI::OP_None,
       TTI::OperandValueProperties Opd2PropInfo = TTI::OP_None,
-      ArrayRef<const Value *> Args = ArrayRef<const Value *>()) {
+      ArrayRef<const Value *> Args = ArrayRef<const Value *>(),
+      const Instruction *CxtI = nullptr) {
     int ISD = TLI->InstructionOpcodeToISD(Opcode);
 
     switch (ISD) {
     default:
-      return BaseT::getArithmeticInstrCost(Opcode, Ty, Opd1Info, Opd2Info,
+      return BaseT::getArithmeticInstrCost(Opcode, Ty, CostKind, Opd1Info,
+                                           Opd2Info,
                                            Opd1PropInfo, Opd2PropInfo);
     case ISD::MUL:
     case ISD::SDIV:
@@ -98,7 +101,8 @@ public:
       // instruction cost was arbitrarily chosen to reduce the desirability
       // of emitting arithmetic instructions that are emulated in software.
       // TODO: Investigate the performance impact given specialized lowerings.
-      return 64 * BaseT::getArithmeticInstrCost(Opcode, Ty, Opd1Info, Opd2Info,
+      return 64 * BaseT::getArithmeticInstrCost(Opcode, Ty, CostKind, Opd1Info,
+                                                Opd2Info,
                                                 Opd1PropInfo, Opd2PropInfo);
     }
   }

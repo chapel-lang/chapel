@@ -1,9 +1,8 @@
 //===- CXSourceLocation.cpp - CXSourceLocations APIs ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,13 +10,14 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/Frontend/ASTUnit.h"
+#include "CXSourceLocation.h"
 #include "CIndexer.h"
 #include "CLog.h"
 #include "CXLoadedDiagnostic.h"
-#include "CXSourceLocation.h"
 #include "CXString.h"
 #include "CXTranslationUnit.h"
+#include "clang/Basic/FileManager.h"
+#include "clang/Frontend/ASTUnit.h"
 #include "llvm/Support/Compiler.h"
 #include "llvm/Support/Format.h"
 

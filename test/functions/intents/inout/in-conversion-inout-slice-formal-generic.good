@@ -1,0 +1,4 @@
+bb.chpl:9: warning: [domain(1,int(64),false)] int(64)
+in f, arg= 0 0 0
+1 1 1
+1 1 1 0 0 0 0 0 0 0

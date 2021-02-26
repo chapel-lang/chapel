@@ -1,9 +1,8 @@
 //===-- BPFMCAsmInfo.h - BPF asm properties -------------------*- C++ -*--====//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,11 +17,10 @@
 #include "llvm/MC/MCAsmInfo.h"
 
 namespace llvm {
-class Target;
 
 class BPFMCAsmInfo : public MCAsmInfo {
 public:
-  explicit BPFMCAsmInfo(const Triple &TT) {
+  explicit BPFMCAsmInfo(const Triple &TT, const MCTargetOptions &Options) {
     if (TT.getArch() == Triple::bpfeb)
       IsLittleEndian = false;
 
@@ -43,6 +41,8 @@ public:
     // section will be parsable, but with odd offsets and
     // line numbers, etc.
     CodePointerSize = 8;
+
+    UseIntegratedAssembler = false;
   }
 
   void setDwarfUsesRelocationsAcrossSections(bool enable) {

@@ -1,6 +1,8 @@
-add_llvm_library(LLVMipo
+add_llvm_component_library(LLVMipo
   AlwaysInliner.cpp
   ArgumentPromotion.cpp
+  Attributor.cpp
+  AttributorAttributes.cpp
   BarrierNoopPass.cpp
   BlockExtractor.cpp
   CalledValuePropagation.cpp
@@ -25,6 +27,7 @@ add_llvm_library(LLVMipo
   LoopExtractor.cpp
   LowerTypeTests.cpp
   MergeFunctions.cpp
+  OpenMPOpt.cpp
   PartialInlining.cpp
   PassManagerBuilder.cpp
   PruneEH.cpp
@@ -42,4 +45,5 @@ add_llvm_library(LLVMipo
 
   DEPENDS
   intrinsics_gen
+  omp_gen
   )

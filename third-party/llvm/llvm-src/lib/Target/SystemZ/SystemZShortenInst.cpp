@@ -1,9 +1,8 @@
 //===-- SystemZShortenInst.cpp - Instruction-shortening pass --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,6 +46,7 @@ private:
   bool shortenOn001(MachineInstr &MI, unsigned Opcode);
   bool shortenOn001AddCC(MachineInstr &MI, unsigned Opcode);
   bool shortenFPConv(MachineInstr &MI, unsigned Opcode);
+  bool shortenFusedFPOp(MachineInstr &MI, unsigned Opcode);
 
   const SystemZInstrInfo *TII;
   const TargetRegisterInfo *TRI;
@@ -65,7 +65,7 @@ SystemZShortenInst::SystemZShortenInst(const SystemZTargetMachine &tm)
 
 // Tie operands if MI has become a two-address instruction.
 static void tieOpsIfNeeded(MachineInstr &MI) {
-  if (MI.getDesc().getOperandConstraint(0, MCOI::TIED_TO) &&
+  if (MI.getDesc().getOperandConstraint(1, MCOI::TIED_TO) == 0 &&
       !MI.getOperand(0).isTied())
     MI.tieOperands(0, 1);
 }
@@ -75,7 +75,7 @@ static void tieOpsIfNeeded(MachineInstr &MI) {
 // instead of IIxF.
 bool SystemZShortenInst::shortenIIF(MachineInstr &MI, unsigned LLIxL,
                                     unsigned LLIxH) {
-  unsigned Reg = MI.getOperand(0).getReg();
+  Register Reg = MI.getOperand(0).getReg();
   // The new opcode will clear the other half of the GR64 reg, so
   // cancel if that is live.
   unsigned thisSubRegIdx =
@@ -86,7 +86,7 @@ bool SystemZShortenInst::shortenIIF(MachineInstr &MI, unsigned LLIxL,
                                             : SystemZ::subreg_l32);
   unsigned GR64BitReg =
       TRI->getMatchingSuperReg(Reg, thisSubRegIdx, &SystemZ::GR64BitRegClass);
-  unsigned OtherReg = TRI->getSubReg(GR64BitReg, otherSubRegIdx);
+  Register OtherReg = TRI->getSubReg(GR64BitReg, otherSubRegIdx);
   if (LiveRegs.contains(OtherReg))
     return false;
 
@@ -176,6 +176,32 @@ bool SystemZShortenInst::shortenFPConv(MachineInstr &MI, unsigned Opcode) {
   return false;
 }
 
+bool SystemZShortenInst::shortenFusedFPOp(MachineInstr &MI, unsigned Opcode) {
+  MachineOperand &DstMO = MI.getOperand(0);
+  MachineOperand &LHSMO = MI.getOperand(1);
+  MachineOperand &RHSMO = MI.getOperand(2);
+  MachineOperand &AccMO = MI.getOperand(3);
+  if (SystemZMC::getFirstReg(DstMO.getReg()) < 16 &&
+      SystemZMC::getFirstReg(LHSMO.getReg()) < 16 &&
+      SystemZMC::getFirstReg(RHSMO.getReg()) < 16 &&
+      SystemZMC::getFirstReg(AccMO.getReg()) < 16 &&
+      DstMO.getReg() == AccMO.getReg()) {
+    MachineOperand Lhs(LHSMO);
+    MachineOperand Rhs(RHSMO);
+    MachineOperand Src(AccMO);
+    MI.RemoveOperand(3);
+    MI.RemoveOperand(2);
+    MI.RemoveOperand(1);
+    MI.setDesc(TII->get(Opcode));
+    MachineInstrBuilder(*MI.getParent()->getParent(), &MI)
+        .add(Src)
+        .add(Lhs)
+        .add(Rhs);
+    return true;
+  }
+  return false;
+}
+
 // Process all instructions in MBB.  Return true if something changed.
 bool SystemZShortenInst::processBlock(MachineBasicBlock &MBB) {
   bool Changed = false;
@@ -236,6 +262,22 @@ bool SystemZShortenInst::processBlock(MachineBasicBlock &MBB) {
       Changed |= shortenOn001(MI, SystemZ::MEEBR);
       break;
 
+    case SystemZ::WFMADB:
+      Changed |= shortenFusedFPOp(MI, SystemZ::MADBR);
+      break;
+
+    case SystemZ::WFMASB:
+      Changed |= shortenFusedFPOp(MI, SystemZ::MAEBR);
+      break;
+
+    case SystemZ::WFMSDB:
+      Changed |= shortenFusedFPOp(MI, SystemZ::MSDBR);
+      break;
+
+    case SystemZ::WFMSSB:
+      Changed |= shortenFusedFPOp(MI, SystemZ::MSEBR);
+      break;
+
     case SystemZ::WFLCDB:
       Changed |= shortenOn01(MI, SystemZ::LCDFR);
       break;
@@ -284,6 +326,14 @@ bool SystemZShortenInst::processBlock(MachineBasicBlock &MBB) {
       Changed |= shortenOn01(MI, SystemZ::CEBR);
       break;
 
+    case SystemZ::WFKDB:
+      Changed |= shortenOn01(MI, SystemZ::KDBR);
+      break;
+
+    case SystemZ::WFKSB:
+      Changed |= shortenOn01(MI, SystemZ::KEBR);
+      break;
+
     case SystemZ::VL32:
       // For z13 we prefer LDE over LE to avoid partial register dependencies.
       Changed |= shortenOn0(MI, SystemZ::LDE32);
@@ -300,6 +350,31 @@ bool SystemZShortenInst::processBlock(MachineBasicBlock &MBB) {
     case SystemZ::VST64:
       Changed |= shortenOn0(MI, SystemZ::STD);
       break;
+
+    default: {
+      int TwoOperandOpcode = SystemZ::getTwoOperandOpcode(MI.getOpcode());
+      if (TwoOperandOpcode == -1)
+        break;
+
+      if ((MI.getOperand(0).getReg() != MI.getOperand(1).getReg()) &&
+          (!MI.isCommutable() ||
+           MI.getOperand(0).getReg() != MI.getOperand(2).getReg() ||
+           !TII->commuteInstruction(MI, false, 1, 2)))
+          break;
+
+      MI.setDesc(TII->get(TwoOperandOpcode));
+      MI.tieOperands(0, 1);
+      if (TwoOperandOpcode == SystemZ::SLL ||
+          TwoOperandOpcode == SystemZ::SLA ||
+          TwoOperandOpcode == SystemZ::SRL ||
+          TwoOperandOpcode == SystemZ::SRA) {
+        // These shifts only use the low 6 bits of the shift count.
+        MachineOperand &ImmMO = MI.getOperand(3);
+        ImmMO.setImm(ImmMO.getImm() & 0xfff);
+      }
+      Changed = true;
+      break;
+    }
     }
 
     LiveRegs.stepBackward(MI);

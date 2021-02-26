@@ -10,7 +10,7 @@ save-borrow-in-collection.chpl:25: note: consider scope of arg
 save-borrow-in-collection.chpl:36: In function 'error4':
 save-borrow-in-collection.chpl:37: error: Scoped variable would outlive the value it is set to
 save-borrow-in-collection.chpl:36: note: consider scope of arg
-save-borrow-in-collection.chpl:40: In function 'error5':
+save-borrow-in-collection.chpl:40: In method 'error5':
 save-borrow-in-collection.chpl:41: error: Scoped variable would outlive the value it is set to
 save-borrow-in-collection.chpl:40: note: consider scope of arg
 save-borrow-in-collection.chpl:50: In function 'error6':

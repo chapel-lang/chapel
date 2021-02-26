@@ -1,9 +1,8 @@
 //===--- CodeGenTypeCache.h - Commonly used LLVM types and info -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,8 +35,8 @@ struct CodeGenTypeCache {
 
   /// i8, i16, i32, and i64
   llvm::IntegerType *Int8Ty, *Int16Ty, *Int32Ty, *Int64Ty;
-  /// float, double
-  llvm::Type *HalfTy, *FloatTy, *DoubleTy;
+  /// half, bfloat, float, double
+  llvm::Type *HalfTy, *BFloatTy, *FloatTy, *DoubleTy;
 
   /// int
   llvm::IntegerType *IntTy;

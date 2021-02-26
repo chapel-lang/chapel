@@ -1,9 +1,8 @@
 //===- llvm-cxxdump.cpp - Dump C++ data in an Object File -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -49,13 +48,18 @@ static void error(std::error_code EC) {
   exit(1);
 }
 
-static void error(Error Err) {
-  if (!Err)
-    return;
+LLVM_ATTRIBUTE_NORETURN static void error(Error Err) {
   logAllUnhandledErrors(std::move(Err), WithColor::error(outs()),
                         "reading file: ");
   outs().flush();
   exit(1);
+}
+
+template <typename T>
+T unwrapOrError(Expected<T> EO) {
+  if (!EO)
+    error(EO.takeError());
+  return std::move(*EO);
 }
 
 } // namespace llvm
@@ -170,7 +174,11 @@ static void dumpCXXData(const ObjectFile *Obj) {
 
   SectionRelocMap.clear();
   for (const SectionRef &Section : Obj->sections()) {
-    section_iterator Sec2 = Section.getRelocatedSection();
+    Expected<section_iterator> ErrOrSec = Section.getRelocatedSection();
+    if (!ErrOrSec)
+      error(ErrOrSec.takeError());
+
+    section_iterator Sec2 = *ErrOrSec;
     if (Sec2 != Obj->section_end())
       SectionRelocMap[*Sec2].push_back(Section);
   }
@@ -196,8 +204,7 @@ static void dumpCXXData(const ObjectFile *Obj) {
     // Skip virtual or BSS sections.
     if (Sec.isBSS() || Sec.isVirtual())
       continue;
-    StringRef SecContents;
-    error(Sec.getContents(SecContents));
+    StringRef SecContents = unwrapOrError(Sec.getContents());
     Expected<uint64_t> SymAddressOrErr = Sym.getAddress();
     error(errorToErrorCode(SymAddressOrErr.takeError()));
     uint64_t SymAddress = *SymAddressOrErr;
@@ -511,7 +518,8 @@ static void dumpArchive(const Archive *Arc) {
     else
       reportError(Arc->getFileName(), cxxdump_error::unrecognized_file_format);
   }
-  error(std::move(Err));
+  if (Err)
+    error(std::move(Err));
 }
 
 static void dumpInput(StringRef File) {

@@ -1,9 +1,8 @@
 //===- llvm/IR/DiagnosticInfo.h - Diagnostic Declaration --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,6 +55,7 @@ enum DiagnosticKind {
   DK_ResourceLimit,
   DK_StackSize,
   DK_Linker,
+  DK_Lowering,
   DK_DebugMetadataVersion,
   DK_DebugMetadataInvalid,
   DK_ISelFallback,
@@ -75,8 +75,10 @@ enum DiagnosticKind {
   DK_LastMachineRemark = DK_MachineOptimizationRemarkAnalysis,
   DK_MIRParser,
   DK_PGOProfile,
+  DK_MisExpect,
   DK_Unsupported,
-  DK_FirstPluginKind
+  DK_FirstPluginKind // Must be last value to work with
+                     // getNextAvailablePluginDiagnosticKind
 };
 
 /// Get the next available kind ID for a plugin diagnostic.
@@ -211,7 +213,7 @@ public:
 };
 
 class DiagnosticInfoStackSize : public DiagnosticInfoResourceLimit {
-  virtual void anchor() override;
+  void anchor() override;
 public:
   DiagnosticInfoStackSize(const Function &Fn, uint64_t StackSize,
                           DiagnosticSeverity Severity = DS_Warning,
@@ -362,7 +364,7 @@ public:
 
 /// Common features for diagnostics with an associated location.
 class DiagnosticInfoWithLocationBase : public DiagnosticInfo {
-  virtual void anchor() override;
+  void anchor() override;
 public:
   /// \p Fn is the function where the diagnostic is being emitted. \p Loc is
   /// the location information to use in the diagnostic.
@@ -466,11 +468,14 @@ public:
   virtual bool isEnabled() const = 0;
 
   StringRef getPassName() const { return PassName; }
+  StringRef getRemarkName() const { return RemarkName; }
   std::string getMsg() const;
   Optional<uint64_t> getHotness() const { return Hotness; }
   void setHotness(Optional<uint64_t> H) { Hotness = H; }
 
   bool isVerbose() const { return IsVerbose; }
+
+  ArrayRef<Argument> getArgs() const { return Args; }
 
   static bool classof(const DiagnosticInfo *DI) {
     return (DI->getKind() >= DK_FirstRemark &&
@@ -501,7 +506,7 @@ protected:
   const char *PassName;
 
   /// Textual identifier for the remark (single-word, camel-case). Can be used
-  /// by external tools reading the YAML output file for optimization remarks to
+  /// by external tools reading the output file for optimization remarks to
   /// identify the remark.
   StringRef RemarkName;
 
@@ -519,8 +524,6 @@ protected:
   /// the optimization records and not in the remark printed in the compiler
   /// output.
   int FirstExtraArgIndex = -1;
-
-  friend struct yaml::MappingTraits<DiagnosticInfoOptimizationBase *>;
 };
 
 /// Allow the insertion operator to return the actual remark type rather than a
@@ -529,9 +532,10 @@ protected:
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               StringRef>::type S) {
+               StringRef>
+               S) {
   R.insert(S);
   return R;
 }
@@ -541,9 +545,10 @@ operator<<(RemarkT &R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &&R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               StringRef>::type S) {
+               StringRef>
+               S) {
   R.insert(S);
   return R;
 }
@@ -551,9 +556,10 @@ operator<<(RemarkT &&R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               DiagnosticInfoOptimizationBase::Argument>::type A) {
+               DiagnosticInfoOptimizationBase::Argument>
+               A) {
   R.insert(A);
   return R;
 }
@@ -561,9 +567,10 @@ operator<<(RemarkT &R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &&R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               DiagnosticInfoOptimizationBase::Argument>::type A) {
+               DiagnosticInfoOptimizationBase::Argument>
+               A) {
   R.insert(A);
   return R;
 }
@@ -571,9 +578,10 @@ operator<<(RemarkT &&R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               DiagnosticInfoOptimizationBase::setIsVerbose>::type V) {
+               DiagnosticInfoOptimizationBase::setIsVerbose>
+               V) {
   R.insert(V);
   return R;
 }
@@ -581,9 +589,10 @@ operator<<(RemarkT &R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &&R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               DiagnosticInfoOptimizationBase::setIsVerbose>::type V) {
+               DiagnosticInfoOptimizationBase::setIsVerbose>
+               V) {
   R.insert(V);
   return R;
 }
@@ -591,9 +600,10 @@ operator<<(RemarkT &&R,
 template <class RemarkT>
 RemarkT &
 operator<<(RemarkT &R,
-           typename std::enable_if<
+           std::enable_if_t<
                std::is_base_of<DiagnosticInfoOptimizationBase, RemarkT>::value,
-               DiagnosticInfoOptimizationBase::setExtraArgs>::type EA) {
+               DiagnosticInfoOptimizationBase::setExtraArgs>
+               EA) {
   R.insert(EA);
   return R;
 }
@@ -601,7 +611,7 @@ operator<<(RemarkT &R,
 /// Common features for diagnostics dealing with optimization remarks
 /// that are used by IR passes.
 class DiagnosticInfoIROptimization : public DiagnosticInfoOptimizationBase {
-  virtual void anchor() override;
+  void anchor() override;
 public:
   /// \p PassName is the name of the pass emitting this diagnostic. \p
   /// RemarkName is a textual identifier for the remark (single-word,
@@ -663,7 +673,7 @@ public:
 private:
   /// The IR value (currently basic block) that the optimization operates on.
   /// This is currently used to provide run-time hotness information with PGO.
-  const Value *CodeRegion;
+  const Value *CodeRegion = nullptr;
 };
 
 /// Diagnostic information for applied optimization remarks.
@@ -822,7 +832,7 @@ private:
 /// Diagnostic information for optimization analysis remarks related to
 /// floating-point non-commutativity.
 class OptimizationRemarkAnalysisFPCommute : public OptimizationRemarkAnalysis {
-  virtual void anchor();
+  void anchor() override;
 public:
   /// \p PassName is the name of the pass emitting this diagnostic. If this name
   /// matches the regular expression given in -Rpass-analysis=, then the
@@ -864,7 +874,7 @@ private:
 /// Diagnostic information for optimization analysis remarks related to
 /// pointer aliasing.
 class OptimizationRemarkAnalysisAliasing : public OptimizationRemarkAnalysis {
-  virtual void anchor();
+  void anchor() override;
 public:
   /// \p PassName is the name of the pass emitting this diagnostic. If this name
   /// matches the regular expression given in -Rpass-analysis=, then the
@@ -1002,11 +1012,24 @@ public:
   void print(DiagnosticPrinter &DP) const override;
 };
 
-namespace yaml {
-template <> struct MappingTraits<DiagnosticInfoOptimizationBase *> {
-  static void mapping(IO &io, DiagnosticInfoOptimizationBase *&OptDiag);
+/// Diagnostic information for MisExpect analysis.
+class DiagnosticInfoMisExpect : public DiagnosticInfoWithLocationBase {
+public:
+    DiagnosticInfoMisExpect(const Instruction *Inst, Twine &Msg);
+
+  /// \see DiagnosticInfo::print.
+  void print(DiagnosticPrinter &DP) const override;
+
+  static bool classof(const DiagnosticInfo *DI) {
+    return DI->getKind() == DK_MisExpect;
+  }
+
+  const Twine &getMsg() const { return Msg; }
+
+private:
+  /// Message to report.
+  const Twine &Msg;
 };
-} // namespace yaml
 
 } // end namespace llvm
 

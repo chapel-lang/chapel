@@ -1,0 +1,6 @@
+ifExprCopyInitBug.chpl:3: In function 'test':
+ifExprCopyInitBug.chpl:5: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+  ifExprCopyInitBug.chpl:15: called as test(type T = owned C)
+ifExprCopyInitBug.chpl:3: In function 'test':
+ifExprCopyInitBug.chpl:5: error: non-lvalue actual is passed to a 'ref' formal of chpl__initCopy()
+  ifExprCopyInitBug.chpl:16: called as test(type T = owned C?)

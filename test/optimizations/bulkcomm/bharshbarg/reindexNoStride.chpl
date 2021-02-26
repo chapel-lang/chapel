@@ -17,7 +17,7 @@ proc assignHalves(left, right) {
   var ldoms = halves(left.domain);
   var rdoms = halves(right.domain);
   assert(ldoms.size == rdoms.size);
-  for (i, j) in zip(1..ldoms.size, 1..rdoms.size by -1) {
+  for (i, j) in zip(0..#ldoms.size, 0..#rdoms.size by -1) {
     stridedAssign(left[(...ldoms[i])], right[(...rdoms[j])]);
   }
 }

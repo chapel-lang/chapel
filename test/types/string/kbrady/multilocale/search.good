@@ -5,116 +5,116 @@ d: çççççççççççççççççççççççççççç
 
 x.___("Hello")
 count: 1
-find: 1
-rfind: 1
-
-x.___("Hello", 2..)
-count: 0
 find: 0
 rfind: 0
+
+x.___("Hello", 1..)
+count: 0
+find: -1
+rfind: -1
 
 x.___("hello")
 count: 2
-find: 8
-rfind: 15
+find: 7
+rfind: 14
 
-x.___("hello", 14..)
+x.___("hello", 13..)
 count: 1
-find: 15
-rfind: 15
+find: 14
+rfind: 14
 
 y.___("Allô")
 count: 1
-find: 1
-rfind: 1
-
-y.___("Allô", 2..)
-count: 0
 find: 0
 rfind: 0
+
+y.___("Allô", 1..)
+count: 0
+find: -1
+rfind: -1
 
 y.___("allô")
 count: 2
-find: 8
-rfind: 15
+find: 7
+rfind: 14
 
-y.___("allô", 14..)
+y.___("allô", 13..)
 count: 1
-find: 15
-rfind: 15
+find: 14
+rfind: 14
 
 c.___("c")
 count: 28
-find: 1
-rfind: 28
+find: 0
+rfind: 27
 
-c.___("c", ..9)
+c.___("c", ..8)
 count: 9
-find: 1
-rfind: 9
-
-c.___("C")
-count: 0
-find: 0
-rfind: 0
-
-c.___("C", 5..9)
-count: 0
-find: 0
-rfind: 0
-
-d.___("ç")
-count: 28
-find: 1
-rfind: 55
-
-d.___("ç", ..18)
-count: 18
-find: 1
-rfind: 35
-
-d.___("Ç")
-count: 0
-find: 0
-rfind: 0
-
-d.___("Ç", 9..18)
-count: 0
-find: 0
-rfind: 0
-
-x.___("")
-count: 20
-find: 0
-rfind: 20
-
-x.___("", 9..15)
-count: 8
 find: 0
 rfind: 8
 
+c.___("C")
+count: 0
+find: -1
+rfind: -1
+
+c.___("C", 4..8)
+count: 0
+find: -1
+rfind: -1
+
+d.___("ç")
+count: 28
+find: 0
+rfind: 54
+
+d.___("ç", ..17)
+count: 18
+find: 0
+rfind: 34
+
+d.___("Ç")
+count: 0
+find: -1
+rfind: -1
+
+d.___("Ç", 8..17)
+count: 0
+find: -1
+rfind: -1
+
+x.___("")
+count: 20
+find: -1
+rfind: 19
+
+x.___("", 8..14)
+count: 8
+find: -1
+rfind: 7
+
 "".___(x)
 count: 0
-find: 0
-rfind: 0
+find: -1
+rfind: -1
 
 y.___("")
 count: 17
-find: 0
-rfind: 20
+find: -1
+rfind: 19
 
-y.___("", 9..15)
+y.___("", 8..14)
 count: 8
-find: 0
-rfind: 9
+find: -1
+rfind: 8
 
 "".___(y)
 count: 0
-find: 0
-rfind: 0
+find: -1
+rfind: -1
 
 "".___("")
 count: 1
-find: 0
-rfind: 0
+find: -1
+rfind: -1
 

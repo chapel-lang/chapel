@@ -225,6 +225,16 @@ Command-line parameters
 ``-fprebuilt-module-path=<directory>``
   Specify the path to the prebuilt modules. If specified, we will look for modules in this directory for a given top-level module name. We don't need a module map for loading prebuilt modules in this directory and the compiler will not try to rebuild these modules. This can be specified multiple times.
 
+-cc1 Options
+~~~~~~~~~~~~
+
+``-fmodules-strict-context-hash``
+  Enables hashing of all compiler options that could impact the semantics of a
+  module in an implicit build. This includes things such as header search paths
+  and diagnostics. Using this option may lead to an excessive number of modules
+  being built if the command line arguments are not homogeneous across your
+  build.
+
 Module Semantics
 ================
 
@@ -360,7 +370,7 @@ The *module-id* should consist of only a single *identifier*, which provides the
 
 The ``explicit`` qualifier can only be applied to a submodule, i.e., a module that is nested within another module. The contents of explicit submodules are only made available when the submodule itself was explicitly named in an import declaration or was re-exported from an imported module.
 
-The ``framework`` qualifier specifies that this module corresponds to a Darwin-style framework. A Darwin-style framework (used primarily on Mac OS X and iOS) is contained entirely in directory ``Name.framework``, where ``Name`` is the name of the framework (and, therefore, the name of the module). That directory has the following layout:
+The ``framework`` qualifier specifies that this module corresponds to a Darwin-style framework. A Darwin-style framework (used primarily on macOS and iOS) is contained entirely in directory ``Name.framework``, where ``Name`` is the name of the framework (and, therefore, the name of the module). That directory has the following layout:
 
 .. parsed-literal::
 

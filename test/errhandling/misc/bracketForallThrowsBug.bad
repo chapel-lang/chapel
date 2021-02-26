@@ -1,2 +1,3 @@
+bracketForallThrowsBug.chpl:22: In function '_isArrayTypeFn':
 bracketForallThrowsBug.chpl:22: error: call to throwing function foo without throws, try, or try! (relaxed mode)
 bracketForallThrowsBug.chpl:7: note: throwing function foo defined here

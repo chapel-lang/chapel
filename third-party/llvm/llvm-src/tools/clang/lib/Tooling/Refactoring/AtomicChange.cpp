@@ -1,9 +1,8 @@
 //===--- AtomicChange.cpp - AtomicChange implementation -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -201,8 +200,14 @@ AtomicChange::AtomicChange(const SourceManager &SM,
       FullKeyPosition.getSpellingLoc().getDecomposedLoc();
   const FileEntry *FE = SM.getFileEntryForID(FileIDAndOffset.first);
   assert(FE && "Cannot create AtomicChange with invalid location.");
-  FilePath = FE->getName();
+  FilePath = std::string(FE->getName());
   Key = FilePath + ":" + std::to_string(FileIDAndOffset.second);
+}
+
+AtomicChange::AtomicChange(const SourceManager &SM, SourceLocation KeyPosition,
+                           llvm::Any M)
+    : AtomicChange(SM, KeyPosition) {
+  Metadata = std::move(M);
 }
 
 AtomicChange::AtomicChange(std::string Key, std::string FilePath,
@@ -285,11 +290,11 @@ llvm::Error AtomicChange::insert(const SourceManager &SM, SourceLocation Loc,
 }
 
 void AtomicChange::addHeader(llvm::StringRef Header) {
-  InsertedHeaders.push_back(Header);
+  InsertedHeaders.push_back(std::string(Header));
 }
 
 void AtomicChange::removeHeader(llvm::StringRef Header) {
-  RemovedHeaders.push_back(Header);
+  RemovedHeaders.push_back(std::string(Header));
 }
 
 llvm::Expected<std::string>

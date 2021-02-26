@@ -1,9 +1,8 @@
 //===- NestedNameSpecifier.h - C++ nested name specifiers -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #ifndef LLVM_CLANG_AST_NESTEDNAMESPECIFIER_H
 #define LLVM_CLANG_AST_NESTEDNAMESPECIFIER_H
 
+#include "clang/AST/DependenceFlags.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/SourceLocation.h"
 #include "llvm/ADT/FoldingSet.h"
@@ -200,6 +200,8 @@ public:
     return nullptr;
   }
 
+  NestedNameSpecifierDependence getDependence() const;
+
   /// Whether this nested name specifier refers to a dependent
   /// type or not.
   bool isDependent() const;
@@ -211,6 +213,9 @@ public:
   /// Whether this nested-name-specifier contains an unexpanded
   /// parameter pack (for C++11 variadic templates).
   bool containsUnexpandedParameterPack() const;
+
+  /// Whether this nested name specifier contains an error.
+  bool containsErrors() const;
 
   /// Print this nested name specifier to the given output stream. If
   /// `ResolveTemplateArguments` is true, we'll print actual types, e.g.

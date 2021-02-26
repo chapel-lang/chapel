@@ -1,9 +1,8 @@
-//===--- Diagnostics.cpp - Helper class for error diagnostics -----*- C++ -*-===//
+//===--- Diagnostics.cpp - Helper class for error diagnostics ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -99,6 +98,8 @@ static StringRef errorTypeToFormatString(Diagnostics::ErrorType Type) {
     return "Ambiguous matcher overload.";
   case Diagnostics::ET_RegistryValueNotFound:
     return "Value not found: $0";
+  case Diagnostics::ET_RegistryUnknownEnumWithReplace:
+    return "Unknown value '$1' for arg $0; did you mean '$2'";
 
   case Diagnostics::ET_ParserStringError:
     return "Error parsing string token: <$0>";

@@ -1,9 +1,8 @@
 //===- NVPTXSubtarget.cpp - NVPTX Subtarget Information -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,13 +33,13 @@ void NVPTXSubtarget::anchor() {}
 NVPTXSubtarget &NVPTXSubtarget::initializeSubtargetDependencies(StringRef CPU,
                                                                 StringRef FS) {
     // Provide the default CPU if we don't have one.
-  TargetName = CPU.empty() ? "sm_20" : CPU;
+    TargetName = std::string(CPU.empty() ? "sm_20" : CPU);
 
-  ParseSubtargetFeatures(TargetName, FS);
+    ParseSubtargetFeatures(TargetName, FS);
 
-  // Set default to PTX 3.2 (CUDA 5.5)
-  if (PTXVersion == 0) {
-    PTXVersion = 32;
+    // Set default to PTX 3.2 (CUDA 5.5)
+    if (PTXVersion == 0) {
+      PTXVersion = 32;
   }
 
   return *this;

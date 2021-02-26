@@ -1,7 +1,0 @@
-bang-vs-cast.chpl:13: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-bang-vs-cast.chpl:21: warning: applying the postfix-! operator to a type is deprecated; instead use a cast to 'class' or 'borrowed class', e.g. 'MyType :borrowed class'
-case 1 error as expected
-case 2 error as expected
-0
-false
-false

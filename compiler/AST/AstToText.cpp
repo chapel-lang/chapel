@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,16 +25,8 @@
 #include "expr.h"
 #include "stmt.h"
 #include "symbol.h"
-
-AstToText::AstToText()
-{
-
-}
-
-AstToText::~AstToText()
-{
-
-}
+#include "IfExpr.h"
+#include "LoopExpr.h"
 
 const std::string& AstToText::text() const
 {
@@ -510,7 +502,7 @@ bool AstToText::handleNormalizedTypeOf(BlockStmt* bs)
           {
             mText  += ": ";
             appendExpr(moveSrc, true);
-            mText  += ".type ";
+            mText  += ".type";
 
             retval =  true;
           }
@@ -618,6 +610,47 @@ bool AstToText::isTypeDefault(Expr* expr) const
   return retval;
 }
 
+//
+//  Helper function for appending domain calls with multiple arguments
+//
+void AstToText::appendDomain(CallExpr* expr, bool printingType)
+{
+  mText += "domain(";
+
+  for(int i=2; i<=expr->numActuals(); i++)
+  {
+    if (i != 2)
+      mText += ", ";
+
+    if (UnresolvedSymExpr* symi = toUnresolvedSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (SymExpr* symi = toSymExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (CallExpr* symi = toCallExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else if (NamedExpr* symi = toNamedExpr(expr->get(i)))
+    {
+      appendExpr(symi, printingType);
+    }
+
+    else
+    {
+      mText += "AppendExpr.Call10";
+    }
+  }
+
+  mText += ")";
+}
+
 /************************************ | *************************************
 *                                                                           *
 * Helper functions for handling the "hidden formals" for methods.           *
@@ -711,6 +744,12 @@ void AstToText::appendExpr(Expr* expr, bool printingType)
   else if (NamedExpr*         sel = toNamedExpr(expr))
     appendExpr(sel, printingType);
 
+  else if (IfExpr*         sel = toIfExpr(expr))
+    appendExpr(sel, printingType);
+
+  else if (LoopExpr*         sel = toLoopExpr(expr))
+    appendExpr(sel, printingType);
+
   else
   {
     // NOAKES 2015/02/05  Debugging support.
@@ -792,7 +831,17 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
     }
     else
     {
-      if (strcmp(var->name, "nil") != 0)
+      /*
+       * For an expression like
+       *   var o: object? = nil;
+       * we arrive here at the "nil" with printingType == false.
+       *
+       * For an expression like
+       *   x: [something] int
+       * we arrive here inside the [] with printingType == true.  When
+       * var->name is "nil" we want to produce "x: [] int".
+       */
+      if (!printingType || strcmp(var->name, "nil") != 0)
         mText += var->name;
     }
   }
@@ -829,6 +878,14 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
   }
 }
 
+static bool looksLikeInfixOperator(const char *fnName)
+{
+  // It looks like an operator if it doesn't look like an identifier.
+  bool looksLikeIdentifier = isalpha(fnName[0]) || fnName[0] == '_';
+
+  return !looksLikeIdentifier;
+}
+
 void AstToText::appendExpr(CallExpr* expr, bool printingType)
 {
   if (expr->primitive == 0)
@@ -841,6 +898,22 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       if     (strcmp(fnName, "!")                            == 0)
       {
         mText += "!";
+        appendExpr(expr->get(1), printingType);
+      }
+
+      // postfix!
+      else if (fnName == astrPostfixBang                     &&
+               expr->numActuals()                            == 1)
+      {
+        appendExpr(expr->get(1), printingType);
+        mText += "!";
+      }
+
+      // UnaryOp bitwise negate
+      else if (strcmp(fnName, "~")                           == 0 &&
+               expr->numActuals()                            == 1)
+      {
+        mText += "~";
         appendExpr(expr->get(1), printingType);
       }
 
@@ -861,7 +934,7 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__atomicType")             == 0)
       {
-        mText += "atomic";
+        mText += "atomic ";
         appendExpr(expr->get(1), printingType);
       }
 
@@ -876,7 +949,9 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       {
         mText += "{";
         appendExpr(expr->get(1), printingType);
-        for (int index = 2; index <= expr->numActuals(); index++)
+
+        // last argument to chpl__buildDomainExpr is definedConst
+        for (int index = 2; index <= expr->numActuals()-1; index++)
         {
           mText += ", ";
           appendExpr(expr->get(index), printingType);
@@ -896,19 +971,16 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
       else if (strcmp(fnName, "chpl__buildDomainRuntimeType") == 0)
       {
-        if (expr->numActuals() == 2)
+        if (expr->numActuals() > 1)
         {
-          if (isUnresolvedSymExpr(expr->get(1)) &&
-              isUnresolvedSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            UnresolvedSymExpr* sym2 = toUnresolvedSymExpr(expr->get(2));
 
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
+          if (isUnresolvedSymExpr(expr->get(1)))
+          {
+            UnresolvedSymExpr* sym = toUnresolvedSymExpr(expr->get(1));
+
+            if (strcmp(sym->unresolved, "defaultDist") == 0)
             {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -919,19 +991,15 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
             }
           }
 
-          else if (isSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
+          else if (isSymExpr(expr->get(1)))
           {
             SymExpr*   sym1 = toSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
 
             VarSymbol* arg1 = toVarSymbol(sym1->symbol());
-            ArgSymbol* arg2 = toArgSymbol(sym2->symbol());
 
-            if (arg1 != 0 && arg2 != 0 && strcmp(arg1->name, "defaultDist") == 0)
+            if (arg1 != 0 && strcmp(arg1->name, "defaultDist") == 0)
             {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
+              appendDomain(expr, printingType);
             }
 
             else
@@ -939,25 +1007,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
               // NOAKES 2015/02/05  Debugging support.
               // Might become ASSERT in the future
               mText += "AppendExpr.Call01";
-            }
-          }
-
-          else if (isUnresolvedSymExpr(expr->get(1)) && isSymExpr(expr->get(2)))
-          {
-            UnresolvedSymExpr* sym1 = toUnresolvedSymExpr(expr->get(1));
-            SymExpr*   sym2 = toSymExpr(expr->get(2));
-            if (strcmp(sym1->unresolved, "defaultDist") == 0)
-            {
-              mText += "domain(";
-              appendExpr(sym2, printingType);
-              mText += ")";
-            }
-
-            else
-            {
-              // Lydia 2015/02/17 Debugging support.
-              // Might become ASSERT in the future
-              mText += "AppendExpr.Call10";
             }
           }
 
@@ -1110,12 +1159,11 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         mText += name->unresolved;
       }
 
-      // NOAKES 2015/02/09 Treating all calls with 2 actuals as binary operators
-      // Lydia 2015/02/17 ... except homogeneous tuple inner workings.
-      else if (expr->numActuals() == 2)
+      // Format binary operators in infix notation
+      else if (expr->numActuals() == 2 && looksLikeInfixOperator(fnName))
       {
-        UnresolvedSymExpr* name     = toUnresolvedSymExpr(expr->baseExpr);
-        if (printingType && strcmp(name->unresolved, "*") == 0)
+        // ... except homogeneous tuple inner workings.
+        if (printingType && strcmp(fnName, "*") == 0)
         {
           // This is not a multiply, it's the symbol for a homogeneous tuple.
 
@@ -1133,13 +1181,15 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
 
         else
         {
+          // Binary operator, infix notation
           appendExpr(expr->get(1), printingType);
           appendExpr(expr->baseExpr, printingType);
           appendExpr(expr->get(2), printingType);
         }
+
       }
 
-      else
+      else /* function/type */
         appendExpr(expr, fnName, printingType);
     }
 
@@ -1150,14 +1200,6 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
         // NOAKES 2015/02/05  Debugging support.
         // Might become ASSERT in the future
         mText += "AppendExpr.Call06";
-      }
-
-      else if (expr->numActuals() == 1)
-      {
-        appendExpr(expr->baseExpr, printingType);
-        mText += '(';
-        appendExpr(expr->get(1), printingType);
-        mText += ')';
       }
 
       else
@@ -1177,6 +1219,25 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       }
     }
 
+    else if (isCallExpr(expr->baseExpr))
+    {
+      CallExpr* subCall = toCallExpr(expr->baseExpr);
+      appendExpr(subCall->get(1), printingType);
+      mText += '.';
+      appendExpr(subCall->get(2), printingType);
+      mText += '(';
+
+      for (int i = 1; i <= expr->numActuals(); i++)
+      {
+        if (i > 1)
+          mText += ", ";
+
+        appendExpr(expr->get(i), printingType);
+      }
+
+      mText += ')';
+    }
+
     else
     {
       // NOAKES 2015/02/05  Debugging support.
@@ -1190,7 +1251,17 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
     if (expr->isPrimitive(PRIM_TYPEOF))
     {
       appendExpr(expr->get(1), printingType);
-      mText += ".type ";
+      mText += ".type";
+    }
+    else if (expr->isPrimitive(PRIM_TRY_EXPR))
+    {
+      mText += "try ";
+      appendExpr(expr->get(1), printingType);
+    }
+    else if (expr->isPrimitive(PRIM_TRYBANG_EXPR))
+    {
+      mText += "try! ";
+      appendExpr(expr->get(1), printingType);
     }
     else if (expr->isPrimitive(PRIM_NEW))
     {
@@ -1259,6 +1330,27 @@ void AstToText::appendExpr(CallExpr* expr, bool printingType)
       mText += "nonnilable ";
       appendExpr(expr->get(1), printingType);
     }
+    else if (!expr->isPrimitive(PRIM_UNKNOWN))
+    {
+      mText += "__primitive(\"";
+      mText += expr->primitive->name;
+      mText += "\"";
+      for (int index = 1; index <= expr->numActuals(); index++)
+        {
+          mText += ", ";
+          if (!isSymExpr(expr->get(index)))
+          {
+            appendExpr(expr->get(index), printingType);
+          }
+          else
+          {
+            mText += "\"";
+            appendExpr(expr->get(index), printingType);
+            mText += "\"";
+          }
+        }
+      mText += ")";
+    }
     else
     {
       // NOAKES 2015/02/05  Debugging support.
@@ -1309,6 +1401,115 @@ void AstToText::appendExpr(NamedExpr* expr, bool printingType)
   appendExpr(expr->actual, printingType);
 }
 
+void AstToText::appendExpr(IfExpr* expr, bool printingType)
+{
+  mText += "if ";
+  if (Expr* sel = toExpr(expr->getCondition()))
+  {
+    appendExpr(sel, printingType);
+
+    if (BlockStmt* thenBlockStmt = toBlockStmt(expr->getThenStmt()))
+    {
+      mText += " then ";
+      if (thenBlockStmt->body.length == 1)
+      {
+        Expr* exp = thenBlockStmt->body.get(1);
+        appendExpr(exp, printingType);
+
+        if (BlockStmt* elseBlockStmt = toBlockStmt(expr->getElseStmt()))
+        {
+          mText += " else ";
+          if (elseBlockStmt->body.length == 1)
+          {
+            Expr* exp = elseBlockStmt->body.get(1);
+            appendExpr(exp, printingType);
+          }
+
+          else
+          {
+            mText += "AppendExpr.If00";
+          }
+        }
+
+        else
+        {
+          mText += "AppendExpr.If01";
+        }
+      }
+
+      else
+      {
+        mText += "AppendExpr.If02";
+      }
+    }
+
+    else
+    {
+      mText += "AppendExpr.If03";
+    }
+  }
+
+  else
+  {
+    mText += "AppendExpr.If04";
+  }
+}
+
+void AstToText::appendExpr(LoopExpr* expr, bool printingType)
+{
+  std::string start,end;
+  if (expr->forall)
+  {
+    if (expr->maybeArrayType)
+    {
+      start = "[";
+      end = "]";
+    }
+
+    else
+    {
+      start = "forall ";
+      end = " do";
+    }
+  }
+
+  else
+  {
+    start = "for ";
+    end = " do";
+  }
+  mText += start;
+
+  if (expr->indices)
+  {
+    appendExpr(expr->indices, printingType);
+    mText += " in ";
+  }
+
+  if (expr->iteratorExpr)
+  {
+    appendExpr(expr->iteratorExpr, printingType);
+    mText += end;
+
+    if (BlockStmt* bs = toBlockStmt(expr->loopBody))
+    {
+      mText += ' ';
+      appendExpr(bs->body.get(1), printingType);
+    }
+
+    else
+    {
+      mText += " AppendExpr.Loop01";
+    }
+
+  }
+
+  else
+  {
+    mText += " AppendExpr.Loop02";
+  }
+}
+
 void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType)
 {
   appendExpr(fnName);
@@ -1321,6 +1522,11 @@ void AstToText::appendExpr(CallExpr* expr, const char* fnName, bool printingType
 
     appendExpr(expr->get(i), printingType);
   }
+
+  // 1-tuples get a trailing "," inside the parens.
+  // Only tuples reach here with fnName == "".
+  if (strlen(fnName) == 0 && expr->numActuals() == 1)
+    mText += ",";
 
   mText += ')';
 }

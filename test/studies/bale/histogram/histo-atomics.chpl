@@ -2,6 +2,8 @@ use CyclicDist;
 use BlockDist;
 use Random;
 use Time;
+use UnorderedAtomics;
+use AtomicAggregation;
 
 config const printStats = true,
              printArrays = false,
@@ -10,7 +12,8 @@ config const printStats = true,
 config const useRandomSeed = true,
              seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
 
-config const useUnorderedAtomics = false;
+enum Mode {ordered, unordered, aggregated}
+config const mode = Mode.ordered;
 
 const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocale
                                                        else here.maxTaskPar;
@@ -26,6 +29,7 @@ proc main() {
   const Mspace = {0..tableSize-1};
   const D = Mspace dmapped Cyclic(startIdx=Mspace.low);
   var A: [D] atomic int;
+  var AggA: [D] AggregatedAtomic(int);
 
   const Nspace = {0..numUpdates-1};
   const D2 = Nspace dmapped Block(Nspace);
@@ -40,13 +44,19 @@ proc main() {
   var t: Timer;
   t.start();
 
-  if useUnorderedAtomics {
-    use UnorderedAtomics;
-    forall r in rindex do
-      A[r].unorderedAdd(1);
-  } else {
-   forall r in rindex do
-    A[r].add(1);
+  select mode {
+    when Mode.ordered {
+      forall r in rindex do
+        A[r].add(1);
+    }
+    when Mode.unordered {
+      forall r in rindex do
+	A[r].unorderedAdd(1);
+    }
+    when Mode.aggregated {
+      forall r in rindex with (var agg = new AtomicIncAggregator(int)) do
+	agg.inc(AggA[r]);
+    }
   }
 
   t.stop();
@@ -61,10 +71,12 @@ proc main() {
   }
 
   if verify {
-    assert(numUpdates == +reduce A.read());
+    if mode == Mode.aggregated then assert(numUpdates == +reduce AggA.read());
+                               else assert(numUpdates == +reduce A.read());
   }
 
   if printArrays {
-    writeln(A);
+    if mode == Mode.aggregated then writeln(AggA);
+                               else writeln(A);
   }
 }

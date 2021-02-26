@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -257,7 +257,7 @@ static void issueNilError(const char* message, Expr* ref,
   if (printsSameLocationAsLastError(ref))
     return;
 
-  USR_FATAL_CONT(ref, message);
+  USR_FATAL_CONT(ref, "%s", message);
 
   Symbol* v  = var;
   if (referent != NULL) {
@@ -1011,9 +1011,8 @@ static bool adjustWhenNilCmp(Expr* arg1, Expr* arg2,
 static bool doAdjustForConditional(CondStmt* cond, bool inThenBranch,
                                    AliasMap& OUT) {
 
-  if (CallExpr* CE = toCallExpr(getSingleDefExpr(cond->condExpr)))
-   if (CE->isNamed("_cond_test") && CE->numActuals() == 1)
-    if (SymExpr* testArg = toSymExpr(CE->get(1)))
+  Expr* theCond = skip_cond_test(getSingleDefExpr(cond->condExpr));
+  if (SymExpr* testArg = toSymExpr(theCond))
     {
      if (isClassIshType(testArg->symbol()))
       // in Chapel: if obj then ...
@@ -1441,7 +1440,7 @@ void adjustSignatureForNilChecking(FnSymbol* fn) {
 
 typedef std::map<Symbol*,Expr*> SymbolToNilMap;
 
-class FindInvalidNonNilables : public AstVisitorTraverse {
+class FindInvalidNonNilables final : public AstVisitorTraverse {
   public:
     // key - a variable of interest
     // value - NULL if that variable isn't possibly nil now
@@ -1449,10 +1448,11 @@ class FindInvalidNonNilables : public AstVisitorTraverse {
     SymbolToNilMap varsToNil;
     // Only present errors once per symbol
     std::set<Symbol*> erroredSymbols;
-    virtual bool enterDefExpr(DefExpr* def);
-    virtual bool enterCallExpr(CallExpr* call);
-    virtual void exitCallExpr(CallExpr* call);
-    virtual void visitSymExpr(SymExpr* se);
+
+    bool enterDefExpr(DefExpr* def) override;
+    bool enterCallExpr(CallExpr* call) override;
+    void exitCallExpr(CallExpr* call) override;
+    void visitSymExpr(SymExpr* se) override;
 };
 
 static bool isNonNilableTypeOrRecordContaining(Type* t) {

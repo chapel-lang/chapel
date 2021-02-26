@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 #include "chpl-comp-detect-macros.h"
 #include "chpl-tasks.h"
 #include <assert.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // SIZE_ALIGN_TYPE:  Declare a version of a type aligned to at least its size.
@@ -68,22 +72,13 @@ static inline memory_order _defaultOfMemoryOrder(void) {
   return memory_order_seq_cst;
 }
 
-// __sync_synchronize is missing for cce < 8.4
-#if RT_COMP_CC == RT_COMP_CRAY
-  #include <intrinsics.h>
-  #define full_memory_barrier __builtin_ia32_mfence
-#else
-  #define full_memory_barrier __sync_synchronize
-#endif
-
-
 static inline void chpl_atomic_thread_fence(memory_order order)
 {
-  full_memory_barrier();
+  __sync_synchronize();
 }
 static inline void chpl_atomic_signal_fence(memory_order order)
 {
-  full_memory_barrier();
+  __sync_synchronize();
 }
 
 
@@ -387,5 +382,9 @@ static inline void atomic_lock_spinlock_t(atomic_spinlock_t* lock) {
 static inline void atomic_unlock_spinlock_t(atomic_spinlock_t* lock) {
   __sync_lock_release(lock);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_atomics_h_

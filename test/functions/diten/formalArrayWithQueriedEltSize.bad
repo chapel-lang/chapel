@@ -1,3 +1,3 @@
 formalArrayWithQueriedEltSize.chpl:1: In function 'f':
 formalArrayWithQueriedEltSize.chpl:1: error: Query expressions are not currently supported in this context
-formalArrayWithQueriedEltSize.chpl:1: Function 'f' instantiated as: f(x: [domain(1,int(64),false)] real(64))
+  formalArrayWithQueriedEltSize.chpl:1: called as f(x: [domain(1,int(64),false)] real(64))

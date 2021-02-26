@@ -1,9 +1,8 @@
 //===- RegAllocBase.h - basic regalloc interface and driver -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -102,8 +101,8 @@ protected:
   // Each call must guarantee forward progess by returning an available PhysReg
   // or new set of split live virtual registers. It is up to the splitter to
   // converge quickly toward fully spilled live ranges.
-  virtual unsigned selectOrSplit(LiveInterval &VirtReg,
-                                 SmallVectorImpl<unsigned> &splitLVRs) = 0;
+  virtual Register selectOrSplit(LiveInterval &VirtReg,
+                                 SmallVectorImpl<Register> &splitLVRs) = 0;
 
   // Use this group name for NamedRegionTimer.
   static const char TimerGroupName[];

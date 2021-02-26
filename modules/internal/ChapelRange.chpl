@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -153,9 +153,11 @@
  */
 module ChapelRange {
 
-  private use ChapelBase, SysBasic, HaltWrappers;
+  use ChapelBase, SysBasic, HaltWrappers;
 
-  use Math;
+  use Math, DSIUtil;
+
+  private use ChapelDebugPrint only chpl_debug_writeln;
 
   // Turns on range iterator debugging.
   pragma "no doc"
@@ -406,17 +408,100 @@ module ChapelRange {
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(param low, param high) param {
-    compilerError("Range bounds must be integers of compatible types");
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
   }
 
   pragma "last resort"
   proc chpl_compute_low_param_loop_bound(low, high) {
-    compilerError("param for loop must be defined over a bounded param range");
+    compilerError("param for-loops must be defined over a bounded param range");
+  }
+
+  proc chpl_compute_count_param_loop(param count: integral) param {
+    return count;
+  }
+
+  pragma "last resort"
+  proc chpl_compute_count_param_loop(count) {
+    compilerError("in a param for-loop, the count operator requires a param integral value");
+  }
+
+  proc chpl_low_bound_count_for_param_loop(param high: integral, param count: integral) param {
+    if count > 0 {
+      compilerError("count operators with positive count require the range to have a low bound");
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else {
+      return high + count + 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_low_bound_count_for_param_loop(high, count) {
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_high_bound_count_for_param_loop(param low: integral, param count: integral) param {
+    if count < 0 {
+      compilerError("count operators with negative count require the range to have a high bound");
+    }
+    else if count == 0 {
+      return low - 1;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_high_bound_count_for_param_loop(low, count) {
+    compilerError("Range bounds must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_bounded_count_for_param_loop_low(param low: integral, param high: integral, param count: integral) param {
+    param abs_count = if count < 0 then -count else count;
+    param size = high - low + 1;
+    if size < abs_count {
+      compilerError("Count of ", abs_count:string, " is too small for range of size ", size:string);
+    }
+    else if count == 0 {
+      return high + 1;
+    }
+    else if count < 0 {
+      return high + count + 1;
+    }
+    else {
+      return low;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_low(low, high, count) {
+    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
+  }
+
+  proc chpl_bounded_count_for_param_loop_high(param low: integral, param high: integral, param count: integral) param {
+    if count == 0 {
+      return low - 1;
+    }
+    else if count < 0 {
+      return high;
+    }
+    else {
+      return low + count - 1;
+    }
+  }
+
+  pragma "last resort"
+  proc chpl_bounded_count_for_param_loop_high(low, high, count) {
+    compilerError("Range bounds and counts must be integers of compatible types in param for-loops");
   }
 
   //################################################################################
   //# Predicates
   //#
+
   /* Return true if argument ``t`` is a range type, false otherwise */
   proc isRangeType(type t) param {
     proc isRangeHelp(type t: range(?)) param  return true;
@@ -440,6 +525,10 @@ module ChapelRange {
   pragma "no doc"
   proc isBoundedRange(param B: BoundedRangeType) param
     return B == BoundedRangeType.bounded;
+
+  /* Return true if this range is bounded */
+  proc range.isBounded() param
+    return boundedType == BoundedRangeType.bounded;
 
   /* Return true if this range has a low bound, false otherwise */
   proc range.hasLowBound() param
@@ -523,10 +612,10 @@ module ChapelRange {
       return _low + chpl__diffMod(_alignment, _low, stride);
   }
 
+  // TODO: Add back example?
   /* Returns the range's aligned high bound. If the aligned high bound is
      undefined, the behavior is undefined.
    */
-  // TODO: Add back example?
   inline proc range.alignedHigh : idxType {
     return chpl_intToIdx(this.alignedHighAsInt);
   }
@@ -551,13 +640,6 @@ module ChapelRange {
   }
 
 
-  /* Deprecated - please use :proc:`range.size`. */
-  inline proc range.length: intIdxType {
-    compilerWarning("'range.length' is deprecated - " +
-                    "please use 'range.size' instead");
-    return this.size;
-  }
-
   /* Returns the number of elements in this range, cast to the index type.
 
      Note: The result is undefined if the index is signed
@@ -567,7 +649,7 @@ module ChapelRange {
     if ! isBoundedRange(this) then
       compilerError("'size' is not defined on unbounded ranges");
 
-    // assumes alignedHigh/alignLow always work, even for an empty range
+    // assumes alignedHigh/alignedLow always work, even for an empty range
     const ah = this.alignedHighAsInt,
           al = this.alignedLowAsInt;
     if al > ah then return 0: intIdxType;
@@ -692,20 +774,6 @@ module ChapelRange {
     return other == this(other);
   }
 
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(ind: idxType) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(ind);
-  }
-
-  /* Deprecated - please use :proc:`range.contains`. */
-  inline proc range.member(other: range(?)) {
-    compilerWarning("range.member is deprecated - " +
-                    "please use range.contains instead");
-    return this.contains(other);
-  }
-
   // Negate one of the two args' strides before comparison.
   private inline proc _containsHelp(in arg1: range(?), in arg2: range(?)) {
     if arg2.stridable then
@@ -793,7 +861,7 @@ module ChapelRange {
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 pragma "no doc"
-proc range.safeCast(type t) where isRangeType(t) {
+proc range.safeCast(type t: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != this.boundedType {
@@ -819,7 +887,7 @@ proc range.safeCast(type t) where isRangeType(t) {
    new type is not stridable, then force the new stride to be 1.
  */
 pragma "no doc"
-proc _cast(type t, r: range(?)) where isRangeType(t) {
+operator :(r: range(?), type t: range(?)) {
   var tmp: t;
 
   if tmp.boundedType != r.boundedType {
@@ -828,9 +896,9 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   }
 
   if tmp.stridable {
-    tmp._stride = r._stride;
-    tmp._alignment = r._alignment: tmp.intIdxType;
-    tmp._aligned = r._aligned;
+    tmp._stride = r.stride;
+    tmp._alignment = r.alignment: tmp.intIdxType;
+    tmp._aligned = r.aligned;
   }
 
   tmp._low = r.low: tmp.intIdxType;
@@ -1936,6 +2004,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // An unbounded range iterator (for all strides)
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these() where boundedType != BoundedRangeType.bounded {
 
     if boundedType == BoundedRangeType.boundedNone then
@@ -1966,6 +2035,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // A bounded and strided range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == true {
     if (useOptimizedRangeIterators) {
@@ -1994,6 +2064,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
 
   // A bounded and non-strided (stride = 1) range iterator
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these()
     where boundedType == BoundedRangeType.bounded && stridable == false {
     if (useOptimizedRangeIterators) {
@@ -2034,6 +2105,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   // int(64) and uint(64) but it's hard to see a case where those could ever be
   // desired.
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.generalIterator() {
     if boundsChecking && this.isAmbiguous() then
       HaltWrappers.boundsCheckHalt("these -- Attempt to iterate over a range with ambiguous alignment.");
@@ -2056,6 +2128,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //#
 
   pragma "no doc"
+  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
                                               !localeModelHasSublocales
   {
@@ -2077,29 +2150,23 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
       chpl_debug_writeln("*** RI: length=", len, " numChunks=", numChunks);
     }
 
-    if numChunks <= 1 {
-      for i in this {
-        yield i;
-      }
-    } else {
-      coforall chunk in 0..#numChunks {
-        if stridable {
-          // TODO: find a way to avoid this densify/undensify for strided
-          // ranges, perhaps by adding knowledge of alignment to _computeBlock
-          // or using an aligned range
-          const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
-          const mylen = hi - (lo-1);
-          var low = orderToIndex(lo);
-          var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
-          if stride < 0 then low <=> high;
-          for i in low..high by stride {
-            yield i;
-          }
-        } else {
-          const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-          for i in lo..hi {
-            yield chpl_intToIdx(i);
-          }
+    coforall chunk in 0..#numChunks {
+      if stridable {
+        // TODO: find a way to avoid this densify/undensify for strided
+        // ranges, perhaps by adding knowledge of alignment to _computeBlock
+        // or using an aligned range
+        const (lo, hi) = _computeBlock(len, numChunks, chunk, len-1);
+        const mylen = hi - (lo-1);
+        var low = orderToIndex(lo);
+        var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
+        if stride < 0 then low <=> high;
+        for i in low..high by stride {
+          yield i;
+        }
+      } else {
+        const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
+        for i in lo..hi {
+          yield chpl_intToIdx(i);
         }
       }
     }
@@ -2147,36 +2214,32 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
                            "### numChunks = ", numChunks);
       }
 
-      if numChunks == 1 {
-        yield (0..len-1,);
-      } else {
-        coforall chunk in 0..#numChunks {
-          local do on here.getChild(chunk) {
+      coforall chunk in 0..#numChunks {
+        local do on here.getChild(chunk) {
+          if debugDataParNuma {
+            if chunk!=chpl_getSubloc() then
+              chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
+                                 chunk, ", on ", chpl_getSubloc(), ") ***");
+          }
+          const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
+          const locRange = lo..hi;
+          const locLen = locRange.size;
+          // Divide the locale's tasks approximately evenly
+          // among the sublocales
+          const numSublocTasks = (if chunk < dptpl % numChunks
+                                  then dptpl / numChunks + 1
+                                  else dptpl / numChunks);
+          const numTasks = _computeNumChunks(numSublocTasks,
+                                             ignoreRunning=true,
+                                             minIndicesPerTask,
+                                             locLen);
+          coforall core in 0..#numTasks {
+            const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
             if debugDataParNuma {
-              if chunk!=chpl_getSubloc() then
-                chpl_debug_writeln("*** ERROR: ON WRONG SUBLOC (should be ",
-                                   chunk, ", on ", chpl_getSubloc(), ") ***");
+              chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
+                                 "locRange = ", locRange, "  coreRange = ", low..high);
             }
-            const (lo,hi) = _computeBlock(len, numChunks, chunk, len-1);
-            const locRange = lo..hi;
-            const locLen = locRange.size;
-            // Divide the locale's tasks approximately evenly
-            // among the sublocales
-            const numSublocTasks = (if chunk < dptpl % numChunks
-                                    then dptpl / numChunks + 1
-                                    else dptpl / numChunks);
-            const numTasks = _computeNumChunks(numSublocTasks,
-                                               ignoreRunning=true,
-                                               minIndicesPerTask,
-                                               locLen);
-            coforall core in 0..#numTasks {
-              const (low, high) = _computeBlock(locLen, numTasks, core, hi, lo, lo);
-              if debugDataParNuma {
-                chpl_debug_writeln("### chunk = ", chunk, "  core = ", core, "  ",
-                                   "locRange = ", locRange, "  coreRange = ", low..high);
-              }
-              yield (low..high,);
-            }
+            yield (low..high,);
           }
         }
       }
@@ -2192,17 +2255,12 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
         chpl_debug_writeln("*** RI: Using ", numChunks, " chunk(s)");
       }
 
-      if numChunks == 1 then
-        yield (0..v-1,);
-      else
+      coforall chunk in 0..#numChunks
       {
-        coforall chunk in 0..#numChunks
-        {
-          const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
-          if debugChapelRange then
-            chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
-          yield (lo..hi,);
-        }
+        const (lo,hi) = _computeBlock(v, numChunks, chunk, v-1);
+        if debugChapelRange then
+          chpl_debug_writeln("*** RI: tuple = ", (lo..hi,));
+        yield (lo..hi,);
       }
     }
   }
@@ -2325,7 +2383,7 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //# Utilities
   //#
 
-  proc _cast(type t, x: range(?)) where t == string {
+  operator :(x: range(?), type t: string) {
     var ret: string;
 
     if x.hasLowBound() then
@@ -2368,18 +2426,10 @@ proc _cast(type t, r: range(?)) where isRangeType(t) {
   //################################################################################
   //# Internal helper functions.
   //#
-  pragma "no doc"
-  inline proc range.chpl__unTranslate(i: intIdxType)
-    return this - i;
 
   pragma "no doc"
   inline proc range.chpl__unTranslate(i)
-  {
-    if isIntType(i.type) then
-      return this - i;
-    else
-      return this + abs(i);
-  }
+    return this - i;
 
   // Determine if a strided range has a definite alignment.
   proc chpl__hasAlignment(r : range(?))

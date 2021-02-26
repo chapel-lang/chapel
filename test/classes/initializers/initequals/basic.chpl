@@ -38,6 +38,11 @@ proc R.init=(x : int) {
   writeln("init= from integer");
   this.x = x;
 }
+operator :(other: int, type t:R)
+{
+  var tmp: R = other;
+  return tmp;
+}
 
 {
   var A : R = 5;

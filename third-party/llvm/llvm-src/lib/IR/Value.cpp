@@ -1,9 +1,8 @@
 //===-- Value.cpp - Implement the Value class -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,8 +13,8 @@
 #include "llvm/IR/Value.h"
 #include "LLVMContextImpl.h"
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SetVector.h"
+#include "llvm/ADT/SmallString.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
@@ -30,6 +29,7 @@
 #include "llvm/IR/Statepoint.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/IR/ValueSymbolTable.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ManagedStatic.h"
@@ -58,7 +58,8 @@ Value::Value(Type *ty, unsigned scid)
   // FIXME: Why isn't this in the subclass gunk??
   // Note, we cannot call isa<CallInst> before the CallInst has been
   // constructed.
-  if (SubclassID == Instruction::Call || SubclassID == Instruction::Invoke)
+  if (SubclassID == Instruction::Call || SubclassID == Instruction::Invoke ||
+      SubclassID == Instruction::CallBr)
     assert((VTy->isFirstClassType() || VTy->isVoidTy() || VTy->isStructTy()) &&
            "invalid CallInst type!");
   else if (SubclassID != BasicBlockVal &&
@@ -82,13 +83,17 @@ Value::~Value() {
   // reference and something is wrong.  This code is here to print out where
   // the value is still being referenced.
   //
-  if (!use_empty()) {
+  // Note that use_empty() cannot be called here, as it eventually downcasts
+  // 'this' to GlobalValue (derived class of Value), but GlobalValue has already
+  // been destructed, so accessing it is UB.
+  //
+  if (!materialized_use_empty()) {
     dbgs() << "While deleting: " << *VTy << " %" << getName() << "\n";
     for (auto *U : users())
       dbgs() << "Use still stuck around after Def is destroyed:" << *U << "\n";
   }
 #endif
-  assert(use_empty() && "Uses remain when a value is destroyed!");
+  assert(materialized_use_empty() && "Uses remain when a value is destroyed!");
 
   // If this value is named, destroy the name.  This should not be in a symtab
   // at this point.
@@ -105,6 +110,10 @@ void Value::deleteValue() {
   case Value::Name##Val:                                                       \
     static_cast<DerivedUser *>(this)->DeleteValue(                             \
         static_cast<DerivedUser *>(this));                                     \
+    break;
+#define HANDLE_CONSTANT(Name)                                                  \
+  case Value::Name##Val:                                                       \
+    llvm_unreachable("constants should be destroyed with destroyConstant");    \
     break;
 #define HANDLE_INSTRUCTION(Name)  /* nothing */
 #include "llvm/IR/Value.def"
@@ -123,8 +132,10 @@ void Value::deleteValue() {
 
 void Value::destroyValueName() {
   ValueName *Name = getValueName();
-  if (Name)
-    Name->Destroy();
+  if (Name) {
+    MallocAllocator Allocator;
+    Name->Destroy(Allocator);
+  }
   setValueName(nullptr);
 }
 
@@ -134,6 +145,51 @@ bool Value::hasNUses(unsigned N) const {
 
 bool Value::hasNUsesOrMore(unsigned N) const {
   return hasNItemsOrMore(use_begin(), use_end(), N);
+}
+
+static bool isUnDroppableUser(const User *U) { return !U->isDroppable(); }
+
+Use *Value::getSingleUndroppableUse() {
+  Use *Result = nullptr;
+  for (Use &U : uses()) {
+    if (!U.getUser()->isDroppable()) {
+      if (Result)
+        return nullptr;
+      Result = &U;
+    }
+  }
+  return Result;
+}
+
+bool Value::hasNUndroppableUses(unsigned int N) const {
+  return hasNItems(user_begin(), user_end(), N, isUnDroppableUser);
+}
+
+bool Value::hasNUndroppableUsesOrMore(unsigned int N) const {
+  return hasNItemsOrMore(user_begin(), user_end(), N, isUnDroppableUser);
+}
+
+void Value::dropDroppableUses(
+    llvm::function_ref<bool(const Use *)> ShouldDrop) {
+  SmallVector<Use *, 8> ToBeEdited;
+  for (Use &U : uses())
+    if (U.getUser()->isDroppable() && ShouldDrop(&U))
+      ToBeEdited.push_back(&U);
+  for (Use *U : ToBeEdited) {
+    U->removeFromList();
+    if (auto *Assume = dyn_cast<IntrinsicInst>(U->getUser())) {
+      assert(Assume->getIntrinsicID() == Intrinsic::assume);
+      unsigned OpNo = U->getOperandNo();
+      if (OpNo == 0)
+        Assume->setOperand(0, ConstantInt::getTrue(Assume->getContext()));
+      else {
+        Assume->setOperand(OpNo, UndefValue::get(U->get()->getType()));
+        CallInst::BundleOpInfo &BOI = Assume->getBundleOpInfoForOperand(OpNo);
+        BOI.Tag = getContext().pImpl->getOrInsertBundleTag("ignore");
+      }
+    } else
+      llvm_unreachable("unkown droppable use");
+  }
 }
 
 bool Value::isUsedInBasicBlock(const BasicBlock *BB) const {
@@ -262,7 +318,8 @@ void Value::setNameImpl(const Twine &NewName) {
     destroyValueName();
 
     // Create the new name.
-    setValueName(ValueName::Create(NameRef));
+    MallocAllocator Allocator;
+    setValueName(ValueName::Create(NameRef, Allocator));
     getValueName()->setValue(this);
     return;
   }
@@ -444,15 +501,11 @@ void Value::replaceUsesOutsideBlock(Value *New, BasicBlock *BB) {
          "replaceUses of value with new value of different type!");
   assert(BB && "Basic block that may contain a use of 'New' must be defined\n");
 
-  use_iterator UI = use_begin(), E = use_end();
-  for (; UI != E;) {
-    Use &U = *UI;
-    ++UI;
-    auto *Usr = dyn_cast<Instruction>(U.getUser());
-    if (Usr && Usr->getParent() == BB)
-      continue;
-    U.set(New);
-  }
+  replaceUsesWithIf(New, [BB](Use &U) {
+    auto *I = dyn_cast<Instruction>(U.getUser());
+    // Don't replace if it's an instruction in the BB basic block.
+    return !I || I->getParent() != BB;
+  });
 }
 
 namespace {
@@ -460,13 +513,18 @@ namespace {
 enum PointerStripKind {
   PSK_ZeroIndices,
   PSK_ZeroIndicesAndAliases,
-  PSK_ZeroIndicesAndAliasesAndInvariantGroups,
+  PSK_ZeroIndicesSameRepresentation,
+  PSK_ZeroIndicesAndInvariantGroups,
   PSK_InBoundsConstantIndices,
   PSK_InBounds
 };
 
+template <PointerStripKind StripKind> static void NoopCallback(const Value *) {}
+
 template <PointerStripKind StripKind>
-static const Value *stripPointerCastsAndOffsets(const Value *V) {
+static const Value *stripPointerCastsAndOffsets(
+    const Value *V,
+    function_ref<void(const Value *)> Func = NoopCallback<StripKind>) {
   if (!V->getType()->isPointerTy())
     return V;
 
@@ -476,11 +534,13 @@ static const Value *stripPointerCastsAndOffsets(const Value *V) {
 
   Visited.insert(V);
   do {
+    Func(V);
     if (auto *GEP = dyn_cast<GEPOperator>(V)) {
       switch (StripKind) {
-      case PSK_ZeroIndicesAndAliases:
-      case PSK_ZeroIndicesAndAliasesAndInvariantGroups:
       case PSK_ZeroIndices:
+      case PSK_ZeroIndicesAndAliases:
+      case PSK_ZeroIndicesSameRepresentation:
+      case PSK_ZeroIndicesAndInvariantGroups:
         if (!GEP->hasAllZeroIndices())
           return V;
         break;
@@ -494,13 +554,17 @@ static const Value *stripPointerCastsAndOffsets(const Value *V) {
         break;
       }
       V = GEP->getPointerOperand();
-    } else if (Operator::getOpcode(V) == Instruction::BitCast ||
-               Operator::getOpcode(V) == Instruction::AddrSpaceCast) {
+    } else if (Operator::getOpcode(V) == Instruction::BitCast) {
       V = cast<Operator>(V)->getOperand(0);
-    } else if (auto *GA = dyn_cast<GlobalAlias>(V)) {
-      if (StripKind == PSK_ZeroIndices || GA->isInterposable())
+      if (!V->getType()->isPointerTy())
         return V;
-      V = GA->getAliasee();
+    } else if (StripKind != PSK_ZeroIndicesSameRepresentation &&
+               Operator::getOpcode(V) == Instruction::AddrSpaceCast) {
+      // TODO: If we know an address space cast will not change the
+      //       representation we could look through it here as well.
+      V = cast<Operator>(V)->getOperand(0);
+    } else if (StripKind == PSK_ZeroIndicesAndAliases && isa<GlobalAlias>(V)) {
+      V = cast<GlobalAlias>(V)->getAliasee();
     } else {
       if (const auto *Call = dyn_cast<CallBase>(V)) {
         if (const Value *RV = Call->getReturnedArgOperand()) {
@@ -510,7 +574,7 @@ static const Value *stripPointerCastsAndOffsets(const Value *V) {
         // The result of launder.invariant.group must alias it's argument,
         // but it can't be marked with returned attribute, that's why it needs
         // special case.
-        if (StripKind == PSK_ZeroIndicesAndAliasesAndInvariantGroups &&
+        if (StripKind == PSK_ZeroIndicesAndInvariantGroups &&
             (Call->getIntrinsicID() == Intrinsic::launder_invariant_group ||
              Call->getIntrinsicID() == Intrinsic::strip_invariant_group)) {
           V = Call->getArgOperand(0);
@@ -527,11 +591,15 @@ static const Value *stripPointerCastsAndOffsets(const Value *V) {
 } // end anonymous namespace
 
 const Value *Value::stripPointerCasts() const {
+  return stripPointerCastsAndOffsets<PSK_ZeroIndices>(this);
+}
+
+const Value *Value::stripPointerCastsAndAliases() const {
   return stripPointerCastsAndOffsets<PSK_ZeroIndicesAndAliases>(this);
 }
 
-const Value *Value::stripPointerCastsNoFollowAliases() const {
-  return stripPointerCastsAndOffsets<PSK_ZeroIndices>(this);
+const Value *Value::stripPointerCastsSameRepresentation() const {
+  return stripPointerCastsAndOffsets<PSK_ZeroIndicesSameRepresentation>(this);
 }
 
 const Value *Value::stripInBoundsConstantOffsets() const {
@@ -539,18 +607,17 @@ const Value *Value::stripInBoundsConstantOffsets() const {
 }
 
 const Value *Value::stripPointerCastsAndInvariantGroups() const {
-  return stripPointerCastsAndOffsets<PSK_ZeroIndicesAndAliasesAndInvariantGroups>(
-      this);
+  return stripPointerCastsAndOffsets<PSK_ZeroIndicesAndInvariantGroups>(this);
 }
 
-const Value *
-Value::stripAndAccumulateInBoundsConstantOffsets(const DataLayout &DL,
-                                                 APInt &Offset) const {
-  if (!getType()->isPointerTy())
+const Value *Value::stripAndAccumulateConstantOffsets(
+    const DataLayout &DL, APInt &Offset, bool AllowNonInbounds,
+    function_ref<bool(Value &, APInt &)> ExternalAnalysis) const {
+  if (!getType()->isPtrOrPtrVectorTy())
     return this;
 
-  assert(Offset.getBitWidth() == DL.getIndexSizeInBits(cast<PointerType>(
-                                     getType())->getAddressSpace()) &&
+  unsigned BitWidth = Offset.getBitWidth();
+  assert(BitWidth == DL.getIndexTypeSizeInBits(getType()) &&
          "The offset bit width does not match the DL specification.");
 
   // Even though we don't look through PHI nodes, we could be called on an
@@ -560,34 +627,60 @@ Value::stripAndAccumulateInBoundsConstantOffsets(const DataLayout &DL,
   const Value *V = this;
   do {
     if (auto *GEP = dyn_cast<GEPOperator>(V)) {
-      if (!GEP->isInBounds())
+      // If in-bounds was requested, we do not strip non-in-bounds GEPs.
+      if (!AllowNonInbounds && !GEP->isInBounds())
         return V;
-      APInt GEPOffset(Offset);
-      if (!GEP->accumulateConstantOffset(DL, GEPOffset))
+
+      // If one of the values we have visited is an addrspacecast, then
+      // the pointer type of this GEP may be different from the type
+      // of the Ptr parameter which was passed to this function.  This
+      // means when we construct GEPOffset, we need to use the size
+      // of GEP's pointer type rather than the size of the original
+      // pointer type.
+      APInt GEPOffset(DL.getIndexTypeSizeInBits(V->getType()), 0);
+      if (!GEP->accumulateConstantOffset(DL, GEPOffset, ExternalAnalysis))
         return V;
-      Offset = GEPOffset;
+
+      // Stop traversal if the pointer offset wouldn't fit in the bit-width
+      // provided by the Offset argument. This can happen due to AddrSpaceCast
+      // stripping.
+      if (GEPOffset.getMinSignedBits() > BitWidth)
+        return V;
+
+      // External Analysis can return a result higher/lower than the value
+      // represents. We need to detect overflow/underflow.
+      APInt GEPOffsetST = GEPOffset.sextOrTrunc(BitWidth);
+      if (!ExternalAnalysis) {
+        Offset += GEPOffsetST;
+      } else {
+        bool Overflow = false;
+        APInt OldOffset = Offset;
+        Offset = Offset.sadd_ov(GEPOffsetST, Overflow);
+        if (Overflow) {
+          Offset = OldOffset;
+          return V;
+        }
+      }
       V = GEP->getPointerOperand();
-    } else if (Operator::getOpcode(V) == Instruction::BitCast) {
+    } else if (Operator::getOpcode(V) == Instruction::BitCast ||
+               Operator::getOpcode(V) == Instruction::AddrSpaceCast) {
       V = cast<Operator>(V)->getOperand(0);
     } else if (auto *GA = dyn_cast<GlobalAlias>(V)) {
-      V = GA->getAliasee();
-    } else {
-      if (const auto *Call = dyn_cast<CallBase>(V))
-        if (const Value *RV = Call->getReturnedArgOperand()) {
+      if (!GA->isInterposable())
+        V = GA->getAliasee();
+    } else if (const auto *Call = dyn_cast<CallBase>(V)) {
+        if (const Value *RV = Call->getReturnedArgOperand())
           V = RV;
-          continue;
-        }
-
-      return V;
     }
-    assert(V->getType()->isPointerTy() && "Unexpected operand type!");
+    assert(V->getType()->isPtrOrPtrVectorTy() && "Unexpected operand type!");
   } while (Visited.insert(V).second);
 
   return V;
 }
 
-const Value *Value::stripInBoundsOffsets() const {
-  return stripPointerCastsAndOffsets<PSK_InBounds>(this);
+const Value *
+Value::stripInBoundsOffsets(function_ref<void(const Value *)> Func) const {
+  return stripPointerCastsAndOffsets<PSK_InBounds>(this, Func);
 }
 
 uint64_t Value::getPointerDereferenceableBytes(const DataLayout &DL,
@@ -601,7 +694,7 @@ uint64_t Value::getPointerDereferenceableBytes(const DataLayout &DL,
     if (DerefBytes == 0 && (A->hasByValAttr() || A->hasStructRetAttr())) {
       Type *PT = cast<PointerType>(A->getType())->getElementType();
       if (PT->isSized())
-        DerefBytes = DL.getTypeStoreSize(PT);
+        DerefBytes = DL.getTypeStoreSize(PT).getKnownMinSize();
     }
     if (DerefBytes == 0) {
       DerefBytes = A->getDereferenceableOrNullBytes();
@@ -627,33 +720,51 @@ uint64_t Value::getPointerDereferenceableBytes(const DataLayout &DL,
       }
       CanBeNull = true;
     }
+  } else if (auto *IP = dyn_cast<IntToPtrInst>(this)) {
+    if (MDNode *MD = IP->getMetadata(LLVMContext::MD_dereferenceable)) {
+      ConstantInt *CI = mdconst::extract<ConstantInt>(MD->getOperand(0));
+      DerefBytes = CI->getLimitedValue();
+    }
+    if (DerefBytes == 0) {
+      if (MDNode *MD =
+              IP->getMetadata(LLVMContext::MD_dereferenceable_or_null)) {
+        ConstantInt *CI = mdconst::extract<ConstantInt>(MD->getOperand(0));
+        DerefBytes = CI->getLimitedValue();
+      }
+      CanBeNull = true;
+    }
   } else if (auto *AI = dyn_cast<AllocaInst>(this)) {
     if (!AI->isArrayAllocation()) {
-      DerefBytes = DL.getTypeStoreSize(AI->getAllocatedType());
+      DerefBytes =
+          DL.getTypeStoreSize(AI->getAllocatedType()).getKnownMinSize();
       CanBeNull = false;
     }
   } else if (auto *GV = dyn_cast<GlobalVariable>(this)) {
     if (GV->getValueType()->isSized() && !GV->hasExternalWeakLinkage()) {
       // TODO: Don't outright reject hasExternalWeakLinkage but set the
       // CanBeNull flag.
-      DerefBytes = DL.getTypeStoreSize(GV->getValueType());
+      DerefBytes = DL.getTypeStoreSize(GV->getValueType()).getFixedSize();
       CanBeNull = false;
     }
   }
   return DerefBytes;
 }
 
-unsigned Value::getPointerAlignment(const DataLayout &DL) const {
+Align Value::getPointerAlignment(const DataLayout &DL) const {
   assert(getType()->isPointerTy() && "must be pointer");
-
-  unsigned Align = 0;
   if (auto *GO = dyn_cast<GlobalObject>(this)) {
-    // Don't make any assumptions about function pointer alignment. Some
-    // targets use the LSBs to store additional information.
-    if (isa<Function>(GO))
-      return 0;
-    Align = GO->getAlignment();
-    if (Align == 0) {
+    if (isa<Function>(GO)) {
+      Align FunctionPtrAlign = DL.getFunctionPtrAlign().valueOrOne();
+      switch (DL.getFunctionPtrAlignType()) {
+      case DataLayout::FunctionPtrAlignType::Independent:
+        return FunctionPtrAlign;
+      case DataLayout::FunctionPtrAlignType::MultipleOfFunctionAlign:
+        return std::max(FunctionPtrAlign, GO->getAlign().valueOrOne());
+      }
+      llvm_unreachable("Unhandled FunctionPtrAlignType");
+    }
+    const MaybeAlign Alignment(GO->getAlignment());
+    if (!Alignment) {
       if (auto *GVar = dyn_cast<GlobalVariable>(GO)) {
         Type *ObjectType = GVar->getValueType();
         if (ObjectType->isSized()) {
@@ -661,37 +772,47 @@ unsigned Value::getPointerAlignment(const DataLayout &DL) const {
           // it the preferred alignment. Otherwise, we have to assume that it
           // may only have the minimum ABI alignment.
           if (GVar->isStrongDefinitionForLinker())
-            Align = DL.getPreferredAlignment(GVar);
+            return DL.getPreferredAlign(GVar);
           else
-            Align = DL.getABITypeAlignment(ObjectType);
+            return DL.getABITypeAlign(ObjectType);
         }
       }
     }
+    return Alignment.valueOrOne();
   } else if (const Argument *A = dyn_cast<Argument>(this)) {
-    Align = A->getParamAlignment();
-
-    if (!Align && A->hasStructRetAttr()) {
+    const MaybeAlign Alignment = A->getParamAlign();
+    if (!Alignment && A->hasStructRetAttr()) {
       // An sret parameter has at least the ABI alignment of the return type.
       Type *EltTy = cast<PointerType>(A->getType())->getElementType();
       if (EltTy->isSized())
-        Align = DL.getABITypeAlignment(EltTy);
+        return DL.getABITypeAlign(EltTy);
     }
+    return Alignment.valueOrOne();
   } else if (const AllocaInst *AI = dyn_cast<AllocaInst>(this)) {
-    Align = AI->getAlignment();
-    if (Align == 0) {
-      Type *AllocatedType = AI->getAllocatedType();
-      if (AllocatedType->isSized())
-        Align = DL.getPrefTypeAlignment(AllocatedType);
-    }
-  } else if (const auto *Call = dyn_cast<CallBase>(this))
-    Align = Call->getAttributes().getRetAlignment();
-  else if (const LoadInst *LI = dyn_cast<LoadInst>(this))
+    return AI->getAlign();
+  } else if (const auto *Call = dyn_cast<CallBase>(this)) {
+    MaybeAlign Alignment = Call->getRetAlign();
+    if (!Alignment && Call->getCalledFunction())
+      Alignment = Call->getCalledFunction()->getAttributes().getRetAlignment();
+    return Alignment.valueOrOne();
+  } else if (const LoadInst *LI = dyn_cast<LoadInst>(this)) {
     if (MDNode *MD = LI->getMetadata(LLVMContext::MD_align)) {
       ConstantInt *CI = mdconst::extract<ConstantInt>(MD->getOperand(0));
-      Align = CI->getLimitedValue();
+      return Align(CI->getLimitedValue());
     }
-
-  return Align;
+  } else if (auto *CstPtr = dyn_cast<Constant>(this)) {
+    if (auto *CstInt = dyn_cast_or_null<ConstantInt>(ConstantExpr::getPtrToInt(
+            const_cast<Constant *>(CstPtr), DL.getIntPtrType(getType()),
+            /*OnlyIfReduced=*/true))) {
+      size_t TrailingZeros = CstInt->getValue().countTrailingZeros();
+      // While the actual alignment may be large, elsewhere we have
+      // an arbitrary upper alignmet limit, so let's clamp to it.
+      return Align(TrailingZeros < Value::MaxAlignmentExponent
+                       ? uint64_t(1) << TrailingZeros
+                       : Value::MaximumAlignment);
+    }
+  }
+  return Align(1);
 }
 
 const Value *Value::DoPHITranslation(const BasicBlock *CurBB,
@@ -715,12 +836,12 @@ void Value::reverseUseList() {
   while (Current) {
     Use *Next = Current->Next;
     Current->Next = Head;
-    Head->setPrev(&Current->Next);
+    Head->Prev = &Current->Next;
     Head = Current;
     Current = Next;
   }
   UseList = Head;
-  Head->setPrev(&UseList);
+  Head->Prev = &UseList;
 }
 
 bool Value::isSwiftError() const {
@@ -931,7 +1052,7 @@ void ValueHandleBase::ValueIsRAUWd(Value *Old, Value *New) {
                << Old->getName() << " to " << *New->getType() << " %"
                << New->getName() << "\n";
         llvm_unreachable(
-            "A weak tracking value handle still pointed to the  old value!\n");
+            "A weak tracking value handle still pointed to the old value!\n");
       default:
         break;
       }

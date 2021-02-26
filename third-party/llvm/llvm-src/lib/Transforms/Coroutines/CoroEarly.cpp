@@ -1,18 +1,13 @@
 //===- CoroEarly.cpp - Coroutine Early Function Pass ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
-//===----------------------------------------------------------------------===//
-// This pass lowers coroutine intrinsics that hide the details of the exact
-// calling convention for coroutine resume and destroy functions and details of
-// the structure of the coroutine frame.
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Transforms/Coroutines/CoroEarly.h"
 #include "CoroInternal.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Module.h"
@@ -23,13 +18,13 @@ using namespace llvm;
 #define DEBUG_TYPE "coro-early"
 
 namespace {
-// Created on demand if CoroEarly pass has work to do.
+// Created on demand if the coro-early pass has work to do.
 class Lowerer : public coro::LowererBase {
   IRBuilder<> Builder;
   PointerType *const AnyResumeFnPtrTy;
   Constant *NoopCoro = nullptr;
 
-  void lowerResumeOrDestroy(CallSite CS, CoroSubFnInst::ResumeKind);
+  void lowerResumeOrDestroy(CallBase &CB, CoroSubFnInst::ResumeKind);
   void lowerCoroPromise(CoroPromiseInst *Intrin);
   void lowerCoroDone(IntrinsicInst *II);
   void lowerCoroNoop(IntrinsicInst *II);
@@ -48,12 +43,11 @@ public:
 // an address returned by coro.subfn.addr intrinsic. This is done so that
 // CGPassManager recognizes devirtualization when CoroElide pass replaces a call
 // to coro.subfn.addr with an appropriate function address.
-void Lowerer::lowerResumeOrDestroy(CallSite CS,
+void Lowerer::lowerResumeOrDestroy(CallBase &CB,
                                    CoroSubFnInst::ResumeKind Index) {
-  Value *ResumeAddr =
-      makeSubFnCall(CS.getArgOperand(0), Index, CS.getInstruction());
-  CS.setCalledFunction(ResumeAddr);
-  CS.setCallingConv(CallingConv::Fast);
+  Value *ResumeAddr = makeSubFnCall(CB.getArgOperand(0), Index, &CB);
+  CB.setCalledOperand(ResumeAddr);
+  CB.setCallingConv(CallingConv::Fast);
 }
 
 // Coroutine promise field is always at the fixed offset from the beginning of
@@ -65,14 +59,14 @@ void Lowerer::lowerResumeOrDestroy(CallSite CS,
 // TODO: Handle the case when coroutine promise alloca has align override.
 void Lowerer::lowerCoroPromise(CoroPromiseInst *Intrin) {
   Value *Operand = Intrin->getArgOperand(0);
-  unsigned Alignement = Intrin->getAlignment();
+  Align Alignment = Intrin->getAlignment();
   Type *Int8Ty = Builder.getInt8Ty();
 
   auto *SampleStruct =
       StructType::get(Context, {AnyResumeFnPtrTy, AnyResumeFnPtrTy, Int8Ty});
   const DataLayout &DL = TheModule.getDataLayout();
   int64_t Offset = alignTo(
-      DL.getStructLayout(SampleStruct)->getElementOffset(2), Alignement);
+      DL.getStructLayout(SampleStruct)->getElementOffset(2), Alignment);
   if (Intrin->isFromPromise())
     Offset = -Offset;
 
@@ -92,13 +86,14 @@ void Lowerer::lowerCoroDone(IntrinsicInst *II) {
   Value *Operand = II->getArgOperand(0);
 
   // ResumeFnAddr is the first pointer sized element of the coroutine frame.
+  static_assert(coro::Shape::SwitchFieldIndex::Resume == 0,
+                "resume function not at offset zero");
   auto *FrameTy = Int8Ptr;
   PointerType *FramePtrTy = FrameTy->getPointerTo();
 
   Builder.SetInsertPoint(II);
   auto *BCI = Builder.CreateBitCast(Operand, FramePtrTy);
-  auto *Gep = Builder.CreateConstInBoundsGEP1_32(FrameTy, BCI, 0);
-  auto *Load = Builder.CreateLoad(Gep);
+  auto *Load = Builder.CreateLoad(FrameTy, BCI);
   auto *Cond = Builder.CreateICmpEQ(Load, NullPtr);
 
   II->replaceAllUsesWith(Cond);
@@ -114,7 +109,7 @@ void Lowerer::lowerCoroNoop(IntrinsicInst *II) {
     StructType *FrameTy = StructType::create(C, "NoopCoro.Frame");
     auto *FramePtrTy = FrameTy->getPointerTo();
     auto *FnTy = FunctionType::get(Type::getVoidTy(C), FramePtrTy,
-                                   /*IsVarArgs=*/false);
+                                   /*isVarArg=*/false);
     auto *FnPtrTy = FnTy->getPointerTo();
     FrameTy->setBody({FnPtrTy, FnPtrTy});
 
@@ -156,8 +151,8 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
   SmallVector<CoroFreeInst *, 4> CoroFrees;
   for (auto IB = inst_begin(F), IE = inst_end(F); IB != IE;) {
     Instruction &I = *IB++;
-    if (auto CS = CallSite(&I)) {
-      switch (CS.getIntrinsicID()) {
+    if (auto *CB = dyn_cast<CallBase>(&I)) {
+      switch (CB->getIntrinsicID()) {
       default:
         continue;
       case Intrinsic::coro_free:
@@ -167,13 +162,13 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
         // Make sure that final suspend point is not duplicated as CoroSplit
         // pass expects that there is at most one final suspend point.
         if (cast<CoroSuspendInst>(&I)->isFinal())
-          CS.setCannotDuplicate();
+          CB->setCannotDuplicate();
         break;
       case Intrinsic::coro_end:
         // Make sure that fallthrough coro.end is not duplicated as CoroSplit
         // pass expects that there is at most one fallthrough coro.end.
         if (cast<CoroEndInst>(&I)->isFallthrough())
-          CS.setCannotDuplicate();
+          CB->setCannotDuplicate();
         break;
       case Intrinsic::coro_noop:
         lowerCoroNoop(cast<IntrinsicInst>(&I));
@@ -190,11 +185,15 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
           }
         }
         break;
+      case Intrinsic::coro_id_retcon:
+      case Intrinsic::coro_id_retcon_once:
+        F.addFnAttr(CORO_PRESPLIT_ATTR, PREPARED_FOR_SPLIT);
+        break;
       case Intrinsic::coro_resume:
-        lowerResumeOrDestroy(CS, CoroSubFnInst::ResumeIndex);
+        lowerResumeOrDestroy(*CB, CoroSubFnInst::ResumeIndex);
         break;
       case Intrinsic::coro_destroy:
-        lowerResumeOrDestroy(CS, CoroSubFnInst::DestroyIndex);
+        lowerResumeOrDestroy(*CB, CoroSubFnInst::DestroyIndex);
         break;
       case Intrinsic::coro_promise:
         lowerCoroPromise(cast<CoroPromiseInst>(&I));
@@ -215,16 +214,30 @@ bool Lowerer::lowerEarlyIntrinsics(Function &F) {
   return Changed;
 }
 
-//===----------------------------------------------------------------------===//
-//                              Top Level Driver
-//===----------------------------------------------------------------------===//
+static bool declaresCoroEarlyIntrinsics(const Module &M) {
+  return coro::declaresIntrinsics(
+      M, {"llvm.coro.id", "llvm.coro.id.retcon", "llvm.coro.id.retcon.once",
+          "llvm.coro.destroy", "llvm.coro.done", "llvm.coro.end",
+          "llvm.coro.noop", "llvm.coro.free", "llvm.coro.promise",
+          "llvm.coro.resume", "llvm.coro.suspend"});
+}
+
+PreservedAnalyses CoroEarlyPass::run(Function &F, FunctionAnalysisManager &) {
+  Module &M = *F.getParent();
+  if (!declaresCoroEarlyIntrinsics(M) || !Lowerer(M).lowerEarlyIntrinsics(F))
+    return PreservedAnalyses::all();
+
+  PreservedAnalyses PA;
+  PA.preserveSet<CFGAnalyses>();
+  return PA;
+}
 
 namespace {
 
-struct CoroEarly : public FunctionPass {
+struct CoroEarlyLegacy : public FunctionPass {
   static char ID; // Pass identification, replacement for typeid.
-  CoroEarly() : FunctionPass(ID) {
-    initializeCoroEarlyPass(*PassRegistry::getPassRegistry());
+  CoroEarlyLegacy() : FunctionPass(ID) {
+    initializeCoroEarlyLegacyPass(*PassRegistry::getPassRegistry());
   }
 
   std::unique_ptr<Lowerer> L;
@@ -232,11 +245,8 @@ struct CoroEarly : public FunctionPass {
   // This pass has work to do only if we find intrinsics we are going to lower
   // in the module.
   bool doInitialization(Module &M) override {
-    if (coro::declaresIntrinsics(
-            M, {"llvm.coro.id", "llvm.coro.destroy", "llvm.coro.done",
-                "llvm.coro.end", "llvm.coro.noop", "llvm.coro.free",
-                "llvm.coro.promise", "llvm.coro.resume", "llvm.coro.suspend"}))
-      L = llvm::make_unique<Lowerer>(M);
+    if (declaresCoroEarlyIntrinsics(M))
+      L = std::make_unique<Lowerer>(M);
     return false;
   }
 
@@ -256,8 +266,8 @@ struct CoroEarly : public FunctionPass {
 };
 }
 
-char CoroEarly::ID = 0;
-INITIALIZE_PASS(CoroEarly, "coro-early", "Lower early coroutine intrinsics",
-                false, false)
+char CoroEarlyLegacy::ID = 0;
+INITIALIZE_PASS(CoroEarlyLegacy, "coro-early",
+                "Lower early coroutine intrinsics", false, false)
 
-Pass *llvm::createCoroEarlyPass() { return new CoroEarly(); }
+Pass *llvm::createCoroEarlyLegacyPass() { return new CoroEarlyLegacy(); }

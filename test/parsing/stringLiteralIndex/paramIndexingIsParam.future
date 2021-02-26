@@ -1,0 +1,2 @@
+feature request: Indexing a param string/bytes with a param int should return a param
+#16895

@@ -1,9 +1,8 @@
 //===- RegisterClassInfo.cpp - Dynamic Register Class Info ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -60,7 +59,7 @@ void RegisterClassInfo::runOnMachineFunction(const MachineFunction &mf) {
   if (Update || CSR != CalleeSavedRegs) {
     // Build a CSRAlias map. Every CSR alias saves the last
     // overlapping CSR.
-    CalleeSavedAliases.resize(TRI->getNumRegs(), 0);
+    CalleeSavedAliases.assign(TRI->getNumRegs(), 0);
     for (const MCPhysReg *I = CSR; *I; ++I)
       for (MCRegAliasIterator AI(*I, TRI, true); AI.isValid(); ++AI)
         CalleeSavedAliases[*AI] = *I;
@@ -91,6 +90,7 @@ void RegisterClassInfo::runOnMachineFunction(const MachineFunction &mf) {
 void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
   assert(RC && "no register class given");
   RCInfo &RCI = RegClass[RC->getID()];
+  auto &STI = MF->getSubtarget();
 
   // Raw register count, including all reserved regs.
   unsigned NumRegs = RC->getNumRegs();
@@ -115,7 +115,8 @@ void RegisterClassInfo::compute(const TargetRegisterClass *RC) const {
     unsigned Cost = TRI->getCostPerUse(PhysReg);
     MinCost = std::min(MinCost, Cost);
 
-    if (CalleeSavedAliases[PhysReg])
+    if (CalleeSavedAliases[PhysReg] &&
+        !STI.ignoreCSRForAllocationOrder(*MF, PhysReg))
       // PhysReg aliases a CSR, save it for later.
       CSRAlias.push_back(PhysReg);
     else {
@@ -185,6 +186,7 @@ unsigned RegisterClassInfo::computePSetLimit(unsigned Idx) const {
       NumRCUnits = NUnits;
     }
   }
+  assert(RC && "Failed to find register class");
   compute(RC);
   unsigned NReserved = RC->getNumRegs() - getNumAllocatableRegs(RC);
   return TRI->getRegPressureSetLimit(*MF, Idx) -

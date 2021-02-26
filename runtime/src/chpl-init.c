@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -94,19 +94,38 @@ static void recordExecutionCommand(int argc, char *argv[]) {
 // code.  The call on non-0 locales is made from chpl_main(), above.
 //
 void chpl_rt_preUserCodeHook(void) {
-  chpl_comm_barrier("pre-user-code hook begin");
-
+  //
+  // The module initialization functions have all completed on each
+  // node, locally, before we are called. 
+  //
+  // The module init code can leave the running task counts incorrect.
+  // Once module init is complete, we can set those counts to the right
+  // values on all nodes: 1 on node 0 for the program itself, and 0 on
+  // all other nodes.  We have to barrier first because on-stmts during
+  // module init can change the running task count on any node.
+  //
+  chpl_comm_barrier("pre-user-code hook: init done");
   chpl_taskRunningCntReset(0, 0);
   if (chpl_nodeID == 0) {
     chpl_taskRunningCntInc(0, 0);
   }
 
   //
-  // Set up any memory tracking requested.
+  // We don't want to track memory during the module init phase, but we
+  // do want to track it in the user code, so we set up memory tracking
+  // now.  This will cause on-stmts from non-zero nodes back to node 0,
+  // which will adjust the running task count, so we have to do another
+  // barrier to make sure the task counts are stable before doing it.
   //
+  chpl_comm_barrier("pre-user-code hook: task counts stable");
   chpl_setMemFlags();
 
-  chpl_comm_barrier("pre-user-code hook end");
+  //
+  // Finally, we have to do a third barrier to make sure all the nodes
+  // have set up memory tracking (if needed) before node 0 enters the
+  // user code and execution starts spreading around the nodes.
+  //
+  chpl_comm_barrier("pre-user-code hook: mem tracking inited");
 }
 
 
@@ -296,6 +315,10 @@ void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
   deinitFn();
 }
 
+// These are currently defined in 'modules/internal/ExportWrappers.chpl'.
+void chpl_libraryModuleLevelSetup(void);
+void chpl_libraryModuleLevelCleanup(void);
+
 //
 // A program using Chapel as a library might look like:
 //
@@ -315,8 +338,12 @@ void chpl_execute_module_deinit(c_fn_ptr deinitFun) {
 // }
 //
 void chpl_library_init(int argc, char* argv[]) {
-    chpl_rt_init(argc, argv);                   // Initialize the runtime
+  chpl_rt_init(argc, argv);                     // Initialize the runtime
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
+  chpl_libraryModuleLevelSetup();
+
+  // @dlongnecke-cray, 11/16/2020 
+  // TODO: Call chpl_rt_preUserCodeHook() here for Locale[0]?
 }
 
 // Defined in modules/internal/ChapelUtil.chpl.  Used to clean up any modules
@@ -327,6 +354,7 @@ extern void chpl_deinitModules(void);
 // A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is 
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
+  chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
   chpl_rt_finalize(0);
 }

@@ -1,0 +1,2 @@
+sortSparse.chpl:3: In function 'main':
+sortSparse.chpl:14: error: sort() is currently only supported for 1D rectangular arrays

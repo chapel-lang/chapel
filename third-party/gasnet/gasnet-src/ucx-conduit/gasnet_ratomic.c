@@ -1,6 +1,6 @@
 /*   $Source: bitbucket.org:berkeleylab/gasnet.git/ucx-conduit/gasnet_ratomic.c $
  * Description: GASNet Remote Atomics API Header (forward decls)
- * Copyright 2019, Mellanox Technologies, Inc. All rights reserved.
+ * Copyright 2019-2020, Mellanox Technologies, Inc. All rights reserved.
  * Terms of use are as specified in license.txt
  */
 
@@ -55,7 +55,7 @@ ucp_atomic_fetch_op_t amo_fetch_op_map_gex_dt_I32(gasneti_op_idx_t op_idx) {
 }
 
 GASNETI_INLINE(amo_post_op_map_gex_dt_I32)
-ucp_atomic_fetch_op_t amo_post_op_map_gex_dt_I32(gasneti_op_idx_t op_idx) {
+ucp_atomic_post_op_t amo_post_op_map_gex_dt_I32(gasneti_op_idx_t op_idx) {
   switch (op_idx) {
     case gasneti_op_idx_ADD:    return UCP_ATOMIC_POST_OP_ADD;
     case gasneti_op_idx_SUB:    return UCP_ATOMIC_POST_OP_ADD;
@@ -210,7 +210,7 @@ int gasnete_ratomic_fetch_nbi(const int length, void *result_p,
 GASNETI_INLINE(gasnete_ratomic_post_inner)
 int gasnete_ratomic_post_inner(const int length,
                                 gasneti_TM_t i_tm, gex_Rank_t tgt_rank,
-                                void *tgt_addr, ucp_atomic_fetch_op_t op,
+                                void *tgt_addr, ucp_atomic_post_op_t op,
                                 uint64_t operand, gasnetc_atomic_val_t *cnt,
                                 gasnetc_cbfunc_t cbfunc, gex_Flags_t flags)
 {
@@ -251,7 +251,7 @@ int gasnete_ratomic_post_inner(const int length,
 GASNETI_INLINE(gasnete_ratomic_post_nb)
 gex_Event_t gasnete_ratomic_post_nb(const int length,
                                     gasneti_TM_t i_tm, gex_Rank_t tgt_rank,
-                                    void *tgt_addr, ucp_atomic_fetch_op_t op,
+                                    void *tgt_addr, ucp_atomic_post_op_t op,
                                     uint64_t operand,
                                     gex_Flags_t flags GASNETI_THREAD_FARG)
 {
@@ -269,7 +269,7 @@ gex_Event_t gasnete_ratomic_post_nb(const int length,
 GASNETI_INLINE(gasnete_ratomic_post_nbi)
 int gasnete_ratomic_post_nbi(const int length,
                              gasneti_TM_t i_tm, gex_Rank_t tgt_rank,
-                             void *tgt_addr, ucp_atomic_fetch_op_t op,
+                             void *tgt_addr, ucp_atomic_post_op_t op,
                              uint64_t operand,
                              gex_Flags_t flags GASNETI_THREAD_FARG)
 {

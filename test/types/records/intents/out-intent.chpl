@@ -120,6 +120,8 @@ proc test5() {
 test5();
 
 proc outGenericArray1(out arr) {
+  var tmp:[1..1] R;
+  arr = tmp; // init arr so we can query its domain
   writeln(arr.domain);
 }
 
@@ -141,8 +143,7 @@ proc test6a() {
 test6a();
 
 proc outGenericArray2(out arr) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -155,9 +156,10 @@ proc test7() {
 test7();
 
 proc outGenericArray2a(out arr) {
-  writeln(arr.domain, " ", arr); // preventing split-init
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var A:[1..1] R;
+  arr = A; // 1st initialization to establish type
+
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -170,6 +172,8 @@ proc test7a() {
 test7a();
 
 proc outPartialArray1(out arr:[] R) {
+  var A:[1..1] R;
+  arr = A; // must establish type
 }
 
 proc test8() {
@@ -181,8 +185,7 @@ proc test8() {
 test8();
 
 proc outPartialArray2(out arr:[] R) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -216,8 +219,7 @@ proc test10b() {
 test10b();
 
 proc outConcreteArray2(out arr:[1..1] R) {
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 
@@ -231,8 +233,7 @@ test11();
 
 proc outConcreteArray2a(out arr:[1..1] R) {
   writeln(arr.domain, " ", arr); // preventing split init
-  var B:[1..1] R;
-  B[1] = makeR(1);
+  var B:[1..1] R = for i in 1..1 do makeR(i);
   arr = B;
 }
 

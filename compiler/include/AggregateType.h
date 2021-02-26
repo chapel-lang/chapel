@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -42,27 +42,29 @@ enum AggregateResolved {
   RESOLVED
 };
 
-class AggregateType : public Type {
+class AggregateType final : public Type {
 public:
   static void                 setCreationStyle(TypeSymbol* t, FnSymbol* fn);
 
 public:
                               AggregateType(AggregateTag initTag);
-                             ~AggregateType();
+                             ~AggregateType() override;
 
   DECLARE_COPY(AggregateType);
+  AggregateType*      copyInner(SymbolMap* map) override;
 
-  virtual void                replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void                replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
-  virtual void                verify();
+  void                verify() override;
 
-  virtual void                accept(AstVisitor* visitor);
+  void                accept(AstVisitor* visitor) override;
 
-  virtual void                printDocs(std::ostream* file, unsigned int tabs);
+  void                printDocs(std::ostream* file, unsigned int tabs);
 
   bool                        isClass()                                  const;
   bool                        isRecord()                                 const;
   bool                        isUnion()                                  const;
+  const char*                 aggregateString()                          const;
 
   // is it a generic type (e.g. contains a type field with or without default)
   // e.g. this would return true for
@@ -89,7 +91,7 @@ public:
   Symbol*                     getField(int i)                            const;
 
   Symbol*                     getField(const char* name,
-                                       bool        fatal = true)         const;
+                                       bool        fatal = true) const override;
 
   int                         getFieldPosition(const char* name,
                                                bool        fatal = true);
@@ -105,9 +107,9 @@ public:
 
   bool                        mayHaveInstances()                         const;
 
-  void                        codegenDef();
+  void                        codegenDef() override;
 
-  void                        codegenPrototype();
+  void                        codegenPrototype() override;
 
   GenRet                      codegenClassStructType();
 
@@ -155,7 +157,7 @@ public:
 
   void                        buildCopyInitializer();
 
-  Symbol*                     getSubstitution(const char* name);
+  Symbol*                     getSubstitution(const char* name)          const;
 
   Type*                       getDecoratedClass(ClassTypeDecorator d);
 
@@ -228,7 +230,7 @@ private:
                                                  Vec<const char*>& names) const;
 
 private:
-  virtual std::string         docsDirective();
+  std::string                 docsDirective();
 
   std::string                 docsSuperClass();
 
@@ -240,9 +242,6 @@ private:
   void                        renameInstantiation();
 
   AggregateType*              instantiationWithParent(AggregateType* parent, Expr* insnPoint = NULL);
-
-  Symbol*                     substitutionForField(Symbol*    field,
-                                                   SymbolMap& subs)      const;
 
   AggregateType*              getCurInstantiation(Symbol* sym, Type* symType);
 

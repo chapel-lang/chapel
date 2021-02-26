@@ -1,4 +1,4 @@
-use BlockDist, HDF5, FileSystem;
+use BlockDist, HDF5, FileSystem, Hdf5PathHelp;
 
 record MyRec {
   var D: domain(1);
@@ -22,12 +22,15 @@ config const cleanupFiles = true;
 
 // This directory will be created and removed. Since it will be removed
 // don't allow setting it via 'config'.
-const hdf5Dir = "hdf5_dir";
+var hdf5Dir = "hdf5_dir";
 
 proc main {
   var Space = {1..nFiles};
   var BlockSpace = Space dmapped Block(Space, Locales, dataParTasksPerLocale=1);
   var data: [BlockSpace] MyRec;
+  const pathPrefix = readPrefixEnv();
+
+  hdf5Dir = pathPrefix + hdf5Dir;
 
   // create the directory hdf5Dir
   if !exists(hdf5Dir) then

@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Unions:
 
 Unions
@@ -35,7 +37,7 @@ A union is defined with the following syntax:
 .. code-block:: syntax
 
    union-declaration-statement:
-     `extern'[OPT] `union' identifier { union-statement-list }
+     'extern'[OPT] 'union' identifier { union-statement-list }
 
    union-statement-list:
      union-statement

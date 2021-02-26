@@ -939,7 +939,7 @@ void gasnetc_rcv_am(const struct ibv_wc *comp, gasnetc_rbuf_t **spare_p GASNETI_
   gasnetc_rbuf_t *spare;
   const int isrep = GASNETC_MSG_ISREPLY(flags);
 
-  GASNETC_STAT_EVENT(RCV_AM_SNDRCV);
+  GASNETC_STAT_EVENT(RCV_AM);
 
 #if GASNETC_IBV_SRQ
   if (gasnetc_use_srq) {
@@ -1002,10 +1002,8 @@ void gasnetc_rcv_am(const struct ibv_wc *comp, gasnetc_rbuf_t **spare_p GASNETI_
       gasnetc_buffer_t *buf = gasneti_malloc(sizeof(gasnetc_buffer_t));
       GASNETI_MEMCPY(buf, (void *)(uintptr_t)rbuf->rr_sg.addr, sizeof(gasnetc_buffer_t));
       emergency_spare.rr_sg.addr = (uintptr_t)buf;
-      emergency_spare.rr_is_rdma = 0;
       emergency_spare.rr_ep = rbuf->rr_ep;
       emergency_spare.cep = rbuf->cep;
-      gasneti_assert(rbuf->rr_is_rdma == 0);
   
       gasnetc_rcv_post(cep, rbuf);
 
@@ -2009,7 +2007,7 @@ static void gasnetc_fh_do_put(gasnetc_sreq_t *sreq GASNETI_THREAD_FARG) {
 }
 
 #define gasnetc_sreq_is_ready(sreq) \
-  gasnetc_atomic_decrement_and_test(&((sreq)->fh_ready), GASNETI_ATOMIC_REL)
+  gasnetc_atomic_decrement_and_test(&((sreq)->fh_ready), GASNETI_ATOMIC_REL|GASNETI_ATOMIC_ACQ)
 
 static void gasnetc_fh_put_cb(void *context, const firehose_request_t *fh_rem, int allLocalHit) {
   gasnetc_sreq_t *sreq = context;
@@ -2647,7 +2645,6 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
       gasnetc_lifo_init(&hca->rbuf_freelist);
       rbuf = hca->rbufs;
       for (i = 0; i < rcv_count; ++i) {
-        rbuf->rr_is_rdma         = 0;
         rbuf->rr_desc.num_sge    = 1;
         rbuf->rr_desc.sg_list    = &rbuf->rr_sg;
         rbuf->rr_desc.wr_id      = (uintptr_t)rbuf;	/* CQE will point back to this request */
@@ -2923,7 +2920,6 @@ gasnetc_sndrcv_quiesce(void) {
       gex_Rank_t peer = (distance <= gasneti_mynode) ? gasneti_mynode - distance
                                                         : gasneti_mynode + (gasneti_nodes - distance);
       if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(peer)) {
-        /* BLCR-TODO: this might be a problem between init and attach? */
         gex_AM_RequestShort0(gasneti_THUNK_TM, peer, gasneti_handleridx(gasnetc_sys_close_reqh), 0);
       } else {
         static gasnetc_counter_t dummy = GASNETC_COUNTER_INITIALIZER; /* So PFs don't run */
@@ -3099,7 +3095,7 @@ extern int gasnetc_rdma_put(
   // TODO-EX:
   //     All uses of rem_auxseg are a temporary hack
   //     This will be replaced by general multi-registration support later
-  const int rem_auxseg = gasneti_in_auxsegment(tm, rank, dst_ptr, nbytes);
+  const int rem_auxseg = gasneti_in_auxsegment(jobrank, dst_ptr, nbytes);
 
   gasneti_assert(nbytes != 0);
   
@@ -3130,12 +3126,13 @@ extern int gasnetc_rdma_put(
     // Because IB lacks native indication of local completion (LC), the only ways to
     // detect LC are to wait for RC, or use bounce buffers to achieve synchronous LC.
     // So, use bounce buffers for a non-bulk put if "not too large".
-    // Also use bounce buffers if (firehose disabled and src is unpinned) OR zero copy fails
+    // Also use bounce buffers if (firehose disabled AND src is in neither the client
+    // nor aux segment) OR zero copy fails such as for read-only memory (bug 3338).
     size_t to_xfer = nbytes;
     if ((nbytes <= gasnetc_bounce_limit) ||
         (!GASNETC_USE_FIREHOSE &&
-         !gasnetc_in_bound_segment(ep, sr_desc_sg_lst[0].addr, sr_desc_sg_lst[0].length) &&
-         !rem_auxseg) ||
+         !gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes) &&
+         !gasneti_in_local_auxsegment((gasneti_EP_t)ep, src_ptr, nbytes)) ||
         ((to_xfer = gasnetc_do_put_zerocp(ep, jobrank, rem_auxseg, sr_desc, nbytes,
                                          local_cnt, local_cb GASNETI_THREAD_PASS)))) {
       gasnetc_do_put_bounce(ep, jobrank, rem_auxseg, sr_desc, to_xfer,
@@ -3144,11 +3141,12 @@ extern int gasnetc_rdma_put(
 
     if (bias_local_cnt) local_cb(local_cnt);
   } else {
-    // Use bounce buffers if (firehose disabled and src is unpinned) OR zero copy fails
+    // Use bounce buffers if (firehose disabled AND src is in neither the client
+    // nor aux segment) OR zero copy fails such as for read-only memory (bug 3338).
     size_t to_xfer = nbytes;
     if ((!GASNETC_USE_FIREHOSE &&
-         !gasnetc_in_bound_segment(ep, sr_desc_sg_lst[0].addr, sr_desc_sg_lst[0].length) &&
-         !rem_auxseg) ||
+         !gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes) &&
+         !gasneti_in_local_auxsegment((gasneti_EP_t)ep, src_ptr, nbytes)) ||
         ((to_xfer = gasnetc_do_put_zerocp(ep, jobrank, rem_auxseg, sr_desc, nbytes,
                                           remote_cnt, remote_cb GASNETI_THREAD_PASS)))) {
       gasnetc_do_put_bounce(ep, jobrank, rem_auxseg, sr_desc, to_xfer,
@@ -3181,9 +3179,7 @@ extern int gasnetc_rdma_long_put(
   // TODO-EX:
   //     All uses of rem_auxseg are a temporary hack
   //     This will be replaced by general multi-registration support later
-  //     XXX: this use is particularly problematic since in a Reply we don't
-  //     anticipate having a TM for the sender (which may not be in THUNK_TM).
-  const int rem_auxseg = gasneti_in_auxsegment(/*tm*/NULL, gasnetc_epid2node(epid), dst_ptr, nbytes);
+  const int rem_auxseg = gasneti_in_auxsegment(gasnetc_epid2node(epid), dst_ptr, nbytes);
 
   gasneti_assert(nbytes != 0);
   
@@ -3197,12 +3193,13 @@ extern int gasnetc_rdma_long_put(
   // Because IB lacks native indication of local completion (LC), the only ways to
   // detect LC are to wait for RC, or use bounce buffers to achieve synchronous LC.
   // So, use bounce buffers for if "not too large".
-  // Also use bounce buffers if (firehose disabled and src is unpinned) OR zero copy fails
+  // Also use bounce buffers if (firehose disabled AND src is in neither the client
+  // nor aux segment) OR zero copy fails such as for read-only memory (bug 3338).
   size_t to_xfer = nbytes;
   if ((nbytes <= gasnetc_bounce_limit) ||
       (!GASNETC_USE_FIREHOSE &&
-       !gasnetc_in_bound_segment(ep, sr_desc_sg_lst[0].addr, sr_desc_sg_lst[0].length) &&
-       !rem_auxseg) ||
+       !gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes) &&
+       !gasneti_in_local_auxsegment((gasneti_EP_t)ep, src_ptr, nbytes)) ||
       ((to_xfer = gasnetc_do_put_zerocp(ep, epid, rem_auxseg, sr_desc, nbytes,
                                         local_cnt, local_cb GASNETI_THREAD_PASS)))) {
     gasnetc_do_put_bounce(ep, epid, rem_auxseg, sr_desc, to_xfer,
@@ -3237,10 +3234,9 @@ extern int gasnetc_rdma_get(
   GASNETC_DECL_SR_DESC(sr_desc, GASNETC_SND_SG);
 
   // TODO-EX:
-  //     All uses of {loc,rem_}auxseg are a temporary hack
+  //     All uses of rem_auxseg are a temporary hack
   //     This will be replaced by general multi-registration support later
-  const int loc_auxseg = gasneti_in_local_auxsegment((gasneti_EP_t)ep, dst_ptr, nbytes);
-  const int rem_auxseg = gasneti_in_auxsegment(tm, rank, src_ptr, nbytes);
+  const int rem_auxseg = gasneti_in_auxsegment(jobrank, src_ptr, nbytes);
 
   gasneti_assert(nbytes != 0);
   gasneti_assert(remote_cnt != NULL);
@@ -3251,8 +3247,8 @@ extern int gasnetc_rdma_get(
   sr_desc_sg_lst[0].addr = (uintptr_t)dst_ptr;
 
   if (!GASNETC_USE_FIREHOSE &&
-      !gasnetc_in_bound_segment(ep, sr_desc_sg_lst[0].addr, sr_desc_sg_lst[0].length) &&
-      !loc_auxseg) {
+      !gasnetc_in_bound_segment(ep, (uintptr_t)dst_ptr, nbytes) &&
+      !gasneti_in_local_auxsegment((gasneti_EP_t)ep, dst_ptr, nbytes)) {
     /* Firehose disabled.  Use bounce buffers since dst_ptr is out-of-segment */
     gasnetc_do_get_bounce(ep, jobrank, rem_auxseg, sr_desc, nbytes, remote_cnt, remote_cb GASNETI_THREAD_PASS);
   } else {

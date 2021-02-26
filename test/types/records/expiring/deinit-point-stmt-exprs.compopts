@@ -1,1 +1,2 @@
 --no-warnings
+# avoid warning: scan has been serialized

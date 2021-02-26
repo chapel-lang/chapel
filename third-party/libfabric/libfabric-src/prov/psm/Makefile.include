@@ -1,0 +1,46 @@
+if HAVE_PSM
+_psm_files = \
+	prov/psm/src/version.h \
+	prov/psm/src/psm_am.h \
+	prov/psm/src/psmx.h \
+	prov/psm/src/psmx_init.c \
+	prov/psm/src/psmx_fabric.c \
+	prov/psm/src/psmx_domain.c \
+	prov/psm/src/psmx_cq.c \
+	prov/psm/src/psmx_cntr.c \
+	prov/psm/src/psmx_av.c \
+	prov/psm/src/psmx_ep.c \
+	prov/psm/src/psmx_cm.c \
+	prov/psm/src/psmx_tagged.c \
+	prov/psm/src/psmx_msg.c \
+	prov/psm/src/psmx_msg2.c \
+	prov/psm/src/psmx_rma.c \
+	prov/psm/src/psmx_atomic.c \
+	prov/psm/src/psmx_am.c \
+	prov/psm/src/psmx_mr.c \
+	prov/psm/src/psmx_wait.c \
+	prov/psm/src/psmx_util.c
+
+if HAVE_PSM_DL
+pkglib_LTLIBRARIES += libpsmx-fi.la
+libpsmx_fi_la_SOURCES = $(_psm_files) $(common_srcs)
+libpsmx_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(psm_CPPFLAGS)
+libpsmx_fi_la_LDFLAGS = \
+    -module -avoid-version -shared -export-dynamic $(psm_LDFLAGS)
+libpsmx_fi_la_LIBADD = $(linkback) $(psm_LIBS)
+libpsmx_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_PSM_DL
+noinst_LTLIBRARIES += libpsmx.la
+libpsmx_la_SOURCES = $(_psm_files)
+libpsmx_la_CPPFLAGS = $(src_libfabric_la_CPPFLAGS) $(psm_CPPFLAGS)
+libpsmx_la_LDFLAGS = $(psm_LDFLAGS)
+libpsmx_la_LIBADD = $(psm_LIBS)
+src_libfabric_la_LIBADD += libpsmx.la
+src_libfabric_la_DEPENDENCIES += libpsmx.la
+endif !HAVE_PSM_DL
+
+prov_install_man_pages += man/man7/fi_psm.7
+
+endif HAVE_PSM
+
+prov_dist_man_pages += man/man7/fi_psm.7

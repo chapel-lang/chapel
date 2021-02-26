@@ -1,6 +1,6 @@
 param size = 5;
 
-extern proc printem(x:size*uint(8), n:int(32));
+extern proc printem(const ref x:size*uint(8), n:int(32));
 
 var t:size*uint(8);
 for param i in 0..size-1 {

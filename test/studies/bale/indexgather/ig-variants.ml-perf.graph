@@ -1,9 +1,11 @@
 perfkeys: compiler-directIndexLocal MB/s:, compiler-directIndex MB/s:, compiler-zipArray MB/s:, compiler-promotion MB/s:
+graphkeys: directIndexLocal, directIndex, zipArray, promotion
 repeat-files: bale-ig-variants.dat
 graphtitle: Bale: Indexgather Compiler-Opt Variants Perf (MB/s per node)
 ylabel: Performance (MB/s per node)
 
 perfkeys:explicit-directIndexLocal MB/s:, explicit-directIndex MB/s:, explicit-zipArray MB/s:, explicit-promotion MB/s:
+graphkeys: directIndexLocal, directIndex, zipArray, promotion
 repeat-files: bale-ig-variants.dat
 graphtitle: Bale: Indexgather Explicit-Opt Variants Perf (MB/s per node)
 ylabel: Performance (MB/s per node)

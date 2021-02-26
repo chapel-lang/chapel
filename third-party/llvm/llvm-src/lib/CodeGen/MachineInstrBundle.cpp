@@ -1,9 +1,8 @@
 //===-- lib/CodeGen/MachineInstrBundle.cpp --------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,6 +15,7 @@
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Target/TargetMachine.h"
 #include <utility>
 using namespace llvm;
@@ -136,14 +136,14 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
       BuildMI(MF, getDebugLoc(FirstMI, LastMI), TII->get(TargetOpcode::BUNDLE));
   Bundle.prepend(MIB);
 
-  SmallVector<unsigned, 32> LocalDefs;
-  SmallSet<unsigned, 32> LocalDefSet;
-  SmallSet<unsigned, 8> DeadDefSet;
-  SmallSet<unsigned, 16> KilledDefSet;
-  SmallVector<unsigned, 8> ExternUses;
-  SmallSet<unsigned, 8> ExternUseSet;
-  SmallSet<unsigned, 8> KilledUseSet;
-  SmallSet<unsigned, 8> UndefUseSet;
+  SmallVector<Register, 32> LocalDefs;
+  SmallSet<Register, 32> LocalDefSet;
+  SmallSet<Register, 8> DeadDefSet;
+  SmallSet<Register, 16> KilledDefSet;
+  SmallVector<Register, 8> ExternUses;
+  SmallSet<Register, 8> ExternUseSet;
+  SmallSet<Register, 8> KilledUseSet;
+  SmallSet<Register, 8> UndefUseSet;
   SmallVector<MachineOperand*, 4> Defs;
   for (auto MII = FirstMI; MII != LastMI; ++MII) {
     for (unsigned i = 0, e = MII->getNumOperands(); i != e; ++i) {
@@ -155,10 +155,10 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
         continue;
       }
 
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
       if (!Reg)
         continue;
-      assert(TargetRegisterInfo::isPhysicalRegister(Reg));
+
       if (LocalDefSet.count(Reg)) {
         MO.setIsInternalRead();
         if (MO.isKill())
@@ -178,7 +178,7 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
 
     for (unsigned i = 0, e = Defs.size(); i != e; ++i) {
       MachineOperand &MO = *Defs[i];
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
       if (!Reg)
         continue;
 
@@ -195,7 +195,7 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
           DeadDefSet.erase(Reg);
       }
 
-      if (!MO.isDead()) {
+      if (!MO.isDead() && Register::isPhysicalRegister(Reg)) {
         for (MCSubRegIterator SubRegs(Reg, TRI); SubRegs.isValid(); ++SubRegs) {
           unsigned SubReg = *SubRegs;
           if (LocalDefSet.insert(SubReg).second)
@@ -207,9 +207,9 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
     Defs.clear();
   }
 
-  SmallSet<unsigned, 32> Added;
+  SmallSet<Register, 32> Added;
   for (unsigned i = 0, e = LocalDefs.size(); i != e; ++i) {
-    unsigned Reg = LocalDefs[i];
+    Register Reg = LocalDefs[i];
     if (Added.insert(Reg).second) {
       // If it's not live beyond end of the bundle, mark it dead.
       bool isDead = DeadDefSet.count(Reg) || KilledDefSet.count(Reg);
@@ -219,7 +219,7 @@ void llvm::finalizeBundle(MachineBasicBlock &MBB,
   }
 
   for (unsigned i = 0, e = ExternUses.size(); i != e; ++i) {
-    unsigned Reg = ExternUses[i];
+    Register Reg = ExternUses[i];
     bool isKill = KilledUseSet.count(Reg);
     bool isUndef = UndefUseSet.count(Reg);
     MIB.addReg(Reg, getKillRegState(isKill) | getUndefRegState(isUndef) |
@@ -278,22 +278,18 @@ bool llvm::finalizeBundles(MachineFunction &MF) {
   return Changed;
 }
 
-//===----------------------------------------------------------------------===//
-// MachineOperand iterator
-//===----------------------------------------------------------------------===//
-
-MachineOperandIteratorBase::VirtRegInfo
-MachineOperandIteratorBase::analyzeVirtReg(unsigned Reg,
-                    SmallVectorImpl<std::pair<MachineInstr*, unsigned> > *Ops) {
-  VirtRegInfo RI = { false, false, false };
-  for(; isValid(); ++*this) {
-    MachineOperand &MO = deref();
+VirtRegInfo llvm::AnalyzeVirtRegInBundle(
+    MachineInstr &MI, Register Reg,
+    SmallVectorImpl<std::pair<MachineInstr *, unsigned>> *Ops) {
+  VirtRegInfo RI = {false, false, false};
+  for (MIBundleOperands O(MI); O.isValid(); ++O) {
+    MachineOperand &MO = *O;
     if (!MO.isReg() || MO.getReg() != Reg)
       continue;
 
     // Remember each (MI, OpNo) that refers to Reg.
     if (Ops)
-      Ops->push_back(std::make_pair(MO.getParent(), getOperandNo()));
+      Ops->push_back(std::make_pair(MO.getParent(), O.getOperandNo()));
 
     // Both defs and uses can read virtual registers.
     if (MO.readsReg()) {
@@ -305,22 +301,21 @@ MachineOperandIteratorBase::analyzeVirtReg(unsigned Reg,
     // Only defs can write.
     if (MO.isDef())
       RI.Writes = true;
-    else if (!RI.Tied && MO.getParent()->isRegTiedToDefOperand(getOperandNo()))
+    else if (!RI.Tied &&
+             MO.getParent()->isRegTiedToDefOperand(O.getOperandNo()))
       RI.Tied = true;
   }
   return RI;
 }
 
-MachineOperandIteratorBase::PhysRegInfo
-MachineOperandIteratorBase::analyzePhysReg(unsigned Reg,
-                                           const TargetRegisterInfo *TRI) {
+PhysRegInfo llvm::AnalyzePhysRegInBundle(const MachineInstr &MI, Register Reg,
+                                         const TargetRegisterInfo *TRI) {
   bool AllDefsDead = true;
   PhysRegInfo PRI = {false, false, false, false, false, false, false, false};
 
-  assert(TargetRegisterInfo::isPhysicalRegister(Reg) &&
-         "analyzePhysReg not given a physical register!");
-  for (; isValid(); ++*this) {
-    MachineOperand &MO = deref();
+  assert(Reg.isPhysical() && "analyzePhysReg not given a physical register!");
+  for (ConstMIBundleOperands O(MI); O.isValid(); ++O) {
+    const MachineOperand &MO = *O;
 
     if (MO.isRegMask() && MO.clobbersPhysReg(Reg)) {
       PRI.Clobbered = true;
@@ -330,8 +325,8 @@ MachineOperandIteratorBase::analyzePhysReg(unsigned Reg,
     if (!MO.isReg())
       continue;
 
-    unsigned MOReg = MO.getReg();
-    if (!MOReg || !TargetRegisterInfo::isPhysicalRegister(MOReg))
+    Register MOReg = MO.getReg();
+    if (!MOReg || !Register::isPhysicalRegister(MOReg))
       continue;
 
     if (!TRI->regsOverlap(MOReg, Reg))

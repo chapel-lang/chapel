@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -579,6 +579,7 @@ proc BlockCyclic1dom.dsiAccess1d(ind: idxType): (locIdT, stoIndexT) {
 
 proc _bcddb(args...) { /* writeln((...args)); */ }
 
+pragma "not order independent yielding loops"
 iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
   param zbased = isUintType(idxType);
 // todo: for the special case handled in dsiMyDensifiedRangeForTaskID1d,
@@ -615,7 +616,7 @@ iter BlockCyclic1locdom.dsiMyDensifiedRangeForSingleTask1d(globDD) {
 
   // Right now explicit cast range(64) to range(32) is not implemented.
   // We are doing it by hand here. Cf. proc =(range, range).
-  proc rangecast(out r1: range(?), r2: range(?)): void {
+  proc rangecast(ref r1: range(?), r2: range(?)): void {
     compilerAssert(r1.boundedType == r2.boundedType);
     if !r1.stridable && r2.stridable && r2._stride != 1 then
       halt("range with non-unit stride is cast to non-stridable range");
@@ -748,6 +749,7 @@ iter BlockCyclic1dom.dsiSerialArrayIterator1d() {
       yield result;
 }
 
+pragma "not order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   assert(!rangeToIterateOver.stridable);
 
@@ -799,6 +801,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dUnitstride(rangeToIterateOver) {
   yield spec(locOff, lastLocOff);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
   assert(stridable);
  if BlockCyclicDim_enableArrayIterWarning then
@@ -809,6 +812,7 @@ iter BlockCyclic1dom._dsiSerialArrayIterator1dStridable() {
     yield (_dsiLocNo_formula(ind), _dsiStorageIdx(ind)..#(1:stoIndexT));
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclic1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   if undensRange.stridable {
     // the simplest way out

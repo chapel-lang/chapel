@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/DwarfCompileUnit.h - Dwarf Compile Unit -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -41,14 +40,16 @@ class MCExpr;
 class MCSymbol;
 class MDNode;
 
+enum class UnitKind { Skeleton, Full };
+
 class DwarfCompileUnit final : public DwarfUnit {
   /// A numeric ID unique among all CUs in the module
   unsigned UniqueID;
   bool HasRangeLists = false;
 
-  /// The attribute index of DW_AT_stmt_list in the compile unit DIE, avoiding
-  /// the need to search for it in applyStmtList.
-  DIE::value_iterator StmtListValue;
+  /// The start of the unit line section, this is also
+  /// reused in appyStmtList.
+  MCSymbol *LineTableStartSym;
 
   /// Skeleton unit associated with this unit.
   DwarfCompileUnit *Skeleton = nullptr;
@@ -101,9 +102,12 @@ class DwarfCompileUnit final : public DwarfUnit {
     return DU->getAbstractEntities();
   }
 
+  void finishNonUnitTypeDIE(DIE& D, const DICompositeType *CTy) override;
+
 public:
   DwarfCompileUnit(unsigned UID, const DICompileUnit *Node, AsmPrinter *A,
-                   DwarfDebug *DW, DwarfFile *DWU);
+                   DwarfDebug *DW, DwarfFile *DWU,
+                   UnitKind Kind = UnitKind::Full);
 
   bool hasRangeLists() const { return HasRangeLists; }
   unsigned getUniqueID() const { return UniqueID; }
@@ -119,16 +123,35 @@ public:
   /// Apply the DW_AT_stmt_list from this compile unit to the specified DIE.
   void applyStmtList(DIE &D);
 
+  /// Get line table start symbol for this unit.
+  MCSymbol *getLineTableStartSym() const { return LineTableStartSym; }
+
   /// A pair of GlobalVariable and DIExpression.
   struct GlobalExpr {
     const GlobalVariable *Var;
     const DIExpression *Expr;
   };
 
+  struct BaseTypeRef {
+    BaseTypeRef(unsigned BitSize, dwarf::TypeKind Encoding) :
+      BitSize(BitSize), Encoding(Encoding) {}
+    unsigned BitSize;
+    dwarf::TypeKind Encoding;
+    DIE *Die = nullptr;
+  };
+
+  std::vector<BaseTypeRef> ExprRefedBaseTypes;
+
   /// Get or create global variable DIE.
   DIE *
   getOrCreateGlobalVariableDIE(const DIGlobalVariable *GV,
                                ArrayRef<GlobalExpr> GlobalExprs);
+
+  DIE *getOrCreateCommonBlock(const DICommonBlock *CB,
+                              ArrayRef<GlobalExpr> GlobalExprs);
+
+  void addLocationAttribute(DIE *ToDIE, const DIGlobalVariable *GV,
+                            ArrayRef<GlobalExpr> GlobalExprs);
 
   /// addLabelAddress - Add a dwarf label attribute data and value using
   /// either DW_FORM_addr or DW_FORM_GNU_addr_index.
@@ -200,6 +223,8 @@ public:
                               SmallVectorImpl<DIE *> &Children,
                               bool *HasNonScopeChildren = nullptr);
 
+  void createBaseTypeDIEs();
+
   /// Construct a DIE for this subprogram scope.
   DIE &constructSubprogramScopeDIE(const DISubprogram *Sub,
                                    LexicalScope *Scope);
@@ -208,12 +233,37 @@ public:
 
   void constructAbstractSubprogramScopeDIE(LexicalScope *Scope);
 
+  /// Whether to use the GNU analog for a DWARF5 tag, attribute, or location
+  /// atom. Only applicable when emitting otherwise DWARF4-compliant debug info.
+  bool useGNUAnalogForDwarf5Feature() const;
+
+  /// This takes a DWARF 5 tag and returns it or a GNU analog.
+  dwarf::Tag getDwarf5OrGNUTag(dwarf::Tag Tag) const;
+
+  /// This takes a DWARF 5 attribute and returns it or a GNU analog.
+  dwarf::Attribute getDwarf5OrGNUAttr(dwarf::Attribute Attr) const;
+
+  /// This takes a DWARF 5 location atom and either returns it or a GNU analog.
+  dwarf::LocationAtom getDwarf5OrGNULocationAtom(dwarf::LocationAtom Loc) const;
+
   /// Construct a call site entry DIE describing a call within \p Scope to a
-  /// callee described by \p CalleeSP. \p IsTail specifies whether the call is
-  /// a tail call. \p PCOffset must be non-zero for non-tail calls or be the
-  /// function-local offset to PC value after the call instruction.
-  DIE &constructCallSiteEntryDIE(DIE &ScopeDIE, const DISubprogram &CalleeSP,
-                                 bool IsTail, const MCExpr *PCOffset);
+  /// callee described by \p CalleeDIE.
+  /// \p CalleeDIE is a declaration or definition subprogram DIE for the callee.
+  /// For indirect calls \p CalleeDIE is set to nullptr.
+  /// \p IsTail specifies whether the call is a tail call.
+  /// \p PCAddr points to the PC value after the call instruction.
+  /// \p CallAddr points to the PC value at the call instruction (or is null).
+  /// \p CallReg is a register location for an indirect call. For direct calls
+  /// the \p CallReg is set to 0.
+  DIE &constructCallSiteEntryDIE(DIE &ScopeDIE, DIE *CalleeDIE, bool IsTail,
+                                 const MCSymbol *PCAddr,
+                                 const MCSymbol *CallAddr, unsigned CallReg);
+  /// Construct call site parameter DIEs for the \p CallSiteDIE. The \p Params
+  /// were collected by the \ref collectCallSiteParameters.
+  /// Note: The order of parameters does not matter, since debuggers recognize
+  ///       call site parameters by the DW_AT_location attribute.
+  void constructCallSiteParmEntryDIEs(DIE &CallSiteDIE,
+                                      SmallVector<DbgCallSiteParam, 4> &Params);
 
   /// Construct import_module DIE.
   DIE *constructImportedEntityDIE(const DIImportedEntity *Module);
@@ -295,9 +345,6 @@ public:
   /// Add a Dwarf expression attribute data and value.
   void addExpr(DIELoc &Die, dwarf::Form Form, const MCExpr *Expr);
 
-  /// Add an attribute containing an address expression to \p Die.
-  void addAddressExpr(DIE &Die, dwarf::Attribute Attribute, const MCExpr *Expr);
-
   void applySubprogramAttributesToDefinition(const DISubprogram *SP,
                                              DIE &SPDie);
 
@@ -314,6 +361,8 @@ public:
   void setDWOId(uint64_t DwoId) { DWOId = DwoId; }
 
   bool hasDwarfPubSections() const;
+
+  void addBaseTypeRef(DIEValueList &Die, int64_t Idx);
 };
 
 } // end namespace llvm

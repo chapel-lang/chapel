@@ -1,9 +1,8 @@
 //===---------- llvm/unittest/Support/Casting.cpp - Casting tests ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -119,6 +118,12 @@ TEST(CastingTest, isa) {
   EXPECT_TRUE(isa<foo>(B4));
 }
 
+TEST(CastingTest, isa_and_nonnull) {
+  EXPECT_TRUE(isa_and_nonnull<foo>(B2));
+  EXPECT_TRUE(isa_and_nonnull<foo>(B4));
+  EXPECT_FALSE(isa_and_nonnull<foo>(fub()));
+}
+
 TEST(CastingTest, cast) {
   foo &F1 = cast<foo>(B1);
   EXPECT_NE(&F1, null_foo);
@@ -188,12 +193,12 @@ TEST(CastingTest, dyn_cast_or_null) {
   EXPECT_NE(F5, null_foo);
 }
 
-std::unique_ptr<derived> newd() { return llvm::make_unique<derived>(); }
-std::unique_ptr<base> newb() { return llvm::make_unique<derived>(); }
+std::unique_ptr<derived> newd() { return std::make_unique<derived>(); }
+std::unique_ptr<base> newb() { return std::make_unique<derived>(); }
 
 TEST(CastingTest, unique_dyn_cast) {
   derived *OrigD = nullptr;
-  auto D = llvm::make_unique<derived>();
+  auto D = std::make_unique<derived>();
   OrigD = D.get();
 
   // Converting from D to itself is valid, it should return a new unique_ptr

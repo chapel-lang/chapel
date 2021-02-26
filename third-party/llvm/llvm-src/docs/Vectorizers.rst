@@ -80,7 +80,7 @@ specifying a vector width and interleaving count:
 
 See the Clang
 `language extensions
-<http://clang.llvm.org/docs/LanguageExtensions.html#extensions-for-loop-hint-optimizations>`_
+<https://clang.llvm.org/docs/LanguageExtensions.html#extensions-for-loop-hint-optimizations>`_
 for details.
 
 Diagnostics
@@ -116,7 +116,7 @@ Consider the following loop:
     }
   }
 
-The command line ``-Rpass-missed=loop-vectorized`` prints the remark:
+The command line ``-Rpass-missed=loop-vectorize`` prints the remark:
 
 .. code-block:: console
 
@@ -133,7 +133,7 @@ switch statement cannot be vectorized.
 
 To ensure line and column numbers are produced include the command line options
 ``-gline-tables-only`` and ``-gcolumn-info``. See the Clang `user manual
-<http://clang.llvm.org/docs/UsersManual.html#options-to-emit-optimization-reports>`_
+<https://clang.llvm.org/docs/UsersManual.html#options-to-emit-optimization-reports>`_
 for details
 
 Features
@@ -418,8 +418,10 @@ into vector operations.
 .. code-block:: c++
 
   void foo(int a1, int a2, int b1, int b2, int *A) {
-    A[0] = a1*(a1 + b1)/b1 + 50*b1/a1;
-    A[1] = a2*(a2 + b2)/b2 + 50*b2/a2;
+    A[0] = a1*(a1 + b1);
+    A[1] = a2*(a2 + b2);
+    A[2] = a1*(a1 + b1);
+    A[3] = a2*(a2 + b2);
   }
 
 The SLP-vectorizer processes the code bottom-up, across basic blocks, in search of scalars to combine.

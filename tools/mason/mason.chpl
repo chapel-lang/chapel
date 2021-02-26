@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,6 +21,8 @@
  * Github: @Spartee
  */
 
+use FileSystem;
+
 use MasonModify;
 use MasonUtils;
 use MasonHelp;
@@ -32,7 +34,6 @@ use MasonUpdate;
 use MasonSearch;
 use MasonTest;
 use MasonRun;
-use FileSystem;
 use MasonSystem;
 use MasonExternal;
 use MasonPublish;
@@ -84,7 +85,7 @@ proc main(args: [] string) throws {
       when 'add' do masonModify(args);
       when 'rm' do masonModify(args);
       when 'build' do masonBuild(args);
-      when 'update' do UpdateLock(args);
+      when 'update' do masonUpdate(args);
       when 'run' do masonRun(args);
       when 'search' do masonSearch(args);
       when 'system' do masonSystem(args);
@@ -96,7 +97,6 @@ proc main(args: [] string) throws {
       when 'clean' do masonClean(args);
       when 'help' do masonHelp();
       when 'version' do printVersion();
-      when '--list' do masonList();
       when '-h' do masonHelp();
       when '--help' do masonHelp();
       when '-V' do printVersion();
@@ -120,7 +120,7 @@ proc masonClean(args) {
       masonCleanHelp();
       exit(0);
     }
-    const cwd = getEnv("PWD");
+    const cwd = here.cwd();
 
     const projectHome = getProjectHome(cwd);
     runCommand('rm -rf ' + projectHome + '/target');

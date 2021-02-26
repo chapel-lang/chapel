@@ -1,1 +1,2 @@
---no-warnings --main-module stream
+--main-module stream --no-warnings
+# --no-warnings for Ambiguous module source file

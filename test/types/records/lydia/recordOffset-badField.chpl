@@ -1,3 +1,4 @@
+use CPtr;
 // Checks behavior when string passed not actually a name of a field
 // Note: c_offsetof is intended for use in C interoperability only.
 record Test {

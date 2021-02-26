@@ -1,9 +1,8 @@
 //===- CompilerInvocation.h - Compiler Invocation Helper Data ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,13 +14,14 @@
 #include "clang/Basic/FileSystemOptions.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangOptions.h"
+#include "clang/Basic/LangStandard.h"
 #include "clang/Frontend/DependencyOutputOptions.h"
 #include "clang/Frontend/FrontendOptions.h"
-#include "clang/Frontend/LangStandard.h"
 #include "clang/Frontend/MigratorOptions.h"
 #include "clang/Frontend/PreprocessorOutputOptions.h"
 #include "clang/StaticAnalyzer/Core/AnalyzerOptions.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
+#include "llvm/ADT/ArrayRef.h"
 #include <memory>
 #include <string>
 
@@ -59,8 +59,7 @@ class TargetOptions;
 /// report the error(s).
 bool ParseDiagnosticArgs(DiagnosticOptions &Opts, llvm::opt::ArgList &Args,
                          DiagnosticsEngine *Diags = nullptr,
-                         bool DefaultDiagColor = true,
-                         bool DefaultShowOpt = true);
+                         bool DefaultDiagColor = true);
 
 class CompilerInvocationBase {
 public:
@@ -148,14 +147,18 @@ public:
   /// Create a compiler invocation from a list of input options.
   /// \returns true on success.
   ///
+  /// \returns false if an error was encountered while parsing the arguments
+  /// and attempts to recover and continue parsing the rest of the arguments.
+  /// The recovery is best-effort and only guarantees that \p Res will end up in
+  /// one of the vaild-to-access (albeit arbitrary) states.
+  ///
   /// \param [out] Res - The resulting invocation.
-  /// \param ArgBegin - The first element in the argument vector.
-  /// \param ArgEnd - The last element in the argument vector.
-  /// \param Diags - The diagnostic engine to use for errors.
+  /// \param [in] CommandLineArgs - Array of argument strings, this must not
+  /// contain "-cc1".
   static bool CreateFromArgs(CompilerInvocation &Res,
-                             const char* const *ArgBegin,
-                             const char* const *ArgEnd,
-                             DiagnosticsEngine &Diags);
+                             ArrayRef<const char *> CommandLineArgs,
+                             DiagnosticsEngine &Diags,
+                             const char *Argv0 = nullptr);
 
   /// Get the directory where the compiler headers
   /// reside, relative to the compiler binary (found by the passed in
@@ -182,6 +185,18 @@ public:
   /// Retrieve a module hash string that is suitable for uniquely
   /// identifying the conditions under which the module was built.
   std::string getModuleHash() const;
+
+  using StringAllocator = llvm::function_ref<const char *(const llvm::Twine &)>;
+  /// Generate a cc1-compatible command line arguments from this instance.
+  ///
+  /// \param [out] Args - The generated arguments. Note that the caller is
+  /// responsible for inserting the path to the clang executable and "-cc1" if
+  /// desired.
+  /// \param SA - A function that given a Twine can allocate storage for a given
+  /// command line argument and return a pointer to the newly allocated string.
+  /// The returned pointer is what gets appended to Args.
+  void generateCC1CommandLine(llvm::SmallVectorImpl<const char *> &Args,
+                              StringAllocator SA) const;
 
   /// @}
   /// @name Option Subgroups
@@ -221,6 +236,16 @@ public:
   }
 
   /// @}
+
+private:
+  /// Parse options for flags that expose marshalling information in their
+  /// table-gen definition
+  ///
+  /// \param Args - The argument list containing the arguments to parse
+  /// \param Diags - The DiagnosticsEngine associated with CreateFromArgs
+  /// \returns - True if parsing was successful, false otherwise
+  bool parseSimpleArgs(const llvm::opt::ArgList &Args,
+                       DiagnosticsEngine &Diags);
 };
 
 IntrusiveRefCntPtr<llvm::vfs::FileSystem>

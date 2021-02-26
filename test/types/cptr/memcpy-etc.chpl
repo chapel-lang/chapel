@@ -1,3 +1,4 @@
+use CPtr;
 proc test(type t, v1:t, v2:t) {
   var x:t = v1;
   var y:t = v2;

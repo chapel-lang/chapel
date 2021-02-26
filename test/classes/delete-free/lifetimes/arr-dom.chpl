@@ -1,6 +1,6 @@
 pragma "safe"
 module arrdom {
-
+pragma "no copy return"
 proc badReturnBorrowedArrayDom() {
   var A:[1..10] int;
 

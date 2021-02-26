@@ -4,7 +4,7 @@
    contributed by Ben Harshbarger
    derived from the Rust #3 version by Matt Brubeck
 */
-private use IO, SysCTypes;
+private use IO, SysCTypes, CPtr;
 
 /*
    This is very ugly because we don't have good IO support for
@@ -116,16 +116,16 @@ proc main(args: [] string) {
   input.readUntil("\n".toByte(), data);
 
   sync {     // wait for all process() tasks to complete before continuing
-    var lineStart = data.size + 1;
+    var lineStart = data.size;
     var sectionStart = lineStart;
     while input.readUntil("\n".toByte(), data) > 0 {
       if data[lineStart] == ">".toByte() {
         begin with (ref data) process(data, sectionStart, lineStart-2);
-        sectionStart = data.size+1;
+        sectionStart = data.size;
       }
-      lineStart = data.size + 1;
+      lineStart = data.size;
     }
-    process(data, sectionStart, data.size-1);
+    process(data, sectionStart, data.size-2);
   }
 
   const stdoutBin = openfd(1).writer(iokind.native, locking=false, 
@@ -152,7 +152,7 @@ proc process(ref data, in start, in end) {
 proc initTable(pairs) {
   var table: [1..128] uint(8);
 
-  for i in 1..pairs.numBytes by 2 {
+  for i in 0..#pairs.numBytes by 2 {
     table[pairs.byte(i)] = pairs.byte(i+1);
     if pairs.byte(i) != "\n".toByte() then
       table[pairs[i:byteIndex].toLower().toByte()] = pairs.byte(i+1);

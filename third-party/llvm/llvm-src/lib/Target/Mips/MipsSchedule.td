@@ -1,9 +1,8 @@
 //===-- MipsSchedule.td - Mips Scheduling Definitions ------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -28,6 +27,7 @@ def II_ADD              : InstrItinClass;
 def II_ADDU             : InstrItinClass;
 def II_ADD_D            : InstrItinClass;
 def II_ADD_S            : InstrItinClass;
+def II_ADDR_PS          : InstrItinClass;
 def II_ALIGN            : InstrItinClass;
 def II_AND              : InstrItinClass;
 def II_ANDI             : InstrItinClass;
@@ -279,6 +279,7 @@ def II_MUL              : InstrItinClass;
 def II_MUH              : InstrItinClass;
 def II_MUHU             : InstrItinClass;
 def II_MULU             : InstrItinClass;
+def II_MULR_PS          : InstrItinClass;
 def II_MULT             : InstrItinClass;
 def II_MULTU            : InstrItinClass;
 def II_MUL_D            : InstrItinClass;

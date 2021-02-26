@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -69,6 +69,7 @@ VarSymbol *gCastChecking = NULL;
 VarSymbol *gNilChecking = NULL;
 VarSymbol *gOverloadSetsChecks = NULL;
 VarSymbol *gDivZeroChecking = NULL;
+VarSymbol* gCacheRemote = NULL;
 VarSymbol* gPrivatization = NULL;
 VarSymbol* gLocal = NULL;
 VarSymbol* gWarnUnstable = NULL;
@@ -125,6 +126,12 @@ void Symbol::verify() {
       INT_FATAL(this, "Symbol without a defPoint");
   }
   verifyInTree(type, "Symbol::type");
+
+  if (name != astr(name))
+    INT_FATAL("name is not an astr");
+
+  if (cname != astr(cname))
+    INT_FATAL("cname is not an astr");
 
   if (symExprsHead) {
     if (symExprsHead->symbolSymExprsPrev != NULL)
@@ -504,11 +511,6 @@ LcnSymbol::LcnSymbol(AstTag      astTag,
   mOffset = -1;
 }
 
-LcnSymbol::~LcnSymbol()
-{
-
-}
-
 void LcnSymbol::locationSet(int depth, int offset)
 {
   mDepth  = depth;
@@ -766,9 +768,11 @@ void ArgSymbol::verify() {
     INT_FATAL(this, "Bad ArgSymbol::variableExpr::parentSymbol");
   // ArgSymbols appear only in formal parameter lists.
   if (defPoint) {
-    FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol);
-    INT_ASSERT(pfs);
-    INT_ASSERT(defPoint->list == &(pfs->formals));
+    if (FnSymbol* pfs = toFnSymbol(defPoint->parentSymbol)) {
+      INT_ASSERT(defPoint->list == &(pfs->formals));
+    } else {
+      INT_ASSERT(isTiMark(this));
+    }
   }
   if (intentsResolved) {
     if (intent == INTENT_BLANK || intent == INTENT_CONST) {
@@ -900,7 +904,7 @@ const char* retTagDescrString(RetTag retTag) {
 
 
 // describes this argument's intent (for use in an English sentence)
-const char* ArgSymbol::intentDescrString() {
+const char* ArgSymbol::intentDescrString() const {
   switch (intent) {
     case INTENT_BLANK: return "default intent";
     case INTENT_IN: return "'in'";
@@ -951,6 +955,22 @@ void ArgSymbol::accept(AstVisitor* visitor) {
 
     visitor->exitArgSym(this);
   }
+}
+
+std::string ArgSymbol::demungeVarArgName(std::string* num) {
+  std::string name = this->name;
+  if (!this->hasFlag(FLAG_EXPANDED_VARARGS)) {
+    INT_FATAL(this, "demungeVarArgName() called on non-vararg ArgSymbol");
+  }
+  std::string mynum = name;
+  mynum.erase(0, 2); // remove _e
+  std::string n = mynum; // ##_name
+  mynum.resize(mynum.find('_')); // ##
+  n.erase(0, n.find('_')+1); // name
+  if (num != NULL) {
+    *num = mynum;
+  }
+  return n;
 }
 
 /******************************** | *********************************
@@ -1421,8 +1441,11 @@ std::string unescapeString(const char* const str, BaseAST *astForError) {
           char buf[3];
           long num;
           buf[0] = buf[1] = buf[2] = '\0';
-          if( str[pos] ) buf[0] = str[pos++];
-          if( str[pos] ) buf[1] = str[pos++];
+          if (str[pos] && isxdigit(str[pos])) {
+              buf[0] = str[pos++];
+              if( str[pos] && isxdigit(str[pos]))
+                buf[1] = str[pos++];
+          }
           num = strtol(buf, NULL, 16);
           newString += (char) num;
         }
@@ -1456,8 +1479,8 @@ void createInitStringLiterals() {
   stringLiteralModule->block->insertAtTail(new DefExpr(initStringLiterals));
 }
 
-bool isValidString(std::string str) {
-  return chpl_enc_validate_buf(str.c_str(), str.length()) == 0;
+bool isValidString(std::string str, int64_t* numCodepoints) {
+  return chpl_enc_validate_buf(str.c_str(), str.length(), numCodepoints) == 0;
 }
 
 // Note that string immediate values are stored
@@ -1493,7 +1516,9 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   std::string unescapedString = unescapeString(str, cstrMove);
 
-  if (!isValidString(unescapedString)) {
+  int64_t numCodepoints = 0;
+  const bool ret = isValidString(unescapedString, &numCodepoints);
+  if (!ret) {
     USR_FATAL_CONT(cstrMove, "Invalid string literal");
 
     // We want to keep the compilation going here so that we can catch other
@@ -1525,7 +1550,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   CallExpr *initCall = new CallExpr(initFn,
                                     cstrTemp,
-                                    new_IntSymbol(strLength));
+                                    new_IntSymbol(strLength),
+                                    new_IntSymbol(numCodepoints));
 
   CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
 
@@ -1581,7 +1607,14 @@ VarSymbol *new_BytesSymbol(const char *str) {
   // DefExpr(s) always goes into the module scope to make it a global
   stringLiteralModule->block->insertAtTail(bytesLitDef);
 
-  CallExpr *initCall = new CallExpr(astr("createBytesWithBorrowedBuffer"),
+  Expr* initFn = NULL;
+  if (gChplCreateBytesWithLiteral != NULL)
+    initFn = new SymExpr(gChplCreateBytesWithLiteral);
+  else
+    initFn = new UnresolvedSymExpr("chpl_createBytesWithLiteral");
+
+
+  CallExpr *initCall = new CallExpr(initFn,
                                     bytesTemp,
                                     new_IntSymbol(bytesLength));
 
@@ -1979,12 +2012,14 @@ const char* astrSgte = NULL;
 const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
+const char* astrScolon = NULL;
 const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
+const char* astrPostinit = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
 const char* astrSuper = NULL;
@@ -1999,6 +2034,10 @@ const char* astr_loopexpr_iter = NULL;
 const char* astrPostfixBang = NULL;
 const char* astrBorrow = NULL;
 const char* astr_init_coerce_tmp = NULL;
+const char* astr_autoCopy = NULL;
+const char* astr_initCopy = NULL;
+const char* astr_coerceCopy = NULL;
+const char* astr_coerceMove = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2010,12 +2049,14 @@ void initAstrConsts() {
   astrSlt = astr("<");
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
+  astrScolon = astr(":");
   astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
+  astrPostinit  = astr("postinit");
   astrTag     = astr("tag");
   astrThis    = astr("this");
   astrSuper   = astr("super");
@@ -2033,6 +2074,35 @@ void initAstrConsts() {
 
   astrBorrow = astr("borrow");
   astr_init_coerce_tmp = astr("init_coerce_tmp");
+
+  astr_autoCopy = astr("chpl__autoCopy");
+  astr_initCopy = astr("chpl__initCopy");
+  astr_coerceCopy = astr("chpl__coerceCopy");
+  astr_coerceMove = astr("chpl__coerceMove");
+}
+
+bool isAstrOpName(const char* name) {
+  if (name == astrSassign || name == astrSeq || name == astrSne ||
+      name == astrSgt || name == astrSgte || name == astrSlt ||
+      name == astrSlte || name == astrSswap || strcmp(name, "&") == 0 ||
+      strcmp(name, "|") == 0 || strcmp(name, "^") == 0 ||
+      strcmp(name, "~") == 0 || strcmp(name, "+") == 0 ||
+      strcmp(name, "-") == 0 || strcmp(name, "*") == 0 ||
+      strcmp(name, "/") == 0 || strcmp(name, "<<") == 0 ||
+      strcmp(name, ">>") == 0 || strcmp(name, "%") == 0 ||
+      strcmp(name, "**") == 0 || strcmp(name, "!") == 0 ||
+      strcmp(name, "<~>") == 0 || strcmp(name, "+=") == 0 ||
+      strcmp(name, "-=") == 0 || strcmp(name, "*=") == 0 ||
+      strcmp(name, "/=") == 0 || strcmp(name, "%=") == 0 ||
+      strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
+      strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
+      strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
+      strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
+      strcmp(name, "align") == 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 /************************************* | **************************************
@@ -2091,35 +2161,82 @@ VarSymbol* newTempConst(QualifiedType qt) {
   return result;
 }
 
-const char* toString(ArgSymbol* arg) {
+const char* toString(ArgSymbol* arg, bool withTypeAndIntent) {
   const char* intent = "";
-  switch (arg->intent) {
-    case INTENT_BLANK:           intent = "";           break;
-    case INTENT_IN:              intent = "in ";        break;
-    case INTENT_INOUT:           intent = "inout ";     break;
-    case INTENT_OUT:             intent = "out ";       break;
-    case INTENT_CONST:           intent = "const ";     break;
-    case INTENT_CONST_IN:        intent = "const in ";  break;
-    case INTENT_CONST_REF:       intent = "const ref "; break;
-    case INTENT_REF_MAYBE_CONST: intent = "";           break;
-    case INTENT_REF:             intent = "ref ";       break;
-    case INTENT_PARAM:           intent = "param ";     break;
-    case INTENT_TYPE:            intent = "type ";      break;
+  if (withTypeAndIntent) {
+    switch (arg->intent) {
+      case INTENT_BLANK:           intent = "";           break;
+      case INTENT_IN:              intent = "in ";        break;
+      case INTENT_INOUT:           intent = "inout ";     break;
+      case INTENT_OUT:             intent = "out ";       break;
+      case INTENT_CONST:           intent = "const ";     break;
+      case INTENT_CONST_IN:        intent = "const in ";  break;
+      case INTENT_CONST_REF:       intent = "const ref "; break;
+      case INTENT_REF_MAYBE_CONST: intent = "";           break;
+      case INTENT_REF:             intent = "ref ";       break;
+      case INTENT_PARAM:           intent = "param ";     break;
+      case INTENT_TYPE:            intent = "type ";      break;
+    }
   }
 
-  if (arg->getValType() == dtAny || arg->getValType() == dtUnknown)
-    return astr(intent, arg->name);
+  const char* retval = "";
+  if (arg->getValType() == dtAny ||
+      arg->getValType() == dtUnknown ||
+      withTypeAndIntent == false)
+    retval = astr(intent, arg->name);
   else
-    return astr(intent, arg->name, ": ", toString(arg->getValType()));
+    retval = astr(intent, arg->name, ": ", toString(arg->getValType()));
+
+  if (developer  == true) {
+    retval = astr(retval, " [", istr(arg->id), "]");
+  }
+
+  return retval;
 }
 
-const char* toString(VarSymbol* var) {
+const char* toString(VarSymbol* var, bool withType) {
+
+  Immediate* imm = getSymbolImmediate(var);
+  if (imm) {
+    Type* t = var->getValType();
+    if (imm->const_kind == NUM_KIND_BOOL) {
+      return astr(imm->bool_value() ? "true" : "false");
+    } else if (imm->const_kind == CONST_KIND_STRING) {
+      std::string value;
+      value = "";
+      if (t == dtBytes)
+        value += "b";
+      value += '"';
+      value += imm->string_value();
+      value += '"';
+      return astr(value.c_str());
+    } else {
+      std::string value;
+      const size_t bufSize = 128;
+      char buf[bufSize];
+      snprint_imm(buf, bufSize, *imm);
+      value = buf;
+      // Add the type if it's not default
+      if (t != dtUnknown && t != dtString && t != dtBytes) {
+        if (withType && isNumericParamDefaultType(t) == false) {
+          value += ": ";
+          value += toString(t);
+        }
+      }
+      return astr(value.c_str());
+    }
+  }
+
   // If it's a compiler temporary, find an assignment
   //  * from a user variable or field
   //  * to a user variable or field
 
-  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP))
-    return astr(var->name, ": ", toString(var->getValType()));
+  if (var->hasFlag(FLAG_USER_VARIABLE_NAME) || !var->hasFlag(FLAG_TEMP)) {
+    if (withType)
+      return astr(var->name, ": ", toString(var->getValType()));
+    else
+      return var->name;
+  }
 
   Symbol* sym = var;
   // Compiler temporaries should have a single definition
@@ -2194,10 +2311,24 @@ const char* toString(VarSymbol* var) {
     }
   }
 
-  if (ArgSymbol* arg = toArgSymbol(sym))
-    return toString(arg);
-  else if (name != NULL)
-    return astr(name, ": ", toString(var->getValType()));
+  if (ArgSymbol* arg = toArgSymbol(sym)) {
+    return toString(arg, withType);
+  } else if (name != NULL) {
+    if (withType)
+      return astr(name, ": ", toString(var->getValType()));
+    else
+      return astr(name);
+  } else {
+    return astr("<temporary>");
+  }
+}
+const char* toString(Symbol* sym, bool withType) {
+  VarSymbol* var = toVarSymbol(sym);
+  ArgSymbol* arg = toArgSymbol(sym);
+  if (var != NULL)
+    return toString(var, withType);
+  if (arg != NULL)
+    return toString(arg, withType);
 
-  return astr("<temporary>");
+  return sym->name;
 }

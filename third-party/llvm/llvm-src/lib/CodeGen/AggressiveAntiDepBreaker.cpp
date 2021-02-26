@@ -1,9 +1,8 @@
 //===- AggressiveAntiDepBreaker.cpp - Anti-dep breaker --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,7 +15,6 @@
 
 #include "AggressiveAntiDepBreaker.h"
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
@@ -29,7 +27,6 @@
 #include "llvm/CodeGen/ScheduleDAG.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetRegisterInfo.h"
-#include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/MC/MCInstrDesc.h"
 #include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/Support/CommandLine.h"
@@ -37,10 +34,7 @@
 #include "llvm/Support/MachineValueType.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
-#include <map>
-#include <set>
 #include <utility>
-#include <vector>
 
 using namespace llvm;
 
@@ -233,7 +227,7 @@ bool AggressiveAntiDepBreaker::IsImplicitDefUse(MachineInstr &MI,
   if (!MO.isReg() || !MO.isImplicit())
     return false;
 
-  unsigned Reg = MO.getReg();
+  Register Reg = MO.getReg();
   if (Reg == 0)
     return false;
 
@@ -253,7 +247,7 @@ void AggressiveAntiDepBreaker::GetPassthruRegs(
     if (!MO.isReg()) continue;
     if ((MO.isDef() && MI.isRegTiedToUseOperand(i)) ||
         IsImplicitDefUse(MI, MO)) {
-      const unsigned Reg = MO.getReg();
+      const Register Reg = MO.getReg();
       for (MCSubRegIterator SubRegs(Reg, TRI, /*IncludeSelf=*/true);
            SubRegs.isValid(); ++SubRegs)
         PassthruRegs.insert(*SubRegs);
@@ -366,7 +360,7 @@ void AggressiveAntiDepBreaker::PrescanInstruction(
   for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
     MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg() || !MO.isDef()) continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0) continue;
 
     HandleLastUse(Reg, Count + 1, "", "\tDead Def: ", "\n");
@@ -376,7 +370,7 @@ void AggressiveAntiDepBreaker::PrescanInstruction(
   for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
     MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg() || !MO.isDef()) continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0) continue;
 
     LLVM_DEBUG(dbgs() << " " << printReg(Reg, TRI) << "=g"
@@ -419,7 +413,7 @@ void AggressiveAntiDepBreaker::PrescanInstruction(
   for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
     MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg() || !MO.isDef()) continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0) continue;
     // Ignore KILLs and passthru registers for liveness...
     if (MI.isKill() || (PassthruRegs.count(Reg) != 0))
@@ -472,7 +466,7 @@ void AggressiveAntiDepBreaker::ScanInstruction(MachineInstr &MI,
   for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
     MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg() || !MO.isUse()) continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0) continue;
 
     LLVM_DEBUG(dbgs() << " " << printReg(Reg, TRI) << "=g"
@@ -507,7 +501,7 @@ void AggressiveAntiDepBreaker::ScanInstruction(MachineInstr &MI,
     for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
       MachineOperand &MO = MI.getOperand(i);
       if (!MO.isReg()) continue;
-      unsigned Reg = MO.getReg();
+      Register Reg = MO.getReg();
       if (Reg == 0) continue;
 
       if (FirstReg != 0) {
@@ -791,7 +785,7 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
         CriticalPathSU = SU;
       }
     }
-
+    assert(CriticalPathSU && "Failed to find SUnit critical path");
     CriticalPathMI = CriticalPathSU->getInstr();
   }
 
@@ -1011,4 +1005,10 @@ unsigned AggressiveAntiDepBreaker::BreakAntiDependencies(
   }
 
   return Broken;
+}
+
+AntiDepBreaker *llvm::createAggressiveAntiDepBreaker(
+    MachineFunction &MFi, const RegisterClassInfo &RCI,
+    TargetSubtargetInfo::RegClassVector &CriticalPathRCs) {
+  return new AggressiveAntiDepBreaker(MFi, RCI, CriticalPathRCs);
 }

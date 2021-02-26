@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -23,6 +23,10 @@
 
 #include "chpl-comp-detect-macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 static inline void chpl_prefetch(void* addr) {
 #if (RT_COMP_CC & (~RT_COMP_PGI))
   // cray, intel, gcc, clang
@@ -39,5 +43,9 @@ static inline void chpl_prefetch(void* addr) {
   (void)0;
 #endif
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_prefetch_h_

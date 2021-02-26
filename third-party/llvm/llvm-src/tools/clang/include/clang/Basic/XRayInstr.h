@@ -1,9 +1,8 @@
 //===--- XRayInstr.h --------------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,17 +28,19 @@ namespace XRayInstrKind {
 
 // TODO: Auto-generate these as we add more instrumentation kinds.
 enum XRayInstrOrdinal : XRayInstrMask {
-  XRIO_Function,
+  XRIO_FunctionEntry,
+  XRIO_FunctionExit,
   XRIO_Custom,
   XRIO_Typed,
   XRIO_Count
 };
 
 constexpr XRayInstrMask None = 0;
-constexpr XRayInstrMask Function = 1U << XRIO_Function;
+constexpr XRayInstrMask FunctionEntry = 1U << XRIO_FunctionEntry;
+constexpr XRayInstrMask FunctionExit = 1U << XRIO_FunctionExit;
 constexpr XRayInstrMask Custom = 1U << XRIO_Custom;
 constexpr XRayInstrMask Typed = 1U << XRIO_Typed;
-constexpr XRayInstrMask All = Function | Custom | Typed;
+constexpr XRayInstrMask All = FunctionEntry | FunctionExit | Custom | Typed;
 
 } // namespace XRayInstrKind
 
@@ -52,7 +53,6 @@ struct XRayInstrSet {
   bool hasOneOf(XRayInstrMask K) const { return Mask & K; }
 
   void set(XRayInstrMask K, bool Value) {
-    assert(llvm::isPowerOf2_32(K));
     Mask = Value ? (Mask | K) : (Mask & ~K);
   }
 

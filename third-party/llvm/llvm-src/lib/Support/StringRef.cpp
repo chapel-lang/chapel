@@ -1,9 +1,8 @@
 //===-- StringRef.cpp - Lightweight String References ---------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -13,13 +12,14 @@
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/ADT/edit_distance.h"
+#include "llvm/Support/Error.h"
 #include <bitset>
 
 using namespace llvm;
 
 // MSVC emits references to this into the translation units which reference it.
 #ifndef _MSC_VER
-const size_t StringRef::npos;
+constexpr size_t StringRef::npos;
 #endif
 
 // strncasecmp() is not available on non-POSIX systems, so define an
@@ -106,19 +106,13 @@ unsigned StringRef::edit_distance(llvm::StringRef Other,
 //===----------------------------------------------------------------------===//
 
 std::string StringRef::lower() const {
-  std::string Result(size(), char());
-  for (size_type i = 0, e = size(); i != e; ++i) {
-    Result[i] = toLower(Data[i]);
-  }
-  return Result;
+  return std::string(map_iterator(begin(), toLower),
+                     map_iterator(end(), toLower));
 }
 
 std::string StringRef::upper() const {
-  std::string Result(size(), char());
-  for (size_type i = 0, e = size(); i != e; ++i) {
-    Result[i] = toUpper(Data[i]);
-  }
-  return Result;
+  return std::string(map_iterator(begin(), toUpper),
+                     map_iterator(end(), toUpper));
 }
 
 //===----------------------------------------------------------------------===//
@@ -373,11 +367,16 @@ void StringRef::split(SmallVectorImpl<StringRef> &A, char Separator,
 size_t StringRef::count(StringRef Str) const {
   size_t Count = 0;
   size_t N = Str.size();
-  if (N > Length)
+  if (!N || N > Length)
     return 0;
-  for (size_t i = 0, e = Length - N + 1; i != e; ++i)
-    if (substr(i, N).equals(Str))
+  for (size_t i = 0, e = Length - N + 1; i < e;) {
+    if (substr(i, N).equals(Str)) {
       ++Count;
+      i += N;
+    }
+    else
+      ++i;
+  }
   return Count;
 }
 
@@ -583,8 +582,11 @@ bool StringRef::getAsInteger(unsigned Radix, APInt &Result) const {
 
 bool StringRef::getAsDouble(double &Result, bool AllowInexact) const {
   APFloat F(0.0);
-  APFloat::opStatus Status =
-      F.convertFromString(*this, APFloat::rmNearestTiesToEven);
+  auto StatusOrErr = F.convertFromString(*this, APFloat::rmNearestTiesToEven);
+  if (errorToBool(StatusOrErr.takeError()))
+    return true;
+
+  APFloat::opStatus Status = *StatusOrErr;
   if (Status != APFloat::opOK) {
     if (!AllowInexact || !(Status & APFloat::opInexact))
       return true;

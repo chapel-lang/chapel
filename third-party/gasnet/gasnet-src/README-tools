@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.15
+GASNet tools specification version: 1.16
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -1183,10 +1183,13 @@ void gasnett_close_streams();
   Errors are ignored, for instance if any of the streams have been previously closed.
 
 void gasnett_fatalerror(const char *msg, ...);
+void gasnett_fatalerror_nopos(const char *msg, ...);
 
   Issue an fatal error message to the console, as specified by the arguments 
   (which follow a printf format convention). Then freeze for debugger and/or
   print a backtrace (depending on current settings) and issue an abort().
+  The first form includes information about call site (i.e. function name,
+  source file and line number), whereas the second omits this information.
 
 void gasnett_killmyprocess(int exitcode); 
 

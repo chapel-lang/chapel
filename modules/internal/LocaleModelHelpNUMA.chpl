@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,12 +19,12 @@
  */
 
 module LocaleModelHelpNUMA {
-  private use SysCTypes;
+  use SysCTypes;
 
   param localeModelHasSublocales = true;
 
-  use LocaleModelHelpSetup;
-  use LocaleModelHelpRuntime;
+  public use LocaleModelHelpSetup;
+  public use LocaleModelHelpRuntime;
 
   //////////////////////////////////////////
   //
@@ -58,7 +58,7 @@ module LocaleModelHelpNUMA {
   //         chpl_executeOn / chpl_executeOnFast
   //
   export
-  proc chpl_doDirectExecuteOn(loc: chpl_localeID_t // target locale
+  proc chpl_doDirectExecuteOn(in loc: chpl_localeID_t // target locale
                              ):bool {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
@@ -82,7 +82,7 @@ module LocaleModelHelpNUMA {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOn(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOn(in loc: chpl_localeID_t, // target locale
                       fn: int,              // on-body function idx
                       args: chpl_comm_on_bundle_p,     // function args
                       args_size: size_t     // args size
@@ -90,7 +90,7 @@ module LocaleModelHelpNUMA {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      var tls = chpl_task_getChapelData();
+      var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on(dnode, dsubloc, fn, args, args_size);
     } else {
@@ -115,7 +115,7 @@ module LocaleModelHelpNUMA {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnFast(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnFast(in loc: chpl_localeID_t, // target locale
                           fn: int,              // on-body function idx
                           args: chpl_comm_on_bundle_p,     // function args
                           args_size: size_t     // args size
@@ -123,7 +123,7 @@ module LocaleModelHelpNUMA {
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
     if dnode != chpl_nodeID {
-      var tls = chpl_task_getChapelData();
+      var tls = chpl_task_getInfoChapel();
       chpl_task_data_setup(chpl_comm_on_bundle_task_bundle(args), tls);
       chpl_comm_execute_on_fast(dnode, dsubloc, fn, args, args_size);
     } else {
@@ -146,7 +146,7 @@ module LocaleModelHelpNUMA {
   //
   pragma "insert line file info"
   export
-  proc chpl_executeOnNB(loc: chpl_localeID_t, // target locale
+  proc chpl_executeOnNB(in loc: chpl_localeID_t, // target locale
                         fn: int,              // on-body function idx
                         args: chpl_comm_on_bundle_p,     // function args
                         args_size: size_t     // args size
@@ -157,7 +157,7 @@ module LocaleModelHelpNUMA {
     //
     const dnode =  chpl_nodeFromLocaleID(loc);
     const dsubloc =  chpl_sublocFromLocaleID(loc);
-    var tls = chpl_task_getChapelData();
+    var tls = chpl_task_getInfoChapel();
     var isSerial = chpl_task_data_getSerial(tls);
     if dnode == chpl_nodeID {
       if isSerial {

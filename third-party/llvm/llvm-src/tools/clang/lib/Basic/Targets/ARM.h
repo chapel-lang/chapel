@@ -1,9 +1,8 @@
 //===--- ARM.h - Declare ARM target feature support -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -34,6 +33,11 @@ class LLVM_LIBRARY_VISIBILITY ARMTargetInfo : public TargetInfo {
     FPARMV8 = (1 << 4)
   };
 
+  enum MVEMode {
+      MVE_INT = (1 << 0),
+      MVE_FP  = (1 << 1)
+  };
+
   // Possible HWDiv features.
   enum HWDivMode { HWDivThumb = (1 << 0), HWDivARM = (1 << 1) };
 
@@ -57,6 +61,7 @@ class LLVM_LIBRARY_VISIBILITY ARMTargetInfo : public TargetInfo {
   unsigned ArchVersion;
 
   unsigned FPU : 5;
+  unsigned MVE : 2;
 
   unsigned IsAAPCS : 1;
   unsigned HWDiv : 2;
@@ -70,6 +75,7 @@ class LLVM_LIBRARY_VISIBILITY ARMTargetInfo : public TargetInfo {
   unsigned DSP : 1;
   unsigned Unaligned : 1;
   unsigned DotProd : 1;
+  unsigned HasMatMul : 1;
 
   enum {
     LDREX_B = (1 << 0), /// byte (8-bit)
@@ -101,6 +107,9 @@ class LLVM_LIBRARY_VISIBILITY ARMTargetInfo : public TargetInfo {
   bool isThumb() const;
   bool supportsThumb() const;
   bool supportsThumb2() const;
+  bool hasMVE() const;
+  bool hasMVEFloat() const;
+  bool hasCDE() const;
 
   StringRef getCPUAttr() const;
   StringRef getCPUProfile() const;
@@ -117,10 +126,18 @@ public:
                  StringRef CPU,
                  const std::vector<std::string> &FeaturesVec) const override;
 
+  bool isValidFeatureName(StringRef Feature) const override {
+    // We pass soft-float-abi in as a -target-feature, but the backend figures
+    // this out through other means.
+    return Feature != "soft-float-abi";
+  }
+
   bool handleTargetFeatures(std::vector<std::string> &Features,
                             DiagnosticsEngine &Diags) override;
 
   bool hasFeature(StringRef Feature) const override;
+
+  bool hasBFloat16Type() const override;
 
   bool isValidCPUName(StringRef Name) const override;
   void fillValidCPUList(SmallVectorImpl<StringRef> &Values) const override;
@@ -135,9 +152,10 @@ public:
 
   void getTargetDefinesARMV81A(const LangOptions &Opts,
                                MacroBuilder &Builder) const;
-
   void getTargetDefinesARMV82A(const LangOptions &Opts,
                                MacroBuilder &Builder) const;
+  void getTargetDefinesARMV83A(const LangOptions &Opts,
+                                 MacroBuilder &Builder) const;
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
 
@@ -166,6 +184,10 @@ public:
   int getEHDataRegisterNumber(unsigned RegNo) const override;
 
   bool hasSjLjLowering() const override;
+
+  bool hasExtIntType() const override { return true; }
+  
+  const char *getBFloat16Mangling() const override { return "u6__bf16"; };
 };
 
 class LLVM_LIBRARY_VISIBILITY ARMleTargetInfo : public ARMTargetInfo {

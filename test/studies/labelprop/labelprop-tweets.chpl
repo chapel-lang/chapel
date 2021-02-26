@@ -56,6 +56,7 @@ use IO;
 use Graph;
 use Random;
 use HashedDist;
+use LinkedLists;
 use BlockDist;
 
 // packing twitter user IDs to numbers
@@ -249,7 +250,7 @@ proc process_json(logfile:channel, fname:string, ref Pairs) {
 proc process_json(fname: string, ref Pairs)
 {
 
-  var last3chars = fname[fname.size-2..fname.size];
+  var last3chars = fname[fname.size-3..];
   if last3chars == ".gz" {
     var sub = spawn(["gunzip", "-c", fname], stdout=PIPE);
     process_json(sub.stdout, fname, Pairs);
@@ -267,7 +268,7 @@ record Triple {
 }
 
 
-proc create_and_analyze_graph(Pairs)
+proc create_and_analyze_graph(ref Pairs)
 {
   if progress {
     writeln("finding mutual mentions");
@@ -361,9 +362,6 @@ proc create_and_analyze_graph(Pairs)
 
   // TODO - performance - merge graph element updates
   var G = buildUndirectedGraph(triples, false, {1..max_nid} );
-
-  // Clear out memory used by triples.
-  triples.domain.clear();
 
   createGraphTime.stop();
 

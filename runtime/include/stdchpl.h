@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -66,7 +66,6 @@
 #include "chpltimers.h"
 #include "chpl-topo.h"
 #include "chpltypes.h"
-#include "chpl-vector-macros.h"
 #include "chpl-visual-debug.h"
 #include "error.h"
 

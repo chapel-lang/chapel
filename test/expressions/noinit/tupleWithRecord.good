@@ -1,0 +1,1 @@
+tupleWithRecord.chpl:11: error: noinit is only supported for arrays

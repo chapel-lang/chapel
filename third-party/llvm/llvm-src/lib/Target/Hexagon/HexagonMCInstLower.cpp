@@ -1,9 +1,8 @@
 //===- HexagonMCInstLower.cpp - Convert Hexagon MachineInstr to an MCInst -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -52,7 +51,7 @@ static MCOperand GetSymbolRef(const MachineOperand &MO, const MCSymbol *Symbol,
     RelocationType = MCSymbolRefExpr::VK_None;
     break;
   case HexagonII::MO_PCREL:
-    RelocationType = MCSymbolRefExpr::VK_Hexagon_PCREL;
+    RelocationType = MCSymbolRefExpr::VK_PCREL;
     break;
   case HexagonII::MO_GOT:
     RelocationType = MCSymbolRefExpr::VK_GOT;

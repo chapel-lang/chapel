@@ -1,5 +1,5 @@
-perfkeys: Time:
-files: split-whitespace-perf.dat
-graphkeys: split
+perfkeys: Time:, Time:, Time:
+files: split-whitespace-perf.dat, split-whitespace-perf-utf8.dat, split-whitespace-perf-bytes.dat
+graphkeys: split (ASCII), split (UTF8), split (bytes)
 ylabel: Time (seconds)
 graphtitle: Splitting a string on whitespace

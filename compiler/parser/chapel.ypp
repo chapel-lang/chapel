@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,6 +70,8 @@
 
   #include "symbol.h"
 
+  #include "ImportStmt.h"
+
   #include <cstdio>
   #include <utility>
   #include <vector>
@@ -84,9 +86,10 @@
   class NamedExpr;
   class Type;
 
-  enum   ProcIter {
-    ProcIter_PROC,
-    ProcIter_ITER
+  enum   ProcIterOp {
+    ProcIterOp_PROC,
+    ProcIterOp_ITER,
+    ProcIterOp_OP
   };
 
   struct PotentialRename {
@@ -129,7 +132,8 @@
     std::vector<DefExpr*>*    pvecOfDefs;
     FnSymbol*                 pfnsymbol;
     ModuleSymbol*             pmodsymbol;
-    ProcIter                  procIter;
+    ImportStmt*               pimportstmt;
+    ProcIterOp                procIterOp;
     FlagSet*                  flagSet;
     ShadowVarSymbol*          pShadowVar;
     ShadowVarPrefix           pShadowVarPref;
@@ -314,13 +318,14 @@
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
 %token TDEFER TDELETE TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
-%token TFALSE TFOR TFORALL TFORWARDING
+%token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
 %token TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token TIMPLEMENTS TINTERFACE
 %token TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
 %token TMINUSMINUS TMODULE
 %token TNEW TNIL TNOINIT TNONE TNOTHING
-%token TON TONLY TOTHERWISE TOUT TOVERRIDE TOWNED
+%token TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
 %token TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE TPROC TPROTOTYPE TPUBLIC
 %token TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
 %token TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE TSTRING TSUBDOMAIN TSYNC
@@ -364,7 +369,7 @@
 %left TNOELSE
 %left TELSE
 %left TCOMMA
-%left TFOR TFORALL TIF TATOMIC TSYNC TSINGLE
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
 // %left TOWNED TUNMANAGED TSHARED
 %left TIN
 %left TALIGN TBY THASH
@@ -404,10 +409,8 @@
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
 %type <pch> fn_ident assignop_ident opt_label_ident
+%type <pch> implements_type_ident implements_type_error_ident
 //%type <pch> opt_string
-
-
-
 
 %type <pblockstmt> program
 %type <pblockstmt> toplevel_stmt_ls
@@ -421,8 +424,13 @@
 %type <pblockstmt> block_stmt
 %type <pblockstmt> stmt_ls
 
-%type <pblockstmt> use_stmt import_stmt require_stmt
-%type <ponlylist>  renames_ls opt_only_ls except_ls
+%type <pimportstmt> import_expr
+%type <pblockstmt> use_stmt import_stmt import_ls require_stmt
+%type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
+
+%type <pblockstmt> implements_stmt interface_stmt
+%type <pcallexpr>  ifc_formal_ls
+%type <pdefexpr>   ifc_formal
 
 %type <pblockstmt> class_level_stmt_ls
 
@@ -466,22 +474,23 @@
 %type <pvecOfDefs> enum_ls
 
 %type <pcallexpr> zippered_iterator
-%type <pexpr> fun_expr call_expr dot_expr
+%type <pexpr> call_base_expr call_expr dot_expr
 %type <pexpr> lhs_expr
 %type <pexpr> unary_op_expr binary_op_expr
 %type <pexpr> parenthesized_expr expr actual_expr
-%type <pexpr> bool_literal literal_expr
+%type <pexpr> bool_literal str_bytes_literal literal_expr
 %type <pexpr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
 %type <pexpr> lifetime_components_expr
 %type <pexpr> lifetime_expr lifetime_ident
 %type <lifetimeAndWhere> opt_lifetime_where
-%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr let_expr
+%type <pexpr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <pexpr> let_expr ifvar
 %type <pexpr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
 %type <pexpr> opt_init_type var_arg_expr
 %type <pexpr> opt_try_expr opt_expr
 %type <pexpr> tuple_component tuple_var_decl_component
 %type <pdefexpr> formal enum_item
-%type <pexpr> query_expr
+%type <pexpr> query_expr ifc_constraint
 
 %type <pcallexpr> new_maybe_decorated
 %type <pcallexpr> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
@@ -491,7 +500,7 @@
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
 %type <pexpr> fn_decl_receiver_expr
-%type <procIter> proc_or_iter
+%type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
 %type <pShadowVar> intent_expr
 %type <pShadowVarPref> shadow_var_prefix
@@ -533,6 +542,8 @@ stmt:
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
+| implements_stmt
+| interface_stmt
 | loop_stmt
 | select_stmt
 | defer_stmt
@@ -660,6 +671,39 @@ renames_ls:
                                          $1->push_back(cur); }
 ;
 
+/* Separated so that use statements can rename their module to "_", but nothing
+   else can */
+use_renames_ls:
+  expr                                 { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
+                                         cur->elem = $1;
+                                         $$->push_back(cur); }
+| expr TAS expr                        { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
+                                         $$->push_back(cur); }
+| expr TAS TUNDERSCORE                 { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($1, new UnresolvedSymExpr("_"));
+                                         $$->push_back(cur); }
+| use_renames_ls TCOMMA expr           { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
+                                         cur->elem = $3;
+                                         $1->push_back(cur); }
+| use_renames_ls TCOMMA expr TAS expr  { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
+                                         $1->push_back(cur); }
+| use_renames_ls TCOMMA expr TAS TUNDERSCORE { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::DOUBLE;
+                                         cur->renamed = new std::pair<Expr*, Expr*>($3, new UnresolvedSymExpr("_"));
+                                         $1->push_back(cur); }
+;
+
+
 opt_only_ls:
   /* nothing */                        { $$ = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
@@ -679,23 +723,35 @@ except_ls:
 ;
 
 use_access_control:
-           { $$ = (currentModuleType != MOD_INTERNAL ? true : false); } // private | public
+           { $$ = true; } // private
 | TPUBLIC  { $$ = false; } // public
 | TPRIVATE { $$ = true; } // private
 ;
 
 use_stmt:
-  use_access_control TUSE renames_ls TSEMI                { $$ = buildUseStmt($3, $1); }
+  use_access_control TUSE use_renames_ls TSEMI            { $$ = buildUseStmt($3, $1); }
 | use_access_control TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, "", $5, true, $1); }
-|use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
+| use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
+| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, true, $1); }
 | use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
 | use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
+| use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, false, $1); }
 ;
 
 import_stmt:
-  use_access_control TIMPORT expr TSEMI { $$ = buildImportStmt($3, $1); }
-| use_access_control TIMPORT expr TAS ident_use TSEMI { $$ = buildImportStmt($3, $5, $1); }
-| use_access_control TIMPORT expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($3, $6, $1); }
+  use_access_control TIMPORT import_ls TSEMI { $$ = $3;
+                                               setImportPrivacy($$, $1);}
+;
+
+import_expr:
+  expr { $$ = buildImportStmt($1); }
+| expr TAS ident_use { $$ = buildImportStmt($1, $3); }
+| expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($1, $4); }
+;
+
+import_ls:
+  import_expr { $$ = buildChapelStmt($1); }
+| import_ls TCOMMA import_expr { $$ = $1; $$->insertAtTail($3); }
 ;
 
 require_stmt:
@@ -713,6 +769,8 @@ assignment_stmt:
     { $$ = buildLAndAssignment($1, $3);    }
 | lhs_expr TASSIGNLOR      opt_try_expr TSEMI
     { $$ = buildLOrAssignment($1, $3);     }
+| lhs_expr TASSIGN         TNOINIT TSEMI
+    { $$ = buildAssignment($1, new SymExpr(gNoInit), "="); }
 ;
 
 // Here are some nonterminals for identifiers
@@ -966,6 +1024,14 @@ loop_stmt:
 | TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
 | TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
+| TFOREACH expr TIN expr                                   do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          expr                                   do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH          zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)
@@ -1023,6 +1089,12 @@ if_stmt:
 | TIF expr block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
 | TIF expr TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
 | TIF expr block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+
+| TIF ifvar TTHEN stmt %prec TNOELSE  { $$ = buildIfStmt($2, $4); }
+| TIF ifvar block_stmt %prec TNOELSE  { $$ = buildIfStmt($2, $3); }
+| TIF ifvar TTHEN stmt TELSE stmt     { $$ = buildIfStmt($2, $4, $6); }
+| TIF ifvar block_stmt TELSE stmt     { $$ = buildIfStmt($2, $3, $5); }
+
 | TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE  {
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6); }
 | TIF expr assignop_ident expr block_stmt %prec TNOELSE  {
@@ -1031,6 +1103,90 @@ $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5); }
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $6, $8); }
 | TIF expr assignop_ident expr block_stmt TELSE stmt     {
 $$ = buildIfStmt(convertAssignmentAndWarn($2,$3,$4), $5, $7); }
+;
+
+ifvar:
+  TVAR   ident_def TASSIGN expr { $$ = buildIfVar($2, $4, false); }
+| TCONST ident_def TASSIGN expr { $$ = buildIfVar($2, $4, true);  }
+;
+
+interface_stmt:
+  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+  { $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, $4, $6)); }
+| TINTERFACE ident_def                       block_stmt
+  { // mimick ifc_formal_ls for a single formal "Self"
+    DefExpr*  formal = InterfaceSymbol::buildFormal("Self", INTENT_TYPE);
+    CallExpr* ls     = new CallExpr(PRIM_ACTUALS_LIST, formal);
+    $$ = buildChapelStmt(InterfaceSymbol::buildDef($2, ls, $3)); }
+;
+
+ifc_formal_ls:
+  ifc_formal                      { $$ = new CallExpr(PRIM_ACTUALS_LIST, $1); }
+| ifc_formal_ls TCOMMA ifc_formal { $1->insertAtTail($3); }
+;
+
+ifc_formal:
+  // implicitly 'type' intent, could specify explicitly - see #16966
+  ident_def  { $$ = InterfaceSymbol::buildFormal($1, INTENT_TYPE); }
+;
+
+// which types are allowed in 'T implements IFC'
+implements_type_ident:
+  TIDENT     { $$ = $1; }
+| TBOOL      { $$ = "bool"; }
+| TINT       { $$ = "int"; }
+| TUINT      { $$ = "uint"; }
+| TREAL      { $$ = "real"; }
+| TIMAG      { $$ = "imag"; }
+| TCOMPLEX   { $$ = "complex"; }
+| TBYTES     { $$ = "bytes"; }
+| TSTRING    { $$ = "string"; }
+| TLOCALE    { $$ = "locale"; }
+| TNOTHING   { $$ = "nothing"; }
+| TVOID      { $$ = "void"; }
+| implements_type_error_ident
+  { $$ = $1;
+    USR_FATAL_CONT("'%s' is not allowed to \"implement\" an interface", $1); }
+;
+
+// these are not allowed as types in 'T implements IFC'
+implements_type_error_ident:
+  TNONE      { $$ = "none"; }
+| TTHIS      { $$ = "this"; }
+| TFALSE     { $$ = "false"; }
+| TTRUE      { $$ = "true"; }
+/* it would be nice to include these, alas they cause shift/reduce conflicts:
+| TSYNC      { $$ = "sync"; }
+| TSINGLE    { $$ = "single"; }
+| TOWNED     { $$ = "owned"; }
+| TSHARED    { $$ = "shared"; }
+| TBORROWED  { $$ = "borrowed"; }
+| TUNMANAGED { $$ = "unmanaged"; }
+*/
+| TDOMAIN    { $$ = "domain"; }
+| TINDEX     { $$ = "index"; }
+;
+
+implements_stmt:
+  TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+  { $$ = buildChapelStmt(ImplementsStmt::build($2, $4, NULL)); }
+| implements_type_ident TIMPLEMENTS ident_def TSEMI
+  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
+    $$ = buildChapelStmt(ImplementsStmt::build($3, act, NULL)); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+  { $5->insertAtHead(new UnresolvedSymExpr($1));
+    $$ = buildChapelStmt(ImplementsStmt::build($3, $5, NULL)); }
+;
+
+ifc_constraint:
+  TIMPLEMENTS ident_def TLP actual_ls TRP
+  { $$ = IfcConstraint::build($2, $4); }
+| implements_type_ident TIMPLEMENTS ident_def
+  { CallExpr* act = new CallExpr(PRIM_ACTUALS_LIST, new UnresolvedSymExpr($1));
+    $$ = IfcConstraint::build($3, act); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
+  { $5->insertAtHead(new UnresolvedSymExpr($1));
+    $$ = IfcConstraint::build($3, $5); }
 ;
 
 defer_stmt:
@@ -1247,7 +1403,7 @@ linkage_spec:
 ;
 
 fn_decl_stmt:
-  linkage_spec proc_or_iter
+  linkage_spec proc_iter_or_op
     {
       // Capture the latest comment
       @2.comment = context->latestComment;
@@ -1277,11 +1433,18 @@ fn_decl_stmt:
         // cname should be set based upon param
         fn->insertFormalAtTail(linkageFn->getFormal(1));
 
-      if ($2 == ProcIter_ITER)
+      if ($2 == ProcIterOp_ITER)
       {
         if (fn->hasFlag(FLAG_EXTERN))
           USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
         fn->addFlag(FLAG_ITERATOR_FN);
+      }
+      if ($2 == ProcIterOp_OP) {
+        fn->addFlag(FLAG_OPERATOR);
+        if (fn->_this != NULL) {
+          updateOpThisTagOrErr(fn);
+          setupTypeIntentArg(toArgSymbol(fn->_this));
+        }
       }
 
       $$ = buildFunctionDecl($4, $6, $7, $8, $9.where, $9.lifetime, $10, @2.comment);
@@ -1321,7 +1484,6 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def    { $$ = $1; }
-| TBNOT ident_def { $$ = astr("~", $2); }
 | TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
@@ -1347,6 +1509,7 @@ fn_ident:
 | TSWAP          { $$ = "<=>"; }
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
+| TCOLON         { $$ = ":"; }
 | ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
@@ -1387,6 +1550,8 @@ formal:
     { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, $5, NULL)); }
 | opt_intent_tag ident_def opt_formal_type var_arg_expr
     { $$ = buildArgDefExpr($1, $2, $3, NULL, $4); }
+| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
+    { $$ = buildPragmaDefExpr($1, buildArgDefExpr($2, $3, $4, NULL, $5)); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
     { $$ = buildTupleArgDefExpr($1, $3, $5, $6); }
 | opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
@@ -1419,9 +1584,10 @@ opt_this_intent_tag:
 | TTYPE  { $$ = INTENT_TYPE;  }
 ;
 
-proc_or_iter:
-  TPROC  { $$ = ProcIter_PROC; }
-| TITER  { $$ = ProcIter_ITER; }
+proc_iter_or_op:
+  TPROC  { $$ = ProcIterOp_PROC; }
+| TITER  { $$ = ProcIterOp_ITER; }
+| TOPERATOR { $$ = ProcIterOp_OP; }
 ;
 
 opt_ret_tag:
@@ -1448,12 +1614,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUESTION ident_def { 
-      DefExpr * de = new DefExpr(new VarSymbol($2));
-      USR_WARN(de, "support for space in query expressions is deprecated");
-      $$ = de;
-  }
-| TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
+  TQUERIEDIDENT       { $$ = buildQueriedExpr($1); }
 ;
 
 var_arg_expr:
@@ -2030,16 +2191,6 @@ new_expr:
                         new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED,
                                      new CallExpr($4, $7)));
     }
-
-  /* handles e.g. new owned(myUnmanaged) */
-| TNEW TOWNED TLP expr TRP
-    { USR_WARN($4, "the syntax 'new owned(an expression)' is deprecated");
-      USR_PRINT($4, "instead use 'owned.create(an expression)'");
-      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtOwned->symbol, $4)); }
-| TNEW TSHARED TLP expr TRP
-    { USR_WARN($4, "the syntax 'new shared(an expression)' is deprecated");
-      USR_PRINT($4, "instead use 'shared.create(an expression)'");
-      $$ = new CallExpr(PRIM_NEW, new CallExpr(dtShared->symbol, $4)); }
 ;
 
 let_expr:
@@ -2059,6 +2210,7 @@ expr:
 | lambda_decl_expr
 | new_expr
 | let_expr
+| ifc_constraint
 | TLP TDOTDOTDOT expr TRP
     { $$ = new CallExpr(PRIM_TUPLE_EXPAND, $3); }
 | expr TCOLON expr
@@ -2109,22 +2261,21 @@ lhs_expr:
 ;
 
 /* Representations of values which can be invoked as functions.
- * Rather than allowing any value these values were deliberately restricted
- * to valid lhs_values and anonymous lambda function declarations.
  *
  * NOTE:  In order to allow expr to be invoked as a function
  *        opt_actual_ls, and every production it relies on, would need to be
  *        reworked to not permit the empty production. */
-fun_expr:
+call_base_expr:
   lhs_expr           { $$ = $1; }
 | expr TBANG         { $$ = new CallExpr("postfix!", $1); }
 | sub_type_level_expr TQUESTION {$$ = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, $1);}
 | lambda_decl_expr   { $$ = $1; }
+| str_bytes_literal
 ;
 
 call_expr:
-  fun_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
-| fun_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
+  call_base_expr TLP opt_actual_ls TRP        { $$ = new CallExpr($1, $3); }
+| call_base_expr TLSBR opt_actual_ls TRSBR    { $$ = buildSquareCallExpr($1, $3); }
 | TPRIMITIVE TLP opt_actual_ls TRP      { $$ = buildPrimitiveExpr($3); }
 ;
 
@@ -2152,17 +2303,23 @@ bool_literal:
 | TTRUE  { $$ = new SymExpr(gTrue); }
 ;
 
+str_bytes_literal:
+  STRINGLITERAL   { $$ = buildStringLiteral($1); }
+| BYTESLITERAL    { $$ = buildBytesLiteral($1); }
+;
+
 literal_expr:
   bool_literal
+| str_bytes_literal
 | INTLITERAL            { $$ = buildIntLiteral($1, yyfilename, chplLineno);    }
 | REALLITERAL           { $$ = buildRealLiteral($1);   }
 | IMAGLITERAL           { $$ = buildImagLiteral($1);   }
-| STRINGLITERAL         { $$ = buildStringLiteral($1); }
-| BYTESLITERAL          { $$ = buildBytesLiteral($1); }
 | CSTRINGLITERAL        { $$ = buildCStringLiteral($1); }
 | TNONE                 { $$ = new SymExpr(gNone); }
-| TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
-| TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2); }
+| TLCBR expr_ls TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
+                                            new SymExpr(gTrue)); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = new CallExpr("chpl__buildDomainExpr", $2,
+                                                   new SymExpr(gTrue)); }
 | TLSBR expr_ls TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR expr_ls TCOMMA TRSBR   { $$ = new CallExpr("chpl__buildArrayExpr",  $2); }
 | TLSBR assoc_expr_ls TRSBR
@@ -2204,7 +2361,8 @@ binary_op_expr:
 | expr TBY expr            { $$ = new CallExpr("chpl_by", $1, $3); }
 | expr TALIGN expr         { $$ = new CallExpr("chpl_align", $1, $3); }
 | expr THASH expr          { $$ = new CallExpr("#", $1, $3); }
-| expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1); }
+| expr TDMAPPED expr       { $$ = new CallExpr("chpl__distributed", $3, $1,
+                                               new SymExpr(gTrue)); }
 ;
 
 unary_op_expr:

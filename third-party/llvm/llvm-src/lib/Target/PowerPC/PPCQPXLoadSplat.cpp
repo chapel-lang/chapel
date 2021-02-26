@@ -1,9 +1,8 @@
 //===----- PPCQPXLoadSplat.cpp - QPX Load Splat Simplification ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -30,10 +29,6 @@ using namespace llvm;
 #define DEBUG_TYPE "ppc-qpx-load-splat"
 
 STATISTIC(NumSimplified, "Number of QPX load splats simplified");
-
-namespace llvm {
-  void initializePPCQPXLoadSplatPass(PassRegistry&);
-}
 
 namespace {
   struct PPCQPXLoadSplat : public MachineFunctionPass {
@@ -84,8 +79,8 @@ bool PPCQPXLoadSplat::runOnMachineFunction(MachineFunction &MF) {
 
       for (auto SI = Splats.begin(); SI != Splats.end();) {
         MachineInstr *SMI = *SI;
-        unsigned SplatReg = SMI->getOperand(0).getReg();
-        unsigned SrcReg = SMI->getOperand(1).getReg();
+        Register SplatReg = SMI->getOperand(0).getReg();
+        Register SrcReg = SMI->getOperand(1).getReg();
 
         if (MI->modifiesRegister(SrcReg, TRI)) {
           switch (MI->getOpcode()) {
@@ -107,7 +102,7 @@ bool PPCQPXLoadSplat::runOnMachineFunction(MachineFunction &MF) {
               // the QPX splat source register.
               unsigned SubRegIndex =
                 TRI->getSubRegIndex(SrcReg, MI->getOperand(0).getReg());
-              unsigned SplatSubReg = TRI->getSubReg(SplatReg, SubRegIndex);
+              Register SplatSubReg = TRI->getSubReg(SplatReg, SubRegIndex);
 
               // Substitute both the explicit defined register, and also the
               // implicit def of the containing QPX register.

@@ -1,12 +1,13 @@
+use CPtr;
 record Foo {
   var mem = c_nil:c_ptr(uint(64));
 }
 
 record Bar {
-  var mem = c_nil;
+  var mem:c_void_ptr = c_nil;
 }
 
-writeln("c_nil = ", c_nil);
+writeln("c_nil = ", c_nil:c_void_ptr);
 
 var foo: Foo;
 writeln("foo = ", foo);

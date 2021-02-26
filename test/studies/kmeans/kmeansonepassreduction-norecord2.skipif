@@ -1,2 +1,0 @@
-# run only under valgrind to ensure .bad mismatch
-CHPL_TEST_VGRND_EXE != on

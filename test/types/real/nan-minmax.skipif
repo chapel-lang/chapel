@@ -1,5 +1,3 @@
 # following the lead of nan-comparisons.skipif:
 # PGI compiler has a different idea for what nan <= nan does
 CHPL_TARGET_COMPILER<=pgi
-# CCE compiler 8.x has its quirks, too
-CHPL_TARGET_COMPILER<=cray

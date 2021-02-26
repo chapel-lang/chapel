@@ -1,9 +1,8 @@
 //===- DbiModuleDescriptorBuilder.cpp - PDB Mod Info Creation ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -40,7 +39,7 @@ static uint32_t calculateDiSymbolStreamSize(uint32_t SymbolByteSize,
 DbiModuleDescriptorBuilder::DbiModuleDescriptorBuilder(StringRef ModuleName,
                                                        uint32_t ModIndex,
                                                        msf::MSFBuilder &Msf)
-    : MSF(Msf), ModuleName(ModuleName) {
+    : MSF(Msf), ModuleName(std::string(ModuleName)) {
   ::memset(&Layout, 0, sizeof(Layout));
   Layout.Mod = ModIndex;
 }
@@ -52,7 +51,7 @@ uint16_t DbiModuleDescriptorBuilder::getStreamIndex() const {
 }
 
 void DbiModuleDescriptorBuilder::setObjFileName(StringRef Name) {
-  ObjFileName = Name;
+  ObjFileName = std::string(Name);
 }
 
 void DbiModuleDescriptorBuilder::setPdbFilePathNI(uint32_t NI) {
@@ -84,14 +83,13 @@ void DbiModuleDescriptorBuilder::addSymbolsInBulk(
 }
 
 void DbiModuleDescriptorBuilder::addSourceFile(StringRef Path) {
-  SourceFiles.push_back(Path);
+  SourceFiles.push_back(std::string(Path));
 }
 
 uint32_t DbiModuleDescriptorBuilder::calculateC13DebugInfoSize() const {
   uint32_t Result = 0;
   for (const auto &Builder : C13Builders) {
-    assert(Builder && "Empty C13 Fragment Builder!");
-    Result += Builder->calculateSerializedLength();
+    Result += Builder.calculateSerializedLength();
   }
   return Result;
 }
@@ -104,7 +102,6 @@ uint32_t DbiModuleDescriptorBuilder::calculateSerializedLength() const {
 }
 
 void DbiModuleDescriptorBuilder::finalize() {
-  Layout.SC.Imod = Layout.Mod;
   Layout.FileNameOffs = 0; // TODO: Fix this
   Layout.Flags = 0;        // TODO: Fix this
   Layout.C11Bytes = 0;
@@ -117,12 +114,15 @@ void DbiModuleDescriptorBuilder::finalize() {
 
   // This value includes both the signature field as well as the record bytes
   // from the symbol stream.
-  Layout.SymBytes = SymbolByteSize + sizeof(uint32_t);
+  Layout.SymBytes =
+      Layout.ModDiStream == kInvalidStreamIndex ? 0 : getNextSymbolOffset();
 }
 
 Error DbiModuleDescriptorBuilder::finalizeMsfLayout() {
   this->Layout.ModDiStream = kInvalidStreamIndex;
   uint32_t C13Size = calculateC13DebugInfoSize();
+  if (!C13Size && !SymbolByteSize)
+    return Error::success();
   auto ExpectedSN =
       MSF.addStream(calculateDiSymbolStreamSize(SymbolByteSize, C13Size));
   if (!ExpectedSN)
@@ -162,8 +162,7 @@ Error DbiModuleDescriptorBuilder::commit(BinaryStreamWriter &ModiWriter,
            "Invalid debug section alignment!");
     // TODO: Write C11 Line data
     for (const auto &Builder : C13Builders) {
-      assert(Builder && "Empty C13 Fragment Builder!");
-      if (auto EC = Builder->commit(SymbolWriter))
+      if (auto EC = Builder.commit(SymbolWriter, CodeViewContainer::Pdb))
         return EC;
     }
 
@@ -179,12 +178,10 @@ Error DbiModuleDescriptorBuilder::commit(BinaryStreamWriter &ModiWriter,
 void DbiModuleDescriptorBuilder::addDebugSubsection(
     std::shared_ptr<DebugSubsection> Subsection) {
   assert(Subsection);
-  C13Builders.push_back(llvm::make_unique<DebugSubsectionRecordBuilder>(
-      std::move(Subsection), CodeViewContainer::Pdb));
+  C13Builders.push_back(DebugSubsectionRecordBuilder(std::move(Subsection)));
 }
 
 void DbiModuleDescriptorBuilder::addDebugSubsection(
     const DebugSubsectionRecord &SubsectionContents) {
-  C13Builders.push_back(llvm::make_unique<DebugSubsectionRecordBuilder>(
-      SubsectionContents, CodeViewContainer::Pdb));
+  C13Builders.push_back(DebugSubsectionRecordBuilder(SubsectionContents));
 }

@@ -1,9 +1,8 @@
 //===- ModuleSummaryAnalysis.h - Module summary index builder ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -26,6 +25,7 @@ class BlockFrequencyInfo;
 class Function;
 class Module;
 class ProfileSummaryInfo;
+class StackSafetyInfo;
 
 /// Direct function to compute a \c ModuleSummaryIndex from a given module.
 ///
@@ -36,7 +36,9 @@ class ProfileSummaryInfo;
 ModuleSummaryIndex buildModuleSummaryIndex(
     const Module &M,
     std::function<BlockFrequencyInfo *(const Function &F)> GetBFICallback,
-    ProfileSummaryInfo *PSI);
+    ProfileSummaryInfo *PSI,
+    std::function<const StackSafetyInfo *(const Function &F)> GetSSICallback =
+        [](const Function &F) -> const StackSafetyInfo * { return nullptr; });
 
 /// Analysis pass to provide the ModuleSummaryIndex object.
 class ModuleSummaryIndexAnalysis
@@ -75,6 +77,27 @@ public:
 // object for the module, to be written to bitcode or LLVM assembly.
 //
 ModulePass *createModuleSummaryIndexWrapperPass();
+
+/// Legacy wrapper pass to provide the ModuleSummaryIndex object.
+class ImmutableModuleSummaryIndexWrapperPass : public ImmutablePass {
+  const ModuleSummaryIndex *Index;
+
+public:
+  static char ID;
+
+  ImmutableModuleSummaryIndexWrapperPass(
+      const ModuleSummaryIndex *Index = nullptr);
+  const ModuleSummaryIndex *getIndex() const { return Index; }
+  void getAnalysisUsage(AnalysisUsage &AU) const override;
+};
+
+//===--------------------------------------------------------------------===//
+//
+// ImmutableModuleSummaryIndexWrapperPass - This pass wrap provided
+// ModuleSummaryIndex object for the module, to be used by other passes.
+//
+ImmutablePass *
+createImmutableModuleSummaryIndexWrapperPass(const ModuleSummaryIndex *Index);
 
 } // end namespace llvm
 

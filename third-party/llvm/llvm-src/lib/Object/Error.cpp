@@ -1,9 +1,8 @@
 //===- Error.cpp - system_error extensions for Object -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,6 +11,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Object/Error.h"
+#include "llvm/ADT/Twine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/ManagedStatic.h"
 
@@ -61,9 +61,10 @@ void BinaryError::anchor() {}
 char BinaryError::ID = 0;
 char GenericBinaryError::ID = 0;
 
-GenericBinaryError::GenericBinaryError(Twine Msg) : Msg(Msg.str()) {}
+GenericBinaryError::GenericBinaryError(const Twine &Msg) : Msg(Msg.str()) {}
 
-GenericBinaryError::GenericBinaryError(Twine Msg, object_error ECOverride)
+GenericBinaryError::GenericBinaryError(const Twine &Msg,
+                                       object_error ECOverride)
     : Msg(Msg.str()) {
   setErrorCode(make_error_code(ECOverride));
 }
@@ -79,18 +80,15 @@ const std::error_category &object::object_category() {
 }
 
 llvm::Error llvm::object::isNotObjectErrorInvalidFileType(llvm::Error Err) {
-  if (auto Err2 =
-          handleErrors(std::move(Err), [](std::unique_ptr<ECError> M) -> Error {
-            // Try to handle 'M'. If successful, return a success value from
-            // the handler.
-            if (M->convertToErrorCode() == object_error::invalid_file_type)
-              return Error::success();
+  return handleErrors(std::move(Err), [](std::unique_ptr<ECError> M) -> Error {
+    // Try to handle 'M'. If successful, return a success value from
+    // the handler.
+    if (M->convertToErrorCode() == object_error::invalid_file_type)
+      return Error::success();
 
-            // We failed to handle 'M' - return it from the handler.
-            // This value will be passed back from catchErrors and
-            // wind up in Err2, where it will be returned from this function.
-            return Error(std::move(M));
-          }))
-    return Err2;
-  return Err;
+    // We failed to handle 'M' - return it from the handler.
+    // This value will be passed back from catchErrors and
+    // wind up in Err2, where it will be returned from this function.
+    return Error(std::move(M));
+  });
 }

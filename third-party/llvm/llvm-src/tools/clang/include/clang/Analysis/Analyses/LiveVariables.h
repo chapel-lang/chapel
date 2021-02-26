@@ -1,9 +1,8 @@
 //===- LiveVariables.h - Live Variable Analysis for Source CFGs -*- C++ --*-//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -71,8 +70,8 @@ public:
   ~LiveVariables() override;
 
   /// Compute the liveness information for a given CFG.
-  static LiveVariables *computeLiveness(AnalysisDeclContext &analysisContext,
-                                        bool killAtAssign);
+  static std::unique_ptr<LiveVariables>
+  computeLiveness(AnalysisDeclContext &analysisContext, bool killAtAssign);
 
   /// Return true if a variable is live at the end of a
   /// specified block.
@@ -98,7 +97,8 @@ public:
 
   void runOnAllBlocks(Observer &obs);
 
-  static LiveVariables *create(AnalysisDeclContext &analysisContext) {
+  static std::unique_ptr<LiveVariables>
+  create(AnalysisDeclContext &analysisContext) {
     return computeLiveness(analysisContext, true);
   }
 
@@ -111,7 +111,8 @@ private:
 
 class RelaxedLiveVariables : public LiveVariables {
 public:
-  static LiveVariables *create(AnalysisDeclContext &analysisContext) {
+  static std::unique_ptr<LiveVariables>
+  create(AnalysisDeclContext &analysisContext) {
     return computeLiveness(analysisContext, false);
   }
 

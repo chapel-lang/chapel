@@ -1,0 +1,3 @@
+ensureRightSymbolRenamed.chpl:7: In function 'main':
+ensureRightSymbolRenamed.chpl:8: error: unresolved call 'int(64).x'
+ensureRightSymbolRenamed.chpl:8: note: because no functions named x found in scope

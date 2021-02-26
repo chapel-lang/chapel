@@ -1,9 +1,8 @@
 //===--- Diagnostics.h - Helper class for error diagnostics -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -66,6 +65,7 @@ public:
     ET_RegistryNotBindable = 4,
     ET_RegistryAmbiguousOverload = 5,
     ET_RegistryValueNotFound = 6,
+    ET_RegistryUnknownEnumWithReplace = 7,
 
     ET_ParserStringError = 100,
     ET_ParserNoOpenParen = 101,

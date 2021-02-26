@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -83,9 +83,8 @@
 pragma "atomic module"
 module Atomics {
 
-  private use ChapelBase;
-  use MemConsistency;
-  use ChapelEnv;
+  use ChapelBase;
+  public use MemConsistency;  // OK: to get and propagate memoryOrder
 
   pragma "no doc"
   pragma "local fn" pragma "fast-on safe extern function"
@@ -351,6 +350,11 @@ module Atomics {
       x <~> read();
     }
 
+  }
+
+  operator :(rhs: bool, type t:AtomicBool) {
+    var lhs: AtomicBool = rhs; // use init=
+    return lhs;
   }
 
   pragma "atomic type"
@@ -678,6 +682,12 @@ module Atomics {
       x <~> read();
     }
 
+  }
+
+  operator :(rhs, type t:AtomicT)
+  where rhs.type == t.T {
+    var lhs: t = rhs; // use init=
+    return lhs;
   }
 
   //

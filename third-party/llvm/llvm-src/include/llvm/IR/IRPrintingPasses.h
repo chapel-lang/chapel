@@ -1,9 +1,8 @@
 //===- IRPrintingPasses.h - Passes to print out IR constructs ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -20,18 +19,10 @@
 #define LLVM_IR_IRPRINTINGPASSES_H
 
 #include "llvm/ADT/StringRef.h"
+#include "llvm/IR/PassManager.h"
 #include <string>
 
 namespace llvm {
-class Pass;
-class BasicBlockPass;
-class Function;
-class FunctionPass;
-class Module;
-class ModulePass;
-class PreservedAnalyses;
-class raw_ostream;
-template <typename IRUnitT, typename... ExtraArgTs> class AnalysisManager;
 
 /// Create and return a pass that writes the module to the specified
 /// \c raw_ostream.
@@ -43,11 +34,6 @@ ModulePass *createPrintModulePass(raw_ostream &OS,
 /// \c raw_ostream as they are processed.
 FunctionPass *createPrintFunctionPass(raw_ostream &OS,
                                       const std::string &Banner = "");
-
-/// Create and return a pass that writes the BB to the specified
-/// \c raw_ostream.
-BasicBlockPass *createPrintBasicBlockPass(raw_ostream &OS,
-                                          const std::string &Banner = "");
 
 /// Print out a name of an LLVM value without any prefixes.
 ///
@@ -78,7 +64,7 @@ extern bool shouldPrintAfterPass(StringRef);
 ///
 /// Note: This pass is for use with the new pass manager. Use the create...Pass
 /// functions above to create passes for use with the legacy pass manager.
-class PrintModulePass {
+class PrintModulePass : public PassInfoMixin<PrintModulePass> {
   raw_ostream &OS;
   std::string Banner;
   bool ShouldPreserveUseListOrder;
@@ -89,15 +75,13 @@ public:
                   bool ShouldPreserveUseListOrder = false);
 
   PreservedAnalyses run(Module &M, AnalysisManager<Module> &);
-
-  static StringRef name() { return "PrintModulePass"; }
 };
 
 /// Pass for printing a Function as LLVM's text IR assembly.
 ///
 /// Note: This pass is for use with the new pass manager. Use the create...Pass
 /// functions above to create passes for use with the legacy pass manager.
-class PrintFunctionPass {
+class PrintFunctionPass : public PassInfoMixin<PrintFunctionPass> {
   raw_ostream &OS;
   std::string Banner;
 
@@ -106,8 +90,6 @@ public:
   PrintFunctionPass(raw_ostream &OS, const std::string &Banner = "");
 
   PreservedAnalyses run(Function &F, AnalysisManager<Function> &);
-
-  static StringRef name() { return "PrintFunctionPass"; }
 };
 
 } // End llvm namespace

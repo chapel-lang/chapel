@@ -16,7 +16,7 @@ enable more features, such as distributed memory execution.
 0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
    tools and packages you may need to have installed to build and run Chapel.
 
-1) If you don't already have Chapel 1.22, see
+1) If you don't already have Chapel 1.23, see
    https://chapel-lang.org/download.html .
 
 2) If you are using a source release, build Chapel in a *quickstart*
@@ -28,14 +28,14 @@ enable more features, such as distributed memory execution.
 
       .. code-block:: bash
 
-         tar xzf chapel-1.22.0.tar.gz
+         tar xzf chapel-1.23.0.tar.gz
 
-   b. Make sure that your shell is in the directory containing
-      QUICKSTART.rst, for example:
+   b. Make sure that you are in the directory you just created by expanding the
+      source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.22.0
+         cd chapel-1.23.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
@@ -115,10 +115,11 @@ you will need to rebuild Chapel from source in a different configuration.
       # run the sample program
       ./hello
 
-   At this point, you can choose to continue using ``setchplenv.bash``
-   or use another method to configure Chapel. In particular, you might
-   use a :ref:`chplconfig <readme-chplenv.chplconfig>` file or
-   set environment variables your in dot files or your own script.
+   Note that the environment settings from ``util/setchplenv.bash`` will not persist beyond this terminal session.
+   You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
+   If you want these environment settings to persist for future terminal sessions,
+   copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
+   You can also store Chapel configuration settings in a :ref:`chplconfig <readme-chplenv.chplconfig>` file instead of your ``~/.bashrc``.
 
    See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
    Chapel's configuration variables, what they mean, and how they
@@ -137,8 +138,8 @@ Performance
 -----------
 
 If you plan to do performance studies of Chapel programs, be sure to use the
-full-featured version from using-a-more-full-featured-chapel_ above and read
-``$CHPL_HOME/PERFORMANCE.md`` to avoid common pitfalls.
+full-featured version from using-a-more-full-featured-chapel_ above and see
+https://chapel-lang.org/performance.html for performance tips.
 
 
 .. _quickstart-with-other-shells:
@@ -171,7 +172,7 @@ Compiling Chapel programs:   :ref:`compiling.rst <readme-compiling>`
 Executing Chapel programs:   :ref:`executing.rst <readme-executing>`
 Debugging Chapel programs:   :ref:`debugging.rst <readme-debugging>`
 Reporting bugs:              :ref:`bugs.rst <readme-bugs>`
-Performance status:          ``$CHPL_HOME/PERFORMANCE.md``
+Performance:                 https://chapel-lang.org/performance.html
 Chapel modes for emacs/vim:  ``$CHPL_HOME/highlight/README.md``
 Chapel's file/dir structure: ``$CHPL_HOME/README.files``
 Changes since last release:  ``$CHPL_HOME/CHANGES.md``

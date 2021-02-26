@@ -5,4 +5,6 @@ CHPL_HOST_PLATFORM == darwin
 CHPL_HOST_PLATFORM <= cygwin
 # --baseline stack size requirements are too high
 COMPOPTS <= --baseline
+# Sanitizers do not work with ulimit -v
+CHPL_SANITIZE_EXE != none
 # Note, this test has a different error for GASNet fast + fifo

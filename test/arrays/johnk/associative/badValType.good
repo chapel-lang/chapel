@@ -1,1 +1,1 @@
-badValType.chpl:2: error: Associative array value element 2 expected to be of type int(64) but is of type string
+badValType.chpl:2: error: Associative array value element 1 expected to be of type int(64) but is of type string

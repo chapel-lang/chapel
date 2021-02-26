@@ -1,0 +1,1 @@
+Vector.chpl:xxx: error: halt reached - Called "vector.first" on an empty vector.

@@ -1,11 +1,13 @@
 nt 3
-asdf(1), returning
-asdf(10), returning
 uncaught TaskErrors: 1 errors: IllegalArgumentError: 3
   pod-tpvs.chpl:48: thrown here
   pod-tpvs.chpl:48: uncaught here
 starting task
 finished task
+asdf(1), returning
+asdf(10), returning
+asdf(1000), returning
+1101000
 asdf(2), returning
 asdf(20), returning
 asdf(2000), returning

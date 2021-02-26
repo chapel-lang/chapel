@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/SmallSetTest.cpp ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -142,4 +141,29 @@ TEST(SmallSetTest, IteratorIncMoveCopy) {
   auto Iter2 = s1.begin();
   Iter = std::move(Iter2);
   EXPECT_EQ("str 0", *Iter);
+}
+
+TEST(SmallSetTest, EqualityComparisonTest) {
+  SmallSet<int, 8> s1small;
+  SmallSet<int, 10> s2small;
+  SmallSet<int, 3> s3large;
+  SmallSet<int, 8> s4large;
+
+  for (int i = 1; i < 5; i++) {
+    s1small.insert(i);
+    s2small.insert(5 - i);
+    s3large.insert(i);
+  }
+  for (int i = 1; i < 11; i++)
+    s4large.insert(i);
+
+  EXPECT_EQ(s1small, s1small);
+  EXPECT_EQ(s3large, s3large);
+
+  EXPECT_EQ(s1small, s2small);
+  EXPECT_EQ(s1small, s3large);
+  EXPECT_EQ(s2small, s3large);
+
+  EXPECT_NE(s1small, s4large);
+  EXPECT_NE(s4large, s3large);
 }

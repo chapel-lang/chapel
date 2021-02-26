@@ -1,4 +1,0 @@
-bug: writeln() called with an extern function argument leads to unexpected output.
-
-This test currently prints {}.  It should probably be illegal and
-result in a compile-time error.

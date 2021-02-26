@@ -1,0 +1,5 @@
+perfkeys: startsWith:, endsWith:, find:, rfind:, startsWith:, endsWith:, find:, rfind:, startsWith:, endsWith:, find:, rfind:
+repeat-files: search-throughput.dat, search-throughput-utf8.dat, search-throughput-bytes.dat
+graphkeys: startsWith (ASCII), endsWith (ASCII), find (ASCII), rfind (ASCII) , startsWith (UTF8), endsWith (UTF8), find (UTF8), rfind (UTF8) , startsWith (bytes), endsWith (bytes), find (bytes), rfind (bytes)
+ylabel: Throughput (MB/s)
+graphtitle: Searches over n strings

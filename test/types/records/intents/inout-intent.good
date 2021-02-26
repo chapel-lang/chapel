@@ -41,8 +41,8 @@ lhs(2 2) = rhs(3 3)
 deinit 3 3
 lhs(0 0) = rhs(1 1)
 lhs(1 1) = rhs(3 3)
-deinit 1 1
 deinit 3 3
+deinit 1 1
 (x = 3, ptr = {xx = 3})
 deinit 3 3
 test4
@@ -67,97 +67,89 @@ deinit 0 0
 deinit 0 0
 test6
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 lhs(0 0) = rhs(0 0)
 deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test7
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-lhs(0 0) = rhs(1 1)
 deinit 1 1
+lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test7a
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 {1..1} (x = 0, ptr = {xx = 0})
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-lhs(0 0) = rhs(1 1)
 deinit 1 1
+lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test8
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 lhs(0 0) = rhs(0 0)
 deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test9
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-lhs(0 0) = rhs(1 1)
 deinit 1 1
+lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test10
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 lhs(0 0) = rhs(0 0)
 deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test11
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-lhs(0 0) = rhs(1 1)
 deinit 1 1
+lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test11a
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
+init= 0 0
 {1..1} (x = 0, ptr = {xx = 0})
 init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 lhs(0 0) = rhs(1 1)
-lhs(0 0) = rhs(1 1)
 deinit 1 1
+lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
@@ -338,9 +330,3 @@ lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
-
-=================================================================================================================
-Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
-=================================================================================================================
-=================================================================================================================
-

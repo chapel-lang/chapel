@@ -11,7 +11,7 @@ const n = 10; // n is parsed from a file
 
 extend(wrappedLists, n);
 
-for i in 1..n do
+for i in 0..#n do
   wrappedLists[i].append(i);
 
 

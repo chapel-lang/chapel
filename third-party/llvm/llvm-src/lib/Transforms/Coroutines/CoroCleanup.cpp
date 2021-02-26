@@ -1,14 +1,12 @@
 //===- CoroCleanup.cpp - Coroutine Cleanup Pass ---------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
-//===----------------------------------------------------------------------===//
-// This pass lowers all remaining coroutine intrinsics.
 //===----------------------------------------------------------------------===//
 
+#include "llvm/Transforms/Coroutines/CoroCleanup.h"
 #include "CoroInternal.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/InstIterator.h"
@@ -50,7 +48,7 @@ static void lowerSubFn(IRBuilder<> &Builder, CoroSubFnInst *SubFn) {
   Builder.SetInsertPoint(SubFn);
   auto *FramePtr = Builder.CreateBitCast(FrameRaw, FramePtrTy);
   auto *Gep = Builder.CreateConstInBoundsGEP2_32(FrameTy, FramePtr, 0, Index);
-  auto *Load = Builder.CreateLoad(Gep);
+  auto *Load = Builder.CreateLoad(FrameTy->getElementType(Index), Gep);
 
   SubFn->replaceAllUsesWith(Load);
 }
@@ -74,6 +72,8 @@ bool Lowerer::lowerRemainingCoroIntrinsics(Function &F) {
         II->replaceAllUsesWith(ConstantInt::getTrue(Context));
         break;
       case Intrinsic::coro_id:
+      case Intrinsic::coro_id_retcon:
+      case Intrinsic::coro_id_retcon_once:
         II->replaceAllUsesWith(ConstantTokenNone::get(Context));
         break;
       case Intrinsic::coro_subfn_addr:
@@ -89,20 +89,34 @@ bool Lowerer::lowerRemainingCoroIntrinsics(Function &F) {
     // After replacement were made we can cleanup the function body a little.
     simplifyCFG(F);
   }
+
   return Changed;
 }
 
-//===----------------------------------------------------------------------===//
-//                              Top Level Driver
-//===----------------------------------------------------------------------===//
+static bool declaresCoroCleanupIntrinsics(const Module &M) {
+  return coro::declaresIntrinsics(M, {"llvm.coro.alloc", "llvm.coro.begin",
+                                      "llvm.coro.subfn.addr", "llvm.coro.free",
+                                      "llvm.coro.id", "llvm.coro.id.retcon",
+                                      "llvm.coro.id.retcon.once"});
+}
+
+PreservedAnalyses CoroCleanupPass::run(Function &F,
+                                       FunctionAnalysisManager &AM) {
+  auto &M = *F.getParent();
+  if (!declaresCoroCleanupIntrinsics(M) ||
+      !Lowerer(M).lowerRemainingCoroIntrinsics(F))
+    return PreservedAnalyses::all();
+
+  return PreservedAnalyses::none();
+}
 
 namespace {
 
-struct CoroCleanup : FunctionPass {
+struct CoroCleanupLegacy : FunctionPass {
   static char ID; // Pass identification, replacement for typeid
 
-  CoroCleanup() : FunctionPass(ID) {
-    initializeCoroCleanupPass(*PassRegistry::getPassRegistry());
+  CoroCleanupLegacy() : FunctionPass(ID) {
+    initializeCoroCleanupLegacyPass(*PassRegistry::getPassRegistry());
   }
 
   std::unique_ptr<Lowerer> L;
@@ -110,10 +124,8 @@ struct CoroCleanup : FunctionPass {
   // This pass has work to do only if we find intrinsics we are going to lower
   // in the module.
   bool doInitialization(Module &M) override {
-    if (coro::declaresIntrinsics(M, {"llvm.coro.alloc", "llvm.coro.begin",
-                                     "llvm.coro.subfn.addr", "llvm.coro.free",
-                                     "llvm.coro.id"}))
-      L = llvm::make_unique<Lowerer>(M);
+    if (declaresCoroCleanupIntrinsics(M))
+      L = std::make_unique<Lowerer>(M);
     return false;
   }
 
@@ -130,8 +142,8 @@ struct CoroCleanup : FunctionPass {
 };
 }
 
-char CoroCleanup::ID = 0;
-INITIALIZE_PASS(CoroCleanup, "coro-cleanup",
+char CoroCleanupLegacy::ID = 0;
+INITIALIZE_PASS(CoroCleanupLegacy, "coro-cleanup",
                 "Lower all coroutine related intrinsics", false, false)
 
-Pass *llvm::createCoroCleanupPass() { return new CoroCleanup(); }
+Pass *llvm::createCoroCleanupLegacyPass() { return new CoroCleanupLegacy(); }

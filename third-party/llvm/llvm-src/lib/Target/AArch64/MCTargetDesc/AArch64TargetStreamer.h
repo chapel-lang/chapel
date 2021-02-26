@@ -1,9 +1,8 @@
 //===-- AArch64TargetStreamer.h - AArch64 Target Streamer ------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -37,6 +36,9 @@ public:
   /// Callback used to implement the .inst directive.
   virtual void emitInst(uint32_t Inst);
 
+  /// Callback used to implement the .variant_pcs directive.
+  virtual void emitDirectiveVariantPCS(MCSymbol *Symbol) {};
+
   virtual void EmitARM64WinCFIAllocStack(unsigned Size) {}
   virtual void EmitARM64WinCFISaveFPLR(int Offset) {}
   virtual void EmitARM64WinCFISaveFPLRX(int Offset) {}
@@ -64,6 +66,7 @@ private:
   AArch64ELFStreamer &getStreamer();
 
   void emitInst(uint32_t Inst) override;
+  void emitDirectiveVariantPCS(MCSymbol *Symbol) override;
 
 public:
   AArch64TargetELFStreamer(MCStreamer &S) : AArch64TargetStreamer(S) {}

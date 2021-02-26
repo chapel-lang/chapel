@@ -1,9 +1,8 @@
 //===- DAGISelMatcherGen.cpp - Matcher generator --------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -142,7 +141,7 @@ namespace {
                                         SmallVectorImpl<unsigned> &ResultOps);
     };
 
-} // end anon namespace.
+} // end anonymous namespace
 
 MatcherGen::MatcherGen(const PatternToMatch &pattern,
                        const CodeGenDAGPatterns &cgp)
@@ -278,6 +277,27 @@ void MatcherGen::EmitLeafMatchCode(const TreePatternNode *N) {
     return;
   }
 
+  if (LeafRec->getName() == "immAllOnesV") {
+    // If this is the root of the dag we're matching, we emit a redundant opcode
+    // check to ensure that this gets folded into the normal top-level
+    // OpcodeSwitch.
+    if (N == Pattern.getSrcPattern()) {
+      const SDNodeInfo &NI = CGP.getSDNodeInfo(CGP.getSDNodeNamed("build_vector"));
+      AddMatcher(new CheckOpcodeMatcher(NI));
+    }
+    return AddMatcher(new CheckImmAllOnesVMatcher());
+  }
+  if (LeafRec->getName() == "immAllZerosV") {
+    // If this is the root of the dag we're matching, we emit a redundant opcode
+    // check to ensure that this gets folded into the normal top-level
+    // OpcodeSwitch.
+    if (N == Pattern.getSrcPattern()) {
+      const SDNodeInfo &NI = CGP.getSDNodeInfo(CGP.getSDNodeNamed("build_vector"));
+      AddMatcher(new CheckOpcodeMatcher(NI));
+    }
+    return AddMatcher(new CheckImmAllZerosVMatcher());
+  }
+
   errs() << "Unknown leaf kind: " << *N << "\n";
   abort();
 }
@@ -291,7 +311,7 @@ void MatcherGen::EmitOperatorMatchCode(const TreePatternNode *N,
     // The "name" of a non-leaf complex pattern (MY_PAT $op1, $op2) is
     // "MY_PAT:op1:op2". We should already have validated that the uses are
     // consistent.
-    std::string PatternName = N->getOperator()->getName();
+    std::string PatternName = std::string(N->getOperator()->getName());
     for (unsigned i = 0; i < N->getNumChildren(); ++i) {
       PatternName += ":";
       PatternName += N->getChild(i)->getName();
@@ -671,19 +691,52 @@ void MatcherGen::EmitResultLeafAsOperand(const TreePatternNode *N,
       return;
     }
 
+    if (Def->getName() == "undef_tied_input") {
+      std::array<MVT::SimpleValueType, 1> ResultVTs = {{ N->getSimpleType(0) }};
+      std::array<unsigned, 0> InstOps;
+      auto IDOperandNo = NextRecordedOperandNo++;
+      AddMatcher(new EmitNodeMatcher("TargetOpcode::IMPLICIT_DEF",
+                                     ResultVTs, InstOps, false, false, false,
+                                     false, -1, IDOperandNo));
+      ResultOps.push_back(IDOperandNo);
+      return;
+    }
+
     // Handle a reference to a register class. This is used
     // in COPY_TO_SUBREG instructions.
     if (Def->isSubClassOf("RegisterOperand"))
       Def = Def->getValueAsDef("RegClass");
     if (Def->isSubClassOf("RegisterClass")) {
-      std::string Value = getQualifiedName(Def) + "RegClassID";
-      AddMatcher(new EmitStringIntegerMatcher(Value, MVT::i32));
-      ResultOps.push_back(NextRecordedOperandNo++);
+      // If the register class has an enum integer value greater than 127, the
+      // encoding overflows the limit of 7 bits, which precludes the use of
+      // StringIntegerMatcher. In this case, fallback to using IntegerMatcher.
+      const CodeGenRegisterClass &RC =
+          CGP.getTargetInfo().getRegisterClass(Def);
+      if (RC.EnumValue <= 127) {
+        std::string Value = getQualifiedName(Def) + "RegClassID";
+        AddMatcher(new EmitStringIntegerMatcher(Value, MVT::i32));
+        ResultOps.push_back(NextRecordedOperandNo++);
+      } else {
+        AddMatcher(new EmitIntegerMatcher(RC.EnumValue, MVT::i32));
+        ResultOps.push_back(NextRecordedOperandNo++);
+      }
       return;
     }
 
     // Handle a subregister index. This is used for INSERT_SUBREG etc.
     if (Def->isSubClassOf("SubRegIndex")) {
+      const CodeGenRegBank &RB = CGP.getTargetInfo().getRegBank();
+      // If we have more than 127 subreg indices the encoding can overflow
+      // 7 bit and we cannot use StringInteger.
+      if (RB.getSubRegIndices().size() > 127) {
+        const CodeGenSubRegIndex *I = RB.findSubRegIdx(Def);
+        assert(I && "Cannot find subreg index by name!");
+        if (I->EnumValue > 127) {
+          AddMatcher(new EmitIntegerMatcher(I->EnumValue, MVT::i32));
+          ResultOps.push_back(NextRecordedOperandNo++);
+          return;
+        }
+      }
       std::string Value = getQualifiedName(Def);
       AddMatcher(new EmitStringIntegerMatcher(Value, MVT::i32));
       ResultOps.push_back(NextRecordedOperandNo++);
@@ -763,14 +816,27 @@ EmitResultInstructionAsOperand(const TreePatternNode *N,
   // 'execute always' values. Match up the node operands to the instruction
   // operands to do this.
   unsigned ChildNo = 0;
+
+  // Similarly to the code in TreePatternNode::ApplyTypeConstraints, count the
+  // number of operands at the end of the list which have default values.
+  // Those can come from the pattern if it provides enough arguments, or be
+  // filled in with the default if the pattern hasn't provided them. But any
+  // operand with a default value _before_ the last mandatory one will be
+  // filled in with their defaults unconditionally.
+  unsigned NonOverridableOperands = NumFixedOperands;
+  while (NonOverridableOperands > NumResults &&
+         CGP.operandHasDefault(II.Operands[NonOverridableOperands-1].Rec))
+    --NonOverridableOperands;
+
   for (unsigned InstOpNo = NumResults, e = NumFixedOperands;
        InstOpNo != e; ++InstOpNo) {
     // Determine what to emit for this operand.
     Record *OperandNode = II.Operands[InstOpNo].Rec;
-    if (OperandNode->isSubClassOf("OperandWithDefaultOps") &&
-        !CGP.getDefaultOperand(OperandNode).DefaultOps.empty()) {
-      // This is a predicate or optional def operand; emit the
-      // 'default ops' operands.
+    if (CGP.operandHasDefault(OperandNode) &&
+        (InstOpNo < NonOverridableOperands || ChildNo >= N->getNumChildren())) {
+      // This is a predicate or optional def operand which the pattern has not
+      // overridden, or which we aren't letting it override; emit the 'default
+      // ops' operands.
       const DAGDefaultOperand &DefaultOp
         = CGP.getDefaultOperand(OperandNode);
       for (unsigned i = 0, e = DefaultOp.DefaultOps.size(); i != e; ++i)
@@ -823,9 +889,13 @@ EmitResultInstructionAsOperand(const TreePatternNode *N,
   if (isRoot && !PhysRegInputs.empty()) {
     // Emit all of the CopyToReg nodes for the input physical registers.  These
     // occur in patterns like (mul:i8 AL:i8, GR8:i8:$src).
-    for (unsigned i = 0, e = PhysRegInputs.size(); i != e; ++i)
+    for (unsigned i = 0, e = PhysRegInputs.size(); i != e; ++i) {
+      const CodeGenRegister *Reg =
+        CGP.getTargetInfo().getRegBank().getReg(PhysRegInputs[i].first);
       AddMatcher(new EmitCopyToRegMatcher(PhysRegInputs[i].second,
-                                          PhysRegInputs[i].first));
+                                          Reg));
+    }
+
     // Even if the node has no other glue inputs, the resultant node must be
     // glued to the CopyFromReg nodes we just generated.
     TreeHasInGlue = true;
@@ -999,7 +1069,6 @@ void MatcherGen::EmitResultCode() {
     }
   }
 
-  assert(Ops.size() >= NumSrcResults && "Didn't provide enough results");
   SmallVector<unsigned, 8> Results(Ops);
 
   // Apply result permutation.

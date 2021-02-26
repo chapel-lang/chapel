@@ -1,9 +1,8 @@
 //===- JITSymbol.h - JIT symbol abstraction ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,12 +23,14 @@
 #include <string>
 
 #include "llvm/ADT/BitmaskEnum.h"
+#include "llvm/ADT/FunctionExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/Error.h"
 
 namespace llvm {
 
 class GlobalValue;
+class GlobalValueSummary;
 
 namespace object {
 
@@ -41,6 +42,11 @@ class SymbolRef;
 using JITTargetAddress = uint64_t;
 
 /// Convert a JITTargetAddress to a pointer.
+///
+/// Note: This is a raw cast of the address bit pattern to the given pointer
+/// type. When casting to a function pointer in order to execute JIT'd code
+/// jitTargetAddressToFunction should be preferred, as it will also perform
+/// pointer signing on targets that require it.
 template <typename T> T jitTargetAddressToPointer(JITTargetAddress Addr) {
   static_assert(std::is_pointer<T>::value, "T must be a pointer type");
   uintptr_t IntPtr = static_cast<uintptr_t>(Addr);
@@ -48,6 +54,18 @@ template <typename T> T jitTargetAddressToPointer(JITTargetAddress Addr) {
   return reinterpret_cast<T>(IntPtr);
 }
 
+/// Convert a JITTargetAddress to a callable function pointer.
+///
+/// Casts the given address to a callable function pointer. This operation
+/// will perform pointer signing for platforms that require it (e.g. arm64e).
+template <typename T> T jitTargetAddressToFunction(JITTargetAddress Addr) {
+  static_assert(std::is_pointer<T>::value &&
+                    std::is_function<std::remove_pointer_t<T>>::value,
+                "T must be a function pointer type");
+  return jitTargetAddressToPointer<T>(Addr);
+}
+
+/// Convert a pointer to a JITTargetAddress.
 template <typename T> JITTargetAddress pointerToJITTargetAddress(T *Ptr) {
   return static_cast<JITTargetAddress>(reinterpret_cast<uintptr_t>(Ptr));
 }
@@ -56,7 +74,7 @@ template <typename T> JITTargetAddress pointerToJITTargetAddress(T *Ptr) {
 class JITSymbolFlags {
 public:
   using UnderlyingType = uint8_t;
-  using TargetFlagsType = uint64_t;
+  using TargetFlagsType = uint8_t;
 
   enum FlagNames : UnderlyingType {
     None = 0,
@@ -66,14 +84,10 @@ public:
     Absolute = 1U << 3,
     Exported = 1U << 4,
     Callable = 1U << 5,
-    Lazy = 1U << 6,
-    Materializing = 1U << 7,
-    LLVM_MARK_AS_BITMASK_ENUM(/* LargestValue = */ Materializing)
+    MaterializationSideEffectsOnly = 1U << 6,
+    LLVM_MARK_AS_BITMASK_ENUM( // LargestValue =
+        MaterializationSideEffectsOnly)
   };
-
-  static JITSymbolFlags stripTransientFlags(JITSymbolFlags Orig) {
-    return static_cast<FlagNames>(Orig.Flags & ~Lazy & ~Materializing);
-  }
 
   /// Default-construct a JITSymbolFlags instance.
   JITSymbolFlags() = default;
@@ -84,7 +98,7 @@ public:
   /// Construct a JITSymbolFlags instance from the given flags and target
   ///        flags.
   JITSymbolFlags(FlagNames Flags, TargetFlagsType TargetFlags)
-    : Flags(Flags), TargetFlags(TargetFlags) {}
+      : TargetFlags(TargetFlags), Flags(Flags) {}
 
   /// Implicitly convert to bool. Returs true if any flag is set.
   explicit operator bool() const { return Flags != None || TargetFlags != 0; }
@@ -111,19 +125,6 @@ public:
     return (Flags & HasError) == HasError;
   }
 
-  /// Returns true if this is a lazy symbol.
-  ///        This flag is used internally by the JIT APIs to track
-  ///        materialization states.
-  bool isLazy() const { return Flags & Lazy; }
-
-  /// Returns true if this symbol is in the process of being
-  ///        materialized.
-  bool isMaterializing() const { return Flags & Materializing; }
-
-  /// Returns true if this symbol is fully materialized.
-  ///        (i.e. neither lazy, nor materializing).
-  bool isMaterialized() const { return !(Flags & (Lazy | Materializing)); }
-
   /// Returns true if the Weak flag is set.
   bool isWeak() const {
     return (Flags & Weak) == Weak;
@@ -147,6 +148,21 @@ public:
   /// Returns true if the given symbol is known to be callable.
   bool isCallable() const { return (Flags & Callable) == Callable; }
 
+  /// Returns true if this symbol is a materialization-side-effects-only
+  /// symbol. Such symbols do not have a real address. They exist to trigger
+  /// and support synchronization of materialization side effects, e.g. for
+  /// collecting initialization information. These symbols will vanish from
+  /// the symbol table immediately upon reaching the ready state, and will
+  /// appear to queries as if they were never defined (except that query
+  /// callback execution will be delayed until they reach the ready state).
+  /// MaterializationSideEffectOnly symbols should only be queried using the
+  /// SymbolLookupFlags::WeaklyReferencedSymbol flag (see
+  /// llvm/include/llvm/ExecutionEngine/Orc/Core.h).
+  bool hasMaterializationSideEffectsOnly() const {
+    return (Flags & MaterializationSideEffectsOnly) ==
+           MaterializationSideEffectsOnly;
+  }
+
   /// Get the underlying flags value as an integer.
   UnderlyingType getRawFlagsValue() const {
     return static_cast<UnderlyingType>(Flags);
@@ -162,14 +178,18 @@ public:
   /// value.
   static JITSymbolFlags fromGlobalValue(const GlobalValue &GV);
 
+  /// Construct a JITSymbolFlags value based on the flags of the given global
+  /// value summary.
+  static JITSymbolFlags fromSummary(GlobalValueSummary *S);
+
   /// Construct a JITSymbolFlags value based on the flags of the given libobject
   /// symbol.
   static Expected<JITSymbolFlags>
   fromObjectSymbol(const object::SymbolRef &Symbol);
 
 private:
-  FlagNames Flags = None;
   TargetFlagsType TargetFlags = 0;
+  FlagNames Flags = None;
 };
 
 inline JITSymbolFlags operator&(const JITSymbolFlags &LHS,
@@ -217,6 +237,13 @@ public:
   JITEvaluatedSymbol(JITTargetAddress Address, JITSymbolFlags Flags)
       : Address(Address), Flags(Flags) {}
 
+  /// Create a symbol from the given pointer with the given flags.
+  template <typename T>
+  static JITEvaluatedSymbol
+  fromPointer(T *P, JITSymbolFlags Flags = JITSymbolFlags::Exported) {
+    return JITEvaluatedSymbol(pointerToJITTargetAddress(P), Flags);
+  }
+
   /// An evaluated symbol converts to 'true' if its address is non-zero.
   explicit operator bool() const { return Address != 0; }
 
@@ -237,7 +264,7 @@ private:
 /// Represents a symbol in the JIT.
 class JITSymbol {
 public:
-  using GetAddressFtor = std::function<Expected<JITTargetAddress>()>;
+  using GetAddressFtor = unique_function<Expected<JITTargetAddress>()>;
 
   /// Create a 'null' symbol, used to represent a "symbol not found"
   ///        result from a successful (non-erroneous) lookup.
@@ -345,7 +372,7 @@ class JITSymbolResolver {
 public:
   using LookupSet = std::set<StringRef>;
   using LookupResult = std::map<StringRef, JITEvaluatedSymbol>;
-  using OnResolvedFunction = std::function<void(Expected<LookupResult>)>;
+  using OnResolvedFunction = unique_function<void(Expected<LookupResult>)>;
 
   virtual ~JITSymbolResolver() = default;
 

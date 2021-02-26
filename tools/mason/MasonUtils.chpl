@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ proc makeTargetFiles(binLoc: string, projectHome: string) {
 
 proc stripExt(toStrip: string, ext: string) : string {
   if toStrip.endsWith(ext) {
-    var stripped = toStrip[..toStrip.size - ext.size];
+    var stripped = toStrip[..<(toStrip.size - ext.size)];
     return stripped;
   }
   else {
@@ -123,11 +123,12 @@ proc runWithStatus(command, show=true): int {
 
   try {
     var cmd = command.split();
-    var sub = spawn(cmd, stdout=PIPE);
+    var sub = spawn(cmd, stdout=PIPE, stderr=PIPE);
 
     var line:string;
     if show {
       while sub.stdout.readline(line) do write(line);
+      while sub.stderr.readline(line) do write(line);
     }
     sub.wait();
     return sub.exit_status;
@@ -158,6 +159,14 @@ proc SPACK_ROOT : string {
 
   return spackRoot;
 }
+/*
+This fetches the mason-installed spack registry only.
+Users that define SPACK_ROOT to their own spack installation will use 
+the registry of their spack installation.
+*/
+proc getSpackRegistry : string {
+  return MASON_HOME + "/spack-registry";
+}
 
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
@@ -166,8 +175,6 @@ proc SPACK_ROOT : string {
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
-
-
     var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
@@ -366,7 +373,7 @@ proc getChapelVersionInfo(): VersionInfo {
       }
 
       const split = semver.split(".");
-      chplVersionInfo = new VersionInfo(split[1]:int, split[2]:int, split[3]:int);
+      chplVersionInfo = new VersionInfo(split[0]:int, split[1]:int, split[2]:int);
     } catch e : Error {
       stderr.writeln("Error while getting Chapel version:");
       stderr.writeln(e.message());
@@ -388,10 +395,8 @@ proc getChapelVersionStr() {
 
 proc gitC(newDir, command, quiet=false) throws {
   var ret : string;
-
   const oldDir = here.cwd();
   here.chdir(newDir);
-
   ret = runCommand(command, quiet);
 
   here.chdir(oldDir);
@@ -470,9 +475,9 @@ proc isIdentifier(name:string) {
     return false;
 
   // Identifiers can't start with a digit or a $
-  if name[1].isDigit() then
+  if name[0].isDigit() then
     return false;
-  if name[1] == "$" then
+  if name[0] == "$" then
     return false;
 
   // Check all characters are legal identifier characters

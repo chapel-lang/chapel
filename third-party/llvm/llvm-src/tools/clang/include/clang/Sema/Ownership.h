@@ -1,9 +1,8 @@
 //===- Ownership.h - Parser ownership helpers -------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -117,7 +116,7 @@ namespace llvm {
 
   template <class T>
   struct PointerLikeTypeTraits<clang::OpaquePtr<T>> {
-    enum { NumLowBitsAvailable = 0 };
+    static constexpr int NumLowBitsAvailable = 0;
 
     static inline void *getAsVoidPointer(clang::OpaquePtr<T> P) {
       // FIXME: Doesn't work? return P.getAs< void >();
@@ -128,9 +127,6 @@ namespace llvm {
       return clang::OpaquePtr<T>::getFromOpaquePtr(P);
     }
   };
-
-  template <class T>
-  struct isPodLike<clang::OpaquePtr<T>> { static const bool value = true; };
 
 } // namespace llvm
 
@@ -282,6 +278,7 @@ namespace clang {
 
   inline ExprResult ExprError() { return ExprResult(true); }
   inline StmtResult StmtError() { return StmtResult(true); }
+  inline TypeResult TypeError() { return TypeResult(true); }
 
   inline ExprResult ExprError(const DiagnosticBuilder&) { return ExprError(); }
   inline StmtResult StmtError(const DiagnosticBuilder&) { return StmtError(); }

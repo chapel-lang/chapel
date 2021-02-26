@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -72,44 +72,15 @@ struct cache_elem {
 struct re_cache {
   int64_t date;
   cache_elem elems[REGEXP_CACHE_SIZE];
+  ~re_cache();
 };
-static pthread_key_t key;
-static pthread_once_t key_once = PTHREAD_ONCE_INIT;
-
-static void local_cache_destroy_elts(re_cache* c);
-
-static
-void destroy_key(void* ptr)
-{
-  re_cache* c = (re_cache*) ptr;
-  local_cache_destroy_elts(c);
-  qio_free(c);
-}
-
-static
-void make_key(void)
-{
-  (void) pthread_key_create(&key, &destroy_key);
-}
-
-
-static inline
-re_cache* local_cache(void)
-{
-  re_cache* ptr;
-  (void) pthread_once(&key_once, make_key);
-  if((ptr = (re_cache*) pthread_getspecific(key)) == NULL) {
-    ptr = (re_cache*) qio_malloc(sizeof(re_cache));
-    memset(ptr, 0, sizeof(re_cache));
-    (void) pthread_setspecific(key, ptr);
-  }
-  return ptr;
-}
 
 static
 void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Options *opts)
 {
-  opts->set_utf8(options->utf8);
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  RE2::Options::Encoding byteE = RE2::Options::Encoding::EncodingLatin1;
+  opts->set_encoding(options->utf8 ? utf8E : byteE);
   opts->set_posix_syntax(options->posix);
   opts->set_literal(options->literal);
   opts->set_never_capture(options->nocapture);
@@ -117,12 +88,15 @@ void qio_re_options_to_re2_options(const qio_regexp_options_t* options, RE2::Opt
   opts->set_one_line(!options->multiline);
   opts->set_dot_nl(options->dotnl);
   opts->set_longest_match(!options->nongreedy);
+  opts->set_log_errors(false);
 }
 
 static
 void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_t* options)
 {
-  options->utf8 = opts->utf8();
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  RE2::Options::Encoding e = opts->encoding();
+  options->utf8 = (e == utf8E);
   options->posix = opts->posix_syntax();
   options->literal = opts->literal();
   options->nocapture = opts->never_capture();
@@ -135,7 +109,9 @@ void re2_options_to_qio_re_options(const RE2::Options *opts, qio_regexp_options_
 static
 bool equal_options(const RE2::Options *opts, const qio_regexp_options_t* options)
 {
-  return  options->utf8 == opts->utf8() &&
+  RE2::Options::Encoding utf8E = RE2::Options::Encoding::EncodingUTF8;
+  bool optsUtf8 = (opts->encoding() == utf8E);
+  return  options->utf8 == optsUtf8 &&
           options->posix == opts->posix_syntax() &&
           options->literal == opts->literal() &&
           options->nocapture == opts->never_capture() &&
@@ -152,10 +128,10 @@ void re_free(re_t* re)
   delete re;
 }
 
-
 static
 re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options_t* options) {
-  re_cache* c = local_cache();
+  thread_local re_cache cache;
+  re_cache* c = &cache;
   int oldest;
   int64_t oldest_date;
   c->date++;
@@ -169,7 +145,7 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
       oldest_date = c->elems[i].date;
     }
     if( ! c->elems[i].re ) continue;
-    const string& pat = c->elems[i].re->re.pattern();
+    const std::string& pat = c->elems[i].re->re.pattern();
     const RE2::Options& opt = c->elems[i].re->re.options();
     if( (uint64_t) pat.length() == (uint64_t) str_len &&
         0 == memcmp(pat.data(), str, str_len ) &&
@@ -201,21 +177,15 @@ re_t* local_cache_get(const char* str, int64_t str_len, const qio_regexp_options
   return re;
 }
 
-static
-void local_cache_destroy_elts(re_cache* c) {
-  if (c) {
-    // Destroy all of the elements in the local cache.
-    for( int i = 0; i < REGEXP_CACHE_SIZE; i++ ) {
-      re_t* re = c->elems[i].re;
-      if (re) {
-        DO_RELEASE(re, re_free);
-      }
+re_cache::~re_cache() {
+  // Destroy all of the elements in the local cache.
+  for(auto& e : elems) {
+    re_t* re = e.re;
+    if (re) {
+      DO_RELEASE(re, re_free);
     }
   }
 }
-
-
-
 
 void qio_regexp_init_default_options(qio_regexp_options_t* opt)
 {
@@ -252,7 +222,7 @@ void qio_regexp_create_compile_flags(const char* str, int64_t str_len, const cha
     if( flags[i] == 's' ) opt.dotnl = true;
     if( flags[i] == 'U' ) opt.nongreedy = true;
   }
-  opt.utf8 = isUtf8; 
+  opt.utf8 = isUtf8;
 
   return qio_regexp_create_compile(str, str_len, &opt, compiled);
 }
@@ -293,13 +263,13 @@ int64_t qio_regexp_get_ncaptures(const qio_regexp_t* regexp)
 qio_bool qio_regexp_ok(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
-  return re2->ok();
+  return re2 && re2->ok();
 }
 
 const char* qio_regexp_error(const qio_regexp_t* regexp)
 {
   RE2* re2 = (RE2*) regexp->regexp;
-  return qio_strdup(re2->error().c_str());
+  return qio_strdup(re2 ? re2->error().c_str() : "");
 }
 
 qio_bool qio_regexp_match(qio_regexp_t* regexp, const char* text, int64_t text_len, int64_t startpos, int64_t endpos, int anchor, qio_regexp_string_piece_t* submatch, int64_t nsubmatch)
@@ -418,7 +388,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   void* bufend = NULL;
   RE2::Anchor ranchor = RE2::UNANCHORED;
   int64_t need;
-  int64_t start_offset, offset, end_offset; 
+  int64_t start_offset, offset, end_offset;
   int64_t end;
   int64_t match_start = -1;
   int64_t match_len = 0;
@@ -429,6 +399,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   bool found = false;
   int i;
   int use_captures = ncaptures;
+  bool atEOF = false;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
   if( ncaptures > INT_MAX || ncaptures < 0 )
@@ -476,6 +447,13 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
     goto markerror;
   }
 
+  // check for EOF
+  err = qio_channel_require_read(false, ch, 1);
+  if( qio_err_to_int(err) == EEOF ) {
+    atEOF = true;
+    err = 0;
+  }
+
   // Require at least 1 byte and at most 1024 bytes.
   need = re->min_match_length_bytes();
   if( need <= 0 ) need = 1;
@@ -490,7 +468,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
   if( err ) goto error;
 
   // We never call end_peek_cached. (should be OK since we do unlock)
- 
+
   if( qio_ptr_diff(bufend, bufstart) > maxlen ) {
     bufend = qio_ptr_add(bufstart, maxlen);
   }
@@ -506,14 +484,16 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 
   found = re->MatchFile(text, buffer, ranchor, locs, ncaptures);
 
-  // Copy capture groups.
-  for( i = 0; i < ncaptures; i++ ) {
-    if( !found || locs[i].start == -1 ) {
-      captures[i].offset = -1;
-      captures[i].len = 0;
-    } else {
-      captures[i].offset = locs[i].start;
-      captures[i].len = locs[i].size();
+  // Copy capture groups if we found something
+  if( found ) {
+    for( i = 0; i < ncaptures; i++ ) {
+      if( locs[i].start == -1 ) {
+        captures[i].offset = -1;
+        captures[i].len = 0;
+      } else {
+        captures[i].offset = locs[i].start;
+        captures[i].len = locs[i].size();
+      }
     }
   }
 
@@ -525,7 +505,7 @@ qioerr qio_regexp_channel_match(const qio_regexp_t* regexp, const int threadsafe
 
 error:
 
-  // Get channel errors from within MatchSpecial1/qio_channel_read_byte 
+  // Get channel errors from within MatchSpecial1/qio_channel_read_byte
   if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
   if( ! err ) err = qio_channel_error(ch);
   if( qio_err_to_int(err) == EEOF ) err = 0; // ignore EOF
@@ -546,6 +526,12 @@ error:
     } else {
       qio_channel_advance(false, ch, end_offset - offset);
     }
+
+    // reset the captures if we didn't find anything
+    for( i = 0; i < ncaptures; i++ ) {
+      captures[i].offset = -1;
+      captures[i].len = 0;
+    }
   }
 
 markerror:
@@ -553,9 +539,14 @@ markerror:
     qio_unlock(&ch->lock);
   }
 
-  if( err == 0 && ! found ) QIO_GET_CONSTANT_ERROR(err, EFORMAT, "no match");
+  // Adjust the error code if nothing was found
+  if( err == 0 && ! found ) {
+    if (atEOF) {
+      err = QIO_EEOF;
+    } else {
+      QIO_GET_CONSTANT_ERROR(err, EFORMAT, "no match");
+    }
+  }
 
   return err;
 }
-
-

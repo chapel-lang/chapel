@@ -1,9 +1,8 @@
 ///===- MachineOptimizationRemarkEmitter.cpp - Opt Diagnostic -*- C++ -*---===//
 ///
-///                     The LLVM Compiler Infrastructure
-///
-/// This file is distributed under the University of Illinois Open Source
-/// License. See LICENSE.TXT for details.
+/// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+/// See https://llvm.org/LICENSE.txt for license information.
+/// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ///
 ///===---------------------------------------------------------------------===//
 /// \file
@@ -18,13 +17,14 @@
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
 DiagnosticInfoMIROptimization::MachineArgument::MachineArgument(
     StringRef MKey, const MachineInstr &MI)
     : Argument() {
-  Key = MKey;
+  Key = std::string(MKey);
 
   raw_string_ostream OS(Val);
   MI.print(OS, /*IsStandalone=*/true, /*SkipOpers=*/false,
@@ -77,7 +77,7 @@ bool MachineOptimizationRemarkEmitterPass::runOnMachineFunction(
   else
     MBFI = nullptr;
 
-  ORE = llvm::make_unique<MachineOptimizationRemarkEmitter>(MF, MBFI);
+  ORE = std::make_unique<MachineOptimizationRemarkEmitter>(MF, MBFI);
   return false;
 }
 

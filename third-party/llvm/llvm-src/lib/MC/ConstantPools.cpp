@@ -1,9 +1,8 @@
 //===- ConstantPools.cpp - ConstantPool class -----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,13 +26,13 @@ using namespace llvm;
 void ConstantPool::emitEntries(MCStreamer &Streamer) {
   if (Entries.empty())
     return;
-  Streamer.EmitDataRegion(MCDR_DataRegion);
+  Streamer.emitDataRegion(MCDR_DataRegion);
   for (const ConstantPoolEntry &Entry : Entries) {
-    Streamer.EmitCodeAlignment(Entry.Size); // align naturally
-    Streamer.EmitLabel(Entry.Label);
-    Streamer.EmitValue(Entry.Value, Entry.Size, Entry.Loc);
+    Streamer.emitCodeAlignment(Entry.Size); // align naturally
+    Streamer.emitLabel(Entry.Label);
+    Streamer.emitValue(Entry.Value, Entry.Size, Entry.Loc);
   }
-  Streamer.EmitDataRegion(MCDR_DataRegionEnd);
+  Streamer.emitDataRegion(MCDR_DataRegionEnd);
   Entries.clear();
 }
 

@@ -1,1 +1,1 @@
-refIntentWithNonLvalue.chpl:5: error: non-lvalue actual is passed to 'ref' formal 'x' of f()
+refIntentWithNonLvalue.chpl:5: error: const actual is passed to 'ref' formal 'x' of f()

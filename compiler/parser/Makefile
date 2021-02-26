@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -57,13 +57,13 @@ parser: FORCE flex_version_check
 
 # Require that the flex version is at least 2.6.0
 flex_version_check:
-	@if python -c "import sys;                                        \
-                       from distutils.version import LooseVersion as LV;  \
-                       sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
-                   `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
-                   "2.6.0";                                               \
-		then echo "PROBLEM: flex version must be at least 2.6.0"; \
-		exit 1;                                                   \
+	@if $(CHPL_MAKE_PYTHON) -c "import sys;                           \
+	               from distutils.version import LooseVersion as LV;  \
+	               sys.exit(LV(sys.argv[1]) >= LV(sys.argv[2]))"      \
+	           `flex --version | sed -e 's/flex //' -e 's/ .*//'`     \
+	           "2.6.0";                                               \
+	then echo "PROBLEM: flex version must be at least 2.6.0";         \
+	  exit 1;                                                         \
 	fi
 
 #

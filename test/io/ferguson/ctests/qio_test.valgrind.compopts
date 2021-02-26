@@ -1,2 +1,0 @@
--DCHPL_VALGRIND_TEST -DCHPL_RT_UNIT_TEST  $CHPL_HOME/runtime/src/qio/qio.c $CHPL_HOME/runtime/src/qio/qbuffer.c $CHPL_HOME/runtime/src/qio/sys.c $CHPL_HOME/runtime/src/qio/sys_xsi_strerror_r.c $CHPL_HOME/runtime/src/qio/qio_error.c $CHPL_HOME/runtime/src/qio/deque.c -lpthread
-

@@ -159,6 +159,7 @@ typedef struct {
   handler_t     handlerId;
 
   uint16_t      nBytes;     /* TODO: remove for short */
+  uint16_t      _reserved;
   uintptr_t	destOffset; /* TODO: remove for short/med */
 
 } ammpi_msg_t;

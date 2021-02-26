@@ -1,0 +1,1 @@
+noSuchOldName.chpl:5: error: Bad identifier in rename, no known 'baz' in 'M'

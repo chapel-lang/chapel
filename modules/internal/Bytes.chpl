@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,30 +20,30 @@
 
 /*
 The following document shows functions and methods used to manipulate and
-process Chapel bytes variables. :record:`bytes` is similar to a string but
+process Chapel bytes variables. :mod:`bytes <Bytes>` is similar to a string but
 allows arbitrary data to be stored in it. Methods on bytes that interpret the
 data as characters assume that the bytes are ASCII characters.
 
-Creating :record:`bytes`
-------------------------
+Creating :mod:`bytes <Bytes>`
+-----------------------------
 
-- A :record:`bytes` can be created using the literals similar to strings:
+- A :mod:`bytes <Bytes>` can be created using the literals similar to strings:
 
 .. code-block:: chapel
 
    var b = b"my bytes";
 
-- If you need to create :record:`bytes` using a specific buffer (i.e. data in
-  another :record:`bytes`, a `c_string` or a C pointer) you can use the
+- If you need to create :mod:`bytes <Bytes>` using a specific buffer (i.e. data
+  in another :mod:`bytes <Bytes>`, a `c_string` or a C pointer) you can use the
   factory functions shown below, such as :proc:`createBytesWithNewBuffer`.
 
-:record:`bytes` and :record:`~String.string`
---------------------------------------------
+:mod:`bytes <Bytes>` and :mod:`string <String>`
+-----------------------------------------------
 
-As :record:`bytes` can store arbitrary data, any :record:`~String.string` can be
-cast to :record:`bytes`. In that event, the bytes will store UTF-8 encoded
-character data. However, a :record:`bytes` can contain non-UTF-8 bytes and needs
-to be decoded to be converted to string.
+As :mod:`bytes <Bytes>` can store arbitrary data, any :mod:`string <String>` can
+be cast to :mod:`bytes <Bytes>`. In that event, the bytes will store UTF-8
+encoded character data. However, a :mod:`bytes <Bytes>` can contain non-UTF-8
+bytes and needs to be decoded to be converted to string.
 
 .. code-block:: chapel
 
@@ -60,20 +60,20 @@ to be decoded to be converted to string.
 
 See the documentation for the :proc:`~bytes.decode` method for details.
 
-Similarly, a :record:`bytes` can be initialized using a string:
+Similarly, a :mod:`bytes <Bytes>` can be initialized using a string:
 
 .. code-block:: chapel
 
    var s = "my string";
    var b: bytes = s;
 
-Casts from :record:`bytes` to a Numeric Type
---------------------------------------------
+Casts from :mod:`bytes <Bytes>` to a Numeric Type
+-------------------------------------------------
 
-This module supports casts from :record:`bytes` to numeric types. Such casts
-will interpret the :record:`bytes` as ASCII characters and convert it to the
-numeric type and throw an error if the :record:`bytes` does not match the
-expected format of a number. For example:
+This module supports casts from :mod:`bytes <Bytes>` to numeric types. Such
+casts will interpret the :mod:`bytes <Bytes>` as ASCII characters and convert it
+to the numeric type and throw an error if the :mod:`bytes <Bytes>` does not
+match the expected format of a number. For example:
 
 .. code-block:: chapel
 
@@ -96,7 +96,7 @@ module Bytes {
   private use ChapelStandard;
   private use ByteBufferHelpers;
   private use BytesStringCommon;
-  private use SysCTypes;
+  private use SysCTypes, CPtr;
 
   public use BytesCasts;
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
@@ -104,27 +104,18 @@ module Bytes {
   pragma "no doc"
   type idxType = int; 
 
-  private proc bytesFactoryArgDepr() {
-    compilerWarning("createBytesWith* with formal argument `s` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
-
-  private proc joinArgDepr() {
-    compilerWarning("bytes.join with formal argument `S` is deprecated. ",
-                    "Use argument name `x` instead");
-  }
   //
   // createBytes* functions
   //
 
   /*
-    Creates a new :record:`bytes` which borrows the internal buffer of another
-    :record:`bytes`. If the buffer is freed before the :record:`bytes` returned
-    from this function, accessing it is undefined behavior.
+    Creates a new :mod:`bytes <Bytes>` which borrows the internal buffer of
+    another :mod:`bytes <Bytes>`. If the buffer is freed before the :mod:`bytes
+    <Bytes>` returned from this function, accessing it is undefined behavior.
 
-    :arg s: The :record:`bytes` to borrow the buffer from
+    :arg s: The :mod:`bytes <Bytes>` to borrow the buffer from
 
-    :returns: A new :record:`bytes`
+    :returns: A new :mod:`bytes <Bytes>`
   */
   inline proc createBytesWithBorrowedBuffer(x: bytes) {
     var ret: bytes;
@@ -132,17 +123,10 @@ module Bytes {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s);
-  }
-
   /*
-    Creates a new :record:`bytes` which borrows the internal buffer of a
-    `c_string`. If the buffer is freed before the :record:`bytes` returned from
-    this function, accessing it is undefined behavior.
+    Creates a new :mod:`bytes <Bytes>` which borrows the internal buffer of a
+    `c_string`. If the buffer is freed before the :mod:`bytes <Bytes>` returned
+    from this function, accessing it is undefined behavior.
 
     :arg s: `c_string` to borrow the buffer from
 
@@ -150,49 +134,42 @@ module Bytes {
                  null byte.
     :type length: `int`
 
-    :returns: A new :record:`bytes`
+    :returns: A new :mod:`bytes <Bytes>`
   */
-  proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
-    //NOTE: This function is heavily used by the compiler to create bytes
-    //literals. So, inlining this causes some bloat in the AST that increases
-    //the compilation time slightly. Therefore, currently we are keeping this
-    //one non-inlined.
+  inline proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
     return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                            size=length+1);
   }
 
-  pragma "last resort"
   pragma "no doc"
-  proc createBytesWithBorrowedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length);
+  proc chpl_createBytesWithLiteral(x: c_string, length: int) {
+    // NOTE: This is a "wellknown" function used by the compiler to create
+    // string literals. Inlining this creates some bloat in the AST, slowing the
+    // compilation.
+    return createBytesWithBorrowedBuffer(x, length);
   }
 
   /*
-     Creates a new :record:`bytes` which borrows the memory allocated for a
-     `c_ptr(uint(8))`. If the buffer is freed before the :record:`bytes`
-     returned from this function, accessing it is undefined behavior.
+     Creates a new :mod:`bytes <Bytes>` which borrows the memory allocated for a
+     `c_ptr`. If the buffer is freed before the :mod:`bytes <Bytes>` returned
+     from this function, accessing it is undefined behavior.
 
      :arg s: Buffer to borrow
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
      :arg size: Size of memory allocated for `s` in bytes
 
-     :returns: A new :record:`bytes`
+     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
-    initWithBorrowedBuffer(ret, x, length,size);
+    initWithBorrowedBuffer(ret, x:bufferType, length, size);
     return ret;
-  }
-
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithBorrowedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithBorrowedBuffer(x=s, length, size);
   }
 
   pragma "no doc"
@@ -201,70 +178,53 @@ module Bytes {
     compilerError("A bytes cannot be passed to createBytesWithOwnedBuffer");
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s);
-  }
-
   /*
-    Creates a new :record:`bytes` which takes ownership of the internal buffer of a
-    `c_string`.The buffer will be freed when the :record:`bytes` is deinitialized.
+    Creates a new :mod:`bytes <Bytes>` which takes ownership of the internal
+    buffer of a `c_string`.The buffer will be freed when the :mod:`bytes
+    <Bytes>` is deinitialized.
 
     :arg s: The `c_string` to take ownership of the buffer from
 
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
-    :returns: A new :record:`bytes`
+    :returns: A new :mod:`bytes <Bytes>`
   */
   inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) {
     return createBytesWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length);
-  }
-
   /*
-     Creates a new :record:`bytes` which takes ownership of the memory allocated
-     for a `c_ptr(uint(8))`. The buffer will be freed when the :record:`bytes`
-     is deinitialized.
+     Creates a new :mod:`bytes <Bytes>` which takes ownership of the memory
+     allocated for a `c_ptr`. The buffer will be freed when the
+     :mod:`bytes <Bytes>` is deinitialized.
 
      :arg s: The buffer to take ownership of
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of the buffer `s`, excluding the terminating null byte.
 
      :arg size: Size of memory allocated for `s` in bytes
 
-     :returns: A new :record:`bytes`
+     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithOwnedBuffer(x: bufferType, length: int, size: int) {
+  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int, size: int) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithOwnedBuffer(ret, x, length, size);
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithOwnedBuffer(s: bufferType, length: int, size: int) {
-    bytesFactoryArgDepr();
-    return createBytesWithOwnedBuffer(x=s, length, size);
-  }
-
   /*
-    Creates a new :record:`bytes` by creating a copy of the buffer of another
-    :record:`bytes`.
+    Creates a new :mod:`bytes <Bytes>` by creating a copy of the buffer of
+    another :mod:`bytes <Bytes>`.
 
-    :arg s: The :record:`bytes` to copy the buffer from
+    :arg s: The :mod:`bytes <Bytes>` to copy the buffer from
 
-    :returns: A new :record:`bytes`
+    :returns: A new :mod:`bytes <Bytes>`
   */
   inline proc createBytesWithNewBuffer(x: bytes) {
     var ret: bytes;
@@ -272,15 +232,8 @@ module Bytes {
     return ret;
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bytes) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s);
-  }
-
   /*
-    Creates a new :record:`bytes` by creating a copy of the buffer of a
+    Creates a new :mod:`bytes <Bytes>` by creating a copy of the buffer of a
     `c_string`.
 
     :arg s: The `c_string` to copy the buffer from
@@ -288,69 +241,51 @@ module Bytes {
     :arg length: Length of `s`'s buffer, excluding the terminating null byte.
     :type length: `int`
 
-    :returns: A new :record:`bytes`
+    :returns: A new :mod:`bytes <Bytes>`
   */
   inline proc createBytesWithNewBuffer(x: c_string, length=x.size) {
     return createBytesWithNewBuffer(x: bufferType, length=length,
                                                     size=length+1);
   }
 
-  pragma "last resort"
-  pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: c_string, length=s.size) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length);
-  }
-
   /*
-     Creates a new :record:`bytes` by creating a copy of a buffer.
+     Creates a new :mod:`bytes <Bytes>` by creating a copy of a buffer.
 
      :arg s: The buffer to copy
-     :type s: `bufferType` (i.e. `c_ptr(uint(8))`)
+     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
 
      :arg length: Length of buffer `s`, excluding the terminating null byte.
 
      :arg size: Size of memory allocated for `s` in bytes
 
-     :returns: A new :record:`bytes`
+     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithNewBuffer(x: bufferType, length: int,
+  inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
                                        size=length+1) {
+    if t != byteType && t != c_char {
+      compilerError("Cannot create a bytes with a buffer of ", t:string);
+    }
     var ret: bytes;
     initWithNewBuffer(ret, x, length, size);
     return ret;
   }
 
-  pragma "last resort"
   pragma "no doc"
-  inline proc createBytesWithNewBuffer(s: bufferType, length: int,
-                                       size=length+1) {
-    bytesFactoryArgDepr();
-    return createBytesWithNewBuffer(x=s, length, size);
-  }
-
   record _bytes {
-    pragma "no doc"
-    var len: int = 0; // length of string in bytes
-    pragma "no doc"
-    var _size: int = 0; // size of the buffer we own
-    pragma "no doc"
+    var buffLen: int = 0; // length of string in bytes
+    var buffSize: int = 0; // size of the buffer we own
     var buff: bufferType = nil;
-    pragma "no doc"
-    var isowned: bool = true;
-    pragma "no doc"
+    var isOwned: bool = true;
     // We use chpl_nodeID as a shortcut to get at here.id without actually constructing
     // a locale object. Used when determining if we should make a remote transfer.
     var locale_id = chpl_nodeID; // : chpl_nodeID_t
 
-    pragma "no doc"
     proc init() {
 
     }
 
-    pragma "no doc"
     proc ref deinit() {
-      if isowned && this.buff != nil {
+      if isOwned && this.buff != nil {
         on __primitive("chpl_on_locale_num",
                        chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
           chpl_here_free(this.buff);
@@ -358,571 +293,360 @@ module Bytes {
       }
     }
 
-    pragma "no doc"
     proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }
-    pragma "no doc"
     proc readThis(f) throws {
       compilerError("not implemented: readThis");
     }
 
-    pragma "no doc"
     proc init=(b: bytes) {
       this.complete();
       initWithNewBuffer(this, b);
     }
 
-    pragma "no doc"
     proc init=(b: string) {
       this.complete();
       initWithNewBuffer(this, b.buff, length=b.numBytes, size=b.numBytes+1);
     }
 
-    // This is assumed to be called from this.locale
-    pragma "no doc"
-    proc ref reinitString(buf: bufferType, s_len: int, size: int,
-                          needToCopy:bool = true) {
-      if this.isEmpty() && buf == nil then return;
-
-      /*const buf = _buf:bufferType; // this is different than string*/
-
-      // If the this.buff is longer than buf, then reuse the buffer if we are
-      // allowed to (this.isowned == true)
-      if s_len != 0 {
-        if needToCopy {
-          if !this.isowned || s_len+1 > this._size {
-            // If the new string is too big for our current buffer or we dont
-            // own our current buffer then we need a new one.
-            if this.isowned && !this.isEmpty() then
-              bufferFree(this.buff);
-            // TODO: should I just allocate 'size' bytes?
-            const (buf, allocSize) = bufferAlloc(s_len+1);
-            this.buff = buf;
-            this._size = allocSize;
-            // We just allocated a buffer, make sure to free it later
-            this.isowned = true;
-          }
-          bufferMemmoveLocal(this.buff, buf, s_len);
-          this.buff[s_len] = 0;
-        } else {
-          if this.isowned && !this.isEmpty() then
-            bufferFree(this.buff);
-          this.buff = buf;
-          this._size = size;
-        }
-      } else {
-        // If s_len is 0, 'buf' may still have been allocated. Regardless, we
-        // need to free the old buffer if 'this' is isowned.
-        if this.isowned && !this.isEmpty() then bufferFree(this.buff);
-        this._size = 0;
-
-        // If we need to copy, we can just set 'buff' to nil. Otherwise the
-        // implication is that the string takes ownership of the given buffer,
-        // so we need to store it and free it later.
-        if needToCopy {
-          this.buff = nil;
-        } else {
-          this.buff = buf;
-        }
-      }
-
-      this.len = s_len;
+    proc init=(b: c_string) {
+      this.complete();
+      var length = b.size;
+      initWithNewBuffer(this, b: bufferType, length=length, size=length+1);
     }
 
-    /* Deprecated - please use :proc:`bytes.size`. */
-    inline proc length {
-      compilerWarning("'bytes.length' is deprecated - " +
-                      "please use 'bytes.size' instead");
-      return len;
-    }
+    inline proc byteIndices return 0..<size;
 
-    /*
-      :returns: The number of bytes in the :record:`bytes`.
-      */
-    inline proc size return len;
-
-    /*
-      :returns: The indices that can be used to index into the bytes
-                (i.e., the range ``1..this.size``)
-    */
-    proc indices return 1..size;
-
-    /*
-      :returns: The number of bytes in the :record:`bytes`.
-      */
-    inline proc numBytes return len;
-
-    pragma "no doc"
-    inline proc param length param {
-      compilerWarning("'bytes.length' is deprecated - " +
-                      "please use 'bytes.size' instead");
-      return size;
-    }
-
-    pragma "no doc"
     inline proc param size param
       return __primitive("string_length_bytes", this);
 
-    pragma "no doc"
     inline proc param numBytes param
       return __primitive("string_length_bytes", this);
 
-    /*
-       Gets a version of the :record:`bytes` that is on the currently
-       executing locale.
-
-       :returns: A shallow copy if the :record:`bytes` is already on the
-                 current locale, otherwise a deep copy is performed.
-    */
-    inline proc localize() : bytes {
-      if _local || this.locale_id == chpl_nodeID {
-        return createBytesWithBorrowedBuffer(this);
-      } else {
-        const x:bytes = this; // assignment makes it local
-        return x;
-      }
-    }
-
-
-    /*
-      Gets a `c_string` from a :record:`bytes`. The returned `c_string` shares
-      the buffer with the :record:`bytes`.
-
-      :returns: A `c_string`
-     */
-    inline proc c_str(): c_string {
-      return getCStr(this);
-    }
-
-    pragma "no doc"
     inline proc param c_str() param : c_string {
       return this:c_string; // folded out in resolution
     }
 
-    /*
-      Gets an ASCII character from the :record:`bytes`
-
-      :arg i: The index
-
-      :returns: A 1-length :record:`bytes` 
-     */
-    proc item(i: int): bytes {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      var (buf, size) = bufferCopy(buf=this.buff, off=i-1, len=1,
-                                   loc=this.locale_id);
-      return createBytesWithOwnedBuffer(buf, length=1, size=size);
-    }
-
     // byteIndex overload provides a nicer interface for string/bytes
     // generic programming
-    pragma "no doc"
     proc item(i: byteIndex): bytes {
       return this.item(i:int);
     }
 
-    /*
-      Gets a byte from the :record:`bytes`
-
-      :arg i: The index
-
-      :returns: uint(8)
-     */
-    proc this(i: int): byteType {
-      return this.byte(i);
-    }
-
     // byteIndex overload provides a nicer interface for string/bytes
     // generic programming
-    pragma "no doc"
     proc this(i: byteIndex): byteType {
       return this.byte(i:int);
     }
 
 
 
-    /*
-      :returns: The value of a single-byte :record:`bytes` as an integer.
-    */
-    proc toByte(): uint(8) {
-      if this.len != 1 {
-        halt("bytes.toByte() only accepts single-byte bytes");
-      }
-      return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
-    }
 
-    pragma "no doc"
     inline proc param toByte() param : uint(8) {
       if this.numBytes != 1 then
         compilerError("bytes.toByte() only accepts single-byte bytes");
       return __primitive("ascii", this);
     }
 
-
-    /*
-      Gets a byte from the :record:`bytes`
-
-      :arg i: The index
-
-      :returns: The value of the `i` th byte as an integer.
-    */
-    proc byte(i: int): byteType {
-      if boundsChecking && (i <= 0 || i > this.len)
-        then halt("index out of bounds of bytes: ", i);
-      return bufferGetByte(buf=this.buff, off=i-1, loc=this.locale_id);
-    }
-
-    pragma "no doc"
     inline proc param byte(param i: int) param : uint(8) {
-      if i < 1 || i > this.numBytes then
-        compilerError("index out of bounds of bytes: " + i:string);
+      if i < 0 || i >= this.numBytes then
+        compilerError("index " + i: string + " out of bounds for bytes with length " + this.numBytes:string);
       return __primitive("ascii", this, i);
     }
 
-    /*
-      Iterates over the :record:`bytes`, yielding ASCII characters.
-
-      :yields: 1-length :record:`bytes`
-     */
-    iter items(): bytes {
-      if this.isEmpty() then return;
-      for i in this.indices do
-        yield this.item[i];
+    inline proc join(const ref x: [] bytes) : bytes {
+      return _join(x);
     }
 
-    /*
-      Iterates over the :record:`bytes`
-
-      :yields: uint(8)
-     */
-    iter these(): byteType {
-      for i in this.bytes() do
-        yield i;
+    inline proc join(ir: _iteratorRecord): bytes {
+      return doJoinIterator(this, ir);
     }
 
-    /*
-      Iterates over the :record:`bytes` byte by byte.
+    // TODO: we don't need this
+    inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
+      return doJoin(this, S);
+    }
+  } // end of record bytes
 
-      :yields: uint(8)
+  /*
+    :returns: The number of bytes in the :mod:`bytes <Bytes>`.
     */
-    iter chpl_bytes(): byteType {
-      for i in this.indices do
-        yield this.byte(i);
+  inline proc bytes.size return buffLen;
+
+  /*
+    :returns: The indices that can be used to index into the bytes
+              (i.e., the range ``0..<this.size``)
+  */
+  proc bytes.indices return 0..<size;
+
+  /*
+    :returns: The number of bytes in the :mod:`bytes <Bytes>`.
+    */
+  inline proc bytes.numBytes return buffLen;
+
+  /*
+     Gets a version of the :mod:`bytes <Bytes>` that is on the currently
+     executing locale.
+
+     :returns: A shallow copy if the :mod:`bytes <Bytes>` is already on the
+               current locale, otherwise a deep copy is performed.
+  */
+  inline proc bytes.localize() : bytes {
+    if _local || this.locale_id == chpl_nodeID {
+      return createBytesWithBorrowedBuffer(this);
+    } else {
+      const x:bytes = this; // assignment makes it local
+      return x;
     }
+  }
+
+
+  /*
+    Gets a `c_string` from a :mod:`bytes <Bytes>`. The returned `c_string`
+    shares the buffer with the :mod:`bytes <Bytes>`.
+
+    :returns: A `c_string`
+   */
+  inline proc bytes.c_str(): c_string {
+    return getCStr(this);
+  }
+
+  /*
+    Gets an ASCII character from the :mod:`bytes <Bytes>`
+
+    :arg i: The index
+
+    :returns: A 1-length :mod:`bytes <Bytes>` 
+   */
+  proc bytes.item(i: int): bytes {
+    if boundsChecking && (i < 0 || i >= this.buffLen)
+      then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
+    var (buf, size) = bufferCopy(buf=this.buff, off=i, len=1,
+                                 loc=this.locale_id);
+    return createBytesWithOwnedBuffer(buf, length=1, size=size);
+  }
+
+  /*
+    Gets a byte from the :mod:`bytes <Bytes>`
+
+    :arg i: The index
+
+    :returns: uint(8)
+   */
+  proc bytes.this(i: int): byteType {
+    return this.byte(i);
+  }
+
+  /*
+    :returns: The value of a single-byte :mod:`bytes <Bytes>` as an integer.
+  */
+  proc bytes.toByte(): uint(8) {
+    if this.buffLen != 1 {
+      halt("bytes.toByte() only accepts single-byte bytes");
+    }
+    return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
+  }
+
+  /*
+    Gets a byte from the :mod:`bytes <Bytes>`
+
+    :arg i: The index
+
+    :returns: The value of the `i` th byte as an integer.
+  */
+  proc bytes.byte(i: int): byteType {
+    if boundsChecking && (i < 0 || i >= this.buffLen)
+      then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
+    return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
+  }
+  /*
+    Iterates over the :mod:`bytes <Bytes>`, yielding ASCII characters.
+
+    :yields: 1-length :mod:`bytes <Bytes>`
+   */
+  pragma "order independent yielding loops"
+  iter bytes.items(): bytes {
+    if this.isEmpty() then return;
+    for i in this.indices do
+      yield this.item[i];
+  }
+
+  /*
+    Iterates over the :mod:`bytes <Bytes>`
+
+    :yields: uint(8)
+   */
+  iter bytes.these(): byteType {
+    for i in this.bytes() do
+      yield i;
+  }
+
+  /*
+    Iterates over the :mod:`bytes <Bytes>` byte by byte.
+
+    :yields: uint(8)
+  */
+  pragma "order independent yielding loops"
+  iter bytes.chpl_bytes(): byteType {
+    for i in this.indices do
+      yield this.byte(i);
+  }
+
+  /*
+    Slices the :mod:`bytes <Bytes>`. Halts if r is non-empty and not completely
+    inside the range ``this.indices`` when compiled with `--checks`.
+    `--fast` disables this check.
+
+    :arg r: The range of indices the new :mod:`bytes <Bytes>` should be made
+            from
+
+    :returns: a new :mod:`bytes <Bytes>` that is a slice within
+              ``this.indices``. If the length of `r` is zero, an empty
+              :mod:`bytes <Bytes>` is returned.
+   */
+  inline proc bytes.this(r: range(?)) : bytes {
+    return getSlice(this, r);
+  }
+  
+  /*
+    Checks if the :mod:`bytes <Bytes>` is empty.
+
+    :returns: * `true`  -- when empty
+              * `false` -- otherwise
+   */
+  inline proc bytes.isEmpty() : bool {
+    return this.buffLen == 0;
+  }
+
+  /*
+    Checks if the :mod:`bytes <Bytes>` starts with any of the given arguments.
+
+    :arg needles: :mod:`bytes <Bytes>` (s) to match against.
+
+    :returns: * `true`--when the :mod:`bytes <Bytes>` begins with one or more of
+                the `needles`
+              * `false`--otherwise
+   */
+  inline proc bytes.startsWith(needles: bytes ...) : bool {
+    return startsEndsWith(this, needles, fromLeft=true);
+  }
+
+  /*
+    Checks if the :mod:`bytes <Bytes>` ends with any of the given arguments.
+
+    :arg needles: :mod:`bytes <Bytes>` (s) to match against.
+
+    :returns: * `true`--when the :mod:`bytes <Bytes>` ends with one or more of
+                the `needles`
+              * `false`--otherwise
+   */
+  inline proc bytes.endsWith(needles: bytes ...) : bool {
+    return startsEndsWith(this, needles, fromLeft=false);
+  }
+
+  /*
+    Finds the argument in the :mod:`bytes <Bytes>`
+
+    :arg needle: :mod:`bytes <Bytes>` to search for
+
+    :arg region: an optional range defining the indices to search
+                 within, default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: the index of the first occurrence from the left of `needle`
+              within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
+              :mod:`bytes <Bytes>`.
+   */
+  inline proc bytes.find(needle: bytes, region: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, region, count=false): idxType;
+  }
+
+  /*
+    Finds the argument in the :mod:`bytes <Bytes>`
+
+    :arg needle: The :mod:`bytes <Bytes>` to search for
+
+    :arg region: an optional range defining the indices to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: the index of the first occurrence from the right of `needle`
+              within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
+              :mod:`bytes <Bytes>`.
+   */
+  inline proc bytes.rfind(needle: bytes, region: range(?) = this.indices) : idxType {
+    return doSearchNoEnc(this, needle, region, count=false,
+                         fromLeft=false): idxType;
+  }
+
+  /*
+    Counts the number of occurrences of the argument in the :mod:`bytes <Bytes>`
+
+    :arg needle: The :mod:`bytes <Bytes>` to search for
+
+    :arg region: an optional range defining the substring to search within,
+                 default is the whole. Halts if the range is not
+                 within ``this.indices``
+
+    :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
+   */
+  inline proc bytes.count(needle: bytes, region: range(?) = this.indices) : int {
+    return doSearchNoEnc(this, needle, region, count=true);
+  }
+
+  /*
+    Replaces occurrences of a :mod:`bytes <Bytes>` with another.
+
+    :arg needle: The :mod:`bytes <Bytes>` to search for
+
+    :arg replacement: The :mod:`bytes <Bytes>` to replace `needle` with
+
+    :arg count: an optional argument specifying the number of replacements to
+                make, values less than zero will replace all occurrences
+
+    :returns: a copy of the :mod:`bytes <Bytes>` where `replacement` replaces
+              `needle` up to `count` times
+   */
+  inline proc bytes.replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
+    return doReplace(this, needle, replacement, count);
+  }
+
+  /*
+    Splits the :mod:`bytes <Bytes>` on `sep` yielding the bytes between each
+    occurrence, up to `maxsplit` times.
+
+    :arg sep: The delimiter used to break the :mod:`bytes <Bytes>` into chunks.
+
+    :arg maxsplit: The number of times to split the :mod:`bytes <Bytes>`,
+                   negative values indicate no limit.
+
+    :arg ignoreEmpty: * `true`-- Empty :mod:`bytes <Bytes>` will not be yielded,
+                      * `false`-- Empty :mod:`bytes <Bytes>` will be yielded
+
+    :yields: :mod:`bytes <Bytes>` 
+   */
+  iter bytes.split(sep: bytes, maxsplit: int = -1,
+             ignoreEmpty: bool = false): bytes {
+    for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
+  }
+
+  /*
+    Works as above, but uses runs of whitespace as the delimiter.
+
+    :arg maxsplit: The maximum number of times to split the :mod:`bytes <Bytes>`,
+                   negative values indicate no limit.
+
+    :yields: :mod:`bytes <Bytes>` 
+   */
+  pragma "not order independent yielding loops"
+  iter bytes.split(maxsplit: int = -1) : bytes {
+    for s in doSplitWSNoEnc(this, maxsplit) do yield s;
+  }
 
     /*
-      Slices the :record:`bytes`. Halts if r is non-empty and not completely
-      inside the range ``this.indices`` when compiled with `--checks`.
-      `--fast` disables this check.
-
-      :arg r: The range of indices the new :record:`bytes` should be made from
-
-      :returns: a new :record:`bytes` that is a slice within
-                ``this.indices``. If the length of `r` is zero, an empty
-                :record:`bytes` is returned.
-     */
-    inline proc this(r: range(?)) : bytes {
-      return getSlice(this, r);
-    }
-
-    // Checks to see if r is inside the bounds of this and returns a finite
-    // range that can be used to iterate over a section of the string
-    // TODO: move into the public interface in some form? better name if so?
-    pragma "no doc"
-    proc _getView(r:range(?)) where r.idxType == int || r.idxType == byteIndex {
-      if boundsChecking {
-        if r.hasLowBound() && (!r.hasHighBound() || r.size > 0) {
-          if r.low:int <= 0 then
-            halt("range out of bounds of bytes");
-        }
-        if r.hasHighBound() && (!r.hasLowBound() || r.size > 0) {
-          if (r.high:int < 0) || (r.high:int > this.len) then
-            halt("range out of bounds of bytes");
-        }
-      }
-      const r1 = r[1:r.idxType..this.len:r.idxType];
-      if r1.stridable {
-        const ret = r1.low:int..r1.high:int by r1.stride;
-        return ret;
-      } else {
-        const ret = r1.low:int..r1.high:int;
-        return ret;
-      }
-    }
-
-    /*
-      Checks if the :record:`bytes` is empty.
-
-      :returns: * `true`  -- when empty
-                * `false` -- otherwise
-     */
-    inline proc isEmpty() : bool {
-      return this.len == 0;
-    }
-
-    /*
-      Checks if the :record:`bytes` starts with any of the given arguments.
-
-      :arg needles: :record:`bytes` (s) to match against.
-
-      :returns: * `true`--when the :record:`bytes` begins with one or more of the `needles`
-                * `false`--otherwise
-     */
-    inline proc startsWith(needles: bytes ...) : bool {
-      return startsEndsWith(this, needles, fromLeft=true);
-    }
-
-    /*
-      Checks if the :record:`bytes` ends with any of the given arguments.
-
-      :arg needles: :record:`bytes` (s) to match against.
-
-      :returns: * `true`--when the :record:`bytes` ends with one or more of the `needles`
-                * `false`--otherwise
-     */
-    inline proc endsWith(needles: bytes ...) : bool {
-      return startsEndsWith(this, needles, fromLeft=false);
-    }
-
-    /*
-      Finds the argument in the :record:`bytes`
-
-      :arg needle: :record:`bytes` to search for
-
-      :arg region: an optional range defining the indices to search
-                   within, default is the whole. Halts if the range is not
-                   within ``this.indices``
-
-      :returns: the index of the first occurrence from the left of `needle`
-                within the :record:`bytes`, or 0 if the `needle` is not in the
-                :record:`bytes`.
-     */
-    inline proc find(needle: bytes, region: range(?) = 1:idxType..) : idxType {
-      return _search_helper(needle, region, count=false): idxType;
-    }
-
-    /*
-      Finds the argument in the :record:`bytes`
-
-      :arg needle: The :record:`bytes` to search for
-
-      :arg region: an optional range defining the indices to search within,
-                   default is the whole. Halts if the range is not
-                   within ``this.indices``
-
-      :returns: the index of the first occurrence from the right of `needle`
-                within the :record:`bytes`, or 0 if the `needle` is not in the
-                :record:`bytes`.
-     */
-    inline proc rfind(needle: bytes, region: range(?) = 1:idxType..) : idxType {
-      return _search_helper(needle, region, count=false,
-                            fromLeft=false): idxType;
-    }
-
-    /*
-      Counts the number of occurrences of the argument in the :record:`bytes`
-
-      :arg needle: The :record:`bytes` to search for
-
-      :arg region: an optional range defining the substring to search within,
-                   default is the whole. Halts if the range is not
-                   within ``this.indices``
-
-      :returns: the number of times `needle` occurs in the :record:`bytes`
-     */
-    inline proc count(needle: bytes, region: range(?) = this.indices) : int {
-      return _search_helper(needle, region, count=true);
-    }
-
-    // Helper function that uses a param bool to toggle between count and find
-    //TODO: this could be a much better string search
-    //      (Boyer-Moore-Horspool|any thing other than brute force)
-    //
-    pragma "no doc"
-    inline proc _search_helper(needle: bytes, region: range(?),
-                               param count: bool, param fromLeft: bool = true) {
-      // needle.len is <= than this.len, so go to the home locale
-      var ret: int = 0;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        // any value > 0 means we have a solution
-        // used because we cant break out of an on-clause early
-        var localRet: int = -1;
-        const nLen = needle.len;
-        const view = this._getView(region);
-        const thisLen = view.size;
-
-        // Edge cases
-        if count {
-          if nLen == 0 { // Empty needle
-            localRet = view.size+1;
-          }
-        } else { // find
-          if nLen == 0 { // Empty needle
-            if fromLeft {
-              localRet = 0;
-            } else {
-              localRet = if thisLen == 0
-                then 0
-                else thisLen+1;
-            }
-          }
-        }
-
-        if nLen > thisLen {
-          localRet = 0;
-        }
-
-        if localRet == -1 {
-          localRet = 0;
-          const localNeedle = needle.localize();
-          const needleLen = localNeedle.len;
-
-          // i *is not* an index into anything, it is the order of the element
-          // of view we are searching from.
-          const numPossible = thisLen - nLen + 1;
-          const searchSpace = if fromLeft
-              then 0..#(numPossible)
-              else 0..#(numPossible) by -1;
-          for i in searchSpace {
-            const bufIdx = view.orderToIndex(i);
-            const found = bufferEqualsLocal(buf1=this.buff, off1=bufIdx-1,
-                                            buf2=localNeedle.buff, off2=0,
-                                            len=needleLen);
-            if found {
-              if count {
-                localRet += 1;
-              } else { // find
-                localRet = view.orderToIndex(i);
-              }
-            }
-            if !count && localRet != 0 then break;
-          }
-        }
-        ret = localRet;
-      }
-      return ret;
-    }
-
-    /*
-      Replaces occurrences of a :record:`bytes` with another.
-
-      :arg needle: The :record:`bytes` to search for
-
-      :arg replacement: The :record:`bytes` to replace `needle` with
-
-      :arg count: an optional argument specifying the number of replacements to
-                  make, values less than zero will replace all occurrences
-
-      :returns: a copy of the :record:`bytes` where `replacement` replaces
-                `needle` up to `count` times
-     */
-    // TODO: not ideal - count and single allocation probably faster
-    //                 - can special case on replacement|needle.size (0, 1)
-    inline proc replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
-      return doReplace(this, needle, replacement, count);
-    }
-
-    /*
-      Splits the :record:`bytes` on `sep` yielding the bytes between each
-      occurrence, up to `maxsplit` times.
-
-      :arg sep: The delimiter used to break the :record:`bytes` into chunks.
-
-      :arg maxsplit: The number of times to split the :record:`bytes`, negative values indicate no limit.
-
-      :arg ignoreEmpty: * `true`-- Empty :record:`bytes` will not be yielded,
-                        * `false`-- Empty :record:`bytes` will be yielded
-
-      :yields: :record:`bytes` 
-     */
-    iter split(sep: bytes, maxsplit: int = -1,
-               ignoreEmpty: bool = false): bytes {
-      for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
-    }
-
-    /*
-      Works as above, but uses runs of whitespace as the delimiter.
-
-      :arg maxsplit: The maximum number of times to split the :record:`bytes`,
-                     negative values indicate no limit.
-
-      :yields: :record:`bytes` 
-     */
-    iter split(maxsplit: int = -1) : bytes {
-      if !this.isEmpty() {
-        const localThis: bytes = this.localize();
-        var done : bool = false;
-        var yieldChunk : bool = false;
-        var chunk : bytes;
-
-        const noSplits : bool = maxsplit == 0;
-        const limitSplits : bool = maxsplit > 0;
-        var splitCount: int = 0;
-        const iEnd: idxType = localThis.len - 1;
-
-        var inChunk : bool = false;
-        var chunkStart : idxType;
-
-        for (i,c) in zip(this.indices, localThis.bytes()) {
-          // emit whole string, unless all whitespace
-          // TODO Engin: Why is this inside the loop?
-          if noSplits {
-            done = true;
-            if !localThis.isSpace() then {
-              chunk = localThis;
-              yieldChunk = true;
-            }
-          } else {
-            var cSpace = byte_isWhitespace(c);
-            // first char of a chunk
-            if !(inChunk || cSpace) {
-              chunkStart = i;
-              inChunk = true;
-              if i > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            } else if inChunk {
-              // first char out of a chunk
-              if cSpace {
-                splitCount += 1;
-                // last split under limit
-                if limitSplits && splitCount > maxsplit {
-                  chunk = localThis[chunkStart..];
-                  yieldChunk = true;
-                  done = true;
-                // no limit
-                } else {
-                  chunk = localThis[chunkStart..i-1];
-                  yieldChunk = true;
-                  inChunk = false;
-                }
-              // out of chars
-              } else if i > iEnd {
-                chunk = localThis[chunkStart..];
-                yieldChunk = true;
-                done = true;
-              }
-            }
-          }
-
-          if yieldChunk {
-            yield chunk;
-            yieldChunk = false;
-          }
-          if done then
-            break;
-        }
-      }
-
-    }
-
-    /*
-      Returns a new :record:`bytes`, which is the concatenation of all of
-      the :record:`bytes` passed in with the contents of the method
+      Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
+      the :mod:`bytes <Bytes>` passed in with the contents of the method
       receiver inserted between them.
 
       .. code-block:: chapel
@@ -930,17 +654,17 @@ module Bytes {
           var x = b"|".join(b"a",b"10",b"d");
           writeln(x); // prints: "a|10|d"
 
-      :arg S: :record:`bytes` values to be joined
+      :arg S: :mod:`bytes <Bytes>` values to be joined
 
-      :returns: A :record:`bytes`
+      :returns: A :mod:`bytes <Bytes>`
     */
-    inline proc join(const ref S: bytes ...) : bytes {
+    inline proc bytes.join(const ref S: bytes ...) : bytes {
       return _join(S);
     }
 
     /*
-      Returns a new :record:`bytes`, which is the concatenation of all of
-      the :record:`bytes` passed in with the contents of the method
+      Returns a new :mod:`bytes <Bytes>`, which is the concatenation of all of
+      the :mod:`bytes <Bytes>` passed in with the contents of the method
       receiver inserted between them.
 
       .. code-block:: chapel
@@ -949,45 +673,15 @@ module Bytes {
           var x = b"|".join(tup);
           writeln(x); // prints: "a|10|d"
 
-      :arg S: :record:`bytes` values to be joined
-      :type S: tuple or array of :record:`bytes`
+      :arg S: :mod:`bytes <Bytes>` values to be joined
+      :type S: tuple or array of :mod:`bytes <Bytes>`
 
-      :returns: A :record:`bytes`
+      :returns: A :mod:`bytes <Bytes>`
     */
-    inline proc join(const ref x) : bytes where isTuple(x) {
+    inline proc bytes.join(const ref x) : bytes where isTuple(x) {
       if !isHomogeneousTuple(x) || !isBytes(x[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of bytes");
       return _join(x);
-    }
-
-    pragma "last resort"
-    pragma "no doc"
-    inline proc join(const ref S) : bytes where isTuple(S) {
-      joinArgDepr();
-      return join(x=S);
-    }
-
-    pragma "no doc"
-    inline proc join(const ref x: [] bytes) : bytes {
-      return _join(x);
-    }
-
-    pragma "last resort"
-    pragma "no doc"
-    inline proc join(const ref S: [] bytes) : bytes {
-      joinArgDepr();
-      return join(x=S);
-    }
-
-    pragma "no doc"
-    inline proc join(ir: _iteratorRecord): bytes {
-      return doJoinIterator(this, ir);
-    }
-
-    // TODO: we don't need this
-    pragma "no doc"
-    inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
     }
 
     /*
@@ -1001,68 +695,64 @@ module Bytes {
       :arg trailing: Indicates if trailing occurrences should be removed.
                      Defaults to `true`.
 
-      :returns: A new :record:`bytes` with `leading` and/or `trailing`
+      :returns: A new :mod:`bytes <Bytes>` with `leading` and/or `trailing`
                 occurrences of characters in `chars` removed as appropriate.
     */
-    proc strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
-      if this.isEmpty() then return "";
-      if chars.isEmpty() then return this;
-
-      const localThis: bytes = this.localize();
-      const localChars: bytes = chars.localize();
-
-      var start: idxType = 1;
-      var end: idxType = localThis.len;
-
-      if leading {
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              start = i + 1;
-              continue outer;
-            }
-          }
-          break;
-        }
-      }
-
-      if trailing {
-        // Because we are working with codepoints whose starting byte index
-        // is not initially known, it is faster to work forward, assuming we
-        // are already past the end of the string, and then update the end
-        // point as we are proven wrong.
-        end = 0;
-        label outer for (i, thisChar) in zip(this.indices, localThis.bytes()) {
-          for removeChar in localChars.bytes() {
-            if thisChar == removeChar {
-              continue outer;
-            }
-          }
-          // This was not a character to be removed, so update tentative end.
-          end = i;
-        }
-      }
-
-      return localThis[start..end];
-
+    proc bytes.strip(chars = b" \t\r\n", leading=true, trailing=true) : bytes {
+      return doStripNoEnc(this, chars, leading, trailing);
     }
 
     /*
-      Splits the :record:`bytes` on a given separator
+      Splits the :mod:`bytes <Bytes>` on a given separator
 
       :arg sep: The separator
 
       :returns: a `3*bytes` consisting of the section before `sep`,
                 `sep`, and the section after `sep`. If `sep` is not found, the
-                tuple will contain the whole :record:`bytes`, and then two empty
-                :record:`bytes`.
+                tuple will contain the whole :mod:`bytes <Bytes>`, and then two
+                empty :mod:`bytes <Bytes>`.
     */
-    inline proc const partition(sep: bytes) : 3*bytes {
+    inline proc const bytes.partition(sep: bytes) : 3*bytes {
       return doPartition(this, sep);
     }
 
+    /* Remove indentation from each line of bytes.
+
+       This can be useful when applied to multi-line bytes that are indented
+       in the source code, but should not be indented in the output.
+
+       When ``columns == 0``, determine the level of indentation to remove from
+       all lines by finding the common leading whitespace across all non-empty
+       lines. Empty lines are lines containing only whitespace. Tabs and spaces
+       are the only whitespaces that are considered, but are not treated as
+       the same characters when determining common whitespace.
+
+       When ``columns > 0``, remove ``columns`` leading whitespace characters
+       from each line. Tabs are not considered whitespace when ``columns > 0``,
+       so only leading spaces are removed.
+
+       :arg columns: The number of columns of indentation to remove. Infer
+                     common leading whitespace if ``columns == 0``.
+
+       :arg ignoreFirst: When ``true``, ignore first line when determining the
+                         common leading whitespace, and make no changes to the
+                         first line.
+
+       :returns: A new `bytes` with indentation removed.
+
+       .. warning::
+
+          ``bytes.dedent`` is not considered stable and is subject to change in
+          future Chapel releases.
+    */
+    proc bytes.dedent(columns=0, ignoreFirst=true): bytes {
+      if chpl_warnUnstable then
+        compilerWarning("bytes.dedent is subject to change in the future.");
+      return doDedent(this, columns, ignoreFirst);
+    }
+
     /*
-      Returns a UTF-8 string from the given :record:`bytes`. If the data is
+      Returns a UTF-8 string from the given :mod:`bytes <Bytes>`. If the data is
       malformed for UTF-8, `policy` argument determines the action.
       
       :arg policy: - `decodePolicy.strict` raises an error
@@ -1073,63 +763,25 @@ module Bytes {
                      private use codepoints
       
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-               argument and the :record:`bytes` contains non-UTF-8 characters.
+               argument and the :mod:`bytes <Bytes>` contains non-UTF-8 characters.
 
       :returns: A UTF-8 string.
     */
-    proc decode(policy=decodePolicy.strict): string throws {
+    proc bytes.decode(policy=decodePolicy.strict): string throws {
       // NOTE: In the future this method could support more encodings.
       var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, policy);
-    }
-
-    // to capture the deprecated formal name "errors"
-    pragma "no doc"
-    pragma "last resort"
-    proc decode(errors=decodePolicy.strict): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      return this.decode(policy=errors);
-    }
-
-    // just to capture the deprecated decodePolicy.ignore and give a compiler
-    // warning
-    pragma "no doc"
-    pragma "last resort"
-    proc decode(param errors: decodePolicy): string throws {
-      compilerWarning("'errors' argument to bytes.decode is deprecated. ",
-                      "Use 'policy' instead.");
-      if errors == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, errors);
-    }
-
-    pragma "no doc"
-    proc decode(param policy: decodePolicy): string throws {
-      if policy == decodePolicy.ignore then
-        compilerWarning("decodePolicy.ignore is deprecated. ",
-                        "Use decodePolicy.drop instead");
-
-      // have to repeat this as above to avoid recursion. That's the cleanest
-      // way I could think of.
-      var localThis: bytes = this.localize();
-      return decodeByteBuffer(localThis.buff, localThis.len, policy);
+      return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are uppercase (A-Z) in
-     ASCII.  Ignores uncased (not a letter) and extended ASCII characters
-     (decimal value larger than 127)
+     Checks if all the characters in the :mod:`bytes <Bytes>` are uppercase
+     (A-Z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
+     characters (decimal value larger than 127)
 
       :returns: * `true`--there is at least one uppercase and no lowercase characters
                 * `false`--otherwise
      */
-    proc isUpper() : bool {
+    proc bytes.isUpper() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1146,14 +798,14 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are lowercase (a-z) in
-     ASCII.  Ignores uncased (not a letter) and extended ASCII characters
-     (decimal value larger than 127)
+     Checks if all the characters in the :mod:`bytes <Bytes>` are lowercase
+     (a-z) in ASCII.  Ignores uncased (not a letter) and extended ASCII
+     characters (decimal value larger than 127)
 
       :returns: * `true`--there is at least one lowercase and no uppercase characters
                 * `false`--otherwise
      */
-    proc isLower() : bool {
+    proc bytes.isLower() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1171,13 +823,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are whitespace (' ',
-     '\\t', '\\n', '\\v', '\\f', '\\r') in ASCII.
+     Checks if all the characters in the :mod:`bytes <Bytes>` are whitespace
+     (' ', '\\t', '\\n', '\\v', '\\f', '\\r') in ASCII.
 
       :returns: * `true`  -- when all the characters are whitespace.
                 * `false` -- otherwise
      */
-    proc isSpace() : bool {
+    proc bytes.isSpace() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1194,13 +846,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are alphabetic (a-zA-Z)
-     in ASCII.
+     Checks if all the characters in the :mod:`bytes <Bytes>` are alphabetic
+     (a-zA-Z) in ASCII.
 
       :returns: * `true`  -- when the characters are alphabetic.
                 * `false` -- otherwise
      */
-    proc isAlpha() : bool {
+    proc bytes.isAlpha() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1217,13 +869,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are digits (0-9) in
-     ASCII.
+     Checks if all the characters in the :mod:`bytes <Bytes>` are digits (0-9)
+     in ASCII.
 
       :returns: * `true`  -- when the characters are digits.
                 * `false` -- otherwise
      */
-    proc isDigit() : bool {
+    proc bytes.isDigit() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1240,13 +892,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are alphanumeric
+     Checks if all the characters in the :mod:`bytes <Bytes>` are alphanumeric
      (a-zA-Z0-9) in ASCII.
 
       :returns: * `true`  -- when the characters are alphanumeric.
                 * `false` -- otherwise
      */
-    proc isAlnum() : bool {
+    proc bytes.isAlnum() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1264,12 +916,13 @@ module Bytes {
     }
 
     /*
-     Checks if all the characters in the :record:`bytes` are printable in ASCII.
+     Checks if all the characters in the :mod:`bytes <Bytes>` are printable in
+     ASCII.
 
       :returns: * `true`  -- when the characters are printable.
                 * `false` -- otherwise
      */
-    proc isPrintable() : bool {
+    proc bytes.isPrintable() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1293,7 +946,7 @@ module Bytes {
       :returns: * `true`  -- when the condition described above is met.
                 * `false` -- otherwise
      */
-    proc isTitle() : bool {
+    proc bytes.isTitle() : bool {
       if this.isEmpty() then return false;
       var result: bool = true;
 
@@ -1327,14 +980,14 @@ module Bytes {
     }
 
     /*
-      Creates a new :record:`bytes` with all applicable characters converted to
-      lowercase.
+      Creates a new :mod:`bytes <Bytes>` with all applicable characters
+      converted to lowercase.
 
-      :returns: A new :record:`bytes` with all uppercase characters (A-Z)
+      :returns: A new :mod:`bytes <Bytes>` with all uppercase characters (A-Z)
                 replaced with their lowercase counterpart in ASCII. Other
                 characters remain untouched.
     */
-    proc toLower() : bytes {
+    proc bytes.toLower() : bytes {
       var result: bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.bytes()) {
@@ -1344,14 +997,14 @@ module Bytes {
     }
 
     /*
-      Creates a new :record:`bytes` with all applicable characters converted to
-      uppercase.
+      Creates a new :mod:`bytes <Bytes>` with all applicable characters
+      converted to uppercase.
 
-      :returns: A new :record:`bytes` with all lowercase characters (a-z)
+      :returns: A new :mod:`bytes <Bytes>` with all lowercase characters (a-z)
                 replaced with their uppercase counterpart in ASCII. Other
                 characters remain untouched.
     */
-    proc toUpper() : bytes {
+    proc bytes.toUpper() : bytes {
       var result: bytes = this;
       if result.isEmpty() then return result;
       for (i,b) in zip(0.., result.bytes()) {
@@ -1361,15 +1014,15 @@ module Bytes {
     }
 
     /*
-      Creates a new :record:`bytes` with all applicable characters converted to
-      title capitalization.
+      Creates a new :mod:`bytes <Bytes>` with all applicable characters
+      converted to title capitalization.
 
-      :returns: A new :record:`bytes` with all cased characters(a-zA-Z)
+      :returns: A new :mod:`bytes <Bytes>` with all cased characters(a-zA-Z)
                 following an uncased character converted to uppercase, and all
                 cased characters following another cased character converted to
                 lowercase.
      */
-    proc toTitle() : bytes {
+    proc bytes.toTitle() : bytes {
       var result: bytes = this;
       if result.isEmpty() then return result;
 
@@ -1391,22 +1044,26 @@ module Bytes {
       return result;
     }
 
-  } // end of record bytes
-
   pragma "no doc"
-  inline proc _cast(type t: bytes, x: string) {
+  inline operator :(x: string, type t: bytes) {
     return createBytesWithNewBuffer(x.buff, length=x.numBytes, size=x.numBytes+1);
   }
+  pragma "no doc"
+  inline operator :(x: c_string, type t: bytes) {
+    var length = x.size;
+    return createBytesWithNewBuffer(x: bufferType, length=length, size=length+1);
+  }
+
 
   /*
-     Appends the :record:`bytes` `rhs` to the :record:`bytes` `lhs`.
+     Appends the :mod:`bytes <Bytes>` `rhs` to the :mod:`bytes <Bytes>` `lhs`.
   */
   proc +=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
   }
 
   /*
-     Copies the :record:`bytes` `rhs` into the :record:`bytes` `lhs`.
+     Copies the :mod:`bytes <Bytes>` `rhs` into the :mod:`bytes <Bytes>` `lhs`.
   */
   proc =(ref lhs: bytes, rhs: bytes) {
     doAssign(lhs, rhs);
@@ -1418,15 +1075,15 @@ module Bytes {
      Halts if `lhs` is a remote bytes.
   */
   proc =(ref lhs: bytes, rhs_c: c_string) {
-    doAssign(lhs, rhs_c);
+    lhs = createBytesWithNewBuffer(rhs_c);
   }
 
   //
   // Concatenation
   //
   /*
-     :returns: A new :record:`bytes` which is the result of concatenating `s0`
-               and `s1`
+     :returns: A new :mod:`bytes <Bytes>` which is the result of concatenating
+               `s0` and `s1`
   */
   proc +(s0: bytes, s1: bytes) {
     return doConcat(s0, s1);
@@ -1437,8 +1094,8 @@ module Bytes {
     return __primitive("string_concat", s0, s1);
 
   /*
-     :returns: A new :record:`bytes` which is the result of repeating `s` `n`
-               times.  If `n` is less than or equal to 0, an empty bytes is
+     :returns: A new :mod:`bytes <Bytes>` which is the result of repeating `s`
+               `n` times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
   */
   proc *(s: bytes, n: integral) {
@@ -1452,35 +1109,6 @@ module Bytes {
 
   pragma "no doc"
   inline proc !=(a: bytes, b: bytes) : bool {
-    return !doEq(a,b);
-  }
-
-  proc comparisonDeprWarn() {
-    compilerWarning("Comparison between bytes and string is deprecated. " +
-                    "Cast the string to bytes first");
-  }
-
-  pragma "no doc"
-  proc ==(a: bytes, b: string) : bool {
-    comparisonDeprWarn();
-    return doEq(a,b);
-  }
-
-  pragma "no doc"
-  proc ==(a: string, b: bytes) : bool {
-    comparisonDeprWarn();
-    return doEq(a,b);
-  }
-
-  pragma "no doc"
-  inline proc !=(a: bytes, b: string) : bool {
-    comparisonDeprWarn();
-    return !doEq(a,b);
-  }
-
-  pragma "no doc"
-  inline proc !=(a: string, b: bytes) : bool {
-    comparisonDeprWarn();
     return !doEq(a,b);
   }
 
@@ -1531,70 +1159,6 @@ module Bytes {
   pragma "no doc"
   inline proc >(param a: bytes, param b: bytes) param {
     return (__primitive("string_compare", a, b) > 0);
-  }
-
-  // character-wise operation helpers
-
-  require "ctype.h";
-
-  private inline proc byte_isAscii(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isascii(c: c_int): c_int;
-    return isascii(c: c_int) != 0;
-  }
-
-  private inline proc byte_isWhitespace(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isspace(c: c_int): c_int;
-    return isspace(c: c_int) != 0;
-  }
-
-  private inline proc byte_isPrintable(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isprint(c: c_int): c_int;
-    return isprint(c: c_int) != 0;
-  }
-
-  private inline proc byte_isAlpha(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isalpha(c: c_int): c_int;
-    return isalpha(c: c_int) != 0;
-  }
-
-  private inline proc byte_isUpper(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isupper(c: c_int): c_int;
-    return isupper(c: c_int) != 0;
-  }
-
-  private inline proc byte_isLower(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc islower(c: c_int): c_int;
-    return islower(c: c_int) != 0;
-  }
-
-  private inline proc byte_isDigit(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isdigit(c: c_int): c_int;
-    return isdigit(c: c_int) != 0;
-  }
-
-  private inline proc byte_isAlnum(c: byteType): bool {
-    pragma "fn synchronization free"
-    extern proc isalnum(c: c_int): c_int;
-    return isalnum(c: c_int) != 0;
-  }
-
-  private inline proc byte_toUpper(c: byteType): byteType {
-    pragma "fn synchronization free"
-    extern proc toupper(c: c_int): c_int;
-    return toupper(c: c_int):byteType;
-  }
-
-  private inline proc byte_toLower(c: byteType): byteType {
-    pragma "fn synchronization free"
-    extern proc tolower(c: c_int): c_int;
-    return tolower(c: c_int):byteType;
   }
 
   //

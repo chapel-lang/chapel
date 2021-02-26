@@ -1,9 +1,8 @@
 //===--- MacroArgs.cpp - Formal argument info for Macros ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -77,8 +76,6 @@ MacroArgs *MacroArgs::create(const MacroInfo *MI,
 /// destroy - Destroy and deallocate the memory for this object.
 ///
 void MacroArgs::destroy(Preprocessor &PP) {
-  StringifiedArgs.clear();
-
   // Don't clear PreExpArgTokens, just clear the entries.  Clearing the entries
   // would deallocate the element vectors.
   for (unsigned i = 0, e = PreExpArgTokens.size(); i != e; ++i)
@@ -136,15 +133,12 @@ const Token *MacroArgs::getUnexpArgument(unsigned Arg) const {
   return Result;
 }
 
-// This function assumes that the variadic arguments are the tokens
-// corresponding to the last parameter (ellipsis) - and since tokens are
-// separated by the 'eof' token, if that is the only token corresponding to that
-// last parameter, we know no variadic arguments were supplied.
-bool MacroArgs::invokedWithVariadicArgument(const MacroInfo *const MI) const {
+bool MacroArgs::invokedWithVariadicArgument(const MacroInfo *const MI,
+                                            Preprocessor &PP) {
   if (!MI->isVariadic())
     return false;
   const int VariadicArgIndex = getNumMacroArguments() - 1;
-  return getUnexpArgument(VariadicArgIndex)->isNot(tok::eof);
+  return getPreExpArgument(VariadicArgIndex, PP).front().isNot(tok::eof);
 }
 
 /// ArgNeedsPreexpansion - If we can prove that the argument won't be affected
@@ -185,7 +179,7 @@ const std::vector<Token> &MacroArgs::getPreExpArgument(unsigned Arg,
   // list.  With this installed, we lex expanded tokens until we hit the EOF
   // token at the end of the unexp list.
   PP.EnterTokenStream(AT, NumToks, false /*disable expand*/,
-                      false /*owns tokens*/);
+                      false /*owns tokens*/, false /*is reinject*/);
 
   // Lex all of the macro-expanded tokens into Result.
   do {
@@ -310,22 +304,4 @@ Token MacroArgs::StringifyArgument(const Token *ArgToks,
   PP.CreateString(Result, Tok,
                   ExpansionLocStart, ExpansionLocEnd);
   return Tok;
-}
-
-/// getStringifiedArgument - Compute, cache, and return the specified argument
-/// that has been 'stringified' as required by the # operator.
-const Token &MacroArgs::getStringifiedArgument(unsigned ArgNo,
-                                               Preprocessor &PP,
-                                               SourceLocation ExpansionLocStart,
-                                               SourceLocation ExpansionLocEnd) {
-  assert(ArgNo < getNumMacroArguments() && "Invalid argument number!");
-  if (StringifiedArgs.empty())
-    StringifiedArgs.resize(getNumMacroArguments(), {});
-
-  if (StringifiedArgs[ArgNo].isNot(tok::string_literal))
-    StringifiedArgs[ArgNo] = StringifyArgument(getUnexpArgument(ArgNo), PP,
-                                               /*Charify=*/false,
-                                               ExpansionLocStart,
-                                               ExpansionLocEnd);
-  return StringifiedArgs[ArgNo];
 }

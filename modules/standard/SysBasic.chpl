@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -141,17 +141,13 @@ inline proc !(a: syserr) return (qio_err_iserr(a) == 0:c_int);
 pragma "no doc"
 inline proc _cond_test(a: syserr) return (qio_err_iserr(a) != 0:c_int);
 pragma "no doc"
-inline proc _cast(type t, x: syserr) where t == int(32)
-  return qio_err_to_int(x);
+inline operator :(x: syserr, type t: int(32)) return qio_err_to_int(x);
 pragma "no doc"
-inline proc _cast(type t, x: syserr) where t == int(64)
-  return qio_err_to_int(x):int(64);
+inline operator :(x: syserr, type t: int(64)) return qio_err_to_int(x):int(64);
 pragma "no doc"
-inline proc _cast(type t, x: int(32)) where t == syserr
-  return qio_int_to_err(x);
+inline operator :(x: int(32), type t: syserr) return qio_int_to_err(x);
 pragma "no doc"
-inline proc _cast(type t, x: int(64)) where t == syserr
-  return qio_int_to_err(x:int(32));
+inline operator :(x: int(64), type t: syserr) return qio_int_to_err(x:int(32));
 pragma "no doc"
 inline proc =(ref ret:syserr, x:syserr) { __primitive("=", ret, x); }
 pragma "no doc"

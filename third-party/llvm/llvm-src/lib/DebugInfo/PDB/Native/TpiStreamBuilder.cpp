@@ -1,9 +1,8 @@
 //===- TpiStreamBuilder.cpp -   -------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -45,6 +44,9 @@ void TpiStreamBuilder::setVersionHeader(PdbRaw_TpiVer Version) {
 void TpiStreamBuilder::addTypeRecord(ArrayRef<uint8_t> Record,
                                      Optional<uint32_t> Hash) {
   // If we just crossed an 8KB threshold, add a type index offset.
+  assert(((Record.size() & 3) == 0) &&
+         "The type record's size is not a multiple of 4 bytes which will "
+         "cause misalignment in the output TPI stream!");
   size_t NewSize = TypeRecordBytes + Record.size();
   constexpr size_t EightKB = 8 * 1024;
   if (NewSize / EightKB > TypeRecordBytes / EightKB || TypeRecords.empty()) {
@@ -77,7 +79,7 @@ Error TpiStreamBuilder::finalize() {
   H->HashStreamIndex = HashStreamIndex;
   H->HashAuxStreamIndex = kInvalidStreamIndex;
   H->HashKeySize = sizeof(ulittle32_t);
-  H->NumHashBuckets = MinTpiHashBuckets;
+  H->NumHashBuckets = MaxTpiHashBuckets - 1;
 
   // Recall that hash values go into a completely different stream identified by
   // the `HashStreamIndex` field of the `TpiStreamHeader`.  Therefore, the data
@@ -130,13 +132,13 @@ Error TpiStreamBuilder::finalizeMsfLayout() {
     ulittle32_t *H = Allocator.Allocate<ulittle32_t>(TypeHashes.size());
     MutableArrayRef<ulittle32_t> HashBuffer(H, TypeHashes.size());
     for (uint32_t I = 0; I < TypeHashes.size(); ++I) {
-      HashBuffer[I] = TypeHashes[I] % MinTpiHashBuckets;
+      HashBuffer[I] = TypeHashes[I] % (MaxTpiHashBuckets - 1);
     }
     ArrayRef<uint8_t> Bytes(
         reinterpret_cast<const uint8_t *>(HashBuffer.data()),
         calculateHashBufferSize());
     HashValueStream =
-        llvm::make_unique<BinaryByteStream>(Bytes, llvm::support::little);
+        std::make_unique<BinaryByteStream>(Bytes, llvm::support::little);
   }
   return Error::success();
 }
@@ -153,9 +155,15 @@ Error TpiStreamBuilder::commit(const msf::MSFLayout &Layout,
   if (auto EC = Writer.writeObject(*Header))
     return EC;
 
-  for (auto Rec : TypeRecords)
+  for (auto Rec : TypeRecords) {
+    assert(!Rec.empty() && "Attempting to write an empty type record shifts "
+                           "all offsets in the TPI stream!");
+    assert(((Rec.size() & 3) == 0) &&
+           "The type record's size is not a multiple of 4 bytes which will "
+           "cause misalignment in the output TPI stream!");
     if (auto EC = Writer.writeBytes(Rec))
       return EC;
+  }
 
   if (HashStreamIndex != kInvalidStreamIndex) {
     auto HVS = WritableMappedBlockStream::createIndexedStream(

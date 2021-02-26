@@ -1,0 +1,2 @@
+foo(out a) with a.type int(64)
+after call, x is 1 : int(64)

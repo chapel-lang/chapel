@@ -1,9 +1,8 @@
 //===-- AArch64CleanupLocalDynamicTLSPass.cpp ---------------------*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -105,6 +104,10 @@ struct LDTLSCleanup : public MachineFunctionPass {
     MachineInstr *Copy = BuildMI(*I.getParent(), I, I.getDebugLoc(),
                                  TII->get(TargetOpcode::COPY), AArch64::X0)
                              .addReg(TLSBaseAddrReg);
+
+    // Update the call site info.
+    if (I.shouldUpdateCallSiteInfo())
+      I.getMF()->eraseCallSiteInfo(&I);
 
     // Erase the TLS_base_addr instruction.
     I.eraseFromParent();

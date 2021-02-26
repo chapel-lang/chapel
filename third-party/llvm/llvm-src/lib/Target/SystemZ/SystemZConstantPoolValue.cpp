@@ -1,9 +1,8 @@
 //===-- SystemZConstantPoolValue.cpp - SystemZ constant-pool value --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,13 +25,12 @@ SystemZConstantPoolValue::Create(const GlobalValue *GV,
   return new SystemZConstantPoolValue(GV, Modifier);
 }
 
-int SystemZConstantPoolValue::
-getExistingMachineCPValue(MachineConstantPool *CP, unsigned Alignment) {
-  unsigned AlignMask = Alignment - 1;
+int SystemZConstantPoolValue::getExistingMachineCPValue(MachineConstantPool *CP,
+                                                        Align Alignment) {
   const std::vector<MachineConstantPoolEntry> &Constants = CP->getConstants();
   for (unsigned I = 0, E = Constants.size(); I != E; ++I) {
     if (Constants[I].isMachineConstantPoolEntry() &&
-        (Constants[I].getAlignment() & AlignMask) == 0) {
+        Constants[I].getAlign() >= Alignment) {
       auto *ZCPV =
         static_cast<SystemZConstantPoolValue *>(Constants[I].Val.MachineCPVal);
       if (ZCPV->GV == GV && ZCPV->Modifier == Modifier)

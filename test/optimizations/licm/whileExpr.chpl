@@ -38,12 +38,12 @@ proc nonGlobalVersion() {
 
 proc inlinedNonGlobalVersion() {
   var B = [10];
-  ref box = B[1];
+  ref box = B[0];
 
   var i = 1;
   while i <= box {
     writeln("ITER ", i);
-    B[1] -= 1;
+    B[0] -= 1;
     i += 1;
   }
 }

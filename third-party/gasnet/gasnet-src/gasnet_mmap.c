@@ -427,6 +427,72 @@ static const char *gasneti_pshm_makeunique(const char *unique) {
 #endif
 #endif /* GASNET_PSHM */
 
+#if defined(GASNETI_PSHM_XPMEM)
+//-----------------------------------------------------------------------------
+// Bug 3806/3815: Workaround XPMEM incompatibility with Cray perftools-lite
+#define GASNETI_XPMEM_WRAP(error_result, xpmem_call) do { \
+  int err, retry; \
+  uint64_t pause=1; \
+  int sigprof = 0; \
+  struct sigaction act_save; \
+  for (retry=0; retry < 10; retry++) { \
+    xpmem_call; \
+    err = errno; \
+    if_pt (result != error_result) break; /* success */ \
+    /* error handling: */ \
+    if (err == EFAULT || err == EINTR) { \
+        GASNETI_TRACE_PRINTF(I,("GASNETI_XPMEM_WRAP("#xpmem_call") failed: %s(%i)  (retry=%i)\n", strerror(err), err, retry)); \
+        if (!sigprof) { /* attempt to block the sampling signal that triggers the defect */ \
+          if (getenv("PAT_RT_SAMPLING_SIGNAL")) sigprof=atoi(getenv("PAT_RT_SAMPLING_SIGNAL")); \
+          if (sigprof <= 0 || sigprof > SIGRTMAX) sigprof = SIGPROF; \
+          struct sigaction act_ign; \
+          act_ign.sa_handler = SIG_IGN; act_ign.sa_flags = SA_RESTART; \
+          if (sigaction(sigprof, 0, &act_save)) { \
+            perror("sigaction(save)"); \
+            sigprof = 0; \
+          } else if (sigaction(sigprof, &act_ign, 0)) perror("sigaction(clear)"); \
+          /*fprintf(stderr,"SIGPROF sa_flags=\t%x sa_handler=%p sa_sigaction=%p\n", act_save.sa_flags,  act_save.sa_handler, act_save.sa_sigaction);*/ \
+        } \
+        /* wait a bit.. */ \
+        pause = MIN(1e9,pause<<3); \
+        gasneti_nsleep(pause); \
+        continue; /* retry */ \
+    } else break; /* unrecognized error */ \
+  } \
+  if_pf (result == error_result) { \
+    gasneti_console_message("WARNING", #xpmem_call" failed: %s(%i)  (%i retries)\n", strerror(err), err, retry); \
+  } \
+  if (sigprof) { /* restore signal handler */ \
+    if (sigaction(sigprof, &act_save, 0)) perror("sigaction(restore)"); \
+  } \
+  errno = err; \
+} while (0)
+
+extern gasneti_xpmem_segid_t gasneti_xpmem_make(void *base, size_t size) {
+  gasneti_xpmem_segid_t result;
+  #if HAVE_XPMEM_MAKE_2
+    GASNETI_XPMEM_WRAP((gasneti_xpmem_segid_t)(-1), 
+                       result = xpmem_make_2(base, size, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600));
+  #else
+    GASNETI_XPMEM_WRAP((gasneti_xpmem_segid_t)(-1), 
+                       result = xpmem_make(base, size, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600));
+  #endif
+  return result;
+}
+extern xpmem_apid_t gasneti_xpmem_get(xpmem_segid_t segid) {
+  gasneti_xpmem_apid_t result;
+  #if HAVE_XPMEM_MAKE_2
+    GASNETI_XPMEM_WRAP((gasneti_xpmem_apid_t)-1,
+                       result = xpmem_get_2(segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL));
+  #else
+    GASNETI_XPMEM_WRAP((gasneti_xpmem_apid_t)-1,
+                       result = xpmem_get(segid, XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL));
+  #endif
+  return result;
+}
+//-----------------------------------------------------------------------------
+#endif
+
 #if defined(GASNETI_USE_HUGETLBFS)
 
 /* Apply the default hugepage size for mapping of the requested size.
@@ -550,24 +616,7 @@ static void * gasneti_pshm_mmap(int pshm_rank, void *segbase, size_t segsize) {
     ptr = mmap(segbase, segsize, (PROT_READ|PROT_WRITE), mmap_flags, 0, 0);
   #endif
   } else {
-    gasneti_xpmem_apid_t apid;
-    // Bounded retry on xpmem_get() failure to tolerate non-fatal signals (see Bug 3815)
-    for (int trial = 1; trial <= 5; ++trial) {
-    #if HAVE_XPMEM_MAKE_2
-      apid =  xpmem_get_2(gasneti_pshm_segids[pshm_rank], XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
-    #else
-      apid =    xpmem_get(gasneti_pshm_segids[pshm_rank], XPMEM_RDWR, XPMEM_PERMIT_MODE, NULL);
-    #endif
-      if (apid != (gasneti_xpmem_apid_t)-1) {
-        break; // Success
-      }
-      // Failure with errno == EFAULT has been seen where EINTR was
-      // probably intended.  So, we retry w/o regard to actual errno.
-      int save_errno = errno;
-      GASNETI_TRACE_PRINTF(I, ("xpmem_get() trial %d failed %d(%s)\n",
-                               trial, save_errno, strerror(save_errno)));
-      errno = save_errno;
-    }
+    gasneti_xpmem_apid_t apid = gasneti_xpmem_get(gasneti_pshm_segids[pshm_rank]);
 
     if (apid != (gasneti_xpmem_apid_t)-1) {
     #if HAVE_XPMEM_MAKE_2
@@ -639,15 +688,7 @@ void gasneti_publish_segment(gasnet_seginfo_t segment) {
   uintptr_t segsize = segment.size;
 #if defined(GASNETI_PSHM_XPMEM)
   /* Create and supernode-exchange xpmem segment ids */
-  gasneti_xpmem_segid_t segid =
-  #if HAVE_XPMEM_MAKE_2
-          xpmem_make_2(segbase, segsize, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600);
-  #else
-            xpmem_make(segbase, segsize, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600);
-  #endif
-  if_pf (segid == (gasneti_xpmem_segid_t)(-1)) {
-    fprintf(stderr, "xpmem_make() failed:%s\n", strerror(errno));
-  }
+  gasneti_xpmem_segid_t segid = gasneti_xpmem_make(segbase, segsize);
   gasneti_pshmnet_bootstrapExchange(gasneti_request_pshmnet, &segid, sizeof(segid), gasneti_pshm_segids);
 #else
   /* empty */
@@ -857,15 +898,8 @@ extern void *gasneti_mmap_vnet(uintptr_t size, gasneti_bootstrapBroadcastfn_t sn
       ptr = gasneti_mmap_shared_internal(gasneti_pshm_nodes, NULL, size, 1);
       save_errno = errno;
       if (ptr != MAP_FAILED) {
-      #if HAVE_XPMEM_MAKE_2
-        segid = xpmem_make_2(ptr, size, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600);
-      #else
-        segid =   xpmem_make(ptr, size, XPMEM_PERMIT_MODE, (void *)(uintptr_t)0600);
-      #endif
+        segid = gasneti_xpmem_make(ptr, size);
         save_errno = errno;
-        if_pf (segid == (gasneti_xpmem_segid_t)(-1)) {
-          fprintf(stderr, "xpmem_make() failed:%s\n", strerror(errno));
-        }
       }
     }
     
@@ -2119,12 +2153,18 @@ static gasneti_auxseg_request_t *gasneti_auxseg_alignedsz = NULL;
   gasneti_auxseg_request_t gasneti_auxseg_dummy(gasnet_seginfo_t *auxseg_info) {
     gasneti_auxseg_request_t retval;
     static gasnet_seginfo_t *auxseg_save = NULL;
-    int i, selftest=0;
+    int selftest = (auxseg_info == (void*)(uintptr_t)-1);
+    if (gasneti_nodes > 4) {
+      if (selftest && !gasneti_mynode) 
+         gasneti_console_message("auxseg-diagnostic", "self-test SKIPPED due to job scale");
+      retval.minsz = 0;
+      retval.optimalsz = 0;
+      return retval;
+    }
     retval.minsz = 213;
     retval.optimalsz = GASNETI_AUXSEG_DUMMY_SZ;
     if (auxseg_info == NULL) return retval; /* initial query */
-    if (auxseg_info == (void*)(uintptr_t)-1) { /* self test */
-      selftest = 1;
+    if (selftest) { /* self test */
       gasneti_assert(auxseg_save);
     } else { /* auxseg granted */
       gasneti_assert(!auxseg_save);
@@ -2132,14 +2172,14 @@ static gasneti_auxseg_request_t *gasneti_auxseg_alignedsz = NULL;
       memcpy(auxseg_save, auxseg_info, gasneti_nodes*sizeof(gasnet_seginfo_t));
       gasneti_leak(auxseg_save); /* Needed by self test, if any */
     }
-    for (i=0; i < gasneti_nodes; i++) {
+    for (int i=0; i < gasneti_nodes; i++) {
       gasneti_assert(auxseg_save[i].addr);
       gasneti_assert_uint(((uintptr_t)auxseg_save[i].addr) % GASNETI_CACHE_LINE_BYTES ,==, 0);
       gasneti_assert_uint(((uintptr_t)auxseg_save[i].addr) % 8 ,==, 0);
       gasneti_assert_uint(auxseg_save[i].size ,>=, retval.minsz);
       gasneti_assert_uint(auxseg_save[i].size ,<=, retval.optimalsz);
     }
-    for (i=0; i < auxseg_save[gasneti_mynode].size; i++) {
+    for (int i=0; i < auxseg_save[gasneti_mynode].size; i++) {
       uint8_t *p = (uint8_t *)auxseg_save[gasneti_mynode].addr;
       #define AUXSEG_TESTVAL(i) ((uint8_t)(8|((i+0x3F)^(i>>8))))
       if (selftest) gasneti_assert_uint(p[i] ,==, AUXSEG_TESTVAL(i));

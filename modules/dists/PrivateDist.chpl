@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -68,20 +68,26 @@ This distribution may perform unnecessary communication
 between locales.
 */
 class Private: BaseDist {
-  override proc dsiNewRectangularDom(param rank: int, type idxType, param stridable: bool, inds) {
+  override proc dsiNewRectangularDom(param rank: int, type idxType,
+                                     param stridable: bool, inds) {
     for i in inds do
       if i.size != 0 then
         halt("Tried to create a privateDom with a specific index set");
-    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=_to_unmanaged(this));
+
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType,
+                                    stridable=stridable,
+                                    dist=_to_unmanaged(this));
   }
 
   proc writeThis(x) throws {
     x <~> "Private Distribution\n";
   }
+
   // acts like a singleton
   proc dsiClone() return _to_unmanaged(this);
 
   proc trackDomains() param return false;
+
   override proc dsiTrackDomains()    return false;
 
   override proc singleton() param return true;
@@ -107,8 +113,12 @@ class PrivateDom: BaseRectangularDom {
 
   proc dsiSerialWrite(x) { x <~> "Private Domain"; }
 
-  proc dsiBuildArray(type eltType) {
-    return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=_to_unmanaged(this));
+  proc dsiBuildArray(type eltType, param initElts:bool) {
+    return new unmanaged PrivateArr(eltType=eltType, rank=rank,
+                                    idxType=idxType,
+                                    stridable=stridable,
+                                    dom=_to_unmanaged(this),
+                                    initElts=initElts);
   }
 
   proc dsiNumIndices return numLocales;
@@ -117,9 +127,11 @@ class PrivateDom: BaseRectangularDom {
   proc dsiStride return 0;
   proc dsiSetIndices(x: domain) { halt("cannot reassign private domain"); }
   proc dsiGetIndices() { return {0..numLocales-1}; }
+
   proc dsiDim(d : int) {
     return dsiLow..dsiHigh;
   }
+
   proc dsiDims() {
     return (dsiLow..dsiHigh,);
   }
@@ -130,26 +142,116 @@ class PrivateDom: BaseRectangularDom {
 
   override proc dsiRequiresPrivatization() param return true;
   override proc linksDistribution() param return false;
-  override proc dsiLinksDistribution()     return false;
+
+  override proc dsiLinksDistribution() return false;
 
   proc dsiGetPrivatizeData() return 0;
 
   proc dsiPrivatize(privatizeData) {
-    return new unmanaged PrivateDom(rank=rank, idxType=idxType, stridable=stridable, dist=dist);
+    return new unmanaged PrivateDom(rank=rank, idxType=idxType,
+                                    stridable=stridable,
+                                    dist=dist);
   }
 
   proc dsiGetReprivatizeData() return 0;
 
   proc dsiReprivatize(other, reprivatizeData) { }
 
-  proc dsiMember(i) return 0 <= i && i <= numLocales-1;
+  proc dsiMember(i) return (0 <= i && i <= numLocales-1);
+
   override proc dsiMyDist() return dist;
 }
 
+private proc checkCanMakeDefaultValue(type eltType) param {
+  var default: eltType;
+}
+
 class PrivateArr: BaseRectangularArr {
+
   var dom: unmanaged PrivateDom(rank, idxType, stridable);
-  pragma "unsafe" // initialized separately
+
+  // may be initialized separately
+  // always destroyed explicitly (to control deiniting elts)
+  pragma "no init" pragma "unsafe" pragma "no auto destroy"
   var data: eltType;
+
+  var isPrivatizedCopy: bool;
+  var defaultInitDataOnPrivatize: bool;
+
+  proc init(type eltType,
+            param rank,
+            type idxType,
+            param stridable,
+            dom: unmanaged PrivateDom(rank, idxType, stridable),
+            param initElts: bool) {
+    super.init(eltType=eltType, rank=rank, idxType=idxType,
+               stridable=stridable);
+    this.dom = dom;
+    // this.data not initialized
+    this.isPrivatizedCopy = false;
+    this.defaultInitDataOnPrivatize = initElts;
+
+    if initElts {
+      pragma "no auto destroy"
+      var default: eltType;
+      __primitive("=", this.data, default);
+    }
+  }
+
+  proc init(toPrivatize: PrivateArr) {
+    var privdom = chpl_getPrivatizedCopy(toPrivatize.dom.type,
+                                         toPrivatize.dom.pid);
+    super.init(eltType=toPrivatize.eltType, rank=toPrivatize.rank,
+               idxType=toPrivatize.idxType, stridable=toPrivatize.stridable);
+    this.dom = privdom;
+    // this.data not initialized
+    this.isPrivatizedCopy = true;
+    this.defaultInitDataOnPrivatize = toPrivatize.defaultInitDataOnPrivatize;
+    this.complete();
+
+    if defaultInitDataOnPrivatize {
+      pragma "no auto destroy" pragma "unsafe"
+      var default: eltType;
+      __primitive("=", this.data, default);
+    }
+  }
+
+  proc deinit() {
+    // data is deinited in dsiDestroyArr if necessary.
+
+  }
+
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
+  }
+}
+
+override proc PrivateArr.dsiElementInitializationComplete() {
+  // no action necessary
+}
+
+override proc PrivateArr.dsiElementDeinitializationComplete() {
+  // no action necessary
+}
+
+override proc PrivateArr.dsiDestroyArr(deinitElts:bool) {
+  if deinitElts {
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+
+    if needsDestroy {
+      if _local {
+        chpl__autoDestroy(data);
+      } else {
+        const pid = this.pid;
+        coforall loc in Locales {
+          on loc {
+            var privarr = chpl_getPrivatizedCopy(_to_unmanaged(this.type), pid);
+            chpl__autoDestroy(privarr.data);
+          }
+        }
+      }
+    }
+  }
 }
 
 override proc PrivateArr.dsiGetBaseDom() return dom;
@@ -159,8 +261,7 @@ override proc PrivateArr.dsiRequiresPrivatization() param return true;
 proc PrivateArr.dsiGetPrivatizeData() return 0;
 
 proc PrivateArr.dsiPrivatize(privatizeData) {
-  var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
-  return new unmanaged PrivateArr(eltType=eltType, rank=rank, idxType=idxType, stridable=stridable, dom=privdom);
+  return new unmanaged PrivateArr(toPrivatize=this);
 }
 
 proc PrivateArr.dsiAccess(i: idxType) ref {
@@ -185,6 +286,7 @@ proc PrivateArr.dsiBoundsCheck(i: 1*idxType) {
   return 0 <= idx && idx < numLocales;
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -198,6 +300,7 @@ iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   }
 }
 
+pragma "order independent yielding loops"
 iter PrivateArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   for i in followThis(0) do
     yield dsiAccess(i);
@@ -230,5 +333,25 @@ proc PrivateArr.doiScan(op, dom) where (rank == 1) &&
 }
 
 // TODO: Fix 'new Private()' leak -- Discussed in #6726
-const PrivateSpace: domain(1) dmapped Private();
+// ENGIN: below is my workaround to close the leak:
+// 1. Declare a module-scope record variable with an unmanaged nilable Private
+//    field
+//    1.a. Make sure that this variable is defined *before* PrivateSpace, so
+//         that compiler injects its cleanup *after* PrivateSpace
+// 2. In module deinitializer, set the field of this record variable to
+//    chpl_privateDist
+// This way we cleanup the unmanaged, module-scope variable after module
+// deinitializer, which is called before deinitializing module-scope variables
+// which would cause use-after-free during the cleanup of PrivateSpace
+var chpl_privateCW = new chpl_privateDistCleanupWrapper();
+var chpl_privateDist = new unmanaged Private();
+const PrivateSpace: domain(1) dmapped new dmap(chpl_privateDist);
 
+record chpl_privateDistCleanupWrapper {
+  var val = nil : unmanaged Private?;
+  proc deinit() { delete val!; }
+}
+
+proc deinit() {
+  chpl_privateCW.val = chpl_privateDist;
+}

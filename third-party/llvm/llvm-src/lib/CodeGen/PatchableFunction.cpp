@@ -1,9 +1,8 @@
 //===-- PatchableFunction.cpp - Patchable prologues for LLVM -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/CodeGen/TargetInstrInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
+#include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
@@ -55,6 +55,15 @@ static bool doesNotGeneratecode(const MachineInstr &MI) {
 }
 
 bool PatchableFunction::runOnMachineFunction(MachineFunction &MF) {
+  if (MF.getFunction().hasFnAttribute("patchable-function-entry")) {
+    MachineBasicBlock &FirstMBB = *MF.begin();
+    const TargetInstrInfo *TII = MF.getSubtarget().getInstrInfo();
+    // The initial .loc covers PATCHABLE_FUNCTION_ENTER.
+    BuildMI(FirstMBB, FirstMBB.begin(), DebugLoc(),
+            TII->get(TargetOpcode::PATCHABLE_FUNCTION_ENTER));
+    return true;
+  }
+
   if (!MF.getFunction().hasFnAttribute("patchable-function"))
     return false;
 
@@ -79,7 +88,7 @@ bool PatchableFunction::runOnMachineFunction(MachineFunction &MF) {
     MIB.add(MO);
 
   FirstActualI->eraseFromParent();
-  MF.ensureAlignment(4);
+  MF.ensureAlignment(Align(16));
   return true;
 }
 

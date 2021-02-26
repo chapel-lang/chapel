@@ -1,9 +1,8 @@
 //===- ARCInstrFormats.td - ARC Instruction Formats --------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -56,6 +55,44 @@ def GPR32Reduced : Operand<iAny> {
   let DecoderMethod = "DecodeGBR32ShortRegister";
 }
 
+// Helper classes for load/store instructions
+class DataSizeMode<bits<2> mode, string instSfx, string asmSfx> {
+  bits<2> Value = mode;
+  string  InstSuffix = instSfx;
+  string  AsmSuffix  = asmSfx;
+}
+class ExtMode<bit mode, string instSfx, string asmSfx> {
+  bit     Value = mode;
+  string  InstSuffix = instSfx;
+  string  AsmSuffix  = asmSfx;
+}
+
+class AddrMode<bits<2> mode, string instSfx, string asmSfx> {
+  bits<2> Value = mode;
+  string  InstSuffix = instSfx;
+  string  AsmSuffix  = asmSfx;
+}
+
+class CacheMode<bit mode, string instSfx, string asmSfx> {
+  bit     Value = mode;
+  string  InstSuffix = instSfx;
+  string  AsmSuffix  = asmSfx;
+}
+
+def ByteSM : DataSizeMode<0b01, "B", "b">;
+def HalfSM : DataSizeMode<0b10, "H", "h">;
+def WordSM : DataSizeMode<0b00,  "",  "">;
+
+def NoEM      : ExtMode<0,   "",   "">;
+def SignedEM  : ExtMode<1, "_X", ".x">;
+
+def NoAM      : AddrMode<0b00, "", "">;
+def PreIncAM  : AddrMode<0b01, "_AW", ".aw">;
+def PostIncAM : AddrMode<0b10, "_AB", ".ab">;
+
+def NoCC       : CacheMode<0b0,    "",    "">;
+def UncachedCC : CacheMode<0b1, "_DI", ".di">;
+
 class InstARC<int sz, dag outs, dag ins, string asmstr, list<dag> pattern>
     : Instruction, Encoding64 {
 
@@ -65,6 +102,18 @@ class InstARC<int sz, dag outs, dag ins, string asmstr, list<dag> pattern>
   let AsmString = asmstr;
   let Pattern = pattern;
   let Size = sz;
+
+  // Load/Store instruction properties
+  DataSizeMode ZZ = WordSM;
+  ExtMode X = NoEM;
+  AddrMode AA = NoAM;
+  CacheMode DI = NoCC;
+
+  // Field used for relation models
+  string BaseOpcode = "";
+
+  //TSFlags
+  let TSFlags{1-0} = AA.Value;
 }
 
 // ARC pseudo instructions format
@@ -78,16 +127,16 @@ class PseudoInstARC<dag outs, dag ins, string asmstr, list<dag> pattern>
 //===----------------------------------------------------------------------===//
 
 // All 32-bit ARC instructions have a 5-bit "major" opcode class designator
-// in bits 27-31.   
-// 
+// in bits 27-31.
+//
 // Some general naming conventions:
 // N  - Delay Slot bit.  ARC v2 branch instructions have an optional delay slot
 //      which is encoded with this bit.  When set, a delay slot exists.
 // cc - Condition code.
 // SX - Signed X-bit immediate.
 // UX - Unsigned X-bit immediate.
-// 
-// [ABC] - 32-bit register operand.  These are 6-bit fields.  This encodes the 
+//
+// [ABC] - 32-bit register operand.  These are 6-bit fields.  This encodes the
 //         standard 32 general purpose registers, and allows use of additional
 //         (extension) registers.  This also encodes an instruction that uses
 //         a 32-bit Long Immediate (LImm), using 0x3e==62 as the field value.
@@ -117,7 +166,7 @@ class F32_BR_COND<bits<5> major, dag outs, dag ins, bit b16, string asmstr,
                   list<dag> pattern> :
   F32_BR<major, outs, ins, b16, asmstr, pattern> {
   bits<21> S21; // 2-byte aligned 21-bit byte-offset.
-  bits<5> cc; 
+  bits<5> cc;
   let Inst{26-18} = S21{10-2};
   let Inst{15-6} = S21{20-11};
   let Inst{4-0} = cc;
@@ -279,7 +328,7 @@ class F32_DOP_RU6<bits<5> major, bits<6> subop, bit F, dag outs, dag ins,
 }
 
 // 2-register, signed 12-bit immediate Dual Operand instruction.
-// This instruction uses B as the first 2 operands (i.e., add B, B, -128). 
+// This instruction uses B as the first 2 operands (i.e., add B, B, -128).
 // |26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|9|8|7|6|5|4|3|2|1|0|
 // |B[2-0]  | 1| 0|            subop| F|B[5-3]  |S12[5-0]     |S12[11-6]  |
 class F32_DOP_RS12<bits<5> major, bits<6> subop, bit F, dag outs, dag ins,
@@ -287,7 +336,7 @@ class F32_DOP_RS12<bits<5> major, bits<6> subop, bit F, dag outs, dag ins,
   InstARC<4, outs, ins, asmstr, pattern> {
   bits<6> B;
   bits<12> S12;
-  
+
   let Inst{31-27} = major;
   let Inst{26-24} = B{2-0};
   let Inst{23-22} = 0b10;
@@ -355,6 +404,8 @@ class F32_LD_RS9<bit x, bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
   let Inst{8-7} = zz;
   let Inst{6} = x;
   let Inst{5-0} = A;
+
+  let BaseOpcode = "ld_rs9";
 }
 
 class F32_LD_ADDR<bit x, bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
@@ -364,6 +415,8 @@ class F32_LD_ADDR<bit x, bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
 
   let B = addr{14-9};
   let S9 = addr{8-0};
+
+  let BaseOpcode = "ld_rs9";
 }
 
 
@@ -388,6 +441,8 @@ class F32_LD_LIMM<bit x, bit di, bits<2> zz, dag outs, dag ins,
   let Inst{6} = x;
   let Inst{5-0} = A;
   let DecoderMethod = "DecodeLdLImmInstruction";
+
+  let BaseOpcode = "ld_limm";
 }
 
 // Register + LImm load.  The 32-bit immediate address is in Inst[63-32].
@@ -416,6 +471,8 @@ class F32_LD_RLIMM<bit x, bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
   let Inst{11-6} = LImmReg;
   let Inst{5-0} = A;
   let DecoderMethod = "DecodeLdRLImmInstruction";
+
+  let BaseOpcode = "ld_rlimm";
 }
 
 // Register + S9 Store. (B + S9)
@@ -438,6 +495,8 @@ class F32_ST_RS9<bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
   let Inst{4-3} = aa;
   let Inst{2-1} = zz;
   let Inst{0} = 0;
+
+  let BaseOpcode = "st_rs9";
 }
 
 class F32_ST_ADDR<bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
@@ -447,6 +506,8 @@ class F32_ST_ADDR<bits<2> aa, bit di, bits<2> zz, dag outs, dag ins,
 
   let B = addr{14-9};
   let S9 = addr{8-0};
+
+  let BaseOpcode = "st_rs9";
 }
 
 // LImm Store.
@@ -470,6 +531,8 @@ class F32_ST_LIMM<bit di, bits<2> zz, dag outs, dag ins,
   let Inst{2-1} = zz;
   let Inst{0} = 0;
   let DecoderMethod = "DecodeStLImmInstruction";
+
+  let BaseOpcode = "st_limm";
 }
 
 // Compact Move/Load.
@@ -484,14 +547,14 @@ class F16_COMPACT<bits<1> i, dag outs, dag ins,
   let Inst{15-11} = 0b01000;
   let Inst{7-5} = h{2-0};
   let Inst{2} = i;
-  let Inst{1-0} = h{4-3};  
+  let Inst{1-0} = h{4-3};
 }
 
 // Compact Load/Add/Sub.
 class F16_LD_ADD_SUB<dag outs, dag ins, string asmstr> :
   InstARC<2, outs, ins, asmstr, []> {
 
-  bits<3> b;  
+  bits<3> b;
   let Inst{15-11} = 0b01001;
   let Inst{10-8} = b;
 }
@@ -512,10 +575,10 @@ class F16_LD_SUB<bit i, string asmstr> :
 class F16_ADD :
   F16_LD_ADD_SUB<(outs GPR32:$r), (ins GPR32:$b, immU<6>:$u6),
   "add_s\t$r, $b, $u6"> {
-  
+
   bit r;
   bits<6> u6;
-  
+
   let Inst{7} = r;
   let Inst{6-4} = u6{5-3};
   let Inst{3} = 1;
@@ -547,7 +610,7 @@ class F16_LDI_u7 :
 
   bits<3> b;
   bits<7> u7;
-  
+
   let Inst{10-8} = b;
   let Inst{7-4} = u7{6-3};
   let Inst{3} = 1;
@@ -560,7 +623,7 @@ class F16_JLI_EI<bit i, string asmstr> :
   !strconcat(asmstr, "\t$u10"), []> {
 
   bits<10> u10;
-  
+
   let Inst{15-11} = 0b01011;
   let Inst{10} = i;
   let Inst{9-0} = u10;
@@ -572,9 +635,9 @@ class F16_LD_ADD_RR<bits<2> i, string asmstr> :
   asmstr, []> {
 
   bits<3> a;
-  bits<3> b; 
+  bits<3> b;
   bits<3> c;
- 
+
   let Inst{15-11} = 0b01100;
   let Inst{10-8} = b;
   let Inst{7-5} = c;
@@ -585,7 +648,7 @@ class F16_LD_ADD_RR<bits<2> i, string asmstr> :
 // Load/Add GP-Relative.
 class F16_GP_LD_ADD<bits<2> i, dag ins, string asmstr> :
   InstARC<2, (outs), ins, asmstr, []> {
- 
+
   let Inst{15-11} = 0b11001;
   let Inst{10-9} = i;
 }
@@ -600,7 +663,7 @@ class F16_ADD_IMM<bits<2> i, string asmstr> :
   bits<3> b;
   bits<3> c;
   bits<3> u3;
-  
+
   let Inst{15-11} = 0b01101;
   let Inst{10-8} = b;
   let Inst{7-5} = c;
@@ -626,8 +689,8 @@ class F16_OP_HREG<bits<3> i, dag outs, dag ins, string asmstr> :
 
 class F16_OP_HREG30<bits<3> i, dag outs, dag ins, string asmstr> :
   F16_OP_HREG<i, outs, ins, asmstr> {
-    
-  bits<5> LImmReg = 0b11110;  
+
+  bits<5> LImmReg = 0b11110;
   let Inst{7-5} = LImmReg{2-0};
   let Inst{1-0} = LImmReg{4-3};
 }
@@ -721,7 +784,7 @@ class F16_SH_SUB_BIT<bits<3> i, string asmstr> :
 
   bits<3> b;
   bits<5> u5;
-  
+
   let Inst{15-11} = 0b10111;
   let Inst{10-8} = b;
   let Inst{7-5} = i;
@@ -753,7 +816,7 @@ class F16_SP_OPS_u7_aligned<bits<3> i,
 
   bits<3> b3;
   bits<7> u7;
-  
+
   let fieldB = b3;
   let fieldU = u7{6-2};
   let u7{1-0} = 0b00;
@@ -763,7 +826,7 @@ class F16_SP_OPS_bconst<bits<3> b, string asmop> :
   F16_SP_OPS_u7_aligned<0b101,
   (outs), (ins immU<7>:$u7),
   !strconcat(asmop, "\t%sp, %sp, $u7")> {
-  
+
   let fieldB = b;
 }
 
@@ -771,14 +834,14 @@ class F16_SP_OPS_uconst<bits<3> i,
   dag outs, dag ins, string asmop> :
   F16_SP_OPS_u7_aligned<i, outs, ins,
   !strconcat(asmop, "\t$b3")> {
-  
+
   let fieldU = 0b00001;
 }
 
 class F16_SP_OPS_buconst<bits<3> i, string asmop> :
   F16_SP_OPS_u7_aligned<i, (outs), (ins),
     !strconcat(asmop, "\t%blink")> {
-  
+
   let fieldB = 0x000;
   let fieldU = 0b10001;
 }

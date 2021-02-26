@@ -1,9 +1,8 @@
 //===-- llvm/Support/AtomicOrdering.h ---Atomic Ordering---------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -54,7 +53,7 @@ template <typename Int> inline bool isValidAtomicOrderingCABI(Int I) {
 ///
 /// not_atomic-->unordered-->relaxed-->release--------------->acq_rel-->seq_cst
 ///                                   \-->consume-->acquire--/
-enum class AtomicOrdering {
+enum class AtomicOrdering : unsigned {
   NotAtomic = 0,
   Unordered = 1,
   Monotonic = 2, // Equivalent to C++'s relaxed.
@@ -62,7 +61,8 @@ enum class AtomicOrdering {
   Acquire = 4,
   Release = 5,
   AcquireRelease = 6,
-  SequentiallyConsistent = 7
+  SequentiallyConsistent = 7,
+  LAST = SequentiallyConsistent
 };
 
 bool operator<(AtomicOrdering, AtomicOrdering) = delete;

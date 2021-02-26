@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ void extractAndPrintFunctionsLLVM(std::set<const GlobalValue*> *gvs) {
 
   std::error_code EC;
   // note: could output to a file if we replace "-" with a filename
-  TOOL_OUTPUT_FILE Out("-", EC, sys::fs::F_None);
+  ToolOutputFile Out("-", EC, sys::fs::F_None);
   if (EC) {    
     errs() << EC.message() << '\n';
     return;

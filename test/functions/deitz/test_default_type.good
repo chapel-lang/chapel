@@ -1,4 +1,4 @@
 test_default_type.chpl:7: error: unresolved call 'foo(12.0, 12.0)'
 test_default_type.chpl:3: note: this candidate did not match: foo(x, y = bar(x))
-test_default_type.chpl:7: note: because call actual argument #2 with type real(64)
+test_default_type.chpl:7: note: because actual argument #2 with type 'real(64)'
 test_default_type.chpl:3: note: is passed to formal 'y: int(64)'

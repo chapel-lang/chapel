@@ -1,9 +1,8 @@
 //===- FixItRewriter.cpp - Fix-It Rewriter Diagnostic Client --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -96,13 +95,14 @@ bool FixItRewriter::WriteFixedFiles(
   for (iterator I = buffer_begin(), E = buffer_end(); I != E; ++I) {
     const FileEntry *Entry = Rewrite.getSourceMgr().getFileEntryForID(I->first);
     int fd;
-    std::string Filename = FixItOpts->RewriteFilename(Entry->getName(), fd);
+    std::string Filename =
+        FixItOpts->RewriteFilename(std::string(Entry->getName()), fd);
     std::error_code EC;
     std::unique_ptr<llvm::raw_fd_ostream> OS;
     if (fd != -1) {
       OS.reset(new llvm::raw_fd_ostream(fd, /*shouldClose=*/true));
     } else {
-      OS.reset(new llvm::raw_fd_ostream(Filename, EC, llvm::sys::fs::F_None));
+      OS.reset(new llvm::raw_fd_ostream(Filename, EC, llvm::sys::fs::OF_None));
     }
     if (EC) {
       Diags.Report(clang::diag::err_fe_unable_to_open_output) << Filename
@@ -114,7 +114,8 @@ bool FixItRewriter::WriteFixedFiles(
     OS->flush();
 
     if (RewrittenFiles)
-      RewrittenFiles->push_back(std::make_pair(Entry->getName(), Filename));
+      RewrittenFiles->push_back(
+          std::make_pair(std::string(Entry->getName()), Filename));
   }
 
   return false;

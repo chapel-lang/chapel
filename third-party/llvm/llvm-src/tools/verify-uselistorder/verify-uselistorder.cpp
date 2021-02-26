@@ -1,9 +1,8 @@
 //===- verify-uselistorder.cpp - The LLVM Modular Optimizer ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -124,7 +123,7 @@ bool TempFile::init(const std::string &Ext) {
 bool TempFile::writeBitcode(const Module &M) const {
   LLVM_DEBUG(dbgs() << " - write bitcode\n");
   std::error_code EC;
-  raw_fd_ostream OS(Filename, EC, sys::fs::F_None);
+  raw_fd_ostream OS(Filename, EC, sys::fs::OF_None);
   if (EC) {
     errs() << "verify-uselistorder: error: " << EC.message() << "\n";
     return true;
@@ -137,7 +136,7 @@ bool TempFile::writeBitcode(const Module &M) const {
 bool TempFile::writeAssembly(const Module &M) const {
   LLVM_DEBUG(dbgs() << " - write assembly\n");
   std::error_code EC;
-  raw_fd_ostream OS(Filename, EC, sys::fs::F_Text);
+  raw_fd_ostream OS(Filename, EC, sys::fs::OF_Text);
   if (EC) {
     errs() << "verify-uselistorder: error: " << EC.message() << "\n";
     return true;

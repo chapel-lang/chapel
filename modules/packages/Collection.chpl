@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -161,13 +161,6 @@ module Collection {
     */
     proc isEmpty() : bool {
       return getSize() == 0;
-    }
-
-    /* Deprecated - please use :proc:`CollectionImpl.size`. */
-    proc length : int {
-      compilerWarning("'CollectionImpl.length' is deprecated - " +
-                      "please use 'CollectionImpl.size' instead");
-      return getSize();
     }
 
     /*

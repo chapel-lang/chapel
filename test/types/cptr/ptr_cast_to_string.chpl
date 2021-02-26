@@ -1,3 +1,4 @@
+use CPtr;
 use Regexp;
 
 var mem = c_calloc(uint(8), 4096);

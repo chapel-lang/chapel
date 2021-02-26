@@ -1,0 +1,3 @@
+issue-16508-user.chpl:17: error: default initialization with type 'TypelessField(int(64))' is not yet supported
+issue-16508-user.chpl:2: note: field 'field' is a generic value
+issue-16508-user.chpl:2: note: consider separately declaring a type field for it or using a 'new' call

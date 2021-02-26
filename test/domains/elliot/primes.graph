@@ -1,0 +1,4 @@
+perfkeys:  AssocArrTable:, MapTable:, BasePrimesTable:
+graphkeys: Associative Array, Map, Custom Map
+graphtitle: Associative Type Add/Remove
+ylabel: Time (seconds)

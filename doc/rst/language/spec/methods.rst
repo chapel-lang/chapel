@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Methods:
 
 Methods
@@ -15,19 +17,19 @@ Methods are declared with the following syntax:
        return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
    proc-or-iter:
-     `proc'
-     `iter'
+     'proc'
+     'iter'
 
    this-intent:
-     `param'
-     `type'
-     `ref'
-     `const ref'
-     `const'
+     'param'
+     'type'
+     'ref'
+     'const ref'
+     'const'
 
    type-binding:
      identifier .
-     `(' expr `)' .
+     '(' expression ')' .
 
 Methods defined within the lexical scope of a class, record, or union
 are referred to as *primary methods*. For such methods, the
@@ -40,7 +42,9 @@ standalone functions rather than methods). Note that secondary methods
 can be defined not only for classes, records, and unions, but also for
 any other type (e.g., integers, reals, strings).
 
-[Secondary_Methods_with_Type_Expressions] Secondary methods can be
+.. _Secondary_Methods_with_Type_Expressions:
+
+Secondary methods can be
 declared with a type expression instead of a type identifier. In
 particular, if the ``type-binding`` is a parenthesized expression, the
 compiler will evaluate that expression to find the receiver type for the

@@ -1,0 +1,6 @@
+--test=0 # private-record.0.good
+--test=1 # private-record.1.good
+--test=2 # private-record.2.good
+--test=3 # private-record.3.good
+--test=4 # private-record.4.good
+--test=5 # private-record.5.good

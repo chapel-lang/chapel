@@ -1,9 +1,8 @@
 //===- VPlanSLP.cpp - SLP Analysis based on VPlan -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// This file implements SLP analysis based on VPlan. The analysis is based on
@@ -347,11 +346,14 @@ SmallVector<VPlanSlp::MultiNodeOpTy, 4> VPlanSlp::reorderMultiNodeOps() {
 
 void VPlanSlp::dumpBundle(ArrayRef<VPValue *> Values) {
   dbgs() << " Ops: ";
-  for (auto Op : Values)
-    if (auto *Instr = cast_or_null<VPInstruction>(Op)->getUnderlyingInstr())
-      dbgs() << *Instr << " | ";
-    else
-      dbgs() << " nullptr | ";
+  for (auto Op : Values) {
+    if (auto *VPInstr = cast_or_null<VPInstruction>(Op))
+      if (auto *Instr = VPInstr->getUnderlyingInstr()) {
+        dbgs() << *Instr << " | ";
+        continue;
+      }
+    dbgs() << " nullptr | ";
+  }
   dbgs() << "\n";
 }
 

@@ -1,4 +1,3 @@
-use Assert;
 use Time;
 use IO;
 

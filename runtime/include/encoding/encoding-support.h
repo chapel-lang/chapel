@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -30,6 +30,9 @@
 
 #include "utf8-decoder.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* Returns the difference between two pointers,
    but returns 0 if either pointer is NULL.
@@ -205,12 +208,12 @@ int chpl_enc_decode_char_buf_wctype(int32_t* CHPL_ENC_RESTRICT chr,
  * :returns: 0 if valid, -1 if illegal byte sequence
  */
 static inline
-int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
+int chpl_enc_validate_buf(const char *buf, ssize_t buflen, int64_t *num_cp) {
   int32_t cp;
   int nbytes;
 
   int offset = 0;
-
+  *num_cp = 0;
   while (offset<buflen) {
     // you can create a chapel string with a codepoint that represents an
     // escaped byte, so the last argument is true
@@ -219,9 +222,13 @@ int chpl_enc_validate_buf(const char *buf, ssize_t buflen) {
       return -1;  // invalid : return EILSEQ
     }
     offset += nbytes;
+    *num_cp += 1;
   }
   return 0;  // valid
 }
 
+#ifdef __cplusplus
+}
 #endif
 
+#endif

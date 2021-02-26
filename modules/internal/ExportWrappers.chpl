@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,7 +22,28 @@ pragma "no doc"
 module ExportWrappers {
   use ChapelStandard;
   use CPtr;
-  private use SysCTypes;
+  use SysCTypes;
+
+  private proc _initDynamicEndCount() {
+    var endCount = _endCountAlloc(forceLocalTypes=false);
+    chpl_task_setDynamicEndCount(endCount);
+  }
+
+  private proc _destroyDynamicEndCount() {
+    var endCount = chpl_task_getDynamicEndCount();
+    _waitEndCount(endCount);
+    _endCountFree(endCount);
+  }
+
+  // TODO: Consider moving this to a separate "LibrarySupport" module.
+  export proc chpl_libraryModuleLevelSetup(): void {
+    _initDynamicEndCount();
+  }
+
+  // TODO: Consider moving this to a separate "LibrarySupport" module.
+  export proc chpl_libraryModuleLevelCleanup(): void {
+    _destroyDynamicEndCount();
+  }
 
   // Actual definition is in "runtime/include/chpl-export-wrappers.h".
   pragma "export wrapper"
@@ -43,12 +64,12 @@ module ExportWrappers {
   // Generic, but both string and bytes have the same implementation.
   proc chpl__exportRetStringOrBytes(ref val): chpl_byte_buffer {
     var result: chpl_byte_buffer;
-    result.isOwned = val.isowned:int(8);
+    result.isOwned = val.isOwned:int(8);
     result.data = val.buff:c_ptr(c_char);
     // Get the length of the string/bytes record in bytes!
     result.size = val.numBytes:uint(64);
     // Assume ownership of the string/bytes record's internal buffer.
-    val.isowned = false;
+    val.isOwned = false;
     return result;
   }
 

@@ -4,7 +4,7 @@ use Cwd 'abs_path';
 use File::Basename;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
+$failuremail = "chapel+tests\@discoursemail.com";
 $replymail = "";
 
 $tokctdir = abs_path(dirname(__FILE__));
@@ -46,11 +46,9 @@ if ($printusage == 1) {
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
-if ($debugmail eq "") {
-    $debugmail = "$user\@cray.com";
-    if ($debug == 1) {
-        $replymail = $debugemail;
-    }
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
 }
 $today = `date +%w-%a`; chomp($today);
 
@@ -314,7 +312,7 @@ sub mysystem {
             open(MAIL, $mailcommand);
             print MAIL "=== Summary ===================================================\n";
             print MAIL "ERROR $_[1]: $status\n";
-            print MAIL "===============================================================\n";
+            print MAIL "=== End Summary ===============================================\n";
             print MAIL "Build: ", $buildurl, "\n";
             close(MAIL);
         } else {

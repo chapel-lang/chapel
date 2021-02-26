@@ -1,9 +1,8 @@
 //==- BlockFrequencyInfoImpl.h - Block Frequency Implementation --*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,8 +24,10 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/ADT/iterator_range.h"
 #include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/ValueHandle.h"
 #include "llvm/Support/BlockFrequency.h"
 #include "llvm/Support/BranchProbability.h"
+#include "llvm/Support/CommandLine.h"
 #include "llvm/Support/DOTGraphTraits.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
@@ -46,6 +47,8 @@
 #include <vector>
 
 #define DEBUG_TYPE "block-freq"
+
+extern llvm::cl::opt<bool> CheckBFIUnknownBlockQueries;
 
 namespace llvm {
 
@@ -160,10 +163,6 @@ inline raw_ostream &operator<<(raw_ostream &OS, BlockMass X) {
 
 } // end namespace bfi_detail
 
-template <> struct isPodLike<bfi_detail::BlockMass> {
-  static const bool value = true;
-};
-
 /// Base class for BlockFrequencyInfoImpl
 ///
 /// BlockFrequencyInfoImplBase has supporting data structures and some
@@ -187,9 +186,9 @@ public:
   struct BlockNode {
     using IndexType = uint32_t;
 
-    IndexType Index = std::numeric_limits<uint32_t>::max();
+    IndexType Index;
 
-    BlockNode() = default;
+    BlockNode() : Index(std::numeric_limits<uint32_t>::max()) {}
     BlockNode(IndexType Index) : Index(Index) {}
 
     bool operator==(const BlockNode &X) const { return Index == X.Index; }
@@ -525,9 +524,11 @@ public:
 
   BlockFrequency getBlockFreq(const BlockNode &Node) const;
   Optional<uint64_t> getBlockProfileCount(const Function &F,
-                                          const BlockNode &Node) const;
+                                          const BlockNode &Node,
+                                          bool AllowSynthetic = false) const;
   Optional<uint64_t> getProfileCountFromFreq(const Function &F,
-                                             uint64_t Freq) const;
+                                             uint64_t Freq,
+                                             bool AllowSynthetic = false) const;
   bool isIrrLoopHeader(const BlockNode &Node);
 
   void setBlockFreq(const BlockNode &Node, uint64_t Freq);
@@ -547,6 +548,7 @@ namespace bfi_detail {
 template <class BlockT> struct TypeMap {};
 template <> struct TypeMap<BasicBlock> {
   using BlockT = BasicBlock;
+  using BlockKeyT = AssertingVH<const BasicBlock>;
   using FunctionT = Function;
   using BranchProbabilityInfoT = BranchProbabilityInfo;
   using LoopT = Loop;
@@ -554,11 +556,15 @@ template <> struct TypeMap<BasicBlock> {
 };
 template <> struct TypeMap<MachineBasicBlock> {
   using BlockT = MachineBasicBlock;
+  using BlockKeyT = const MachineBasicBlock *;
   using FunctionT = MachineFunction;
   using BranchProbabilityInfoT = MachineBranchProbabilityInfo;
   using LoopT = MachineLoop;
   using LoopInfoT = MachineLoopInfo;
 };
+
+template <class BlockT, class BFIImplT>
+class BFICallbackVH;
 
 /// Get the name of a MachineBasicBlock.
 ///
@@ -845,6 +851,7 @@ template <class BT> class BlockFrequencyInfoImpl : BlockFrequencyInfoImplBase {
   friend struct bfi_detail::BlockEdgesAdder<BT>;
 
   using BlockT = typename bfi_detail::TypeMap<BT>::BlockT;
+  using BlockKeyT = typename bfi_detail::TypeMap<BT>::BlockKeyT;
   using FunctionT = typename bfi_detail::TypeMap<BT>::FunctionT;
   using BranchProbabilityInfoT =
       typename bfi_detail::TypeMap<BT>::BranchProbabilityInfoT;
@@ -852,6 +859,8 @@ template <class BT> class BlockFrequencyInfoImpl : BlockFrequencyInfoImplBase {
   using LoopInfoT = typename bfi_detail::TypeMap<BT>::LoopInfoT;
   using Successor = GraphTraits<const BlockT *>;
   using Predecessor = GraphTraits<Inverse<const BlockT *>>;
+  using BFICallbackVH =
+      bfi_detail::BFICallbackVH<BlockT, BlockFrequencyInfoImpl>;
 
   const BranchProbabilityInfoT *BPI = nullptr;
   const LoopInfoT *LI = nullptr;
@@ -859,7 +868,7 @@ template <class BT> class BlockFrequencyInfoImpl : BlockFrequencyInfoImplBase {
 
   // All blocks in reverse postorder.
   std::vector<const BlockT *> RPOT;
-  DenseMap<const BlockT *, BlockNode> Nodes;
+  DenseMap<BlockKeyT, std::pair<BlockNode, BFICallbackVH>> Nodes;
 
   using rpot_iterator = typename std::vector<const BlockT *>::const_iterator;
 
@@ -871,7 +880,8 @@ template <class BT> class BlockFrequencyInfoImpl : BlockFrequencyInfoImplBase {
   BlockNode getNode(const rpot_iterator &I) const {
     return BlockNode(getIndex(I));
   }
-  BlockNode getNode(const BlockT *BB) const { return Nodes.lookup(BB); }
+
+  BlockNode getNode(const BlockT *BB) const { return Nodes.lookup(BB).first; }
 
   const BlockT *getBlock(const BlockNode &Node) const {
     assert(Node.Index < RPOT.size());
@@ -973,13 +983,17 @@ public:
   }
 
   Optional<uint64_t> getBlockProfileCount(const Function &F,
-                                          const BlockT *BB) const {
-    return BlockFrequencyInfoImplBase::getBlockProfileCount(F, getNode(BB));
+                                          const BlockT *BB,
+                                          bool AllowSynthetic = false) const {
+    return BlockFrequencyInfoImplBase::getBlockProfileCount(F, getNode(BB),
+                                                            AllowSynthetic);
   }
 
   Optional<uint64_t> getProfileCountFromFreq(const Function &F,
-                                             uint64_t Freq) const {
-    return BlockFrequencyInfoImplBase::getProfileCountFromFreq(F, Freq);
+                                             uint64_t Freq,
+                                             bool AllowSynthetic = false) const {
+    return BlockFrequencyInfoImplBase::getProfileCountFromFreq(F, Freq,
+                                                               AllowSynthetic);
   }
 
   bool isIrrLoopHeader(const BlockT *BB) {
@@ -987,6 +1001,13 @@ public:
   }
 
   void setBlockFreq(const BlockT *BB, uint64_t Freq);
+
+  void forgetBlock(const BlockT *BB) {
+    // We don't erase corresponding items from `Freqs`, `RPOT` and other to
+    // avoid invalidating indices. Doing so would have saved some memory, but
+    // it's not worth it.
+    Nodes.erase(BB);
+  }
 
   Scaled64 getFloatingBlockFreq(const BlockT *BB) const {
     return BlockFrequencyInfoImplBase::getFloatingBlockFreq(getNode(BB));
@@ -1013,7 +1034,39 @@ public:
   raw_ostream &printBlockFreq(raw_ostream &OS, const BlockT *BB) const {
     return BlockFrequencyInfoImplBase::printBlockFreq(OS, getNode(BB));
   }
+
+  void verifyMatch(BlockFrequencyInfoImpl<BT> &Other) const;
 };
+
+namespace bfi_detail {
+
+template <class BFIImplT>
+class BFICallbackVH<BasicBlock, BFIImplT> : public CallbackVH {
+  BFIImplT *BFIImpl;
+
+public:
+  BFICallbackVH() = default;
+
+  BFICallbackVH(const BasicBlock *BB, BFIImplT *BFIImpl)
+      : CallbackVH(BB), BFIImpl(BFIImpl) {}
+
+  virtual ~BFICallbackVH() = default;
+
+  void deleted() override {
+    BFIImpl->forgetBlock(cast<BasicBlock>(getValPtr()));
+  }
+};
+
+/// Dummy implementation since MachineBasicBlocks aren't Values, so ValueHandles
+/// don't apply to them.
+template <class BFIImplT>
+class BFICallbackVH<MachineBasicBlock, BFIImplT> {
+public:
+  BFICallbackVH() = default;
+  BFICallbackVH(const MachineBasicBlock *, BFIImplT *) {}
+};
+
+} // end namespace bfi_detail
 
 template <class BT>
 void BlockFrequencyInfoImpl<BT>::calculate(const FunctionT &F,
@@ -1042,6 +1095,15 @@ void BlockFrequencyInfoImpl<BT>::calculate(const FunctionT &F,
   computeMassInFunction();
   unwrapLoops();
   finalizeMetrics();
+
+  if (CheckBFIUnknownBlockQueries) {
+    // To detect BFI queries for unknown blocks, add entries for unreachable
+    // blocks, if any. This is to distinguish between known/existing unreachable
+    // blocks and unknown blocks.
+    for (const BlockT &BB : F)
+      if (!Nodes.count(&BB))
+        setBlockFreq(&BB, 0);
+  }
 }
 
 template <class BT>
@@ -1053,7 +1115,7 @@ void BlockFrequencyInfoImpl<BT>::setBlockFreq(const BlockT *BB, uint64_t Freq) {
     // BlockNode for it assigned with a new index. The index can be determined
     // by the size of Freqs.
     BlockNode NewNode(Freqs.size());
-    Nodes[BB] = NewNode;
+    Nodes[BB] = {NewNode, BFICallbackVH(BB, this)};
     Freqs.emplace_back();
     BlockFrequencyInfoImplBase::setBlockFreq(NewNode, Freq);
   }
@@ -1073,7 +1135,7 @@ template <class BT> void BlockFrequencyInfoImpl<BT>::initializeRPOT() {
     BlockNode Node = getNode(I);
     LLVM_DEBUG(dbgs() << " - " << getIndex(I) << ": " << getBlockName(Node)
                       << "\n");
-    Nodes[*I] = Node;
+    Nodes[*I] = {Node, BFICallbackVH(*I, this)};
   }
 
   Working.reserve(RPOT.size());
@@ -1357,6 +1419,61 @@ raw_ostream &BlockFrequencyInfoImpl<BT>::print(raw_ostream &OS) const {
   return OS;
 }
 
+template <class BT>
+void BlockFrequencyInfoImpl<BT>::verifyMatch(
+    BlockFrequencyInfoImpl<BT> &Other) const {
+  bool Match = true;
+  DenseMap<const BlockT *, BlockNode> ValidNodes;
+  DenseMap<const BlockT *, BlockNode> OtherValidNodes;
+  for (auto &Entry : Nodes) {
+    const BlockT *BB = Entry.first;
+    if (BB) {
+      ValidNodes[BB] = Entry.second.first;
+    }
+  }
+  for (auto &Entry : Other.Nodes) {
+    const BlockT *BB = Entry.first;
+    if (BB) {
+      OtherValidNodes[BB] = Entry.second.first;
+    }
+  }
+  unsigned NumValidNodes = ValidNodes.size();
+  unsigned NumOtherValidNodes = OtherValidNodes.size();
+  if (NumValidNodes != NumOtherValidNodes) {
+    Match = false;
+    dbgs() << "Number of blocks mismatch: " << NumValidNodes << " vs "
+           << NumOtherValidNodes << "\n";
+  } else {
+    for (auto &Entry : ValidNodes) {
+      const BlockT *BB = Entry.first;
+      BlockNode Node = Entry.second;
+      if (OtherValidNodes.count(BB)) {
+        BlockNode OtherNode = OtherValidNodes[BB];
+        auto Freq = Freqs[Node.Index];
+        auto OtherFreq = Other.Freqs[OtherNode.Index];
+        if (Freq.Integer != OtherFreq.Integer) {
+          Match = false;
+          dbgs() << "Freq mismatch: " << bfi_detail::getBlockName(BB) << " "
+                 << Freq.Integer << " vs " << OtherFreq.Integer << "\n";
+        }
+      } else {
+        Match = false;
+        dbgs() << "Block " << bfi_detail::getBlockName(BB) << " index "
+               << Node.Index << " does not exist in Other.\n";
+      }
+    }
+    // If there's a valid node in OtherValidNodes that's not in ValidNodes,
+    // either the above num check or the check on OtherValidNodes will fail.
+  }
+  if (!Match) {
+    dbgs() << "This\n";
+    print(dbgs());
+    dbgs() << "Other\n";
+    Other.print(dbgs());
+  }
+  assert(Match && "BFI mismatch");
+}
+
 // Graph trait base class for block frequency information graph
 // viewer.
 
@@ -1374,7 +1491,7 @@ struct BFIDOTGraphTraitsBase : public DefaultDOTGraphTraits {
   explicit BFIDOTGraphTraitsBase(bool isSimple = false)
       : DefaultDOTGraphTraits(isSimple) {}
 
-  static std::string getGraphName(const BlockFrequencyInfoT *G) {
+  static StringRef getGraphName(const BlockFrequencyInfoT *G) {
     return G->getFunction()->getName();
   }
 

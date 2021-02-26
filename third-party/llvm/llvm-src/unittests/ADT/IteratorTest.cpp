@@ -1,9 +1,8 @@
 //===- IteratorTest.cpp - Unit tests for iterator utilities ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -108,10 +107,10 @@ TEST(PointeeIteratorTest, Basic) {
 
 TEST(PointeeIteratorTest, SmartPointer) {
   SmallVector<std::unique_ptr<int>, 4> V;
-  V.push_back(make_unique<int>(1));
-  V.push_back(make_unique<int>(2));
-  V.push_back(make_unique<int>(3));
-  V.push_back(make_unique<int>(4));
+  V.push_back(std::make_unique<int>(1));
+  V.push_back(std::make_unique<int>(2));
+  V.push_back(std::make_unique<int>(3));
+  V.push_back(std::make_unique<int>(4));
 
   typedef pointee_iterator<
       SmallVectorImpl<std::unique_ptr<int>>::const_iterator>
@@ -210,10 +209,10 @@ TEST(FilterIteratorTest, FunctionPointer) {
 
 TEST(FilterIteratorTest, Composition) {
   auto IsOdd = [](int N) { return N % 2 == 1; };
-  std::unique_ptr<int> A[] = {make_unique<int>(0), make_unique<int>(1),
-                              make_unique<int>(2), make_unique<int>(3),
-                              make_unique<int>(4), make_unique<int>(5),
-                              make_unique<int>(6)};
+  std::unique_ptr<int> A[] = {std::make_unique<int>(0), std::make_unique<int>(1),
+                              std::make_unique<int>(2), std::make_unique<int>(3),
+                              std::make_unique<int>(4), std::make_unique<int>(5),
+                              std::make_unique<int>(6)};
   using PointeeIterator = pointee_iterator<std::unique_ptr<int> *>;
   auto Range = make_filter_range(
       make_range(PointeeIterator(std::begin(A)), PointeeIterator(std::end(A))),
@@ -448,19 +447,6 @@ TEST(RangeTest, Distance) {
 
   EXPECT_EQ(std::distance(v1.begin(), v1.end()), size(v1));
   EXPECT_EQ(std::distance(v2.begin(), v2.end()), size(v2));
-}
-
-TEST(IteratorRangeTest, DropBegin) {
-  SmallVector<int, 5> vec{0, 1, 2, 3, 4};
-
-  for (int n = 0; n < 5; ++n) {
-    int i = n;
-    for (auto &v : drop_begin(vec, n)) {
-      EXPECT_EQ(v, i);
-      i += 1;
-    }
-    EXPECT_EQ(i, 5);
-  }
 }
 
 } // anonymous namespace

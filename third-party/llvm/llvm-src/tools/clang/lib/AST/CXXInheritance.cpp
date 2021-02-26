@@ -1,9 +1,8 @@
 //===- CXXInheritance.cpp - C++ Inheritance -------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -45,7 +44,7 @@ void CXXBasePaths::ComputeDeclsFound() {
     Decls.insert(Path->Decls.front());
 
   NumDeclsFound = Decls.size();
-  DeclsFound = llvm::make_unique<NamedDecl *[]>(NumDeclsFound);
+  DeclsFound = std::make_unique<NamedDecl *[]>(NumDeclsFound);
   std::copy(Decls.begin(), Decls.end(), DeclsFound.get());
 }
 
@@ -148,37 +147,27 @@ CXXRecordDecl::isCurrentInstantiation(const DeclContext *CurContext) const {
   return false;
 }
 
-bool CXXRecordDecl::forallBases(ForallBasesCallback BaseMatches,
-                                bool AllowShortCircuit) const {
+bool CXXRecordDecl::forallBases(ForallBasesCallback BaseMatches) const {
   SmallVector<const CXXRecordDecl*, 8> Queue;
 
   const CXXRecordDecl *Record = this;
-  bool AllMatches = true;
   while (true) {
     for (const auto &I : Record->bases()) {
       const RecordType *Ty = I.getType()->getAs<RecordType>();
-      if (!Ty) {
-        if (AllowShortCircuit) return false;
-        AllMatches = false;
-        continue;
-      }
+      if (!Ty)
+        return false;
 
       CXXRecordDecl *Base =
             cast_or_null<CXXRecordDecl>(Ty->getDecl()->getDefinition());
       if (!Base ||
           (Base->isDependentContext() &&
            !Base->isCurrentInstantiation(Record))) {
-        if (AllowShortCircuit) return false;
-        AllMatches = false;
-        continue;
+        return false;
       }
 
       Queue.push_back(Base);
-      if (!BaseMatches(Base)) {
-        if (AllowShortCircuit) return false;
-        AllMatches = false;
-        continue;
-      }
+      if (!BaseMatches(Base))
+        return false;
     }
 
     if (Queue.empty())
@@ -186,7 +175,7 @@ bool CXXRecordDecl::forallBases(ForallBasesCallback BaseMatches,
     Record = Queue.pop_back_val(); // not actually a queue.
   }
 
-  return AllMatches;
+  return true;
 }
 
 bool CXXBasePaths::lookupInBases(ASTContext &Context,
@@ -487,6 +476,21 @@ bool CXXRecordDecl::FindOMPReductionMember(const CXXBaseSpecifier *Specifier,
   return false;
 }
 
+bool CXXRecordDecl::FindOMPMapperMember(const CXXBaseSpecifier *Specifier,
+                                        CXXBasePath &Path,
+                                        DeclarationName Name) {
+  RecordDecl *BaseRecord =
+      Specifier->getType()->castAs<RecordType>()->getDecl();
+
+  for (Path.Decls = BaseRecord->lookup(Name); !Path.Decls.empty();
+       Path.Decls = Path.Decls.slice(1)) {
+    if (Path.Decls.front()->isInIdentifierNamespace(IDNS_OMPMapper))
+      return true;
+  }
+
+  return false;
+}
+
 bool CXXRecordDecl::
 FindNestedNameSpecifierMember(const CXXBaseSpecifier *Specifier,
                               CXXBasePath &Path,
@@ -540,8 +544,7 @@ void OverridingMethods::add(unsigned OverriddenSubobject,
                             UniqueVirtualMethod Overriding) {
   SmallVectorImpl<UniqueVirtualMethod> &SubobjectOverrides
     = Overrides[OverriddenSubobject];
-  if (std::find(SubobjectOverrides.begin(), SubobjectOverrides.end(),
-                Overriding) == SubobjectOverrides.end())
+  if (llvm::find(SubobjectOverrides, Overriding) == SubobjectOverrides.end())
     SubobjectOverrides.push_back(Overriding);
 }
 
@@ -745,6 +748,8 @@ CXXRecordDecl::getFinalOverriders(CXXFinalOverriderMap &FinalOverriders) const {
         return false;
       };
 
+      // FIXME: IsHidden reads from Overriding from the middle of a remove_if
+      // over the same sequence! Is this guaranteed to work?
       Overriding.erase(
           std::remove_if(Overriding.begin(), Overriding.end(), IsHidden),
           Overriding.end());

@@ -4,7 +4,7 @@ Basics of Initialization
 ========================
 
 Status:
-  Active
+  Partially Accepted - `noinit` part under discussion in issue #8792
 
 Authors:
   Michael Ferguson

@@ -1,9 +1,8 @@
 //===-- ARMTargetMachine.h - Define TargetMachine for ARM -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -71,6 +70,8 @@ public:
            TargetTriple.isOSWindows() ||
            TargetABI == ARMBaseTargetMachine::ARM_ABI_AAPCS16;
   }
+
+  bool targetSchedulesPostRAScheduling() const override { return true; };
 };
 
 /// ARM/Thumb little endian target machine.

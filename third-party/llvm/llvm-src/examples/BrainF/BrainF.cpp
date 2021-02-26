@@ -1,9 +1,8 @@
 //===-- BrainF.cpp - BrainF compiler example ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,25 +66,24 @@ void BrainF::header(LLVMContext& C) {
 
   //Function prototypes
 
-  //declare void @llvm.memset.p0i8.i32(i8 *, i8, i32, i32, i1)
+  //declare void @llvm.memset.p0i8.i32(i8 *, i8, i32, i1)
   Type *Tys[] = { Type::getInt8PtrTy(C), Type::getInt32Ty(C) };
   Function *memset_func = Intrinsic::getDeclaration(module, Intrinsic::memset,
                                                     Tys);
 
   //declare i32 @getchar()
-  getchar_func = cast<Function>(module->
-    getOrInsertFunction("getchar", IntegerType::getInt32Ty(C)));
+  getchar_func =
+      module->getOrInsertFunction("getchar", IntegerType::getInt32Ty(C));
 
   //declare i32 @putchar(i32)
-  putchar_func = cast<Function>(module->
-    getOrInsertFunction("putchar", IntegerType::getInt32Ty(C),
-                        IntegerType::getInt32Ty(C)));
+  putchar_func = module->getOrInsertFunction(
+      "putchar", IntegerType::getInt32Ty(C), IntegerType::getInt32Ty(C));
 
   //Function header
 
   //define void @brainf()
-  brainf_func = cast<Function>(module->
-    getOrInsertFunction("brainf", Type::getVoidTy(C)));
+  brainf_func = Function::Create(FunctionType::get(Type::getVoidTy(C), false),
+                                 Function::ExternalLinkage, "brainf", module);
 
   builder = new IRBuilder<>(BasicBlock::Create(C, label, brainf_func));
 
@@ -100,13 +98,12 @@ void BrainF::header(LLVMContext& C) {
                                    nullptr, "arr");
   BB->getInstList().push_back(cast<Instruction>(ptr_arr));
 
-  //call void @llvm.memset.p0i8.i32(i8 *%arr, i8 0, i32 %d, i32 1, i1 0)
+  //call void @llvm.memset.p0i8.i32(i8 *%arr, i8 0, i32 %d, i1 0)
   {
     Value *memset_params[] = {
       ptr_arr,
       ConstantInt::get(C, APInt(8, 0)),
       val_mem,
-      ConstantInt::get(C, APInt(32, 1)),
       ConstantInt::get(C, APInt(1, 0))
     };
 
@@ -154,9 +151,9 @@ void BrainF::header(LLVMContext& C) {
       "aberrormsg");
 
     //declare i32 @puts(i8 *)
-    Function *puts_func = cast<Function>(module->
-      getOrInsertFunction("puts", IntegerType::getInt32Ty(C),
-                      PointerType::getUnqual(IntegerType::getInt8Ty(C))));
+    FunctionCallee puts_func = module->getOrInsertFunction(
+        "puts", IntegerType::getInt32Ty(C),
+        PointerType::getUnqual(IntegerType::getInt8Ty(C)));
 
     //brainf.aberror:
     aberrorbb = BasicBlock::Create(C, label, brainf_func);
@@ -442,7 +439,8 @@ void BrainF::readloop(PHINode *phi, BasicBlock *oldbb, BasicBlock *testbb,
       Value *head_0 = phi;
 
       //%tape.%d = load i8 *%head.%d
-      LoadInst *tape_0 = new LoadInst(head_0, tapereg, testbb);
+      LoadInst *tape_0 = new LoadInst(IntegerType::getInt8Ty(C), head_0,
+                                      tapereg, testbb);
 
       //%test.%d = icmp eq i8 %tape.%d, 0
       ICmpInst *test_0 = new ICmpInst(*testbb, ICmpInst::ICMP_EQ, tape_0,

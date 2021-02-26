@@ -52,3 +52,6 @@ developers.  A possible reading order is roughly as follows:
 
 `Valgrind.rst`: 
   Building the Chapel compiler so that compiled programs work with valgrind.
+
+`Sanitizers.rst`:
+  Enabling sanitizers for the compiler and/or executable.

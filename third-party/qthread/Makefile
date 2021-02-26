@@ -16,26 +16,34 @@ QTHREAD_BUILD_DIR = $(QTHREAD_ABS_DIR)/$(QTHREAD_BUILD_SUBDIR)
 QTHREAD_DIR = $(QTHREAD_ABS_DIR)
 
 #
-# Cray X* builds are cross-compilations
+# Cray builds are cross-compilations
 #
-ifneq (, $(filter cray-x% cray-shasta,$(CHPL_MAKE_TARGET_PLATFORM)))
-CHPL_QTHREAD_CFG_OPTIONS += --host=$(shell uname -m)-cle-linux-gnu
-else ifneq ($(CHPL_MAKE_HOST_PLATFORM),$(CHPL_MAKE_TARGET_PLATFORM))
-CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_PLATFORM)-unknown-linux-gnu
+ifneq (, $(filter cray-x%,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-cle-linux-gnu
+else ifneq (, $(filter cray-cs hpe-cray-ex,$(CHPL_MAKE_TARGET_PLATFORM)))
+CHPL_QTHREAD_CFG_OPTIONS += --host=$(CHPL_MAKE_TARGET_ARCH)-unknown-linux-gnu
 endif
 
 ifneq ($(CHPL_MAKE_HWLOC),none)
   # Have Qthreads get its hwloc topology from the Chapel runtime,
   # unless directed not to.
   ifeq (, $(call isTrue, $(CHPL_QTHREAD_DONT_GET_TOPO_FROM_RT)))
-    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc_via_chapel
+    TOPOLOGY = hwloc_via_chapel
     CFLAGS_NEEDS_RT_INCLUDES = y
   else
-    CHPL_QTHREAD_CFG_OPTIONS += --with-topology=hwloc
+    TOPOLOGY = hwloc
   endif
-  ifeq ($(CHPL_MAKE_HWLOC),hwloc)
+  ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
   endif
+endif
+
+ifneq (, $(CHPL_QTHREAD_TOPOLOGY))
+TOPOLOGY = $(CHPL_QTHREAD_TOPOLOGY)
+endif
+
+ifneq (, $(TOPOLOGY))
+CHPL_QTHREAD_CFG_OPTIONS += --with-topology=$(TOPOLOGY)
 endif
 
 

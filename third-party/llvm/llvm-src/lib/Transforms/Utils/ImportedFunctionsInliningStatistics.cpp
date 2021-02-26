@@ -1,9 +1,8 @@
 //===-- ImportedFunctionsInliningStats.cpp ----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // Generating inliner statistics for imported functions, mostly useful for
@@ -26,8 +25,8 @@ ImportedFunctionsInliningStatistics::createInlineGraphNode(const Function &F) {
 
   auto &ValueLookup = NodesMap[F.getName()];
   if (!ValueLookup) {
-    ValueLookup = llvm::make_unique<InlineGraphNode>();
-    ValueLookup->Imported = F.getMetadata("thinlto_src_module") != nullptr;
+    ValueLookup = std::make_unique<InlineGraphNode>();
+    ValueLookup->Imported = F.hasMetadata("thinlto_src_module");
   }
   return *ValueLookup;
 }
@@ -65,7 +64,7 @@ void ImportedFunctionsInliningStatistics::setModuleInfo(const Module &M) {
     if (F.isDeclaration())
       continue;
     AllFunctions++;
-    ImportedFunctions += int(F.getMetadata("thinlto_src_module") != nullptr);
+    ImportedFunctions += int(F.hasMetadata("thinlto_src_module"));
   }
 }
 static std::string getStatString(const char *Msg, int32_t Fraction, int32_t All,

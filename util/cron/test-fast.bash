@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
 #
-# Test --fast configuration on full suite with compiler performance enabled on
-# linux64.
+# Test --fast configuration on full suite.
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='comp-fast'
-
 source $CWD/common.bash
 source $CWD/common-fast.bash
+source $CWD/common-localnode-paratest.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="fast"
 
-nightly_args="${nightly_args} -compperformance (--fast)"
-$CWD/nightly -cron ${nightly_args}
+$CWD/nightly -cron ${nightly_args} $(get_nightly_paratest_args)

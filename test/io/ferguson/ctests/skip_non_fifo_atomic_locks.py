@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """Skip test when atomics are implemented with locks and tasking layer is not fifo.
 

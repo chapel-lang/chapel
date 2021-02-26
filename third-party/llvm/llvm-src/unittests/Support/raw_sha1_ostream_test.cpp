@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/raw_ostream_test.cpp - raw_ostream tests -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -42,6 +41,22 @@ TEST(sha1_hash_test, Basic) {
   std::array<uint8_t, 20> Vec = SHA1::hash(Input);
   std::string Hash = toHex({(const char *)Vec.data(), 20});
   ASSERT_EQ("2EF7BDE608CE5404E97D5F042F95F89F1C232871", Hash);
+}
+
+TEST(sha1_hash_test, Update) {
+  SHA1 sha1;
+  std::string Input = "123456789012345678901234567890";
+  ASSERT_EQ(Input.size(), 30UL);
+  // 3 short updates.
+  sha1.update(Input);
+  sha1.update(Input);
+  sha1.update(Input);
+  // Long update that gets into the optimized loop with prefix/suffix.
+  sha1.update(Input + Input + Input + Input);
+  // 18 bytes buffered now.
+
+  std::string Hash = toHex(sha1.final());
+  ASSERT_EQ("3E4A614101AD84985AB0FE54DC12A6D71551E5AE", Hash);
 }
 
 // Check that getting the intermediate hash in the middle of the stream does

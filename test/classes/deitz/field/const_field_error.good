@@ -1,1 +1,1 @@
-const_field_error.chpl:8: error: illegal lvalue in assignment
+const_field_error.chpl:8: error: cannot assign to const variable

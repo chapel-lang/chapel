@@ -1,9 +1,8 @@
 //===-- llvm/CodeGen/DebugHandlerBase.h -----------------------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,8 +18,8 @@
 #include "llvm/CodeGen/AsmPrinterHandler.h"
 #include "llvm/CodeGen/DbgEntityHistoryCalculator.h"
 #include "llvm/CodeGen/LexicalScopes.h"
-#include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/IR/DebugLoc.h"
 
 namespace llvm {
 
@@ -119,18 +118,17 @@ public:
   void beginFunction(const MachineFunction *MF) override;
   void endFunction(const MachineFunction *MF) override;
 
+  void beginBasicBlock(const MachineBasicBlock &MBB) override;
+  void endBasicBlock(const MachineBasicBlock &MBB) override;
+
   /// Return Label preceding the instruction.
   MCSymbol *getLabelBeforeInsn(const MachineInstr *MI);
 
   /// Return Label immediately following the instruction.
   MCSymbol *getLabelAfterInsn(const MachineInstr *MI);
 
-  /// Return the function-local offset of an instruction. A label for the
-  /// instruction \p MI should exist (\ref getLabelAfterInsn).
-  const MCExpr *getFunctionLocalOffsetAfterInsn(const MachineInstr *MI);
-
   /// If this type is derived from a base type then return base type size.
-  static uint64_t getBaseTypeSize(const DITypeRef TyRef);
+  static uint64_t getBaseTypeSize(const DIType *Ty);
 };
 
 }

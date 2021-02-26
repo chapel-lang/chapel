@@ -18,7 +18,7 @@ function(get_ext_project_build_command out_var target)
     set(${out_var} "$(MAKE)" "${target}" PARENT_SCOPE)
   else()
     set(${out_var} ${CMAKE_COMMAND} --build . --target ${target}
-                                    --config $<CONFIGURATION> PARENT_SCOPE)
+                                    --config $<CONFIG> PARENT_SCOPE)
   endif()
 endfunction()
 
@@ -58,12 +58,16 @@ if(LLVM_BUILD_EXTERNAL_COMPILER_RT AND EXISTS ${COMPILER_RT_SRC_ROOT}/)
     endif()
   endforeach()
 
+  set(compiler_rt_configure_deps)
   if(TARGET cxx-headers)
-    set(COMPILER_RT_LIBCXX_DEPENDENCY "cxx-headers")
+    list(APPEND compiler_rt_configure_deps "cxx-headers")
+  endif()
+  if(LLVM_INCLUDE_TESTS)
+    list(APPEND compiler_rt_configure_deps LLVMTestingSupport)
   endif()
 
   ExternalProject_Add(compiler-rt
-    DEPENDS llvm-config clang ${COMPILER_RT_LIBCXX_DEPENDENCY}
+    DEPENDS llvm-config clang ${compiler_rt_configure_deps}
     PREFIX ${COMPILER_RT_PREFIX}
     SOURCE_DIR ${COMPILER_RT_SRC_ROOT}
     STAMP_DIR ${STAMP_DIR}
@@ -71,6 +75,7 @@ if(LLVM_BUILD_EXTERNAL_COMPILER_RT AND EXISTS ${COMPILER_RT_SRC_ROOT}/)
     CMAKE_ARGS ${CLANG_COMPILER_RT_CMAKE_ARGS}
                -DCMAKE_C_COMPILER=${LLVM_RUNTIME_OUTPUT_INTDIR}/clang
                -DCMAKE_CXX_COMPILER=${LLVM_RUNTIME_OUTPUT_INTDIR}/clang++
+               -DCMAKE_ASM_COMPILER=${LLVM_RUNTIME_OUTPUT_INTDIR}/clang
                -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                -DLLVM_CONFIG_PATH=${LLVM_RUNTIME_OUTPUT_INTDIR}/llvm-config
@@ -128,7 +133,7 @@ if(LLVM_BUILD_EXTERNAL_COMPILER_RT AND EXISTS ${COMPILER_RT_SRC_ROOT}/)
     # Add top-level targets for various compiler-rt test suites.
     set(COMPILER_RT_TEST_SUITES check-fuzzer check-asan check-hwasan check-asan-dynamic check-dfsan
       check-lsan check-msan check-sanitizer check-tsan check-ubsan check-ubsan-minimal
-      check-profile check-cfi check-cfi-and-supported check-safestack)
+      check-profile check-cfi check-cfi-and-supported check-safestack check-gwp_asan)
     foreach(test_suite ${COMPILER_RT_TEST_SUITES})
       get_ext_project_build_command(run_test_suite ${test_suite})
       add_custom_target(${test_suite}

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,6 +52,7 @@ static void findLoopExprDefs(LoopExpr* fe, Expr* indices, AList& defIndices) {
     VarSymbol* idx = new VarSymbol(se->unresolved);
     idx->addFlag(FLAG_INDEX_VAR);
     idx->addFlag(FLAG_INSERT_AUTO_DESTROY);
+    idx->addFlag(FLAG_NO_DOC);
     DefExpr* def = new DefExpr(idx);
     defIndices.insertAtTail(def);
   }
@@ -177,13 +178,13 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
                             bool parallel, bool zippered);
 
-class LowerLoopExprVisitor : public AstVisitorTraverse
+class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
   public:
-    LowerLoopExprVisitor() { }
-    virtual ~LowerLoopExprVisitor() { }
+    LowerLoopExprVisitor()          = default;
+   ~LowerLoopExprVisitor() override = default;
 
-    virtual bool enterLoopExpr(LoopExpr* node);
+    bool enterLoopExpr(LoopExpr* node) override;
 };
 
 //
@@ -197,7 +198,11 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
   if (node->getStmtExpr() == NULL) {
     // Don't touch LoopExprs in DefExprs, they should be copied later into
     // BlockStmts.
-    INT_ASSERT(isDefExpr(node->parentExpr));
+
+    // While this works for correct codes, it results in assertion errors
+    // for incorrect codes that don't generate errors until resolution:
+    //
+    //    INT_ASSERT(isDefExpr(node->parentExpr));
   } else {
     SET_LINENO(node);
 
@@ -389,10 +394,17 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
                                        Expr* cond,
                                        Expr* indices,
                                        bool zippered,
+                                       bool forall,
                                        Expr*& stmt)
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    sifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    sifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    sifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -459,10 +471,17 @@ static FnSymbol* buildLeaderIteratorFn(const char* iteratorName,
 
 static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
                                          bool zippered,
+                                         bool forall,
                                          VarSymbol*& followerIterator)
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
+  if (forall) {
+    fifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
+    fifn->addFlag(FLAG_NO_REDUNDANT_ORDER_INDEPENDENT_PRAGMA_WARNING);
+  } else {
+    fifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
+  }
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);
@@ -520,14 +539,15 @@ static bool isGlobalVar(Symbol* sym) {
 //
 // Is this symbol defined outside 'enclosingExpr'?
 //
-static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
+bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr) {
   Symbol* enclosingSym = enclosingExpr->parentSymbol;
   Expr* curr = sym->defPoint;
   Symbol* currParentSym = curr->parentSymbol;
 
   // See if we are even in the same function.
   while (currParentSym != enclosingSym) {
-    if (currParentSym == NULL || currParentSym == rootModule)
+    if (isModuleSymbol(currParentSym))
+      // we made it all the way to the top without crossing enclosingSym, so
       return true; // 'sym' is defined outside 'enclosingSym', so it is outer
 
     curr = currParentSym->defPoint;
@@ -539,6 +559,8 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
     if (curr == NULL) {
       // 'sym' better not be defined under a Symbol
       // that is adjacent to 'enclosingExpr'.
+      // 2020-11 the assert below means we do not enter the above while-loop,
+      // meaning that we do not encounter symbols with nested symbols.
       INT_ASSERT(currParentSym == sym->defPoint->parentSymbol);
       return true;
     }
@@ -547,9 +569,6 @@ static bool isOuterVar(Symbol* sym, Expr* enclosingExpr) {
 
     curr = curr->parentExpr;
   }
-
-  INT_ASSERT(false); // should not get here
-  return false;
 }
 
 static bool considerForOuter(Symbol* sym) {
@@ -562,8 +581,11 @@ static bool considerForOuter(Symbol* sym) {
       sym->hasFlag(FLAG_PARAM))
     return false;  // these will be eliminated anyway
 
-  if (isArgSymbol(sym))
-    return true;   // a formal is never a global var
+  // Do not consider type formals (detected above with FLAG_TYPE_VARIABLE)
+  // and param formals (detected below with INTENT_PARAM).
+
+  if (ArgSymbol* arg = toArgSymbol(sym))
+    return !(arg->intent == INTENT_PARAM); // a formal is never a global var
 
   if (isGlobalVar(sym))
     return false;  // we do not need to handle globals
@@ -581,7 +603,7 @@ static void findOuterVars(LoopExpr* loopExpr, std::set<Symbol*>& outerVars) {
 
   for_vector(SymExpr, se, uses) {
     Symbol* sym = se->symbol();
-    if (considerForOuter(sym) && isOuterVar(sym, loopExpr))
+    if (considerForOuter(sym) && isOuterVarLoop(sym, loopExpr))
         outerVars.insert(sym);
   }
 }
@@ -593,11 +615,14 @@ static ArgSymbol* newOuterVarArg(Symbol* ovar) {
 
   ArgSymbol* ret = new ArgSymbol(INTENT_BLANK, ovar->name, argType);
 
-  // An argument might need to be a type variable if the outer variable is
+  // An argument might need to be a type or param if the outer variable is
   // a type field.
   if (ovar->hasFlag(FLAG_TYPE_VARIABLE)) {
     ret->addFlag(FLAG_TYPE_VARIABLE);
   }
+  if (ArgSymbol* ovarArg = toArgSymbol(ovar))
+    if (ovarArg->intent == INTENT_PARAM)
+      ret->intent = INTENT_PARAM;
 
   return ret;
 }
@@ -775,14 +800,16 @@ static CallExpr* buildLoopExprFunctions(LoopExpr* loopExpr) {
   FnSymbol* fifn = NULL;
 
   Expr* stmt = NULL; // Initialized by buildSerialIteratorFn.
-  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices, zippered, stmt);
+  sifn = buildSerialIteratorFn(iteratorName, loopBody, cond, indices,
+                               zippered, forall, stmt);
 
   if (forall) {
     lifn = buildLeaderIteratorFn(iteratorName, zippered);
     addOuterVariableFormals(lifn, outerVars);
 
     VarSymbol* followerIterator; // Initialized by buildFollowerIteratorFn.
-    fifn = buildFollowerIteratorFn(iteratorName, zippered, followerIterator);
+    fifn = buildFollowerIteratorFn(iteratorName, zippered, forall,
+                                   followerIterator);
 
     // do we need to use this map since symbols have not been resolved?
     SymbolMap map;

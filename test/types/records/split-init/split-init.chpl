@@ -774,6 +774,31 @@ class TestClass18 {
 }
 
 proc test18() {
+  writeln("test18");
   var x = new TestClass18();
 }
 test18();
+
+writeln("test19");
+// check mentions in type aliases prohibit split-init
+var a: R;
+type t = a.type;
+printA();
+a = makeR(19);
+
+proc printA() {
+  writeln(a);
+}
+
+proc test20() {
+  writeln("test20");
+  var b: R;
+  type t = b.type;
+  printB();
+  b = makeR(20);
+
+  proc printB() {
+    writeln(b);
+  }
+}
+test20();

@@ -106,8 +106,8 @@ class ArrayWrapper
 class CandidateDomain {
   
   param rank:       int;
-  const D:          domain(rank,stridable=true);
-  const flags:      [D] bool;
+  var D:          domain(rank,stridable=true);
+  var flags:      [D] bool;
   const min_width:  rank*int;
   var   signatures: rank*unmanaged ArrayWrapper;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -97,6 +97,34 @@ module ChapelUtil {
       }
     }
   }
+
+  //
+  // safeMul: If a and b are of type t, return true iff no
+  //  overflow/underflow would occur for a * b
+  //
+  proc safeMul(a: ?t, b:t){
+    if !isIntegralType(t) then
+      compilerError("Values must be of integral type.");
+    if a>0{
+      if b>0 {
+        if a > max(t)/b then return false;
+      }
+      else {
+        if b < min(t)/a then return false;
+      }
+    }
+    else {
+      if b>0{
+        if a < min(t)/b then return false;
+      }
+      else {
+        if a!=0 && b < max(t)/a then return false;
+      }
+    }
+    // //if all the case are false then multiplication is safe
+    return true;
+ 
+  }
   
   pragma "no default functions"
   extern record chpl_main_argument {
@@ -104,12 +132,6 @@ module ChapelUtil {
     // var argv: c_ptr(c_string);
     var return_value: int(32);
   }
-
-  proc =(ref lhs:chpl_main_argument, rhs:chpl_main_argument) {
-    __primitive("=", lhs, rhs);
-  }
-
-  proc chpl__initCopy(x:chpl_main_argument) return x;
 
   proc chpl_convert_args(arg: chpl_main_argument) {
     var local_arg = arg;

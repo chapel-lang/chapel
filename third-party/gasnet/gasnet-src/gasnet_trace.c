@@ -510,6 +510,30 @@ size_t gasneti_format_ti(char *buf, gex_TI_t ti) {
     return output;
   }
 
+  #define MAX_FORMAT_EP_LOC 128
+  /* format an array of EP_Location_t
+     caller should not deallocate string, they are recycled automatically
+   */
+  extern char *gasneti_format_eploc(const gex_EP_Location_t *members, size_t nmembers) {
+    // (rank is 10 chars max) + "." + (ep_idx is 4 char max at 12 bits) + ", " =  17 char each
+    gasneti_static_assert(17 * MAX_FORMAT_EP_LOC + 5 < BUFSZ);
+
+    int count = MIN(MAX_FORMAT_EP_LOC, nmembers);
+    char *buf = gasneti_getbuf();
+    char *p = buf;
+    for (int i = 0; i < count; ++i) {
+      sprintf(p, "%d.%d", members[i].gex_rank, members[i].gex_ep_index);
+      if (i != count-1) {
+        strcat(p, ", ");  // non-final element
+      } else if (count != nmembers) {
+        strcat(p, ", ..."); // final element of a truncated list
+      }
+      p += strlen(p);
+      gasneti_assert_uint(p-buf ,<, BUFSZ);
+    }
+    return buf;
+  }
+
   static int gasneti_autoflush = 0;
   #define GASNETI_TRACEFILE_FLUSH(fp) do {  \
     if (gasneti_autoflush) fflush(fp);      \
@@ -584,8 +608,11 @@ size_t gasneti_format_ti(char *buf, gex_TI_t ti) {
   static void gasneti_file_vprintf(FILE *fp, const char *format, va_list argptr) {
     gasneti_mutex_assertlocked(&gasneti_tracelock);
     gasneti_assert(fp);
-    fprintf(fp, "%i> ", (int)gasneti_mynode);
-    vfprintf(fp, format, argptr);
+    int rc;
+    rc = fprintf(fp, "%i> ", (int)gasneti_mynode);
+    gasneti_assert_always_int(rc ,>=, 3);
+    rc = vfprintf(fp, format, argptr);
+    gasneti_assert_always_int(rc ,>=, 0);
     if (format[strlen(format)-1]!='\n') fprintf(fp, "\n");
     GASNETI_TRACEFILE_FLUSH(fp);
   }
@@ -641,7 +668,7 @@ size_t gasneti_format_ti(char *buf, gex_TI_t ti) {
   }
 #endif
 
-static FILE *gasneti_open_outputfile(const char *filename, const char *desc) {
+extern FILE *gasneti_open_outputfile(const char *filename, const char *desc) {
   FILE *fp = NULL;
   char pathtemp[255];
   if (!strcmp(filename, "stderr") ||
@@ -819,6 +846,7 @@ static void gasneti_argv_from_proc(int **ppargc, char ****ppargv) {
   }
   cmdline = gasneti_realloc(cmdline, len);
   gasneti_leak(cmdline);
+  if (len > 0) cmdline[len-1] = 0; // bug 4076: defensively ensure null-termination
 
   /* Parse the cmdline on '\0' separators */
   {
@@ -913,6 +941,7 @@ static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
   mib[1] = KERN_PROCARGS2;
   mib[2] = getpid();
 
+retry:
   /* Query for length and allocate space */
   len = 0;
   if (sysctl(mib, 3, NULL, &len, NULL, 0) < 0) return;
@@ -928,12 +957,28 @@ static void gasneti_argv_from_sysctl(int **ppargc, char ****ppargv) {
   /* Extract argc and the argv array from buf */
   { char *start, *end;
 
-    argc = *(int*)buf; /* argc is first int */
+    if (mib[1] == KERN_PROCARGS2) {
+      /* argc is first int */
+      argc = *(int*)buf;
+      start = buf + sizeof(int);
+    } else {
+      start = buf;
+    }
 
-    /* Skip over argc, execpath and any trailing '\0' to find argv[0] */
-    start = buf + sizeof(int);
+    /* Skip over execpath and any trailing '\0' to find argv[0] */
     start += strlen(start) + 1;
-    while (! *start) start++;
+    while ((start - buf < len) && ! *start) start++;
+
+    #if defined(KERN_PROCARGS)
+      if ((start - buf == len) && (mib[1] == KERN_PROCARGS2)) {
+        // Did not find anything after exepath.
+        // So, try again using KERN_PROCARGS (which excludes argc).
+        gasneti_free(buf);
+        len = 0;
+        mib[1] = KERN_PROCARGS;
+        goto retry;
+      }
+    #endif
     gasneti_assert_uint(start - buf ,<, len);
 
     /* Skip over the args to find end */
@@ -1385,54 +1430,7 @@ extern void gasneti_trace_finish(void) {
   }
 #endif
 #if GASNET_DEBUGMALLOC
-  if (gasneti_mallocreport_filename) {
-    static gasneti_mutex_t gasneti_debugmalloclock = GASNETI_MUTEX_INITIALIZER;
-    FILE *fp;
-    gasneti_mutex_lock(&gasneti_debugmalloclock);
-    fp = gasneti_open_outputfile(gasneti_mallocreport_filename, "malloc report");
-    if (fp) {
-      gasnett_heapstats_t stats;
-      gasnett_getheapstats(&stats);
-      fprintf(fp, "# GASNet Debug Mallocator Report\n");
-      fprintf(fp, "#\n");
-      fprintf(fp, "# program: %s\n",gasneti_exename);
-      fprintf(fp, "# host:    %s\n",gasnett_gethostname());
-      fprintf(fp, "# pid:     %i\n",(int)getpid());
-      fprintf(fp, "# node:    %i / %i\n", (int)gasneti_mynode, (int)gasneti_nodes);
-      fprintf(fp, "#\n");
-      fprintf(fp, "# Private memory utilization:\n");
-      fprintf(fp, "# ---------------------------\n");
-      fprintf(fp, "#\n");
-      fprintf(fp, "# malloc() space total:        %10"PRIu64" bytes, in %10"PRIu64" objects\n",
-                  stats.allocated_bytes, stats.allocated_objects);
-      fprintf(fp, "# malloc() space in-use:       %10"PRIu64" bytes, in %10"PRIu64" objects\n",
-                  stats.live_bytes, stats.live_objects);
-      fprintf(fp, "# malloc() space freed:        %10"PRIu64" bytes, in %10"PRIu64" objects\n",
-                  stats.freed_bytes, stats.freed_objects);
-      fprintf(fp, "# malloc() space peak usage:   %10"PRIu64" bytes,    %10"PRIu64" objects\n",
-                  stats.live_bytes_max, stats.live_objects_max);
-      fprintf(fp, "# malloc() system overhead: >= %10"PRIu64" bytes\n",
-                  stats.overhead_bytes);
-      fprintf(fp, "#\n");
-
-      gasneti_memcheck_all(); /* check ring sanity */
-
-      fprintf(fp, "# Live objects at job exit\n");
-      fprintf(fp, "# ------------------------\n");
-      fprintf(fp, "#\n");
-      fprintf(fp, "# Table below shows objects allocated, but not freed by job exit.\n");
-      fprintf(fp, "# Note that GASNet does not free most of its internal permanent data structures,\n");
-      fprintf(fp, "# in order to streamline job shutdown.  An asterisk (*) following the size\n");
-      fprintf(fp, "# identifies objects known to correspond to these permanent allocations.\n");
-      fprintf(fp, "#\n");
-      fprintf(fp, "# Object size     Location Allocated\n");
-      fprintf(fp, "# ==================================\n");
-
-      gasneti_malloc_dump_liveobjects(fp);
-      fclose(fp);
-    }
-    gasneti_mutex_unlock(&gasneti_debugmalloclock);
-  }
+  if (gasneti_mallocreport_filename) gasneti_heapinfo_dump(gasneti_mallocreport_filename, 1);
 #endif
 }
 

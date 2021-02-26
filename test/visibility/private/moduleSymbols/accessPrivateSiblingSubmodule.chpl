@@ -6,7 +6,7 @@ module parent {
   }
 
   module sibling {
-    import parent.child;
+    import parent.{child}; // use bracketed form instead
     proc main() {
       writeln(child.secretFunction(11));
     }

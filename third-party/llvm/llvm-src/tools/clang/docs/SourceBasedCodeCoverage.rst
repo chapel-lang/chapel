@@ -87,10 +87,46 @@ directory structure will be created.  Additionally, the following special
   be between 1 and 9. The merge pool specifier can only occur once per filename
   pattern.
 
+* "%c" expands out to nothing, but enables a mode in which profile counter
+  updates are continuously synced to a file. This means that if the
+  instrumented program crashes, or is killed by a signal, perfect coverage
+  information can still be recovered. Continuous mode does not support value
+  profiling for PGO, and is only supported on Darwin at the moment. Support for
+  Linux may be mostly complete but requires testing, and support for Windows
+  may require more extensive changes: please get involved if you are interested
+  in porting this feature.
+
 .. code-block:: console
 
     # Step 2: Run the program.
     % LLVM_PROFILE_FILE="foo.profraw" ./foo
+
+Note that continuous mode is also used on Fuchsia where it's the only supported
+mode, but the implementation is different. The Darwin and Linux implementation
+relies on padding and the ability to map a file over the existing memory
+mapping which is generally only available on POSIX systems and isn't suitable
+for other platforms.
+
+On Fuchsia, we rely on the ability to relocate counters at runtime using a
+level of indirection. On every counter access, we add a bias to the counter
+address. This bias is stored in ``__llvm_profile_counter_bias`` symbol that's
+provided by the profile runtime and is initially set to zero, meaning no
+relocation. The runtime can map the profile into memory at arbitrary locations,
+and set bias to the offset between the original and the new counter location,
+at which point every subsequent counter access will be to the new location,
+which allows updating profile directly akin to the continuous mode.
+
+The advantage of this approach is that doesn't require any special OS support.
+The disadvantage is the extra overhead due to additional instructions required
+for each counter access (overhead both in terms of binary size and performance)
+plus duplication of counters (i.e. one copy in the binary itself and another
+copy that's mapped into memory). This implementation can be also enabled for
+other platforms by passing the ``-runtime-counter-relocation`` option to the
+backend during compilation.
+
+.. code-block:: console
+
+    % clang++ -fprofile-instr-generate -fcoverage-mapping -mllvm -runtime-counter-relocation foo.cc -o foo
 
 Creating coverage reports
 =========================
@@ -293,3 +329,37 @@ Drawbacks and limitations
   If the call to ``may_throw()`` propagates an exception into ``f``, the code
   coverage tool may mark the ``return`` statement as executed even though it is
   not. A call to ``longjmp()`` can have similar effects.
+
+Clang implementation details
+============================
+
+This section may be of interest to those wishing to understand or improve
+the clang code coverage implementation.
+
+Gap regions
+-----------
+
+Gap regions are source regions with counts. A reporting tool cannot set a line
+execution count to the count from a gap region unless that region is the only
+one on a line.
+
+Gap regions are used to eliminate unnatural artifacts in coverage reports, such
+as red "unexecuted" highlights present at the end of an otherwise covered line,
+or blue "executed" highlights present at the start of a line that is otherwise
+not executed.
+
+Switch statements
+-----------------
+
+The region mapping for a switch body consists of a gap region that covers the
+entire body (starting from the '{' in 'switch (...) {', and terminating where the
+last case ends). This gap region has a zero count: this causes "gap" areas in
+between case statements, which contain no executable code, to appear uncovered.
+
+When a switch case is visited, the parent region is extended: if the parent
+region has no start location, its start location becomes the start of the case.
+This is used to support switch statements without a ``CompoundStmt`` body, in
+which the switch body and the single case share a count.
+
+For switches with ``CompoundStmt`` bodies, a new region is created at the start
+of each switch case.

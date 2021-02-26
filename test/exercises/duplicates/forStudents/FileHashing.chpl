@@ -159,7 +159,7 @@ module FileHashing {
     }
     // If fullPath starts with currentDirectory, remove it
     if fullPath.startsWith(currentDirectory) {
-      fullPath = fullPath[currentDirectory.size+1..];
+      fullPath = fullPath[currentDirectory.size..];
     }
     return fullPath;
   }

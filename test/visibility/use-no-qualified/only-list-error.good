@@ -1,0 +1,2 @@
+only-list-error.chpl:10: In function 'main':
+only-list-error.chpl:11: error: 'A' undeclared (first use this function)

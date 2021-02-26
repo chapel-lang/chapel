@@ -1,9 +1,8 @@
 //===-- RuntimeDyldELF.cpp - Run-time dynamic linker for MC-JIT -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -161,9 +160,13 @@ createRTDyldELFObject(MemoryBufferRef Buffer, const ObjectFile &SourceObject,
   // Iterate over all sections in the object.
   auto SI = SourceObject.section_begin();
   for (const auto &Sec : Obj->sections()) {
-    StringRef SectionName;
-    Sec.getName(SectionName);
-    if (SectionName != "") {
+    Expected<StringRef> NameOrErr = Sec.getName();
+    if (!NameOrErr) {
+      consumeError(NameOrErr.takeError());
+      continue;
+    }
+
+    if (*NameOrErr != "") {
       DataRefImpl ShdrRef = Sec.getRawDataRefImpl();
       Elf_Shdr *shdr = const_cast<Elf_Shdr *>(
           reinterpret_cast<const Elf_Shdr *>(ShdrRef.p));
@@ -239,19 +242,19 @@ llvm::RuntimeDyldELF::create(Triple::ArchType Arch,
                              JITSymbolResolver &Resolver) {
   switch (Arch) {
   default:
-    return make_unique<RuntimeDyldELF>(MemMgr, Resolver);
+    return std::make_unique<RuntimeDyldELF>(MemMgr, Resolver);
   case Triple::mips:
   case Triple::mipsel:
   case Triple::mips64:
   case Triple::mips64el:
-    return make_unique<RuntimeDyldELFMips>(MemMgr, Resolver);
+    return std::make_unique<RuntimeDyldELFMips>(MemMgr, Resolver);
   }
 }
 
 std::unique_ptr<RuntimeDyld::LoadedObjectInfo>
 RuntimeDyldELF::loadObject(const object::ObjectFile &O) {
   if (auto ObjSectionToIDOrErr = loadObjectImpl(O))
-    return llvm::make_unique<LoadedELFObjectInfo>(*this, *ObjSectionToIDOrErr);
+    return std::make_unique<LoadedELFObjectInfo>(*this, *ObjSectionToIDOrErr);
   else {
     HasError = true;
     raw_string_ostream ErrStream(ErrorStr);
@@ -266,7 +269,7 @@ void RuntimeDyldELF::resolveX86_64Relocation(const SectionEntry &Section,
                                              uint64_t SymOffset) {
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_X86_64_NONE:
     break;
@@ -356,7 +359,7 @@ void RuntimeDyldELF::resolveX86Relocation(const SectionEntry &Section,
   default:
     // There are other relocation types, but it appears these are the
     // only ones currently used by the LLVM ELF object writer
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   }
 }
@@ -379,7 +382,7 @@ void RuntimeDyldELF::resolveAArch64Relocation(const SectionEntry &Section,
 
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_AARCH64_ABS16: {
     uint64_t Result = Value + Addend;
@@ -396,6 +399,13 @@ void RuntimeDyldELF::resolveAArch64Relocation(const SectionEntry &Section,
   case ELF::R_AARCH64_ABS64:
     write(isBE, TargetPtr, Value + Addend);
     break;
+  case ELF::R_AARCH64_PLT32: {
+    uint64_t Result = Value + Addend - FinalAddress;
+    assert(static_cast<int64_t>(Result) >= INT32_MIN &&
+           static_cast<int64_t>(Result) <= INT32_MAX);
+    write(isBE, TargetPtr, static_cast<uint32_t>(Result));
+    break;
+  }
   case ELF::R_AARCH64_PREL32: {
     uint64_t Result = Value + Addend - FinalAddress;
     assert(static_cast<int64_t>(Result) >= INT32_MIN &&
@@ -551,7 +561,7 @@ void RuntimeDyldELF::setMipsABI(const ObjectFile &Obj) {
     IsMipsO32ABI = AbiVariant & ELF::EF_MIPS_ABI_O32;
     IsMipsN32ABI = AbiVariant & ELF::EF_MIPS_ABI2;
   }
-  IsMipsN64ABI = Obj.getFileFormatName().equals("ELF64-mips");
+  IsMipsN64ABI = Obj.getFileFormatName().equals("elf64-mips");
 }
 
 // Return the .TOC. section and offset.
@@ -568,10 +578,11 @@ Error RuntimeDyldELF::findPPC64TOCSection(const ELFObjectFileBase &Obj,
 
   // The TOC consists of sections .got, .toc, .tocbss, .plt in that
   // order. The TOC starts where the first of these sections starts.
-  for (auto &Section: Obj.sections()) {
-    StringRef SectionName;
-    if (auto EC = Section.getName(SectionName))
-      return errorCodeToError(EC);
+  for (auto &Section : Obj.sections()) {
+    Expected<StringRef> NameOrErr = Section.getName();
+    if (!NameOrErr)
+      return NameOrErr.takeError();
+    StringRef SectionName = *NameOrErr;
 
     if (SectionName == ".got"
         || SectionName == ".toc"
@@ -602,13 +613,19 @@ Error RuntimeDyldELF::findOPDEntrySection(const ELFObjectFileBase &Obj,
   // .opd entries
   for (section_iterator si = Obj.section_begin(), se = Obj.section_end();
        si != se; ++si) {
-    section_iterator RelSecI = si->getRelocatedSection();
+
+    Expected<section_iterator> RelSecOrErr = si->getRelocatedSection();
+    if (!RelSecOrErr)
+      report_fatal_error(toString(RelSecOrErr.takeError()));
+
+    section_iterator RelSecI = *RelSecOrErr;
     if (RelSecI == Obj.section_end())
       continue;
 
-    StringRef RelSectionName;
-    if (auto EC = RelSecI->getName(RelSectionName))
-      return errorCodeToError(EC);
+    Expected<StringRef> NameOrErr = RelSecI->getName();
+    if (!NameOrErr)
+      return NameOrErr.takeError();
+    StringRef RelSectionName = *NameOrErr;
 
     if (RelSectionName != ".opd")
       continue;
@@ -704,7 +721,7 @@ void RuntimeDyldELF::resolvePPC32Relocation(const SectionEntry &Section,
   uint8_t *LocalAddress = Section.getAddressWithOffset(Offset);
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_PPC_ADDR16_LO:
     writeInt16BE(LocalAddress, applyPPClo(Value + Addend));
@@ -724,7 +741,7 @@ void RuntimeDyldELF::resolvePPC64Relocation(const SectionEntry &Section,
   uint8_t *LocalAddress = Section.getAddressWithOffset(Offset);
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_PPC64_ADDR16:
     writeInt16BE(LocalAddress, applyPPClo(Value + Addend));
@@ -818,7 +835,7 @@ void RuntimeDyldELF::resolveSystemZRelocation(const SectionEntry &Section,
   uint8_t *LocalAddress = Section.getAddressWithOffset(Offset);
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_390_PC16DBL:
   case ELF::R_390_PLT16DBL: {
@@ -873,7 +890,7 @@ void RuntimeDyldELF::resolveBPFRelocation(const SectionEntry &Section,
 
   switch (Type) {
   default:
-    llvm_unreachable("Relocation type not implemented yet!");
+    report_fatal_error("Relocation type not implemented yet!");
     break;
   case ELF::R_BPF_NONE:
     break;
@@ -1857,9 +1874,6 @@ Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
     Sections[GOTSectionID] =
         SectionEntry(".got", Addr, TotalSize, TotalSize, 0);
 
-    if (Checker)
-      Checker->registerSection(Obj.getFileName(), GOTSectionID);
-
     // For now, initialize all GOT entries to zero.  We'll fill them in as
     // needed when GOT-based relocations are applied.
     memset(Addr, 0, TotalSize);
@@ -1869,7 +1883,12 @@ Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
       for (section_iterator SI = Obj.section_begin(), SE = Obj.section_end();
            SI != SE; ++SI) {
         if (SI->relocation_begin() != SI->relocation_end()) {
-          section_iterator RelocatedSection = SI->getRelocatedSection();
+          Expected<section_iterator> RelSecOrErr = SI->getRelocatedSection();
+          if (!RelSecOrErr)
+            return make_error<RuntimeDyldError>(
+                toString(RelSecOrErr.takeError()));
+
+          section_iterator RelocatedSection = *RelSecOrErr;
           ObjSectionToIDMap::iterator i = SectionMap.find(*RelocatedSection);
           assert (i != SectionMap.end());
           SectionToGOTMap[i->second] = GOTSectionID;
@@ -1883,8 +1902,14 @@ Error RuntimeDyldELF::finalizeLoad(const ObjectFile &Obj,
   ObjSectionToIDMap::iterator i, e;
   for (i = SectionMap.begin(), e = SectionMap.end(); i != e; ++i) {
     const SectionRef &Section = i->first;
+
     StringRef Name;
-    Section.getName(Name);
+    Expected<StringRef> NameOrErr = Section.getName();
+    if (NameOrErr)
+      Name = *NameOrErr;
+    else
+      consumeError(NameOrErr.takeError());
+
     if (Name == ".eh_frame") {
       UnregisteredEHFrameSections.push_back(i->second);
       break;

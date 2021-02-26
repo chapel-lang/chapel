@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 writeln("numLocales = ", numLocales);
 writeln("LocaleSpace = ", LocaleSpace);

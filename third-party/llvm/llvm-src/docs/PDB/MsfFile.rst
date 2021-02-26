@@ -70,14 +70,14 @@ follows:
   sizes of 4KiB, and all further discussion assumes a block size of 4KiB.
 - **FreeBlockMapBlock** - The index of a block within the file, at which begins
   a bitfield representing the set of all blocks within the file which are "free"
-  (i.e. the data within that block is not used).  See :ref:`msf_freeblockmap` for
-  more information.
+  (i.e. the data within that block is not used).  See :ref:`msf_freeblockmap`
+  for more information.
   **Important**: ``FreeBlockMapBlock`` can only be ``1`` or ``2``!
-- **NumBlocks** - The total number of blocks in the file.  ``NumBlocks * BlockSize``
-  should equal the size of the file on disk.
-- **NumDirectoryBytes** - The size of the stream directory, in bytes.  The stream
-  directory contains information about each stream's size and the set of blocks
-  that it occupies.  It will be described in more detail later.
+- **NumBlocks** - The total number of blocks in the file.  ``NumBlocks *
+  BlockSize`` should equal the size of the file on disk.
+- **NumDirectoryBytes** - The size of the stream directory, in bytes.  The
+  stream directory contains information about each stream's size and the set of
+  blocks that it occupies.  It will be described in more detail later.
 - **BlockMapAddr** - The index of a block within the MSF file.  At this block is
   an array of ``ulittle32_t``'s listing the blocks that the stream directory
   resides on.  For large MSF files, the stream directory (which describes the
@@ -85,7 +85,8 @@ follows:
   result, this extra layer of indirection is introduced, whereby this block
   contains the list of blocks that the stream directory occupies, and the stream
   directory itself can be stitched together accordingly.  The number of
-  ``ulittle32_t``'s in this array is given by ``ceil(NumDirectoryBytes / BlockSize)``.
+  ``ulittle32_t``'s in this array is given by ``ceil(NumDirectoryBytes /
+  BlockSize)``.
 
 .. _msf_freeblockmap:
 
@@ -103,7 +104,7 @@ write your new modified bitfield to FPM2, and vice versa. Only when you commit
 the file to disk do you need to swap the value in the SuperBlock to point to
 the new ``FreeBlockMapBlock``.
 
-The Free Block Maps are stored as a series of single blocks thoughout the file
+The Free Block Maps are stored as a series of single blocks throughout the file
 at intervals of BlockSize. Because each FPM block is of size ``BlockSize``
 bytes, it contains 8 times as many bits as an interval has blocks. This means
 that the first block of each FPM refers to the first 8 intervals of the file
@@ -156,9 +157,10 @@ like:
     };
   };
 
-In total, this occupies ``15 * 4 = 60`` bytes, so ``SuperBlock->NumDirectoryBytes``
-would equal ``60``, and ``SuperBlock->BlockMapAddr`` would be an array of one
-``ulittle32_t``, since ``60 <= SuperBlock->BlockSize``.
+In total, this occupies ``15 * 4 = 60`` bytes, so
+``SuperBlock->NumDirectoryBytes`` would equal ``60``, and
+``SuperBlock->BlockMapAddr`` would be an array of one ``ulittle32_t``, since
+``60 <= SuperBlock->BlockSize``.
 
 Note also that the streams are discontiguous, and that part of stream 3 is in the
 middle of part of stream 2.  You cannot assume anything about the layout of the

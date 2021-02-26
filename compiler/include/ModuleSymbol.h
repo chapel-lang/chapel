@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,7 +32,7 @@ enum ModTag {
 struct ArgumentDescription;
 struct ExternBlockInfo;
 
-class ModuleSymbol : public Symbol {
+class ModuleSymbol final : public Symbol {
 public:
   static void             addTopLevelModule (ModuleSymbol* module);
 
@@ -54,17 +54,18 @@ public:
                                        ModTag      iModTag,
                                        BlockStmt*  iBlock);
 
-                         ~ModuleSymbol();
+                         ~ModuleSymbol() override = default;
 
   // Interface to BaseAST
-  virtual void            verify();
-  virtual void            accept(AstVisitor* visitor);
+  void            verify() override;
+  void            accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(ModuleSymbol);
+  ModuleSymbol* copyInner(SymbolMap* map) override;
 
   // Interface to Symbol
-  virtual void            replaceChild(BaseAST* oldAst, BaseAST* newAst);
-  virtual void            codegenDef();
+  void            replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void            codegenDef() override;
 
   // New interface
   std::vector<AggregateType*> getTopLevelClasses();
@@ -117,6 +118,7 @@ private:
   bool                    hasTopLevelModule();
 };
 
+extern BlockStmt*         rootBlock;
 extern ModuleSymbol*      rootModule;
 extern ModuleSymbol*      theProgram;
 extern ModuleSymbol*      baseModule;

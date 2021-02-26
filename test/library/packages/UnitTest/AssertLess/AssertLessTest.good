@@ -64,7 +64,7 @@ AssertionError: assert failed - Strings are not of same length
 Error Caught in Equal Strings
 AssertionError: First String > Second String :
 'unequalstring'>'unequalString'
-First larger element in first String is at index 8:
+First larger element in first String is at index 7:
 's'
 'S'
 

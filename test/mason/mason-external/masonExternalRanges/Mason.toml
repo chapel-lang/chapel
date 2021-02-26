@@ -1,0 +1,13 @@
+
+[brick]
+name = "masonExternalRanges"
+version = "0.1.0"
+chplVersion = "1.23.0"
+license = "None"
+
+[dependencies]
+
+[external]
+libtomlc99 = "libtomlc99@0.2019.03.06:0.2019.06.24"
+
+

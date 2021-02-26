@@ -156,7 +156,7 @@ local {
           src = dest;
           var neighbor = ijk + nOff;
           var srcOff = (0,0,0);
-          for i in 1..3 {
+          for i in 0..2 {
             if(neighbor(i) < 0) {
               //neighbor(i) = locDom.high(i);
               //srcOff(i) = boxSpace.high(i);

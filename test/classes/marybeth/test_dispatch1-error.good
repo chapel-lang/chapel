@@ -1,1 +1,2 @@
-test_dispatch1-error.chpl:27: error: Cannot assign to borrowed pumps from borrowed shoe
+test_dispatch1-error.chpl:27: error: cannot initialize 'shoe2' of type 'borrowed pumps' from a 'borrowed shoe'
+test_dispatch1-error.chpl:29: error: cannot initialize 'shoe3' of type 'borrowed boots' from a 'borrowed pumps'

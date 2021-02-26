@@ -1,5 +1,0 @@
-semantic: variable of type not visible at definition point
-
-A variable is defined by assigning to it the return value of a function.
-The function returns a record defined in a module not used in the variable's
-scope. The methods and fields defined in the record are not accessible.

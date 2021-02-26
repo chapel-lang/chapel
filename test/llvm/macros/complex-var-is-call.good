@@ -1,0 +1,1 @@
+complex-var-is-call.chpl:2: error: Could not find C variable ComplexVar - perhaps it is a complex macro?

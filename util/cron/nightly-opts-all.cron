@@ -1,9 +1,0 @@
-#!/usr/bin/env bash
-
-CWD=$(cd $(dirname $0) ; pwd)
-
-source $CWD/common.bash
-
-log_info "Testing -cron -all."
-$CWD/start_opt_test -cron -all
-log_info "Finished"

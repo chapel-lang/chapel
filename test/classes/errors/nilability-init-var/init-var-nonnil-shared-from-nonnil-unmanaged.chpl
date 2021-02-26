@@ -7,5 +7,3 @@ class MyClass {
 var rhs = new unmanaged MyClass();
 
 var lhs: shared MyClass = rhs;
-
-compilerError("done");

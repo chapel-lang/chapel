@@ -1,2 +1,1 @@
-returnRecordDiffModule.chpl:11: In function 'main':
-returnRecordDiffModule.chpl:12: error: record 'R' is not visible at this point
+2

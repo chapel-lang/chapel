@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,6 +22,11 @@
 #define _CACHES_H_
 
 #include "baseAST.h"
+
+class CalledFunInfo;
+class VisibilityInfo;
+class GenericsCacheInfo;
+class ResolutionCandidate;
 
 //
 // SymbolMapCache: FnSymbol -> FnSymbol cache based on a SymbolMap
@@ -57,11 +62,6 @@ FnSymbol* checkCache(SymbolMapCache& cache,
                      FnSymbol*       oldFn,
                      SymbolMap*      map);
 
-void      replaceCache(SymbolMapCache& cache,
-                       FnSymbol*       oldFn,
-                       FnSymbol*       newFn,
-                       SymbolMap*      map);
-
 void      freeCache(SymbolMapCache& cache);
 
 //
@@ -74,45 +74,45 @@ void      freeCache(SymbolMapCache& cache);
 // wrappers for constructors.
 //
 
-extern SymbolMapCache genericsCache;
 extern SymbolMapCache promotionsCache;
 
-
-
-
-
-
-
 //
-// SymbolVecCache: FnSymbol -> FnSymbol cache based on a Vec<Symbol*>
+// SymbolMapScopeCache: FnSymbol -> FnSymbol cache based on a SymbolMap+scope
 //
-//   This cache works similarly to the SymbolMapCache above except
-//   instead of a map, the cache is based on a vector.  The cache
-//   entries match if the functions are the same and the vectors
-//   contain the same elements (in any order).
+//   addCache(cache, old_fn, new_fn, map): adds an entry to cache from
+//                                         old_fn to new_fn via map
 //
-class SymbolVecCacheEntry {
+//   checkCache(cache, fn, map): returns a function previously added
+//                               via addMapCache if fn matches old_fn
+//                               and the maps contain the same
+//                               key-value pairs (in any order)
+//
+//   freeCache(cache): frees memory associated with cache
+//
+class SymbolMapScopeCacheEntry {
 public:
-  SymbolVecCacheEntry(FnSymbol* fn, Vec<Symbol*>* ivec);
+  SymbolMapScopeCacheEntry(FnSymbol* ifn, SymbolMap* imap);
 
-  FnSymbol*    fn;
-  Vec<Symbol*> vec;
+  FnSymbol* fn;
+  SymbolMap map;
 };
 
-typedef Map<FnSymbol*,     Vec<SymbolVecCacheEntry*>*> SymbolVecCache;
-typedef MapElem<FnSymbol*, Vec<SymbolVecCacheEntry*>*> SymbolVecCacheElem;
+typedef Map<FnSymbol*,     Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCache;
+typedef MapElem<FnSymbol*, Vec<SymbolMapScopeCacheEntry*>*> SymbolMapScopeCacheElem;
 
-
-void      addCache(SymbolVecCache& cache,
-                   FnSymbol*       newFn,
+void      addCache(SymbolMapScopeCache& cache,
                    FnSymbol*       oldFn,
-                   Vec<Symbol*>* vec);
+                   FnSymbol*       newFn,
+                   SymbolMap*      map);
 
-FnSymbol* checkCache(SymbolVecCache& cache,
-                     FnSymbol*       fn,
-                     Vec<Symbol*>*   vec);
+FnSymbol* checkCache(SymbolMapScopeCache& cache,
+                     FnSymbol*            oldFn,
+                     VisibilityInfo*      visInfo,
+                     SymbolMap*           map);
 
-void      freeCache(SymbolVecCache& cache);
+void      freeCache(SymbolMapScopeCache& cache);
+
+void      advanceCurrStart(VisibilityInfo& visInfo);
 
 //
 // Caches to avoid creating multiple identical wrappers and
@@ -123,6 +123,25 @@ void      freeCache(SymbolVecCache& cache);
 // when instantiating constructors and building up the default
 // wrappers for constructors.
 //
-extern SymbolVecCache defaultsCache;
+
+extern SymbolMapScopeCache genericsCache;
+
+// for debugging
+void genericsCacheSummary(CalledFunInfo* fi);
+void genericsCacheSummary(CalledFunInfo& fi);
+void genericsCacheSummary(GenericsCacheInfo* ci);
+void genericsCacheSummary(GenericsCacheInfo& ci);
+void genericsCacheSummary(VisibilityInfo* visInfo);
+void genericsCacheSummary(VisibilityInfo& visInfo);
+void genericsCacheSummary(int id);
+void genericsCacheSummary(BaseAST* ast);
+
+// GenericsCacheInfo interface
+void createCacheInfoIfNeeded(FnSymbol* fn);
+void clearCacheInfoIfEmpty(FnSymbol* fn);
+void updateCacheInfosForACall(VisibilityInfo& visInfo,
+                              ResolutionCandidate* best1,
+                              ResolutionCandidate* best2,
+                              ResolutionCandidate* best3);
 
 #endif

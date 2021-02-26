@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -22,12 +22,15 @@
 #include "AstVisitorTraverse.h"
 #include "CForLoop.h"
 #include "ForLoop.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "iterator.h"
 #include "passes.h"
 #include "resolution.h"
 #include "stringutil.h"
 #include "wellknown.h"
+
+#include <map>
 #include <set>
 
 /*
@@ -325,7 +328,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs);
 
 /////////// ExpandVisitor visitor ///////////
 
-class ExpandVisitor : public AstVisitorTraverse {
+class ExpandVisitor final : public AstVisitorTraverse {
 public:
   ForallStmt* const forall;
   SymbolMap& svar2clonevar;
@@ -333,9 +336,9 @@ public:
 
   ExpandVisitor(ForallStmt* fs, SymbolMap& map);
   ExpandVisitor(ExpandVisitor* parentEV, SymbolMap& map);
-  ~ExpandVisitor();
+ ~ExpandVisitor() override;
 
-  virtual bool enterCallExpr(CallExpr* node) {
+  bool enterCallExpr(CallExpr* node) override {
     if (node->isPrimitive(PRIM_YIELD)) {
       expandYield(this, node);
     }
@@ -351,7 +354,7 @@ public:
     return false;
   }
 
-  virtual bool enterForallStmt(ForallStmt* node) {
+  bool enterForallStmt(ForallStmt* node) override {
 
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
@@ -362,13 +365,13 @@ public:
     return false;
   }
 
-  virtual bool enterCForLoop(CForLoop* node) {
+  bool enterCForLoop(CForLoop* node) override {
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
     }
     return true;
   }
-  virtual bool enterForLoop(ForLoop* node) {
+  bool enterForLoop(ForLoop* node) override {
     if (forall->hasVectorizationHazard()) {
       node->setHasVectorizationHazard(true);
     }
@@ -428,6 +431,27 @@ static void removeVoidReturn(BlockStmt* cloneBody) {
   retexpr->remove();
 }
 
+// Do not create top-level TPVs and such when there are no "top-level" yields
+// i.e. yields outside any parallel constructs.
+// A yield within an 'if' or a serial loop is considered "top-level".
+static std::map<FnSymbol*,bool> toplevelYieldsArePresent;
+typedef std::map<FnSymbol*,bool>::iterator TLVYIterator;
+
+static bool hasToplevelYields(FnSymbol* fn) {
+  std::pair<FnSymbol*,bool> val(fn, false);
+  std::pair<TLVYIterator,bool> result = toplevelYieldsArePresent.insert(val);
+  if (result.second) {
+    // Yes, we inserted a new element. Compute tlvy, store and return it.
+    bool hasTlvy = false;
+    computeHasToplevelYields(fn->body, hasTlvy);
+    result.first->second = hasTlvy;
+    return hasTlvy;
+  } else {
+    // This function is already in the map. Use the cached value.
+    return result.first->second;
+  }
+}
+
 /////////// standardized svar actions ///////////
 
 // When ForallStmt::loopBody() is inlined upon encountering a yield
@@ -470,6 +494,9 @@ static VarSymbol* createCurrTPV(ShadowVarSymbol* TPV) {
   currTPV->qual = TPV->qual;
   if (TPV->hasFlag(FLAG_CONST))   currTPV->addFlag(FLAG_CONST);
   if (TPV->hasFlag(FLAG_REF_VAR)) currTPV->addFlag(FLAG_REF_VAR);
+  if (TPV->hasFlag(FLAG_COMPILER_ADDED_AGGREGATOR)) {
+    currTPV->addFlag(FLAG_COMPILER_ADDED_AGGREGATOR);
+  }
   return currTPV;
 }
 
@@ -786,9 +813,11 @@ static void expandShadowVarTaskFn(FnSymbol* cloneTaskFn, CallExpr* callToTFn,
     }
 
     case TFI_TASK_PRIVATE:
+     if (hasToplevelYields(cloneTaskFn)) {
       addDefAndMap(aInit, map, svar, createCurrTPV(svar));
       addCloneOfInitBlock(aInit, map, svar);
       addCloneOfDeinitBlock(aFini, map, svar);
+     }
       break;
 
     case TFI_IN_PARENT:         // handled upon TFI_IN
@@ -928,7 +957,7 @@ static void expandForall(ExpandVisitor* EV, ForallStmt* fs)
 /////////// outermost visitor ///////////
 
 static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
-                                    ShadowVarSymbol* svar)
+                                    FnSymbol* parIterFn, ShadowVarSymbol* svar)
 {
   SET_LINENO(svar);
   switch (svar->intent)
@@ -966,9 +995,11 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
     }
 
     case TFI_TASK_PRIVATE:
+     if (hasToplevelYields(parIterFn)) {
       addDefAndMap(aInit, map, svar, createCurrTPV(svar));
       addCloneOfInitBlock(aInit, map, svar);
       addCloneOfDeinitBlock(aFini, map, svar);
+     }
       break;
 
     case TFI_IN_PARENT:         // handled upon TFI_IN
@@ -986,7 +1017,7 @@ static void expandShadowVarTopLevel(Expr* aInit, Expr* aFini, SymbolMap& map,
 
 // 'ibody' is a clone of the parallel iterator body
 // We are replacing the ForallStmt with this clone.
-static void expandTopLevel(ExpandVisitor* outerVis,
+static void expandTopLevel(ExpandVisitor* outerVis, FnSymbol* parIterFn,
                            BlockStmt* iwrap, BlockStmt* ibody)
 {
   INT_ASSERT(ibody->inTree()); //fyi
@@ -999,7 +1030,7 @@ static void expandTopLevel(ExpandVisitor* outerVis,
   SymbolMap& map = outerVis->svar2clonevar;
 
   for_shadow_vars(svar, temp, outerVis->forall)
-    expandShadowVarTopLevel(aInit, aFini, map, svar);
+    expandShadowVarTopLevel(aInit, aFini, map, parIterFn, svar);
 }
 
 
@@ -1110,6 +1141,10 @@ static void handleRecursiveIter(ForallStmt* fs,
                                 FnSymbol* parIterFn,  CallExpr* parIterCall)
 {
   SET_LINENO(parIterCall);
+
+  // aggregation uses task-private variables, we can't have them with a
+  // recursive iterator
+  removeAggregationFromRecursiveForall(fs);
 
   // Check for non-ref intents.
   SymbolMap sv2ov;
@@ -1265,7 +1300,7 @@ static Symbol* inlineRetArgFunction(CallExpr* defCall, FnSymbol* defFn,
     INT_ASSERT(fn->hasFlag(FLAG_AUTO_DESTROY_FN));
     retAssign = toCallExpr(prev->prev);
     prev->remove();
-  }    
+  }
 
   INT_ASSERT(retAssign && retAssign->isPrimitive(PRIM_ASSIGN));
 
@@ -1461,7 +1496,7 @@ static void lowerOneForallStmt(ForallStmt* fs) {
 
   SymbolMap       map;
   ExpandVisitor   outerVis(fs, map);
-  expandTopLevel(&outerVis, iwrap, ibody);
+  expandTopLevel(&outerVis, parIterFn, iwrap, ibody);
 
   // Traverse recursively.
   ibody->accept(&outerVis);
@@ -1502,6 +1537,7 @@ void lowerForallStmtsInline()
   USR_STOP();
 
   removeDeadIters();
+  toplevelYieldsArePresent.clear();
 
   // Ensure gDummyRef is no longer used.
   INT_ASSERT(gDummyRef->firstSymExpr() == NULL);

@@ -1,9 +1,8 @@
 //===- ProfileCommon.h - Common profiling APIs. -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -63,6 +62,10 @@ protected:
 public:
   /// A vector of useful cutoff values for detailed summary.
   static const ArrayRef<uint32_t> DefaultCutoffs;
+
+  /// Find the summary entry for a desired percentile of counts.
+  static const ProfileSummaryEntry &
+  getEntryForPercentile(SummaryEntryVector &DS, uint64_t Percentile);
 };
 
 class InstrProfSummaryBuilder final : public ProfileSummaryBuilder {
@@ -84,7 +87,8 @@ public:
   SampleProfileSummaryBuilder(std::vector<uint32_t> Cutoffs)
       : ProfileSummaryBuilder(std::move(Cutoffs)) {}
 
-  void addRecord(const sampleprof::FunctionSamples &FS);
+  void addRecord(const sampleprof::FunctionSamples &FS,
+                 bool isCallsiteSample = false);
   std::unique_ptr<ProfileSummary> getSummary();
 };
 

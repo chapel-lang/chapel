@@ -1,5 +1,6 @@
-add_llvm_library(LLVMGlobalISel
+add_llvm_component_library(LLVMGlobalISel
         CSEInfo.cpp
+        GISelKnownBits.cpp
         CSEMIRBuilder.cpp
         CallLowering.cpp
         GlobalISel.cpp
@@ -7,6 +8,7 @@ add_llvm_library(LLVMGlobalISel
         CombinerHelper.cpp
         GISelChangeObserver.cpp
         IRTranslator.cpp
+        InlineAsmLowering.cpp
         InstructionSelect.cpp
         InstructionSelector.cpp
         LegalityPredicates.cpp
@@ -15,11 +17,15 @@ add_llvm_library(LLVMGlobalISel
         LegalizerHelper.cpp
         LegalizerInfo.cpp
         Localizer.cpp
+        LostDebugLocObserver.cpp
         MachineIRBuilder.cpp
         RegBankSelect.cpp
         RegisterBank.cpp
         RegisterBankInfo.cpp
         Utils.cpp
+
+        ADDITIONAL_HEADER_DIRS
+        ${LLVM_MAIN_INCLUDE_DIR}/llvm/CodeGen/GlobalISel
 
         DEPENDS
         intrinsics_gen

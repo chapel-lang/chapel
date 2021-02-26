@@ -1,9 +1,8 @@
 //===- CompilationDatabase.cpp --------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -65,16 +64,14 @@ std::unique_ptr<CompilationDatabase>
 CompilationDatabase::loadFromDirectory(StringRef BuildDirectory,
                                        std::string &ErrorMessage) {
   llvm::raw_string_ostream ErrorStream(ErrorMessage);
-  for (CompilationDatabasePluginRegistry::iterator
-       It = CompilationDatabasePluginRegistry::begin(),
-       Ie = CompilationDatabasePluginRegistry::end();
-       It != Ie; ++It) {
+  for (const CompilationDatabasePluginRegistry::entry &Database :
+       CompilationDatabasePluginRegistry::entries()) {
     std::string DatabaseErrorMessage;
-    std::unique_ptr<CompilationDatabasePlugin> Plugin(It->instantiate());
+    std::unique_ptr<CompilationDatabasePlugin> Plugin(Database.instantiate());
     if (std::unique_ptr<CompilationDatabase> DB =
             Plugin->loadFromDirectory(BuildDirectory, DatabaseErrorMessage))
       return DB;
-    ErrorStream << It->getName() << ": " << DatabaseErrorMessage << "\n";
+    ErrorStream << Database.getName() << ": " << DatabaseErrorMessage << "\n";
   }
   return nullptr;
 }
@@ -165,7 +162,7 @@ private:
     case driver::Action::InputClass:
       if (Collect) {
         const auto *IA = cast<driver::InputAction>(A);
-        Inputs.push_back(IA->getInputArg().getSpelling());
+        Inputs.push_back(std::string(IA->getInputArg().getSpelling()));
       }
       break;
 
@@ -234,7 +231,7 @@ std::string GetClangToolCommand() {
   SmallString<128> ClangToolPath;
   ClangToolPath = llvm::sys::path::parent_path(ClangExecutable);
   llvm::sys::path::append(ClangToolPath, "clang-tool");
-  return ClangToolPath.str();
+  return std::string(ClangToolPath.str());
 }
 
 } // namespace
@@ -357,7 +354,7 @@ FixedCompilationDatabase::loadFromCommandLine(int &Argc,
   std::vector<std::string> StrippedArgs;
   if (!stripPositionalArgs(CommandLine, StrippedArgs, ErrorMsg))
     return nullptr;
-  return llvm::make_unique<FixedCompilationDatabase>(Directory, StrippedArgs);
+  return std::make_unique<FixedCompilationDatabase>(Directory, StrippedArgs);
 }
 
 std::unique_ptr<FixedCompilationDatabase>
@@ -369,9 +366,15 @@ FixedCompilationDatabase::loadFromFile(StringRef Path, std::string &ErrorMsg) {
     ErrorMsg = "Error while opening fixed database: " + Result.message();
     return nullptr;
   }
-  std::vector<std::string> Args{llvm::line_iterator(**File),
-                                llvm::line_iterator()};
-  return llvm::make_unique<FixedCompilationDatabase>(
+  std::vector<std::string> Args;
+  for (llvm::StringRef Line :
+       llvm::make_range(llvm::line_iterator(**File), llvm::line_iterator())) {
+    // Stray whitespace is almost certainly unintended.
+    Line = Line.trim();
+    if (!Line.empty())
+      Args.push_back(Line.str());
+  }
+  return std::make_unique<FixedCompilationDatabase>(
       llvm::sys::path::parent_path(Path), std::move(Args));
 }
 
@@ -388,8 +391,8 @@ FixedCompilationDatabase(Twine Directory, ArrayRef<std::string> CommandLine) {
 std::vector<CompileCommand>
 FixedCompilationDatabase::getCompileCommands(StringRef FilePath) const {
   std::vector<CompileCommand> Result(CompileCommands);
-  Result[0].CommandLine.push_back(FilePath);
-  Result[0].Filename = FilePath;
+  Result[0].CommandLine.push_back(std::string(FilePath));
+  Result[0].Filename = std::string(FilePath);
   return Result;
 }
 

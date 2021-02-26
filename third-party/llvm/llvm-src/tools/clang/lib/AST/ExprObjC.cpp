@@ -1,9 +1,8 @@
 //===- ExprObjC.cpp - (ObjC) Expression AST Node Implementation -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,6 +12,8 @@
 
 #include "clang/AST/ExprObjC.h"
 #include "clang/AST/ASTContext.h"
+#include "clang/AST/ComputeDependence.h"
+#include "clang/AST/DependenceFlags.h"
 #include "clang/AST/SelectorLocationsKind.h"
 #include "clang/AST/Type.h"
 #include "clang/AST/TypeLoc.h"
@@ -26,20 +27,13 @@ using namespace clang;
 
 ObjCArrayLiteral::ObjCArrayLiteral(ArrayRef<Expr *> Elements, QualType T,
                                    ObjCMethodDecl *Method, SourceRange SR)
-    : Expr(ObjCArrayLiteralClass, T, VK_RValue, OK_Ordinary, false, false,
-           false, false),
+    : Expr(ObjCArrayLiteralClass, T, VK_RValue, OK_Ordinary),
       NumElements(Elements.size()), Range(SR), ArrayWithObjectsMethod(Method) {
   Expr **SaveElements = getElements();
-  for (unsigned I = 0, N = Elements.size(); I != N; ++I) {
-    if (Elements[I]->isTypeDependent() || Elements[I]->isValueDependent())
-      ExprBits.ValueDependent = true;
-    if (Elements[I]->isInstantiationDependent())
-      ExprBits.InstantiationDependent = true;
-    if (Elements[I]->containsUnexpandedParameterPack())
-      ExprBits.ContainsUnexpandedParameterPack = true;
-
+  for (unsigned I = 0, N = Elements.size(); I != N; ++I)
     SaveElements[I] = Elements[I];
-  }
+
+  setDependence(computeDependence(this));
 }
 
 ObjCArrayLiteral *ObjCArrayLiteral::Create(const ASTContext &C,
@@ -60,25 +54,13 @@ ObjCDictionaryLiteral::ObjCDictionaryLiteral(ArrayRef<ObjCDictionaryElement> VK,
                                              bool HasPackExpansions, QualType T,
                                              ObjCMethodDecl *method,
                                              SourceRange SR)
-    : Expr(ObjCDictionaryLiteralClass, T, VK_RValue, OK_Ordinary, false, false,
-           false, false),
+    : Expr(ObjCDictionaryLiteralClass, T, VK_RValue, OK_Ordinary),
       NumElements(VK.size()), HasPackExpansions(HasPackExpansions), Range(SR),
       DictWithObjectsMethod(method) {
   KeyValuePair *KeyValues = getTrailingObjects<KeyValuePair>();
   ExpansionData *Expansions =
       HasPackExpansions ? getTrailingObjects<ExpansionData>() : nullptr;
   for (unsigned I = 0; I < NumElements; I++) {
-    if (VK[I].Key->isTypeDependent() || VK[I].Key->isValueDependent() ||
-        VK[I].Value->isTypeDependent() || VK[I].Value->isValueDependent())
-      ExprBits.ValueDependent = true;
-    if (VK[I].Key->isInstantiationDependent() ||
-        VK[I].Value->isInstantiationDependent())
-      ExprBits.InstantiationDependent = true;
-    if (VK[I].EllipsisLoc.isInvalid() &&
-        (VK[I].Key->containsUnexpandedParameterPack() ||
-         VK[I].Value->containsUnexpandedParameterPack()))
-      ExprBits.ContainsUnexpandedParameterPack = true;
-
     KeyValues[I].Key = VK[I].Key;
     KeyValues[I].Value = VK[I].Value;
     if (Expansions) {
@@ -89,6 +71,7 @@ ObjCDictionaryLiteral::ObjCDictionaryLiteral(ArrayRef<ObjCDictionaryElement> VK,
         Expansions[I].NumExpansionsPlusOne = 0;
     }
   }
+  setDependence(computeDependence(this));
 }
 
 ObjCDictionaryLiteral *
@@ -128,10 +111,7 @@ ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
                                  SelectorLocationsKind SelLocsK,
                                  ObjCMethodDecl *Method, ArrayRef<Expr *> Args,
                                  SourceLocation RBracLoc, bool isImplicit)
-    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary,
-           /*TypeDependent=*/false, /*ValueDependent=*/false,
-           /*InstantiationDependent=*/false,
-           /*ContainsUnexpandedParameterPack=*/false),
+    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary),
       SelectorOrMethod(
           reinterpret_cast<uintptr_t>(Method ? Method : Sel.getAsOpaquePtr())),
       Kind(IsInstanceSuper ? SuperInstance : SuperClass),
@@ -140,6 +120,7 @@ ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
       RBracLoc(RBracLoc) {
   initArgsAndSelLocs(Args, SelLocs, SelLocsK);
   setReceiverPointer(SuperType.getAsOpaquePtr());
+  setDependence(computeDependence(this));
 }
 
 ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
@@ -149,15 +130,14 @@ ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
                                  SelectorLocationsKind SelLocsK,
                                  ObjCMethodDecl *Method, ArrayRef<Expr *> Args,
                                  SourceLocation RBracLoc, bool isImplicit)
-    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary, T->isDependentType(),
-           T->isDependentType(), T->isInstantiationDependentType(),
-           T->containsUnexpandedParameterPack()),
+    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary),
       SelectorOrMethod(
           reinterpret_cast<uintptr_t>(Method ? Method : Sel.getAsOpaquePtr())),
       Kind(Class), HasMethod(Method != nullptr), IsDelegateInitCall(false),
       IsImplicit(isImplicit), LBracLoc(LBracLoc), RBracLoc(RBracLoc) {
   initArgsAndSelLocs(Args, SelLocs, SelLocsK);
   setReceiverPointer(Receiver);
+  setDependence(computeDependence(this));
 }
 
 ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
@@ -166,16 +146,14 @@ ObjCMessageExpr::ObjCMessageExpr(QualType T, ExprValueKind VK,
                                  SelectorLocationsKind SelLocsK,
                                  ObjCMethodDecl *Method, ArrayRef<Expr *> Args,
                                  SourceLocation RBracLoc, bool isImplicit)
-    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary,
-           Receiver->isTypeDependent(), Receiver->isTypeDependent(),
-           Receiver->isInstantiationDependent(),
-           Receiver->containsUnexpandedParameterPack()),
+    : Expr(ObjCMessageExprClass, T, VK, OK_Ordinary),
       SelectorOrMethod(
           reinterpret_cast<uintptr_t>(Method ? Method : Sel.getAsOpaquePtr())),
       Kind(Instance), HasMethod(Method != nullptr), IsDelegateInitCall(false),
       IsImplicit(isImplicit), LBracLoc(LBracLoc), RBracLoc(RBracLoc) {
   initArgsAndSelLocs(Args, SelLocs, SelLocsK);
   setReceiverPointer(Receiver);
+  setDependence(computeDependence(this));
 }
 
 void ObjCMessageExpr::initArgsAndSelLocs(ArrayRef<Expr *> Args,
@@ -183,18 +161,8 @@ void ObjCMessageExpr::initArgsAndSelLocs(ArrayRef<Expr *> Args,
                                          SelectorLocationsKind SelLocsK) {
   setNumArgs(Args.size());
   Expr **MyArgs = getArgs();
-  for (unsigned I = 0; I != Args.size(); ++I) {
-    if (Args[I]->isTypeDependent())
-      ExprBits.TypeDependent = true;
-    if (Args[I]->isValueDependent())
-      ExprBits.ValueDependent = true;
-    if (Args[I]->isInstantiationDependent())
-      ExprBits.InstantiationDependent = true;
-    if (Args[I]->containsUnexpandedParameterPack())
-      ExprBits.ContainsUnexpandedParameterPack = true;
-
+  for (unsigned I = 0; I != Args.size(); ++I)
     MyArgs[I] = Args[I];
-  }
 
   SelLocsKind = SelLocsK;
   if (!isImplicit()) {
@@ -293,6 +261,32 @@ void ObjCMessageExpr::getSelectorLocs(
     SelLocs.push_back(getSelectorLoc(i));
 }
 
+
+QualType ObjCMessageExpr::getCallReturnType(ASTContext &Ctx) const {
+  if (const ObjCMethodDecl *MD = getMethodDecl()) {
+    QualType QT = MD->getReturnType();
+    if (QT == Ctx.getObjCInstanceType()) {
+      // instancetype corresponds to expression types.
+      return getType();
+    }
+    return QT;
+  }
+
+  // Expression type might be different from an expected call return type,
+  // as expression type would never be a reference even if call returns a
+  // reference. Reconstruct the original expression type.
+  QualType QT = getType();
+  switch (getValueKind()) {
+  case VK_LValue:
+    return Ctx.getLValueReferenceType(QT);
+  case VK_XValue:
+    return Ctx.getRValueReferenceType(QT);
+  case VK_RValue:
+    return QT;
+  }
+  llvm_unreachable("Unsupported ExprValueKind");
+}
+
 SourceRange ObjCMessageExpr::getReceiverRange() const {
   switch (getReceiverKind()) {
   case Instance:
@@ -350,6 +344,11 @@ Stmt::child_range ObjCMessageExpr::children() {
     begin = reinterpret_cast<Stmt **>(getArgs());
   return child_range(begin,
                      reinterpret_cast<Stmt **>(getArgs() + getNumArgs()));
+}
+
+Stmt::const_child_range ObjCMessageExpr::children() const {
+  auto Children = const_cast<ObjCMessageExpr *>(this)->children();
+  return const_child_range(Children.begin(), Children.end());
 }
 
 StringRef ObjCBridgedCastExpr::getBridgeKindName() const {

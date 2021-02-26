@@ -1,7 +1,7 @@
 " Vim syntax file
 " Language:   llvm
 " Maintainer: The LLVM team, http://llvm.org/
-" Version:      $Revision: 346785 $
+" Version:      $Revision$
 
 if version < 600
   syntax clear
@@ -14,7 +14,7 @@ syn case match
 " Types.
 " Types also include struct, array, vector, etc. but these don't
 " benefit as much from having dedicated highlighting rules.
-syn keyword llvmType void half float double x86_fp80 fp128 ppc_fp128
+syn keyword llvmType void half bfloat float double x86_fp80 fp128 ppc_fp128
 syn keyword llvmType label metadata x86_mmx
 syn keyword llvmType type label opaque token
 syn match   llvmType /\<i\d\+\>/
@@ -23,7 +23,7 @@ syn match   llvmType /\<i\d\+\>/
 " The true and false tokens can be used for comparison opcodes, but it's
 " much more common for these tokens to be used for boolean constants.
 syn keyword llvmStatement add addrspacecast alloca and arcp ashr atomicrmw
-syn keyword llvmStatement bitcast br catchpad catchswitch catchret call
+syn keyword llvmStatement bitcast br catchpad catchswitch catchret call callbr
 syn keyword llvmStatement cleanuppad cleanupret cmpxchg eq exact extractelement
 syn keyword llvmStatement extractvalue fadd fast fcmp fdiv fence fmul fpext
 syn keyword llvmStatement fptosi fptoui fptrunc free frem fsub fneg getelementptr
@@ -82,6 +82,7 @@ syn keyword llvmKeyword
       \ externally_initialized
       \ extern_weak
       \ fastcc
+      \ tailcc
       \ filter
       \ from
       \ gc
@@ -89,6 +90,7 @@ syn keyword llvmKeyword
       \ hhvmcc
       \ hhvm_ccc
       \ hidden
+      \ immarg
       \ initialexec
       \ inlinehint
       \ inreg
@@ -148,6 +150,7 @@ syn keyword llvmKeyword
       \ sspstrong
       \ strictfp
       \ swiftcc
+      \ swiftself
       \ tail
       \ target
       \ thread_local
@@ -200,6 +203,7 @@ syn match   llvmConstant /\<DIFlag[A-Za-z]\+\>/
 syn match  llvmSpecialComment /;\s*PR\d*\s*$/
 syn match  llvmSpecialComment /;\s*REQUIRES:.*$/
 syn match  llvmSpecialComment /;\s*RUN:.*$/
+syn match  llvmSpecialComment /;\s*ALLOW_RETRIES:.*$/
 syn match  llvmSpecialComment /;\s*CHECK:.*$/
 syn match  llvmSpecialComment "\v;\s*CHECK-(NEXT|NOT|DAG|SAME|LABEL):.*$"
 syn match  llvmSpecialComment /;\s*XFAIL:.*$/

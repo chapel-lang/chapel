@@ -1,5 +1,6 @@
 use Set;
 
+config param parSafe = false;
 config const testIters = 8;
 
 record testRecord {
@@ -7,13 +8,13 @@ record testRecord {
   proc init(dummy: int=0) { this.dummy = dummy; }
 }
 
-proc _cast(type t: testRecord, x: int) {
+operator :(x: int, type t: testRecord) {
   return new testRecord(x);
 }
 
 proc doTest(type eltType) {
-  var s1: set(eltType);
-  var s2: set(eltType);
+  var s1: set(eltType, parSafe);
+  var s2: set(eltType, parSafe);
 
   assert(s1.isDisjoint(s2));
   assert(s2.isDisjoint(s1));

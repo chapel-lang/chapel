@@ -1,16 +1,16 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,7 @@
 
 //
 // BlockCyclic Distribution
-// 
+//
 //      BlockCyclic    BlockCyclicDom     BlockCyclicArr
 //
 //   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
@@ -109,7 +109,7 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3)) 
+      dmapped BlockCyclic(startIdx=Space.low,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
@@ -141,7 +141,7 @@ The ``BlockCyclic`` class initializer is defined as follows:
     proc BlockCyclic.init(
       startIdx,
       blocksize,
-      targetLocales: [] locale = Locales, 
+      targetLocales: [] locale = Locales,
       dataParTasksPerLocale    = // value of dataParTasksPerLocale config const
       param rank: int          = // inferred from startIdx argument,
       type idxType             = // inferred from startIdx argument )
@@ -355,7 +355,7 @@ proc BlockCyclic.getStarts(inds, locid) {
   var R: rank*range(idxType, stridable=true);
   for i in 0..rank-1 {
     var lo, hi: idxType;
-    const domlo = inds.dim(i).low, 
+    const domlo = inds.dim(i).low,
           domhi = inds.dim(i).high;
     const mylo = locDist(locid).myStarts(i).low;
     const mystr = locDist(locid).myStarts(i).stride;
@@ -373,7 +373,7 @@ proc BlockCyclic.getStarts(inds, locid) {
       }
     } else {
       halt("BLC: need to handle domain low less than lowIdx");
-        }     
+        }
       } else {
         lo = domlo;
         hi = domhi;
@@ -603,7 +603,7 @@ proc BlockCyclicDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockCyclicDom.dsiBuildArray(type eltType) {
+proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   var locArrTemp: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
   var myLocArrTemp: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
@@ -612,7 +612,12 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
   // formerly BlockCyclicArr.setup()
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
-      const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable, dom.locDoms(localeIdx), dom.locDoms(localeIdx));
+      const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
+                                                   idxType, stridable,
+                                                   dom.locDoms(localeIdx),
+                                                   dom.locDoms(localeIdx),
+                                                   localeIdx,
+                                                   initElts=initElts);
       locArrTemp(localeIdx) = LBCA;
       if here == creationLocale then
         myLocArrTemp = LBCA;
@@ -625,6 +630,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType) {
                                          locArr = locArrNN,
                                          myLocArr = myLocArrTemp,
                                          dom=_to_unmanaged(this));
+
   return arr;
 }
 
@@ -797,13 +803,13 @@ proc LocBlockCyclicDom.enumerateBlocks() {
         lo = i;
       else
         lo = i(j);
-      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1, 
+      write(lo, "..", min(lo + globDom.dist.blocksize(j)-1,
                           globDom.whole.dim(j).high));
     }
     writeln("}");
-  } 
+  }
 }
-  
+
 
 //
 // queries for this locale's number of indices, low, and high bounds
@@ -867,13 +873,53 @@ class BlockCyclicArr: BaseRectangularArr {
 
 override proc BlockCyclicArr.dsiGetBaseDom() return dom;
 
-override proc BlockCyclicArr.dsiDestroyArr() {
+override proc BlockCyclicArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
+override proc BlockCyclicArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on dom.dist.targetLocales(localeIdx) {
-      delete locArr(localeIdx);
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementInitializationComplete();
     }
   }
 }
+
+override proc BlockCyclicArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      var arr = locArr(localeIdx);
+      arr.myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc BlockCyclicArr.dsiDestroyArr(deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on dom.dist.targetLocales(localeIdx) {
+      var arr = locArr(localeIdx);
+      if deinitElts {
+        param needsDestroy = __primitive("needs auto destroy", eltType);
+        if needsDestroy {
+          const wholeCopy = {(...arr.allocDom.globDom.dsiDims())};
+          // only deinitialize non-padding elements
+          // padding is always deinited in the LocArr deinit
+          forall flatIndex in arr.allocDom.myFlatInds {
+            var globalIndex = arr.flatInd2mdInd(flatIndex);
+            if wholeCopy.contains(globalIndex) {
+              chpl__autoDestroy(arr.myElems[flatIndex]);
+            }
+          }
+        }
+      }
+      arr.myElems.dsiElementDeinitializationComplete();
+      delete arr;
+    }
+  }
+}
+
+override proc BlockCyclicDom.dsiSupportsAutoLocalAccess() param { return true; }
 
 proc BlockCyclicArr.chpl__serialize() {
   return pid;
@@ -904,6 +950,10 @@ proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   return c;
 }
 
+inline proc BlockCyclicArr.dsiLocalAccess(i: idxType) ref {
+  return _to_nonnil(myLocArr).this(i);
+}
+
 //
 // the global accessor for the array
 //
@@ -919,6 +969,13 @@ proc BlockCyclicArr.dsiAccess(i: idxType) ref where rank == 1 {
   //  var desc = locArr(loci);
   //  return locArr(loci)(i);
   return locArr(dom.dist.idxToLocaleInd(i))(i);
+}
+
+inline proc BlockCyclicArr.dsiLocalAccess(i: rank*idxType) ref {
+  if rank == 1 then
+    return _to_nonnil(myLocArr).this(i[0]);
+  else
+    return _to_nonnil(myLocArr).this(i);
 }
 
 proc BlockCyclicArr.dsiAccess(i: rank*idxType) ref {
@@ -938,6 +995,7 @@ proc BlockCyclicArr.dsiBoundsCheck(i: rank*idxType) {
   return dom.dsiMember(i);
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -948,6 +1006,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
     yield yieldThis;
 }
 
+pragma "order independent yielding loops"
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
   var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
 
@@ -990,13 +1049,13 @@ proc BlockCyclicArr.dsiSerialWrite(f) {
   chpl_serialReadWriteRectangular(f, this);
 }
 
-proc BlockCyclicArr.dsiTargetLocales() {
+proc BlockCyclicArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
-proc BlockCyclicDom.dsiTargetLocales() {
+proc BlockCyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
-proc BlockCyclic.dsiTargetLocales() {
+proc BlockCyclic.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1006,14 +1065,15 @@ proc BlockCyclicDom.dsiHasSingleLocalSubdomain() param return false;
 
 // essentially enumerateBlocks()
 // basically add blocksize to the start indices
+pragma "order independent yielding loops"
 private
 iter do_dsiLocalSubdomains(indexDom) {
   param rank = indexDom.rank;
   type idxType = indexDom.idxType;
+  const blockSizes = indexDom.globDom.dist.blocksize;
+  const globDims = indexDom.globDom.whole.dims();
   for i in indexDom.myStarts {
     var temp : rank*range(idxType);
-    const blockSizes = indexDom.globDom.dist.blocksize;
-    const globDims = indexDom.globDom.whole.dims();
     for param j in 0..rank-1 {
       var lo: idxType;
       if rank == 1 then lo = i;
@@ -1059,6 +1119,7 @@ class LocBlockCyclicArr {
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
   const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  // MPF TODO: Why do we need indexDom at all? is it always == allocDom?
   const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
 
 
@@ -1067,7 +1128,8 @@ class LocBlockCyclicArr {
   //
   // the block of local array data
   //
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [allocDom.myFlatInds] eltType;
 
   // TODO: need to be able to access these, but is this the right place?
@@ -1077,66 +1139,151 @@ class LocBlockCyclicArr {
   const numblocks : rank*int = allocDom._lens;
 
   const sizes : (rank+1)*int = allocDom._sizes;
-}
+  const localeIndex: if rank == 1 then int else rank*int;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            localeIndex,
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.allocDom = allocDom;
+    this.indexDom = indexDom;
+    this.myElems = this.allocDom.myFlatInds.buildArray(eltType, initElts=initElts);
+    this.localeIndex = localeIndex;
+    this.complete();
 
-proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t, dim = 0) where t == idxType {
-  //  writeln("blksize");
-  const blksize = blocksize(dim);
-  //  writeln("ind0");
-  const ind0 = (i - low): int;
-  //  writeln("blkNum");
-  const blkNum = ind0 / (blksize * locsize(dim));
-  //  writeln("blkOff");
-  const blkOff = ind0 % blksize;
-  //  writeln("returning");
-  return  blkNum * blksize + blkOff;
-}
+    // BlockCyclic arrays are currently represented in a way that
+    // stores additional padding elements.
+    //
+    // For example, consider the following 2D array, with 2x2 blocks,
+    // which shows numbers indicating the locale number owning the element:
+    //
+    //   0 0 1 1 0      // note: 3 elements on locale 0 in this row
+    //   0 0 1 1 0
+    //   1 1 0 0 1      // note: 2 elements on locale 0 in this row
+    //   1 1 0 0 1
+    //   0 0 1 1 0
+    //
+    // These padding elements need to be initialized even if the
+    // array is not being default initialized.
 
-proc LocBlockCyclicArr.mdInd2FlatInd(i: ?t) where t == rank*idxType {
-  if (false) {  // CMO
-    var blkmults = * scan [d in 0..rank-1] blocksize(d);
-    //    writeln("blkmults = ", blkmults);
-    var numwholeblocks = 0;
-    var blkOff = 0;
-    for param d in 0..rank-1 by -1 {
-      const blksize = blocksize(d);
-      const ind0 = (i(d) - low(d)): int;
-      const blkNum = ind0 / (blksize * locsize(d));
-      const blkDimOff = ind0 % blksize;
-      if (d != rank) {
-        numwholeblocks *= numblocks(rank-d);
-        blkOff *= blkmults(rank-d);
+    // Even if the array elements don't need to be initialized now,
+    // do initialize the padding elements.
+    if initElts == false {
+      const wholeCopy = {(...allocDom.globDom.dsiDims())};
+      forall flatIndex in this.allocDom.myFlatInds {
+        var globalIndex = flatInd2mdInd(flatIndex);
+        if !wholeCopy.contains(globalIndex) {
+          pragma "no auto destroy" pragma "unsafe"
+          var def: eltType;
+          __primitive("=", this.myElems[flatIndex], def);
+        }
       }
-      numwholeblocks += blkNum;
-      blkOff += blkDimOff;
     }
-    return (numwholeblocks * blocksize(rank)) + blkOff;
-  } else { // RMO
+  }
+  proc deinit() {
+    // Even if the array elements don't need to be de-initialized now,
+    // do de-initialize the padding.
+    param needsDestroy = __primitive("needs auto destroy", eltType);
+    if needsDestroy {
+      const wholeCopy = {(...allocDom.globDom.dsiDims())};
+      forall flatIndex in this.allocDom.myFlatInds {
+        var globalIndex = flatInd2mdInd(flatIndex);
+        if !wholeCopy.contains(globalIndex) {
+          chpl__autoDestroy(myElems[flatIndex]);
+        }
+      }
+    }
 
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocBlockCyclicArr.writeThis() is not implemented / should not be needed");
+  }
+}
+
+
+proc LocBlockCyclicArr.mdInd2FlatInd(i) {
+  // note: draft CMO implementation available in history of this comment
+
+  if rank == 1 {
+    param d = 0;
+    const blksize = blocksize(d);
+    const base = (i - low): int;
+    const localBlockNum = base / (blksize * locsize(d));
+    const localBlockStart = localBlockNum * blksize;
+    const localBlockOff = base % blksize;
+
+    const localIdx = localBlockStart + localBlockOff;
+
+    return localIdx;
+  } else {
     var idx = 0;
-
     for param d in 0..rank-1 {
-      const bs              = blocksize(d);  // cache for performance
+      const blksize         = blocksize(d);  // cache for performance
       const base            = i(d) - low(d); // zero-based index
-      const localBlockNum   = base / (bs * locsize(d));
-      const localBlockStart = localBlockNum * bs;
-      const remainder       = base % bs;
+      const localBlockNum   = base / (blksize * locsize(d));
+      const localBlockStart = localBlockNum * blksize;
+      const localBlockOff   = base % blksize;
 
-      const locIdx = localBlockStart + remainder;
+      const localIdx = localBlockStart + localBlockOff;
 
-      idx += locIdx * sizes(d+1);
+      idx += localIdx * sizes(d+1);
     }
 
     return idx;
   }
 }
 
+proc LocBlockCyclicArr.flatInd2mdInd(in idx:int) {
+  if rank == 1 {
+    param d = 0;
+    const blksize = blocksize(d);
+    const localIdx = idx;
+    const localBlockNum = localIdx / blksize;
+    const localBlockOff = localIdx % blksize;
+    const globalBlockNum = localBlockNum * locsize(d) + localeIndex;
+    const globalBlockStart = globalBlockNum * blksize;
+    return low + globalBlockStart + localBlockOff;
+  } else {
+    var i: rank*idxType;
+    for param d in 0..rank-1 {
+      const blksize = blocksize(d);
+      const localIdx = idx / sizes(d+1);
+      idx -= localIdx * sizes(d+1);
+      const localBlockNum = localIdx / blksize;
+      const localBlockOff = localIdx % blksize;
+      const globalBlockNum = localBlockNum * locsize(d) + localeIndex(d);
+      const globalBlockStart = globalBlockNum * blksize;
+      i(d) = low(d) + globalBlockStart + localBlockOff;
+    }
+    return i;
+  }
+}
+
+
+
 //
 // the accessor for the local array -- assumes the index is local
 //
 proc LocBlockCyclicArr.this(i) ref {
   const flatInd = mdInd2FlatInd(i);
+  if debugBlockCyclicDist {
+    // check flatInd2mdInd as well
+    const globalIndex = flatInd2mdInd(flatInd);
+    assert(globalIndex == i);
+  }
   //writeln(i, " --> ", flatInd);
   return myElems(flatInd);
 }

@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License. See LICENSE.TXT for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 """ This module is responsible for the Clang executable.
 
 Since Clang command line interface is so rich, but this project is using only
@@ -18,6 +17,11 @@ __all__ = ['get_version', 'get_arguments', 'get_checkers', 'is_ctu_capable',
 
 # regex for activated checker
 ACTIVE_CHECKER_PATTERN = re.compile(r'^-analyzer-checker=(.*)$')
+
+
+class ClangErrorException(Exception):
+    def __init__(self, error):
+        self.error = error
 
 
 def get_version(clang):
@@ -40,13 +44,14 @@ def get_arguments(command, cwd):
 
     cmd = command[:]
     cmd.insert(1, '-###')
+    cmd.append('-fno-color-diagnostics')
 
     output = run_command(cmd, cwd=cwd)
     # The relevant information is in the last line of the output.
     # Don't check if finding last line fails, would throw exception anyway.
     last_line = output[-1]
     if re.search(r'clang(.*): error:', last_line):
-        raise Exception(last_line)
+        raise ClangErrorException(last_line)
     return decode(last_line)
 
 

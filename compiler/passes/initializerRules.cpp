@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1135,6 +1135,30 @@ static bool isSymbolThis(Expr* expr) {
   return retval;
 }
 
+// returns true if there is a postinit defined on the type
+// and in that event adds FLAG_HAS_POSTINIT to the type symbol
+static bool findPostinitAndMark(AggregateType* at) {
+  bool retval = false;
+
+  // If there is postinit() it is defined on the defining type
+  if (at->instantiatedFrom == NULL) {
+    int size = at->methods.n;
+
+    for (int i = 0; i < size && retval == false; i++) {
+      if (at->methods.v[i] != NULL)
+        retval = at->methods.v[i]->isPostInitializer();
+    }
+
+  } else {
+    retval = findPostinitAndMark(at->instantiatedFrom);
+  }
+
+  if (retval)
+    at->symbol->addFlag(FLAG_HAS_POSTINIT);
+
+  return retval;
+}
+
 //
 // Builds the list of AggregateTypes in the hierarchy of `at` that have or
 // require a postinit.
@@ -1156,14 +1180,14 @@ static bool buildPostInitChain(AggregateType* at,
   if (at == dtObject) {
     ret = false;
   } else if (at->isRecord()) {
-    if (at->hasPostInitializer()) {
+    if (findPostinitAndMark(at)) {
       chain.push_back(at);
       ret = true;
     }
   } else if (parent != NULL && buildPostInitChain(parent, chain) == true) {
     ret = true;
     chain.push_back(at);
-  } else if (at->hasPostInitializer()) {
+  } else if (findPostinitAndMark(at)) {
     ret = true;
     chain.push_back(at);
   }
@@ -1192,22 +1216,22 @@ static bool isSuperPostInit(CallExpr* stmt) {
   return retval;
 }
 
-class PostinitVisitor : public AstVisitorTraverse {
+class PostinitVisitor final : public AstVisitorTraverse {
   public:
-    PostinitVisitor() : found(false) { }
-    virtual ~PostinitVisitor() { }
+    PostinitVisitor()          = default;
+   ~PostinitVisitor() override = default;
 
-    bool found;
+    bool found = false;
 
-    virtual bool enterCondStmt(CondStmt* node);
-    virtual bool enterCallExpr(CallExpr* node);
+    bool enterCondStmt(CondStmt* node) override;
+    bool enterCallExpr(CallExpr* node) override;
 
-    virtual bool enterForallStmt(ForallStmt* node);
-    virtual bool enterWhileDoStmt(WhileDoStmt* node);
-    virtual bool enterDoWhileStmt(DoWhileStmt* node);
-    virtual bool enterForLoop(ForLoop* node);
-    virtual bool enterParamForLoop(ParamForLoop* node);
-    virtual bool enterBlockStmt(BlockStmt* node);
+    bool enterForallStmt(ForallStmt* node) override;
+    bool enterWhileDoStmt(WhileDoStmt* node) override;
+    bool enterDoWhileStmt(DoWhileStmt* node) override;
+    bool enterForLoop(ForLoop* node) override;
+    bool enterParamForLoop(ParamForLoop* node) override;
+    bool enterBlockStmt(BlockStmt* node) override;
 
     void enterLoopStmt(BlockStmt* node);
 };
@@ -1414,6 +1438,8 @@ static int insertPostInit(AggregateType* at, bool insertSuper) {
   if (found == false) {
     buildPostInit(at);
   }
+
+  at->symbol->addFlag(FLAG_HAS_POSTINIT);
 
   return ret;
 }

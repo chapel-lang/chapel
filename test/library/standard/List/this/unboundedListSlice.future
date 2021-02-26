@@ -1,0 +1,4 @@
+bug: unbounded list slices not supported
+
+It seems like unbounded slices of lists should be supported; or if not
+supported, to generate a reasonable user-facing error message.

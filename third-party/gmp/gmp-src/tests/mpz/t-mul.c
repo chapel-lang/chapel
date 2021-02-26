@@ -21,7 +21,6 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "longlong.h"
 #include "tests.h"
@@ -78,7 +77,10 @@ main (int argc, char **argv)
   extra_fft = getenv ("GMP_CHECK_FFT");
   fft_max_2exp = 0;
   if (extra_fft != NULL)
-    fft_max_2exp = atoi (extra_fft);
+    {
+      fft_max_2exp = atoi (extra_fft);
+      printf ("GMP_CHECK_FFT=%d (include this in bug reports)\n", fft_max_2exp);
+    }
 
   if (fft_max_2exp <= 1)	/* compat with old use of GMP_CHECK_FFT */
     fft_max_2exp = 22;		/* default limit, good for any machine */

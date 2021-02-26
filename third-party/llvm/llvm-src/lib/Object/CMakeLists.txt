@@ -1,4 +1,4 @@
-add_llvm_library(LLVMObject
+add_llvm_component_library(LLVMObject
   Archive.cpp
   ArchiveWriter.cpp
   Binary.cpp
@@ -13,14 +13,20 @@ add_llvm_library(LLVMObject
   IRSymtab.cpp
   MachOObjectFile.cpp
   MachOUniversal.cpp
+  Minidump.cpp
   ModuleSymbolTable.cpp
   Object.cpp
   ObjectFile.cpp
   RecordStreamer.cpp
+  RelocationResolver.cpp
   SymbolicFile.cpp
   SymbolSize.cpp
+  TapiFile.cpp
+  TapiUniversal.cpp
   WasmObjectFile.cpp
+  WindowsMachineFlag.cpp
   WindowsResource.cpp
+  XCOFFObjectFile.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${LLVM_MAIN_INCLUDE_DIR}/llvm/Object

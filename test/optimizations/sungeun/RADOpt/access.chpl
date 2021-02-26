@@ -13,6 +13,7 @@ use BlockDist;
 use CyclicDist;
 use BlockCycDist;
 use CommDiagnostics;
+use DSIUtil;
 
 // Stole this from the setupTargetLocalesArray()
 const factors = _factor(rank, numLocales);

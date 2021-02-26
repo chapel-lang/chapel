@@ -12,8 +12,8 @@ var l2 = new list(shared C);
 l2.append(new shared C(3));
 l2.append(new shared C(4));
 
-l1.insert(2, new shared C(5));
-var c = l1[3];
+l1.insert(1, new shared C(5));
+var c = l1[2];
 c.i *= 10;
 
 writeln(c);

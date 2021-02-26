@@ -1,0 +1,1 @@
+if-var-2-type.chpl:3: error: "if var/const" construct cannot be invoked on a type

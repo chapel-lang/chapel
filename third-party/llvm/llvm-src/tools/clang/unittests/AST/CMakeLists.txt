@@ -1,4 +1,5 @@
 set(LLVM_LINK_COMPONENTS
+  FrontendOpenMP
   Support
   )
 
@@ -8,8 +9,14 @@ endif()
 
 add_clang_unittest(ASTTests
   ASTContextParentMapTest.cpp
+  ASTImporterFixtures.cpp
   ASTImporterTest.cpp
+  ASTImporterGenericRedeclTest.cpp
+  ASTImporterODRStrategiesTest.cpp
+  ASTImporterVisibilityTest.cpp
+  ASTTraverserTest.cpp
   ASTTypeTraitsTest.cpp
+  ASTTraverserTest.cpp
   ASTVectorTest.cpp
   CommentLexer.cpp
   CommentParser.cpp
@@ -19,19 +26,27 @@ add_clang_unittest(ASTTests
   DeclTest.cpp
   EvaluateAsRValueTest.cpp
   ExternalASTSourceTest.cpp
-  Language.cpp
+  HasSideEffectsTest.cpp
   NamedDeclPrinterTest.cpp
+  RecursiveASTVisitorTest.cpp
+  SizelessTypesTest.cpp
   SourceLocationTest.cpp
   StmtPrinterTest.cpp
   StructuralEquivalenceTest.cpp
   )
 
-target_link_libraries(ASTTests
+clang_target_link_libraries(ASTTests
   PRIVATE
   clangAST
   clangASTMatchers
   clangBasic
   clangFrontend
   clangSerialization
+  clangTesting
   clangTooling
   )
+
+target_link_libraries(ASTTests
+  PRIVATE
+  LLVMTestingSupport
+)

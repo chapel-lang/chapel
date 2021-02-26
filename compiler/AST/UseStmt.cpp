@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -36,6 +36,7 @@ UseStmt::UseStmt(BaseAST* source, const char* modRename,
   src    = NULL;
   this->modRename = astr(modRename);
   except = false;
+  canReexport = true;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -62,6 +63,7 @@ UseStmt::UseStmt(BaseAST*                            source,
   src    = NULL;
   this->modRename = astr(modRename);
   except = exclude;
+  canReexport = true;
 
   if (Symbol* b = toSymbol(source)) {
     src = new SymExpr(b);
@@ -161,47 +163,43 @@ void UseStmt::scopeResolve(ResolveScope* scope) {
   if (isValid(src) == true) {
     // 2017/05/28 The parser inserts a normalized UseStmt in to ChapelBase
     if (SymExpr* se = toSymExpr(src)) {
-      INT_ASSERT(se->symbol() == rootModule);
-
-    } else if (Symbol* sym = scope->lookupForImport(src, /* isUse */ true)) {
-      SET_LINENO(this);
-
-      if (ModuleSymbol* modSym = toModuleSymbol(sym)) {
-        scope->enclosingModule()->moduleUseAdd(modSym);
-
-        updateEnclosingBlock(scope, sym);
-
-        validateList();
-
-      } else if (isEnum(sym) == true) {
-        updateEnclosingBlock(scope, sym);
-
-        validateList();
-
-      } else {
-        if (sym->isImmediate() == true) {
-          USR_FATAL(this,
-                    "'use' statements must refer to module or enum symbols "
-                    "(e.g., 'use <module>[.<submodule>]*;')");
-
-        } else if (sym->name != NULL) {
-          USR_FATAL_CONT(this,
-                         "'use' of non-module/enum symbol %s",
-                         sym->name);
-          USR_FATAL_CONT(sym,  "Definition of symbol %s", sym->name);
-          USR_STOP();
-
-        } else {
-          USR_FATAL(this, "'use' of non-module/enum symbol");
-        }
-      }
+      // Alternatively, we could have needed to resolve the use and import
+      // statements in this scope sooner than it would have been reached by
+      // processImportExprs
+      INT_ASSERT(se->symbol() == rootModule ||
+                 scope->progress != IUP_NOT_STARTED);
 
     } else {
-      if (UnresolvedSymExpr* use = toUnresolvedSymExpr(src)) {
-        USR_FATAL(this, "Cannot find module or enum '%s'", use->unresolved);
+      SymAndReferencedName symAndName = scope->lookupForImport(src, /* isUse */
+                                                               true);
+      SET_LINENO(this);
+
+      if (ModuleSymbol* modSym = toModuleSymbol(symAndName.first)) {
+        if (symAndName.second[0] != '\0') {
+          USR_FATAL(this,
+                    "'use' of non-module/enum symbol %s",
+                    symAndName.second);
+        }
+        scope->enclosingModule()->moduleUseAdd(modSym);
+
+        updateEnclosingBlock(scope, modSym);
+
+        validateList();
+
+      } else if (isEnum(symAndName.first) == true) {
+        updateEnclosingBlock(scope, symAndName.first);
+
+        validateList();
+
+      } else if (symAndName.second[0] != '\0') {
+        USR_FATAL(this,
+                  "'use' of non-module/enum symbol %s",
+                  symAndName.second);
+
       } else {
-        USR_FATAL(this, "Cannot find module or enum");
+        USR_FATAL(this, "'use' of non-module/enum symbol");
       }
+
     }
 
   } else {
@@ -337,18 +335,22 @@ void UseStmt::validateNamed() {
       scope->getFields(name, symbols);
 
       if (symbols.size() == 0) {
-        SymExpr* srcExpr = toSymExpr(src);
-        INT_ASSERT(srcExpr); // should have been resolved by this point
-        USR_FATAL_CONT(this,
-                       "Bad identifier in '%s' clause, no known '%s' defined in"
-                       " '%s'",
-                       (except == true) ? "except" : "only",
-                       name,
-                       srcExpr->symbol()->name);
+        // Allows an only or except list to contain the name of a type with
+        // methods defined in that scope
+        if (!scope->matchesTypeWithMethods(name)) {
+          SymExpr* srcExpr = toSymExpr(src);
+          INT_ASSERT(srcExpr); // should have been resolved by this point
+          USR_FATAL_CONT(this,
+                         "Bad identifier in '%s' clause, no known '%s' defined "
+                         "in '%s'",
+                         (except == true) ? "except" : "only",
+                         name,
+                         srcExpr->symbol()->name);
+        }
 
       } else {
         for_vector(Symbol, sym, symbols) {
-          if (sym->hasFlag(FLAG_PRIVATE) == true) {
+          if (sym->hasFlag(FLAG_PRIVATE) == true && !sym->isVisible(this)) {
             USR_FATAL_CONT(this,
                            "Bad identifier in '%s' clause, '%s' is private",
                            (except == true) ? "except" : "only",
@@ -394,6 +396,61 @@ void UseStmt::writeListPredicate(FILE* mFP) const {
 
   } else if (hasExceptList() == true) {
     fprintf(mFP, " 'except' ");
+  }
+}
+
+/************************************* | **************************************
+*                                                                             *
+* Determine if the provided type was named in some form in the import         *
+* statement.  Used for determining if we should traverse the import statement *
+* to find its methods.                                                        *
+*                                                                             *
+************************************** | *************************************/
+std::set<const char*> UseStmt::typeWasNamed(Type* t) const {
+  std::set<const char*> namedTypes;
+
+  typeWasNamed(t, &namedTypes);
+  return namedTypes;
+}
+
+void UseStmt::typeWasNamed(Type* t, std::set<const char*>* namedTypes) const {
+  if (isPlainUse() == true) {
+    // We don't limit the use in any way, so we don't need special handling to
+    // find methods
+    return;
+
+  } else {
+    const char* name = t->symbol->name;
+    if (AggregateType* at = toAggregateType(t)) {
+      if (at->instantiatedFrom != NULL) {
+        // Need to check against the generic type's name rather than the
+        // instantiation, since the instantiation name included instantiation
+        // information in it (and that isn't usable in a use/import list, at
+        // least right now)
+        AggregateType* rootType = at->getRootInstantiation();
+        name = rootType->symbol->name;
+      }
+    }
+
+    if (except == true) {
+      // For use statements with except clauses, we want to store related type
+      // names that *weren't* in the except clause
+      if (matchedNameOrRename(name) == false) {
+        namedTypes->insert(name);
+      }
+    } else {
+      // For use statements with only lists, we want to store related type names
+      // that *were* in the only list
+      if (matchedNameOrRename(name) == true) {
+        namedTypes->insert(name);
+      }
+    }
+
+    if (AggregateType* at = toAggregateType(t)) {
+      forv_Vec(AggregateType, pt, at->dispatchParents) {
+        typeWasNamed(pt, namedTypes);
+      }
+    }
   }
 }
 
@@ -707,8 +764,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // list (could be all of the outer unqualified list)
           SET_LINENO(this);
 
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
         } else {
           // all the unqualified identifiers were in the 'except'
           // list so this module use will give us nothing.
@@ -763,8 +820,8 @@ ImportStmt* UseStmt::applyOuterImport(const ImportStmt* outer) {
           // There were symbols that were in both our 'only' list and the outer
           // unqualified list, so this module use is still interesting.
           SET_LINENO(this);
-          return new ImportStmt(src, isPrivate, &newUnqualifiedList,
-                                &newRenamed);
+          return new ImportStmt(src, &newUnqualifiedList, &newRenamed,
+                                isPrivate);
 
         } else {
           // all of the unqualified and renamed identifiers in the outer import
@@ -929,7 +986,7 @@ bool UseStmt::providesNewSymbols(const ImportStmt* other) const {
     // probably fine. (and if they did, there's no harm in including it again)
     return true;
   } else {
-    if (other->unqualified.size() == 0 && other->renamed.size() == 0) {
+    if (!other->providesUnqualifiedAccess()) {
       // Other is an import of just a module.  As long as we provided something
       // for unqualified access, we provide new symbols
       if (renamed.size() > 0) {

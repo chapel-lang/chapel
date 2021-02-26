@@ -1,9 +1,8 @@
 //===- AppendingTypeTableBuilder.h -------------------------------*- C++-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -39,7 +38,7 @@ public:
   explicit AppendingTypeTableBuilder(BumpPtrAllocator &Storage);
   ~AppendingTypeTableBuilder();
 
-  // TypeTableCollection overrides
+  // TypeCollection overrides
   Optional<TypeIndex> getFirst() override;
   Optional<TypeIndex> getNext(TypeIndex Prev) override;
   CVType getType(TypeIndex Index) override;
@@ -47,6 +46,7 @@ public:
   bool contains(TypeIndex Index) override;
   uint32_t size() override;
   uint32_t capacity() override;
+  bool replaceType(TypeIndex &Index, CVType Data, bool Stabilize) override;
 
   // public interface
   void reset();

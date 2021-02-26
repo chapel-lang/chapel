@@ -1,9 +1,8 @@
 //===-- HexagonTargetStreamer.h - Hexagon Target Streamer ------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -16,13 +15,13 @@ namespace llvm {
 class HexagonTargetStreamer : public MCTargetStreamer {
 public:
   HexagonTargetStreamer(MCStreamer &S) : MCTargetStreamer(S) {}
-  virtual void EmitCodeAlignment(unsigned ByteAlignment,
+  virtual void emitCodeAlignment(unsigned ByteAlignment,
                                  unsigned MaxBytesToEmit = 0){};
   virtual void emitFAlign(unsigned Size, unsigned MaxBytesToEmit){};
-  virtual void EmitCommonSymbolSorted(MCSymbol *Symbol, uint64_t Size,
+  virtual void emitCommonSymbolSorted(MCSymbol *Symbol, uint64_t Size,
                                       unsigned ByteAlignment,
                                       unsigned AccessGranularity){};
-  virtual void EmitLocalCommonSymbolSorted(MCSymbol *Symbol, uint64_t Size,
+  virtual void emitLocalCommonSymbolSorted(MCSymbol *Symbol, uint64_t Size,
                                            unsigned ByteAlign,
                                            unsigned AccessGranularity){};
 };

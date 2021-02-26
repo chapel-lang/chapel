@@ -2,6 +2,6 @@ deinitExplicitCall.chpl:6: error: direct calls to deinit() are not allowed
 deinitExplicitCall.chpl:10: error: direct calls to deinit() are not allowed
 deinitExplicitCall.chpl:12: error: direct calls to deinit() are not allowed
 deinitExplicitCall.chpl:13: error: direct calls to deinit() are not allowed
-deinitExplicitCall.chpl:15: In function 'something':
+deinitExplicitCall.chpl:15: In method 'something':
 deinitExplicitCall.chpl:16: error: direct calls to deinit() are not allowed
 deinitExplicitCall.chpl:17: error: direct calls to deinit() are not allowed

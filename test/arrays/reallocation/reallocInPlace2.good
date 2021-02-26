@@ -1,28 +1,12 @@
+D = {1..10}
 (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42)
 (x = 1) (x = 2) (x = 3) (x = 4) (x = 5) (x = 6) (x = 7) (x = 8) (x = 9) (x = 10)
+D = {1..20}
 reallocating in-place
 (x = 1) (x = 2) (x = 3) (x = 4) (x = 5) (x = 6) (x = 7) (x = 8) (x = 9) (x = 10) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42)
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
-In deinit
+D = {0..21}
 (x = 42) (x = 1) (x = 2) (x = 3) (x = 4) (x = 5) (x = 6) (x = 7) (x = 8) (x = 9) (x = 10) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42) (x = 42)
+D = {0..10}
 reallocating in-place
 In deinit
 In deinit
@@ -36,6 +20,7 @@ In deinit
 In deinit
 In deinit
 (x = 42) (x = 1) (x = 2) (x = 3) (x = 4) (x = 5) (x = 6) (x = 7) (x = 8) (x = 9) (x = 10)
+D = {0..10}
 (x = 42) (x = 1) (x = 2) (x = 3) (x = 4) (x = 5) (x = 6) (x = 7) (x = 8) (x = 9) (x = 10)
 In deinit
 In deinit

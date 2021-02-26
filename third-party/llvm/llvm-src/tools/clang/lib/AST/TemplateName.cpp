@@ -1,9 +1,8 @@
 //===- TemplateName.cpp - C++ Template Name Representation ----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,8 +11,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/AST/TemplateName.h"
+#include "clang/AST/Decl.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/AST/DeclTemplate.h"
+#include "clang/AST/DependenceFlags.h"
 #include "clang/AST/NestedNameSpecifier.h"
 #include "clang/AST/PrettyPrinter.h"
 #include "clang/AST/TemplateBase.h"
@@ -67,6 +68,8 @@ TemplateName::TemplateName(void *Ptr) {
 TemplateName::TemplateName(TemplateDecl *Template) : Storage(Template) {}
 TemplateName::TemplateName(OverloadedTemplateStorage *Storage)
     : Storage(Storage) {}
+TemplateName::TemplateName(AssumedTemplateStorage *Storage)
+    : Storage(Storage) {}
 TemplateName::TemplateName(SubstTemplateTemplateParmStorage *Storage)
     : Storage(Storage) {}
 TemplateName::TemplateName(SubstTemplateTemplateParmPackStorage *Storage)
@@ -88,6 +91,8 @@ TemplateName::NameKind TemplateName::getKind() const {
     = Storage.get<UncommonTemplateNameStorage*>();
   if (uncommon->getAsOverloadedStorage())
     return OverloadedTemplate;
+  if (uncommon->getAsAssumedTemplateName())
+    return AssumedTemplate;
   if (uncommon->getAsSubstTemplateTemplateParm())
     return SubstTemplateTemplateParm;
   return SubstTemplateTemplateParmPack;
@@ -110,6 +115,14 @@ OverloadedTemplateStorage *TemplateName::getAsOverloadedTemplate() const {
   if (UncommonTemplateNameStorage *Uncommon =
           Storage.dyn_cast<UncommonTemplateNameStorage *>())
     return Uncommon->getAsOverloadedStorage();
+
+  return nullptr;
+}
+
+AssumedTemplateStorage *TemplateName::getAsAssumedTemplateName() const {
+  if (UncommonTemplateNameStorage *Uncommon =
+          Storage.dyn_cast<UncommonTemplateNameStorage *>())
+    return Uncommon->getAsAssumedTemplateName();
 
   return nullptr;
 }
@@ -157,52 +170,54 @@ TemplateName TemplateName::getNameToSubstitute() const {
   return TemplateName(Decl);
 }
 
-bool TemplateName::isDependent() const {
+TemplateNameDependence TemplateName::getDependence() const {
+  auto D = TemplateNameDependence::None;
+  switch (getKind()) {
+  case TemplateName::NameKind::QualifiedTemplate:
+    D |= toTemplateNameDependence(
+        getAsQualifiedTemplateName()->getQualifier()->getDependence());
+    break;
+  case TemplateName::NameKind::DependentTemplate:
+    D |= toTemplateNameDependence(
+        getAsDependentTemplateName()->getQualifier()->getDependence());
+    break;
+  case TemplateName::NameKind::SubstTemplateTemplateParmPack:
+    D |= TemplateNameDependence::UnexpandedPack;
+    break;
+  case TemplateName::NameKind::OverloadedTemplate:
+    llvm_unreachable("overloaded templates shouldn't survive to here.");
+  default:
+    break;
+  }
   if (TemplateDecl *Template = getAsTemplateDecl()) {
-    if (isa<TemplateTemplateParmDecl>(Template))
-      return true;
+    if (auto *TTP = dyn_cast<TemplateTemplateParmDecl>(Template)) {
+      D |= TemplateNameDependence::DependentInstantiation;
+      if (TTP->isParameterPack())
+        D |= TemplateNameDependence::UnexpandedPack;
+    }
     // FIXME: Hack, getDeclContext() can be null if Template is still
     // initializing due to PCH reading, so we check it before using it.
     // Should probably modify TemplateSpecializationType to allow constructing
     // it without the isDependent() checking.
-    return Template->getDeclContext() &&
-           Template->getDeclContext()->isDependentContext();
+    if (Template->getDeclContext() &&
+        Template->getDeclContext()->isDependentContext())
+      D |= TemplateNameDependence::DependentInstantiation;
+  } else {
+    D |= TemplateNameDependence::DependentInstantiation;
   }
+  return D;
+}
 
-  assert(!getAsOverloadedTemplate() &&
-         "overloaded templates shouldn't survive to here");
-
-  return true;
+bool TemplateName::isDependent() const {
+  return getDependence() & TemplateNameDependence::Dependent;
 }
 
 bool TemplateName::isInstantiationDependent() const {
-  if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName()) {
-    if (QTN->getQualifier()->isInstantiationDependent())
-      return true;
-  }
-
-  return isDependent();
+  return getDependence() & TemplateNameDependence::Instantiation;
 }
 
 bool TemplateName::containsUnexpandedParameterPack() const {
-  if (QualifiedTemplateName *QTN = getAsQualifiedTemplateName()) {
-    if (QTN->getQualifier()->containsUnexpandedParameterPack())
-      return true;
-  }
-
-  if (TemplateDecl *Template = getAsTemplateDecl()) {
-    if (TemplateTemplateParmDecl *TTP
-                                  = dyn_cast<TemplateTemplateParmDecl>(Template))
-      return TTP->isParameterPack();
-
-    return false;
-  }
-
-  if (DependentTemplateName *DTN = getAsDependentTemplateName())
-    return DTN->getQualifier() &&
-      DTN->getQualifier()->containsUnexpandedParameterPack();
-
-  return getAsSubstTemplateTemplateParmPack() != nullptr;
+  return getDependence() & TemplateNameDependence::UnexpandedPack;
 }
 
 void
@@ -231,7 +246,9 @@ TemplateName::print(raw_ostream &OS, const PrintingPolicy &Policy,
   } else if (SubstTemplateTemplateParmPackStorage *SubstPack
                                         = getAsSubstTemplateTemplateParmPack())
     OS << *SubstPack->getParameterPack();
-  else {
+  else if (AssumedTemplateStorage *Assumed = getAsAssumedTemplateName()) {
+    Assumed->getDeclName().print(OS, Policy);
+  } else {
     OverloadedTemplateStorage *OTS = getAsOverloadedTemplate();
     (*OTS->begin())->printName(OS);
   }
@@ -249,6 +266,20 @@ const DiagnosticBuilder &clang::operator<<(const DiagnosticBuilder &DB,
   OS << '\'';
   OS.flush();
   return DB << NameStr;
+}
+
+const PartialDiagnostic&clang::operator<<(const PartialDiagnostic &PD,
+                                           TemplateName N) {
+  std::string NameStr;
+  llvm::raw_string_ostream OS(NameStr);
+  LangOptions LO;
+  LO.CPlusPlus = true;
+  LO.Bool = true;
+  OS << '\'';
+  N.print(OS, PrintingPolicy(LO));
+  OS << '\'';
+  OS.flush();
+  return PD << NameStr;
 }
 
 void TemplateName::dump(raw_ostream &OS) const {

@@ -1,9 +1,8 @@
 //===---------- AArch64CollectLOH.cpp - AArch64 collect LOH pass --*- C++ -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -104,6 +103,7 @@
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/CodeGen/MachineBasicBlock.h"
@@ -182,6 +182,7 @@ static bool canDefBePartOfLOH(const MachineInstr &MI) {
   case AArch64::ADDXri:
     return canAddBePartOfLOH(MI);
   case AArch64::LDRXui:
+  case AArch64::LDRWui:
     // Check immediate to see if the immediate is an address.
     switch (MI.getOperand(2).getType()) {
     default:
@@ -313,7 +314,8 @@ static void handleUse(const MachineInstr &MI, const MachineOperand &MO,
     Info.Type = MCLOH_AdrpAdd;
     Info.IsCandidate = true;
     Info.MI0 = &MI;
-  } else if (MI.getOpcode() == AArch64::LDRXui &&
+  } else if ((MI.getOpcode() == AArch64::LDRXui ||
+              MI.getOpcode() == AArch64::LDRWui) &&
              MI.getOperand(2).getTargetFlags() & AArch64II::MO_GOT) {
     Info.Type = MCLOH_AdrpLdrGot;
     Info.IsCandidate = true;
@@ -358,7 +360,9 @@ static bool handleMiddleInst(const MachineInstr &MI, LOHInfo &DefInfo,
       return true;
     }
   } else {
-    assert(MI.getOpcode() == AArch64::LDRXui && "Expect LDRXui");
+    assert((MI.getOpcode() == AArch64::LDRXui ||
+            MI.getOpcode() == AArch64::LDRWui) &&
+           "Expect LDRXui or LDRWui");
     assert((MI.getOperand(2).getTargetFlags() & AArch64II::MO_GOT) &&
            "Expected GOT relocation");
     if (OpInfo.Type == MCLOH_AdrpAddStr && OpInfo.MI1 == nullptr) {
@@ -378,7 +382,7 @@ static bool handleMiddleInst(const MachineInstr &MI, LOHInfo &DefInfo,
 
 /// Update state when seeing and ADRP instruction.
 static void handleADRP(const MachineInstr &MI, AArch64FunctionInfo &AFI,
-                       LOHInfo &Info) {
+                       LOHInfo &Info, LOHInfo *LOHInfos) {
   if (Info.LastADRP != nullptr) {
     LLVM_DEBUG(dbgs() << "Adding MCLOH_AdrpAdrp:\n"
                       << '\t' << MI << '\t' << *Info.LastADRP);
@@ -389,12 +393,24 @@ static void handleADRP(const MachineInstr &MI, AArch64FunctionInfo &AFI,
   // Produce LOH directive if possible.
   if (Info.IsCandidate) {
     switch (Info.Type) {
-    case MCLOH_AdrpAdd:
+    case MCLOH_AdrpAdd: {
+      // ADRPs and ADDs for this candidate may be split apart if using
+      // GlobalISel instead of pseudo-expanded. If that happens, the
+      // def register of the ADD may have a use in between. Adding an LOH in
+      // this case can cause the linker to rewrite the ADRP to write to that
+      // register, clobbering the use.
+      const MachineInstr *AddMI = Info.MI0;
+      int DefIdx = mapRegToGPRIndex(MI.getOperand(0).getReg());
+      int OpIdx = mapRegToGPRIndex(AddMI->getOperand(0).getReg());
+      LOHInfo DefInfo = LOHInfos[OpIdx];
+      if (DefIdx != OpIdx && (DefInfo.OneUser || DefInfo.MultiUsers))
+        break;
       LLVM_DEBUG(dbgs() << "Adding MCLOH_AdrpAdd:\n"
                         << '\t' << MI << '\t' << *Info.MI0);
       AFI.addLOHDirective(MCLOH_AdrpAdd, {&MI, Info.MI0});
       ++NumADRSimpleCandidate;
       break;
+    }
     case MCLOH_AdrpLdr:
       if (supportLoadFromLiteral(*Info.MI0)) {
         LLVM_DEBUG(dbgs() << "Adding MCLOH_AdrpLdr:\n"
@@ -475,13 +491,23 @@ static void handleNormalInst(const MachineInstr &MI, LOHInfo *LOHInfos) {
     handleClobber(LOHInfos[Idx]);
   }
   // Handle uses.
+
+  SmallSet<int, 4> UsesSeen;
   for (const MachineOperand &MO : MI.uses()) {
     if (!MO.isReg() || !MO.readsReg())
       continue;
     int Idx = mapRegToGPRIndex(MO.getReg());
     if (Idx < 0)
       continue;
-    handleUse(MI, MO, LOHInfos[Idx]);
+
+    // Multiple uses of the same register within a single instruction don't
+    // count as MultiUser or block optimization. This is especially important on
+    // arm64_32, where any memory operation is likely to be an explicit use of
+    // xN and an implicit use of wN (the base address register).
+    if (!UsesSeen.count(Idx)) {
+      handleUse(MI, MO, LOHInfos[Idx]);
+      UsesSeen.insert(Idx);
+    }
   }
 }
 
@@ -508,11 +534,13 @@ bool AArch64CollectLOH::runOnMachineFunction(MachineFunction &MF) {
 
     // Walk the basic block backwards and update the per register state machine
     // in the process.
-    for (const MachineInstr &MI : make_range(MBB.rbegin(), MBB.rend())) {
+    for (const MachineInstr &MI :
+         instructionsWithoutDebug(MBB.rbegin(), MBB.rend())) {
       unsigned Opcode = MI.getOpcode();
       switch (Opcode) {
       case AArch64::ADDXri:
       case AArch64::LDRXui:
+      case AArch64::LDRWui:
         if (canDefBePartOfLOH(MI)) {
           const MachineOperand &Def = MI.getOperand(0);
           const MachineOperand &Op = MI.getOperand(1);
@@ -529,7 +557,7 @@ bool AArch64CollectLOH::runOnMachineFunction(MachineFunction &MF) {
         const MachineOperand &Op0 = MI.getOperand(0);
         int Idx = mapRegToGPRIndex(Op0.getReg());
         if (Idx >= 0) {
-          handleADRP(MI, AFI, LOHInfos[Idx]);
+          handleADRP(MI, AFI, LOHInfos[Idx], LOHInfos);
           continue;
         }
         break;

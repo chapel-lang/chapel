@@ -1,0 +1,206 @@
+OUTPUT testing abistructfunc_c_____
+OUTPUT testing abistructfunc_c_____: e 0 f 1 s.a 2 s.b 3 s.d 12.250000 g 4 h -5 ld 66.000000 m 1.125000n 10000.000000 i 7 j 8 k -1
+OUTPUT testing abistructfunc_chapel
+OUTPUT testing abistructfunc_chapel: e 0 f 1 s.a 2 s.b 3 s.d 12.250000 g 4 h -5 ld 66.000000 m 1.125000n 10000.000000 i 7 j 8 k -1
+OUTPUT testing bool_..._c_____
+OUTPUT testing bool_..._c_____: arg 1
+OUTPUT testing bool_..._chapel
+OUTPUT testing bool_..._chapel: arg 1
+OUTPUT testing complexd_..._c_____
+OUTPUT testing complexd_..._c_____: arg 1.000000 0.000000
+OUTPUT testing complexd_..._chapel
+OUTPUT testing complexd_..._chapel: arg 1.000000 0.000000
+OUTPUT testing complexf_..._c_____
+OUTPUT testing complexf_..._c_____: arg 1.000000 0.000000
+OUTPUT testing complexf_..._chapel
+OUTPUT testing complexf_..._chapel: arg 1.000000 0.000000
+OUTPUT testing double_..._c_____
+OUTPUT testing double_..._c_____: arg 1.000000
+OUTPUT testing double_..._chapel
+OUTPUT testing double_..._chapel: arg 1.000000
+OUTPUT testing float_..._c_____
+OUTPUT testing float_..._c_____: arg 0.125000
+OUTPUT testing float_..._chapel
+OUTPUT testing float_..._chapel: arg 0.125000
+OUTPUT testing int16_..._c_____
+OUTPUT testing int16_..._c_____: arg -1
+OUTPUT testing int16_..._chapel
+OUTPUT testing int16_..._chapel: arg -1
+OUTPUT testing int32_..._c_____
+OUTPUT testing int32_..._c_____: arg -1
+OUTPUT testing int32_..._chapel
+OUTPUT testing int32_..._chapel: arg -1
+OUTPUT testing int64_..._c_____
+OUTPUT testing int64_..._c_____: arg -1
+OUTPUT testing int64_..._chapel
+OUTPUT testing int64_..._chapel: arg -1
+OUTPUT testing int8_..._c_____
+OUTPUT testing int8_..._c_____: arg -1
+OUTPUT testing int8_..._chapel
+OUTPUT testing int8_..._chapel: arg -1
+OUTPUT testing struct_aligned16test_..._c_____
+OUTPUT testing struct_aligned16test_..._c_____: arg.x 123456789 arg.a 987654321
+OUTPUT testing struct_aligned16test_..._chapel
+OUTPUT testing struct_aligned16test_..._chapel: arg.x 123456789 arg.a 987654321
+OUTPUT testing struct_one_double..._c_____
+OUTPUT testing struct_one_double..._c_____: arg.a 15.000000
+OUTPUT testing struct_one_double..._chapel
+OUTPUT testing struct_one_double..._chapel: arg.a 15.000000
+OUTPUT testing struct_one_float..._c_____
+OUTPUT testing struct_one_float..._c_____: arg.a 12.000000
+OUTPUT testing struct_one_float..._chapel
+OUTPUT testing struct_one_float..._chapel: arg.a 12.000000
+OUTPUT testing struct_one_int..._c_____
+OUTPUT testing struct_one_int..._c_____: arg.a -2
+OUTPUT testing struct_one_int..._chapel
+OUTPUT testing struct_one_int..._chapel: arg.a -2
+OUTPUT testing struct_one_long..._c_____
+OUTPUT testing struct_one_long..._c_____: arg.a -8
+OUTPUT testing struct_one_long..._chapel
+OUTPUT testing struct_one_long..._chapel: arg.a -8
+OUTPUT testing struct_paddingtest_..._c_____
+OUTPUT testing struct_paddingtest_..._c_____: arg.c1 1 arg.h2 2 arg.d3 3
+OUTPUT testing struct_paddingtest_..._chapel
+OUTPUT testing struct_paddingtest_..._chapel: arg.c1 1 arg.h2 2 arg.d3 3
+OUTPUT testing struct_pair_double..._c_____
+OUTPUT testing struct_pair_double..._c_____: arg.a 0.000000 arg.b 1.000000
+OUTPUT testing struct_pair_double..._chapel
+OUTPUT testing struct_pair_double..._chapel: arg.a 0.000000 arg.b 1.000000
+OUTPUT testing struct_pair_float..._c_____
+OUTPUT testing struct_pair_float..._c_____: arg.a 0.000000 arg.b 1.000000
+OUTPUT testing struct_pair_float..._chapel
+OUTPUT testing struct_pair_float..._chapel: arg.a 0.000000 arg.b 1.000000
+OUTPUT testing struct_pair_int..._c_____
+OUTPUT testing struct_pair_int..._c_____: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_int..._chapel
+OUTPUT testing struct_pair_int..._chapel: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_long..._c_____
+OUTPUT testing struct_pair_long..._c_____: arg.a 0 arg.b 1
+OUTPUT testing struct_pair_long..._chapel
+OUTPUT testing struct_pair_long..._chapel: arg.a 0 arg.b 1
+OUTPUT testing struct_triple_..._c_____
+OUTPUT testing struct_triple_..._c_____: arg.a 0 arg.b 1 arg.c 2
+OUTPUT testing struct_triple_..._chapel
+OUTPUT testing struct_triple_..._chapel: arg.a 0 arg.b 1 arg.c 2
+OUTPUT testing struct_twelve_..._c_____
+OUTPUT testing struct_twelve_..._c_____: arg.a 0 arg.b 1 arg.c 2 arg.d 3 arg.e 4 arg.f 5 arg.g 6 arg.h 7 arg.i 8 arg.j 9 arg.k 10 arg.l 11
+OUTPUT testing struct_twelve_..._chapel
+OUTPUT testing struct_twelve_..._chapel: arg.a 0 arg.b 1 arg.c 2 arg.d 3 arg.e 4 arg.f 5 arg.g 6 arg.h 7 arg.i 8 arg.j 9 arg.k 10 arg.l 11
+OUTPUT testing uint16_..._c_____
+OUTPUT testing uint16_..._c_____: arg 65535
+OUTPUT testing uint16_..._chapel
+OUTPUT testing uint16_..._chapel: arg 65535
+OUTPUT testing uint32_..._c_____
+OUTPUT testing uint32_..._c_____: arg 4294967295
+OUTPUT testing uint32_..._chapel
+OUTPUT testing uint32_..._chapel: arg 4294967295
+OUTPUT testing uint64_..._c_____
+OUTPUT testing uint64_..._c_____: arg 18446744073709551615
+OUTPUT testing uint64_..._chapel
+OUTPUT testing uint64_..._chapel: arg 18446744073709551615
+OUTPUT testing uint8_..._c_____
+OUTPUT testing uint8_..._c_____: arg 255
+OUTPUT testing uint8_..._chapel
+OUTPUT testing uint8_..._chapel: arg 255
+define weak dso_local %struct.c_one_double @struct_one_double_return_c_____()
+define weak dso_local %struct.c_one_double @struct_one_double_return_chapel()
+define weak dso_local %struct.c_one_float @struct_one_float_return_c_____()
+define weak dso_local %struct.c_one_float @struct_one_float_return_chapel()
+define weak dso_local %struct.c_pair_double @struct_pair_double_return_c_____()
+define weak dso_local %struct.c_pair_double @struct_pair_double_return_chapel()
+define weak dso_local %struct.c_pair_float @struct_pair_float_return_c_____()
+define weak dso_local %struct.c_pair_float @struct_pair_float_return_chapel()
+define weak dso_local [2 x i64] @struct_paddingtest_return_c_____()
+define weak dso_local [2 x i64] @struct_paddingtest_return_chapel()
+define weak dso_local [2 x i64] @struct_pair_long_return_c_____()
+define weak dso_local [2 x i64] @struct_pair_long_return_chapel()
+define weak dso_local double @double_return_c_____()
+define weak dso_local double @double_return_chapel()
+define weak dso_local float @float_return_c_____()
+define weak dso_local float @float_return_chapel()
+define weak dso_local i1 @bool_return_c_____()
+define weak dso_local i1 @bool_return_chapel()
+define weak dso_local i16 @int16_return_c_____()
+define weak dso_local i16 @int16_return_chapel()
+define weak dso_local i16 @uint16_return_c_____()
+define weak dso_local i16 @uint16_return_chapel()
+define weak dso_local i32 @int32_return_c_____()
+define weak dso_local i32 @int32_return_chapel()
+define weak dso_local i32 @uint32_return_c_____()
+define weak dso_local i32 @uint32_return_chapel()
+define weak dso_local i64 @int64_return_c_____()
+define weak dso_local i64 @int64_return_chapel()
+define weak dso_local i64 @struct_one_int_return_c_____()
+define weak dso_local i64 @struct_one_int_return_chapel()
+define weak dso_local i64 @struct_one_long_return_c_____()
+define weak dso_local i64 @struct_one_long_return_chapel()
+define weak dso_local i64 @struct_pair_int_return_c_____()
+define weak dso_local i64 @struct_pair_int_return_chapel()
+define weak dso_local i64 @uint64_return_c_____()
+define weak dso_local i64 @uint64_return_chapel()
+define weak dso_local i8 @int8_return_c_____()
+define weak dso_local i8 @int8_return_chapel()
+define weak dso_local i8 @uint8_return_c_____()
+define weak dso_local i8 @uint8_return_chapel()
+define weak dso_local void @abistructfunc_c_____(i32, i32, [2 x i64], i32, i32, double, double, double, i32, i32, i32)
+define weak dso_local void @abistructfunc_chapel(i32, i32, [2 x i64], i32, i32, double, double, double, i32, i32, i32)
+define weak dso_local void @bool_arg_c_____(i1)
+define weak dso_local void @bool_arg_chapel(i1)
+define weak dso_local void @complexd_arg_c_____([2 x double])
+define weak dso_local void @complexd_arg_chapel([2 x double])
+define weak dso_local void @complexf_arg_c_____([2 x float])
+define weak dso_local void @complexf_arg_chapel([2 x float])
+define weak dso_local void @double_arg_c_____(double)
+define weak dso_local void @double_arg_chapel(double)
+define weak dso_local void @float_arg_c_____(float)
+define weak dso_local void @float_arg_chapel(float)
+define weak dso_local void @int16_arg_c_____(i16)
+define weak dso_local void @int16_arg_chapel(i16)
+define weak dso_local void @int32_arg_c_____(i32)
+define weak dso_local void @int32_arg_chapel(i32)
+define weak dso_local void @int64_arg_c_____(i64)
+define weak dso_local void @int64_arg_chapel(i64)
+define weak dso_local void @int8_arg_c_____(i8)
+define weak dso_local void @int8_arg_chapel(i8)
+define weak dso_local void @struct_aligned16test_arg_c_____(%struct.aligned16test*)
+define weak dso_local void @struct_aligned16test_arg_chapel(%struct.aligned16test*)
+define weak dso_local void @struct_aligned16test_return_c_____(%struct.aligned16test* noalias sret)
+define weak dso_local void @struct_aligned16test_return_chapel(%struct.aligned16test* noalias sret align 16)
+define weak dso_local void @struct_one_double_arg_c_____([1 x double])
+define weak dso_local void @struct_one_double_arg_chapel([1 x double])
+define weak dso_local void @struct_one_float_arg_c_____([1 x float])
+define weak dso_local void @struct_one_float_arg_chapel([1 x float])
+define weak dso_local void @struct_one_int_arg_c_____(i64)
+define weak dso_local void @struct_one_int_arg_chapel(i64)
+define weak dso_local void @struct_one_long_arg_c_____(i64)
+define weak dso_local void @struct_one_long_arg_chapel(i64)
+define weak dso_local void @struct_paddingtest_arg_c_____([2 x i64])
+define weak dso_local void @struct_paddingtest_arg_chapel([2 x i64])
+define weak dso_local void @struct_pair_double_arg_c_____([2 x double])
+define weak dso_local void @struct_pair_double_arg_chapel([2 x double])
+define weak dso_local void @struct_pair_float_arg_c_____([2 x float])
+define weak dso_local void @struct_pair_float_arg_chapel([2 x float])
+define weak dso_local void @struct_pair_int_arg_c_____(i64)
+define weak dso_local void @struct_pair_int_arg_chapel(i64)
+define weak dso_local void @struct_pair_long_arg_c_____([2 x i64])
+define weak dso_local void @struct_pair_long_arg_chapel([2 x i64])
+define weak dso_local void @struct_triple_arg_c_____(%struct.c_triple*)
+define weak dso_local void @struct_triple_arg_chapel(%struct.c_triple*)
+define weak dso_local void @struct_triple_return_c_____(%struct.c_triple* noalias sret)
+define weak dso_local void @struct_triple_return_chapel(%struct.c_triple* noalias sret align 8)
+define weak dso_local void @struct_twelve_arg_c_____(%struct.c_twelve*)
+define weak dso_local void @struct_twelve_arg_chapel(%struct.c_twelve*)
+define weak dso_local void @struct_twelve_return_c_____(%struct.c_twelve* noalias sret)
+define weak dso_local void @struct_twelve_return_chapel(%struct.c_twelve* noalias sret align 8)
+define weak dso_local void @uint16_arg_c_____(i16)
+define weak dso_local void @uint16_arg_chapel(i16)
+define weak dso_local void @uint32_arg_c_____(i32)
+define weak dso_local void @uint32_arg_chapel(i32)
+define weak dso_local void @uint64_arg_c_____(i64)
+define weak dso_local void @uint64_arg_chapel(i64)
+define weak dso_local void @uint8_arg_c_____(i8)
+define weak dso_local void @uint8_arg_chapel(i8)
+define weak dso_local { double, double } @complexd_return_c_____()
+define weak dso_local { double, double } @complexd_return_chapel()
+define weak dso_local { float, float } @complexf_return_c_____()
+define weak dso_local { float, float } @complexf_return_chapel()

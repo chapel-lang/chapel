@@ -1,1 +1,1 @@
---library
+--no-llvm --library

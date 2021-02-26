@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -21,8 +21,9 @@
 // DefaultSparse.chpl
 //
 module DefaultSparse {
-  private use ChapelStandard;
+  use ChapelStandard;
   import RangeChunk;
+  use DSIUtil;
 
   config param debugDefaultSparse = false;
 
@@ -47,22 +48,28 @@ module DefaultSparse {
       return _nnz;
     }
 
-    proc dsiBuildArray(type eltType)
-      return new unmanaged DefaultSparseArr(eltType=eltType, rank=rank, idxType=idxType,
-                                  dom=_to_unmanaged(this));
+    proc dsiBuildArray(type eltType, param initElts:bool) {
+      return new unmanaged DefaultSparseArr(eltType=eltType,
+                                            rank=rank, idxType=idxType,
+                                            dom=_to_unmanaged(this),
+                                            initElts=initElts);
+    }
 
+    pragma "order independent yielding loops"
     iter dsiIndsIterSafeForRemoving() {
       for i in 1.._nnz by -1 {
         yield _indices(i);
       }
     }
 
+    pragma "order independent yielding loops"
     iter these() {
       for i in 1.._nnz {
         yield _indices(i);
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) where tag == iterKind.standalone {
       const numElems = _nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
@@ -101,6 +108,7 @@ module DefaultSparse {
           yield (this, chunk.first, chunk.last);
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis:(?,?,?)) where tag == iterKind.follower {
       var (followThisDom, startIx, endIx) = followThis;
 
@@ -355,7 +363,8 @@ module DefaultSparse {
     }
 
     proc dsiAssignDomain(rhs: domain, lhsPrivate:bool) {
-      if _to_borrowed(rhs._instance.type) == this.type && this.dsiNumIndices == 0 {
+      if _to_borrowed(rhs._instance.type) == this.type && 
+         canDoDirectAssignment(rhs) {
 
         // ENGIN: We cannot use bulkGrow here, because rhs might be grown using
         // grow, which has a different heuristic to grow the internal arrays.
@@ -386,11 +395,16 @@ module DefaultSparse {
 
   class DefaultSparseArr: BaseSparseArrImpl {
 
-    /*proc DefaultSparseArr(type eltType, param rank, type idxType, dom) {*/
-      /*this.dom = dom;*/
-      /*this.dataDom = dom.nnzDom;*/
-      /*writeln("dataDom is set : ", this.dataDom);*/
-    /*}*/
+    proc init(type eltType,
+              param rank : int,
+              type idxType,
+              dom,
+              param initElts:bool) {
+      super.init(eltType, rank, idxType, dom, initElts);
+    }
+
+    // dsiDestroyArr is defined in BaseSparseArrImpl
+
     // ref version
     proc dsiAccess(ind: idxType) ref where rank == 1 {
       // make sure we're in the dense bounding box
@@ -474,10 +488,12 @@ module DefaultSparse {
         return irv;
     }
 
+    pragma "order independent yielding loops"
     iter these() ref {
       for i in 1..dom._nnz do yield data[i];
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind) ref where tag == iterKind.standalone {
       const numElems = dom._nnz;
       const numChunks = _computeNumChunks(numElems): numElems.type;
@@ -505,6 +521,7 @@ module DefaultSparse {
     }
 
     // same as DefaultSparseDom's follower, except here we index into 'data'
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis:(?,?,?)) ref where tag == iterKind.follower {
       var (followThisDom, startIx, endIx) = followThis;
 

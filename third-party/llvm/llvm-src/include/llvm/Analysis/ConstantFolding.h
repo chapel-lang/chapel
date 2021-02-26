@@ -1,9 +1,8 @@
 //===-- ConstantFolding.h - Fold instructions into constants ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -23,15 +22,13 @@
 namespace llvm {
 class APInt;
 template <typename T> class ArrayRef;
-class CallSite;
+class CallBase;
 class Constant;
 class ConstantExpr;
-class ConstantVector;
 class DataLayout;
 class Function;
 class GlobalValue;
 class Instruction;
-class ImmutableCallSite;
 class TargetLibraryInfo;
 class Type;
 
@@ -48,9 +45,9 @@ bool IsConstantOffsetFromGlobal(Constant *C, GlobalValue *&GV, APInt &Offset,
 Constant *ConstantFoldInstruction(Instruction *I, const DataLayout &DL,
                                   const TargetLibraryInfo *TLI = nullptr);
 
-/// ConstantFoldConstant - Attempt to fold the constant using the
-/// specified DataLayout.
-/// If successful, the constant result is returned, if not, null is returned.
+/// ConstantFoldConstant - Fold the constant using the specified DataLayout.
+/// This function always returns a non-null constant: Either the folding result,
+/// or the original constant if further folding is not possible.
 Constant *ConstantFoldConstant(const Constant *C, const DataLayout &DL,
                                const TargetLibraryInfo *TLI = nullptr);
 
@@ -72,6 +69,12 @@ Constant *
 ConstantFoldCompareInstOperands(unsigned Predicate, Constant *LHS,
                                 Constant *RHS, const DataLayout &DL,
                                 const TargetLibraryInfo *TLI = nullptr);
+
+/// Attempt to constant fold a unary operation with the specified
+/// operand. If it fails, it returns a constant expression of the specified
+/// operands.
+Constant *ConstantFoldUnaryOpOperand(unsigned Opcode, Constant *Op,
+                                     const DataLayout &DL);
 
 /// Attempt to constant fold a binary operation with the specified
 /// operands.  If it fails, it returns a constant expression of the specified
@@ -115,10 +118,11 @@ Constant *ConstantFoldInsertElementInstruction(Constant *Val,
 Constant *ConstantFoldExtractElementInstruction(Constant *Val, Constant *Idx);
 
 /// Attempt to constant fold a shufflevector instruction with the
-/// specified operands and indices.  The constant result is returned if
-/// successful; if not, null is returned.
+/// specified operands and mask.  See class ShuffleVectorInst for a description
+/// of the mask representation. The constant result is returned if successful;
+/// if not, null is returned.
 Constant *ConstantFoldShuffleVectorInstruction(Constant *V1, Constant *V2,
-                                               Constant *Mask);
+                                               ArrayRef<int> Mask);
 
 /// ConstantFoldLoadFromConstPtr - Return the value that a load from C would
 /// produce if it is constant and determinable.  If this is not determinable,
@@ -139,11 +143,11 @@ Constant *ConstantFoldLoadThroughGEPIndices(Constant *C,
 
 /// canConstantFoldCallTo - Return true if its even possible to fold a call to
 /// the specified function.
-bool canConstantFoldCallTo(ImmutableCallSite CS, const Function *F);
+bool canConstantFoldCallTo(const CallBase *Call, const Function *F);
 
 /// ConstantFoldCall - Attempt to constant fold a call to the specified function
 /// with the specified arguments, returning null if unsuccessful.
-Constant *ConstantFoldCall(ImmutableCallSite CS, Function *F,
+Constant *ConstantFoldCall(const CallBase *Call, Function *F,
                            ArrayRef<Constant *> Operands,
                            const TargetLibraryInfo *TLI = nullptr);
 
@@ -155,7 +159,7 @@ Constant *ConstantFoldLoadThroughBitcast(Constant *C, Type *DestTy,
 
 /// Check whether the given call has no side-effects.
 /// Specifically checks for math routimes which sometimes set errno.
-bool isMathLibCallNoop(CallSite CS, const TargetLibraryInfo *TLI);
+bool isMathLibCallNoop(const CallBase *Call, const TargetLibraryInfo *TLI);
 }
 
 #endif

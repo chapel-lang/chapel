@@ -1,9 +1,8 @@
 //===---------------------- RetireStage.cpp ---------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -32,11 +31,11 @@ llvm::Error RetireStage::cycleStart() {
   while (!RCU.isEmpty()) {
     if (MaxRetirePerCycle != 0 && NumRetired == MaxRetirePerCycle)
       break;
-    const RetireControlUnit::RUToken &Current = RCU.peekCurrentToken();
+    const RetireControlUnit::RUToken &Current = RCU.getCurrentToken();
     if (!Current.Executed)
       break;
-    RCU.consumeCurrentToken();
     notifyInstructionRetired(Current.IR);
+    RCU.consumeCurrentToken();
     NumRetired++;
   }
 
@@ -52,6 +51,10 @@ void RetireStage::notifyInstructionRetired(const InstRef &IR) const {
   LLVM_DEBUG(llvm::dbgs() << "[E] Instruction Retired: #" << IR << '\n');
   llvm::SmallVector<unsigned, 4> FreedRegs(PRF.getNumRegisterFiles());
   const Instruction &Inst = *IR.getInstruction();
+
+  // Release the load/store queue entries.
+  if (Inst.isMemOp())
+    LSU.onInstructionRetired(IR);
 
   for (const WriteState &WS : Inst.getDefs())
     PRF.removeRegisterWrite(WS, FreedRegs);

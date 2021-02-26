@@ -24,7 +24,7 @@ record R {
 /* user record's can't write their own
    autoCopy after PR #5164
 pragma "auto copy fn"
-proc chpl__autoCopy(arg: R) {
+proc chpl__autoCopy(arg: R, definedConst: bool) {
 
   // TODO - is no auto destroy necessary here?
   pragma "no auto destroy"
@@ -41,7 +41,7 @@ proc chpl__autoCopy(arg: R) {
 // I'd like this to be ref, but that breaks
 //    var outerX: R; begin { var x = outerX; }
 pragma "init copy fn"
-proc chpl__initCopy(arg: R) {
+proc chpl__initCopy(arg: R, definedConst: bool) {
   // TODO - is no auto destroy necessary here?
   pragma "no auto destroy"
   var ret: R;

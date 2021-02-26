@@ -20,6 +20,8 @@ can be convenient.
 
 .. contents::
 
+.. _readme-chplenv.recommended_settings:
+
 Recommended Settings
 --------------------
 
@@ -35,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.22.0
+        export CHPL_HOME=~/chapel-1.23.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -85,7 +87,7 @@ CHPL_HOST_PLATFORM
         export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 
    For other platforms that appear very similar to a UNIX workstation from the
-   shell prompt (e.g., a Cray XK\ |trade|), the value may need to be set
+   shell prompt (e.g., a Cray CS\ |trade|), the value may need to be set
    explicitly.  The strings for our currently-supported host platforms are as
    follows:
 
@@ -103,8 +105,6 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        cray-xe      Cray XE\ |trade|
-        cray-xk      Cray XK\ |trade|
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -116,8 +116,7 @@ CHPL_HOST_PLATFORM
    We are interested in making our code framework portable to other platforms --
    if you are using Chapel on a platform other than the ones listed above,
    please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform and/or contact us at:
-   :disguise:`chapel_info@cray.com`
+   Makefile for this platform.
 
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
@@ -213,7 +212,7 @@ CHPL_*_COMPILER
    ``CHPL_TARGET_COMPILER`` will default to the same value as ``CHPL_HOST_COMPILER``.
 
    .. note::
-     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=llvm``)
+     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=bundled``)
      will build the runtime twice: once with the compiler as described above and
      once with clang-included. We do this in order to avoid issues in linking
      objects built by different compilers.
@@ -337,10 +336,6 @@ CHPL_LOCALE_MODEL
         flat     top-level locales are not further subdivided
         numa     top-level locales are further subdivided into
                  sublocales, each one a NUMA domain
-        knl      a processor-specific locale model for the
-                 self-hosted Xeon Phi (Knight's Landing) which
-                 includes NUMA support and access to the
-                 tightly-coupled high-bandwidth memory
         ======== =============================================
 
    If unset, ``CHPL_LOCALE_MODEL`` defaults to ``flat``.
@@ -399,8 +394,8 @@ CHPL_COMM
         ugni    Cray-specific native communication layer
         ======= ============================================
 
-   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray XE
-   and XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
+   If unset, ``CHPL_COMM`` defaults to ``none`` in most cases.  On Cray
+   XC systems it defaults to ``ugni``.  On Cray CS systems it defaults
    to ``gasnet``.  See :ref:`readme-multilocale` for more information on
    executing Chapel programs using multiple locales.  See
    :ref:`readme-libfabric` for more information about the ofi communication
@@ -459,9 +454,9 @@ CHPL_ATOMICS
         ===========  =====================================================
 
    If ``CHPL_ATOMICS`` is not set, it defaults to ``cstdlib`` when the target
-   compiler is ``gnu``, ``clang``, ``allinea``, or ``clang-included``.  It
-   defaults to ``intrinsics`` when the target compiler is ``intel`` or
-   ``cray``.  It defaults to ``locks`` when the target compiler is ``pgi``.
+   compiler is ``gnu``, ``clang``, ``allinea``, ``clang-included``, or
+   ``cray``.  It defaults to ``intrinsics`` when the target compiler is
+   ``intel``.  It defaults to ``locks`` when the target compiler is ``pgi``.
 
    See the Chapel Language Specification for more information about atomic
    operations in Chapel or :ref:`readme-atomics` for more information about the
@@ -494,7 +489,8 @@ CHPL_GMP
        system   use a system install of GMP
                 (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
-       gmp      use the GMP distribution bundled with Chapel in third-party
+       bundled  use the GMP distribution bundled with Chapel in third-party
+       gmp      deprecated - use bundled instead
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
@@ -505,7 +501,7 @@ CHPL_GMP
        ======= ====================================================
        Value   Description
        ======= ====================================================
-       gmp     if the build was successful
+       bundled if the build was successful
        system  if unsuccessful and :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` is cray-x*
        none    otherwise
        ======= ====================================================
@@ -528,10 +524,11 @@ CHPL_HWLOC
        Value    Description
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
-       hwloc    use the hwloc distribution bundled with Chapel in third-party
+       bundled  use the hwloc distribution bundled with Chapel in third-party
+       hwloc    deprecated - use bundled instead
        ======== ==============================================================
 
-   If unset, ``CHPL_HWLOC`` defaults to ``hwloc`` if
+   If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
    :ref:`readme-chplenv.CHPL_TASKS` is ``qthreads``.  In all other cases
    it defaults to ``none``.  In the unlikely event the bundled hwloc
    distribution does not build successfully, it should still be possible
@@ -561,10 +558,11 @@ CHPL_HWLOC
           Value    Description
           ======== ==============================================================
           none     do not build or use jemalloc
-          jemalloc use the jemalloc distribution bundled with Chapel in third-party
+          bundled  use the jemalloc distribution bundled with Chapel in third-party
+          jemalloc deprecated - use bundled instead
           ======== ==============================================================
 
-      If unset, ``CHPL_JEMALLOC`` defaults to ``jemalloc`` if
+      If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
       :ref:`readme-chplenv.CHPL_MEM` is ``jemalloc``.  In all other cases it
       defaults to ``none``.
 
@@ -573,6 +571,36 @@ CHPL_HWLOC
        Using CHPL_JEMALLOC=system is not regularly tested and may not work
        for you. Chapel depends on jemalloc features that are not available in
        all versions. For best results, we recommend using the bundled jemalloc
+       if possible.
+
+..  (comment) CHPL_LIBFABRIC is not a user-facing feature
+
+   .. _readme-chplenv.CHPL_LIBFABRIC:
+
+   CHPL_LIBFABRIC
+   ~~~~~~~~~~~~~~
+      Optionally, the ``CHPL_LIBFABRIC`` environment variable can select
+      between no libfabric or using the libfabric distributed with Chapel in
+      third-party. This setting is intended to elaborate upon
+      ``CHPL_COMM=ofi``.
+
+          ========= ==============================================================
+          Value     Description
+          ========= ==============================================================
+          none      do not build or use libfabric
+          bundled   use the libfabric distribution bundled with Chapel in third-party
+          libfabric deprecated - use bundled instead
+          ========= ==============================================================
+
+      If unset, ``CHPL_LIBFABRIC`` defaults to ``bundled`` if
+      :ref:`readme-chplenv.CHPL_COMM` is ``ofi``.  In all other cases it
+      defaults to ``none``.
+
+   .. (comment) CHPL_LIBFABRIC=system is also available but it is only
+       intended to support packaging.
+       Using CHPL_LIBFABRIC=system is not regularly tested and may not work
+       for you. Chapel depends on libfabric features that are not available in
+       all versions. For best results, we recommend using the bundled libfabric
        if possible.
 
 .. _readme-chplenv.CHPL_REGEXP:
@@ -634,24 +662,25 @@ CHPL_LLVM
        ============== ======================================================
        Value          Description
        ============== ======================================================
-       llvm           use the llvm/clang distribution in third-party
+       bundled        use the llvm/clang distribution in third-party
+       llvm           deprecated - use bundled instead
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
-       none           do not support llvm-/clang-related features
+       none           do not support llvm/clang-related features
        ============== ======================================================
 
    .. (comment) -minimal can be used but is only interesting for developers
        llvm-minimal   as above, but only build and link LLVM ADTs
        system-minimal as above, but only link LLVM ADTs
 
-   If unset, ``CHPL_LLVM`` defaults to ``llvm`` if you've already installed
+   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
    llvm in third-party and ``none`` otherwise.
 
-   Chapel currently supports LLVM 8.0.
+   Chapel currently supports LLVM 11.0.
 
    .. note::
 
-       We have had success with this procedure to install LLVM 8.0
+       We have had success with this procedure to install LLVM 11.0
        dependencies on Ubuntu.
 
        First, follow the instructions at ``https://apt.llvm.org`` that
@@ -661,7 +690,7 @@ CHPL_LLVM
 
         .. code-block:: sh
 
-            apt-get install llvm-8-dev llvm-8 llvm-8-tools clang-8 libclang-8-dev libedit-dev
+            apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
 
 .. _readme-chplenv.CHPL_UNWIND:
 
@@ -673,7 +702,8 @@ CHPL_UNWIND
        ========= =======================================================
        Value     Description
        ========= =======================================================
-       libunwind use the libunwind bundled with Chapel in third-party
+       bundled   use the libunwind bundled with Chapel in third-party
+       libunwind deprecated - use bundled instead
        system    assume libunwind is already installed on the system
        none      don't use an unwind library, disabling stack tracing
        ========= =======================================================

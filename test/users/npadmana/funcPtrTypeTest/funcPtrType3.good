@@ -1,0 +1,2 @@
+funcPtrType3.chpl:11: In function 'main':
+funcPtrType3.chpl:14: error: Cannot assign to c_fn_ptr(real, real) from c_fn_ptr(void)

@@ -1,1 +1,1 @@
-CHPL_ATOMICS!=intrinsics
+CHPL_ATOMICS==locks

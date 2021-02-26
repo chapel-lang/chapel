@@ -1,3 +1,4 @@
+use CPtr;
 var D = {1..5, 1..5};
 var A: [D] int;
 

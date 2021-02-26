@@ -1,9 +1,8 @@
 //===- llvm/ADT/SparseMultiSet.h - Sparse multiset --------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -95,7 +94,7 @@ class SparseMultiSet {
   /// tombstones, in which case they are actually nodes in a single-linked
   /// freelist of recyclable slots.
   struct SMSNode {
-    static const unsigned INVALID = ~0U;
+    static constexpr unsigned INVALID = ~0U;
 
     ValueT Data;
     unsigned Prev;

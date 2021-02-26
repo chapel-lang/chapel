@@ -1,3 +1,4 @@
+use CPtr;
 use SysCTypes;
 
 var A:[0..10] int;

@@ -1,9 +1,8 @@
-//===- llvm/Transforms/Utils/LowerMemintrinsics.h ---------------*- C++ -*-===//
+//===- llvm/Transforms/Utils/LowerMemIntrinsics.h ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,12 +23,13 @@ class MemMoveInst;
 class MemSetInst;
 class TargetTransformInfo;
 class Value;
+struct Align;
 
 /// Emit a loop implementing the semantics of llvm.memcpy where the size is not
 /// a compile-time constant. Loop will be insterted at \p InsertBefore.
 void createMemCpyLoopUnknownSize(Instruction *InsertBefore, Value *SrcAddr,
                                  Value *DstAddr, Value *CopyLen,
-                                 unsigned SrcAlign, unsigned DestAlign,
+                                 Align SrcAlign, Align DestAlign,
                                  bool SrcIsVolatile, bool DstIsVolatile,
                                  const TargetTransformInfo &TTI);
 
@@ -37,10 +37,9 @@ void createMemCpyLoopUnknownSize(Instruction *InsertBefore, Value *SrcAddr,
 /// compile time constant. Loop is inserted at \p InsertBefore.
 void createMemCpyLoopKnownSize(Instruction *InsertBefore, Value *SrcAddr,
                                Value *DstAddr, ConstantInt *CopyLen,
-                               unsigned SrcAlign, unsigned DestAlign,
+                               Align SrcAlign, Align DestAlign,
                                bool SrcIsVolatile, bool DstIsVolatile,
                                const TargetTransformInfo &TTI);
-
 
 /// Expand \p MemCpy as a loop. \p MemCpy is not deleted.
 void expandMemCpyAsLoop(MemCpyInst *MemCpy, const TargetTransformInfo &TTI);

@@ -1,9 +1,8 @@
 //===--- MSVCErrorWorkarounds.h - Enable future<Error> in MSVC --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -60,22 +59,19 @@ public:
   template <typename OtherT>
   MSVCPExpected(
       OtherT &&Val,
-      typename std::enable_if<std::is_convertible<OtherT, T>::value>::type * =
-          nullptr)
+      std::enable_if_t<std::is_convertible<OtherT, T>::value> * = nullptr)
       : Expected<T>(std::move(Val)) {}
 
   template <class OtherT>
   MSVCPExpected(
       Expected<OtherT> &&Other,
-      typename std::enable_if<std::is_convertible<OtherT, T>::value>::type * =
-          nullptr)
+      std::enable_if_t<std::is_convertible<OtherT, T>::value> * = nullptr)
       : Expected<T>(std::move(Other)) {}
 
   template <class OtherT>
   explicit MSVCPExpected(
       Expected<OtherT> &&Other,
-      typename std::enable_if<!std::is_convertible<OtherT, T>::value>::type * =
-          nullptr)
+      std::enable_if_t<!std::is_convertible<OtherT, T>::value> * = nullptr)
       : Expected<T>(std::move(Other)) {}
 };
 

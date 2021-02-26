@@ -1,9 +1,8 @@
 //===- llvm/Analysis/DominanceFrontier.h - Dominator Frontiers --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -131,7 +130,7 @@ public:
   using DomSetType = typename DominanceFrontierBase<BlockT, false>::DomSetType;
 
   void analyze(DomTreeT &DT) {
-    assert(DT.getRoots().size() == 1 &&
+    assert(DT.root_size() == 1 &&
            "Only one entry block for forward domfronts!");
     this->Roots = {DT.getRoot()};
     calculate(DT, DT[this->Roots[0]]);

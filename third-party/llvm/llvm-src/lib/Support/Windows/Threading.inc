@@ -1,9 +1,8 @@
 //===- Windows/Threading.inc - Win32 Threading Implementation - -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,44 +13,46 @@
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/Twine.h"
 
-#include "WindowsSupport.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 #include <process.h>
+
+#include <bitset>
 
 // Windows will at times define MemoryFence.
 #ifdef MemoryFence
 #undef MemoryFence
 #endif
 
-namespace {
-  struct ThreadInfo {
-    void(*func)(void*);
-    void *param;
-  };
-}
-
-static unsigned __stdcall ThreadCallback(void *param) {
-  struct ThreadInfo *info = reinterpret_cast<struct ThreadInfo *>(param);
-  info->func(info->param);
-
+static unsigned __stdcall threadFuncSync(void *Arg) {
+  SyncThreadInfo *TI = static_cast<SyncThreadInfo *>(Arg);
+  TI->UserFn(TI->UserData);
   return 0;
 }
 
-void llvm::llvm_execute_on_thread(void(*Fn)(void*), void *UserData,
-  unsigned RequestedStackSize) {
-  struct ThreadInfo param = { Fn, UserData };
+static unsigned __stdcall threadFuncAsync(void *Arg) {
+  std::unique_ptr<AsyncThreadInfo> Info(static_cast<AsyncThreadInfo *>(Arg));
+  (*Info)();
+  return 0;
+}
 
-  HANDLE hThread = (HANDLE)::_beginthreadex(NULL,
-    RequestedStackSize, ThreadCallback,
-    &param, 0, NULL);
+static void
+llvm_execute_on_thread_impl(unsigned (__stdcall *ThreadFunc)(void *), void *Arg,
+                            llvm::Optional<unsigned> StackSizeInBytes,
+                            JoiningPolicy JP) {
+  HANDLE hThread = (HANDLE)::_beginthreadex(
+      NULL, StackSizeInBytes.getValueOr(0), ThreadFunc, Arg, 0, NULL);
 
-  if (hThread) {
-    // We actually don't care whether the wait succeeds or fails, in
-    // the same way we don't care whether the pthread_join call succeeds
-    // or fails.  There's not much we could do if this were to fail. But
-    // on success, this call will wait until the thread finishes executing
-    // before returning.
-    (void)::WaitForSingleObject(hThread, INFINITE);
-    ::CloseHandle(hThread);
+  if (!hThread) {
+    ReportLastErrorFatal("_beginthreadex failed");
+  }
+
+  if (JP == JoiningPolicy::Join) {
+    if (::WaitForSingleObject(hThread, INFINITE) == WAIT_FAILED) {
+      ReportLastErrorFatal("WaitForSingleObject failed");
+    }
+  }
+  if (::CloseHandle(hThread) == FALSE) {
+    ReportLastErrorFatal("CloseHandle failed");
   }
 }
 
@@ -107,3 +108,191 @@ void llvm::get_thread_name(SmallVectorImpl<char> &Name) {
   // value.
   Name.clear();
 }
+
+SetThreadPriorityResult llvm::set_thread_priority(ThreadPriority Priority) {
+  // https://docs.microsoft.com/en-us/windows/desktop/api/processthreadsapi/nf-processthreadsapi-setthreadpriority
+  // Begin background processing mode. The system lowers the resource scheduling
+  // priorities of the thread so that it can perform background work without
+  // significantly affecting activity in the foreground.
+  // End background processing mode. The system restores the resource scheduling
+  // priorities of the thread as they were before the thread entered background
+  // processing mode.
+  return SetThreadPriority(GetCurrentThread(),
+                           Priority == ThreadPriority::Background
+                               ? THREAD_MODE_BACKGROUND_BEGIN
+                               : THREAD_MODE_BACKGROUND_END)
+             ? SetThreadPriorityResult::SUCCESS
+             : SetThreadPriorityResult::FAILURE;
+}
+
+struct ProcessorGroup {
+  unsigned ID;
+  unsigned AllThreads;
+  unsigned UsableThreads;
+  unsigned ThreadsPerCore;
+  uint64_t Affinity;
+
+  unsigned useableCores() const {
+    return std::max(1U, UsableThreads / ThreadsPerCore);
+  }
+};
+
+template <typename F>
+static bool IterateProcInfo(LOGICAL_PROCESSOR_RELATIONSHIP Relationship, F Fn) {
+  DWORD Len = 0;
+  BOOL R = ::GetLogicalProcessorInformationEx(Relationship, NULL, &Len);
+  if (R || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
+    return false;
+  }
+  auto *Info = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)calloc(1, Len);
+  R = ::GetLogicalProcessorInformationEx(Relationship, Info, &Len);
+  if (R) {
+    auto *End =
+        (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)((uint8_t *)Info + Len);
+    for (auto *Curr = Info; Curr < End;
+         Curr = (SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *)((uint8_t *)Curr +
+                                                            Curr->Size)) {
+      if (Curr->Relationship != Relationship)
+        continue;
+      Fn(Curr);
+    }
+  }
+  free(Info);
+  return true;
+}
+
+static ArrayRef<ProcessorGroup> getProcessorGroups() {
+  auto computeGroups = []() {
+    SmallVector<ProcessorGroup, 4> Groups;
+
+    auto HandleGroup = [&](SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *ProcInfo) {
+      GROUP_RELATIONSHIP &El = ProcInfo->Group;
+      for (unsigned J = 0; J < El.ActiveGroupCount; ++J) {
+        ProcessorGroup G;
+        G.ID = Groups.size();
+        G.AllThreads = El.GroupInfo[J].MaximumProcessorCount;
+        G.UsableThreads = El.GroupInfo[J].ActiveProcessorCount;
+        assert(G.UsableThreads <= 64);
+        G.Affinity = El.GroupInfo[J].ActiveProcessorMask;
+        Groups.push_back(G);
+      }
+    };
+
+    if (!IterateProcInfo(RelationGroup, HandleGroup))
+      return std::vector<ProcessorGroup>();
+
+    auto HandleProc = [&](SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *ProcInfo) {
+      PROCESSOR_RELATIONSHIP &El = ProcInfo->Processor;
+      assert(El.GroupCount == 1);
+      unsigned NumHyperThreads = 1;
+      // If the flag is set, each core supports more than one hyper-thread.
+      if (El.Flags & LTP_PC_SMT)
+        NumHyperThreads = std::bitset<64>(El.GroupMask[0].Mask).count();
+      unsigned I = El.GroupMask[0].Group;
+      Groups[I].ThreadsPerCore = NumHyperThreads;
+    };
+
+    if (!IterateProcInfo(RelationProcessorCore, HandleProc))
+      return std::vector<ProcessorGroup>();
+
+    // If there's an affinity mask set on one of the CPUs, then assume the user
+    // wants to constrain the current process to only a single CPU.
+    for (auto &G : Groups) {
+      if (G.UsableThreads != G.AllThreads) {
+        ProcessorGroup NewG{G};
+        Groups.clear();
+        Groups.push_back(NewG);
+        break;
+      }
+    }
+
+    return std::vector<ProcessorGroup>(Groups.begin(), Groups.end());
+  };
+  static auto Groups = computeGroups();
+  return ArrayRef<ProcessorGroup>(Groups);
+}
+
+template <typename R, typename UnaryPredicate>
+static unsigned aggregate(R &&Range, UnaryPredicate P) {
+  unsigned I{};
+  for (const auto &It : Range)
+    I += P(It);
+  return I;
+}
+
+// for sys::getHostNumPhysicalCores
+int computeHostNumPhysicalCores() {
+  static unsigned Cores =
+      aggregate(getProcessorGroups(), [](const ProcessorGroup &G) {
+        return G.UsableThreads / G.ThreadsPerCore;
+      });
+  return Cores;
+}
+
+int computeHostNumHardwareThreads() {
+  static unsigned Threads =
+      aggregate(getProcessorGroups(),
+                [](const ProcessorGroup &G) { return G.UsableThreads; });
+  return Threads;
+}
+
+// Finds the proper CPU socket where a thread number should go. Returns 'None'
+// if the thread shall remain on the actual CPU socket.
+Optional<unsigned>
+llvm::ThreadPoolStrategy::compute_cpu_socket(unsigned ThreadPoolNum) const {
+  ArrayRef<ProcessorGroup> Groups = getProcessorGroups();
+  // Only one CPU socket in the system or process affinity was set, no need to
+  // move the thread(s) to another CPU socket.
+  if (Groups.size() <= 1)
+    return None;
+
+  // We ask for less threads than there are hardware threads per CPU socket, no
+  // need to dispatch threads to other CPU sockets.
+  unsigned MaxThreadsPerSocket =
+      UseHyperThreads ? Groups[0].UsableThreads : Groups[0].useableCores();
+  if (compute_thread_count() <= MaxThreadsPerSocket)
+    return None;
+
+  assert(ThreadPoolNum < compute_thread_count() &&
+         "The thread index is not within thread strategy's range!");
+
+  // Assumes the same number of hardware threads per CPU socket.
+  return (ThreadPoolNum * Groups.size()) / compute_thread_count();
+}
+
+// Assign the current thread to a more appropriate CPU socket or CPU group
+void llvm::ThreadPoolStrategy::apply_thread_strategy(
+    unsigned ThreadPoolNum) const {
+  Optional<unsigned> Socket = compute_cpu_socket(ThreadPoolNum);
+  if (!Socket)
+    return;
+  ArrayRef<ProcessorGroup> Groups = getProcessorGroups();
+  GROUP_AFFINITY Affinity{};
+  Affinity.Group = Groups[*Socket].ID;
+  Affinity.Mask = Groups[*Socket].Affinity;
+  SetThreadGroupAffinity(GetCurrentThread(), &Affinity, nullptr);
+}
+
+llvm::BitVector llvm::get_thread_affinity_mask() {
+  GROUP_AFFINITY Affinity{};
+  GetThreadGroupAffinity(GetCurrentThread(), &Affinity);
+
+  static unsigned All =
+      aggregate(getProcessorGroups(),
+                [](const ProcessorGroup &G) { return G.AllThreads; });
+
+  unsigned StartOffset =
+      aggregate(getProcessorGroups(), [&](const ProcessorGroup &G) {
+        return G.ID < Affinity.Group ? G.AllThreads : 0;
+      });
+
+  llvm::BitVector V;
+  V.resize(All);
+  for (unsigned I = 0; I < sizeof(KAFFINITY) * 8; ++I) {
+    if ((Affinity.Mask >> I) & 1)
+      V.set(StartOffset + I);
+  }
+  return V;
+}
+
+unsigned llvm::get_cpus() { return getProcessorGroups().size(); }

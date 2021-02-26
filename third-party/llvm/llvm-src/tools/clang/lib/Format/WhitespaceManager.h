@@ -1,9 +1,8 @@
 //===--- WhitespaceManager.h - Format C++ code ------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -20,6 +19,7 @@
 #include "clang/Basic/SourceManager.h"
 #include "clang/Format/Format.h"
 #include <string>
+#include <tuple>
 
 namespace clang {
 namespace format {
@@ -41,6 +41,8 @@ public:
                     bool UseCRLF)
       : SourceMgr(SourceMgr), Style(Style), UseCRLF(UseCRLF) {}
 
+  bool useCRLF() const { return UseCRLF; }
+
   /// Replaces the whitespace in front of \p Tok. Only call once for
   /// each \c AnnotatedToken.
   ///
@@ -48,7 +50,7 @@ public:
   /// this replacement. It is needed for determining how \p Spaces is turned
   /// into tabs and spaces for some format styles.
   void replaceWhitespace(FormatToken &Tok, unsigned Newlines, unsigned Spaces,
-                         unsigned StartOfTokenColumn,
+                         unsigned StartOfTokenColumn, bool isAligned = false,
                          bool InPPDirective = false);
 
   /// Adds information about an unchangeable token's whitespace.
@@ -108,7 +110,7 @@ public:
            SourceRange OriginalWhitespaceRange, int Spaces,
            unsigned StartOfTokenColumn, unsigned NewlinesBefore,
            StringRef PreviousLinePostfix, StringRef CurrentLinePrefix,
-           bool ContinuesPPDirective, bool IsInsideToken);
+           bool IsAligned, bool ContinuesPPDirective, bool IsInsideToken);
 
     // The kind of the token whose whitespace this change replaces, or in which
     // this change inserts whitespace.
@@ -124,6 +126,7 @@ public:
     unsigned NewlinesBefore;
     std::string PreviousLinePostfix;
     std::string CurrentLinePrefix;
+    bool IsAligned;
     bool ContinuesPPDirective;
 
     // The number of spaces in front of the token or broken part of the token.
@@ -156,11 +159,16 @@ public:
     const Change *StartOfBlockComment;
     int IndentationOffset;
 
-    // A combination of indent level and nesting level, which are used in
-    // tandem to compute lexical scope, for the purposes of deciding
+    // Depth of conditionals. Computed from tracking fake parenthesis, except
+    // it does not increase the indent for "chained" conditionals.
+    int ConditionalsLevel;
+
+    // A combination of indent, nesting and conditionals levels, which are used
+    // in tandem to compute lexical scope, for the purposes of deciding
     // when to stop consecutive alignment runs.
-    std::pair<unsigned, unsigned> indentAndNestingLevel() const {
-      return std::make_pair(Tok->IndentLevel, Tok->NestingLevel);
+    std::tuple<unsigned, unsigned, unsigned> indentAndNestingLevel() const {
+      return std::make_tuple(Tok->IndentLevel, Tok->NestingLevel,
+                             ConditionalsLevel);
     }
   };
 
@@ -170,11 +178,20 @@ private:
   /// \c EscapedNewlineColumn for the first tokens or token parts in a line.
   void calculateLineBreakInformation();
 
+  /// \brief Align consecutive C/C++ preprocessor macros over all \c Changes.
+  void alignConsecutiveMacros();
+
   /// Align consecutive assignments over all \c Changes.
   void alignConsecutiveAssignments();
 
+  /// Align consecutive bitfields over all \c Changes.
+  void alignConsecutiveBitFields();
+
   /// Align consecutive declarations over all \c Changes.
   void alignConsecutiveDeclarations();
+
+  /// Align consecutive declarations over all \c Changes.
+  void alignChainedConditionals();
 
   /// Align trailing comments over all \c Changes.
   void alignTrailingComments();
@@ -200,7 +217,10 @@ private:
                                 unsigned PreviousEndOfTokenColumn,
                                 unsigned EscapedNewlineColumn);
   void appendIndentText(std::string &Text, unsigned IndentLevel,
-                        unsigned Spaces, unsigned WhitespaceStartColumn);
+                        unsigned Spaces, unsigned WhitespaceStartColumn,
+                        bool IsAligned);
+  unsigned appendTabIndent(std::string &Text, unsigned Spaces,
+                           unsigned Indentation);
 
   SmallVector<Change, 16> Changes;
   const SourceManager &SourceMgr;

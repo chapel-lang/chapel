@@ -3,7 +3,7 @@
 # Log in to each VM in turn to run commands manually
 # Assumes VMs are up and leaves them running
 
-for name in *
+for name in current/*
 do
   if [ -f $name/Vagrantfile ]
   then

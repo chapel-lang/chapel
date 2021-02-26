@@ -1,5 +1,5 @@
-perfkeys: passing:, returning:, returning itoa:
-repeat-files: arguments.dat
-graphkeys: pass to proc, return from proc, return itoa from proc
+perfkeys: passing:, returning:, returning itoa:, passing:, returning:, passing:, returning:
+repeat-files: arguments.dat, arguments.dat, arguments.dat, arguments-utf8.dat, arguments-utf8.dat, arguments-bytes.dat, arguments-bytes.dat
+graphkeys: pass to proc (ASCII), return from proc (ASCII), return itoa from proc (ASCII), pass to proc (UTF8), return from proc (UTF8), pass to proc (bytes), return from proc (bytes)
 ylabel: Time (seconds)
 graphtitle: Passing and returning strings

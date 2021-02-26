@@ -1,0 +1,164 @@
+#
+# Copyright (c) 2014-2019, Cisco Systems, Inc. All rights reserved.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+# FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+# COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+# INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+# BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+# LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+# ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+
+if HAVE_USNIC
+libusnic_direct_sources = \
+	prov/usnic/src/usnic_direct/cq_desc.h \
+	prov/usnic/src/usnic_direct/cq_enet_desc.h \
+	prov/usnic/src/usnic_direct/kcompat.h \
+	prov/usnic/src/usnic_direct/kcompat_priv.h \
+	prov/usnic/src/usnic_direct/libnl1_utils.h \
+	prov/usnic/src/usnic_direct/libnl3_utils.h \
+	prov/usnic/src/usnic_direct/libnl_utils_common.c \
+	prov/usnic/src/usnic_direct/libnl_utils.h \
+	prov/usnic/src/usnic_direct/linux/delay.h \
+	prov/usnic/src/usnic_direct/linux/slab.h \
+	prov/usnic/src/usnic_direct/linux_types.h \
+	prov/usnic/src/usnic_direct/rq_enet_desc.h \
+	prov/usnic/src/usnic_direct/usd_caps.c \
+	prov/usnic/src/usnic_direct/usd_caps.h \
+	prov/usnic/src/usnic_direct/usd_dest.c \
+	prov/usnic/src/usnic_direct/usd_dest.h \
+	prov/usnic/src/usnic_direct/usd_device.c \
+	prov/usnic/src/usnic_direct/usd_device.h \
+	prov/usnic/src/usnic_direct/usd_event.c \
+	prov/usnic/src/usnic_direct/usd_enum.c \
+	prov/usnic/src/usnic_direct/usd.h \
+	prov/usnic/src/usnic_direct/usd_ib_cmd.c \
+	prov/usnic/src/usnic_direct/usd_ib_cmd.h \
+	prov/usnic/src/usnic_direct/usd_ib_sysfs.c \
+	prov/usnic/src/usnic_direct/usd_ib_sysfs.h \
+	prov/usnic/src/usnic_direct/usd_mem.c \
+	prov/usnic/src/usnic_direct/usd_poll.c \
+	prov/usnic/src/usnic_direct/usd_post.c \
+	prov/usnic/src/usnic_direct/usd_post.h \
+	prov/usnic/src/usnic_direct/usd_post_ud_raw.c \
+	prov/usnic/src/usnic_direct/usd_post_ud_udp.c \
+	prov/usnic/src/usnic_direct/usd_post_ud_pio_udp.c \
+	prov/usnic/src/usnic_direct/usd_queue.h \
+	prov/usnic/src/usnic_direct/usd_queues.c \
+	prov/usnic/src/usnic_direct/usd_socket.c \
+	prov/usnic/src/usnic_direct/usd_socket.h \
+	prov/usnic/src/usnic_direct/usd_time.h \
+	prov/usnic/src/usnic_direct/usd_util.h \
+	prov/usnic/src/usnic_direct/usd_vnic.c \
+	prov/usnic/src/usnic_direct/usd_vnic.h \
+	prov/usnic/src/usnic_direct/usnic_abi.h \
+	prov/usnic/src/usnic_direct/usnic_direct.h \
+	prov/usnic/src/usnic_direct/usnic_ib_abi.h \
+	prov/usnic/src/usnic_direct/usnic_ip_utils.c \
+	prov/usnic/src/usnic_direct/usnic_ip_utils.h \
+	prov/usnic/src/usnic_direct/usnic_user_utils.h \
+	prov/usnic/src/usnic_direct/vnic_cq.c \
+	prov/usnic/src/usnic_direct/vnic_cq.h \
+	prov/usnic/src/usnic_direct/vnic_dev.c \
+	prov/usnic/src/usnic_direct/vnic_devcmd.h \
+	prov/usnic/src/usnic_direct/vnic_dev.h \
+	prov/usnic/src/usnic_direct/vnic_enet.h \
+	prov/usnic/src/usnic_direct/vnic_resource.h \
+	prov/usnic/src/usnic_direct/vnic_rq.c \
+	prov/usnic/src/usnic_direct/vnic_rq.h \
+	prov/usnic/src/usnic_direct/vnic_stats.h \
+	prov/usnic/src/usnic_direct/vnic_wq.c \
+	prov/usnic/src/usnic_direct/vnic_wq.h \
+	prov/usnic/src/usnic_direct/vnic_intr.c \
+	prov/usnic/src/usnic_direct/vnic_intr.h \
+	prov/usnic/src/usnic_direct/wq_enet_desc.h
+
+_usnic_files = \
+	$(libusnic_direct_sources) \
+	prov/usnic/src/fi_ext_usnic.h \
+	prov/usnic/src/usdf.h \
+	prov/usnic/src/usdf_av.c \
+	prov/usnic/src/usdf_av.h \
+	prov/usnic/src/usdf_cm.c \
+	prov/usnic/src/usdf_cm.h \
+	prov/usnic/src/usdf_cq.c \
+	prov/usnic/src/usdf_cq.h \
+	prov/usnic/src/usdf_dgram.c \
+	prov/usnic/src/usdf_dgram.h \
+	prov/usnic/src/usdf_domain.c \
+	prov/usnic/src/usdf_endpoint.c \
+	prov/usnic/src/usdf_endpoint.h \
+	prov/usnic/src/usdf_ep_dgram.c \
+	prov/usnic/src/usdf_eq.c \
+	prov/usnic/src/usdf_fabric.c \
+	prov/usnic/src/usdf_mem.c \
+	prov/usnic/src/usdf_pep.c \
+	prov/usnic/src/usdf_progress.c \
+	prov/usnic/src/usdf_progress.h \
+	prov/usnic/src/usdf_rudp.h \
+	prov/usnic/src/usdf_timer.c \
+	prov/usnic/src/usdf_timer.h \
+	prov/usnic/src/usdf_poll.c \
+	prov/usnic/src/usdf_poll.h \
+	prov/usnic/src/usdf_ext.c \
+	prov/usnic/src/usdf_wait.h \
+	prov/usnic/src/usdf_wait.c
+
+if USNIC_BUILD_FAKE_VERBS_DRIVER
+_usnic_files += prov/usnic/src/usdf_fake_ibv.c
+endif
+
+_usnic_cppflags = \
+        -D__LIBUSNIC__ -DWANT_DEBUG_MSGS=0 \
+        -DHAVE_LIBNL3=$(HAVE_LIBNL3) $(usnic_CPPFLAGS) \
+        -I$(top_srcdir)/prov/usnic/src/usnic_direct
+
+rdmainclude_HEADERS += \
+	prov/usnic/src/fi_ext_usnic.h
+
+if HAVE_USNIC_DL
+pkglib_LTLIBRARIES += libusnic-fi.la
+libusnic_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(_usnic_cppflags)
+libusnic_fi_la_SOURCES = $(_usnic_files) $(common_srcs)
+libusnic_fi_la_LDFLAGS = \
+        $(usnic_ln_LDFLAGS) \
+        -module -avoid-version -shared -export-dynamic
+libusnic_fi_la_LIBADD = $(linkback) $(usnic_LIBS)
+libusnic_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_USNIC_DL
+src_libfabric_la_SOURCES += $(_usnic_files)
+src_libfabric_la_CPPFLAGS += $(_usnic_cppflags)
+src_libfabric_la_LDFLAGS += $(usnic_LDFLAGS)
+src_libfabric_la_LIBADD += $(usnic_LIBS)
+endif !HAVE_USNIC_DL
+
+prov_install_man_pages += man/man7/fi_usnic.7
+
+endif HAVE_USNIC
+
+prov_dist_man_pages += man/man7/fi_usnic.7

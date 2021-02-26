@@ -1,9 +1,8 @@
 //===- MCAsmInfoCOFF.cpp - COFF asm properties ----------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,7 +26,7 @@ MCAsmInfoCOFF::MCAsmInfoCOFF() {
   HasDotTypeDotSizeDirective = false;
   HasSingleParameterDotFile = true;
   WeakRefDirective = "\t.weak\t";
-  HasLinkOnceDirective = true;
+  AvoidWeakIfComdat = true;
 
   // Doesn't support visibility:
   HiddenVisibilityAttr = HiddenDeclarationVisibilityAttr = MCSA_Invalid;
@@ -36,8 +35,6 @@ MCAsmInfoCOFF::MCAsmInfoCOFF() {
   // Set up DWARF directives
   SupportsDebugInformation = true;
   NeedsDwarfSectionOffsetDirective = true;
-
-  UseIntegratedAssembler = true;
 
   // At least MSVC inline-asm does AShr.
   UseLogicalShr = false;

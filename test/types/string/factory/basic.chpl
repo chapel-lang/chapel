@@ -1,3 +1,6 @@
+use SysCTypes;
+use CPtr;
+
 const targetLocale = Locales[numLocales-1];
 
 var chplStr = "A Chapel string";
@@ -45,7 +48,7 @@ cPtr[2] = 67:uint(8);
 cPtr[3] = 0:uint(8);
 {
   // there should be 1 allocate, 2 frees
-  writeln("Initialize from c_ptr");
+  writeln("Initialize from c_ptr(uint(8))");
 
   try! {
     var sNew = createStringWithNewBuffer(cPtr, length=3, size=4);
@@ -57,6 +60,34 @@ cPtr[3] = 0:uint(8);
     writeln(sOwned);
 
     cPtr[1] = 32:uint(8);
+
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+  }
+}
+
+writeln();
+
+var cCharPtr = c_malloc(c_char, 4);
+cCharPtr[0] = 65:uint(8);
+cCharPtr[1] = 66:uint(8);
+cCharPtr[2] = 67:uint(8);
+cCharPtr[3] = 0:uint(8);
+{
+  // there should be 1 allocate, 2 frees
+  writeln("Initialize from c_ptr(c_char)");
+
+  try! {
+    var sNew = createStringWithNewBuffer(cCharPtr, length=3, size=4);
+    var sBorrowed = createStringWithBorrowedBuffer(cCharPtr, length=3, size=4);
+    var sOwned = createStringWithOwnedBuffer(cCharPtr, length=3, size=4);
+
+    writeln(sNew);
+    writeln(sBorrowed);
+    writeln(sOwned);
+
+    cCharPtr[1] = 32:uint(8);
 
     writeln(sNew);
     writeln(sBorrowed);

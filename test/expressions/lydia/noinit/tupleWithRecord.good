@@ -1,5 +1,0 @@
-tupleWithRecord.chpl:11: warning: noinit is currently ignored
-I default initialized!
-(5, (bar = 2))
-I default initialized!
-(0, (bar = 0))

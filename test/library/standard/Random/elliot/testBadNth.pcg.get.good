@@ -1,3 +1,3 @@
-uncaught IllegalArgumentError: PCGRandomStream.getNth(n) called with non-positive 'n' value -1
+uncaught IllegalArgumentError: PCGRandomStream.getNth(n) called with negative 'n' value -1
   testBadNth.chpl:17: thrown here
   testBadNth.chpl:17: uncaught here

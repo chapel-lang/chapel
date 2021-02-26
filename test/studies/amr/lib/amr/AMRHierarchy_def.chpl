@@ -563,8 +563,8 @@ proc AMRHierarchy.deleteBoundaryStructures( i: int )
 class PhysicalBoundary
 {
 
-  const grids:        domain(unmanaged Grid);
-  const multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true)?;
+  var grids:        domain(unmanaged Grid);
+  var multidomains: [grids] unmanaged MultiDomain(dimension,stridable=true)?;
 
 
 

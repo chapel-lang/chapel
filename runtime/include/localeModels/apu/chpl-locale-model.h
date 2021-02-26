@@ -1,6 +1,6 @@
 /*
  * Copyright 2017 Advanced Micro Devices, Inc.
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -22,6 +22,10 @@
 
 #include "sys_basic.h"
 #include "chpltypes.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // This is the type of a global locale ID.
@@ -78,5 +82,9 @@ c_sublocid_t chpl_localeModel_sublocToExecutionSubloc(
 extern
 c_sublocid_t chpl_localeModel_sublocMerge(c_sublocid_t full_subloc,
                   c_sublocid_t execution_subloc);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_locale_model_h_

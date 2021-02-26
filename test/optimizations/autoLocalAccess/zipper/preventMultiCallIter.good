@@ -1,0 +1,48 @@
+
+Start analyzing forall (preventMultiCallIter.chpl:47)
+| Couldn't determine loop domain: will attempt dynamic optimizations only (preventMultiCallIter.chpl:47)
+|
+|  Start analyzing call (preventMultiCallIter.chpl:48)
+|  This call is a dynamic optimization candidate (preventMultiCallIter.chpl:48)
+|
+|  Start analyzing call (preventMultiCallIter.chpl:49)
+|  This call is a dynamic optimization candidate (preventMultiCallIter.chpl:49)
+|
+|  Start analyzing call (preventMultiCallIter.chpl:50)
+|  This call is a dynamic optimization candidate (preventMultiCallIter.chpl:50)
+|
+End analyzing forall (preventMultiCallIter.chpl:47)
+
+leader iterator invoked
+follower iterator invoked
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+Custom this was called
+6 7 8 9 10 11 12 13 14 15

@@ -1,0 +1,3 @@
+A.domain definedConst=true
+test1 D definedConst=true
+test2 D definedConst=false

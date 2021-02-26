@@ -1,0 +1,6 @@
+#!/bin/sh
+
+if [[ -z ${CHPL_TEST_PERF} ]]; then
+  sed -n "s/.*\(Will do parallel transfer\).*/\1/p" <$2 >$2.tmp
+  mv $2.tmp $2
+fi

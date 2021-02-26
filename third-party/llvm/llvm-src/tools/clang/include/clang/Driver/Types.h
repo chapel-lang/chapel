@@ -1,9 +1,8 @@
 //===--- Types.h - Input & Temporary Driver Types ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,16 +11,18 @@
 
 #include "clang/Driver/Phases.h"
 #include "llvm/ADT/SmallVector.h"
+#include "llvm/Option/ArgList.h"
 
 namespace llvm {
 class StringRef;
 }
 namespace clang {
 namespace driver {
+class Driver;
 namespace types {
   enum ID {
     TY_INVALID,
-#define TYPE(NAME, ID, PP_TYPE, TEMP_SUFFIX, FLAGS) TY_##ID,
+#define TYPE(NAME, ID, PP_TYPE, TEMP_SUFFIX, ...) TY_##ID,
 #include "clang/Driver/Types.def"
 #undef TYPE
     TY_LAST
@@ -43,9 +44,6 @@ namespace types {
   /// getTypeTempSuffix - Return the suffix to use when creating a
   /// temp file of this type, or null if unspecified.
   const char *getTypeTempSuffix(ID Id, bool CLMode = false);
-
-  /// onlyAssembleType - Should this type only be assembled.
-  bool onlyAssembleType(ID Id);
 
   /// onlyPrecompileType - Should this type only be precompiled.
   bool onlyPrecompileType(ID Id);
@@ -83,6 +81,9 @@ namespace types {
   /// isObjC - Is this an "ObjC" input (Obj-C and Obj-C++ sources and headers).
   bool isObjC(ID Id);
 
+  /// isFortran - Is this a Fortran input.
+  bool isFortran(ID Id);
+
   /// isSrcFile - Is this a source file, i.e. something that still has to be
   /// preprocessed. The logic behind this is the same that decides if the first
   /// compilation phase is a preprocessing one.
@@ -97,10 +98,12 @@ namespace types {
   ID lookupTypeForTypeSpecifier(const char *Name);
 
   /// getCompilationPhases - Get the list of compilation phases ('Phases') to be
-  /// done for type 'Id'.
-  void getCompilationPhases(
-    ID Id,
-    llvm::SmallVectorImpl<phases::ID> &Phases);
+  /// done for type 'Id' up until including LastPhase.
+  llvm::SmallVector<phases::ID, phases::MaxNumberOfPhases>
+  getCompilationPhases(ID Id, phases::ID LastPhase = phases::LastPhase);
+  llvm::SmallVector<phases::ID, phases::MaxNumberOfPhases>
+  getCompilationPhases(const clang::driver::Driver &Driver,
+                       llvm::opt::DerivedArgList &DAL, ID Id);
 
   /// lookupCXXTypeForCType - Lookup CXX input type that corresponds to given
   /// C type (used for clang++ emulation of g++ behaviour)

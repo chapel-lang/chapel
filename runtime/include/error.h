@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 
 #include <stdarg.h>
 #include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern int verbosity;
 
@@ -100,6 +104,13 @@ void chpl_msg(int verbose_level, const char* fmt, ...)
 
 #ifndef LAUNCHER
 void chpl_error_init(void);
+#endif
+
+char* chpl_stack_unwind_to_string(char sep);
+void chpl_stack_unwind(FILE* out, char sep);
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

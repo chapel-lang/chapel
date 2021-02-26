@@ -1,17 +1,14 @@
 #!/usr/bin/env bash
 
-# Skip this test if using a launcher, or for cray-xc, or if using --llvm, or
+# Skip this test if using a launcher, or for cray-xc, or
 # if gfortran is not available.
 
 launcher=`$CHPL_HOME/util/chplenv/chpl_launcher.py`
 
-[[ $COMPOPTS == *"--llvm"* ]]
-llvm=$?
-
 command -v gfortran 2>&1 >/dev/null
 gfortranFound=$?
 
-if [[ $gfortranFound == 0 && $launcher == "none" && $llvm != 0 && $CHPL_TARGET_PLATFORM != "cray-xc" ]] ; then
+if [[ $gfortranFound == 0 && $launcher == "none" && $CHPL_TARGET_PLATFORM != "cray-xc" && $CHPL_SANITIZE_EXE == "none" ]] ; then
   echo False
 else
   echo True

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,7 +61,7 @@ static void checkLowerIteratorsRemovedPrims();
 static void checkFlagRelationships(); // Checks expected relationships between
                                       // flags.
 static void checkAutoCopyMap();
-static void checkDefaultInitEqAndAssign();
+static void checkInitEqAssignCast();
 static void checkFormalActualBaseTypesMatch();
 static void checkRetTypeMatchesRetVarType();
 static void checkFormalActualTypesMatch();
@@ -150,7 +150,7 @@ void check_resolve()
   check_afterNormalization();
   checkReturnTypesHaveRefTypes();
   checkAutoCopyMap();
-  checkDefaultInitEqAndAssign();
+  checkInitEqAssignCast();
 }
 
 void check_resolveIntents()
@@ -443,8 +443,42 @@ void check_afterEveryPass()
 
 static void check_afterScopeResolve()
 {
-  if (fVerify)
-  {
+  // Check that 'out' arguments are not referred to by later arguments.
+  // An alternative to this code would be to make scopeResolve not find
+  // them at all when processing the other formals.
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    // step 1: skip check if there are no out formals
+    bool anyOutFormals = false;
+    for_formals(formal, fn) {
+      if (formal->intent == INTENT_OUT) {
+        anyOutFormals = true;
+        break;
+      }
+    }
+
+    if (anyOutFormals) {
+      // step 2: check each formal for a reference to
+      // a previous out formal.
+      for_formals(formal, fn) {
+
+        if (formal->intent == INTENT_OUT && formal->variableExpr != NULL)
+          USR_FATAL_CONT(formal, "out intent varargs are not supported");
+
+        for_formals(earlierFormal, fn) {
+          // stop if we get to the same formal as the above loop
+          if (earlierFormal == formal)
+            break;
+          if (earlierFormal->intent == INTENT_OUT) {
+            // check that earlierFormal is not used in formal's defExpr
+            if (findSymExprFor(formal->defPoint, earlierFormal))
+              USR_FATAL_CONT(formal,
+                             "out-intent formal '%s' is used within "
+                             "later formal '%s'",
+                             earlierFormal->name, formal->name);
+          }
+        }
+      }
+    }
   }
 }
 
@@ -474,7 +508,7 @@ static void check_afterResolution()
     checkFormalActualBaseTypesMatch();
     checkRetTypeMatchesRetVarType();
     checkAutoCopyMap();
-    checkDefaultInitEqAndAssign();
+    checkInitEqAssignCast();
   }
 }
 
@@ -696,9 +730,11 @@ checkAutoCopyMap()
   {
     if (hasAutoCopyForType(key)) {
       FnSymbol* fn = getAutoCopyForType(key);
-      if (fn->numFormals() > 0) {
+      if (fn->numFormals() > 1) {
         Type* baseType = fn->getFormal(1)->getValType();
         INT_ASSERT(baseType == key);
+
+        sanityCheckDefinedConstArg(fn->getFormal(2));
       }
     }
   }
@@ -734,8 +770,7 @@ static FnSymbol* findUserAssign(AggregateType* at) {
 }
 
 
-static void
-checkDefaultInitEqAndAssign()
+static void checkInitEqAssignCast()
 {
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->hasFlag(FLAG_EXTERN))

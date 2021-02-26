@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -37,12 +37,12 @@ assignment, and unary, binary, and relational operators.
 .. function:: proc tuple.indices
 
    Returns the range of indices that are legal for indexing into the
-   tuple: ``1..this.size``.
+   tuple: ``0..<this.size``.
 
 
 */
 module ChapelTuple {
-  private use ChapelStandard;
+  use ChapelStandard, DSIUtil;
 
   pragma "tuple" record _tuple {
     param size : int;
@@ -161,7 +161,7 @@ module ChapelTuple {
     return __primitive("is star tuple type", x);
 
   pragma "no doc"
-  proc _check_tuple_var_decl(x: _tuple, param p) param {
+  proc _check_tuple_var_decl(const ref x: _tuple, param p) param {
     if p == x.size {
       return true;
     } else {
@@ -170,7 +170,7 @@ module ChapelTuple {
     }
   }
   pragma "no doc"
-  proc _check_tuple_var_decl(x, param p) param {
+  proc _check_tuple_var_decl(const ref x, param p) param {
     compilerError("illegal tuple variable declaration with non-tuple initializer");
     return false;
   }
@@ -195,7 +195,9 @@ module ChapelTuple {
   //
   pragma "compiler generated"
   pragma "last resort"
-  inline proc =(ref x: _tuple, y: _tuple) where x.size == y.size {
+  inline proc =(ref x: _tuple,
+                pragma "intent ref maybe const formal" y: _tuple)
+  where x.size == y.size {
     for param i in 0..x.size-1 do
       x(i) = y(i);
   }
@@ -216,6 +218,19 @@ module ChapelTuple {
     return __primitive("get svec member", this, i);
   }
 
+  pragma "no doc"
+  pragma "reference to const when const this"
+  pragma "star tuple accessor"
+  proc _tuple.this(i : bool) ref {
+    if !isHomogeneousTuple(this) then
+      compilerError("invalid access of non-homogeneous tuple by runtime value");
+    if boundsChecking then
+      if i < 0 || i > size-1 then
+        halt("tuple access out of bounds: ", i);
+    return __primitive("get svec member", this, i);
+  }
+
+
   // This is controlled with --[no-]warn-tuple-iteration
   // so we are not chpldoc-ing it.
   //
@@ -234,6 +249,7 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -271,19 +287,16 @@ module ChapelTuple {
                                             minIndicesPerTask,
                                             myRange);
 
-    if numChunks == 1 {
-      yield myRange;
-    } else {
-      coforall chunk in 0..#numChunks {
-        // _computeBlock assumes 0-based ranges
-        const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
-        yield (lo..hi,);
-      }
+    coforall chunk in 0..#numChunks {
+      // _computeBlock assumes 0-based ranges
+      const (lo,hi) = _computeBlock(length, numChunks, chunk, length-1);
+      yield (lo..hi,);
     }
   }
 
   pragma "no doc"
   pragma "reference to const when const this"
+  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
@@ -296,14 +309,6 @@ module ChapelTuple {
       yield this(i);
     }
   }
-
-  /* TODO: Want this for heterogeneous tuples, but we can't write it today:
-
-  iter _tuple.indices param {
-    for param i in 1..this.size do
-      yield i;
-  }
-  */
 
   proc _tuple.indices {
     return 0..<this.size;
@@ -321,12 +326,14 @@ module ChapelTuple {
   // Note: statically inlining the _chpl_complex runtime functions is necessary
   // for good performance
   //
-  inline proc _cast(type t, x: (?,?)) where t == complex(64) {
+  inline operator :(x: (?,?), type t: complex(64)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex64(re:real(32),im:real(32)) : complex(64);
     return _chpl_complex64(x(0):real(32),x(1):real(32));
   }
 
-  inline proc _cast(type t, x: (?,?)) where t == complex(128) {
+  inline operator :(x: (?,?), type t: complex(128)) {
+    pragma "fn synchronization free"
     extern proc _chpl_complex128(re:real(64),im:real(64)):complex(128);
     return _chpl_complex128(x(0):real(64),x(1):real(64));
   }
@@ -336,7 +343,7 @@ module ChapelTuple {
   //
   pragma "tuple cast fn"
   pragma "unsafe"
-  inline proc _cast(type t:_tuple, x: _tuple) {
+  inline operator :(x: _tuple, type t:_tuple) {
     // body filled in during resolution
   }
 

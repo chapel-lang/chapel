@@ -1,9 +1,8 @@
 //===- ARMConstantPoolValue.cpp - ARM constantpool value ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,6 +17,7 @@
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/GlobalValue.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/Compiler.h"
@@ -73,7 +73,7 @@ StringRef ARMConstantPoolValue::getModifierText() const {
 }
 
 int ARMConstantPoolValue::getExistingMachineCPValue(MachineConstantPool *CP,
-                                                    unsigned Alignment) {
+                                                    Align Alignment) {
   llvm_unreachable("Shouldn't be calling this directly!");
 }
 
@@ -189,7 +189,7 @@ const BlockAddress *ARMConstantPoolConstant::getBlockAddress() const {
 }
 
 int ARMConstantPoolConstant::getExistingMachineCPValue(MachineConstantPool *CP,
-                                                       unsigned Alignment) {
+                                                       Align Alignment) {
   int index =
     getExistingMachineCPValueImpl<ARMConstantPoolConstant>(CP, Alignment);
   if (index != -1) {
@@ -228,7 +228,7 @@ ARMConstantPoolSymbol::ARMConstantPoolSymbol(LLVMContext &C, StringRef s,
                                              bool AddCurrentAddress)
     : ARMConstantPoolValue(C, id, ARMCP::CPExtSymbol, PCAdj, Modifier,
                            AddCurrentAddress),
-      S(s) {}
+      S(std::string(s)) {}
 
 ARMConstantPoolSymbol *ARMConstantPoolSymbol::Create(LLVMContext &C,
                                                      StringRef s, unsigned ID,
@@ -237,7 +237,7 @@ ARMConstantPoolSymbol *ARMConstantPoolSymbol::Create(LLVMContext &C,
 }
 
 int ARMConstantPoolSymbol::getExistingMachineCPValue(MachineConstantPool *CP,
-                                                     unsigned Alignment) {
+                                                     Align Alignment) {
   return getExistingMachineCPValueImpl<ARMConstantPoolSymbol>(CP, Alignment);
 }
 
@@ -277,7 +277,7 @@ ARMConstantPoolMBB *ARMConstantPoolMBB::Create(LLVMContext &C,
 }
 
 int ARMConstantPoolMBB::getExistingMachineCPValue(MachineConstantPool *CP,
-                                                  unsigned Alignment) {
+                                                  Align Alignment) {
   return getExistingMachineCPValueImpl<ARMConstantPoolMBB>(CP, Alignment);
 }
 

@@ -1,9 +1,9 @@
-vectorizeOnlyEmitsVectorPragma.chpl:4: note: Vectorization hinted for CForLoop
-vectorizeOnlyEmitsVectorPragma.chpl:5: note: Vectorization hinted for CForLoop
-vectorizeOnlyEmitsVectorPragma.chpl:6: note: Vectorization hinted for CForLoop
-vectorizeOnlyEmitsVectorPragma.chpl:8: note: Vectorization hinted for CForLoop
-vectorizeOnlyEmitsVectorPragma.chpl:9: note: Vectorization hinted for CForLoop
-vectorizeOnlyEmitsVectorPragma.chpl:10: note: Vectorization hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:4: note: loop vectorization (with parallel access) hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:5: note: loop vectorization (with parallel access) hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:6: note: loop vectorization (with parallel access) hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:8: note: loop vectorization (with parallel access) hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:9: note: loop vectorization (with parallel access) hinted for CForLoop
+vectorizeOnlyEmitsVectorPragma.chpl:10: note: loop vectorization (with parallel access) hinted for CForLoop
 1
 2
 3

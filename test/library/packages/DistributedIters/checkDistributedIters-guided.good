@@ -168,7 +168,7 @@ DistributedIters: distributedGuided:
   numWorkerLocales = 2
   numActualWorkerLocales = 1
   masterLocale.id = 0
-  actualWorkerLocaleIds = [ 0 ]
+  actualWorkerLocaleIds = [ 2 ]
 Result: pass
 Testing a range, strided (zippered)...
 DistributedIters: distributedGuided:
@@ -177,7 +177,7 @@ DistributedIters: distributedGuided:
   numWorkerLocales = 2
   numActualWorkerLocales = 1
   masterLocale.id = 0
-  actualWorkerLocaleIds = [ 0 ]
+  actualWorkerLocaleIds = [ 2 ]
 Result: pass
 Testing a domain, non-strided (zippered)...
 DistributedIters: distributedGuided:
@@ -186,7 +186,7 @@ DistributedIters: distributedGuided:
   numWorkerLocales = 2
   numActualWorkerLocales = 1
   masterLocale.id = 0
-  actualWorkerLocaleIds = [ 0 ]
+  actualWorkerLocaleIds = [ 2 ]
 Result: pass
 Testing a domain, strided (zippered)...
 DistributedIters: distributedGuided:
@@ -195,7 +195,7 @@ DistributedIters: distributedGuided:
   numWorkerLocales = 2
   numActualWorkerLocales = 1
   masterLocale.id = 0
-  actualWorkerLocaleIds = [ 0 ]
+  actualWorkerLocaleIds = [ 2 ]
 Result: pass
 
 Odd locales only, coordinated mode:

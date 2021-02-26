@@ -1,0 +1,14 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libfabric
+Description: OFI-WG libfabric
+URL: https://github.com/ofiwg/libfabric.git
+Version: @VERSION@
+Requires:
+Cflags: -I${includedir}
+Libs: -L${libdir} -lfabric @FI_PC_PUBLIC_LIBS@
+Libs.private: @FI_PC_PRIVATE_LIBS@
+Requires.private:

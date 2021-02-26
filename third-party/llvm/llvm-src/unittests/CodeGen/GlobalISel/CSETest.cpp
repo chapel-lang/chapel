@@ -1,9 +1,8 @@
 //===- CSETest.cpp -----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -12,7 +11,8 @@
 
 namespace {
 
-TEST_F(GISelMITest, TestCSE) {
+TEST_F(AArch64GISelMITest, TestCSE) {
+  setUp();
   if (!TM)
     return;
 
@@ -22,46 +22,84 @@ TEST_F(GISelMITest, TestCSE) {
   auto MIBInput1 = B.buildInstr(TargetOpcode::G_TRUNC, {s16}, {Copies[1]});
   auto MIBAdd = B.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput});
   GISelCSEInfo CSEInfo;
-  CSEInfo.setCSEConfig(make_unique<CSEConfig>());
+  CSEInfo.setCSEConfig(std::make_unique<CSEConfigFull>());
   CSEInfo.analyze(*MF);
   B.setCSEInfo(&CSEInfo);
   CSEMIRBuilder CSEB(B.getState());
+
   CSEB.setInsertPt(*EntryMBB, EntryMBB->begin());
   unsigned AddReg = MRI->createGenericVirtualRegister(s16);
   auto MIBAddCopy =
       CSEB.buildInstr(TargetOpcode::G_ADD, {AddReg}, {MIBInput, MIBInput});
-  ASSERT_EQ(MIBAddCopy->getOpcode(), TargetOpcode::COPY);
+  EXPECT_EQ(MIBAddCopy->getOpcode(), TargetOpcode::COPY);
   auto MIBAdd2 =
       CSEB.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput});
-  ASSERT_TRUE(&*MIBAdd == &*MIBAdd2);
+  EXPECT_TRUE(&*MIBAdd == &*MIBAdd2);
   auto MIBAdd4 =
       CSEB.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput});
-  ASSERT_TRUE(&*MIBAdd == &*MIBAdd4);
+  EXPECT_TRUE(&*MIBAdd == &*MIBAdd4);
   auto MIBAdd5 =
       CSEB.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput1});
-  ASSERT_TRUE(&*MIBAdd != &*MIBAdd5);
+  EXPECT_TRUE(&*MIBAdd != &*MIBAdd5);
 
   // Try building G_CONSTANTS.
   auto MIBCst = CSEB.buildConstant(s32, 0);
   auto MIBCst1 = CSEB.buildConstant(s32, 0);
-  ASSERT_TRUE(&*MIBCst == &*MIBCst1);
+  EXPECT_TRUE(&*MIBCst == &*MIBCst1);
   // Try the CFing of BinaryOps.
   auto MIBCF1 = CSEB.buildInstr(TargetOpcode::G_ADD, {s32}, {MIBCst, MIBCst});
-  ASSERT_TRUE(&*MIBCF1 == &*MIBCst);
+  EXPECT_TRUE(&*MIBCF1 == &*MIBCst);
 
   // Try out building FCONSTANTs.
   auto MIBFP0 = CSEB.buildFConstant(s32, 1.0);
   auto MIBFP0_1 = CSEB.buildFConstant(s32, 1.0);
-  ASSERT_TRUE(&*MIBFP0 == &*MIBFP0_1);
+  EXPECT_TRUE(&*MIBFP0 == &*MIBFP0_1);
   CSEInfo.print();
+
+  // Make sure buildConstant with a vector type doesn't crash, and the elements
+  // CSE.
+  auto Splat0 = CSEB.buildConstant(LLT::vector(2, s32), 0);
+  EXPECT_EQ(TargetOpcode::G_BUILD_VECTOR, Splat0->getOpcode());
+  EXPECT_EQ(Splat0.getReg(1), Splat0.getReg(2));
+  EXPECT_EQ(&*MIBCst, MRI->getVRegDef(Splat0.getReg(1)));
+
+  auto FSplat = CSEB.buildFConstant(LLT::vector(2, s32), 1.0);
+  EXPECT_EQ(TargetOpcode::G_BUILD_VECTOR, FSplat->getOpcode());
+  EXPECT_EQ(FSplat.getReg(1), FSplat.getReg(2));
+  EXPECT_EQ(&*MIBFP0, MRI->getVRegDef(FSplat.getReg(1)));
 
   // Check G_UNMERGE_VALUES
   auto MIBUnmerge = CSEB.buildUnmerge({s32, s32}, Copies[0]);
   auto MIBUnmerge2 = CSEB.buildUnmerge({s32, s32}, Copies[0]);
-  ASSERT_TRUE(&*MIBUnmerge == &*MIBUnmerge2);
+  EXPECT_TRUE(&*MIBUnmerge == &*MIBUnmerge2);
+
+  // Check G_IMPLICIT_DEF
+  auto Undef0 = CSEB.buildUndef(s32);
+  auto Undef1 = CSEB.buildUndef(s32);
+  EXPECT_EQ(&*Undef0, &*Undef1);
+
+  // If the observer is installed to the MF, CSE can also
+  // track new instructions built without the CSEBuilder and
+  // the newly built instructions are available for CSEing next
+  // time a build call is made through the CSEMIRBuilder.
+  // Additionally, the CSE implementation lazily hashes instructions
+  // (every build call) to give chance for the instruction to be fully
+  // built (say using .addUse().addDef().. so on).
+  GISelObserverWrapper WrapperObserver(&CSEInfo);
+  RAIIMFObsDelInstaller Installer(*MF, WrapperObserver);
+  MachineIRBuilder RegularBuilder(*MF);
+  RegularBuilder.setInsertPt(*EntryMBB, EntryMBB->begin());
+  auto NonCSEFMul = RegularBuilder.buildInstr(TargetOpcode::G_AND)
+                        .addDef(MRI->createGenericVirtualRegister(s32))
+                        .addUse(Copies[0])
+                        .addUse(Copies[1]);
+  auto CSEFMul =
+      CSEB.buildInstr(TargetOpcode::G_AND, {s32}, {Copies[0], Copies[1]});
+  EXPECT_EQ(&*CSEFMul, &*NonCSEFMul);
 }
 
-TEST_F(GISelMITest, TestCSEConstantConfig) {
+TEST_F(AArch64GISelMITest, TestCSEConstantConfig) {
+  setUp();
   if (!TM)
     return;
 
@@ -70,7 +108,7 @@ TEST_F(GISelMITest, TestCSEConstantConfig) {
   auto MIBAdd = B.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput});
   auto MIBZero = B.buildConstant(s16, 0);
   GISelCSEInfo CSEInfo;
-  CSEInfo.setCSEConfig(make_unique<CSEConfigConstantOnly>());
+  CSEInfo.setCSEConfig(std::make_unique<CSEConfigConstantOnly>());
   CSEInfo.analyze(*MF);
   B.setCSEInfo(&CSEInfo);
   CSEMIRBuilder CSEB(B.getState());
@@ -78,10 +116,15 @@ TEST_F(GISelMITest, TestCSEConstantConfig) {
   auto MIBAdd1 =
       CSEB.buildInstr(TargetOpcode::G_ADD, {s16}, {MIBInput, MIBInput});
   // We should CSE constants only. Adds should not be CSEd.
-  ASSERT_TRUE(MIBAdd1->getOpcode() != TargetOpcode::COPY);
-  ASSERT_TRUE(&*MIBAdd1 != &*MIBAdd);
+  EXPECT_TRUE(MIBAdd1->getOpcode() != TargetOpcode::COPY);
+  EXPECT_TRUE(&*MIBAdd1 != &*MIBAdd);
   // We should CSE constant.
   auto MIBZeroTmp = CSEB.buildConstant(s16, 0);
-  ASSERT_TRUE(&*MIBZero == &*MIBZeroTmp);
+  EXPECT_TRUE(&*MIBZero == &*MIBZeroTmp);
+
+  // Check G_IMPLICIT_DEF
+  auto Undef0 = CSEB.buildUndef(s16);
+  auto Undef1 = CSEB.buildUndef(s16);
+  EXPECT_EQ(&*Undef0, &*Undef1);
 }
 } // namespace

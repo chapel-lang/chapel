@@ -1,1 +1,0 @@
-$CHPL_HOME/modules/internal/ChapelBase.chpl:2265: error: follower iterators accepting a non-POD argument by in-intent are not implemented

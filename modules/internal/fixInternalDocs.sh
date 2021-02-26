@@ -105,7 +105,7 @@ function removeUsage() {
     exit 1;
   fi
 
-  sed -e '/\*\*Usage\*\*/ { N; N; N; N; N; N; d; }' $1 > $1.tmp
+  sed -e '/\*\*Usage\*\*/ { N; N; N; N; N; N; N; N; N; N; N; N; d; }' $1 > $1.tmp
   mv $1.tmp $1
 }
 
@@ -122,24 +122,7 @@ removePattern "record:: _tuple" $file
 fixTitle "Tuples" $file
 removeUsage $file
 
-## ChapelIO ##
-
-file="./ChapelIO.rst"
-fixTitle "IO Support" $file
-removeUsage $file
-
-## End ChapelIO ##
-
-
-## ChapelIteratorSupport ##
-
-file="./ChapelIteratorSupport.rst"
-removePrefixFunctions $file
-fixTitle "Vectorizing Iterator" $file
-removeUsage $file
-
-
-## End ChapelIteratorSupport ##
+## End ChapelTuple ##
 
 
 ## ChapelLocale ##
@@ -221,35 +204,18 @@ replace "_complex" "complex" $file
 file="./String.rst"
 fixTitle "Strings" $file
 removeUsage $file
+replace "chpl_bytes" "bytes" $file
 
 ## End of String ##
 
-## UtilMisc_forDocs ##
+## Bytes ##
 
-file="./UtilMisc_forDocs.rst"
-
-# Don't removePrefixFunctions since it's a stand-in documentation file
-# so shouldn't have any that we don't want documented.
-fixTitle "Misc Functions" $file
+file="./Bytes.rst"
+fixTitle "Bytes" $file
 removeUsage $file
+replace "chpl_bytes" "bytes" $file
 
-# End UtilMisc_forDocs ##
-
-## ChapelEnv ##
-
-file="./ChapelEnv.rst"
-fixTitle "Chapel Environment Variables" $file
-replace " = AppendExpr.Call09" "" $file
-removeUsage $file
-
-## End of ChapelEnv ##
-
-## CPtr ##
-
-file="./CPtr.rst"
-removeUsage $file
-
-## End of CPtr ##
+## End of Bytes ##
 
 ## ChapelError ##
 

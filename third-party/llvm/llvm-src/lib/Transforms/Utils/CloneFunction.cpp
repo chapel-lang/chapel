@@ -1,9 +1,8 @@
 //===- CloneFunction.cpp - Clone a function into another function ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -16,13 +15,13 @@
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/Analysis/ConstantFolding.h"
+#include "llvm/Analysis/DomTreeUpdater.h"
 #include "llvm/Analysis/InstructionSimplify.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DerivedTypes.h"
-#include "llvm/IR/DomTreeUpdater.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instructions.h"
@@ -47,7 +46,7 @@ BasicBlock *llvm::CloneBasicBlock(const BasicBlock *BB, ValueToValueMapTy &VMap,
   if (BB->hasName())
     NewBB->setName(BB->getName() + NameSuffix);
 
-  bool hasCalls = false, hasDynamicAllocas = false, hasStaticAllocas = false;
+  bool hasCalls = false, hasDynamicAllocas = false;
   Module *TheModule = F ? F->getParent() : nullptr;
 
   // Loop over all instructions, and copy them over.
@@ -63,18 +62,15 @@ BasicBlock *llvm::CloneBasicBlock(const BasicBlock *BB, ValueToValueMapTy &VMap,
 
     hasCalls |= (isa<CallInst>(I) && !isa<DbgInfoIntrinsic>(I));
     if (const AllocaInst *AI = dyn_cast<AllocaInst>(&I)) {
-      if (isa<ConstantInt>(AI->getArraySize()))
-        hasStaticAllocas = true;
-      else
+      if (!AI->isStaticAlloca()) {
         hasDynamicAllocas = true;
+      }
     }
   }
 
   if (CodeInfo) {
     CodeInfo->ContainsCalls          |= hasCalls;
     CodeInfo->ContainsDynamicAllocas |= hasDynamicAllocas;
-    CodeInfo->ContainsDynamicAllocas |= hasStaticAllocas &&
-                                        BB != &BB->getParent()->getEntryBlock();
   }
   return NewBB;
 }
@@ -211,6 +207,21 @@ void llvm::CloneFunctionInto(Function *NewFunc, const Function *OldFunc,
       RemapInstruction(&II, VMap,
                        ModuleLevelChanges ? RF_None : RF_NoModuleLevelChanges,
                        TypeMapper, Materializer);
+
+  // Register all DICompileUnits of the old parent module in the new parent module
+  auto* OldModule = OldFunc->getParent();
+  auto* NewModule = NewFunc->getParent();
+  if (OldModule && NewModule && OldModule != NewModule && DIFinder.compile_unit_count()) {
+    auto* NMD = NewModule->getOrInsertNamedMetadata("llvm.dbg.cu");
+    // Avoid multiple insertions of the same DICompileUnit to NMD.
+    SmallPtrSet<const void*, 8> Visited;
+    for (auto* Operand : NMD->operands())
+      Visited.insert(Operand);
+    for (auto* Unit : DIFinder.compile_units())
+      // VMap.MD()[Unit] == Unit
+      if (Visited.insert(Unit).second)
+        NMD->addOperand(Unit);
+  }
 }
 
 /// Return a copy of the specified function and add it to that function's
@@ -353,8 +364,8 @@ void PruningFunctionCloner::CloneBlock(const BasicBlock *BB,
     hasCalls |= (isa<CallInst>(II) && !isa<DbgInfoIntrinsic>(II));
 
     if (CodeInfo)
-      if (auto CS = ImmutableCallSite(&*II))
-        if (CS.hasOperandBundles())
+      if (auto *CB = dyn_cast<CallBase>(&*II))
+        if (CB->hasOperandBundles())
           CodeInfo->OperandBundleCallSites.push_back(NewInst);
 
     if (const AllocaInst *AI = dyn_cast<AllocaInst>(II)) {
@@ -410,8 +421,8 @@ void PruningFunctionCloner::CloneBlock(const BasicBlock *BB,
     VMap[OldTI] = NewInst;             // Add instruction map to value.
 
     if (CodeInfo)
-      if (auto CS = ImmutableCallSite(OldTI))
-        if (CS.hasOperandBundles())
+      if (auto *CB = dyn_cast<CallBase>(OldTI))
+        if (CB->hasOperandBundles())
           CodeInfo->OperandBundleCallSites.push_back(NewInst);
 
     // Recursively clone any reachable successor blocks.
@@ -605,8 +616,9 @@ void llvm::CloneAndPruneIntoFromInst(Function *NewFunc, const Function *OldFunc,
 
     // Skip over non-intrinsic callsites, we don't want to remove any nodes from
     // the CGSCC.
-    CallSite CS = CallSite(I);
-    if (CS && CS.getCalledFunction() && !CS.getCalledFunction()->isIntrinsic())
+    CallBase *CB = dyn_cast<CallBase>(I);
+    if (CB && CB->getCalledFunction() &&
+        !CB->getCalledFunction()->isIntrinsic())
       continue;
 
     // See if this instruction simplifies.
@@ -740,12 +752,12 @@ Loop *llvm::cloneLoopWithPreheader(BasicBlock *Before, BasicBlock *LoopDomBB,
                                    const Twine &NameSuffix, LoopInfo *LI,
                                    DominatorTree *DT,
                                    SmallVectorImpl<BasicBlock *> &Blocks) {
-  assert(OrigLoop->getSubLoops().empty() &&
-         "Loop to be cloned cannot have inner loop");
   Function *F = OrigLoop->getHeader()->getParent();
   Loop *ParentLoop = OrigLoop->getParentLoop();
+  DenseMap<Loop *, Loop *> LMap;
 
   Loop *NewLoop = LI->AllocateLoop();
+  LMap[OrigLoop] = NewLoop;
   if (ParentLoop)
     ParentLoop->addChildLoop(NewLoop);
   else
@@ -765,20 +777,45 @@ Loop *llvm::cloneLoopWithPreheader(BasicBlock *Before, BasicBlock *LoopDomBB,
   // Update DominatorTree.
   DT->addNewBlock(NewPH, LoopDomBB);
 
+  for (Loop *CurLoop : OrigLoop->getLoopsInPreorder()) {
+    Loop *&NewLoop = LMap[CurLoop];
+    if (!NewLoop) {
+      NewLoop = LI->AllocateLoop();
+
+      // Establish the parent/child relationship.
+      Loop *OrigParent = CurLoop->getParentLoop();
+      assert(OrigParent && "Could not find the original parent loop");
+      Loop *NewParentLoop = LMap[OrigParent];
+      assert(NewParentLoop && "Could not find the new parent loop");
+
+      NewParentLoop->addChildLoop(NewLoop);
+    }
+  }
+
   for (BasicBlock *BB : OrigLoop->getBlocks()) {
+    Loop *CurLoop = LI->getLoopFor(BB);
+    Loop *&NewLoop = LMap[CurLoop];
+    assert(NewLoop && "Expecting new loop to be allocated");
+
     BasicBlock *NewBB = CloneBasicBlock(BB, VMap, NameSuffix, F);
     VMap[BB] = NewBB;
 
     // Update LoopInfo.
     NewLoop->addBasicBlockToLoop(NewBB, *LI);
 
-    // Add DominatorTree node. After seeing all blocks, update to correct IDom.
+    // Add DominatorTree node. After seeing all blocks, update to correct
+    // IDom.
     DT->addNewBlock(NewBB, NewPH);
 
     Blocks.push_back(NewBB);
   }
 
   for (BasicBlock *BB : OrigLoop->getBlocks()) {
+    // Update loop headers.
+    Loop *CurLoop = LI->getLoopFor(BB);
+    if (BB == CurLoop->getHeader())
+      LMap[CurLoop]->moveToHeader(cast<BasicBlock>(VMap[BB]));
+
     // Update DominatorTree.
     BasicBlock *IDomBB = DT->getNode(BB)->getIDom()->getBlock();
     DT->changeImmediateDominator(cast<BasicBlock>(VMap[BB]),

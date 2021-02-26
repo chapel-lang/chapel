@@ -1,9 +1,8 @@
 //===- Win32/Program.cpp - Win32 Program Implementation ------- -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -11,14 +10,15 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "WindowsSupport.h"
 #include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/ConvertUTF.h"
 #include "llvm/Support/Errc.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
+#include "llvm/Support/Windows/WindowsSupport.h"
 #include "llvm/Support/WindowsError.h"
 #include "llvm/Support/raw_ostream.h"
+#include <psapi.h>
 #include <cstdio>
 #include <fcntl.h>
 #include <io.h>
@@ -139,7 +139,7 @@ static HANDLE RedirectIO(Optional<StringRef> Path, int fd,
   if (Path->empty())
     fname = "NUL";
   else
-    fname = *Path;
+    fname = std::string(*Path);
 
   SECURITY_ATTRIBUTES sa;
   sa.nLength = sizeof(sa);
@@ -152,7 +152,7 @@ static HANDLE RedirectIO(Optional<StringRef> Path, int fd,
     if (windows::UTF8ToUTF16(fname, fnameUnicode))
       return INVALID_HANDLE_VALUE;
   } else {
-    if (path::widenPath(fname, fnameUnicode))
+    if (sys::windows::widenPath(fname, fnameUnicode))
       return INVALID_HANDLE_VALUE;
   }
   h = CreateFileW(fnameUnicode.data(), fd ? GENERIC_WRITE : GENERIC_READ,
@@ -198,7 +198,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
     // An environment block consists of a null-terminated block of
     // null-terminated strings. Convert the array of environment variables to
     // an environment block by concatenating them.
-    for (const auto E : *Env) {
+    for (StringRef E : *Env) {
       SmallVector<wchar_t, MAX_PATH> EnvString;
       if (std::error_code ec = windows::UTF8ToUTF16(E, EnvString)) {
         SetLastError(ec.value());
@@ -264,7 +264,7 @@ static bool Execute(ProcessInfo &PI, StringRef Program,
   fflush(stderr);
 
   SmallVector<wchar_t, MAX_PATH> ProgramUtf16;
-  if (std::error_code ec = path::widenPath(Program, ProgramUtf16)) {
+  if (std::error_code ec = sys::windows::widenPath(Program, ProgramUtf16)) {
     SetLastError(ec.value());
     MakeErrMsg(ErrMsg,
                std::string("Unable to convert application name to UTF-16"));
@@ -391,7 +391,8 @@ std::string sys::flattenWindowsCommandLine(ArrayRef<StringRef> Args) {
 }
 
 ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
-                      bool WaitUntilChildTerminates, std::string *ErrMsg) {
+                      bool WaitUntilChildTerminates, std::string *ErrMsg,
+                      Optional<ProcessStatistics> *ProcStat) {
   assert(PI.Pid && "invalid pid to wait on, process not started?");
   assert((PI.Process && PI.Process != INVALID_HANDLE_VALUE) &&
          "invalid process handle to wait on, process not started?");
@@ -402,6 +403,8 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
     milliSecondsToWait = SecondsToWait * 1000;
 
   ProcessInfo WaitResult = PI;
+  if (ProcStat)
+    ProcStat->reset();
   DWORD WaitStatus = WaitForSingleObject(PI.Process, milliSecondsToWait);
   if (WaitStatus == WAIT_TIMEOUT) {
     if (SecondsToWait) {
@@ -419,6 +422,22 @@ ProcessInfo sys::Wait(const ProcessInfo &PI, unsigned SecondsToWait,
     } else {
       // Non-blocking wait.
       return ProcessInfo();
+    }
+  }
+
+  // Get process execution statistics.
+  if (ProcStat) {
+    FILETIME CreationTime, ExitTime, KernelTime, UserTime;
+    PROCESS_MEMORY_COUNTERS MemInfo;
+    if (GetProcessTimes(PI.Process, &CreationTime, &ExitTime, &KernelTime,
+                        &UserTime) &&
+        GetProcessMemoryInfo(PI.Process, &MemInfo, sizeof(MemInfo))) {
+      auto UserT = std::chrono::duration_cast<std::chrono::microseconds>(
+          toDuration(UserTime));
+      auto KernelT = std::chrono::duration_cast<std::chrono::microseconds>(
+          toDuration(KernelTime));
+      uint64_t PeakMemory = MemInfo.PeakPagefileUsage / 1024;
+      *ProcStat = ProcessStatistics{UserT + KernelT, UserT, PeakMemory};
     }
   }
 
@@ -471,7 +490,7 @@ std::error_code
 llvm::sys::writeFileWithEncoding(StringRef FileName, StringRef Contents,
                                  WindowsEncodingMethod Encoding) {
   std::error_code EC;
-  llvm::raw_fd_ostream OS(FileName, EC, llvm::sys::fs::F_Text);
+  llvm::raw_fd_ostream OS(FileName, EC, llvm::sys::fs::OF_Text);
   if (EC)
     return EC;
 

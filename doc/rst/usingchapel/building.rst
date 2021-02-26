@@ -163,7 +163,7 @@ new build environment by creating ``Makefile.<compiler>`` and/or
 ``Makefile.<platform>`` files and setting your environment variables to
 refer to those files.  If you do develop new build environment support
 that you would like to contribute back to the community, we encourage
-you to send your changes back to us at: :disguise:`chapel_info@cray.com`
+you to submit a pull request to the `Chapel GitHub repository`_.
 
 .. _readme-installing:
 
@@ -186,3 +186,6 @@ See ``./configure --help`` for more information on the options available.
  ``./configure`` will save the current configuration into a
  ``chplconfig`` file and can set the installation path that will be
  compiled in to the ``chpl`` binary.
+
+
+.. _Chapel GitHub repository: https://github.com/chapel-lang/chapel

@@ -4,6 +4,7 @@ README file for pmi-spawner
 @ TOC: @
 @ Section: Overview @
 @ Section: Basic Usage @
+@ Section: Compatibility @
 @ Section: Build-time Configuration @
 @ Section: Runtime Configuration @
 
@@ -55,6 +56,25 @@ MPI runtime (which GASNet will not even use outside of startup and shutdown).
      + Setting GASNET_[CONDUIT]_SPAWNER=pmi in the environment
      + If pmi-spawner was established as the default at configure time (see
        Build-time Configuration, below).
+
+@ Section: Compatibility @
+
+GASNet's pmi-spawner is believed to be compatible with the PMI1 and PMI2
+libraries provided by MPICH (and its many derivatives), Cray, SLURM and
+Open MPI / Open PMIx.
+
+GASNet's pmi-spawner is believed to be compatible with at least API
+versions 2 and 3 of the PMIx library provided by Open MPI / Open PMIx.
+While API version 1 is not supported, the PMIx distributions which
+implement it are all believed to provide supported libraries for PMI2 and
+PMI1.
+
+Note that compatibility between the client library (which pmi-spawner uses)
+and the server (implemented by a process manager such as hydra, alps,
+slurm, orted, etc.) is also an important requirement.  In general, one
+should use a PMI header and library pair from the same vendor or project as
+the process manager.  Though some inter-product compatibility does exist,
+that topic is outside the scope of this document.
 
 @ Section: Build-time Configuration @
 

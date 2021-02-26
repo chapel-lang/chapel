@@ -1,9 +1,8 @@
 //===- llvm/unittest/CodeGen/GlobalISel/LowLevelTypeTest.cpp --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -15,18 +14,6 @@
 #include "gtest/gtest.h"
 
 using namespace llvm;
-
-// Define a pretty printer to help debugging when things go wrong.
-namespace llvm {
-std::ostream &
-operator<<(std::ostream &OS, const llvm::LLT Ty) {
-  std::string Repr;
-  raw_string_ostream SS{Repr};
-  Ty.print(SS);
-  OS << SS.str();
-  return OS;
-}
-}
 
 namespace {
 
@@ -98,47 +85,147 @@ TEST(LowLevelTypeTest, Vector) {
 
       // Test Type->LLT conversion.
       Type *IRSTy = IntegerType::get(C, S);
-      Type *IRTy = VectorType::get(IRSTy, Elts);
+      Type *IRTy = FixedVectorType::get(IRSTy, Elts);
       EXPECT_EQ(VTy, getLLTForType(*IRTy, DL));
     }
   }
 }
 
+TEST(LowLevelTypeTest, ScalarOrVector) {
+  // Test version with number of bits for scalar type.
+  EXPECT_EQ(LLT::scalar(32), LLT::scalarOrVector(1, 32));
+  EXPECT_EQ(LLT::vector(2, 32), LLT::scalarOrVector(2, 32));
+
+  // Test version with LLT for scalar type.
+  EXPECT_EQ(LLT::scalar(32), LLT::scalarOrVector(1, LLT::scalar(32)));
+  EXPECT_EQ(LLT::vector(2, 32), LLT::scalarOrVector(2, LLT::scalar(32)));
+
+  // Test with pointer elements.
+  EXPECT_EQ(LLT::pointer(1, 32), LLT::scalarOrVector(1, LLT::pointer(1, 32)));
+  EXPECT_EQ(LLT::vector(2, LLT::pointer(1, 32)),
+            LLT::scalarOrVector(2, LLT::pointer(1, 32)));
+}
+
+TEST(LowLevelTypeTest, ChangeElementType) {
+  const LLT P0 = LLT::pointer(0, 32);
+  const LLT P1 = LLT::pointer(1, 64);
+
+  const LLT S32 = LLT::scalar(32);
+  const LLT S64 = LLT::scalar(64);
+
+  const LLT V2S32 = LLT::vector(2, 32);
+  const LLT V2S64 = LLT::vector(2, 64);
+
+  const LLT V2P0 = LLT::vector(2, P0);
+  const LLT V2P1 = LLT::vector(2, P1);
+
+  EXPECT_EQ(S64, S32.changeElementType(S64));
+  EXPECT_EQ(S32, S32.changeElementType(S32));
+
+  EXPECT_EQ(S32, S64.changeElementSize(32));
+  EXPECT_EQ(S32, S32.changeElementSize(32));
+
+  EXPECT_EQ(V2S64, V2S32.changeElementType(S64));
+  EXPECT_EQ(V2S32, V2S64.changeElementType(S32));
+
+  EXPECT_EQ(V2S64, V2S32.changeElementSize(64));
+  EXPECT_EQ(V2S32, V2S64.changeElementSize(32));
+
+  EXPECT_EQ(P0, S32.changeElementType(P0));
+  EXPECT_EQ(S32, P0.changeElementType(S32));
+
+  EXPECT_EQ(V2P1, V2P0.changeElementType(P1));
+  EXPECT_EQ(V2S32, V2P0.changeElementType(S32));
+}
+
+TEST(LowLevelTypeTest, ChangeNumElements) {
+  const LLT P0 = LLT::pointer(0, 32);
+  const LLT V2P0 = LLT::vector(2, P0);
+  const LLT V3P0 = LLT::vector(3, P0);
+
+  const LLT S64 = LLT::scalar(64);
+  const LLT V2S64 = LLT::vector(2, 64);
+  const LLT V3S64 = LLT::vector(3, 64);
+
+  // Vector to scalar
+  EXPECT_EQ(S64, V2S64.changeNumElements(1));
+
+  // Vector to vector
+  EXPECT_EQ(V3S64, V2S64.changeNumElements(3));
+
+  // Scalar to vector
+  EXPECT_EQ(V2S64, S64.changeNumElements(2));
+
+  EXPECT_EQ(P0, V2P0.changeNumElements(1));
+  EXPECT_EQ(V3P0, V2P0.changeNumElements(3));
+  EXPECT_EQ(V2P0, P0.changeNumElements(2));
+}
+
+#ifdef GTEST_HAS_DEATH_TEST
+#ifndef NDEBUG
+
+// Invalid to directly change the element size for pointers.
+TEST(LowLevelTypeTest, ChangeElementTypeDeath) {
+  const LLT P0 = LLT::pointer(0, 32);
+  const LLT V2P0 = LLT::vector(2, P0);
+
+  EXPECT_DEATH(P0.changeElementSize(64),
+               "invalid to directly change element size for pointers");
+  EXPECT_DEATH(V2P0.changeElementSize(64),
+               "invalid to directly change element size for pointers");
+
+  // Make sure this still fails even without a change in size.
+  EXPECT_DEATH(P0.changeElementSize(32),
+               "invalid to directly change element size for pointers");
+  EXPECT_DEATH(V2P0.changeElementSize(32),
+               "invalid to directly change element size for pointers");
+}
+
+#endif
+#endif
+
 TEST(LowLevelTypeTest, Pointer) {
   LLVMContext C;
-  DataLayout DL("");
+  DataLayout DL("p64:64:64-p127:512:512:512-p16777215:65528:8");
 
-  for (unsigned AS : {0U, 1U, 127U, 0xffffU}) {
-    const LLT Ty = LLT::pointer(AS, DL.getPointerSizeInBits(AS));
-    const LLT VTy = LLT::vector(4, Ty);
+  for (unsigned AS : {0U, 1U, 127U, 0xffffU,
+        static_cast<unsigned>(maxUIntN(23)),
+        static_cast<unsigned>(maxUIntN(24))}) {
+    for (unsigned NumElts : {2, 3, 4, 256, 65535}) {
+      const LLT Ty = LLT::pointer(AS, DL.getPointerSizeInBits(AS));
+      const LLT VTy = LLT::vector(NumElts, Ty);
 
-    // Test kind.
-    ASSERT_TRUE(Ty.isValid());
-    ASSERT_TRUE(Ty.isPointer());
+      // Test kind.
+      ASSERT_TRUE(Ty.isValid());
+      ASSERT_TRUE(Ty.isPointer());
 
-    ASSERT_FALSE(Ty.isScalar());
-    ASSERT_FALSE(Ty.isVector());
+      ASSERT_FALSE(Ty.isScalar());
+      ASSERT_FALSE(Ty.isVector());
 
-    ASSERT_TRUE(VTy.isValid());
-    ASSERT_TRUE(VTy.isVector());
-    ASSERT_TRUE(VTy.getElementType().isPointer());
+      ASSERT_TRUE(VTy.isValid());
+      ASSERT_TRUE(VTy.isVector());
+      ASSERT_TRUE(VTy.getElementType().isPointer());
 
-    // Test addressspace.
-    EXPECT_EQ(AS, Ty.getAddressSpace());
-    EXPECT_EQ(AS, VTy.getElementType().getAddressSpace());
+      EXPECT_EQ(Ty, VTy.getElementType());
+      EXPECT_EQ(Ty.getSizeInBits(), VTy.getScalarSizeInBits());
 
-    // Test equality operators.
-    EXPECT_TRUE(Ty == Ty);
-    EXPECT_FALSE(Ty != Ty);
-    EXPECT_TRUE(VTy == VTy);
-    EXPECT_FALSE(VTy != VTy);
+      // Test address space.
+      EXPECT_EQ(AS, Ty.getAddressSpace());
+      EXPECT_EQ(AS, VTy.getElementType().getAddressSpace());
 
-    // Test Type->LLT conversion.
-    Type *IRTy = PointerType::get(IntegerType::get(C, 8), AS);
-    EXPECT_EQ(Ty, getLLTForType(*IRTy, DL));
-    Type *IRVTy =
-        VectorType::get(PointerType::get(IntegerType::get(C, 8), AS), 4);
-    EXPECT_EQ(VTy, getLLTForType(*IRVTy, DL));
+      // Test equality operators.
+      EXPECT_TRUE(Ty == Ty);
+      EXPECT_FALSE(Ty != Ty);
+      EXPECT_TRUE(VTy == VTy);
+      EXPECT_FALSE(VTy != VTy);
+
+      // Test Type->LLT conversion.
+      Type *IRTy = PointerType::get(IntegerType::get(C, 8), AS);
+      EXPECT_EQ(Ty, getLLTForType(*IRTy, DL));
+      Type *IRVTy = FixedVectorType::get(
+          PointerType::get(IntegerType::get(C, 8), AS), NumElts);
+      EXPECT_EQ(VTy, getLLTForType(*IRVTy, DL));
+    }
   }
 }
 
@@ -149,6 +236,26 @@ TEST(LowLevelTypeTest, Invalid) {
   ASSERT_FALSE(Ty.isScalar());
   ASSERT_FALSE(Ty.isPointer());
   ASSERT_FALSE(Ty.isVector());
+}
+
+TEST(LowLevelTypeTest, Divide) {
+  // Test basic scalar->scalar cases.
+  EXPECT_EQ(LLT::scalar(16), LLT::scalar(32).divide(2));
+  EXPECT_EQ(LLT::scalar(8), LLT::scalar(32).divide(4));
+  EXPECT_EQ(LLT::scalar(8), LLT::scalar(32).divide(4));
+
+  // Test pointer->scalar
+  EXPECT_EQ(LLT::scalar(32), LLT::pointer(0, 64).divide(2));
+
+  // Test dividing vectors.
+  EXPECT_EQ(LLT::scalar(32), LLT::vector(2, 32).divide(2));
+  EXPECT_EQ(LLT::vector(2, 32), LLT::vector(4, 32).divide(2));
+
+  // Test vector of pointers
+  EXPECT_EQ(LLT::pointer(1, 64),
+            LLT::vector(4, LLT::pointer(1, 64)).divide(4));
+  EXPECT_EQ(LLT::vector(2, LLT::pointer(1, 64)),
+            LLT::vector(4, LLT::pointer(1, 64)).divide(2));
 }
 
 }

@@ -1,3 +1,0 @@
-usedWithClass.chpl:7: warning: noinit is currently ignored
-{bar = 4, baz = true}
-{bar = 3, baz = false}

@@ -1,9 +1,8 @@
 //===- HexagonPacketizer.h - VLIW packetizer --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -58,6 +57,13 @@ class HexagonPacketizerList : public VLIWPacketizerList {
   // instruction from the previous packet.
   bool PacketStalls = false;
 
+  // Set to true if the packet has a duplex pair of sub-instructions.
+  bool PacketHasDuplex = false;
+
+  // Set to true if the packet has a instruction that can only be executed
+  // in SLOT0.
+  bool PacketHasSLOT0OnlyInsn = false;
+
 protected:
   /// A handle to the branch probability pass.
   const MachineBranchProbabilityInfo *MBPI;
@@ -70,8 +76,7 @@ private:
 
 public:
   HexagonPacketizerList(MachineFunction &MF, MachineLoopInfo &MLI,
-                        AliasAnalysis *AA,
-                        const MachineBranchProbabilityInfo *MBPI,
+                        AAResults *AA, const MachineBranchProbabilityInfo *MBPI,
                         bool Minimal);
 
   // initPacketizerState - initialize some internal flags.
@@ -151,6 +156,7 @@ protected:
   bool hasRegMaskDependence(const MachineInstr &I, const MachineInstr &J);
   bool hasDualStoreDependence(const MachineInstr &I, const MachineInstr &J);
   bool producesStall(const MachineInstr &MI);
+  bool isPureSlot0InsnWithNoSlot1Store(const MachineInstr &MI);
 };
 
 } // end namespace llvm

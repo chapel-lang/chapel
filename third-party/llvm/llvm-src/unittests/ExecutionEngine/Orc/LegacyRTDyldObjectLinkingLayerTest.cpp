@@ -1,9 +1,8 @@
 //===- RTDyldObjectLinkingLayerTest.cpp - RTDyld linking layer unit tests -===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -69,18 +68,21 @@ TEST(LegacyRTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
 
   ExecutionSession ES;
 
-  LegacyRTDyldObjectLinkingLayer ObjLayer(ES, [&MM](VModuleKey) {
-    return LegacyRTDyldObjectLinkingLayer::Resources{
-        MM, std::make_shared<NullResolver>()};
-  });
+  LegacyRTDyldObjectLinkingLayer ObjLayer(
+      AcknowledgeORCv1Deprecation, ES, [&MM](VModuleKey) {
+        return LegacyRTDyldObjectLinkingLayer::Resources{
+            MM, std::make_shared<NullResolver>()};
+      });
 
   LLVMContext Context;
-  auto M = llvm::make_unique<Module>("", Context);
+  auto M = std::make_unique<Module>("", Context);
   M->setTargetTriple("x86_64-unknown-linux-gnu");
-  Type *Int32Ty = IntegerType::get(Context, 32);
-  GlobalVariable *GV =
-    new GlobalVariable(*M, Int32Ty, false, GlobalValue::ExternalLinkage,
-                         ConstantInt::get(Int32Ty, 42), "foo");
+  Constant *StrConstant = ConstantDataArray::getString(Context, "forty-two");
+  auto *GV =
+      new GlobalVariable(*M, StrConstant->getType(), true,
+                         GlobalValue::ExternalLinkage, StrConstant, "foo");
+  GV->setUnnamedAddr(GlobalValue::UnnamedAddr::Global);
+  GV->setAlignment(Align(1));
 
   GV->setSection(".debug_str");
 
@@ -94,7 +96,7 @@ TEST(LegacyRTDyldObjectLinkingLayerTest, TestSetProcessAllSections) {
   if (!TM)
     return;
 
-  auto Obj = SimpleCompiler(*TM)(*M);
+  auto Obj = cantFail(SimpleCompiler(*TM)(*M));
 
   {
     // Test with ProcessAllSections = false (the default).
@@ -131,13 +133,14 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoDuplicateFinalization) {
 
   std::map<orc::VModuleKey, std::shared_ptr<orc::SymbolResolver>> Resolvers;
 
-  LegacyRTDyldObjectLinkingLayer ObjLayer(ES, [&](VModuleKey K) {
-    auto I = Resolvers.find(K);
-    assert(I != Resolvers.end() && "Missing resolver");
-    auto R = std::move(I->second);
-    Resolvers.erase(I);
-    return LegacyRTDyldObjectLinkingLayer::Resources{MM, std::move(R)};
-  });
+  LegacyRTDyldObjectLinkingLayer ObjLayer(
+      AcknowledgeORCv1Deprecation, ES, [&](VModuleKey K) {
+        auto I = Resolvers.find(K);
+        assert(I != Resolvers.end() && "Missing resolver");
+        auto R = std::move(I->second);
+        Resolvers.erase(I);
+        return LegacyRTDyldObjectLinkingLayer::Resources{MM, std::move(R)};
+      });
   SimpleCompiler Compile(*TM);
 
   // Create a pair of modules that will trigger recursive finalization:
@@ -164,7 +167,7 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoDuplicateFinalization) {
     Builder.CreateRet(FourtyTwo);
   }
 
-  auto Obj1 = Compile(*MB1.getModule());
+  auto Obj1 = cantFail(Compile(*MB1.getModule()));
 
   ModuleBuilder MB2(Context, "", "dummy");
   {
@@ -177,14 +180,14 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoDuplicateFinalization) {
     IRBuilder<> Builder(FooEntry);
     Builder.CreateRet(Builder.CreateCall(BarDecl));
   }
-  auto Obj2 = Compile(*MB2.getModule());
+  auto Obj2 = cantFail(Compile(*MB2.getModule()));
 
   auto K1 = ES.allocateVModule();
   Resolvers[K1] = std::make_shared<NullResolver>();
   cantFail(ObjLayer.addObject(K1, std::move(Obj1)));
 
   auto K2 = ES.allocateVModule();
-  auto LegacyLookup = [&](const std::string &Name) {
+  auto LegacyLookup = [&](StringRef Name) {
     return ObjLayer.findSymbol(Name, true);
   };
 
@@ -218,10 +221,11 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoPrematureAllocation) {
 
   auto MM = std::make_shared<SectionMemoryManagerWrapper>();
 
-  LegacyRTDyldObjectLinkingLayer ObjLayer(ES, [&MM](VModuleKey K) {
-    return LegacyRTDyldObjectLinkingLayer::Resources{
-        MM, std::make_shared<NullResolver>()};
-  });
+  LegacyRTDyldObjectLinkingLayer ObjLayer(
+      AcknowledgeORCv1Deprecation, ES, [&MM](VModuleKey K) {
+        return LegacyRTDyldObjectLinkingLayer::Resources{
+            MM, std::make_shared<NullResolver>()};
+      });
   SimpleCompiler Compile(*TM);
 
   // Create a pair of unrelated modules:
@@ -249,7 +253,7 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoPrematureAllocation) {
     Builder.CreateRet(FourtyTwo);
   }
 
-  auto Obj1 = Compile(*MB1.getModule());
+  auto Obj1 = cantFail(Compile(*MB1.getModule()));
 
   ModuleBuilder MB2(Context, "", "dummy");
   {
@@ -262,7 +266,7 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoPrematureAllocation) {
     Value *Seven = ConstantInt::getSigned(Int32Ty, 7);
     Builder.CreateRet(Seven);
   }
-  auto Obj2 = Compile(*MB2.getModule());
+  auto Obj2 = cantFail(Compile(*MB2.getModule()));
 
   auto K = ES.allocateVModule();
   cantFail(ObjLayer.addObject(K, std::move(Obj1)));
@@ -279,7 +283,7 @@ TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, NoPrematureAllocation) {
 TEST_F(LegacyRTDyldObjectLinkingLayerExecutionTest, TestNotifyLoadedSignature) {
   ExecutionSession ES;
   LegacyRTDyldObjectLinkingLayer ObjLayer(
-      ES,
+      AcknowledgeORCv1Deprecation, ES,
       [](VModuleKey) {
         return LegacyRTDyldObjectLinkingLayer::Resources{
             nullptr, std::make_shared<NullResolver>()};

@@ -1,9 +1,8 @@
 //===- LLToken.h - Token Codes for LLVM Assembly Files ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -38,6 +37,7 @@ enum Kind {
   bar,     // |
   colon,   // :
 
+  kw_vscale,
   kw_x,
   kw_true,
   kw_false,
@@ -114,6 +114,7 @@ enum Kind {
   kw_align,
   kw_addrspace,
   kw_section,
+  kw_partition,
   kw_alias,
   kw_ifunc,
   kw_module,
@@ -131,6 +132,7 @@ enum Kind {
   kw_fastcc,
   kw_coldcc,
   kw_intel_ocl_bicc,
+  kw_cfguard_checkcc,
   kw_x86_stdcallcc,
   kw_x86_fastcallcc,
   kw_x86_thiscallcc,
@@ -140,6 +142,7 @@ enum Kind {
   kw_arm_aapcscc,
   kw_arm_aapcs_vfpcc,
   kw_aarch64_vector_pcs,
+  kw_aarch64_sve_vector_pcs,
   kw_msp430_intrcc,
   kw_avr_intrcc,
   kw_avr_signalcc,
@@ -167,6 +170,7 @@ enum Kind {
   kw_amdgpu_ps,
   kw_amdgpu_cs,
   kw_amdgpu_kernel,
+  kw_tailcc,
 
   // Attributes:
   kw_attributes,
@@ -175,6 +179,7 @@ enum Kind {
   kw_argmemonly,
   kw_sanitize_address,
   kw_sanitize_hwaddress,
+  kw_sanitize_memtag,
   kw_builtin,
   kw_byval,
   kw_inalloca,
@@ -191,21 +196,27 @@ enum Kind {
   kw_naked,
   kw_nest,
   kw_noalias,
+  kw_noundef,
   kw_nobuiltin,
   kw_nocapture,
   kw_noduplicate,
+  kw_nofree,
   kw_noimplicitfloat,
   kw_noinline,
   kw_norecurse,
   kw_nonlazybind,
+  kw_nomerge,
   kw_nonnull,
   kw_noredzone,
   kw_noreturn,
+  kw_nosync,
   kw_nocf_check,
   kw_nounwind,
+  kw_null_pointer_is_valid,
   kw_optforfuzzing,
   kw_optnone,
   kw_optsize,
+  kw_preallocated,
   kw_readnone,
   kw_readonly,
   kw_returned,
@@ -225,8 +236,10 @@ enum Kind {
   kw_swifterror,
   kw_swiftself,
   kw_uwtable,
+  kw_willreturn,
   kw_writeonly,
   kw_zeroext,
+  kw_immarg,
 
   kw_type,
   kw_opaque,
@@ -328,6 +341,7 @@ enum Kind {
   kw_catchret,
   kw_catchpad,
   kw_cleanuppad,
+  kw_callbr,
 
   kw_alloca,
   kw_load,
@@ -344,6 +358,8 @@ enum Kind {
   kw_insertvalue,
   kw_blockaddress,
 
+  kw_freeze,
+
   // Metadata types.
   kw_distinct,
 
@@ -359,10 +375,12 @@ enum Kind {
   kw_name,
   kw_summaries,
   kw_flags,
+  kw_blockcount,
   kw_linkage,
   kw_notEligibleToImport,
   kw_live,
   kw_dsoLocal,
+  kw_canAutoHide,
   kw_function,
   kw_insts,
   kw_funcFlags,
@@ -371,14 +389,19 @@ enum Kind {
   kw_noRecurse,
   kw_returnDoesNotAlias,
   kw_noInline,
+  kw_alwaysInline,
   kw_calls,
   kw_callee,
+  kw_params,
+  kw_param,
   kw_hotness,
   kw_unknown,
   kw_hot,
   kw_critical,
   kw_relbf,
   kw_variable,
+  kw_vTableFuncs,
+  kw_virtFunc,
   kw_aliasee,
   kw_refs,
   kw_typeIdInfo,
@@ -391,6 +414,7 @@ enum Kind {
   kw_offset,
   kw_args,
   kw_typeid,
+  kw_typeidCompatibleVTable,
   kw_summary,
   kw_typeTestRes,
   kw_kind,
@@ -404,6 +428,7 @@ enum Kind {
   kw_sizeM1,
   kw_bitMask,
   kw_inlineBits,
+  kw_vcall_visibility,
   kw_wpdResolutions,
   kw_wpdRes,
   kw_indir,
@@ -421,6 +446,7 @@ enum Kind {
   kw_varFlags,
 
   // Unsigned Valued tokens (UIntVal).
+  LabelID,    // 42:
   GlobalID,   // @42
   LocalVarID, // %42
   AttrGrpID,  // #42

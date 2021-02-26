@@ -2,8 +2,7 @@ vec-no-hint.chpl:27: note: Vectorization hazard -- other
 vec-no-hint.chpl:55: note: Vectorization hazard -- calls synchronizing function add
 vec-no-hint.chpl:62: note: fn doIncrement hazard -- calls synchronizing function add
 vec-no-hint.chpl:71: note: Vectorization hazard -- calls synchronizing function doIncrement
-vec-no-hint.chpl:45: note: Vectorization disabled -- address taken
-vec-no-hint.chpl:45: note: Vectorization disabled -- address taken
+vec-no-hint.chpl:44: note: loop vectorization (with parallel access) hinted for CForLoop
 10000.0 0.0
 1.0 10000.0
 2.0 20000.0

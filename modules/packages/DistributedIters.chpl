@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -31,7 +31,8 @@
 module DistributedIters
 {
 use DynamicIters,
-    Time;
+    Time,
+    DSIUtil;
 
 /*
   Toggle debugging output.
@@ -49,6 +50,7 @@ config param timeDistributedIters:bool = false;
 config const infoDistributedIters:bool = false;
 
 // Distributed Dynamic Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -97,7 +99,6 @@ config const infoDistributedIters:bool = false;
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedDynamic(c,
                         chunkSize:int=1,
                         numTasks:int=0,
@@ -198,16 +199,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      // It's not sensible to use a single locale besides masterLocale, so use
-      // potentialWorkerLocales only if it's larger than one locale.
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
 
       if infoDistributedIters then
       {
@@ -323,6 +319,7 @@ where tag == iterKind.follower
 }
 
 // Distributed Guided Iterator.
+// Serial version.
 /*
   :arg c: The range (or domain) to iterate over. The range (domain) size must
     be positive.
@@ -368,7 +365,6 @@ where tag == iterKind.follower
 
   Available for serial and zippered contexts.
 */
-// Serial version.
 iter distributedGuided(c,
                        numTasks:int=0,
                        parDim:int=0,
@@ -461,18 +457,11 @@ where tag == iterKind.leader
       const denseRangeHigh:int = denseRange.high;
       const masterLocale = here.locale;
 
-      const potentialWorkerLocales =
+      const actualWorkerLocales =
         [L in workerLocales] if numLocales == 1
                                 || !coordinated
                                 || L != masterLocale
                              then L;
-      /*
-        It's not sensible to use a single locale besides masterLocale, so use
-        potentialWorkerLocales only if it's larger than one locale.
-      */
-      const actualWorkerLocales = if potentialWorkerLocales.size > 1
-                                  then potentialWorkerLocales
-                                  else [masterLocale];
       const numActualWorkerLocales = actualWorkerLocales.size;
 
       // The guided iterator stage (determines next subrange index and size).

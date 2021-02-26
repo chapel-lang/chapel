@@ -1,9 +1,8 @@
 //===- LanaiDisassembler.cpp - Disassembler for Lanai -----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,8 +12,10 @@
 
 #include "LanaiDisassembler.h"
 
-#include "Lanai.h"
-#include "LanaiSubtarget.h"
+#include "LanaiAluCode.h"
+#include "LanaiCondCode.h"
+#include "LanaiInstrInfo.h"
+#include "TargetInfo/LanaiTargetInfo.h"
 #include "llvm/MC/MCFixedLenDisassembler.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCSubtargetInfo.h"
@@ -35,7 +36,7 @@ static MCDisassembler *createLanaiDisassembler(const Target & /*T*/,
   return new LanaiDisassembler(STI, Ctx);
 }
 
-extern "C" void LLVMInitializeLanaiDisassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeLanaiDisassembler() {
   // Register the disassembler
   TargetRegistry::RegisterMCDisassembler(getTheLanaiTarget(),
                                          createLanaiDisassembler);
@@ -127,9 +128,10 @@ static void PostOperandDecodeAdjust(MCInst &Instr, uint32_t Insn) {
   }
 }
 
-DecodeStatus LanaiDisassembler::getInstruction(
-    MCInst &Instr, uint64_t &Size, ArrayRef<uint8_t> Bytes, uint64_t Address,
-    raw_ostream & /*VStream*/, raw_ostream & /*CStream*/) const {
+DecodeStatus
+LanaiDisassembler::getInstruction(MCInst &Instr, uint64_t &Size,
+                                  ArrayRef<uint8_t> Bytes, uint64_t Address,
+                                  raw_ostream & /*CStream*/) const {
   uint32_t Insn;
 
   DecodeStatus Result = readInstruction32(Bytes, Size, Insn);

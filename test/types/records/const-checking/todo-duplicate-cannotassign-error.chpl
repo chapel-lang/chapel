@@ -4,5 +4,6 @@ record REC {
   const F1, F2, F3: int;
 }
 
-var RR, QQ: REC;
+var RR = new REC();
+var QQ = new REC();
 RR = QQ;

@@ -1,0 +1,4 @@
+complex-intents.chpl:1: error: out-intent formal 'a' is used within later formal 'b'
+complex-intents.chpl:16: error: out-intent formal 'a' is used within later formal 'b'
+complex-intents.chpl:33: error: out-intent formal 'a' is used within later formal 'b'
+complex-intents.chpl:50: error: out-intent formal 'a' is used within later formal 'b'

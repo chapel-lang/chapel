@@ -1,0 +1,64 @@
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:10)
+|  Potential source aggregation (arrElemFromDynFastFollower.chpl:10)
+|  Potential destination aggregation (arrElemFromDynFastFollower.chpl:10)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+
+Start analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:17)
+|  Potential source aggregation (arrElemFromDynFastFollower.chpl:17)
+|  Potential destination aggregation (arrElemFromDynFastFollower.chpl:17)
+End analyzing forall for automatic aggregation [static and dynamic ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:10)
+|  Potential source aggregation (arrElemFromDynFastFollower.chpl:10)
+End analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:10)
+|  Potential source aggregation (arrElemFromDynFastFollower.chpl:10)
+End analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromDynFastFollower.chpl:9)
+
+Start analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:17)
+|  Potential destination aggregation (arrElemFromDynFastFollower.chpl:17)
+End analyzing forall for automatic aggregation [no ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+
+Start analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+| Found an aggregation candidate (arrElemFromDynFastFollower.chpl:17)
+|  Potential destination aggregation (arrElemFromDynFastFollower.chpl:17)
+End analyzing forall for automatic aggregation [static only ALA clone]  (arrElemFromDynFastFollower.chpl:16)
+
+Aggregation candidate has confirmed local child  (arrElemFromDynFastFollower.chpl:10)
+LHS is local, RHS is nonlocal. Will use source aggregation  (arrElemFromDynFastFollower.chpl:10)
+Aggregation candidate has reverted local child  (arrElemFromDynFastFollower.chpl:10)
+Aggregation candidate has confirmed local child  (arrElemFromDynFastFollower.chpl:17)
+LHS is nonlocal, RHS is local. Will use destination aggregation  (arrElemFromDynFastFollower.chpl:17)
+Aggregation candidate has reverted local child  (arrElemFromDynFastFollower.chpl:17)
+Replaced assignment with aggregation (arrElemFromDynFastFollower.chpl:10)
+Replaced assignment with aggregation (arrElemFromDynFastFollower.chpl:17)
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+SrcAggregator.copy is called
+0 0 0 0 0 0 0 0 0 0 0
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+DstAggregator.copy is called
+0 0 0 0 0 0 0 0 0 0 0

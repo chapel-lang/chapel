@@ -1,9 +1,8 @@
 //===--- DatatCollection.h --------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -51,10 +50,9 @@ template <class T> void addDataToConsumer(T &DataConsumer, const QualType &QT) {
 }
 
 template <class T, class Type>
-typename std::enable_if<
-    std::is_integral<Type>::value || std::is_enum<Type>::value ||
-    std::is_convertible<Type, size_t>::value // for llvm::hash_code
-    >::type
+std::enable_if_t<std::is_integral<Type>::value || std::is_enum<Type>::value ||
+                 std::is_convertible<Type, size_t>::value // for llvm::hash_code
+                 >
 addDataToConsumer(T &DataConsumer, Type Data) {
   DataConsumer.update(StringRef(reinterpret_cast<char *>(&Data), sizeof(Data)));
 }

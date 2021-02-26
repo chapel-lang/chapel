@@ -1,9 +1,8 @@
 //===- DisassemblerEmitter.cpp - Generate a disassembler ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -137,7 +136,7 @@ void EmitDisassembler(RecordKeeper &Records, raw_ostream &OS) {
   // ARM and Thumb have a CHECK() macro to deal with DecodeStatuses.
   if (Target.getName() == "ARM" || Target.getName() == "Thumb" ||
       Target.getName() == "AArch64" || Target.getName() == "ARM64") {
-    std::string PredicateNamespace = Target.getName();
+    std::string PredicateNamespace = std::string(Target.getName());
     if (PredicateNamespace == "Thumb")
       PredicateNamespace = "ARM";
 
@@ -149,9 +148,9 @@ void EmitDisassembler(RecordKeeper &Records, raw_ostream &OS) {
     return;
   }
 
-  EmitFixedLenDecoder(Records, OS, Target.getName(),
-                      "if (", " == MCDisassembler::Fail)",
-                      "MCDisassembler::Success", "MCDisassembler::Fail", "");
+  EmitFixedLenDecoder(Records, OS, std::string(Target.getName()), "if (",
+                      " == MCDisassembler::Fail)", "MCDisassembler::Success",
+                      "MCDisassembler::Fail", "");
 }
 
-} // End llvm namespace
+} // end namespace llvm

@@ -20,11 +20,12 @@ use lib "$FindBin::Bin";
 use nightlysubs;
 
 # Mailing lists.
-$failuremail = "chapel-test-results-regressions\@lists.sourceforge.net chapel_cronmail\@cray.com";
-$allmail = "chapel-test-results-all\@lists.sourceforge.net chapel_cronmail_all\@cray.com";
+$failuremail = "chapel+tests\@discoursemail.com";
+$allmail = "chapel-test-results-all\@lists.sourceforge.net";
 $replymail = "";
 
 $valgrind = 0;
+$valgrindexe = 0;
 $interpret = 0;
 $printusage = 1;
 $debug = 1;
@@ -53,7 +54,8 @@ $verify = 0;
 $retaintree = 0;
 $dist = "";
 $llvm = 0;
-$memleaks = "";
+$memleaks = 0;
+$memleakslog = "";
 $multilocale = 0;
 $svnrevopt = "";
 $compopts = "";
@@ -63,6 +65,8 @@ $numtrials = "";
 $cronrecipient = "";
 $junit_xml = 0;
 $mason_build = 0;
+$protobuf_build = 0;
+$python2 = 0;
 
 while (@ARGV) {
     $flag = shift @ARGV;
@@ -74,6 +78,8 @@ while (@ARGV) {
         $printusage = 0;
     } elsif ($flag eq "-valgrind") {
         $valgrind = 1;
+    } elsif ($flag eq "-valgrindexe") {
+        $valgrindexe = 1;
     } elsif ($flag eq "-interpret") {
         $interpret = 1;
     } elsif ($flag eq "-notest") {
@@ -120,7 +126,9 @@ while (@ARGV) {
     } elsif ($flag eq "-fast") {
         $fast = 1;
     } elsif ($flag eq "-memleaks") {
-        $memleaks = shift @ARGV;
+        $memleaks = 1;
+    } elsif ($flag eq "-memleakslog") {
+        $memleakslog = shift @ARGV;
     } elsif ($flag eq "-componly") {
         $componly = 1;
     } elsif ($flag eq "-futures") {
@@ -129,6 +137,8 @@ while (@ARGV) {
         $futuresMode = 0;
     } elsif ($flag eq "-no-buildcheck") {
         $buildcheck = 0;
+    } elsif ($flag eq "-python2") {
+        $python2 = 1;
     } elsif ($flag eq "-parnodefile") {
         $parnodefile = shift @ARGV;
     } elsif ($flag eq "-no-local") {
@@ -149,6 +159,8 @@ while (@ARGV) {
         $asserts = 1;
     } elsif ($flag eq "-mason") {
         $mason_build = 1;
+    } elsif ($flag eq "-protobuf") {
+        $protobuf_build = 1;
     } else {
         $printusage = 1;
         last;
@@ -190,7 +202,7 @@ if ($printusage == 1) {
     print "\t-componly                      : only run the compiler, not the generated binary\n";
     print "\t-compopts <opt>                : run tests with -compopts <opt>\n";
     print "\t-compperformance <description> : run tests with compiler performance tracking\n";
-    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of SourceForge mailing list(s)\n";
+    print "\t-cron-recipient <addr>         : send -cron emails to this address instead of the default mailing list(s)\n";
     print "\t-dist <dist>                   : run distribution robustness tests\n";
     print "\t-examples                      : run the release/examples tests only\n";
     print "\t-execopts <opt>                : run tests with -execopts <opt>\n";
@@ -201,7 +213,8 @@ if ($printusage == 1) {
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
     print "\t-llvm                          : run tests using --llvm\n";
     print "\t-mason                         : build mason before running tests\n";
-    print "\t-memleaks <log>                : run memleaks tests\n";
+    print "\t-memleaks <log>                : run tests with --memLeaks\n";
+    print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
     print "\t-multilocale                   : run multilocale tests only\n";
     print "\t-no-buildcheck                 : do not run `make check` before running tests\n";
     print "\t-no-futures                    : do not run future tests\n";
@@ -213,11 +226,14 @@ if ($printusage == 1) {
     print "\t-performance                   : run performance tests\n";
     print "\t-performance-configs <configs> : comma seperated configs to graph, ': v' after config to be visible by default\n";
     print "\t-performance-description <...> : run performance tests with additional description\n";
+    print "\t-protobuf                      : build the protobuf Chapel plugin before running tests\n";
+    print "\t-python2                       : don't use features that needs python 3\n";
     print "\t-releasePerformance            : \$releasePerformance=1 ?\n";
    #print "\t-retaintree                    : \$retaintree=1 ?\n";
     print "\t-startdate <date>              : run performance tests providing a common start date to all the graphs\n";
     print "\t-sync-dir-suffix <suffix>      : \$syncsuffix = <suffix> ?\n";
     print "\t-valgrind                      : run tests in valgrind mode\n";
+    print "\t-valgrindexe                   : run tests in valgrindexe mode\n";
     print "\t-verify                        : -compopts --verify ?\n";
    #print "\t-interpret                     : run tests in interpreted mode\n";
     exit 1;
@@ -243,11 +259,9 @@ if (exists($ENV{"JENKINS_URL"})) {
 $user = `whoami`;
 chomp($user);
 $debugmail = $ENV{'CHPL_NIGHTLY_DEBUG_EMAIL'};
-if ($debugmail eq "") {
-    $debugmail = "$user\@cray.com";
-    if ($debug == 1) {
-        $replymail = $debugemail;
-    }
+if ($debug == 1 && $debugmail eq "") {
+    print "Set CHPL_NIGHTLY_DEBUG_EMAIL to use debug mode\n";
+    exit 1;
 }
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
@@ -327,7 +341,7 @@ if (! (-r $logdir and -w $logdir and -d $logdir)) {
 
 $memleaksdir = $ENV{'CHPL_NIGHTLY_MEMLEAKS_DIR'};
 
-if ($memleaks ne "") {
+if ($memleakslog ne "") {
     # Default to known file share.
     if ($debug == 1 && $memleaksdir eq "") {
         $memleaksdir = $logdir;
@@ -339,7 +353,7 @@ if ($memleaks ne "") {
         mkpath $memleaksdir;
     }
 
-    # Check that memleaks dir is accessible.
+    # Check that memleakslog dir is accessible.
     if (! (-r $memleaksdir and -w $memleaksdir and -d $memleaksdir)) {
         print "Error: CHPL_NIGHTLY_MEMLEAKS_DIR ($memleaksdir) not accessible\n";
         exit 1;
@@ -407,7 +421,7 @@ if ($mailer eq "") {
 print "\$mailer = $mailer\n";
 
 
-$launchcmd = "$ENV{'CHPL_APP_LAUNCH_CMD'}";
+$launchcmd = "$ENV{'CHPL_TEST_LAUNCHCMD'}";
 
 if ($debug == 1) {
     $subjectid = "Debug";
@@ -419,9 +433,9 @@ if ($debug == 1) {
     # "email", the mailer program used on cygwin platform, requires multiple
     # recipient addresses to be comma delimited instead of space delimited.
     if ($mailer eq "email") {
-        $recipient = "$failuremail,$allmail";
+        $recipient = "$failuremail";
     } else {
-        $recipient = "$failuremail $allmail";
+        $recipient = "$failuremail";
     }
     $nochangerecipient = $allmail;
 }
@@ -474,56 +488,54 @@ if (-d "$chplhomedir/.git") {
 chomp($revision);
 $revision = "Revision: $revision";
 
-#
-# if on cygwin, blow away FILES files because they wreak havoc on stuff
-#
-$hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-if ($hostplatform =~ "cygwin") {
-    mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
-}
+# we'll use some python3 to set platform-specific things. We are not using
+# python2 on those platforms so, skip those
+if ($python2 == 0) {
+  #
+  # if on cygwin, blow away FILES files because they wreak havoc on stuff
+  #
+  $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
+  if ($hostplatform =~ "cygwin") {
+      mysystem("cd $chplhomedir && find . -name FILES -exec rm {} \\;");
+  }
 
-$hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
+  $hostcompiler = `$utildir/chplenv/chpl_compiler.py --host`; chomp($hostcompiler);
 
-# Setup variables to pass to all make calls.
-$make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
+  # Setup variables to pass to all make calls.
+  $make_vars_no_opt = "DEBUG=0 WARNINGS=1 ASSERTS=$asserts";
 
-# Add OPTIMIZE=1 for most environments. If using the cray programming
-# environment, disable optimizations when building the compiler. This is an
-# experiment to see if it stabilizes the tests for the compiler when built with
-# cray C++/C compiler.
-if ($hostcompiler eq "cray-prgenv-cray") {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
-} else {
-    $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  # Add OPTIMIZE=1 for most environments. If using the cray programming
+  # environment, disable optimizations when building the compiler. This is an
+  # experiment to see if it stabilizes the tests for the compiler when built with
+  # cray C++/C compiler.
+  if ($hostcompiler eq "cray-prgenv-cray") {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=0";
+  } else {
+      $make_vars_opt = "$make_vars_no_opt OPTIMIZE=1";
+  }
 }
 
 
 print "Making $make_vars_opt compiler\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", 0, 1);
-if ($makestat != 0) {
-    print "Making $make_vars_no_opt compiler\n";
-    # Since the rest of the compiler is being built unoptimized, disable
-    # compiler performance testing so we don't get unexplained hiccups in
-    # the perf graphs.
-    print "compiler performance testing will be disabled\n";
-    $compperformance = 0;
-    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_no_opt compiler", "making chapel compiler", 1, 1);
-}
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt compiler", "making chapel compiler", 1, 1);
 
 # Speculatively build a couple third-party libraries. This command should not
 # fail, even if it fails to build the libraries.
 print "Making $make_vars_opt third-party-try-opt\n";
 mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-opt", "make chapel third-party-try-opt", 1, 1);
 
-# Build chpldoc. Do not fail the build if it does not succeed. Do not send
-# mail either.
-print "Making $make_vars_opt chpldoc\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+# if we are using python2, we cannot build the test-venv and/or chpldoc
+if ($python2 == 0) {
+  # Build chpldoc. Do not fail the build if it does not succeed. Do not send
+  # mail either.
+  print "Making $make_vars_opt chpldoc\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
 
-# Build test virtualenv. Fail if the build does not succeed as virtualenv is
-# needed for start_test. Send mail on failure
-print "Making $make_var_opt test-venv\n";
-mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+  # Build test virtualenv. Fail if the build does not succeed as virtualenv is
+  # needed for start_test. Send mail on failure
+  print "Making $make_var_opt test-venv\n";
+  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt test-venv", "make chapel test-venv", 1, 1);
+}
 
 if ($buildruntime == 0) {
     $endtime = localtime;
@@ -546,15 +558,8 @@ if ($buildruntime == 0) {
     exit 0;
 }
 
-# if this is a performance test run then failing to build the runtime with
-# optimizations is a fatal error.  Otherwise we could get hiccups in the
-# performance graphs that are difficult to track.
-print "Making $make_vars_opt $qthreadopts runtime\n";
-$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt $qthreadopts runtime", "making chapel runtime", $performance, 1);
-if ($makestat != 0) {
-    print "Making $make_vars_no_opt $qthreadopts runtime\n";
-    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_no_opt $qthreadopts runtime", "making chapel runtime", 1, 1);
-}
+print "Making $make_vars_opt runtime\n";
+$makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt runtime", "making chapel runtime", 1, 1);
 
 print "Making modules\n";
 $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modules", "making chapel modules", 1, 1);
@@ -563,6 +568,12 @@ $makestat = mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt modul
 if ($mason_build == 1) {
   print "Making mason\n";
   mysystem("cd $chplhomedir && $make -j$num_procs mason", "making mason", 1, 1);
+}
+
+# Build the protobuf Chapel plugin
+if ($protobuf_build == 1) {
+    print "Making the protobuf Chapel plugin\n";
+    mysystem("cd $chplhomedir && $make protoc-gen-chpl", "making protoc-gen-chpl", 1, 1);
 }
 
 #
@@ -575,6 +586,8 @@ if ($interpret == 1) {
 }
 if ($valgrind == 1) {
     $testflags = "$testflags -valgrind";
+} elsif ($valgrindexe == 1) {
+    $testflags = "$testflags -valgrindexe";
 }
 
 $testflags = "$testflags -futures-mode $futuresMode";
@@ -672,8 +685,11 @@ if (!($dist eq "")) {
 if ($fast == 1) {
     $testflags = "$testflags -compopts --fast";
 }
-if (!($memleaks eq "")) {
-    $testflags = "$testflags -memleaks $basetmpdir/$memleaks";
+if ($memleaks == 1) {
+    $testflags = "$testflags -memleaks";
+}
+if (!($memleakslog eq "")) {
+    $testflags = "$testflags -memleakslog $basetmpdir/$memleakslog";
 }
 if ($nolocal == 1) {
     $testflags = "$testflags -compopts --no-local";
@@ -726,6 +742,15 @@ if ($runtests == 0) {
     } else {
         print "CHPL_TEST_NOMAIL: No $mailcommand\n";
     }
+
+} elsif ($python2 == 1) {
+
+  # test system depends on python3, so with python2 we cannot do much other than
+  # `make check`
+  $ENV{'CHPL_HOME'} = $chplhomedir;
+
+  $buildcheckcommand = "cd $ENV{'CHPL_HOME'} && . util/setchplenv.sh && CHPL_CHECK_DEBUG=1 make check";
+  mysystem($buildcheckcommand, "running `make check`", 1, 1, 1);
 
 } else {
 
@@ -844,8 +869,8 @@ if ($runtests == 0) {
 #
 # analyze memory leaks tests
 #
-    if (!($memleaks eq "")) {
-        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleaks > $memleaksdir/$memleaks", "analyzeMemLeaksLog", 1, 0, 0);
+    if (!($memleakslog eq "")) {
+        mysystem("$chplhomedir/util/devel/analyzeMemLeaksLog $basetmpdir/$memleakslog > $memleaksdir/$memleakslog", "analyzeMemLeaksLog", 1, 0, 0);
 
         # Update the memory leaks status for performance testing runs to
         #  generate graphs for the memory leaks data
@@ -862,7 +887,7 @@ if ($runtests == 0) {
             }
         }
 
-        mysystem("cd $testdir && cp $memleaksdir/$memleaks ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
+        mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
 

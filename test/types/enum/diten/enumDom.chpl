@@ -1,3 +1,5 @@
+use LinkedLists;
+
 enum color { red, green, blue };
 
 var D: domain(real);

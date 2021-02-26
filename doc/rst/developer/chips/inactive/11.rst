@@ -1,0 +1,177 @@
+Alternative Initializer Features
+================================
+
+Status:
+  Inactive - Rejected
+
+Authors:
+  Kyle Brady, Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov
+
+.. contents:: Outline
+   :local:
+
+Abstract
+--------
+
+This document contains some features we discussed as part of the
+initializer story and chose not to incorporate.
+
+Rationale
+---------
+
+During our development of the initializer story for Chapel
+we considered a variety of features. Some of them were accepted
+and some of them were rejected. This document records some of
+the discussed-and-rejected features for posterity.
+
+Features
+--------
+
+Alternative syntax for distinguishing Phase 1 and Phase 2 in an initializer
+***************************************************************************
+
+We considered providing dedicated syntax for distinguishing Phase 1
+and Phase 2 in an initializer. This syntax, codenamed Syntax 2,
+designates different block statements for Phase 1 and Phase 2,
+separated by the proposed "finalize" keyword.
+
+.. code-block:: chapel
+
+   proc init() {
+     ... Phase 1 code ...
+     super.init(...);
+   } finalize {
+     ... Phase 2 code ...
+   }
+
+The super.init() call can be omitted if it passes no arguments.
+The "finalize" keyword and the following block, if empty,
+can also be omitted.
+
+Syntax 2 has the advantage of visually-clear separation of the two
+phases. We did not incorporate it because it did not allow sharing
+variables or extending an if statement across the two phases.
+Also, we would like Phase 2 to be the default, and it felt
+unintuitive under Syntax 2.
+
+
+Child's fields could depend on parent's fields
+**********************************************
+
+We considered allowing child's fields to be initialized based on
+parent's fields. Below is one way to achieve this.
+
+The child's initializer could control where, in its Phase 1, the
+parent's Phase 1 is invoked. In other words, the parent's Phase 1
+would not necessarily come at the end of the child initializer's Phase 1.
+If the child needs to access its parent's fields, it can invoke
+the parent's Phase 1 prior to such access.
+
+Here is an example, which is based on Syntax 2.
+
+.. code-block:: chapel
+
+   class Parent {
+     var D: domain(1);
+     proc init(myRange) {
+       D = {myRange};  // Phase 1
+     } finalize {
+       ... Phase 2 code ...
+     }
+   }
+
+   class Child: Parent {
+     var xD: domain(1);
+     proc init(myRange, extra) {
+       super.init(myRange);   // initializes Parent.D
+       xD = D.expand(extra);  // initialize xD based on Parent.D
+     } finalize {
+       ... Phase 2 code ...
+     }
+   }
+
+Analogously, we could allow the child initializer to control the point
+during its Phase 2 when the parent initializer's Phase 2 is to be invoked.
+For example:
+
+.. code-block:: chapel
+
+   class Child: Parent {
+     proc init(...) {
+       ... Phase 1 code ...
+     } finalize {
+       ... Phase 2 in Child ...
+       super.finalize();      // executes Phase 2 in Parent
+     }
+   }
+
+We did not incorporate this functionality because it adds complexity to
+how initialization occurs.
+
+
+Parent could have final control over the newly-created object
+*************************************************************
+
+We considered giving the parent class the ability to exercise final control
+over the newly-created object via a "lastly" block.
+An example where this is important
+is if the new object must be be added to a shared list.
+If the list is concurrently accessible, it is important for all other
+invariants on the new object to have been established prior to such addition.
+This includes any actions performed in child class initializer(s).
+We did not incorporate the proposed feature because we preferred the user
+to perform such "final" actions outside of the initializer or explicitly
+in each child's initializer.
+
+..
+ One way to achieve this is by introducing the optional "lastly" phase.
+ This phase in the parent initializer would be executed
+ after all actions specified by child class(es) have completed.
+
+..
+ The following example relies on Syntax 2:
+
+..
+   class Parent {
+     proc init(...) {
+       ... Phase 1 in Parent ...
+     } finalize {
+       ... Phase 2 in Parent ...
+     } lastly {
+       AllObjects.add(this); // done after Parent's and Child's Phase 2
+     }
+   }
+   class Child: Parent {
+     proc init(...) finalize {
+       ... Phase 2 in Child ...
+     }
+   }
+
+..
+ Another approach is to introduce "lastinit" methods.
+ This approach was not brought up with the team.
+ One "lastinit" method with 0 arguments could be optionally defined
+ on each class.
+
+..
+ When defined, this method would be invoked on the newly-created object
+ after all actions specified by its initializer(s) have completed.
+ The "lastinit" method in the parent class would be invoked
+ after all "lastinit" methods in the child class(es), if any,
+ have completed. For example:
+
+..
+   class Parent {
+     proc init(...) {
+       ...
+     }
+     proc lastinit() {
+       // this method executes after Parent's and Child's initializers
+       AllObjects.add(this);
+     }
+   }
+   class Child: Parent {
+     proc init(...) {
+       ...
+     }
+   }

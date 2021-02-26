@@ -89,7 +89,9 @@ to read it as possible.  As such, we recommend that you:
    patches may not apply correctly if the underlying code changes between the
    time the patch was created and the time it is applied.
 
-#. Patches should be made with ``git format-patch``, or similar. If you use a
+#. Patches should be made with ``git format-patch``, or similar (see special
+   commands for `Requesting Phabricator review via the web interface
+   <Phabricator.html#phabricator-request-review-web>`_ ). If you use a
    different tool, make sure it uses the ``diff -u`` format and that it
    doesn't contain clutter which makes it hard to read.
 
@@ -113,57 +115,17 @@ a file inline, making it difficult to work with for reviewers using that
 program.
 
 When submitting patches, please do not add confidentiality or non-disclosure
-notices to the patches themselves.  These notices conflict with the `LLVM
-License`_ and may result in your contribution being excluded.
+notices to the patches themselves.  These notices conflict with the LLVM
+licensing terms and may result in your contribution being excluded.
 
 .. _code review:
 
 Code Reviews
 ------------
 
-LLVM has a code review policy. Code review is one way to increase the quality of
-software. We generally follow these policies:
-
-#. All developers are required to have significant changes reviewed before they
-   are committed to the repository.
-
-#. Code reviews are conducted by email on the relevant project's commit mailing
-   list, or alternatively on the project's development list or bug tracker.
-
-#. Code can be reviewed either before it is committed or after.  We expect major
-   changes to be reviewed before being committed, but smaller changes (or
-   changes where the developer owns the component) can be reviewed after commit.
-
-#. The developer responsible for a code change is also responsible for making
-   all necessary review-related changes.
-
-#. Code review can be an iterative process, which continues until the patch is
-   ready to be committed. Specifically, once a patch is sent out for review, it
-   needs an explicit "looks good" before it is submitted. Do not assume silent
-   approval, or request active objections to the patch with a deadline.
-
-Sometimes code reviews will take longer than you would hope for, especially for
-larger features. Accepted ways to speed up review times for your patches are:
-
-* Review other people's patches. If you help out, everybody will be more
-  willing to do the same for you; goodwill is our currency.
-* Ping the patch. If it is urgent, provide reasons why it is important to you to
-  get this patch landed and ping it every couple of days. If it is
-  not urgent, the common courtesy ping rate is one week. Remember that you're
-  asking for valuable time from other professional developers.
-* Ask for help on IRC. Developers on IRC will be able to either help you
-  directly, or tell you who might be a good reviewer.
-* Split your patch into multiple smaller patches that build on each other. The
-  smaller your patch, the higher the probability that somebody will take a quick
-  look at it.
-
-Developers should participate in code reviews as both reviewers and
-reviewees. If someone is kind enough to review your code, you should return the
-favor for someone else.  Note that anyone is welcome to review and give feedback
-on a patch, but only people with Subversion write access can approve it.
-
-There is a web based code review tool that can optionally be used
-for code reviews. See :doc:`Phabricator`.
+LLVM has a code-review policy. Code review is one way to increase the quality of
+software. Please see :doc:`CodeReview` for more information on LLVM's code-review
+process.
 
 .. _code owners:
 
@@ -292,8 +254,15 @@ all there is to the change.
 
 Below are some guidelines about the format of the message itself:
 
-* Separate the commit message into title, body and, if you're not the original
-  author, a "Patch by" attribution line (see below).
+* Separate the commit message into title and body separated by a blank line.
+
+* If you're not the original author, ensure the 'Author' property of the commit is
+  set to the original author and the 'Committer' property is set to yourself.
+  You can use a command similar to
+  ``git commit --amend --author="John Doe <jdoe@llvm.org>`` to correct the
+  author property if it is incorrect. See `Attribution of Changes`_ for more
+  information including the method we used for attribution before the project
+  migrated to git.
 
 * The title should be concise. Because all commits are emailed to the list with
   the first line as the subject, long titles are frowned upon.  Short titles
@@ -314,18 +283,13 @@ Below are some guidelines about the format of the message itself:
 
 * If the patch fixes a bug in bugzilla, please include the PR# in the message.
 
-* `Attribution of Changes`_ should be in a separate line, after the end of
-  the body, as simple as "Patch by John Doe.". This is how we officially
-  handle attribution, and there are automated processes that rely on this
-  format.
-
 * Text formatting and spelling should follow the same rules as documentation
   and in-code comments, ex. capitalization, full stop, etc.
 
 * If the commit is a bug fix on top of another recently committed patch, or a
-  revert or reapply of a patch, include the svn revision number of the prior
-  related commit. This could be as simple as "Revert rNNNN because it caused
-  PR#".
+  revert or reapply of a patch, include the git commit hash of the prior
+  related commit. This could be as simple as "Revert commit NNNN because it
+  caused PR#".
 
 For minor violations of these recommendations, the community normally favors
 reminding the contributor of this policy over reverting. Minor corrections and
@@ -334,39 +298,26 @@ omissions can be handled by sending a reply to the commits mailing list.
 Obtaining Commit Access
 -----------------------
 
+New Contributors
+^^^^^^^^^^^^^^^^
 We grant commit access to contributors with a track record of submitting high
 quality patches.  If you would like commit access, please send an email to
-`Chris <mailto:clattner@llvm.org>`_ with the following information:
+`Chris <mailto:clattner@llvm.org>`_ with your GitHub username.
 
-#. The user name you want to commit with, e.g. "hacker".
+Prior to obtaining commit access, it is common practice to request that
+someone with commit access commits on your behalf. When doing so, please
+provide the name and email address you would like to use in the Author
+property of the commit.
 
-#. The full name and email address you want message to llvm-commits to come
-   from, e.g. "J. Random Hacker <hacker@yoyodyne.com>".
-
-#. A "password hash" of the password you want to use, e.g. "``2ACR96qjUqsyM``".
-   Note that you don't ever tell us what your password is; you just give it to
-   us in an encrypted form.  To get this, run "``htpasswd``" (a utility that
-   comes with apache) in *crypt* mode (often enabled with "``-d``"), or find a web
-   page that will do it for you.  Note that our system does not work with MD5
-   hashes.  These are significantly longer than a crypt hash - e.g.
-   "``$apr1$vea6bBV2$Z8IFx.AfeD8LhqlZFqJer0``", we only accept the shorter crypt hash.
-
-Once you've been granted commit access, you should be able to check out an LLVM
-tree with an SVN URL of "https://username@llvm.org/..." instead of the normal
-anonymous URL of "http://llvm.org/...".  The first time you commit you'll have
-to type in your password.  Note that you may get a warning from SVN about an
-untrusted key; you can ignore this.  To verify that your commit access works,
-please do a test commit (e.g. change a comment or add a blank line).  Your first
-commit to a repository may require the autogenerated email to be approved by a
-moderator of the mailing list.
+Your first commit to a repository may require the autogenerated email to be
+approved by a moderator of the mailing list.
 This is normal and will be done when the mailing list owner has time.
 
 If you have recently been granted commit access, these policies apply:
 
-#. You are granted *commit-after-approval* to all parts of LLVM.  To get
-   approval, submit a `patch`_ to `llvm-commits
-   <http://lists.llvm.org/mailman/listinfo/llvm-commits>`_. When approved,
-   you may commit it yourself.
+#. You are granted *commit-after-approval* to all parts of LLVM. For
+   information on how to get approval for a patch, please see :doc:`CodeReview`.
+   When approved, you may commit it yourself.
 
 #. You are allowed to commit patches without approval which you think are
    obvious. This is clearly a subjective decision --- we simply expect you to
@@ -393,6 +344,12 @@ In any case, your changes are still subject to `code review`_ (either before or
 after they are committed, depending on the nature of the change).  You are
 encouraged to review other peoples' patches as well, but you aren't required
 to do so.
+
+Current Contributors - Transferring from SVN
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you had commit access to SVN and would like to request commit access to
+GitHub, please email `llvm-admin <mailto:llvm-admin@lists.llvm.org>`_ with your
+SVN username and GitHub username.
 
 .. _discuss the change/gather consensus:
 
@@ -500,6 +457,11 @@ etc.). The author should first submit them to the relevant project's commit
 list, development list, or LLVM bug tracker component. If someone sends you
 a patch privately, encourage them to submit it to the appropriate list first.
 
+Our previous version control system (subversion) did not distinguish between the
+author and the committer like git does. As such, older commits used a different
+attribution mechanism. The previous method was to include "Patch by John Doe."
+in a separate line of the commit message and there are automated processes that
+rely on this format.
 
 .. _IR backwards compatibility:
 
@@ -559,19 +521,86 @@ C API Changes
   release notes so that it's clear to external users who do not follow the
   project how the C API is changing and evolving.
 
-New Targets
------------
+.. _toolchain:
+
+Updating Toolchain Requirements
+-------------------------------
+
+We intend to require newer toolchains as time goes by. This means LLVM's
+codebase can use newer versions of C++ as they get standardized. Requiring newer
+toolchains to build LLVM can be painful for those building LLVM; therefore, it
+will only be done through the following process:
+
+  * It is a general goal to support LLVM and GCC versions from the last 3 years
+    at a minimum. This time-based guideline is not strict: we may support much
+    older compilers, or decide to support fewer versions.
+
+  * An RFC is sent to the `llvm-dev mailing list`_
+
+    - Detail upsides of the version increase (e.g. which newer C++ language or
+      library features LLVM should use; avoid miscompiles in particular compiler
+      versions, etc).
+    - Detail downsides on important platforms (e.g. Ubuntu LTS status).
+
+  * Once the RFC reaches consensus, update the CMake toolchain version checks as
+    well as the :doc:`getting started<GettingStarted>` guide.  This provides a
+    softer transition path for developers compiling LLVM, because the
+    error can be turned into a warning using a CMake flag. This is an important
+    step: LLVM still doesn't have code which requires the new toolchains, but it
+    soon will. If you compile LLVM but don't read the mailing list, we should
+    tell you!
+
+  * Ensure that at least one LLVM release has had this soft-error. Not all
+    developers compile LLVM top-of-tree. These release-bound developers should
+    also be told about upcoming changes.
+
+  * Turn the soft-error into a hard-error after said LLVM release has branched.
+
+  * Update the :doc:`coding standards<CodingStandards>` to allow the new
+    features we've explicitly approved in the RFC.
+
+  * Start using the new features in LLVM's codebase.
+
+Here's a `sample RFC
+<http://lists.llvm.org/pipermail/llvm-dev/2019-January/129452.html>`_ and the
+`corresponding change <https://reviews.llvm.org/D57264>`_.
+
+.. _new-llvm-components:
+
+Introducing New Components into LLVM
+====================================
+
+The LLVM community is a vibrant and exciting place to be, and we look to be
+inclusive of new projects and foster new communities, and increase
+collaboration across industry and academia.
+
+That said, we need to strike a balance between being inclusive of new ideas and
+people and the cost of ongoing maintenance that new code requires.  As such, we
+have the following general policies for introducing major new components into
+the LLVM world.  However, this is really only intended to cover common cases
+that we have seen arise: different situations are different, and we are open
+to discussing unusual cases as well - just start an RFC thread on the
+`llvm-dev mailing list`_.
+
+Adding a New Target
+-------------------
 
 LLVM is very receptive to new targets, even experimental ones, but a number of
 problems can appear when adding new large portions of code, and back-ends are
-normally added in bulk.  We have found that landing large pieces of new code 
-and then trying to fix emergent problems in-tree is problematic for a variety 
+normally added in bulk.  We have found that landing large pieces of new code
+and then trying to fix emergent problems in-tree is problematic for a variety
 of reasons.
 
 For these reasons, new targets are *always* added as *experimental* until
-they can be proven stable, and later moved to non-experimental. The difference
-between both classes is that experimental targets are not built by default
-(need to be added to -DLLVM_TARGETS_TO_BUILD at CMake time).
+they can be proven stable, and later moved to non-experimental. The differences
+between both classes are:
+
+* Experimental targets are not built by default (they need to be explicitly
+  enabled at CMake time).
+
+* Test failures, bugs, and build breakages that only appear when the
+  experimental target is enabled, caused by changes unrelated to the target, are
+  the responsibility of the community behind the target to fix.
 
 The basic rules for a back-end to be upstreamed in **experimental** mode are:
 
@@ -598,8 +627,8 @@ The basic rules for a back-end to be upstreamed in **experimental** mode are:
 * The target should have either reasonable documentation on how it
   works (ISA, ABI, etc.) or a publicly available simulator/hardware
   (either free or cheap enough) - preferably both.  This allows
-  developers to validate assumptions, understand constraints and review code 
-  that can affect the target. 
+  developers to validate assumptions, understand constraints and review code
+  that can affect the target.
 
 In addition, the rules for a back-end to be promoted to **official** are:
 
@@ -638,46 +667,110 @@ In essences, these rules are necessary for targets to gain and retain their
 status, but also markers to define bit-rot, and will be used to clean up the
 tree from unmaintained targets.
 
-.. _toolchain:
+Adding an Established Project To the LLVM Monorepo
+--------------------------------------------------
 
-Updating Toolchain Requirements
--------------------------------
+The `LLVM monorepo <https://github.com/llvm/llvm-project>`_ is the centerpoint
+of development in the LLVM world, and has all of the primary LLVM components,
+including the LLVM optimizer and code generators, Clang, LLDB, etc.  `Monorepos
+in general <https://en.wikipedia.org/wiki/Monorepo>`_ are great because they
+allow atomic commits to the project, simplify CI, and make it easier for
+subcommunities to collaborate.
 
-We intend to require newer toolchains as time goes by. This means LLVM's
-codebase can use newer versions of C++ as they get standardized. Requiring newer
-toolchains to build LLVM can be painful for those building LLVM; therefore, it
-will only be done through the following process:
+That said, the burden to add things to the LLVM monorepo needs to be very high -
+code that is added to this repository is checked out by everyone in the
+community.  As such, we hold subprojects to a high bar similar to "official
+targets", they:
 
-  * Generally, try to support LLVM and GCC versions from the last 3 years at a
-    minimum. This time-based guideline is not strict: we may support much older
-    compilers, or decide to support fewer versions.
+ * Must be generally aligned with the mission of the LLVM project to advance
+   compilers, languages, tools, runtimes, etc.
+ * Must conform to all of the policies laid out in this developer policy
+   document, including license, patent, coding standards, and code of conduct.
+ * Must have an active community that maintains the code, including established
+   code owners.
+ * Should have reasonable documentation about how it works, including a high
+   quality README file.
+ * Should have CI to catch breakage within the project itself or due to
+   underlying LLVM dependencies.
+ * Should have code free of issues the community finds contentious, or be on a
+   clear path to resolving them.
+ * Must be proposed through the LLVM RFC process, and have its addition approved
+   by the LLVM community - this ultimately mediates the resolution of the
+   "should" concerns above.
 
-  * An RFC is sent to the `llvm-dev mailing list <http://lists.llvm.org/mailman/listinfo/llvm-dev>`_
+If you have a project that you think would make sense to add to the LLVM
+monorepo, please start an RFC thread on the `llvm-dev mailing list`_ to kick off
+the discussion.  This process can take some time and iteration - please don’t
+be discouraged or intimidated by that!
 
-    - Detail upsides of the version increase (e.g. which newer C++ language or
-      library features LLVM should use; avoid miscompiles in particular compiler
-      versions, etc).
-    - Detail downsides on important platforms (e.g. Ubuntu LTS status).
+If you have an earlier stage project that you think is aligned with LLVM, please
+see the "Incubating New Projects" section.
 
-  * Once the RFC reaches consensus, update the CMake toolchain version checks as
-    well as the :doc:`getting started<GettingStarted>` guide. We want to
-    soft-error when developers compile LLVM. We say "soft-error" because the
-    error can be turned into a warning using a CMake flag. This is an important
-    step: LLVM still doesn't have code which requires the new toolchains, but it
-    soon will. If you compile LLVM but don't read the mailing list, we should
-    tell you!
+Incubating New Projects
+-----------------------
 
-  * Ensure that at least one LLVM release has had this soft-error. Not all
-    developers compile LLVM top-of-tree. These release-bound developers should
-    also be told about upcoming changes.
+The burden to add a new project to the LLVM monorepo is intentionally very high,
+but that can have a chilling effect on new and innovative projects.  To help
+foster these sorts of projects, LLVM supports an "incubator" process that is
+much easier to get started with.  It provides space for potentially valuable,
+new top-level and sub-projects to reach a critical mass before they have enough
+code to prove their utility and grow a community.  This also allows
+collaboration between teams that already have permissions to make contributions
+to projects under the LLVM umbrella.
 
-  * Turn the soft-error into a hard-error after said LLVM release has branched.
+Projects which can be considered for the LLVM incubator meet the following
+criteria:
 
-  * Update the :doc:`coding standards<CodingStandards>` to allow the new
-    features we've explicitly approved in the RFC.
+ * Must be generally aligned with the mission of the LLVM project to advance
+   compilers, languages, tools, runtimes, etc.
+ * Must conform to the license, patent, and code of conduct policies laid out
+   in this developer policy document.
+ * Must have a documented charter and development plan, e.g. in the form of a
+   README file, mission statement, and/or manifesto.
+ * Should conform to coding standards, incremental development process, and
+   other expectations.
+ * Should have a sense of the community that it hopes to eventually foster, and
+   there should be interest from members with different affiliations /
+   organizations.
+ * Should have a feasible path to eventually graduate as a dedicated top-level
+   or sub-project within the `LLVM monorepo
+   <https://github.com/llvm/llvm-project>`_.
+ * Should include a notice (e.g. in the project README or web page) that the
+   project is in ‘incubation status’ and is not included in LLVM releases (see
+   suggested wording below).
+ * Must be proposed through the LLVM RFC process, and have its addition
+   approved by the LLVM community - this ultimately mediates the resolution of
+   the "should" concerns above.
 
-  * Start using the new features in LLVM's codebase.
+That said, the project need not have any code to get started, and need not have
+an established community at all!  Furthermore, incubating projects may pass
+through transient states that violate the "Should" guidelines above, or would
+otherwise make them unsuitable for direct inclusion in the monorepo (e.g.
+dependencies that have not yet been factored appropriately, leveraging
+experimental components or APIs that are not yet upstream, etc).
 
+When approved, the llvm-admin group can grant the new project:
+ * A new repository in the LLVM Github Organization - but not the LLVM monorepo.
+ * New mailing list, discourse forum, and/or discord chat hosted with other LLVM
+   forums.
+ * Other infrastructure integration can be discussed on a case-by-case basis.
+
+Graduation to the mono-repo would follow existing processes and standards for
+becoming a first-class part of the monorepo.  Similarly, an incubating project
+may be eventually retired, but no process has been established for that yet.  If
+and when this comes up, please start an RFC discussion on llvm-dev.
+
+This process is very new - please expect the details to change, it is always
+safe to ask on the `llvm-dev mailing list`_ about this.
+
+Suggested disclaimer for the project README and the main project web page:
+
+::
+
+   This project is participating in the LLVM Incubator process: as such, it is
+   not part of any official LLVM release.  While incubation status is not
+   necessarily a reflection of the completeness or stability of the code, it
+   does indicate that the project is not yet endorsed as a component of LLVM.
 
 .. _copyright-license-patents:
 
@@ -687,44 +780,227 @@ Copyright, License, and Patents
 .. note::
 
    This section deals with legal matters but does not provide legal advice.  We
-   are not lawyers --- please seek legal counsel from an attorney.
+   are not lawyers --- please seek legal counsel from a licensed attorney.
 
 This section addresses the issues of copyright, license and patents for the LLVM
-project.  The copyright for the code is held by the individual contributors of
-the code and the terms of its license to LLVM users and developers is the
-`University of Illinois/NCSA Open Source License
-<http://www.opensource.org/licenses/UoI-NCSA.php>`_ (with portions dual licensed
-under the `MIT License <http://www.opensource.org/licenses/mit-license.php>`_,
-see below).  As contributor to the LLVM project, you agree to allow any
-contributions to the project to licensed under these terms.
+project.  The copyright for the code is held by the contributors of
+the code.  The code is licensed under permissive `open source licensing terms`_,
+namely the Apache 2 license, which includes a copyright and `patent license`_.
+When you contribute code to the LLVM project, you license it under these terms.
+
+If you have questions or comments about these topics, please contact the
+`LLVM Developer's Mailing List <mailto:llvm-dev@lists.llvm.org>`_.  However,
+please realize that most compiler developers are not lawyers, and therefore you
+will not be getting official legal advice.
 
 Copyright
 ---------
 
-The LLVM project does not require copyright assignments, which means that the
-copyright for the code in the project is held by its respective contributors who
-have each agreed to release their contributed code under the terms of the `LLVM
-License`_.
+The LLVM project does not collect copyright assignments, which means that the
+copyright for the code in the project is held by the respective contributors.
+Because you (or your company)
+retain ownership of the code you contribute, you know it may only be used under
+the terms of the open source license you contributed it under: the license for
+your contributions cannot be changed in the future without your approval.
 
-An implication of this is that the LLVM license is unlikely to ever change:
-changing it would require tracking down all the contributors to LLVM and getting
-them to agree that a license change is acceptable for their contribution.  Since
-there are no plans to change the license, this is not a cause for concern.
+Because the LLVM project does not require copyright assignments, changing the
+LLVM license requires tracking down the
+contributors to LLVM and getting them to agree that a license change is
+acceptable for their contributions.  We feel that a high burden for relicensing
+is good for the project, because contributors do not have to fear that their
+code will be used in a way with which they disagree.
 
-As a contributor to the project, this means that you (or your company) retain
-ownership of the code you contribute, that it cannot be used in a way that
-contradicts the license (which is a liberal BSD-style license), and that the
-license for your contributions won't change without your approval in the
-future.
+Relicensing
+-----------
 
-.. _LLVM License:
+The last paragraph notwithstanding, the LLVM Project is in the middle of a large
+effort to change licenses, which aims to solve several problems:
 
-License
+* The old licenses made it difficult to move code from (e.g.) the compiler to
+  runtime libraries, because runtime libraries used a different license from the
+  rest of the compiler.
+* Some contributions were not submitted to LLVM due to concerns that
+  the patent grant required by the project was overly broad.
+* The patent grant was unique to the LLVM Project, not written by a lawyer, and
+  was difficult to determine what protection was provided (if any).
+
+The scope of relicensing is all code that is considered part of the LLVM
+project, including the main LLVM repository, runtime libraries (compiler_rt,
+OpenMP, etc), Polly, and all other subprojects.  There are a few exceptions:
+
+* Code imported from other projects (e.g. Google Test, Autoconf, etc) will
+  remain as it is.  This code isn't developed as part of the LLVM project, it
+  is used by LLVM.
+* Some subprojects are impractical or uninteresting to relicense (e.g. llvm-gcc
+  and dragonegg). These will be split off from the LLVM project (e.g. to
+  separate GitHub projects), allowing interested people to continue their
+  development elsewhere.
+
+To relicense LLVM, we will be seeking approval from all of the copyright holders
+of code in the repository, or potentially remove/rewrite code if we cannot.
+This is a large
+and challenging project which will take a significant amount of time to
+complete.  In the interim, **all contributions to the project will be made under
+the terms of both the new license and the legacy license scheme** (each of which
+is described below).  The exception to this is the legacy patent grant, which
+will not be required for new contributions.
+
+When all of the code in the project has been converted to the new license or
+removed, we will drop the requirement to contribute under the legacy license.
+This will achieve the goal of having
+a single standardized license for the entire codebase.
+
+If you are a prior contributor to LLVM and have not done so already, please do
+*TODO* to allow us to use your code. *Add a link to a separate page here, which
+is probably a click through web form or something like that.  Details to be
+determined later*.
+
+
+.. _open source licensing terms:
+
+New LLVM Project License Framework
+----------------------------------
+
+Contributions to LLVM are licensed under the `Apache License, Version 2.0
+<https://www.apache.org/licenses/LICENSE-2.0>`_, with two limited
+exceptions intended to ensure that LLVM is very permissively licensed.
+Collectively, the name of this license is "Apache 2.0 License with LLVM
+exceptions".  The exceptions read:
+
+::
+
+   ---- LLVM Exceptions to the Apache 2.0 License ----
+
+   As an exception, if, as a result of your compiling your source code, portions
+   of this Software are embedded into an Object form of such source code, you
+   may redistribute such embedded portions in such Object form without complying
+   with the conditions of Sections 4(a), 4(b) and 4(d) of the License.
+
+   In addition, if you combine or link compiled forms of this Software with
+   software that is licensed under the GPLv2 ("Combined Software") and if a
+   court of competent jurisdiction determines that the patent provision (Section
+   3), the indemnity provision (Section 9) or other Section of the License
+   conflicts with the conditions of the GPLv2, you may retroactively and
+   prospectively choose to deem waived or otherwise exclude such Section(s) of
+   the License, but only in their entirety and only with respect to the Combined
+   Software.
+
+
+We intend to keep LLVM perpetually open source and available under a permissive
+license - this fosters the widest adoption of LLVM by
+**allowing commercial products to be derived from LLVM** with few restrictions
+and without a requirement for making any derived works also open source.  In
+particular, LLVM's license is not a "copyleft" license like the GPL.
+
+The "Apache 2.0 License with LLVM exceptions" allows you to:
+
+* freely download and use LLVM (in whole or in part) for personal, internal, or
+  commercial purposes.
+* include LLVM in packages or distributions you create.
+* combine LLVM with code licensed under every other major open source
+  license (including BSD, MIT, GPLv2, GPLv3...).
+* make changes to LLVM code without being required to contribute it back
+  to the project - contributions are appreciated though!
+
+However, it imposes these limitations on you:
+
+* You must retain the copyright notice if you redistribute LLVM: You cannot
+  strip the copyright headers off or replace them with your own.
+* Binaries that include LLVM must reproduce the copyright notice (e.g. in an
+  included README file or in an "About" box), unless the LLVM code was added as
+  a by-product of compilation.  For example, if an LLVM runtime library like
+  compiler_rt or libc++ was automatically included into your application by the
+  compiler, you do not need to attribute it.
+* You can't use our names to promote your products (LLVM derived or not) -
+  though you can make truthful statements about your use of the LLVM code,
+  without implying our sponsorship.
+* There's no warranty on LLVM at all.
+
+We want LLVM code to be widely used, and believe that this provides a model that
+is great for contributors and users of the project.  For more information about
+the Apache 2.0 License, please see the `Apache License FAQ
+<http://www.apache.org/foundation/license-faq.html>`_, maintained by the
+Apache Project.
+
+
+.. note::
+
+   The LLVM Project includes some really old subprojects (dragonegg,
+   llvm-gcc-4.0, and llvm-gcc-4.2), which are licensed under **GPL
+   licenses**.  This code is not actively maintained - it does not even
+   build successfully.  This code is cleanly separated into distinct SVN
+   repositories from the rest of LLVM, and the LICENSE.txt files specifically
+   indicate that they contain GPL code.  When LLVM transitions from SVN to Git,
+   we plan to drop these code bases from the new repository structure.
+
+
+.. _patent license:
+
+Patents
 -------
 
-We intend to keep LLVM perpetually open source and to use a liberal open source
-license. **As a contributor to the project, you agree that any contributions be
-licensed under the terms of the corresponding subproject.** All of the code in
+Section 3 of the Apache 2.0 license is a patent grant under which
+contributors of code to the project contribute the rights to use any of
+their patents that would otherwise be infringed by that code contribution
+(protecting uses of that code).  Further, the patent grant is revoked
+from anyone who files a patent lawsuit about code in LLVM - this protects the
+community by providing a "patent commons" for the code base and reducing the
+odds of patent lawsuits in general.
+
+The license specifically scopes which patents are included with code
+contributions.  To help explain this, the `Apache License FAQ
+<http://www.apache.org/foundation/license-faq.html>`_ explains this scope using
+some questions and answers, which we reproduce here for your convenience (for
+reference, the "ASF" is the Apache Software Foundation, the guidance still
+holds though)::
+
+   Q1: If I own a patent and contribute to a Work, and, at the time my
+   contribution is included in that Work, none of my patent's claims are subject
+   to Apache's Grant of Patent License, is there a way any of those claims would
+   later become subject to the Grant of Patent License solely due to subsequent
+   contributions by other parties who are not licensees of that patent.
+
+   A1: No.
+
+   Q2: If at any time after my contribution, I am able to license other patent
+   claims that would have been subject to Apache's Grant of Patent License if
+   they were licensable by me at the time of my contribution, do those other
+   claims become subject to the Grant of Patent License?
+
+   A2: Yes.
+
+   Q3: If I own or control a licensable patent and contribute code to a specific
+   Apache product, which of my patent claims are subject to Apache's Grant of
+   Patent License?
+
+   A3:  The only patent claims that are licensed to the ASF are those you own or
+   have the right to license that read on your contribution or on the
+   combination of your contribution with the specific Apache product to which
+   you contributed as it existed at the time of your contribution. No additional
+   patent claims become licensed as a result of subsequent combinations of your
+   contribution with any other software. Note, however, that licensable patent
+   claims include those that you acquire in the future, as long as they read on
+   your original contribution as made at the original time. Once a patent claim
+   is subject to Apache's Grant of Patent License, it is licensed under the
+   terms of that Grant to the ASF and to recipients of any software distributed
+   by the ASF for any Apache software product whatsoever.
+
+.. _legacy:
+
+Legacy License Structure
+------------------------
+
+.. note::
+   The code base was previously licensed under the Terms described here.
+   We are in the middle of relicensing to a new approach (described above), but
+   until this effort is complete, the code is also still available under these
+   terms.  Once we finish the relicensing project, new versions of the code will
+   not be available under these terms.  However, nothing takes away your right
+   to use old versions under the licensing terms under which they were
+   originally released.
+
+We intend to keep LLVM perpetually open source and to use a permissive open
+source license.  The code in
 LLVM is available under the `University of Illinois/NCSA Open Source License
 <http://www.opensource.org/licenses/UoI-NCSA.php>`_, which boils down to
 this:
@@ -732,13 +1008,13 @@ this:
 * You can freely distribute LLVM.
 * You must retain the copyright notice if you redistribute LLVM.
 * Binaries derived from LLVM must reproduce the copyright notice (e.g. in an
-  included readme file).
+  included README file).
 * You can't use our names to promote your LLVM derived products.
 * There's no warranty on LLVM at all.
 
 We believe this fosters the widest adoption of LLVM because it **allows
 commercial products to be derived from LLVM** with few restrictions and without
-a requirement for making any derived works also open source (i.e.  LLVM's
+a requirement for making any derived works also open source (i.e. LLVM's
 license is not a "copyleft" license like the GPL). We suggest that you read the
 `License <http://www.opensource.org/licenses/UoI-NCSA.php>`_ if further
 clarification is needed.
@@ -757,29 +1033,4 @@ to move code from (e.g.)  libc++ to the LLVM core without concern, but that code
 cannot be moved from the LLVM core to libc++ without the copyright owner's
 permission.
 
-Note that the LLVM Project does distribute dragonegg, **which is
-GPL.** This means that anything "linked" into dragonegg must itself be compatible
-with the GPL, and must be releasable under the terms of the GPL.  This implies
-that **any code linked into dragonegg and distributed to others may be subject to
-the viral aspects of the GPL** (for example, a proprietary code generator linked
-into dragonegg must be made available under the GPL).  This is not a problem for
-code already distributed under a more liberal license (like the UIUC license),
-and GPL-containing subprojects are kept in separate SVN repositories whose
-LICENSE.txt files specifically indicate that they contain GPL code.
-
-Patents
--------
-
-To the best of our knowledge, LLVM does not infringe on any patents (we have
-actually removed code from LLVM in the past that was found to infringe).  Having
-code in LLVM that infringes on patents would violate an important goal of the
-project by making it hard or impossible to reuse the code for arbitrary purposes
-(including commercial use).
-
-When contributing code, we expect contributors to notify us of any potential for
-patent-related trouble with their changes (including from third parties).  If
-you or your employer own the rights to a patent and would like to contribute
-code to LLVM that relies on it, we require that the copyright owner sign an
-agreement that allows any other user of LLVM to freely use your patent.  Please
-contact the `LLVM Foundation Board of Directors <mailto:board@llvm.org>`_ for more
-details.
+.. _llvm-dev mailing list: http://lists.llvm.org/mailman/listinfo/llvm-dev

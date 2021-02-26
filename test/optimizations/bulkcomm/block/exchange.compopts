@@ -1,0 +1,3 @@
+# drop the parallel assign threshold and test whether different patterns cause
+# parallel assignment
+-sdebugDefaultDistBulkTransfer=true -sparallelAssignThreshold=1000

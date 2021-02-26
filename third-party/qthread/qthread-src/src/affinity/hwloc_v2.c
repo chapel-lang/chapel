@@ -89,7 +89,7 @@ static void print_system_view(hwloc_topology_t sys_topo)
 
     int const num_cores =
         hwloc_get_nbobjs_inside_cpuset_by_type(
-            sys_topo, allowed_cpuset, HWLOC_OBJ_CORE);
+            sys_topo, allowed_cpuset, HWLOC_OBJ_CACHE_UNIFIED);
 
     printf("TOPO: number of available COREs: %d\n", num_cores);
 }
@@ -179,7 +179,7 @@ static void init_type_options(void)
     while (NULL != obj) {
         topo_types[type_id] = obj->type;
 
-        if (0 == hwloc_compare_types(HWLOC_OBJ_CACHE, obj->type)) {
+        if (0 == hwloc_compare_types(HWLOC_OBJ_CACHE_UNIFIED, obj->type)) {
             snprintf(topo_type_names[type_id], 8, "L%dcache", cache_level);
             cache_level += 1;
         } else {
@@ -559,7 +559,7 @@ void INTERNAL qt_affinity_init(qthread_shepherd_id_t *nbshepherds,
                     sys_topo, allowed_cpuset, qt_topo.shep_level, i);
             hwloc_obj_t logical_core_obj =
                 hwloc_get_obj_inside_cpuset_by_type(
-                    sys_topo, shep_obj->allowed_cpuset, HWLOC_OBJ_CORE, j);
+                    sys_topo, shep_obj->cpuset, HWLOC_OBJ_CORE, j);
             qt_topo.worker_map[uid].bind_obj =
                 hwloc_get_ancestor_obj_by_depth(
                     sys_topo, qt_topo.worker_obj->depth, logical_core_obj);
@@ -587,7 +587,7 @@ void INTERNAL qt_affinity_set(qthread_worker_t *me,
     ASSERT_ONLY(hwloc_topology_check(sys_topo));
 
     hwloc_obj_t target_obj = qt_topo.worker_map[me->unique_id - 1].bind_obj;
-    if (hwloc_set_cpubind(sys_topo, target_obj->allowed_cpuset,
+    if (hwloc_set_cpubind(sys_topo, target_obj->cpuset,
                           HWLOC_CPUBIND_THREAD)) {
         char *str;
         int   i = errno;
@@ -596,7 +596,7 @@ void INTERNAL qt_affinity_set(qthread_worker_t *me,
             return;
         }
 #endif
-        hwloc_bitmap_asprintf(&str, target_obj->allowed_cpuset);
+        hwloc_bitmap_asprintf(&str, target_obj->cpuset);
         fprintf(stderr, "Couldn't bind to cpuset %s because %s (%i)\n", str,
                 strerror(i), i);
         FREE(str, strlen(str));
@@ -683,7 +683,7 @@ void INTERNAL qt_affinity_mem_tonode(void  *addr,
 
     DEBUG_ONLY(hwloc_topology_check(sys_topo));
     hwloc_bitmap_set(nodeset, node);
-    hwloc_set_area_membind_nodeset(sys_topo, addr, bytes, nodeset,
+    hwloc_set_area_membind(sys_topo, addr, bytes, nodeset,
                                    HWLOC_MEMBIND_BIND,
                                    HWLOC_MEMBIND_NOCPUBIND);
     hwloc_bitmap_free(nodeset);

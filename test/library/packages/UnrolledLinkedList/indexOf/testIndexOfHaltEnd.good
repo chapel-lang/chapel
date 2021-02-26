@@ -1,0 +1,1 @@
+testIndexOfHaltEnd.chpl:12: error: halt reached - End index for "unrolledLinkedList.indexOf" out of bounds: 8

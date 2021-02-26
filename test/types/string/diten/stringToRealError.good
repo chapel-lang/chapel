@@ -1,0 +1,3 @@
+uncaught IllegalArgumentError: bad cast from string '  1234  _' to real(64)
+  stringToRealError.chpl:4: thrown here
+  stringToRealError.chpl:4: uncaught here

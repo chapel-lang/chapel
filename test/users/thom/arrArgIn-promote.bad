@@ -1,4 +1,0 @@
-arrArgIn-promote.chpl:8: error: unresolved call 'writeArr(promoted expression)'
-arrArgIn-promote.chpl:1: note: this candidate did not match: writeArr(in X: [] real)
-arrArgIn-promote.chpl:8: note: because call actual argument #1 with type iterator
-arrArgIn-promote.chpl:1: note: is passed to formal 'in X: []'

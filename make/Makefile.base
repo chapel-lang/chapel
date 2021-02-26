@@ -1,4 +1,4 @@
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -99,6 +99,9 @@ $(eval $(CHPL_MAKE_SETTINGS))
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
+# Compute python command name
+export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
+
 # Now do some minor situational clean-ups.
 
 # The config variable for segment is CHPL_GASNET_SEGMENT
@@ -115,6 +118,7 @@ CHPL_MAKE_COMPILER = $(CHPL_MAKE_TARGET_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_TARGET_PLATFORM)
 CHPL_MAKE_ARCH = $(CHPL_MAKE_TARGET_ARCH)
 CHPL_MAKE_MEM = $(CHPL_MAKE_TARGET_MEM)
+CHPL_MAKE_SANITIZE = $(CHPL_MAKE_SANITIZE_EXE)
 else
 CHPL_MAKE_COMPILER = $(CHPL_MAKE_HOST_COMPILER)
 CHPL_MAKE_PLATFORM = $(CHPL_MAKE_HOST_PLATFORM)
@@ -179,6 +183,7 @@ include $(THIRD_PARTY_DIR)/re2/Makefile.include
 include $(THIRD_PARTY_DIR)/llvm/Makefile.include-$(CHPL_MAKE_LLVM)
 include $(THIRD_PARTY_DIR)/fltk/Makefile.include
 include $(THIRD_PARTY_DIR)/libunwind/Makefile.include
+include $(THIRD_PARTY_DIR)/libfabric/Makefile.include
 
 -include $(THIRD_PARTY_DIR)/Makefile.devel.include
 

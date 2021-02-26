@@ -1,0 +1,30 @@
+if HAVE_RXM
+_rxm_files = \
+       prov/rxm/src/rxm_attr.c		\
+       prov/rxm/src/rxm_init.c		\
+       prov/rxm/src/rxm_fabric.c	\
+       prov/rxm/src/rxm_domain.c	\
+       prov/rxm/src/rxm_conn.c		\
+       prov/rxm/src/rxm_ep.c		\
+       prov/rxm/src/rxm_cq.c		\
+       prov/rxm/src/rxm_av.c		\
+       prov/rxm/src/rxm_rma.c		\
+       prov/rxm/src/rxm_atomic.c		\
+       prov/rxm/src/rxm.h
+
+if HAVE_RXM_DL
+pkglib_LTLIBRARIES += librxm-fi.la
+librxm_fi_la_SOURCES = $(_rxm_files) $(common_srcs)
+librxm_fi_la_LIBADD = $(linkback) $(rxm_shm_LIBS)
+librxm_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
+librxm_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_RXM_DL
+src_libfabric_la_SOURCES += $(_rxm_files)
+src_libfabric_la_LIBADD += $(rxm_shm_LIBS)
+endif !HAVE_RXM_DL
+
+prov_install_man_pages += man/man7/fi_rxm.7
+
+endif HAVE_RXM
+
+prov_dist_man_pages += man/man7/fi_rxm.7

@@ -1,0 +1,2 @@
+error-dfltimpl-rettype.chpl:9: error: interface function dfltInt with inferred return type
+error-dfltimpl-rettype.chpl:9: note: a non-void return type must be declared explicitly

@@ -6,6 +6,9 @@ endif
 
 ifndef LLVM_CONFIG
   export LLVM_CONFIG:=$(shell $(THIRD_PARTY_DIR)/llvm/find-llvm-config.sh $(PREFERRED_LLVM_VERS))
+  ifeq ($(LLVM_CONFIG), missing-llvm-config)
+    $(error Could not find compatible LLVM version for CHPL_LLVM=system)
+  endif
 endif
 
 ifndef LLVM_CONFIG_INCLUDE_DIR

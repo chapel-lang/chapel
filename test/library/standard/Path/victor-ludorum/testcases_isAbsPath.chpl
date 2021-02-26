@@ -20,7 +20,7 @@
    writeln(isAbsPath(getPythonsAbspath()));
 
    proc getPythonsAbspath() {
-     var command = "python -c 'import os; print(os.getcwd())'";
+     var command = "python3 -c 'import os; print(os.getcwd())'";
      var sub = spawnshell(command, stdout=PIPE);
 
      var absPath:string;

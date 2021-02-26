@@ -1,9 +1,8 @@
 //====- X86FlagsCopyLowering.cpp - Lowers COPY nodes of EFLAGS ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -71,12 +70,6 @@ STATISTIC(NumSetCCsInserted, "Number of setCC instructions inserted");
 STATISTIC(NumTestsInserted, "Number of test instructions inserted");
 STATISTIC(NumAddsInserted, "Number of adds instructions inserted");
 
-namespace llvm {
-
-void initializeX86FlagsCopyLoweringPassPass(PassRegistry &);
-
-} // end namespace llvm
-
 namespace {
 
 // Convenient array type for storing registers associated with each condition.
@@ -84,9 +77,7 @@ using CondRegArray = std::array<unsigned, X86::LAST_VALID_COND + 1>;
 
 class X86FlagsCopyLoweringPass : public MachineFunctionPass {
 public:
-  X86FlagsCopyLoweringPass() : MachineFunctionPass(ID) {
-    initializeX86FlagsCopyLoweringPassPass(*PassRegistry::getPassRegistry());
-  }
+  X86FlagsCopyLoweringPass() : MachineFunctionPass(ID) { }
 
   StringRef getPassName() const override { return "X86 EFLAGS copy lowering"; }
   bool runOnMachineFunction(MachineFunction &MF) override;
@@ -96,12 +87,12 @@ public:
   static char ID;
 
 private:
-  MachineRegisterInfo *MRI;
-  const X86Subtarget *Subtarget;
-  const X86InstrInfo *TII;
-  const TargetRegisterInfo *TRI;
-  const TargetRegisterClass *PromoteRC;
-  MachineDominatorTree *MDT;
+  MachineRegisterInfo *MRI = nullptr;
+  const X86Subtarget *Subtarget = nullptr;
+  const X86InstrInfo *TII = nullptr;
+  const TargetRegisterInfo *TRI = nullptr;
+  const TargetRegisterClass *PromoteRC = nullptr;
+  MachineDominatorTree *MDT = nullptr;
 
   CondRegArray collectCondsInRegs(MachineBasicBlock &MBB,
                                   MachineBasicBlock::iterator CopyDefI);
@@ -124,15 +115,15 @@ private:
                    MachineBasicBlock::iterator TestPos, DebugLoc TestLoc,
                    MachineInstr &CMovI, MachineOperand &FlagUse,
                    CondRegArray &CondRegs);
+  void rewriteFCMov(MachineBasicBlock &TestMBB,
+                    MachineBasicBlock::iterator TestPos, DebugLoc TestLoc,
+                    MachineInstr &CMovI, MachineOperand &FlagUse,
+                    CondRegArray &CondRegs);
   void rewriteCondJmp(MachineBasicBlock &TestMBB,
                       MachineBasicBlock::iterator TestPos, DebugLoc TestLoc,
                       MachineInstr &JmpI, CondRegArray &CondRegs);
   void rewriteCopy(MachineInstr &MI, MachineOperand &FlagUse,
                    MachineInstr &CopyDefI);
-  void rewriteSetCarryExtended(MachineBasicBlock &TestMBB,
-                               MachineBasicBlock::iterator TestPos,
-                               DebugLoc TestLoc, MachineInstr &SetBI,
-                               MachineOperand &FlagUse, CondRegArray &CondRegs);
   void rewriteSetCC(MachineBasicBlock &TestMBB,
                     MachineBasicBlock::iterator TestPos, DebugLoc TestLoc,
                     MachineInstr &SetCCI, MachineOperand &FlagUse,
@@ -170,6 +161,7 @@ enum class FlagArithMnemonic {
   RCL,
   RCR,
   SBB,
+  SETB,
 };
 } // namespace
 
@@ -240,6 +232,10 @@ static FlagArithMnemonic getMnemonicFromOpcode(unsigned Opcode) {
   case X86::ADOX32rm:
   case X86::ADOX64rm:
     return FlagArithMnemonic::ADOX;
+
+  case X86::SETB_C32r:
+  case X86::SETB_C64r:
+    return FlagArithMnemonic::SETB;
   }
 }
 
@@ -252,13 +248,13 @@ static MachineBasicBlock &splitBlock(MachineBasicBlock &MBB,
          "Split instruction must be in the split block!");
   assert(SplitI.isBranch() &&
          "Only designed to split a tail of branch instructions!");
-  assert(X86::getCondFromBranchOpc(SplitI.getOpcode()) != X86::COND_INVALID &&
+  assert(X86::getCondFromBranch(SplitI) != X86::COND_INVALID &&
          "Must split on an actual jCC instruction!");
 
   // Dig out the previous instruction to the split point.
   MachineInstr &PrevI = *std::prev(SplitI.getIterator());
   assert(PrevI.isBranch() && "Must split after a branch!");
-  assert(X86::getCondFromBranchOpc(PrevI.getOpcode()) != X86::COND_INVALID &&
+  assert(X86::getCondFromBranch(PrevI) != X86::COND_INVALID &&
          "Must split after an actual jCC instruction!");
   assert(!std::prev(PrevI.getIterator())->isTerminator() &&
          "Must only have this one terminator prior to the split!");
@@ -341,6 +337,28 @@ static MachineBasicBlock &splitBlock(MachineBasicBlock &MBB,
   }
 
   return NewMBB;
+}
+
+static X86::CondCode getCondFromFCMOV(unsigned Opcode) {
+  switch (Opcode) {
+  default: return X86::COND_INVALID;
+  case X86::CMOVBE_Fp32:  case X86::CMOVBE_Fp64:  case X86::CMOVBE_Fp80:
+    return X86::COND_BE;
+  case X86::CMOVB_Fp32:   case X86::CMOVB_Fp64:   case X86::CMOVB_Fp80:
+    return X86::COND_B;
+  case X86::CMOVE_Fp32:   case X86::CMOVE_Fp64:   case X86::CMOVE_Fp80:
+    return X86::COND_E;
+  case X86::CMOVNBE_Fp32: case X86::CMOVNBE_Fp64: case X86::CMOVNBE_Fp80:
+    return X86::COND_A;
+  case X86::CMOVNB_Fp32:  case X86::CMOVNB_Fp64:  case X86::CMOVNB_Fp80:
+    return X86::COND_AE;
+  case X86::CMOVNE_Fp32:  case X86::CMOVNE_Fp64:  case X86::CMOVNE_Fp80:
+    return X86::COND_NE;
+  case X86::CMOVNP_Fp32:  case X86::CMOVNP_Fp64:  case X86::CMOVNP_Fp80:
+    return X86::COND_NP;
+  case X86::CMOVP_Fp32:   case X86::CMOVP_Fp64:   case X86::CMOVP_Fp80:
+    return X86::COND_P;
+  }
 }
 
 bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
@@ -588,22 +606,23 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
         // branch folding or black placement. As a consequence, we get to deal
         // with the simpler formulation of conditional branches followed by tail
         // calls.
-        if (X86::getCondFromBranchOpc(MI.getOpcode()) != X86::COND_INVALID) {
+        if (X86::getCondFromBranch(MI) != X86::COND_INVALID) {
           auto JmpIt = MI.getIterator();
           do {
             JmpIs.push_back(&*JmpIt);
             ++JmpIt;
           } while (JmpIt != UseMBB.instr_end() &&
-                   X86::getCondFromBranchOpc(JmpIt->getOpcode()) !=
+                   X86::getCondFromBranch(*JmpIt) !=
                        X86::COND_INVALID);
           break;
         }
 
         // Otherwise we can just rewrite in-place.
-        if (X86::getCondFromCMovOpc(MI.getOpcode()) != X86::COND_INVALID) {
+        if (X86::getCondFromCMov(MI) != X86::COND_INVALID) {
           rewriteCMov(*TestMBB, TestPos, TestLoc, MI, *FlagUse, CondRegs);
-        } else if (X86::getCondFromSETOpc(MI.getOpcode()) !=
-                   X86::COND_INVALID) {
+        } else if (getCondFromFCMOV(MI.getOpcode()) != X86::COND_INVALID) {
+          rewriteFCMov(*TestMBB, TestPos, TestLoc, MI, *FlagUse, CondRegs);
+        } else if (X86::getCondFromSETCC(MI) != X86::COND_INVALID) {
           rewriteSetCC(*TestMBB, TestPos, TestLoc, MI, *FlagUse, CondRegs);
         } else if (MI.getOpcode() == TargetOpcode::COPY) {
           rewriteCopy(MI, *FlagUse, CopyDefI);
@@ -620,24 +639,9 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
           // logic.
           FlagsKilled = true;
 
-          switch (MI.getOpcode()) {
-          case X86::SETB_C8r:
-          case X86::SETB_C16r:
-          case X86::SETB_C32r:
-          case X86::SETB_C64r:
-            // Use custom lowering for arithmetic that is merely extending the
-            // carry flag. We model this as the SETB_C* pseudo instructions.
-            rewriteSetCarryExtended(*TestMBB, TestPos, TestLoc, MI, *FlagUse,
-                                    CondRegs);
-            break;
-
-          default:
-            // Generically handle remaining uses as arithmetic instructions.
-            rewriteArithmetic(*TestMBB, TestPos, TestLoc, MI, *FlagUse,
-                              CondRegs);
-            break;
-          }
-          break;
+          // Generically handle remaining uses as arithmetic instructions.
+          rewriteArithmetic(*TestMBB, TestPos, TestLoc, MI, *FlagUse,
+                            CondRegs);
         }
 
         // If this was the last use of the flags, we're done.
@@ -684,6 +688,9 @@ bool X86FlagsCopyLoweringPass::runOnMachineFunction(MachineFunction &MF) {
           }
 
           Blocks.push_back(SuccMBB);
+
+          // After this, EFLAGS will be recreated before each use.
+          SuccMBB->removeLiveIn(X86::EFLAGS);
         }
     } while (!Blocks.empty());
 
@@ -730,9 +737,10 @@ CondRegArray X86FlagsCopyLoweringPass::collectCondsInRegs(
   // Scan backwards across the range of instructions with live EFLAGS.
   for (MachineInstr &MI :
        llvm::reverse(llvm::make_range(MBB.begin(), TestPos))) {
-    X86::CondCode Cond = X86::getCondFromSETOpc(MI.getOpcode());
-    if (Cond != X86::COND_INVALID && !MI.mayStore() && MI.getOperand(0).isReg() &&
-        TRI->isVirtualRegister(MI.getOperand(0).getReg())) {
+    X86::CondCode Cond = X86::getCondFromSETCC(MI);
+    if (Cond != X86::COND_INVALID && !MI.mayStore() &&
+        MI.getOperand(0).isReg() &&
+        Register::isVirtualRegister(MI.getOperand(0).getReg())) {
       assert(MI.getOperand(0).isDef() &&
              "A non-storing SETcc should always define a register!");
       CondRegs[Cond] = MI.getOperand(0).getReg();
@@ -749,9 +757,9 @@ CondRegArray X86FlagsCopyLoweringPass::collectCondsInRegs(
 unsigned X86FlagsCopyLoweringPass::promoteCondToReg(
     MachineBasicBlock &TestMBB, MachineBasicBlock::iterator TestPos,
     DebugLoc TestLoc, X86::CondCode Cond) {
-  unsigned Reg = MRI->createVirtualRegister(PromoteRC);
+  Register Reg = MRI->createVirtualRegister(PromoteRC);
   auto SetI = BuildMI(TestMBB, TestPos, TestLoc,
-                      TII->get(X86::getSETFromCond(Cond)), Reg);
+                      TII->get(X86::SETCCr), Reg).addImm(Cond);
   (void)SetI;
   LLVM_DEBUG(dbgs() << "    save cond: "; SetI->dump());
   ++NumSetCCsInserted;
@@ -788,10 +796,10 @@ void X86FlagsCopyLoweringPass::rewriteArithmetic(
     CondRegArray &CondRegs) {
   // Arithmetic is either reading CF or OF. Figure out which condition we need
   // to preserve in a register.
-  X86::CondCode Cond;
+  X86::CondCode Cond = X86::COND_INVALID;
 
   // The addend to use to reset CF or OF when added to the flag value.
-  int Addend;
+  int Addend = 0;
 
   switch (getMnemonicFromOpcode(MI.getOpcode())) {
   case FlagArithMnemonic::ADC:
@@ -799,6 +807,7 @@ void X86FlagsCopyLoweringPass::rewriteArithmetic(
   case FlagArithMnemonic::RCL:
   case FlagArithMnemonic::RCR:
   case FlagArithMnemonic::SBB:
+  case FlagArithMnemonic::SETB:
     Cond = X86::COND_B; // CF == 1
     // Set up an addend that when one is added will need a carry due to not
     // having a higher bit available.
@@ -823,7 +832,7 @@ void X86FlagsCopyLoweringPass::rewriteArithmetic(
   MachineBasicBlock &MBB = *MI.getParent();
 
   // Insert an instruction that will set the flag back to the desired value.
-  unsigned TmpReg = MRI->createVirtualRegister(PromoteRC);
+  Register TmpReg = MRI->createVirtualRegister(PromoteRC);
   auto AddI =
       BuildMI(MBB, MI.getIterator(), MI.getDebugLoc(), TII->get(X86::ADD8ri))
           .addDef(TmpReg, RegState::Dead)
@@ -842,7 +851,7 @@ void X86FlagsCopyLoweringPass::rewriteCMov(MachineBasicBlock &TestMBB,
                                            MachineOperand &FlagUse,
                                            CondRegArray &CondRegs) {
   // First get the register containing this specific condition.
-  X86::CondCode Cond = X86::getCondFromCMovOpc(CMovI.getOpcode());
+  X86::CondCode Cond = X86::getCondFromCMov(CMovI);
   unsigned CondReg;
   bool Inverted;
   std::tie(CondReg, Inverted) =
@@ -853,21 +862,64 @@ void X86FlagsCopyLoweringPass::rewriteCMov(MachineBasicBlock &TestMBB,
   // Insert a direct test of the saved register.
   insertTest(MBB, CMovI.getIterator(), CMovI.getDebugLoc(), CondReg);
 
-  // Rewrite the CMov to use the !ZF flag from the test (but match register
-  // size and memory operand), and then kill its use of the flags afterward.
-  auto &CMovRC = *MRI->getRegClass(CMovI.getOperand(0).getReg());
-  CMovI.setDesc(TII->get(X86::getCMovFromCond(
-      Inverted ? X86::COND_E : X86::COND_NE, TRI->getRegSizeInBits(CMovRC) / 8,
-      !CMovI.memoperands_empty())));
+  // Rewrite the CMov to use the !ZF flag from the test, and then kill its use
+  // of the flags afterward.
+  CMovI.getOperand(CMovI.getDesc().getNumOperands() - 1)
+      .setImm(Inverted ? X86::COND_E : X86::COND_NE);
   FlagUse.setIsKill(true);
   LLVM_DEBUG(dbgs() << "    fixed cmov: "; CMovI.dump());
+}
+
+void X86FlagsCopyLoweringPass::rewriteFCMov(MachineBasicBlock &TestMBB,
+                                            MachineBasicBlock::iterator TestPos,
+                                            DebugLoc TestLoc,
+                                            MachineInstr &CMovI,
+                                            MachineOperand &FlagUse,
+                                            CondRegArray &CondRegs) {
+  // First get the register containing this specific condition.
+  X86::CondCode Cond = getCondFromFCMOV(CMovI.getOpcode());
+  unsigned CondReg;
+  bool Inverted;
+  std::tie(CondReg, Inverted) =
+      getCondOrInverseInReg(TestMBB, TestPos, TestLoc, Cond, CondRegs);
+
+  MachineBasicBlock &MBB = *CMovI.getParent();
+
+  // Insert a direct test of the saved register.
+  insertTest(MBB, CMovI.getIterator(), CMovI.getDebugLoc(), CondReg);
+
+  auto getFCMOVOpcode = [](unsigned Opcode, bool Inverted) {
+    switch (Opcode) {
+    default: llvm_unreachable("Unexpected opcode!");
+    case X86::CMOVBE_Fp32: case X86::CMOVNBE_Fp32:
+    case X86::CMOVB_Fp32:  case X86::CMOVNB_Fp32:
+    case X86::CMOVE_Fp32:  case X86::CMOVNE_Fp32:
+    case X86::CMOVP_Fp32:  case X86::CMOVNP_Fp32:
+      return Inverted ? X86::CMOVE_Fp32 : X86::CMOVNE_Fp32;
+    case X86::CMOVBE_Fp64: case X86::CMOVNBE_Fp64:
+    case X86::CMOVB_Fp64:  case X86::CMOVNB_Fp64:
+    case X86::CMOVE_Fp64:  case X86::CMOVNE_Fp64:
+    case X86::CMOVP_Fp64:  case X86::CMOVNP_Fp64:
+      return Inverted ? X86::CMOVE_Fp64 : X86::CMOVNE_Fp64;
+    case X86::CMOVBE_Fp80: case X86::CMOVNBE_Fp80:
+    case X86::CMOVB_Fp80:  case X86::CMOVNB_Fp80:
+    case X86::CMOVE_Fp80:  case X86::CMOVNE_Fp80:
+    case X86::CMOVP_Fp80:  case X86::CMOVNP_Fp80:
+      return Inverted ? X86::CMOVE_Fp80 : X86::CMOVNE_Fp80;
+    }
+  };
+
+  // Rewrite the CMov to use the !ZF flag from the test.
+  CMovI.setDesc(TII->get(getFCMOVOpcode(CMovI.getOpcode(), Inverted)));
+  FlagUse.setIsKill(true);
+  LLVM_DEBUG(dbgs() << "    fixed fcmov: "; CMovI.dump());
 }
 
 void X86FlagsCopyLoweringPass::rewriteCondJmp(
     MachineBasicBlock &TestMBB, MachineBasicBlock::iterator TestPos,
     DebugLoc TestLoc, MachineInstr &JmpI, CondRegArray &CondRegs) {
   // First get the register containing this specific condition.
-  X86::CondCode Cond = X86::getCondFromBranchOpc(JmpI.getOpcode());
+  X86::CondCode Cond = X86::getCondFromBranch(JmpI);
   unsigned CondReg;
   bool Inverted;
   std::tie(CondReg, Inverted) =
@@ -880,10 +932,8 @@ void X86FlagsCopyLoweringPass::rewriteCondJmp(
 
   // Rewrite the jump to use the !ZF flag from the test, and kill its use of
   // flags afterward.
-  JmpI.setDesc(TII->get(
-      X86::GetCondBranchFromCond(Inverted ? X86::COND_E : X86::COND_NE)));
-  const int ImplicitEFLAGSOpIdx = 1;
-  JmpI.getOperand(ImplicitEFLAGSOpIdx).setIsKill(true);
+  JmpI.getOperand(1).setImm(Inverted ? X86::COND_E : X86::COND_NE);
+  JmpI.findRegisterUseOperand(X86::EFLAGS)->setIsKill(true);
   LLVM_DEBUG(dbgs() << "    fixed jCC: "; JmpI.dump());
 }
 
@@ -896,137 +946,13 @@ void X86FlagsCopyLoweringPass::rewriteCopy(MachineInstr &MI,
   MI.eraseFromParent();
 }
 
-void X86FlagsCopyLoweringPass::rewriteSetCarryExtended(
-    MachineBasicBlock &TestMBB, MachineBasicBlock::iterator TestPos,
-    DebugLoc TestLoc, MachineInstr &SetBI, MachineOperand &FlagUse,
-    CondRegArray &CondRegs) {
-  // This routine is only used to handle pseudos for setting a register to zero
-  // or all ones based on CF. This is essentially the sign extended from 1-bit
-  // form of SETB and modeled with the SETB_C* pseudos. They require special
-  // handling as they aren't normal SETcc instructions and are lowered to an
-  // EFLAGS clobbering operation (SBB typically). One simplifying aspect is that
-  // they are only provided in reg-defining forms. A complicating factor is that
-  // they can define many different register widths.
-  assert(SetBI.getOperand(0).isReg() &&
-         "Cannot have a non-register defined operand to this variant of SETB!");
-
-  // Little helper to do the common final step of replacing the register def'ed
-  // by this SETB instruction with a new register and removing the SETB
-  // instruction.
-  auto RewriteToReg = [&](unsigned Reg) {
-    MRI->replaceRegWith(SetBI.getOperand(0).getReg(), Reg);
-    SetBI.eraseFromParent();
-  };
-
-  // Grab the register class used for this particular instruction.
-  auto &SetBRC = *MRI->getRegClass(SetBI.getOperand(0).getReg());
-
-  MachineBasicBlock &MBB = *SetBI.getParent();
-  auto SetPos = SetBI.getIterator();
-  auto SetLoc = SetBI.getDebugLoc();
-
-  auto AdjustReg = [&](unsigned Reg) {
-    auto &OrigRC = *MRI->getRegClass(Reg);
-    if (&OrigRC == &SetBRC)
-      return Reg;
-
-    unsigned NewReg;
-
-    int OrigRegSize = TRI->getRegSizeInBits(OrigRC) / 8;
-    int TargetRegSize = TRI->getRegSizeInBits(SetBRC) / 8;
-    assert(OrigRegSize <= 8 && "No GPRs larger than 64-bits!");
-    assert(TargetRegSize <= 8 && "No GPRs larger than 64-bits!");
-    int SubRegIdx[] = {X86::NoSubRegister, X86::sub_8bit, X86::sub_16bit,
-                       X86::NoSubRegister, X86::sub_32bit};
-
-    // If the original size is smaller than the target *and* is smaller than 4
-    // bytes, we need to explicitly zero extend it. We always extend to 4-bytes
-    // to maximize the chance of being able to CSE that operation and to avoid
-    // partial dependency stalls extending to 2-bytes.
-    if (OrigRegSize < TargetRegSize && OrigRegSize < 4) {
-      NewReg = MRI->createVirtualRegister(&X86::GR32RegClass);
-      BuildMI(MBB, SetPos, SetLoc, TII->get(X86::MOVZX32rr8), NewReg)
-          .addReg(Reg);
-      if (&SetBRC == &X86::GR32RegClass)
-        return NewReg;
-      Reg = NewReg;
-      OrigRegSize = 4;
-    }
-
-    NewReg = MRI->createVirtualRegister(&SetBRC);
-    if (OrigRegSize < TargetRegSize) {
-      BuildMI(MBB, SetPos, SetLoc, TII->get(TargetOpcode::SUBREG_TO_REG),
-              NewReg)
-          .addImm(0)
-          .addReg(Reg)
-          .addImm(SubRegIdx[OrigRegSize]);
-    } else if (OrigRegSize > TargetRegSize) {
-      if (TargetRegSize == 1 && !Subtarget->is64Bit()) {
-        // Need to constrain the register class.
-        MRI->constrainRegClass(Reg, &X86::GR32_ABCDRegClass);
-      }
-
-      BuildMI(MBB, SetPos, SetLoc, TII->get(TargetOpcode::COPY),
-              NewReg)
-          .addReg(Reg, 0, SubRegIdx[TargetRegSize]);
-    } else {
-      BuildMI(MBB, SetPos, SetLoc, TII->get(TargetOpcode::COPY), NewReg)
-          .addReg(Reg);
-    }
-    return NewReg;
-  };
-
-  unsigned &CondReg = CondRegs[X86::COND_B];
-  if (!CondReg)
-    CondReg = promoteCondToReg(TestMBB, TestPos, TestLoc, X86::COND_B);
-
-  // Adjust the condition to have the desired register width by zero-extending
-  // as needed.
-  // FIXME: We should use a better API to avoid the local reference and using a
-  // different variable here.
-  unsigned ExtCondReg = AdjustReg(CondReg);
-
-  // Now we need to turn this into a bitmask. We do this by subtracting it from
-  // zero.
-  unsigned ZeroReg = MRI->createVirtualRegister(&X86::GR32RegClass);
-  BuildMI(MBB, SetPos, SetLoc, TII->get(X86::MOV32r0), ZeroReg);
-  ZeroReg = AdjustReg(ZeroReg);
-
-  unsigned Sub;
-  switch (SetBI.getOpcode()) {
-  case X86::SETB_C8r:
-    Sub = X86::SUB8rr;
-    break;
-
-  case X86::SETB_C16r:
-    Sub = X86::SUB16rr;
-    break;
-
-  case X86::SETB_C32r:
-    Sub = X86::SUB32rr;
-    break;
-
-  case X86::SETB_C64r:
-    Sub = X86::SUB64rr;
-    break;
-
-  default:
-    llvm_unreachable("Invalid SETB_C* opcode!");
-  }
-  unsigned ResultReg = MRI->createVirtualRegister(&SetBRC);
-  BuildMI(MBB, SetPos, SetLoc, TII->get(Sub), ResultReg)
-      .addReg(ZeroReg)
-      .addReg(ExtCondReg);
-  return RewriteToReg(ResultReg);
-}
-
 void X86FlagsCopyLoweringPass::rewriteSetCC(MachineBasicBlock &TestMBB,
                                             MachineBasicBlock::iterator TestPos,
                                             DebugLoc TestLoc,
                                             MachineInstr &SetCCI,
                                             MachineOperand &FlagUse,
                                             CondRegArray &CondRegs) {
-  X86::CondCode Cond = X86::getCondFromSETOpc(SetCCI.getOpcode());
+  X86::CondCode Cond = X86::getCondFromSETCC(SetCCI);
   // Note that we can't usefully rewrite this to the inverse without complex
   // analysis of the users of the setCC. Largely we rely on duplicates which
   // could have been avoided already being avoided here.

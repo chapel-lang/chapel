@@ -1,9 +1,8 @@
 //===- RegisterClassInfo.h - Dynamic Register Class Info --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -111,7 +110,7 @@ public:
   /// getLastCalleeSavedAlias - Returns the last callee saved register that
   /// overlaps PhysReg, or 0 if Reg doesn't overlap a CalleeSavedAliases.
   unsigned getLastCalleeSavedAlias(unsigned PhysReg) const {
-    assert(TargetRegisterInfo::isPhysicalRegister(PhysReg));
+    assert(Register::isPhysicalRegister(PhysReg));
     if (PhysReg < CalleeSavedAliases.size())
       return CalleeSavedAliases[PhysReg];
     return 0;

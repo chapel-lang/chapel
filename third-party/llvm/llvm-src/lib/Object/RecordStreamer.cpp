@@ -1,9 +1,8 @@
 //===-- RecordStreamer.cpp - Record asm defined and used symbols ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -82,22 +81,22 @@ RecordStreamer::const_iterator RecordStreamer::begin() {
 
 RecordStreamer::const_iterator RecordStreamer::end() { return Symbols.end(); }
 
-void RecordStreamer::EmitInstruction(const MCInst &Inst,
-                                     const MCSubtargetInfo &STI, bool) {
-  MCStreamer::EmitInstruction(Inst, STI);
+void RecordStreamer::emitInstruction(const MCInst &Inst,
+                                     const MCSubtargetInfo &STI) {
+  MCStreamer::emitInstruction(Inst, STI);
 }
 
-void RecordStreamer::EmitLabel(MCSymbol *Symbol, SMLoc Loc) {
-  MCStreamer::EmitLabel(Symbol);
+void RecordStreamer::emitLabel(MCSymbol *Symbol, SMLoc Loc) {
+  MCStreamer::emitLabel(Symbol);
   markDefined(*Symbol);
 }
 
-void RecordStreamer::EmitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
+void RecordStreamer::emitAssignment(MCSymbol *Symbol, const MCExpr *Value) {
   markDefined(*Symbol);
-  MCStreamer::EmitAssignment(Symbol, Value);
+  MCStreamer::emitAssignment(Symbol, Value);
 }
 
-bool RecordStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
+bool RecordStreamer::emitSymbolAttribute(MCSymbol *Symbol,
                                          MCSymbolAttr Attribute) {
   if (Attribute == MCSA_Global || Attribute == MCSA_Weak)
     markGlobal(*Symbol, Attribute);
@@ -106,13 +105,13 @@ bool RecordStreamer::EmitSymbolAttribute(MCSymbol *Symbol,
   return true;
 }
 
-void RecordStreamer::EmitZerofill(MCSection *Section, MCSymbol *Symbol,
+void RecordStreamer::emitZerofill(MCSection *Section, MCSymbol *Symbol,
                                   uint64_t Size, unsigned ByteAlignment,
                                   SMLoc Loc) {
   markDefined(*Symbol);
 }
 
-void RecordStreamer::EmitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
+void RecordStreamer::emitCommonSymbol(MCSymbol *Symbol, uint64_t Size,
                                       unsigned ByteAlignment) {
   markDefined(*Symbol);
 }
@@ -225,9 +224,9 @@ void RecordStreamer::flushSymverDirectives() {
       if (IsDefined)
         markDefined(*Alias);
       // Don't use EmitAssignment override as it always marks alias as defined.
-      MCStreamer::EmitAssignment(Alias, Value);
+      MCStreamer::emitAssignment(Alias, Value);
       if (Attr != MCSA_Invalid)
-        EmitSymbolAttribute(Alias, Attr);
+        emitSymbolAttribute(Alias, Attr);
     }
   }
 }

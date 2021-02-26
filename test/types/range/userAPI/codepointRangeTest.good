@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
 ./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
-codepointRangeTest.chpl:3: Function 'testRangeAPI' instantiated as: testRangeAPI(lbl: string, r: range(codepointIndex,bounded,false), idx: codepointIndex, subr: range(codepointIndex,bounded,false))
+  codepointRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(codepointIndex,bounded,false), idx: codepointIndex, subr: range(codepointIndex,bounded,false))
 codepoint range
 ------------
 1..10
@@ -9,6 +9,7 @@ stridable        = false
 boundedType      = bounded
 isRangeType()    = true
 isBoundedRange() = true
+isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 1
@@ -60,6 +61,7 @@ stridable        = true
 boundedType      = bounded
 isRangeType()    = true
 isBoundedRange() = true
+isBounded()      = true
 hasLowBound()    = true
 hasHighBound()   = true
 stride           = 2
@@ -111,6 +113,7 @@ stridable        = false
 boundedType      = boundedLow
 isRangeType()    = true
 isBoundedRange() = false
+isBounded()      = false
 hasLowBound()    = true
 hasHighBound()   = false
 stride           = 1
@@ -158,6 +161,7 @@ stridable        = false
 boundedType      = boundedHigh
 isRangeType()    = true
 isBoundedRange() = false
+isBounded()      = false
 hasLowBound()    = false
 hasHighBound()   = true
 stride           = 1

@@ -1,4 +1,4 @@
 ref-superclass.chpl:13: error: unresolved call 'procRefD(borrowed C)'
 ref-superclass.chpl:6: note: this candidate did not match: procRefD(ref arg: borrowed D)
-ref-superclass.chpl:13: note: because call actual argument #1 with type borrowed C
+ref-superclass.chpl:13: note: because actual argument #1 with type 'borrowed C'
 ref-superclass.chpl:6: note: is passed to formal 'ref arg: borrowed D'

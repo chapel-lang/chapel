@@ -1,6 +1,6 @@
 
 
-proc foo(out x) {
+proc foo(out x: int) {
   x = x * 2;
   return x;
 }

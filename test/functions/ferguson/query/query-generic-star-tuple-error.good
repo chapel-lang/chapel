@@ -1,4 +1,4 @@
 query-generic-star-tuple-error.chpl:17: error: unresolved call 'f((Wrapper(int(64)),Wrapper(owned GenericClass(int(64)))))'
 query-generic-star-tuple-error.chpl:10: note: this candidate did not match: f(x: 2*Wrapper)
 query-generic-star-tuple-error.chpl:10: note: because an argument was incompatible
-query-generic-star-tuple-error.chpl:7: note: candidates are: Wrapper.f
+note: there is also 1 other candidate, use --print-all-candidates to see it

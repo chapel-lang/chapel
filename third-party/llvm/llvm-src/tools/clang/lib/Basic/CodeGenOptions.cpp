@@ -1,9 +1,8 @@
 //===--- CodeGenOptions.cpp -----------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -18,7 +17,7 @@ CodeGenOptions::CodeGenOptions() {
 #include "clang/Basic/CodeGenOptions.def"
 
   RelocationModel = llvm::Reloc::PIC_;
-  memcpy(CoverageVersion, "402*", 4);
+  memcpy(CoverageVersion, "408*", 4);
 }
 
 bool CodeGenOptions::isNoBuiltinFunc(const char *Name) const {

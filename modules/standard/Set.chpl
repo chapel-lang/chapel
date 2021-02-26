@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,6 +45,7 @@ module Set {
   import ChapelLocks;
   private use IO;
   private use Reflection;
+  private use ChapelHashtable;
 
   pragma "no doc"
   private param _sanityChecks = true;
@@ -83,6 +84,15 @@ module Set {
     }
   }
 
+  pragma "no doc"
+  proc _checkElementType(type t) {
+    // In the future we might support it if the set is not default-inited.
+    if isGenericType(t) {
+      compilerWarning('creating a set with element type ' + t:string, 2);
+      compilerError('set element type cannot currently be generic', 2);
+    }
+  }
+
   /*
     A set is a collection of unique elements. Attempting to add a duplicate
     element to a set has no effect.
@@ -117,7 +127,7 @@ module Set {
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
     pragma "no doc"
-    var _dom: domain(eltType, parSafe);
+    var _htb: chpl__hashtable(eltType, nothing);
 
     /*
       Initializes an empty set containing elements of the given type.
@@ -126,21 +136,19 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, param parSafe=false) {
-      // Only non-nilable borrowed classes work so far
-      if isClass(eltType) {
-        if !(isBorrowedClass(eltType) && isNonNilableClass(eltType)) then
-          compilerError('Sets do not support class types');
-      }
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+      _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
+    }
+
+    // Returns true if the key was added to the hashtable.
+    pragma "no doc"
+    proc _addElem(in elem: eltType): bool {
+      var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+
+      if isFullSlot then return false;
+      _htb.fillSlot(idx, elem, none);
+      return true;
     }
 
     /*
@@ -153,23 +161,14 @@ module Set {
       :arg parSafe: If `true`, this set will use parallel safe operations.
     */
     proc init(type eltType, iterable, param parSafe=false)
-            where canResolveMethod(iterable, "these") {
-      if isClass(eltType) then
-        compilerError('Sets do not support class types');
-      if isTuple(eltType) then
-        compilerError('Sets do not support tuple types');
-      if isGenericType(eltType) {
-        compilerWarning("creating a set with element type " +
-                        eltType:string);
-        compilerError("set element type cannot currently be generic");
-        // In the future we might support it if the set is not default-inited
-      }
+    where canResolveMethod(iterable, "these") lifetime this < iterable {
+      _checkElementType(eltType); 
+
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.complete();
 
-      for x in iterable do
-        _dom.add(x);
+      for elem in iterable do _addElem(elem);
     }
 
     /*
@@ -179,20 +178,17 @@ module Set {
 
       :arg other: A set to initialize this set with.
     */
-    proc init=(const ref other: set(?t, ?)) {
+    proc init=(const ref other: set(?t, ?)) lifetime this < other {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.complete();
 
-      for x in other {
-        var cpy = x;
-        _dom.add(cpy);
-      }
-    }
+      if !isCopyableType(eltType) then
+        compilerError('cannot initialize ' + this.type:string + ' from ' +
+                      other.type:string + ' because element type ' +
+                      eltType:string + ' is not copyable');
 
-    pragma "no doc"
-    inline proc deinit() {
-      clear();
+      for elem in other do _addElem(elem);
     }
 
     pragma "no doc"
@@ -217,12 +213,12 @@ module Set {
 
       :arg x: The element to add to this set.
     */
-    proc add(in x: eltType) {
-      on this {
-        _enter();
-        _dom.add(x);
-        _leave();
-      }
+    proc ref add(in x: eltType) lifetime this < x {
+
+      // Remove `on this` block because it prevents copy elision of `x` when
+      // passed to `_addElem`. See #15808.
+      _enter(); defer _leave();
+      _addElem(x);
     }
 
     /*
@@ -237,17 +233,29 @@ module Set {
       var result = false;
 
       on this {
-        _enter();
-        result = _dom.contains(x);
-        _leave();
+        _enter(); defer _leave();
+        result = _contains(x);
       }
 
       return result;
     }
 
     /*
+     As above, but parSafe lock must be held and must be called "on this".
+    */
+    pragma "no doc"
+    proc const _contains(const ref x: eltType): bool {
+      var (hasFoundSlot, _) = _htb.findFullSlot(x);
+      return hasFoundSlot;
+    }
+
+    /*
       Returns `true` if this set shares no elements in common with the set
       `other`, and `false` otherwise.
+
+      .. warning::
+
+        `other` must not be modified during this call.
 
       :arg other: The set to compare against.
       :return: Whether or not this set and `other` are disjoint.
@@ -257,26 +265,16 @@ module Set {
       var result = true;
 
       on this {
-        _enter();
+        _enter(); defer _leave();
 
-        if !(size == 0 || other.size == 0) {
-
-          //
-          // Right now, iterators do not acquire locks, and attempting to
-          // modify a container while it is being iterated over leads to
-          // undefined behavior. This means that when a container is being
-          // iterated over by at least one thread, it is considered to be in a
-          // "read only" state. This may only be a temporary assumption, but
-          // for now it means we only need to grab the lock on `this`.
-          //
+        if _size != 0 {
+          // TODO: Take locks on other?
           for x in other do
-            if _dom.contains(x) {
+            if this._contains(x) {
               result = false;
               break;
             }
         }
-
-        _leave();
       }
 
       return result;
@@ -308,18 +306,23 @@ module Set {
       :return: Whether or not an element equal to `x` was removed.
       :rtype: `bool`
     */
-    proc remove(const ref x: eltType): bool {
+    proc ref remove(const ref x: eltType): bool {
       var result = false;
 
       on this {
-        _enter();
+        _enter(); defer _leave();
 
-        if _dom.contains(x) {
-          _dom.remove(x);
+        var (hasFoundSlot, idx) = _htb.findFullSlot(x);
+
+        if hasFoundSlot {
+          // TODO: Return the removed element? #15819
+          var key: eltType;
+          var val: nothing;
+
+          _htb.clearSlot(idx, key, val);
+          _htb.maybeShrinkAfterRemove();
           result = true;
         }
-
-        _leave();
       }
 
       return result;
@@ -333,46 +336,62 @@ module Set {
         Clearing the contents of this set will invalidate all existing
         references to the elements contained in this set.
     */
-    proc clear() {
+    proc ref clear() {
       on this {
-        _enter();
-        _dom.clear();
-        _leave();
+        _enter(); defer _leave();
+
+        for idx in 0..#_htb.tableSize {
+          if _htb.isSlotFull(idx) {
+            var key: eltType;
+            var val: nothing;
+            _htb.clearSlot(idx, key, val);
+          }
+        }
+
+        _htb.maybeShrinkAfterRemove();
       }
     }
 
     /*
-      Iterate over the elements of this set.
+      Iterate over the elements of this set. Yields constant references
+      that cannot be modified.
 
       .. warning::
 
-        Set iterators are currently not threadsafe. Attempting to mutate the
-        state of a set while it is being iterated over is considered
-        undefined behavior.
-
-      :yields: A reference to one of the elements contained in this set.
+        Modifying this set while iterating over it may invalidate the
+        references returned by an iterator and is considered undefined
+        behavior.
+      
+      :yields: A constant reference to an element in this set.
     */
-    iter these() {
-      for x in _dom.these() do
-        yield x;
+    pragma "order independent yielding loops"
+    iter const these() {
+      for idx in 0..#_htb.tableSize do
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.standalone {
-      for x in _dom.these(tag) do
-        yield x;
+    pragma "order independent yielding loops"
+    iter const these(param tag) where tag == iterKind.standalone {
+      var space = 0..#_htb.tableSize;
+      for idx in space.these(tag) do
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     pragma "no doc"
-    iter these(param tag) where tag == iterKind.leader {
-      for followThis in _dom.these(tag) do
+    iter const these(param tag) where tag == iterKind.leader {
+      var space = 0..#_htb.tableSize;
+      for followThis in space.these(tag) {
         yield followThis;
+      }
     }
 
     pragma "no doc"
-    iter these(param tag, followThis) where tag == iterKind.follower {
-      for x in _dom.these(tag, followThis) do
-        yield x;
+    pragma "order independent yielding loops"
+    iter const these(param tag, followThis)
+    where tag == iterKind.follower {
+      for idx in followThis(0) do
+        if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
     /*
@@ -382,12 +401,13 @@ module Set {
     */
     proc const writeThis(ch: channel) throws {
       on this {
-        _enter();
+        _enter(); defer _leave();
+
         var count = 1;
         ch <~> "{";
 
-        for x in _dom {
-          if count <= (_dom.size - 1) {
+        for x in this {
+          if count <= (_htb.tableNumFullSlots - 1) {
             count += 1;
             ch <~> x <~> ", ";
           } else {
@@ -396,7 +416,6 @@ module Set {
         }
 
         ch <~> "}";
-        _leave();
       }
     }
 
@@ -410,9 +429,8 @@ module Set {
       var result = false;
 
       on this {
-        _enter();
-        result = _dom.isEmpty();
-        _leave();
+        _enter(); defer _leave();
+        result = _htb.tableNumFullSlots == 0;
       }
 
       return result;
@@ -425,12 +443,20 @@ module Set {
       var result = 0;
 
       on this {
-        _enter();
-        result = _dom.size;
-        _leave();
+        _enter(); defer _leave();
+        result = _size;
       }
 
       return result;
+    }
+
+    /*
+      As above, but the parSafe lock must be held, and must be called
+      "on this".
+    */
+    pragma "no doc"
+    inline proc const _size {
+      return _htb.tableNumFullSlots;
     }
 
     /*
@@ -442,21 +468,27 @@ module Set {
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
-      var result: [1.._dom.size] eltType;
+      // May take locks non-locally...
+      _enter(); defer _leave();
+
+      var result: [0..#_htb.tableNumFullSlots] eltType;
+
+      if !isCopyableType(eltType) then
+        compilerError('Cannot create array because set element type ' +
+                      eltType:string + ' is not copyable');
 
       on this {
-        _enter();
+        if _htb.tableNumFullSlots != 0 {
+          var count = 0;
+          var array: [0..#_htb.tableNumFullSlots] eltType;
 
-        var count = 1;
-        var array: [1.._dom.size] eltType;
+          for x in this {
+            array[count] = x;
+            count += 1;
+          }
 
-        for x in _dom {
-          array[count] = x;
-          count += 1;
+          result = array;
         }
-
-        result = array;
-        _leave();
       }
 
       return result;
@@ -495,28 +527,21 @@ module Set {
   proc |(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    for x in a do
-      result.add(x);
-
-    for x in b do
-      result.add(x);
+    result = a;
+    result |= b;
 
     return result;
   }
 
   /*
-    Assign to the set `lhs` the set that is the union of `lhs` and `rhs`.
-
-    .. warning::
-
-      This will invalidate any references to elements previously contained in
-      the set `lhs`.
+    Add to the set `lhs` all the elements of `rhs`.
 
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
   proc |=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    lhs = lhs | rhs;
+    for x in rhs do
+      lhs.add(x);
   }
 
   /*
@@ -534,18 +559,13 @@ module Set {
   }
 
   /*
-    Assign to the set `lhs` the set that is the union of `lhs` and `rhs`.
-
-    .. warning::
-
-      This will invalidate any references to elements previously contained in
-      the set `lhs`.
+    Add to the set `lhs` all the elements of `rhs`.
 
     :arg lhs: A set to take the union of and then assign to.
     :arg rhs: A set to take the union of.
   */
   proc +=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    lhs = lhs + rhs;
+    lhs |= rhs;
   }
 
   /*
@@ -574,7 +594,7 @@ module Set {
   }
 
   /*
-    Assign to the set `lhs` the set that is the difference of `lhs` and `rhs`.
+    Remove from the set `lhs` the elements of `rhs`.
 
     .. warning::
 
@@ -585,7 +605,13 @@ module Set {
     :arg rhs: A set to take the difference of.
   */
   proc -=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    lhs = lhs - rhs;
+    if lhs.parSafe && rhs.parSafe {
+      forall x in rhs do
+        lhs.remove(x);
+    } else {
+      for x in rhs do
+        lhs.remove(x);
+    }
   }
 
   /*
@@ -600,14 +626,27 @@ module Set {
   proc &(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    if a.parSafe && b.parSafe {
-      forall x in a do
-        if b.contains(x) then
-          result.add(x);
+    /* Iterate over the smaller set */
+    if a.size <= b.size {
+      if a.parSafe && b.parSafe {
+        forall x in a do
+          if b.contains(x) then
+            result.add(x);
+      } else {
+        for x in a do
+          if b.contains(x) then
+            result.add(x);
+      }
     } else {
-      for x in a do
-        if b.contains(x) then
-          result.add(x);
+      if a.parSafe && b.parSafe {
+        forall x in b do
+          if a.contains(x) then
+            result.add(x);
+      } else {
+        for x in b do
+          if a.contains(x) then
+            result.add(x);
+      }
     }
 
     return result;
@@ -626,7 +665,20 @@ module Set {
     :arg rhs: A set to take the intersection of.
   */
   proc &=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    lhs = lhs & rhs;
+    /* We can't remove things from lhs while iterating over it, so
+     * use a temporary. */
+    var result: set(t, (lhs.parSafe || rhs.parSafe));
+
+    if lhs.parSafe && rhs.parSafe {
+      forall x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
+    } else {
+      for x in lhs do
+        if rhs.contains(x) then
+          result.add(x);
+    }
+    lhs = result;
   }
 
   /*
@@ -641,20 +693,14 @@ module Set {
   proc ^(const ref a: set(?t, ?), const ref b: set(t, ?)): set(t) {
     var result: set(t, (a.parSafe || b.parSafe));
 
-    if a.parSafe && b.parSafe {
-      forall x in a do
-        if !b.contains(x) then
-          result.add(x);
-      forall x in b do
-        if !a.contains(x) then
-          result.add(x);
+    /* Expect the loop in ^= to be more expensive than the loop in =,
+       so arrange for the rhs of the ^= to be the smaller set. */
+    if a.size <= b.size {
+      result = b;
+      result ^= a;
     } else {
-      for x in a do
-        if !b.contains(x) then
-          result.add(x);
-      for x in b do
-        if !a.contains(x) then
-          result.add(x);
+      result = a;
+      result ^= b;
     }
 
     return result;
@@ -673,7 +719,23 @@ module Set {
     :arg rhs: A set to take the symmetric difference of.
   */
   proc ^=(ref lhs: set(?t, ?), const ref rhs: set(t, ?)) {
-    lhs = lhs ^ rhs;
+    if lhs.parSafe && rhs.parSafe {
+      forall x in rhs {
+        if lhs.contains(x) {
+          lhs.remove(x);
+        } else {
+          lhs.add(x);
+        }
+      }
+    } else {
+      for x in rhs {
+        if lhs.contains(x) {
+          lhs.remove(x);
+        } else {
+          lhs.add(x);
+        }
+      }
+    }
   }
 
   /*
@@ -805,5 +867,4 @@ module Set {
     return result;
   }
 
-} // End module "Sets".
-
+} // End module "Set".

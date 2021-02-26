@@ -1,9 +1,8 @@
 //===- FormatVariadicTest.cpp - Unit tests for string formatting ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -488,9 +487,7 @@ struct format_tuple {
   const char *Fmt;
   explicit format_tuple(const char *Fmt) : Fmt(Fmt) {}
 
-  template <typename... Ts>
-  auto operator()(Ts &&... Values) const
-      -> decltype(formatv(Fmt, std::forward<Ts>(Values)...)) {
+  template <typename... Ts> auto operator()(Ts &&... Values) const {
     return formatv(Fmt, std::forward<Ts>(Values)...);
   }
 };
@@ -619,11 +616,11 @@ TEST(FormatVariadicTest, Adapter) {
 TEST(FormatVariadicTest, MoveConstructor) {
   auto fmt = formatv("{0} {1}", 1, 2);
   auto fmt2 = std::move(fmt);
-  std::string S = fmt2;
+  std::string S = std::string(fmt2);
   EXPECT_EQ("1 2", S);
 }
 TEST(FormatVariadicTest, ImplicitConversions) {
-  std::string S = formatv("{0} {1}", 1, 2);
+  std::string S = std::string(formatv("{0} {1}", 1, 2));
   EXPECT_EQ("1 2", S);
 
   SmallString<4> S2 = formatv("{0} {1}", 1, 2);

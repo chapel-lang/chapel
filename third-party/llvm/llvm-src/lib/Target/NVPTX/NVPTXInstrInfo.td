@@ -1,9 +1,8 @@
 //===- NVPTXInstrInfo.td - NVPTX Instruction defs -------------*- tblgen-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -143,9 +142,17 @@ def true : Predicate<"true">;
 def hasPTX31 : Predicate<"Subtarget->getPTXVersion() >= 31">;
 def hasPTX60 : Predicate<"Subtarget->getPTXVersion() >= 60">;
 def hasPTX61 : Predicate<"Subtarget->getPTXVersion() >= 61">;
+def hasPTX63 : Predicate<"Subtarget->getPTXVersion() >= 63">;
+def hasPTX64 : Predicate<"Subtarget->getPTXVersion() >= 64">;
 
 def hasSM30 : Predicate<"Subtarget->getSmVersion() >= 30">;
 def hasSM70 : Predicate<"Subtarget->getSmVersion() >= 70">;
+def hasSM72 : Predicate<"Subtarget->getSmVersion() >= 72">;
+def hasSM75 : Predicate<"Subtarget->getSmVersion() >= 75">;
+
+// non-sync shfl instructions are not available on sm_70+ in PTX6.4+
+def hasSHFL : Predicate<"!(Subtarget->getSmVersion() >= 70" 
+                          "&& Subtarget->getPTXVersion() >= 64)">;
 
 def useShortPtr : Predicate<"useShortPointers()">;
 def useFP16Math: Predicate<"Subtarget->allowFP16Math()">;
@@ -1549,6 +1556,10 @@ def LdStCode : Operand<i32> {
   let PrintMethod = "printLdStCode";
 }
 
+def MmaCode : Operand<i32> {
+  let PrintMethod = "printMmaCode";
+}
+
 def SDTWrapper : SDTypeProfile<1, 1, [SDTCisSameAs<0, 1>, SDTCisPtrTy<0>]>;
 def Wrapper    : SDNode<"NVPTXISD::Wrapper", SDTWrapper>;
 
@@ -2902,7 +2913,7 @@ def : Pat<(ctlz Int32Regs:$a), (CLZr32 Int32Regs:$a)>;
 // ctz instruction always returns a 32-bit value.  For ctlz.i64, convert the
 // ptx value to 64 bits to match the ISD node's semantics, unless we know we're
 // truncating back down to 32 bits.
-def : Pat<(ctlz Int64Regs:$a), (CVT_u64_u32 (CLZr64 Int64Regs:$a), CvtNONE)>;
+def : Pat<(i64 (ctlz Int64Regs:$a)), (CVT_u64_u32 (CLZr64 Int64Regs:$a), CvtNONE)>;
 def : Pat<(i32 (trunc (ctlz Int64Regs:$a))), (CLZr64 Int64Regs:$a)>;
 
 // For 16-bit ctlz, we zero-extend to 32-bit, perform the count, then trunc the
@@ -2919,10 +2930,10 @@ def : Pat<(i32 (trunc (ctlz Int64Regs:$a))), (CLZr64 Int64Regs:$a)>;
 // and then ctlz that value.  This way we don't have to subtract 16 from the
 // result.  Unfortunately today we don't have a way to generate
 // "mov b32reg, {b16imm, b16reg}", so we don't do this optimization.
-def : Pat<(ctlz Int16Regs:$a),
+def : Pat<(i16 (ctlz Int16Regs:$a)),
           (SUBi16ri (CVT_u16_u32
            (CLZr32 (CVT_u32_u16 Int16Regs:$a, CvtNONE)), CvtNONE), 16)>;
-def : Pat<(i32 (zext (ctlz Int16Regs:$a))),
+def : Pat<(i32 (zext (i16 (ctlz Int16Regs:$a)))),
           (SUBi32ri (CLZr32 (CVT_u32_u16 Int16Regs:$a, CvtNONE)), 16)>;
 
 // Population count
@@ -2947,7 +2958,7 @@ def : Pat<(i32 (trunc (ctpop Int64Regs:$a))), (POPCr64 Int64Regs:$a)>;
 // If we know that we're storing into an i32, we can avoid the final trunc.
 def : Pat<(ctpop Int16Regs:$a),
           (CVT_u16_u32 (POPCr32 (CVT_u32_u16 Int16Regs:$a, CvtNONE)), CvtNONE)>;
-def : Pat<(i32 (zext (ctpop Int16Regs:$a))),
+def : Pat<(i32 (zext (i16 (ctpop Int16Regs:$a)))),
           (POPCr32 (CVT_u32_u16 Int16Regs:$a, CvtNONE))>;
 
 // fpround f32 -> f16
@@ -3002,15 +3013,6 @@ def : Pat<(ffloor Float32Regs:$a),
           (CVT_f32_f32 Float32Regs:$a, CvtRMI)>, Requires<[doNoF32FTZ]>;
 def : Pat<(ffloor Float64Regs:$a),
           (CVT_f64_f64 Float64Regs:$a, CvtRMI)>;
-
-def : Pat<(f16 (fround Float16Regs:$a)),
-          (CVT_f16_f16 Float16Regs:$a, CvtRNI)>;
-def : Pat<(fround Float32Regs:$a),
-          (CVT_f32_f32 Float32Regs:$a, CvtRNI_FTZ)>, Requires<[doF32FTZ]>;
-def : Pat<(f32 (fround Float32Regs:$a)),
-          (CVT_f32_f32 Float32Regs:$a, CvtRNI)>, Requires<[doNoF32FTZ]>;
-def : Pat<(f64 (fround Float64Regs:$a)),
-          (CVT_f64_f64 Float64Regs:$a, CvtRNI)>;
 
 def : Pat<(ftrunc Float16Regs:$a),
           (CVT_f16_f16 Float16Regs:$a, CvtRZI)>;

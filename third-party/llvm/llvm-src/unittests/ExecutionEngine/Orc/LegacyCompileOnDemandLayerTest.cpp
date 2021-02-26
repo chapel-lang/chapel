@@ -1,9 +1,8 @@
 //===----- CompileOnDemandLayerTest.cpp - Unit tests for the COD layer ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -26,7 +25,7 @@ public:
 class DummyCallbackManager : public JITCompileCallbackManager {
 public:
   DummyCallbackManager(ExecutionSession &ES)
-      : JITCompileCallbackManager(llvm::make_unique<DummyTrampolinePool>(), ES,
+      : JITCompileCallbackManager(std::make_unique<DummyTrampolinePool>(), ES,
                                   0) {}
 };
 
@@ -77,9 +76,9 @@ TEST(LegacyCompileOnDemandLayerTest, FindSymbol) {
   };
 
   llvm::orc::LegacyCompileOnDemandLayer<decltype(TestBaseLayer)> COD(
-      ES, TestBaseLayer, GetResolver, SetResolver,
+      AcknowledgeORCv1Deprecation, ES, TestBaseLayer, GetResolver, SetResolver,
       [](Function &F) { return std::set<Function *>{&F}; }, CallbackMgr,
-      [] { return llvm::make_unique<DummyStubsManager>(); }, true);
+      [] { return std::make_unique<DummyStubsManager>(); }, true);
 
   auto Sym = COD.findSymbol("foo", true);
 

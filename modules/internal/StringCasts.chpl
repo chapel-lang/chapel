@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -20,7 +20,10 @@
 
 module StringCasts {
   private use ChapelStandard;
+  private use BytesStringCommon;
   private use SysCTypes;
+  private use CPtr;
+  private use String.NVStringFactory;
 
   // TODO: I want to break all of these casts from string to T out into
   // T.parse(string), but we dont support methods on types yet. Ideally they
@@ -32,7 +35,7 @@ module StringCasts {
   // Bool
   //
 
-  inline proc _cast(type t:string, x: bool) {
+  operator :(x: bool, type t:string) {
     if (x) {
       return "true";
     } else {
@@ -40,7 +43,7 @@ module StringCasts {
     }
   }
 
-  proc _cast(type t:chpl_anybool, x: string) throws {
+  operator :(x: string, type t:chpl_anybool) throws {
     var str = x.strip();
     if str.isEmpty() {
       throw new owned IllegalArgumentError("bad cast from empty string to bool");
@@ -57,7 +60,7 @@ module StringCasts {
   //
   // int
   //
-  proc _cast(type t:string, x: integral) {
+  operator :(x: integral, type t:string) {
     //TODO: switch to using qio's writef somehow
     pragma "fn synchronization free"
     extern proc integral_to_c_string(x:int(64), size:uint(32), isSigned: bool, ref err: bool) : c_string;
@@ -74,15 +77,14 @@ module StringCasts {
       }
     }
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
-  inline proc _cast(type t:integral, x: string) throws {
+  operator :(x: string, type t:integral) throws {
     //TODO: switch to using qio's readf somehow
     pragma "fn synchronization free"
     pragma "insert line file info"
@@ -113,26 +115,15 @@ module StringCasts {
     var isErr: bool;
     // localize the string and remove leading and trailing whitespace
     var localX = x.localize();
-    const hasUnderscores = localX.find("_") != 0;
-
-    if hasUnderscores {
-      localX = localX.strip();
-      // make sure the string only has one word
-      var numElements: int;
-      for localX.split() {
-        numElements += 1;
-        if numElements > 1 then break;
-      }
-      if numElements > 1 then
-        throw new owned IllegalArgumentError("bad cast from string '" + x + "' to " + t:string);
-
-      // remove underscores everywhere but the first position
-      if localX.size >= 2 then
-        localX = localX[1] + localX[2..].replace("_", "");
-    }
 
     if localX.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t:string);
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupForNumericCast(localX);
+
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from string '"+ x + "' to " + t:string);
 
     if isIntType(t) {
       select numBits(t) {
@@ -161,7 +152,7 @@ module StringCasts {
   //
   // real & imag
   //
-  inline proc _real_cast_helper(x: real(64), param isImag: bool) : string {
+  proc _real_cast_helper(x: real(64), param isImag: bool) : string {
     pragma "fn synchronization free"
     extern proc real_to_c_string(x:real(64), isImag: bool) : c_string;
     pragma "fn synchronization free"
@@ -169,20 +160,19 @@ module StringCasts {
 
     var csc = real_to_c_string(x:real(64), isImag);
 
-    var ret: string;
-    ret.buff = csc:c_ptr(uint(8));
-    ret.len = strlen(csc).safeCast(int);
-    ret._size = ret.len+1;
-
-    return ret;
+    const len = strlen(csc).safeCast(int);
+    return chpl_createStringWithOwnedBufferNV(x=csc:c_ptr(uint(8)),
+                                              length=len,
+                                              size=len+1,
+                                              numCodepoints=len);
   }
 
-  proc _cast(type t:string, x:chpl_anyreal) {
+  inline operator :(x:chpl_anyreal, type t:string) {
     //TODO: switch to using qio's writef somehow
     return _real_cast_helper(x:real(64), false);
   }
 
-  proc _cast(type t:string, x:chpl_anyimag) {
+  operator :(x:chpl_anyimag, type t:string) {
     //TODO: switch to using qio's writef somehow
     // The Chapel version of the imag --> real cast smashes it flat rather than
     // just stripping off the "i".  See the cast in ChapelBase.
@@ -190,24 +180,7 @@ module StringCasts {
     return _real_cast_helper(r, true);
   }
 
-  inline proc _cleanupStringForRealCast(type t, ref s: string) throws {
-    var len = s.size;
-
-    if s.isEmpty() then
-      throw new owned IllegalArgumentError("bad cast from empty string to " + t: string);
-
-    if len >= 2 && s[2..].find("_") != 0 {
-      // Don't remove a leading underscore in the string number,
-      // but remove the rest.
-      if len > 2 && s[1] == "_" {
-        s = s[1] + s[2..].replace("_", "");
-      } else {
-        s = s.replace("_", "");
-      }
-    }
-  }
-
-  inline proc _cast(type t:chpl_anyreal, x: string) throws {
+  operator :(x: string, type t:chpl_anyreal) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_real32(x: c_string, ref err: bool) : real(32);
@@ -219,7 +192,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_real32(localX.c_str(), isErr);
@@ -233,7 +210,7 @@ module StringCasts {
     return retVal;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x: string) throws {
+  operator :(x: string, type t:chpl_anyimag) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_imag32(x: c_string, ref err: bool) : imag(32);
@@ -245,7 +222,11 @@ module StringCasts {
     var isErr: bool;
     var localX = x.localize();
 
-    _cleanupStringForRealCast(t, localX);
+    if localX.isEmpty() then
+      throw new owned IllegalArgumentError("bad cast from empty string to " +
+                                           t:string);
+
+    _cleanupForNumericCast(localX);
 
     select numBits(t) {
       when 32 do retVal = c_string_to_imag32(localX.c_str(), isErr);
@@ -263,7 +244,7 @@ module StringCasts {
   //
   // complex
   //
-  proc _cast(type t:string, x: chpl_anycomplex) {
+  operator :(x: chpl_anycomplex, type t:string) {
     if isnan(x.re) || isnan(x.im) then
       return "nan";
     var re = (x.re):string;
@@ -286,7 +267,7 @@ module StringCasts {
   }
 
 
-  inline proc _cast(type t:chpl_anycomplex, x: string) throws {
+operator :(x: string, type t:chpl_anycomplex) throws {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc c_string_to_complex64(x:c_string, ref err: bool) : complex(64);

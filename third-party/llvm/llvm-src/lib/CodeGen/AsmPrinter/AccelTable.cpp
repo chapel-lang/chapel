@@ -1,9 +1,8 @@
 //===- llvm/CodeGen/AsmPrinter/AccelTable.cpp - Accelerator Tables --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -56,10 +55,10 @@ void AccelTableBase::finalize(AsmPrinter *Asm, StringRef Prefix) {
   // Create the individual hash data outputs.
   for (auto &E : Entries) {
     // Unique the entries.
-    std::stable_sort(E.second.Values.begin(), E.second.Values.end(),
-                     [](const AccelTableData *A, const AccelTableData *B) {
-                       return *A < *B;
-                     });
+    llvm::stable_sort(E.second.Values,
+                      [](const AccelTableData *A, const AccelTableData *B) {
+                        return *A < *B;
+                      });
     E.second.Values.erase(
         std::unique(E.second.Values.begin(), E.second.Values.end()),
         E.second.Values.end());
@@ -82,10 +81,9 @@ void AccelTableBase::finalize(AsmPrinter *Asm, StringRef Prefix) {
   // Sort the contents of the buckets by hash value so that hash collisions end
   // up together. Stable sort makes testing easier and doesn't cost much more.
   for (auto &Bucket : Buckets)
-    std::stable_sort(Bucket.begin(), Bucket.end(),
-                     [](HashData *LHS, HashData *RHS) {
-                       return LHS->HashValue < RHS->HashValue;
-                     });
+    llvm::stable_sort(Bucket, [](HashData *LHS, HashData *RHS) {
+      return LHS->HashValue < RHS->HashValue;
+    });
 }
 
 namespace {
@@ -273,7 +271,7 @@ void AccelTableWriter::emitOffsets(const MCSymbol *Base) const {
         continue;
       PrevHash = HashValue;
       Asm->OutStreamer->AddComment("Offset in Bucket " + Twine(i));
-      Asm->EmitLabelDifference(Hash->Sym, Base, sizeof(uint32_t));
+      Asm->emitLabelDifference(Hash->Sym, Base, sizeof(uint32_t));
     }
   }
 }
@@ -339,7 +337,7 @@ void AppleAccelTableWriter::emitData() const {
           PrevHash != Hash->HashValue)
         Asm->emitInt32(0);
       // Remember to emit the label for our offset.
-      Asm->OutStreamer->EmitLabel(Hash->Sym);
+      Asm->OutStreamer->emitLabel(Hash->Sym);
       Asm->OutStreamer->AddComment(Hash->Name.getString());
       Asm->emitDwarfStringOffset(Hash->Name);
       Asm->OutStreamer->AddComment("Num DIEs");
@@ -370,9 +368,9 @@ void Dwarf5AccelTableWriter<DataT>::Header::emit(
 
   AsmPrinter *Asm = Ctx.Asm;
   Asm->OutStreamer->AddComment("Header: unit length");
-  Asm->EmitLabelDifference(Ctx.ContributionEnd, Ctx.ContributionStart,
+  Asm->emitLabelDifference(Ctx.ContributionEnd, Ctx.ContributionStart,
                            sizeof(uint32_t));
-  Asm->OutStreamer->EmitLabel(Ctx.ContributionStart);
+  Asm->OutStreamer->emitLabel(Ctx.ContributionStart);
   Asm->OutStreamer->AddComment("Header: version");
   Asm->emitInt16(Version);
   Asm->OutStreamer->AddComment("Header: padding");
@@ -388,12 +386,12 @@ void Dwarf5AccelTableWriter<DataT>::Header::emit(
   Asm->OutStreamer->AddComment("Header: name count");
   Asm->emitInt32(NameCount);
   Asm->OutStreamer->AddComment("Header: abbreviation table size");
-  Asm->EmitLabelDifference(Ctx.AbbrevEnd, Ctx.AbbrevStart, sizeof(uint32_t));
+  Asm->emitLabelDifference(Ctx.AbbrevEnd, Ctx.AbbrevStart, sizeof(uint32_t));
   Asm->OutStreamer->AddComment("Header: augmentation string size");
   assert(AugmentationStringSize % 4 == 0);
   Asm->emitInt32(AugmentationStringSize);
   Asm->OutStreamer->AddComment("Header: augmentation string");
-  Asm->OutStreamer->EmitBytes({AugmentationString, AugmentationStringSize});
+  Asm->OutStreamer->emitBytes({AugmentationString, AugmentationStringSize});
 }
 
 template <typename DataT>
@@ -455,23 +453,23 @@ void Dwarf5AccelTableWriter<DataT>::emitStringOffsets() const {
 
 template <typename DataT>
 void Dwarf5AccelTableWriter<DataT>::emitAbbrevs() const {
-  Asm->OutStreamer->EmitLabel(AbbrevStart);
+  Asm->OutStreamer->emitLabel(AbbrevStart);
   for (const auto &Abbrev : Abbreviations) {
     Asm->OutStreamer->AddComment("Abbrev code");
     assert(Abbrev.first != 0);
-    Asm->EmitULEB128(Abbrev.first);
+    Asm->emitULEB128(Abbrev.first);
     Asm->OutStreamer->AddComment(dwarf::TagString(Abbrev.first));
-    Asm->EmitULEB128(Abbrev.first);
+    Asm->emitULEB128(Abbrev.first);
     for (const auto &AttrEnc : Abbrev.second) {
-      Asm->EmitULEB128(AttrEnc.Index, dwarf::IndexString(AttrEnc.Index).data());
-      Asm->EmitULEB128(AttrEnc.Form,
+      Asm->emitULEB128(AttrEnc.Index, dwarf::IndexString(AttrEnc.Index).data());
+      Asm->emitULEB128(AttrEnc.Form,
                        dwarf::FormEncodingString(AttrEnc.Form).data());
     }
-    Asm->EmitULEB128(0, "End of abbrev");
-    Asm->EmitULEB128(0, "End of abbrev");
+    Asm->emitULEB128(0, "End of abbrev");
+    Asm->emitULEB128(0, "End of abbrev");
   }
-  Asm->EmitULEB128(0, "End of abbrev list");
-  Asm->OutStreamer->EmitLabel(AbbrevEnd);
+  Asm->emitULEB128(0, "End of abbrev list");
+  Asm->OutStreamer->emitLabel(AbbrevEnd);
 }
 
 template <typename DataT>
@@ -480,13 +478,13 @@ void Dwarf5AccelTableWriter<DataT>::emitEntry(const DataT &Entry) const {
   assert(AbbrevIt != Abbreviations.end() &&
          "Why wasn't this abbrev generated?");
 
-  Asm->EmitULEB128(AbbrevIt->first, "Abbreviation code");
+  Asm->emitULEB128(AbbrevIt->first, "Abbreviation code");
   for (const auto &AttrEnc : AbbrevIt->second) {
     Asm->OutStreamer->AddComment(dwarf::IndexString(AttrEnc.Index));
     switch (AttrEnc.Index) {
     case dwarf::DW_IDX_compile_unit: {
       DIEInteger ID(getCUIndexForEntry(Entry));
-      ID.EmitValue(Asm, AttrEnc.Form);
+      ID.emitValue(Asm, AttrEnc.Form);
       break;
     }
     case dwarf::DW_IDX_die_offset:
@@ -500,11 +498,11 @@ void Dwarf5AccelTableWriter<DataT>::emitEntry(const DataT &Entry) const {
 }
 
 template <typename DataT> void Dwarf5AccelTableWriter<DataT>::emitData() const {
-  Asm->OutStreamer->EmitLabel(EntryPool);
+  Asm->OutStreamer->emitLabel(EntryPool);
   for (auto &Bucket : Contents.getBuckets()) {
     for (auto *Hash : Bucket) {
       // Remember to emit the label for our offset.
-      Asm->OutStreamer->EmitLabel(Hash->Sym);
+      Asm->OutStreamer->emitLabel(Hash->Sym);
       for (const auto *Value : Hash->Values)
         emitEntry(*static_cast<const DataT *>(Value));
       Asm->OutStreamer->AddComment("End of list: " + Hash->Name.getString());
@@ -539,8 +537,8 @@ template <typename DataT> void Dwarf5AccelTableWriter<DataT>::emit() const {
   emitOffsets(EntryPool);
   emitAbbrevs();
   emitData();
-  Asm->OutStreamer->EmitValueToAlignment(4, 0);
-  Asm->OutStreamer->EmitLabel(ContributionEnd);
+  Asm->OutStreamer->emitValueToAlignment(4, 0);
+  Asm->OutStreamer->emitLabel(ContributionEnd);
 }
 
 void llvm::emitAppleAccelTableImpl(AsmPrinter *Asm, AccelTableBase &Contents,
@@ -557,8 +555,8 @@ void llvm::emitDWARF5AccelTable(
   SmallVector<unsigned, 1> CUIndex(CUs.size());
   int Count = 0;
   for (const auto &CU : enumerate(CUs)) {
-    if (CU.value()->getCUNode()->getNameTableKind() ==
-        DICompileUnit::DebugNameTableKind::None)
+    if (CU.value()->getCUNode()->getNameTableKind() !=
+        DICompileUnit::DebugNameTableKind::Default)
       continue;
     CUIndex[CU.index()] = Count++;
     assert(CU.index() == CU.value()->getUniqueID());
@@ -616,30 +614,10 @@ void AppleAccelTableStaticTypeData::emit(AsmPrinter *Asm) const {
   Asm->emitInt32(QualifiedNameHash);
 }
 
-#ifndef _MSC_VER
-// The lines below are rejected by older versions (TBD) of MSVC.
 constexpr AppleAccelTableData::Atom AppleAccelTableTypeData::Atoms[];
 constexpr AppleAccelTableData::Atom AppleAccelTableOffsetData::Atoms[];
 constexpr AppleAccelTableData::Atom AppleAccelTableStaticOffsetData::Atoms[];
 constexpr AppleAccelTableData::Atom AppleAccelTableStaticTypeData::Atoms[];
-#else
-// FIXME: Erase this path once the minimum MSCV version has been bumped.
-const SmallVector<AppleAccelTableData::Atom, 4>
-    AppleAccelTableOffsetData::Atoms = {
-        Atom(dwarf::DW_ATOM_die_offset, dwarf::DW_FORM_data4)};
-const SmallVector<AppleAccelTableData::Atom, 4> AppleAccelTableTypeData::Atoms =
-    {Atom(dwarf::DW_ATOM_die_offset, dwarf::DW_FORM_data4),
-     Atom(dwarf::DW_ATOM_die_tag, dwarf::DW_FORM_data2),
-     Atom(dwarf::DW_ATOM_type_flags, dwarf::DW_FORM_data1)};
-const SmallVector<AppleAccelTableData::Atom, 4>
-    AppleAccelTableStaticOffsetData::Atoms = {
-        Atom(dwarf::DW_ATOM_die_offset, dwarf::DW_FORM_data4)};
-const SmallVector<AppleAccelTableData::Atom, 4>
-    AppleAccelTableStaticTypeData::Atoms = {
-        Atom(dwarf::DW_ATOM_die_offset, dwarf::DW_FORM_data4),
-        Atom(dwarf::DW_ATOM_die_tag, dwarf::DW_FORM_data2),
-        Atom(5, dwarf::DW_FORM_data1), Atom(6, dwarf::DW_FORM_data4)};
-#endif
 
 #ifndef NDEBUG
 void AppleAccelTableWriter::Header::print(raw_ostream &OS) const {

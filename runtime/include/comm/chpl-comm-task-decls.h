@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,20 +24,30 @@
 #ifndef _chpl_comm_task_decls_h
 #define _chpl_comm_task_decls_h
 
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // Define the type of a n.b. communications handle.
 typedef void* chpl_comm_nb_handle_t;
 
 typedef struct {
-  int dummy;    // structs must be nonempty
+  int8_t dummy;    // structs must be nonempty
 } chpl_comm_taskPrvData_t;
 
 //
 // Comm layer private area within executeOn argument bundles
 // (bundle.comm)
 typedef struct {
-  int64_t dummy;    // structs must be nonempty
+  int8_t dummy;    // structs must be nonempty
 } chpl_comm_bundleData_t;
 
 #undef HAS_CHPL_CACHE_FNS
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

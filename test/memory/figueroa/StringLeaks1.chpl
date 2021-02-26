@@ -1,4 +1,4 @@
-use Memory, IO;
+use Memory.Diagnostics, IO;
 
 config const n = 1;
 

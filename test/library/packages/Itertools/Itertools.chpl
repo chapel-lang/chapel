@@ -184,11 +184,9 @@ module Itertools {
 
     const workingIters = followThis(0);
 
-    const offset = if isTuple(arg) then 0 else 1;
-
-    if isString(arg) || isArray(arg) || isTuple(arg) then
+    if isString(arg) || isBytes(arg) || isArray(arg) || isTuple(arg) then
       for idx in workingIters do
-        yield arg[(idx % arg.size) + offset];
+        yield arg[idx % arg.size];
     else {
       var tempObject: [1..#arg.size] arg.low.type;
 
@@ -196,7 +194,7 @@ module Itertools {
         tempObject[idx] = element;
 
       for idx in workingIters do
-        yield tempObject[(idx % arg.size) + offset];
+        yield tempObject[(idx % arg.size) + 1];
     }
   }
 

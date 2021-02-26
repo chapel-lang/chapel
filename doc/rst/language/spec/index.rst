@@ -39,3 +39,4 @@ Chapel Language Specification
    user-defined-reductions-and-scans
    memory-consistency-model
    interoperability
+   syntax

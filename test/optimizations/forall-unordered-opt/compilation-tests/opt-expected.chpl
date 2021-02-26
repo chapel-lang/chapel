@@ -142,3 +142,35 @@ proc mini_ra_recursive() {
   }
 }
 mini_ra_recursive();
+
+config const multiplier = 1234567;
+config const increment = 98765;
+
+// An iterator representing a not-order-independent loop
+// similar to RAStream
+iter rng_iter() {
+  var cursor = multiplier + increment;
+  for i in 1..M {
+    cursor = cursor * multiplier + increment;
+    yield cursor;
+  }
+}
+iter rng_iter(param tag: iterKind, followThis) where tag == iterKind.follower {
+  const (followInds,) = followThis;
+  const start = followInds.low;
+  var cursor = multiplier * start + increment;
+  for i in 1..M {
+    cursor = cursor * multiplier + increment;
+    yield cursor;
+  }
+}
+
+proc mini_ra_lf() {
+  var T: [0..1023] atomic int;
+  var indexMask = 1023;
+  var Updates: [0..#M] int;
+
+  forall (_, r) in zip(Updates, rng_iter()) do
+    T(r & indexMask).xor(r);
+}
+mini_ra_lf();

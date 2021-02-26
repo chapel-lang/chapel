@@ -11,4 +11,8 @@ proc testSparse(type t) {
           else new t(1);
 
   assert(A.size == 1);
+
+  if isUnmanagedClass(t) {
+    delete A;
+  }
 }

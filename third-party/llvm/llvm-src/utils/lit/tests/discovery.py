@@ -17,6 +17,9 @@
 # CHECK-BASIC-OUT:   top-level-suite - 3 tests
 # CHECK-BASIC-OUT:     Source Root: {{.*[/\\]discovery$}}
 # CHECK-BASIC-OUT:     Exec Root  : {{.*[/\\]discovery$}}
+# CHECK-BASIC-OUT:     Available Features: feature1 feature2
+# CHECK-BASIC-OUT:     Available Substitutions: %key1 => value1
+# CHECK-BASIC-OUT:                              %key2 => value2
 #
 # CHECK-BASIC-OUT: -- Available Tests --
 # CHECK-BASIC-OUT: sub-suite :: test-one
@@ -29,7 +32,7 @@
 # RUN: %{python} %{inputs}/config-map-discovery/driver.py \
 # RUN:           %{inputs}/config-map-discovery/main-config/lit.cfg \
 # RUN:           %{inputs}/config-map-discovery/lit.alt.cfg \
-# RUN:           --single-process --debug --show-tests --show-suites > %t.out 2> %t.err
+# RUN:           --workers=1 --debug --show-tests --show-suites > %t.out 2> %t.err
 # RUN: FileCheck --check-prefix=CHECK-CONFIG-MAP-OUT < %t.out %s
 # RUN: FileCheck --check-prefix=CHECK-CONFIG-MAP-ERR < %t.err %s
 
@@ -150,5 +153,7 @@
 #      CHECK-ASEXEC-INTREE:   exec-discovery-in-tree-suite - 1 tests
 # CHECK-ASEXEC-INTREE-NEXT:     Source Root: {{.*[/\\]exec-discovery-in-tree$}}
 # CHECK-ASEXEC-INTREE-NEXT:     Exec Root  : {{.*[/\\]exec-discovery-in-tree[/\\]obj$}}
+# CHECK-ASEXEC-INTREE-NEXT:     Available Features:
+# CHECK-ASEXEC-INTREE-NEXT:     Available Substitutions:
 # CHECK-ASEXEC-INTREE-NEXT: -- Available Tests --
 # CHECK-ASEXEC-INTREE-NEXT: exec-discovery-in-tree-suite :: test-one

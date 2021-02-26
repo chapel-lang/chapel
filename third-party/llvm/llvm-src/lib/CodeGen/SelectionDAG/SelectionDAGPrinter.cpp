@@ -1,9 +1,8 @@
 //===-- SelectionDAGPrinter.cpp - Implement SelectionDAG::viewGraph() -----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -71,7 +70,7 @@ namespace llvm {
     }
 
     static std::string getGraphName(const SelectionDAG *G) {
-      return G->getMachineFunction().getName();
+      return std::string(G->getMachineFunction().getName());
     }
 
     static bool renderGraphFromBottomUp() {
@@ -164,6 +163,20 @@ void SelectionDAG::viewGraph(const std::string &Title) {
 void SelectionDAG::viewGraph() {
   viewGraph("");
 }
+
+/// Just dump dot graph to a user-provided path and title.
+/// This doesn't open the dot viewer program and
+/// helps visualization when outside debugging session.
+/// FileName expects absolute path. If provided
+/// without any path separators then the file
+/// will be created in the current directory.
+/// Error will be emitted if the path is insane.
+#if !defined(NDEBUG) || defined(LLVM_ENABLE_DUMP)
+LLVM_DUMP_METHOD void SelectionDAG::dumpDotGraph(const Twine &FileName,
+                                                 const Twine &Title) {
+  dumpDotGraphToFile(this, FileName, Title);
+}
+#endif
 
 /// clearGraphAttrs - Clear all previously defined node graph attributes.
 /// Intended to be used from a debugging tool (eg. gdb).

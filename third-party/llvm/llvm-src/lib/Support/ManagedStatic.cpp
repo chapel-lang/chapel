@@ -1,9 +1,8 @@
 //===-- ManagedStatic.cpp - Static Global wrapper -------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,21 +12,20 @@
 
 #include "llvm/Support/ManagedStatic.h"
 #include "llvm/Config/config.h"
-#include "llvm/Support/Mutex.h"
-#include "llvm/Support/MutexGuard.h"
 #include "llvm/Support/Threading.h"
 #include <cassert>
+#include <mutex>
 using namespace llvm;
 
 static const ManagedStaticBase *StaticList = nullptr;
-static sys::Mutex *ManagedStaticMutex = nullptr;
+static std::recursive_mutex *ManagedStaticMutex = nullptr;
 static llvm::once_flag mutex_init_flag;
 
 static void initializeMutex() {
-  ManagedStaticMutex = new sys::Mutex();
+  ManagedStaticMutex = new std::recursive_mutex();
 }
 
-static sys::Mutex* getManagedStaticMutex() {
+static std::recursive_mutex *getManagedStaticMutex() {
   llvm::call_once(mutex_init_flag, initializeMutex);
   return ManagedStaticMutex;
 }
@@ -36,7 +34,7 @@ void ManagedStaticBase::RegisterManagedStatic(void *(*Creator)(),
                                               void (*Deleter)(void*)) const {
   assert(Creator);
   if (llvm_is_multithreaded()) {
-    MutexGuard Lock(*getManagedStaticMutex());
+    std::lock_guard<std::recursive_mutex> Lock(*getManagedStaticMutex());
 
     if (!Ptr.load(std::memory_order_relaxed)) {
       void *Tmp = Creator();
@@ -78,7 +76,7 @@ void ManagedStaticBase::destroy() const {
 
 /// llvm_shutdown - Deallocate and destroy all ManagedStatic variables.
 void llvm::llvm_shutdown() {
-  MutexGuard Lock(*getManagedStaticMutex());
+  std::lock_guard<std::recursive_mutex> Lock(*getManagedStaticMutex());
 
   while (StaticList)
     StaticList->destroy();

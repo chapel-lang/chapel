@@ -1,0 +1,5 @@
+canresolve-in-sort.chpl:46: In function 'canResolveMethod':
+canresolve-in-sort.chpl:47: error: success
+  canresolve-in-sort.chpl:33: called as canResolveMethod(recv: DefaultComparator, name: string, a: int(64), b: int(64))
+  within internal functions (use --print-callstack-on-error to see)
+  canresolve-in-sort.chpl:19: called as BinarySearch(Data: int(64), val: int(64), comparator: DefaultComparator)

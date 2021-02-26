@@ -1,2 +1,2 @@
 assignRemoteConst.chpl:1: In function 'foo':
-assignRemoteConst.chpl:4: error: illegal lvalue in assignment
+assignRemoteConst.chpl:4: error: cannot assign to const variable

@@ -31,6 +31,10 @@ proc =(ref x : history_real, y : x.type) {
   x.h = y.h;
   x.f = y.f;
 }
+operator :(y: real, type t: history_real) {
+  var tmp: t = y;
+  return tmp;
+}
 
 proc >(x : history_real, y : real) {
   return x.f > y;

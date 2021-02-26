@@ -1,9 +1,8 @@
 //===- Version.cpp - Clang Version Number -----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,8 +17,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#ifdef HAVE_SVN_VERSION_INC
-#  include "SVNVersion.inc"
+#ifdef HAVE_VCS_VERSION_INC
+#include "VCSVersion.inc"
 #endif
 
 namespace clang {
@@ -28,52 +27,25 @@ std::string getClangRepositoryPath() {
 #if defined(CLANG_REPOSITORY_STRING)
   return CLANG_REPOSITORY_STRING;
 #else
-#ifdef SVN_REPOSITORY
-  StringRef URL(SVN_REPOSITORY);
+#ifdef CLANG_REPOSITORY
+  return CLANG_REPOSITORY;
 #else
-  StringRef URL("");
+  return "";
 #endif
-
-  // If the SVN_REPOSITORY is empty, try to use the SVN keyword. This helps us
-  // pick up a tag in an SVN export, for example.
-  StringRef SVNRepository("$URL: https://llvm.org/svn/llvm-project/cfe/tags/RELEASE_800/final/lib/Basic/Version.cpp $");
-  if (URL.empty()) {
-    URL = SVNRepository.slice(SVNRepository.find(':'),
-                              SVNRepository.find("/lib/Basic"));
-  }
-
-  // Strip off version from a build from an integration branch.
-  URL = URL.slice(0, URL.find("/src/tools/clang"));
-
-  // Trim path prefix off, assuming path came from standard cfe path.
-  size_t Start = URL.find("cfe/");
-  if (Start != StringRef::npos)
-    URL = URL.substr(Start + 4);
-
-  return URL;
 #endif
 }
 
 std::string getLLVMRepositoryPath() {
 #ifdef LLVM_REPOSITORY
-  StringRef URL(LLVM_REPOSITORY);
+  return LLVM_REPOSITORY;
 #else
-  StringRef URL("");
+  return "";
 #endif
-
-  // Trim path prefix off, assuming path came from standard llvm path.
-  // Leave "llvm/" prefix to distinguish the following llvm revision from the
-  // clang revision.
-  size_t Start = URL.find("llvm/");
-  if (Start != StringRef::npos)
-    URL = URL.substr(Start);
-
-  return URL;
 }
 
 std::string getClangRevision() {
-#ifdef SVN_REVISION
-  return SVN_REVISION;
+#ifdef CLANG_REVISION
+  return CLANG_REVISION;
 #else
   return "";
 #endif
@@ -125,13 +97,12 @@ std::string getClangToolFullVersion(StringRef ToolName) {
 #ifdef CLANG_VENDOR
   OS << CLANG_VENDOR;
 #endif
-  OS << ToolName << " version " CLANG_VERSION_STRING " "
-     << getClangFullRepositoryVersion();
+  OS << ToolName << " version " CLANG_VERSION_STRING;
 
-  // If vendor supplied, include the base LLVM version as well.
-#ifdef CLANG_VENDOR
-  OS << " (based on " << BACKEND_PACKAGE_STRING << ")";
-#endif
+  std::string repo = getClangFullRepositoryVersion();
+  if (!repo.empty()) {
+    OS << " " << repo;
+  }
 
   return OS.str();
 }
@@ -144,7 +115,13 @@ std::string getClangFullCPPVersion() {
 #ifdef CLANG_VENDOR
   OS << CLANG_VENDOR;
 #endif
-  OS << "Clang " CLANG_VERSION_STRING " " << getClangFullRepositoryVersion();
+  OS << "Clang " CLANG_VERSION_STRING;
+
+  std::string repo = getClangFullRepositoryVersion();
+  if (!repo.empty()) {
+    OS << " " << repo;
+  }
+
   return OS.str();
 }
 

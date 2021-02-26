@@ -1,5 +1,5 @@
-record rec_t {
-  var mem: int;
+extern record rec_t {
+  var mem: int(64);
 };
 
 export

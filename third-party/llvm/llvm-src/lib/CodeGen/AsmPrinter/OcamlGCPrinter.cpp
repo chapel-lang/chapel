@@ -1,9 +1,8 @@
 //===- OcamlGCPrinter.cpp - Ocaml frametable emitter ----------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -67,8 +66,8 @@ static void EmitCamlGlobal(const Module &M, AsmPrinter &AP, const char *Id) {
 
   MCSymbol *Sym = AP.OutContext.getOrCreateSymbol(TmpStr);
 
-  AP.OutStreamer->EmitSymbolAttribute(Sym, MCSA_Global);
-  AP.OutStreamer->EmitLabel(Sym);
+  AP.OutStreamer->emitSymbolAttribute(Sym, MCSA_Global);
+  AP.OutStreamer->emitLabel(Sym);
 }
 
 void OcamlGCMetadataPrinter::beginAssembly(Module &M, GCModuleInfo &Info,
@@ -107,7 +106,7 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
   EmitCamlGlobal(M, AP, "data_end");
 
   // FIXME: Why does ocaml emit this??
-  AP.OutStreamer->EmitIntValue(0, IntPtrSize);
+  AP.OutStreamer->emitIntValue(0, IntPtrSize);
 
   AP.OutStreamer->SwitchSection(AP.getObjFileLowering().getDataSection());
   EmitCamlGlobal(M, AP, "frametable");
@@ -130,7 +129,7 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
     report_fatal_error(" Too much descriptor for ocaml GC");
   }
   AP.emitInt16(NumDescriptors);
-  AP.EmitAlignment(IntPtrSize == 4 ? 2 : 3);
+  AP.emitAlignment(IntPtrSize == 4 ? Align(4) : Align(8));
 
   for (GCModuleInfo::FuncInfoVec::iterator I = Info.funcinfo_begin(),
                                            IE = Info.funcinfo_end();
@@ -165,7 +164,7 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
                            Twine(LiveCount) + " >= 65536.");
       }
 
-      AP.OutStreamer->EmitSymbolValue(J->Label, IntPtrSize);
+      AP.OutStreamer->emitSymbolValue(J->Label, IntPtrSize);
       AP.emitInt16(FrameSize);
       AP.emitInt16(LiveCount);
 
@@ -181,7 +180,7 @@ void OcamlGCMetadataPrinter::finishAssembly(Module &M, GCModuleInfo &Info,
         AP.emitInt16(K->StackOffset);
       }
 
-      AP.EmitAlignment(IntPtrSize == 4 ? 2 : 3);
+      AP.emitAlignment(IntPtrSize == 4 ? Align(4) : Align(8));
     }
   }
 }

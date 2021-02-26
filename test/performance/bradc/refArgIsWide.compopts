@@ -1,2 +1,1 @@
---savec gen_output --no-local
-
+--no-llvm --savec gen_output --no-local

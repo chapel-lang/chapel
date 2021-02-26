@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 
 #include <sys/time.h>   // For struct timeval.
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct timeval _timevalue;
 
 _timevalue chpl_null_timevalue(void);
@@ -38,5 +42,9 @@ void chpl_timevalue_parts(_timevalue t, int32_t* seconds, int32_t* minutes, int3
 _real64 chpl_now_time(void);
 
 #endif // LAUNCHER
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

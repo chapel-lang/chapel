@@ -1,0 +1,761 @@
+.. _initializers:
+
+Initializers
+============
+
+Status:
+  Inactive - Superseded by CHIP 23
+
+Authors:
+  Lydia Duncan, Michael Ferguson, Mike Noakes, Vassily Litvinov, Kyle Brady
+
+
+Abstract
+--------
+
+In this document, we propose new syntax and rules for constructors, both in
+ordinary and more complex cases.
+
+Outline
+-------
+
+ * `Rationale`_: The Problems Associated With Constructors
+ * `Compiler Generated Initializers`_
+ * `Initializer Naming`_
+ * `How are Initializers Invoked?`_
+ * `Defining the Initializer Body`_
+
+   - `Phase 1 of Initialization`_
+   - `Phase 2 of Initialization`_
+   - `Syntax`_
+   - `Definition Location`_
+
+ * `Referencing Other Initializers`_
+ * `Generics`_
+ * `Implementation Strategy, Misc.`_
+ * `Noinit`_
+ * `Copy Initializers`_
+ * `Deinitialization`_
+ * `Summary`_
+
+
+Rationale
+---------
+
+Variable declaration results in the allocation and (usually the) initialization
+of an instance of a particular type.  Through what was previously known as a
+“constructor”, the type designer could control how the initialization of a class
+or record instance responded to the various arguments it was provided (or lack
+thereof).  In the past, these constructors have not been able to handle all the
+types a designer would like to define and some of the major internal Chapel
+types have had to work around these lacks.  This effort will seek to define a
+stronger and more robust implementation, one that can handle such unusual cases.
+That implementation will be referred to as an “initializer” in the coming
+paragraphs, as this more accurately reflects the work done in these methods –
+allocation will remain handled by the compiler, over which the type designer
+will continue to have no control, and it will be triggered by the initializer
+call.
+
+Description
+-----------
+
+Compiler Generated Initializers
++++++++++++++++++++++++++++++++
+
+In keeping with prior practices, the compiler will generate a default all-fields
+initializer if no initializers are defined by the type designer.  This
+all-fields initializer will take into account any initialization code present in
+the field definitions.  The type designer may wish to make use of the all-fields
+initializer even if they have provided another initializer, but the definition
+of semantics for how to request that this initializer still be generated remains
+future work.
+
+Initializer Naming
+++++++++++++++++++
+
+Describing the new initializer specification in order, we first define a change
+to the naming scheme for these methods.  It has been remarked in the past that
+naming methods which create instances of a type after that type name has a
+greater potential for error than using a unified name for all types – if the
+type was renamed or copied, any written constructor would have to be altered as
+well or the code would break:
+
+.. code-block:: chapel
+
+   class Foo {
+     proc Foo() {
+       ...
+     }
+   }
+
+In the example above if ``Foo`` were renamed to ``Bar``, so too would the method
+``Foo()`` need to be renamed or it would no longer be a constructor on that
+type.  Additionally, if the type designer wished to give their type a
+particularly long name, that name would also have to be repeated at the
+constructor definition.  With these concerns in mind, we propose to change the
+name of an initializer method to ``init`` for all types – this name is succinct
+and does not vary, meaning that modifications to the type name will be less
+painful to perform.  Similarly and for consistency, the destructor name will be
+updated to ``deinit``.
+
+
+How are Initializers Invoked?
++++++++++++++++++++++++++++++
+
+A `proc init` is an initializer that is called by using the `new` syntax.
+It is an compilation error to call an `init` directly.
+
+In certain cases, the compiler adds calls to initializers. In particular,
+a statement such as `var a:MyRecord;`, where `MyRecord` is a record type,
+will invoke the zero-arguments initializer for `MyRecord` in the process
+of creating the variable `a`.
+
+The compiler can add calls to copy-initializers in certain cases, such as
+when initializing a variable with another variable (e.g. `var a = b`) or
+when using the `in` argument intent. See also `Copy Initializers`_.
+
+Defining the Initializer Body
++++++++++++++++++++++++++++++
+
+To create a more robust initializer, a more thorough definition of the body was
+required.  With this work, we have defined two phases for the body of an
+initializer.  We felt this separation was necessary in order to provide an
+initializer for any type without sacrificing certain guarantees about the
+validity of it at any given point.  To wit, we wanted to ensure that the object
+in question could not be accessed as a whole before its fields had been put into
+an initialized state, while still allowing it to be operated on when the fields
+were given a valid (if not final) value.
+
+Phase 1 of Initialization
+*************************
+
+Phase 1 of the initializer will operate on the instance before all of its fields
+have been given a valid starting value.  Because of the dangers associated with
+operating on uninitialized memory, the operations possible during Phase 1 will
+be limited.  However, the type designer may desire to perform some more
+complicated actions on the instance before returning it to the user – these
+actions will be possible during Phase 2 of the initializer.
+
+During Phase 1, methods on the ``this`` instance cannot be called.  Fields must
+be initialized in declaration order, but the type designer can omit fields in
+Phase 1 to use the field declaration or (if not present) the type default for
+that field.  Omitted fields will be treated as if the intended initialization
+was inserted in the appropriate statement order.  For instance:
+
+.. code-block:: chapel
+
+   class Foo {
+     var bar = 10;
+     var baz = false;
+     var dip: real;
+     ... // More fields, potentially
+
+     proc init(barVal, dipVal) {
+       bar = barVal;
+       // Since no explicit initialization is provided for baz,
+       // it occurs between these two statements.
+       // It is set to false, the value provided in the field declaration.
+       dip = dipVal;
+       ... // Remainder of initializer
+     }
+   }
+
+Both explicit and implicit initialization of a field can depend on the values of
+earlier fields, but not of later fields:
+
+.. code-block:: chapel
+
+   class Foo2 {
+     var bar = 10;
+     var baz = 5;
+     var dip = baz * 3; // In the initializer, if dip is unspecified it will
+     // use this dependence
+     ... // More fields, potentially
+
+     proc init(barVal) {
+       bar = barVal;
+       baz = divceil(bar, 2);
+       // baz relies on bar, which is acceptable because bar is defined
+       // dip obtains its value based on its field declaration's dependence on
+       // baz, which is defined
+       ... // Remainder of initializer
+     }
+   }
+
+``const`` and ``ref`` fields may be initialized during this phase.  No parent
+fields may be accessed during this phase, as they have not been given an initial
+value yet – the parent's Phase 1 will be entered once the child's phase 1 is
+complete (more information on this process will be provided later in this
+document in the section on `Referencing Other Initializers`_).  Local helper
+variables may be created and used, and functions may be called so long as
+``this`` is not provided as an argument, but loops and parallel statements are
+not allowed to contain the initialization of fields, as fields cannot be
+initialized multiple times or in an arbitrary order.  Should allowing loops and
+parallel statements which do not violate this condition prove infeasible to
+implement, they will not be allowed at all during this phase for the time being.
+
+Phase 2 of Initialization
+*************************
+
+At the start of Phase 2, every field is expected to contain a valid initial
+value, though the contents of certain fields may be redefined during this phase.
+This applies to fields inherited from a parent.  Thus, modifications to fields
+during Phase 2 are considered assignment, including updates to ``ref`` fields.
+Methods may be called on the ``this`` instance, and the object can be treated as
+a whole.  Parent fields may be accessed during this phase; operations on these
+fields in the parent's Phase 2 will have already occurred.  However, ``const``
+fields may not be redefined.  Note that we may choose to loosen the latter
+decision in the future and allow modification of ``const`` fields during Phase
+2, but it is a less breaking change to go from strict to tolerant than the
+opposite direction.
+
+Syntax
+******
+
+Because Phase 1 and Phase 2 have such divergent rules, it is necessary to
+distinguish when Phase 1 ends and Phase 2 begins, both for clarity to the
+compiler and to the type designer.  The chosen syntax to represent this divide
+hinges on a call to another initializer, whether parent or defined on the same
+type.  It looks like this:
+
+.. code-block:: chapel
+
+   proc init() {
+     ... // Phase 1 code
+     super.init();
+     // In this case, the call to the parent initializer divides the phases
+     ... // Phase 2 code
+   }
+
+The alternate implementation which came in a close second follows.  It
+designates the phases through separate bodies which are executed in sequence.
+Any calls to parent initializers or other initializers defined on the type must
+occur as the last statement in the Phase 1 body:
+
+.. code-block:: chapel
+
+	 proc init() {
+	   ... // Phase 1 code
+	   // Optional call to parent or other initializer would occur here
+	 } finalize {
+	   ... // Phase 2 code
+	 }
+
+
+The first syntax has the benefit of maintaining the initializer as a single
+body.  It appears more visually simple to the type designer's eyes, though the
+implementation may need to be more complicated to accommodate this benefit
+(which is not necessarily an argument against it).  Local variables can be
+shared from Phase 1 to Phase 2, and ``param`` or compile-time const ``if``
+statements may be used to wrap across both phases; though loops, on statements,
+and parallel statements are not allowed to encapsulate both phases.  However,
+since the call to the parent initializer serves as the division between the two
+phases, it would be easy for this statement to get lost amid a larger and more
+complex initializer body.  Additionally, because the phase split is not as
+extreme as in the second syntax, the type designer may be more confused or
+frustrated when code placed after the call is valid but identical code before it
+is not.
+
+In contrast, the second syntax denotes more obviously the divide between the two
+phases.  Different rules for the different portions of the initializer would
+likely feel more reasonable to a type designer encountering our new requirements
+for the first time.  This comes at the cost of sharing local variables between
+the two phases.  That functionality can be recovered by calling a sibling
+initializer with the necessary variables as arguments; however, this workaround
+may be impractical or seen as a high cost for the type designer to pay.  The
+``finalize`` block may be easily dropped, though this does more to support a
+default of Phase 1 rather than Phase 2.
+
+From an implementation standpoint, these syntaxes do not differ wildly – indeed,
+it is likely that after a certain point in the compiler, they would be handled
+identically, perhaps by inserting a pair of block statements similar to that
+visible in syntax 2, so that the rules for Phase 1 may be applied to the first
+block while the rules for Phase 2 may be applied to the second, without a
+constant check to the location of the ``.init()`` call which is the linchpin for
+syntax 1.
+
+Definition Location
+*******************
+An initializer for a type may be defined within its original confines:
+
+.. code-block:: chapel
+
+   record Bar {
+     ... // Some fields
+     proc init(...) { ... }
+     ... // Some methods
+   }
+
+At the same scope as the type definition:
+
+.. code-block:: chapel
+
+   record Bar {
+     ... // Some fields and methods
+   }
+   proc Bar.init(...) { ... }
+
+Or even in a separate module from where the type was defined, so long as the
+type itself is accessible from that scope.  While the latter could allow
+extensions to the type that the type designer did not intend, the type designer
+may still maintain control over which fields may be manipulated in this way.
+This can be done either by setting fields as private (when private fields and
+methods are supported) so that the knowledge of these fields' existence is
+hidden, or by defining a parentheses-less method instead of a field by the same
+name so that the value may be relied upon in all circumstances.
+
+Referencing Other Initializers
+++++++++++++++++++++++++++++++
+
+For either initializer syntax, the strategy to call parent and other
+initializers remains the same.  Both also require that such calls only occur at
+the end of Phase 1 for the current initializer.  The syntax of choice explicitly
+enforces this rule by separating the two phases based on these calls, while the
+alternate syntax would require a check to ensure correct usage.
+
+The syntax to call a parent initializer is ``super.init(<args>);``.  All the
+child's fields must be initialized at this point, so when the parent finishes
+its Phase 1 and begins its Phase 2, the object may be treated as a whole.  Once
+the parent has finished its Phase 2, control flow returns to the child's
+initializer and enters the child's Phase 2.  If the type has no parent, an
+argument-less ``super.init();`` call will be valid (signifying that control is
+entering Phase 2) but is otherwise a no-op.  (Note that this extra call is
+unnecessary in the second syntax proposal.)
+
+For instance, if a parent and child class were defined as:
+
+.. code-block:: chapel
+
+   class Parent {
+     ... // Some fields
+
+     proc init(...) {
+       writeln("Parent Phase 1"); 
+       super.init(); // no-op, no parent
+       writeln("Parent Phase 2"); 
+       // Since child fields are initialized, whole object use is allowed
+     }
+   }
+
+   class Child: Parent {
+     ... // Some fields
+
+     proc init(...) {
+       writeln("Child Phase 1"); 
+       //  Can’t access parent fields yet 
+       super.init(); 
+       writeln("Child Phase 2"); 
+     }
+   }
+
+Creating an instance of Child will cause the following output during
+initialization:
+
+::
+
+	Child Phase 1
+	Parent Phase 1
+	<any parent of Parent output would go in here>
+	Parent Phase 2
+	Child Phase 2
+
+
+The syntax to call another initializer defined on the same type is
+``this.init(<args>);``.  Similarly to in the parent-referential case, the return
+from that call will indicate that the calling initializer has begun Phase 2. In
+contrast to the parent case, however, a call to another initializer may not be
+made if the current initializer includes field initialization statements in
+Phase 1.  The rationale for this decision is that a valid other initializer will
+initialize all of its fields, and so any initialization prior to that call will
+lead to the occurrence of an unexpected double initialization.
+
+An initializer may only contain one ``this.init(<args>)`` or
+``super.init(<args>)`` call in a single path through the body – it may not
+contain both, or multiple of either one.  Additionally, only ``param``
+conditionals may surround one of these calls.
+
+If no ``this.init(<args>)`` or ``super.init(<args>)`` call is present, the
+compiler will insert an argument-less ``super.init()`` call at the beginning of
+the initializer body:
+
+.. code-block:: chapel
+
+   proc init() {
+     // Since there is no call to super.init(<args>) or this.init(<args>),
+     // this initializer starts with an implicit super.init() call
+     field1 = 17; // This is then assignment.  If field1 were `const`, this
+     // line would throw an error
+     this.someOtherMethod(); // This call is valid, because we are in Phase 2
+   }
+
+The compiler generated initializer will also include an argument-less
+``super.init()`` call after the initialization of its fields has been completed.
+If the parent type has defined an initializer that this call cannot resolve to,
+attempts to initialize the child will result in an error.  Otherwise, it will
+resolve appropriately.  We may consider expanding to support the case where the
+parent has defined just a single initializer with any number of arguments, but
+that decision and its implementation are future work.
+
+For backwards compatibility purposes, unless the divide between Phase 1 and 2 is
+explicitly stated, the compiler assumes the body of an initializer to be in
+Phase 2.  For optimization purposes, ideally bodies which are compliant with the
+conditions of Phase 1 would be considered Phase 1 only – implementing this is
+future work.
+
+Generics
+++++++++
+
+The current plan for supporting generic fields is to treat them similar to
+normal fields with some exceptions.  For instance, ``type`` and ``param`` fields
+will only be initialized in Phase 1, and cannot be updated during Phase 2
+(similar to the handling of ``const`` and ``ref`` fields, and for the same
+reasons).  Generic ``var`` fields will be reassignable during Phase 2, and the
+normal rules about type constraints apply - the type of the generic ``var``
+field cannot change during Phase 2.
+
+If the initialization of a ``param`` field is omitted during Phase 1 and the
+field is declared with a type or starting value, that information will be used
+as the initialization of the omitted ``param`` field.  If the initialization of
+a ``type`` field is omitted during Phase 1 and the field is declared with a
+starting value, that information will similarly be used as the initialization of
+the omitted ``type`` field.  It is an error for a ``type`` or ``param`` field's
+initialization to be omitted during Phase 1 when none of that information is
+present in the field's declaration, and it is an error for the initialization of
+a generic ``var`` or ``const`` field to be omitted during Phase 1.
+
+This is a departure from the previous implementation of generic fields, which
+required the presence of an argument with the same name as the field in the
+argument list for all constructors, but forbade the manipulation of these fields
+within the constructor body.  That design was deemed unnecessarily confusing and
+restrictive for users.
+
+Type Declarations of Generic Instantiations
++++++++++++++++++++++++++++++++++++++++++++
+
+In keeping with prior practice, an instance of a generic class or record that
+defines an initializer may be declared with a specific generic instantiation of
+its type (with or without an initial value).  This generic instantiation must
+include an argument per generic field, even if no initializers are provided that
+match it.  ``type`` fields require a ``type`` argument in the type declaration,
+``param`` fields require a ``param`` argument, and generic ``var`` / ``const``
+fields require a ``type`` argument.  For instance:
+
+.. code-block:: chapel
+
+   class Foo {
+     param p: int;
+
+     proc init() {
+       p = 4;
+       super.init();
+     }
+   }
+
+   var foo: Foo(4); // Declares an instantiation where p = 4.
+
+The above program declares a legal generic instantiation of ``Foo``.  An
+instance of that instantiation can be created via a call to ``new`` with no
+arguments:
+
+.. code-block:: chapel
+
+   foo = new Foo();
+
+The following line is also a legal generic instantiation of ``Foo``:
+
+.. code-block:: chapel
+
+   var foo: Foo(2);
+
+However, no instance of that instantiation can be created (other than ``nil``),
+as the sole provided initializer will only generate instances of ``Foo(4)``.
+The following line would generate a type mismatch:
+
+.. code-block:: chapel
+
+   var foo: Foo(2) = new Foo();
+
+This allows the type creator to limit the instances and instantiations of
+``Foo`` available to the user.
+
+This becomes more obvious in the case of generic records.  Records are
+initialized upon declaration, so a call to one of the record's initializers
+would be generated after the type instantiation was determined.  In the case
+where the record is concrete, the generated call contains no actuals.  If the
+record is generic, it will contain an argument per generic field, determined by
+the type constructor call that was used.  ``type`` fields will still send a
+``type`` actual, ``param`` fields will still send a ``param`` actual, but
+generic ``var`` / ``const`` fields will use the default value of the ``type``
+argument used for determining the type instantiation.  For instance,
+
+.. code-block:: chapel
+
+   record Foo {
+     type t;
+     var x: int;
+
+     proc init(type tVal) {
+       t = tVal;
+       x = 10;
+       super.init();
+     }
+   }
+
+   var foo: Foo(int);
+
+The above code will create an instance of ``Foo`` with t set to ``int`` and x
+set to ``10``, as specified by the defined initializer, because the initializer
+contains just one type argument and so matches against the generated call.  The
+defined type and the type created by the initializer match, so no issues will be
+encountered.
+
+If the initializer were defined thusly:
+
+.. code-block:: chapel
+
+   proc init(type tVal) {
+     if (tVal != x.type) {
+       t = x.type;
+     } else {
+       t = tVal;
+     }
+     x = 10;
+     super.init();
+   }
+
+then a call of the form
+
+.. code-block:: chapel
+
+   var foo: Foo(real);
+
+would run into issues - the initializer accepts a ``type`` argument; however, it
+might not use that argument when setting the generic ``type`` field.  This means
+that the initializer may generate a different type than the type constructor
+with the same argument, so the program will fail to compile.
+
+In the case of a record with a generic ``var`` / ``const`` field:
+
+.. code-block:: chapel
+
+   record Foo {
+     var x;
+
+     proc init(xVal) {
+       x = xVal;
+       super.init();
+     }
+   }
+
+   var foo: Foo(bool);
+
+the type of foo will be ``Foo(bool)`` and its x field will store ``false``, the
+default value of the bool type.
+
+Should no initializer be defined that matches the generated call, an unresolved
+call error will be generated:
+
+.. code-block:: chapel
+
+   record Foo {
+     type t;
+     var x: int;
+
+     proc init(xVal) {
+       t = xVal.type;
+       x = xVal;
+       super.init();
+     }
+   }
+
+   var foo: Foo(real);
+
+In the above example, since it is the t field that is generic, the call to
+initialize foo will try to use ``real`` as its only argument.  Since the only
+initializer defined does not take a ``type`` argument, this call will fail to
+resolve.
+
+
+Implementation Strategy, Misc.
+++++++++++++++++++++++++++++++
+
+It is our intention to make the transition to the new syntax and rules both
+visible and straight-forward.  Ideally, the first release with the new
+initializer implementation will still allow the previous constructors to
+function (albeit with a warning that support of them is in the process of
+deprecation and a reference to the specification for the new initializer
+syntax), though attempting to define both a constructor and an initializer with
+the same set of arguments for a type will produce an error (instead of silently
+ignoring the constructor body).
+
+Noinit
+++++++
+
+It may happen that for the purposes of optimization, a user would like to
+receive a constructed instance of a type that is not fully initialized.  For
+example, the user could know that the initial value for the instance will not be
+used before it is overwritten by some other value.  This instance could then
+gain an initial value at a later time, instead of paying the cost of default
+initialization and then updating through assignment.  This would be done through
+an application of the keyword ``noinit``.  To provide a specific case, if the
+user wished to create an array and then give it a complex set of contents
+(perhaps by passing it to a function which would provide the proper value for
+each element, e.g.), the user could indicate this with the syntax ``var
+arrayName: [domain] real = noinit;``.  Note that it is considered an error to
+access the contents of an instance that has been created with ``noinit`` until
+an initial value for its entire contents has been provided.  This is the
+responsibility of the user.  Instances that cannot be changed after
+initialization, such as ``const`` s or ``param`` s, cannot have ``noinit``
+applied to them.
+
+In the above example, it should be noted that the user would need to fully
+specify the type of the instance to which they wish to apply ``noinit``, or the
+compiler will not be able to perform the space allocation necessary for
+construction.  Relatedly, an array that has been created via the ``noinit``
+keyword requires certain type knowledge to be present in order to accurately
+create the space – the domain of the array and the type it will store are
+essential.  There are other Chapel types with special requirements for
+``noinit`` to be valid, such as types which have removed the setter method for a
+particular field (and as such cannot update this field after initialization), or
+types whose assignment operators assume that a particular field will always
+contain initialized memory.  Because some of these types are complex and large
+enough that the application of ``noinit`` would be a useful optimization, it is
+desirable to provide a mechanism for the type designer to specify how their
+type should respond to the ``noinit`` keyword (if at all) rather than have the
+language make the decision and declare that such types cannot support the
+keyword.
+
+To that end, for arbitrary classes or records the type designer will be able to
+specify what ``noinit`` means for their type via the initializers they define,
+as an argument to the initializer that can be referenced throughout the body.
+The compiler-generated all-fields initializer will support ``noinit`` by
+applying it to all fields when the ``noinit`` argument is set to ``true``.
+Should the type designer provide an initializer, this will prevent the
+all-fields ``noinit`` application case, as part of preventing the use of the
+all-fields initializer.  This means that in order for a type with one or more
+defined initializer to support ``noinit``, the argument must be explicitly
+present in one of the initializers.
+
+In the type designer's initializer, ``noinit`` can only be applied to a field
+during Phase 1.  This is because at the time of Phase 2, the field will have
+been given an initial value and ``noinit`` cannot be applied as assignment.  The
+recommended strategy is to only apply ``noinit`` within the initializer body
+when the ``noinit`` argument is set to ``true``, but the type designer may
+choose to ignore this rule – for instance, so that an array field may be filled
+in parallel during Phase 2.  However, in doing so they must be careful, as with
+any use of ``noinit``, to be certain that uninitialized memory is not read.
+
+Note that the name of the ``noinit`` argument to the initializer is not set in
+stone – should it prove difficult to implement ``noinit`` as both a keyword and
+an argument that can be referenced, adjustments will need to be made.  This
+could be done by only treating ``noinit`` as a keyword (but not defining it as
+such in the parser, as it currently is) when used to initialize a field or
+instance, or by giving the argument a different name (but still keeping their
+relationship strongly linked).
+
+Copy Initializers
++++++++++++++++++
+
+The type designer may find themselves also looking to control the behavior of
+their type when copies of it must be made, such as when the type is passed to a
+function or task by the ``in`` intent, or copied across locale boundaries.  An
+example of when such control would be desired is if the type designer wanted to
+implement reference counting for their type.  For these situations, the type
+designer may define a copy initializer, to handle the state of the type's
+fields.  The copy initializer is an initializer with a single argument, of the
+same type as the type being created.
+
+A more complicated strategy, similar to that employed in D's postblit, may be
+considered at a later time, but for now, we view this support as sufficient.
+
+For more details on when the copy initializer would be called, please refer to
+`CHIP 13 - When Do Records and Array Copies Occur`_
+
+.. _CHIP 13 - When Do Records and Array Copies Occur:
+   https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/13.rst
+
+
+Deinitialization
+++++++++++++++++
+
+To specify actions that occur upon deinitialization, specify a ``proc
+deinit()`` method. This method must have zero arguments and must be
+declared with parentheses. It cannot be called directly. If a type
+does not specify a ``proc deinit()`` method, the compiler will generate one.
+It will be equivalent to a user-written ``deinit`` with an empty body.
+
+In addition to the actions specified by the ``deinit`` method, whether
+compiler-generated or user-defined, in the process of deinitialization:
+
+ * parent ``deinit`` methods are called in the case of inherited classes, and
+ * all fields of record type are deinitialized.
+
+The expected use-case for the ``deinit`` method is to call ``delete`` on
+fields of class type, when appropriate. It is the responsibility of the
+class designer to ``delete`` fields when appropriate. The compiler will not
+automatically add ``delete`` calls for fields of class type.
+Conversely, the compiler adds ``deinit`` calls on fields of record type.
+These calls cannot be added by the user.
+
+Limitations
+***********
+
+It is an error for a ``deinit`` method to invoke a method
+on ``this`` or to pass ``this`` as an argument to a function.
+
+However, the ``deinit`` method can refer to any field in its class or
+record. The ``deinit`` in a class can also refer to any field in its
+parent class(es), if any.
+
+Order of deinitialization
+*************************
+
+Suppose a class ``Child`` inherits from another class ``Parent``.
+When an instance of ``Child`` is deinitialized, the ``deinit`` method
+for ``Child`` is invoked before the ``deinit`` method for ``Parent``.
+
+The fields of a given class or record will be deinitialized after the
+``deinit`` method for that class or record has completed.
+
+Within a class or a record, fields are deinitialized
+in reverse declaration order.
+
+Rationale for deinit Rules
+**************************
+
+Our goal is to support type safety, specifically
+to prevent accesses to fields after they have been deinitialized.
+This includes preventing access to an array after its domain
+has been deinitialized.
+The above rules specify one way to achieve this goal.
+They are a work in progress.
+
+For example, disallowing the use of ``this`` as a whole within ``deinit``
+is intended merely as the minimum functionality currently required,
+so that we can refine it in the future without breaking code.
+
+
+Summary
++++++++
+
+Initializers will be used to dictate the starting value of records and classes.
+If the type designer does not provide an initializer, the compiler will generate
+one for the type based on its field declarations.  The operations possible in an
+initializer body will be divided into two phases – the first will be more
+strict, requiring ordering of field initialization and rejecting attempts to
+utilize the object as a whole; the second will be more permissive in general but
+will not allow the redefinition of ``const`` fields.  The syntax for the
+initializer will consist of a single body, with a call to another initializer
+serving as the divide between phases – if no call to another initializer is
+provided, the body is assumed to be operating in the second phase.  Calls to
+other initializers must occur at the end of the first phase only, and a parent
+initializer will fully complete before returning control to the child which
+called it.  For optimization purposes, some types will support ``noinit`` in
+order to skip initialization when their starting value would only be
+overwritten.  The type designer may prevent this on their type by defining an
+initializer, or may exert explicit control by utilizing an additional argument
+to the initializer.  The type designer may also utilize ``noinit`` on individual
+fields during the first phase of the initializer body.  If there are operations
+which must occur on a copy made by the compiler before it is operated on by
+other code, the type designer may supply a copy initializer to specify these
+operations.

@@ -1,9 +1,8 @@
 //===- ExternalASTSource.h - Abstract External AST Interface ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,7 +17,6 @@
 #include "clang/AST/CharUnits.h"
 #include "clang/AST/DeclBase.h"
 #include "clang/Basic/LLVM.h"
-#include "clang/Basic/Module.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
@@ -40,6 +38,7 @@ namespace clang {
 
 class ASTConsumer;
 class ASTContext;
+class ASTSourceDescriptor;
 class CXXBaseSpecifier;
 class CXXCtorInitializer;
 class CXXRecordDecl;
@@ -67,9 +66,8 @@ class ExternalASTSource : public RefCountedBase<ExternalASTSource> {
   /// whenever we might have added new redeclarations for existing decls.
   uint32_t CurrentGeneration = 0;
 
-  /// Whether this AST source also provides information for
-  /// semantic analysis.
-  bool SemaSource = false;
+  /// LLVM-style RTTI.
+  static char ID;
 
 public:
   ExternalASTSource() = default;
@@ -166,31 +164,6 @@ public:
   /// Determine whether D comes from a PCH which was built with a corresponding
   /// object file.
   virtual bool DeclIsFromPCHWithObjectFile(const Decl *D) { return false; }
-
-  /// Abstracts clang modules and precompiled header files and holds
-  /// everything needed to generate debug info for an imported module
-  /// or PCH.
-  class ASTSourceDescriptor {
-    StringRef PCHModuleName;
-    StringRef Path;
-    StringRef ASTFile;
-    ASTFileSignature Signature;
-    const Module *ClangModule = nullptr;
-
-  public:
-    ASTSourceDescriptor() = default;
-    ASTSourceDescriptor(StringRef Name, StringRef Path, StringRef ASTFile,
-                        ASTFileSignature Signature)
-        : PCHModuleName(std::move(Name)), Path(std::move(Path)),
-          ASTFile(std::move(ASTFile)), Signature(Signature) {}
-    ASTSourceDescriptor(const Module &M);
-
-    std::string getModuleName() const;
-    StringRef getPath() const { return Path; }
-    StringRef getASTFile() const { return ASTFile; }
-    ASTFileSignature getSignature() const { return Signature; }
-    const Module *getModuleOrNull() const { return ClangModule; }
-  };
 
   /// Return a descriptor for the corresponding module, if one exists.
   virtual llvm::Optional<ASTSourceDescriptor> getSourceDescriptor(unsigned ID);
@@ -325,6 +298,12 @@ public:
   }
 
   virtual void getMemoryBufferSizes(MemoryBufferSizes &sizes) const;
+
+  /// LLVM-style RTTI.
+  /// \{
+  virtual bool isA(const void *ClassID) const { return ClassID == &ID; }
+  static bool classof(const ExternalASTSource *S) { return S->isA(&ID); }
+  /// \}
 
 protected:
   static DeclContextLookupResult
@@ -500,9 +479,8 @@ struct PointerLikeTypeTraits<
   static void *getAsVoidPointer(Ptr P) { return P.getOpaqueValue(); }
   static Ptr getFromVoidPointer(void *P) { return Ptr::getFromOpaqueValue(P); }
 
-  enum {
-    NumLowBitsAvailable = PointerLikeTypeTraits<T>::NumLowBitsAvailable - 1
-  };
+  static constexpr int NumLowBitsAvailable =
+      PointerLikeTypeTraits<T>::NumLowBitsAvailable - 1;
 };
 
 } // namespace llvm

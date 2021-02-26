@@ -1,9 +1,8 @@
 //===-- BuiltinsMips.def - Mips Builtin function database --------*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -636,6 +635,9 @@ BUILTIN(__builtin_msa_ld_h, "V8Ssv*Ii", "nc")
 BUILTIN(__builtin_msa_ld_w, "V4Siv*Ii", "nc")
 BUILTIN(__builtin_msa_ld_d, "V2SLLiv*Ii", "nc")
 
+BUILTIN(__builtin_msa_ldr_d, "V2SLLiv*Ii", "nc")
+BUILTIN(__builtin_msa_ldr_w, "V4Siv*Ii", "nc")
+
 BUILTIN(__builtin_msa_ldi_b, "V16cIi", "nc")
 BUILTIN(__builtin_msa_ldi_h, "V8sIi", "nc")
 BUILTIN(__builtin_msa_ldi_w, "V4iIi", "nc")
@@ -857,6 +859,9 @@ BUILTIN(__builtin_msa_st_b, "vV16Scv*Ii", "nc")
 BUILTIN(__builtin_msa_st_h, "vV8Ssv*Ii", "nc")
 BUILTIN(__builtin_msa_st_w, "vV4Siv*Ii", "nc")
 BUILTIN(__builtin_msa_st_d, "vV2SLLiv*Ii", "nc")
+
+BUILTIN(__builtin_msa_str_d, "vV2SLLiv*Ii", "nc")
+BUILTIN(__builtin_msa_str_w, "vV4Siv*Ii", "nc")
 
 BUILTIN(__builtin_msa_subs_s_b, "V16ScV16ScV16Sc", "nc")
 BUILTIN(__builtin_msa_subs_s_h, "V8SsV8SsV8Ss", "nc")

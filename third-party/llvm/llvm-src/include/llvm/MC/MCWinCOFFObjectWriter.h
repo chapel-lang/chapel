@@ -1,9 +1,8 @@
 //===- llvm/MC/MCWinCOFFObjectWriter.h - Win COFF Object Writer -*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -32,7 +31,7 @@ class raw_pwrite_stream;
   public:
     virtual ~MCWinCOFFObjectTargetWriter() = default;
 
-    virtual Triple::ObjectFormatType getFormat() const { return Triple::COFF; }
+    Triple::ObjectFormatType getFormat() const override { return Triple::COFF; }
     static bool classof(const MCObjectTargetWriter *W) {
       return W->getFormat() == Triple::COFF;
     }

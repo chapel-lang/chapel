@@ -1,0 +1,1 @@
+bug: nested proc override does not affect implicitly-inferred 'implements'

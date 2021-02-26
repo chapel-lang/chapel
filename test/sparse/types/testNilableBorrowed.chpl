@@ -1,8 +1,14 @@
-import SparseTest;
 class T {
   var value = 0;
 }
 
-type t = borrowed T?;
+var D = {1..100};
+var sparseD: sparse subdomain(D);
 
-SparseTest.testSparse(t);
+sparseD += 1;
+
+var A: [sparseD] borrowed T?;
+var a = new T();
+var b: borrowed T? = a.borrow();
+A[1] = b;
+assert(A.size == 1);

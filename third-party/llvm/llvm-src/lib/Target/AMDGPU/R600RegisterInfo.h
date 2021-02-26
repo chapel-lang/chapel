@@ -1,9 +1,8 @@
 //===-- R600RegisterInfo.h - R600 Register Info Interface ------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,13 +20,15 @@
 namespace llvm {
 
 struct R600RegisterInfo final : public R600GenRegisterInfo {
-  RegClassWeight RCW;
+  R600RegisterInfo() : R600GenRegisterInfo(0) {}
 
-  R600RegisterInfo();
+  /// \returns the sub reg enum value for the given \p Channel
+  /// (e.g. getSubRegFromChannel(0) -> R600::sub0)
+  static unsigned getSubRegFromChannel(unsigned Channel);
 
   BitVector getReservedRegs(const MachineFunction &MF) const override;
   const MCPhysReg *getCalleeSavedRegs(const MachineFunction *MF) const override;
-  unsigned getFrameRegister(const MachineFunction &MF) const override;
+  Register getFrameRegister(const MachineFunction &MF) const override;
 
   /// get the HW encoding for a register's channel.
   unsigned getHWRegChan(unsigned reg) const;
@@ -38,8 +39,9 @@ struct R600RegisterInfo final : public R600GenRegisterInfo {
   /// CFGStructurizer
   const TargetRegisterClass *getCFGStructurizerRegClass(MVT VT) const;
 
-  const RegClassWeight &
-    getRegClassWeight(const TargetRegisterClass *RC) const override;
+  bool trackLivenessAfterRegAlloc(const MachineFunction &MF) const override {
+    return false;
+  }
 
   // \returns true if \p Reg can be defined in one ALU clause and used in
   // another.

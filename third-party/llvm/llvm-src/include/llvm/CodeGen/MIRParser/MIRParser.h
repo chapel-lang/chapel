@@ -1,9 +1,8 @@
 //===- MIRParser.h - MIR serialization format parser ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -24,10 +23,14 @@
 
 namespace llvm {
 
-class StringRef;
+class Function;
 class MIRParserImpl;
 class MachineModuleInfo;
 class SMDiagnostic;
+class StringRef;
+
+typedef llvm::function_ref<Optional<std::string>(StringRef)>
+    DataLayoutCallbackTy;
 
 /// This class initializes machine functions by applying the state loaded from
 /// a MIR file.
@@ -43,7 +46,8 @@ public:
   ///
   /// A new, empty module is created if the LLVM IR isn't present.
   /// \returns nullptr if a parsing error occurred.
-  std::unique_ptr<Module> parseIRModule();
+  std::unique_ptr<Module> parseIRModule(
+      DataLayoutCallbackTy DataLayoutCallback = [](StringRef) { return None; });
 
   /// Parses MachineFunctions in the MIR file and add them to the given
   /// MachineModuleInfo \p MMI.
@@ -61,9 +65,11 @@ public:
 /// \param Filename - The name of the file to parse.
 /// \param Error - Error result info.
 /// \param Context - Context which will be used for the parsed LLVM IR module.
-std::unique_ptr<MIRParser> createMIRParserFromFile(StringRef Filename,
-                                                   SMDiagnostic &Error,
-                                                   LLVMContext &Context);
+/// \param ProcessIRFunction - function to run on every IR function or stub
+/// loaded from the MIR file.
+std::unique_ptr<MIRParser> createMIRParserFromFile(
+    StringRef Filename, SMDiagnostic &Error, LLVMContext &Context,
+    std::function<void(Function &)> ProcessIRFunction = nullptr);
 
 /// This function is another interface to the MIR serialization format parser.
 ///
@@ -74,7 +80,8 @@ std::unique_ptr<MIRParser> createMIRParserFromFile(StringRef Filename,
 /// \param Contents - The MemoryBuffer containing the machine level IR.
 /// \param Context - Context which will be used for the parsed LLVM IR module.
 std::unique_ptr<MIRParser>
-createMIRParser(std::unique_ptr<MemoryBuffer> Contents, LLVMContext &Context);
+createMIRParser(std::unique_ptr<MemoryBuffer> Contents, LLVMContext &Context,
+                std::function<void(Function &)> ProcessIRFunction = nullptr);
 
 } // end namespace llvm
 

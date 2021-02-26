@@ -1,4 +1,4 @@
 sugarFcfTypes2.chpl:13: error: unresolved call 'barIntInt(shared chpl__fcf_type_int64_t_int64_t)'
 sugarFcfTypes2.chpl:7: note: this candidate did not match: barIntInt(f: c_fn_ptr)
-sugarFcfTypes2.chpl:13: note: because call actual argument #1 with type shared chpl__fcf_type_int64_t_int64_t
+sugarFcfTypes2.chpl:13: note: because actual argument #1 with type 'shared chpl__fcf_type_int64_t_int64_t'
 sugarFcfTypes2.chpl:7: note: is passed to formal 'f: c_fn_ptr'

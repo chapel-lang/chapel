@@ -1,9 +1,8 @@
 //===--- PPC.cpp - Implement PPC target feature support -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -31,6 +30,7 @@ const Builtin::Info PPCTargetInfo::BuiltinInfo[] = {
 /// configured set of features.
 bool PPCTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
                                          DiagnosticsEngine &Diags) {
+  FloatABI = HardFloat;
   for (const auto &Feature : Features) {
     if (Feature == "+altivec") {
       HasAltivec = true;
@@ -54,6 +54,16 @@ bool PPCTargetInfo::handleTargetFeatures(std::vector<std::string> &Features,
       HasFloat128 = true;
     } else if (Feature == "+power9-vector") {
       HasP9Vector = true;
+    } else if (Feature == "+power10-vector") {
+      HasP10Vector = true;
+    } else if (Feature == "+pcrelative-memops") {
+      HasPCRelativeMemops = true;
+    } else if (Feature == "+spe") {
+      HasSPE = true;
+      LongDoubleWidth = LongDoubleAlign = 64;
+      LongDoubleFormat = &llvm::APFloat::IEEEdouble();
+    } else if (Feature == "-hard-float") {
+      FloatABI = SoftFloat;
     }
     // TODO: Finish this list and add an assert that we've handled them
     // all.
@@ -101,7 +111,9 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("_CALL_LINUX", "1");
 
   // Subtarget options.
-  Builder.defineMacro("__NATURAL_ALIGNMENT__");
+  if (!getTriple().isOSAIX()){
+    Builder.defineMacro("__NATURAL_ALIGNMENT__");
+  }
   Builder.defineMacro("__REGISTER_PREFIX__", "");
 
   // FIXME: Should be controlled by command line option.
@@ -143,12 +155,18 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("_ARCH_PWR8");
   if (ArchDefs & ArchDefinePwr9)
     Builder.defineMacro("_ARCH_PWR9");
+  if (ArchDefs & ArchDefinePwr10)
+    Builder.defineMacro("_ARCH_PWR10");
   if (ArchDefs & ArchDefineA2)
     Builder.defineMacro("_ARCH_A2");
   if (ArchDefs & ArchDefineA2q) {
     Builder.defineMacro("_ARCH_A2Q");
     Builder.defineMacro("_ARCH_QP");
   }
+  if (ArchDefs & ArchDefineE500)
+    Builder.defineMacro("__NO_LWSYNC__");
+  if (ArchDefs & ArchDefineFuture)
+    Builder.defineMacro("_ARCH_PWR_FUTURE");
 
   if (getTriple().getVendor() == llvm::Triple::BGQ) {
     Builder.defineMacro("__bg__");
@@ -160,6 +178,10 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
   if (HasAltivec) {
     Builder.defineMacro("__VEC__", "10206");
     Builder.defineMacro("__ALTIVEC__");
+  }
+  if (HasSPE) {
+    Builder.defineMacro("__SPE__");
+    Builder.defineMacro("__NO_FPRS__");
   }
   if (HasVSX)
     Builder.defineMacro("__VSX__");
@@ -173,6 +195,8 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
     Builder.defineMacro("__FLOAT128__");
   if (HasP9Vector)
     Builder.defineMacro("__POWER9_VECTOR__");
+  if (HasP10Vector)
+    Builder.defineMacro("__POWER10_VECTOR__");
 
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1");
   Builder.defineMacro("__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2");
@@ -199,7 +223,6 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
   //   __CMODEL_LARGE__
   //   _CALL_SYSV
   //   _CALL_DARWIN
-  //   __NO_FPRS__
 }
 
 // Handle explicit options being passed to the compiler here: if we've
@@ -208,43 +231,32 @@ void PPCTargetInfo::getTargetDefines(const LangOptions &Opts,
 // - direct-move
 // - float128
 // - power9-vector
+// - power10-vector
 // then go ahead and error since the customer has expressed an incompatible
 // set of options.
 static bool ppcUserFeaturesCheck(DiagnosticsEngine &Diags,
                                  const std::vector<std::string> &FeaturesVec) {
 
-  if (std::find(FeaturesVec.begin(), FeaturesVec.end(), "-vsx") !=
-      FeaturesVec.end()) {
-    if (std::find(FeaturesVec.begin(), FeaturesVec.end(), "+power8-vector") !=
-        FeaturesVec.end()) {
-      Diags.Report(diag::err_opt_not_valid_with_opt) << "-mpower8-vector"
-                                                     << "-mno-vsx";
-      return false;
-    }
+  // vsx was not explicitly turned off.
+  if (llvm::find(FeaturesVec, "-vsx") == FeaturesVec.end())
+    return true;
 
-    if (std::find(FeaturesVec.begin(), FeaturesVec.end(), "+direct-move") !=
-        FeaturesVec.end()) {
-      Diags.Report(diag::err_opt_not_valid_with_opt) << "-mdirect-move"
-                                                     << "-mno-vsx";
-      return false;
+  auto FindVSXSubfeature = [&](StringRef Feature, StringRef Option) {
+    if (llvm::find(FeaturesVec, Feature) != FeaturesVec.end()) {
+      Diags.Report(diag::err_opt_not_valid_with_opt) << Option << "-mno-vsx";
+      return true;
     }
+    return false;
+  };
 
-    if (std::find(FeaturesVec.begin(), FeaturesVec.end(), "+float128") !=
-        FeaturesVec.end()) {
-      Diags.Report(diag::err_opt_not_valid_with_opt) << "-mfloat128"
-                                                     << "-mno-vsx";
-      return false;
-    }
+  bool Found = FindVSXSubfeature("+power8-vector", "-mpower8-vector");
+  Found |= FindVSXSubfeature("+direct-move", "-mdirect-move");
+  Found |= FindVSXSubfeature("+float128", "-mfloat128");
+  Found |= FindVSXSubfeature("+power9-vector", "-mpower9-vector");
+  Found |= FindVSXSubfeature("+power10-vector", "-mpower10-vector");
 
-    if (std::find(FeaturesVec.begin(), FeaturesVec.end(), "+power9-vector") !=
-        FeaturesVec.end()) {
-      Diags.Report(diag::err_opt_not_valid_with_opt) << "-mpower9-vector"
-                                                     << "-mno-vsx";
-      return false;
-    }
-  }
-
-  return true;
+  // Return false if any vsx subfeatures was found.
+  return !Found;
 }
 
 bool PPCTargetInfo::initFeatureMap(
@@ -306,18 +318,51 @@ bool PPCTargetInfo::initFeatureMap(
                         .Case("pwr8", true)
                         .Default(false);
 
+  Features["spe"] = llvm::StringSwitch<bool>(CPU)
+                        .Case("8548", true)
+                        .Case("e500", true)
+                        .Default(false);
+
+  // Power10 includes all the same features as Power9 plus any features specific
+  // to the Power10 core.
+  if (CPU == "pwr10" || CPU == "power10") {
+    initFeatureMap(Features, Diags, "pwr9", FeaturesVec);
+    addP10SpecificFeatures(Features);
+  }
+
+  // Future CPU should include all of the features of Power 10 as well as any
+  // additional features (yet to be determined) specific to it.
+  if (CPU == "future") {
+    initFeatureMap(Features, Diags, "pwr10", FeaturesVec);
+    addFutureSpecificFeatures(Features);
+  }
+
   if (!ppcUserFeaturesCheck(Diags, FeaturesVec))
     return false;
 
   if (!(ArchDefs & ArchDefinePwr9) && (ArchDefs & ArchDefinePpcgr) &&
-      std::find(FeaturesVec.begin(), FeaturesVec.end(), "+float128") !=
-          FeaturesVec.end()) {
+      llvm::find(FeaturesVec, "+float128") != FeaturesVec.end()) {
     // We have __float128 on PPC but not power 9 and above.
     Diags.Report(diag::err_opt_not_valid_with_opt) << "-mfloat128" << CPU;
     return false;
   }
 
   return TargetInfo::initFeatureMap(Features, Diags, CPU, FeaturesVec);
+}
+
+// Add any Power10 specific features.
+void PPCTargetInfo::addP10SpecificFeatures(
+    llvm::StringMap<bool> &Features) const {
+  Features["htm"] = false; // HTM was removed for P10.
+  Features["power10-vector"] = true;
+  Features["pcrelative-memops"] = true;
+  return;
+}
+
+// Add features specific to the "Future" CPU.
+void PPCTargetInfo::addFutureSpecificFeatures(
+    llvm::StringMap<bool> &Features) const {
+  return;
 }
 
 bool PPCTargetInfo::hasFeature(StringRef Feature) const {
@@ -334,6 +379,9 @@ bool PPCTargetInfo::hasFeature(StringRef Feature) const {
       .Case("extdiv", HasExtDiv)
       .Case("float128", HasFloat128)
       .Case("power9-vector", HasP9Vector)
+      .Case("power10-vector", HasP10Vector)
+      .Case("pcrelative-memops", HasPCRelativeMemops)
+      .Case("spe", HasSPE)
       .Default(false);
 }
 
@@ -347,22 +395,34 @@ void PPCTargetInfo::setFeatureEnabled(llvm::StringMap<bool> &Features,
                              .Case("direct-move", true)
                              .Case("power8-vector", true)
                              .Case("power9-vector", true)
+                             .Case("power10-vector", true)
                              .Case("float128", true)
                              .Default(false);
     if (FeatureHasVSX)
       Features["vsx"] = Features["altivec"] = true;
     if (Name == "power9-vector")
       Features["power8-vector"] = true;
-    Features[Name] = true;
+    else if (Name == "power10-vector")
+      Features["power8-vector"] = Features["power9-vector"] = true;
+    if (Name == "pcrel")
+      Features["pcrelative-memops"] = true;
+    else
+      Features[Name] = true;
   } else {
     // If we're disabling altivec or vsx go ahead and disable all of the vsx
     // features.
     if ((Name == "altivec") || (Name == "vsx"))
       Features["vsx"] = Features["direct-move"] = Features["power8-vector"] =
-          Features["float128"] = Features["power9-vector"] = false;
+          Features["float128"] = Features["power9-vector"] =
+              Features["power10-vector"] = false;
     if (Name == "power8-vector")
-      Features["power9-vector"] = false;
-    Features[Name] = false;
+      Features["power9-vector"] = Features["power10-vector"] = false;
+    else if (Name == "power9-vector")
+      Features["power10-vector"] = false;
+    if (Name == "pcrel")
+      Features["pcrelative-memops"] = false;
+    else
+      Features[Name] = false;
   }
 }
 
@@ -443,17 +503,17 @@ ArrayRef<TargetInfo::AddlRegName> PPCTargetInfo::getGCCAddlRegNames() const {
 }
 
 static constexpr llvm::StringLiteral ValidCPUNames[] = {
-    {"generic"}, {"440"},         {"450"},     {"601"},    {"602"},
-    {"603"},     {"603e"},        {"603ev"},   {"604"},    {"604e"},
-    {"620"},     {"630"},         {"g3"},      {"7400"},   {"g4"},
-    {"7450"},    {"g4+"},         {"750"},     {"970"},    {"g5"},
-    {"a2"},      {"a2q"},         {"e500mc"},  {"e5500"},  {"power3"},
-    {"pwr3"},    {"power4"},      {"pwr4"},    {"power5"}, {"pwr5"},
-    {"power5x"}, {"pwr5x"},       {"power6"},  {"pwr6"},   {"power6x"},
-    {"pwr6x"},   {"power7"},      {"pwr7"},    {"power8"}, {"pwr8"},
-    {"power9"},  {"pwr9"},        {"powerpc"}, {"ppc"},    {"powerpc64"},
-    {"ppc64"},   {"powerpc64le"}, {"ppc64le"},
-};
+    {"generic"},     {"440"},     {"450"},     {"601"},       {"602"},
+    {"603"},         {"603e"},    {"603ev"},   {"604"},       {"604e"},
+    {"620"},         {"630"},     {"g3"},      {"7400"},      {"g4"},
+    {"7450"},        {"g4+"},     {"750"},     {"8548"},      {"970"},
+    {"g5"},          {"a2"},      {"a2q"},     {"e500"},      {"e500mc"},
+    {"e5500"},       {"power3"},  {"pwr3"},    {"power4"},    {"pwr4"},
+    {"power5"},      {"pwr5"},    {"power5x"}, {"pwr5x"},     {"power6"},
+    {"pwr6"},        {"power6x"}, {"pwr6x"},   {"power7"},    {"pwr7"},
+    {"power8"},      {"pwr8"},    {"power9"},  {"pwr9"},      {"power10"},
+    {"pwr10"},       {"powerpc"}, {"ppc"},     {"powerpc64"}, {"ppc64"},
+    {"powerpc64le"}, {"ppc64le"}, {"future"}};
 
 bool PPCTargetInfo::isValidCPUName(StringRef Name) const {
   return llvm::find(ValidCPUNames, Name) != std::end(ValidCPUNames);
@@ -467,6 +527,10 @@ void PPCTargetInfo::adjust(LangOptions &Opts) {
   if (HasAltivec)
     Opts.AltiVec = 1;
   TargetInfo::adjust(Opts);
+  if (LongDoubleFormat != &llvm::APFloat::IEEEdouble())
+    LongDoubleFormat = Opts.PPCIEEELongDouble
+                           ? &llvm::APFloat::IEEEquad()
+                           : &llvm::APFloat::PPCDoubleDouble();
 }
 
 ArrayRef<Builtin::Info> PPCTargetInfo::getTargetBuiltins() const {

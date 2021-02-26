@@ -41,9 +41,9 @@ C Compiler generated, mildly edited.  Could surely be further optimised.
 ASM_START()
 PROLOGUE(mpn_invert_limb)
 	lsr	x2, x0, #54
-	adrp	x1, approx_tab
+	LEA_HI(	x1, approx_tab)
 	and	x2, x2, #0x1fe
-	add	x1, x1, :lo12:approx_tab
+	LEA_LO(	x1, approx_tab)
 	ldrh	w3, [x1,x2]
 	lsr	x4, x0, #24
 	add	x4, x4, #1

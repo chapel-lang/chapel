@@ -1,19 +1,20 @@
 //========- unittests/Support/ThreadPools.cpp - ThreadPools.h tests --========//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/ThreadPool.h"
 
+#include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/Triple.h"
 #include "llvm/Support/Host.h"
 #include "llvm/Support/TargetSelect.h"
+#include "llvm/Support/Threading.h"
 
 #include "gtest/gtest.h"
 
@@ -70,10 +71,11 @@ protected:
 
   void SetUp() override { MainThreadReady = false; }
 
+  void RunOnAllSockets(ThreadPoolStrategy S);
+
   std::condition_variable WaitMainThread;
   std::mutex WaitMainThreadMutex;
-  bool MainThreadReady;
-
+  bool MainThreadReady = false;
 };
 
 #define CHECK_UNSUPPORTED() \
@@ -133,7 +135,7 @@ TEST_F(ThreadPoolTest, Async) {
 
 TEST_F(ThreadPoolTest, GetFuture) {
   CHECK_UNSUPPORTED();
-  ThreadPool Pool{2};
+  ThreadPool Pool(hardware_concurrency(2));
   std::atomic_int i{0};
   Pool.async([this, &i] {
     waitForMainThread();
@@ -164,3 +166,57 @@ TEST_F(ThreadPoolTest, PoolDestruction) {
   }
   ASSERT_EQ(5, checked_in);
 }
+
+#if LLVM_ENABLE_THREADS == 1
+
+void ThreadPoolTest::RunOnAllSockets(ThreadPoolStrategy S) {
+  // FIXME: Skip these tests on non-Windows because multi-socket system were not
+  // tested on Unix yet, and llvm::get_thread_affinity_mask() isn't implemented
+  // for Unix.
+  Triple Host(Triple::normalize(sys::getProcessTriple()));
+  if (!Host.isOSWindows())
+    return;
+
+  llvm::DenseSet<llvm::BitVector> ThreadsUsed;
+  std::mutex Lock;
+  {
+    std::condition_variable AllThreads;
+    std::mutex AllThreadsLock;
+    unsigned Active = 0;
+
+    ThreadPool Pool(S);
+    for (size_t I = 0; I < S.compute_thread_count(); ++I) {
+      Pool.async([&] {
+        {
+          std::lock_guard<std::mutex> Guard(AllThreadsLock);
+          ++Active;
+          AllThreads.notify_one();
+        }
+        waitForMainThread();
+        std::lock_guard<std::mutex> Guard(Lock);
+        auto Mask = llvm::get_thread_affinity_mask();
+        ThreadsUsed.insert(Mask);
+      });
+    }
+    ASSERT_EQ(true, ThreadsUsed.empty());
+    {
+      std::unique_lock<std::mutex> Guard(AllThreadsLock);
+      AllThreads.wait(Guard,
+                      [&]() { return Active == S.compute_thread_count(); });
+    }
+    setMainThreadReady();
+  }
+  ASSERT_EQ(llvm::get_cpus(), ThreadsUsed.size());
+}
+
+TEST_F(ThreadPoolTest, AllThreads_UseAllRessources) {
+  CHECK_UNSUPPORTED();
+  RunOnAllSockets({});
+}
+
+TEST_F(ThreadPoolTest, AllThreads_OneThreadPerCore) {
+  CHECK_UNSUPPORTED();
+  RunOnAllSockets(llvm::heavyweight_hardware_concurrency());
+}
+
+#endif

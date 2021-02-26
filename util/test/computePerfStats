@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # COMPUTE PERFORMANCE STATISTTICS
 # This is used by sub_test if start_test is called with the -performance flag.
@@ -88,7 +88,7 @@ def log_timeouts(keys, time_out, date): # if we timed out
 def validate_output(verify_keys, output_file):
     # read output from file
     global test_output, test_output_raw
-    with open(output_file, "r") as file:
+    with open(output_file, "r", encoding="utf-8", errors="surrogateescape") as file:
         test_output_raw = file.read()
         test_output = test_output_raw.split("\n")
 

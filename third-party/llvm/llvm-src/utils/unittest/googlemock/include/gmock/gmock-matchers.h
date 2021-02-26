@@ -35,6 +35,8 @@
 // matchers can be defined by the user implementing the
 // MatcherInterface<T> interface if necessary.
 
+// IWYU pragma: private, include "gmock/gmock.h"
+
 #ifndef GMOCK_INCLUDE_GMOCK_GMOCK_MATCHERS_H_
 #define GMOCK_INCLUDE_GMOCK_GMOCK_MATCHERS_H_
 
@@ -3116,8 +3118,9 @@ class ElementsAreMatcherImpl : public MatcherInterface<Container> {
   typedef typename View::const_reference StlContainerReference;
   typedef decltype(std::begin(
       std::declval<StlContainerReference>())) StlContainerConstIterator;
-  typedef typename std::remove_reference<decltype(
-      *std::declval<StlContainerConstIterator &>())>::type Element;
+  typedef std::remove_reference_t<decltype(
+      *std::declval<StlContainerConstIterator &>())>
+      Element;
 
   // Constructs the matcher from a sequence of element values or
   // element matchers.
@@ -3358,8 +3361,9 @@ class UnorderedElementsAreMatcherImpl
   typedef typename View::const_reference StlContainerReference;
   typedef decltype(std::begin(
       std::declval<StlContainerReference>())) StlContainerConstIterator;
-  typedef typename std::remove_reference<decltype(
-      *std::declval<StlContainerConstIterator &>())>::type Element;
+  typedef std::remove_reference_t<decltype(
+      *std::declval<StlContainerConstIterator &>())>
+      Element;
 
   // Constructs the matcher from a sequence of element values or
   // element matchers.
@@ -3468,8 +3472,9 @@ class UnorderedElementsAreMatcher {
     typedef typename View::const_reference StlContainerReference;
     typedef decltype(std::begin(
         std::declval<StlContainerReference>())) StlContainerConstIterator;
-    typedef typename std::remove_reference<decltype(
-        *std::declval<StlContainerConstIterator &>())>::type Element;
+    typedef std::remove_reference_t<decltype(
+        *std::declval<StlContainerConstIterator &>())>
+        Element;
     typedef ::std::vector<Matcher<const Element&> > MatcherVec;
     MatcherVec matchers;
     matchers.reserve(::testing::tuple_size<MatcherTuple>::value);
@@ -3497,8 +3502,9 @@ class ElementsAreMatcher {
     typedef typename View::const_reference StlContainerReference;
     typedef decltype(std::begin(
         std::declval<StlContainerReference>())) StlContainerConstIterator;
-    typedef typename std::remove_reference<decltype(
-        *std::declval<StlContainerConstIterator &>())>::type Element;
+    typedef std::remove_reference_t<decltype(
+        *std::declval<StlContainerConstIterator &>())>
+        Element;
     typedef ::std::vector<Matcher<const Element&> > MatcherVec;
     MatcherVec matchers;
     matchers.reserve(::testing::tuple_size<MatcherTuple>::value);
@@ -3586,6 +3592,8 @@ class BoundSecondMatcher {
   void operator=(const BoundSecondMatcher& /*rhs*/) {
     GTEST_LOG_(FATAL) << "BoundSecondMatcher should never be assigned.";
   }
+
+  BoundSecondMatcher(const BoundSecondMatcher &) = default;
 
  private:
   template <typename T>

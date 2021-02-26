@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,8 @@
 // arrays obtained from external code to Chapel (and thus that we do not own).
 //
 module ExternalArray {
-  private use ChapelStandard;
+  use ChapelStandard;
+  private use CPtr;
 
   extern record chpl_opaque_array {
     var _pid: int;
@@ -50,7 +51,7 @@ module ExternalArray {
   chpl_make_external_array_ptr_free(elts: c_void_ptr,
                                     num_elts: uint): chpl_external_array;
 
-  extern proc chpl_free_external_array(x: chpl_external_array);
+  extern proc chpl_free_external_array(in x: chpl_external_array);
   extern proc chpl_call_free_func(func: c_void_ptr, elts: c_void_ptr);
 
   // Creates an instance of our new array type
@@ -96,6 +97,26 @@ module ExternalArray {
     return ret;
   }
 
+  proc convertStringOrBytes(ref arr: []): chpl_external_array
+    where arr.eltType == string || arr.eltType == bytes {
+
+    var wrapper: [arr.domain] chpl_byte_buffer;
+
+    // Move existing string buffers over to a new shell.
+    for i in 0..#arr.size {
+      ref item = arr[i];
+
+      // This call assumes ownership of the string's buffer.
+      var val = chpl__exportRetStringOrBytes(item);
+      wrapper[i] = val;
+    }
+
+    var ext = chpl_make_external_array_ptr_free(c_ptrTo(wrapper[0]),
+                                                wrapper.size: uint);
+
+    return ext;
+  }
+
   proc convertToExternalArray(in arr: []): chpl_external_array
     where (getExternalArrayType(arr) == chpl_external_array) {
     if (!isExternArrEltType(arr.eltType)) {
@@ -118,6 +139,15 @@ module ExternalArray {
     if (arr.domain.low != 0) {
       halt("cannot return an array when the lower bounds is not 0");
     }
+
+    //
+    // If the array element type is string or bytes, silently convert it to
+    // an array of 'chpl_byte_buffer'. Then in compiler code, we iterate
+    // through the elements and convert them to string or bytes as desired.
+    //
+    if arr.eltType == string || arr.eltType == bytes then
+      return convertStringOrBytes(arr);
+
     var externalArr = chpl_make_external_array_ptr_free(c_ptrTo(arr[0]),
                                                         arr.size: uint);
     // Change the source array so that it does not clean up its memory, so we
@@ -148,7 +178,7 @@ module ExternalArray {
   // extern array.
   // NOTE: once we can export types, those should also be supported here.
   private proc isExternArrEltType(type t) param {
-    if (isPrimitive(t) && t != string) {
+    if (isPrimitive(t)) {
       return true;
     } else if (t == c_string) {
       return true;
@@ -191,7 +221,7 @@ module ExternalArray {
 
   // Can't create an _array wrapper to call the cleanup function for us, so do
   // the next best thing.
-  export proc cleanupOpaqueArray(arr: chpl_opaque_array) {
+  export proc cleanupOpaqueArray(const ref arr: chpl_opaque_array) {
     var cleanup = arr._instance: unmanaged BaseArr?;
     if cleanup then
       _do_destroy_arr(arr._unowned, cleanup!);

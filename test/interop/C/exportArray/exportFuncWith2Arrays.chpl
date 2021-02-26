@@ -1,4 +1,4 @@
-export proc foo(x: [] int, y: [] int) {
+export proc foo(ref x: [] int, const ref y: [] int) {
   writeln(x); // Note: this assumes x will have initial contents
   writeln(y); // Note: this assumes y will have initial contents
   if (x.size == y.size) {

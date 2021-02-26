@@ -17,7 +17,7 @@ forall i in 1..N {
 
 var total : int;
 forall i in 1..N with (+ reduce total) {
-    total += lfs.pop()[2];
+    total += lfs.pop()[1];
 }
 assert(total == expected, total, "!=", expected);
 timer.stop();
@@ -32,7 +32,7 @@ forall i in 1..N with (var tok = lfs.getToken()) {
 
 total = 0;
 forall i in 1..N with (var tok = lfs.getToken(), + reduce total) {
-    total += lfs.pop(tok)[2];
+    total += lfs.pop(tok)[1];
 }
 assert(total == expected, total, "!=", expected);
 lfs.tryReclaim();

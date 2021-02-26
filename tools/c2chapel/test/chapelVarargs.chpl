@@ -5,6 +5,7 @@ require "chapelVarargs.h";
 
 // Note: Generated with fake std headers
 
+use CPtr;
 extern proc printf_wrapper(format : c_string, c__varargs ...) : void;
 
 // Overload for empty varargs

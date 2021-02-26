@@ -1,1 +1,1 @@
-listIndexOfHaltStart.chpl:10: error: halt reached - Start index for "list.indexOf" out of bounds: 0
+listIndexOfHaltStart.chpl:10: error: halt reached - Start index for "list.indexOf" out of bounds: -1

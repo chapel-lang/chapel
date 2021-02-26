@@ -1,9 +1,8 @@
 //===- LexicalScopes.cpp - Collecting lexical scope info --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -164,8 +163,8 @@ public:
   void getMachineBasicBlocks(const DILocation *DL,
                              SmallPtrSetImpl<const MachineBasicBlock *> &MBBs);
 
-  /// dominates - Return true if DebugLoc's lexical scope dominates at least one
-  /// machine instruction's lexical scope in a given machine basic block.
+  /// Return true if DebugLoc's lexical scope dominates at least one machine
+  /// instruction's lexical scope in a given machine basic block.
   bool dominates(const DILocation *DL, MachineBasicBlock *MBB);
 
   /// findLexicalScope - Find lexical scope, either regular or inlined, for the
@@ -251,6 +250,11 @@ private:
   /// CurrentFnLexicalScope - Top level scope for the current function.
   ///
   LexicalScope *CurrentFnLexicalScope = nullptr;
+
+  /// Map a location to the set of basic blocks it dominates. This is a cache
+  /// for \ref LexicalScopes::getMachineBasicBlocks results.
+  using BlockSetT = SmallPtrSet<const MachineBasicBlock *, 4>;
+  DenseMap<const DILocation *, std::unique_ptr<BlockSetT>> DominatedBlocks;
 };
 
 } // end namespace llvm

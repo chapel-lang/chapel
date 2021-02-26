@@ -1,1 +1,1 @@
-default-argument-out.chpl:1: error: invalid type specification
+default-argument-out.chpl:1: error: illegal assignment of value to type

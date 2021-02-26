@@ -1,9 +1,8 @@
 //===-- XCoreTargetObjectFile.h - XCore Object Info -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -33,7 +32,7 @@ static const unsigned CodeModelLargeSize = 256;
 
     MCSection *getSectionForConstant(const DataLayout &DL, SectionKind Kind,
                                      const Constant *C,
-                                     unsigned &Align) const override;
+                                     Align &Alignment) const override;
   };
 } // end namespace llvm
 

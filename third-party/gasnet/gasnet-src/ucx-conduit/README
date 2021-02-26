@@ -148,6 +148,8 @@ precedence.
   + See the GASNet Bugzilla server for details on known bugs:
     https://gasnet-bugs.lbl.gov/
   + This version is known to have issues with Mellanox ConnectX-4 adapters
+  + Support for segment-everything mode is experimental and is known to
+    suffer from unbounded memory use in AMLong (and amref-based Put/Get).
 
 @ Section: Design Overview @
 
@@ -214,12 +216,12 @@ precedence.
   The main difference from ibv-conduit design is an "election" procedure
   in case global exit experienced timeout.
   In ibv-conduit, rank 0 is used to arbitrate between other ranks in 
-  competition for "master" role.
-  In ucx-conduit, rank 0 is always considered to be "master". It takes this
+  competition for "leader" role.
+  In ucx-conduit, rank 0 is always considered to be "leader". It takes this
   role when it receives the request to perform exit from other ranks.
   There might be a further improvement of the non-global exit protocol by
   sequentially trying ranks 1, 2, ..., <myself> if rank 0 failed to confirm
-  it has taken "master" role (noted in the Further work section).
+  it has taken "leader" role (noted in the Further work section).
 
 @ Section: Future work @
 
@@ -227,3 +229,5 @@ precedence.
   + Additional round of performance analysis and tuning.
   + Investigate older UCX versions and hardware compatibility and update README.
   + Support Graceful exits if rank 0 has failed.
+  + Fix robustness problems with AMLong in `--enable-segment-everything` mode.
+  + Apply ODP to optimize `--enable-segment-everything` mode.

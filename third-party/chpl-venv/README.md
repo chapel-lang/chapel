@@ -28,6 +28,9 @@ section.
 The primary packages required by `start_test` are: `argparse`, `PyYAML`, and
 `virtualenv` (for installation).
 
+The primary packages required by `c2chapel` are: `argparse`, `pycparser`, and
+`virtualenv` (for installation).
+
 ### Sphinx
 
 Python documentation generator
@@ -133,3 +136,13 @@ Required by Sphinx, and man page generation.
 **License**: public domain, Python, 2-Clause BSD, GPL 3 (see COPYING.txt, also found at http://sourceforge.net/p/docutils/code/HEAD/tree/trunk/docutils/COPYING.txt)
 
 **Website**: https://pypi.python.org/pypi/docutils
+
+### pycparser
+
+C parser in Python
+
+Required by c2chapel.
+
+**License**: BSD
+
+**Website**: https://pypi.org/project/pycparser/

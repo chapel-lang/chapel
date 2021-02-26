@@ -1,9 +1,8 @@
 //===--- RenamingAction.cpp - Clang refactoring library -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -74,6 +73,8 @@ RenameOccurrences::initiate(RefactoringRuleContext &Context,
   return RenameOccurrences(getCanonicalSymbolDeclaration(ND),
                            std::move(NewName));
 }
+
+const NamedDecl *RenameOccurrences::getRenameDecl() const { return ND; }
 
 Expected<AtomicChanges>
 RenameOccurrences::createSourceReplacements(RefactoringRuleContext &Context) {
@@ -169,7 +170,8 @@ static void convertChangesToFileReplacements(
     std::map<std::string, tooling::Replacements> *FileToReplaces) {
   for (const auto &AtomicChange : AtomicChanges) {
     for (const auto &Replace : AtomicChange.getReplacements()) {
-      llvm::Error Err = (*FileToReplaces)[Replace.getFilePath()].add(Replace);
+      llvm::Error Err =
+          (*FileToReplaces)[std::string(Replace.getFilePath())].add(Replace);
       if (Err) {
         llvm::errs() << "Renaming failed in " << Replace.getFilePath() << "! "
                      << llvm::toString(std::move(Err)) << "\n";
@@ -265,12 +267,12 @@ private:
 };
 
 std::unique_ptr<ASTConsumer> RenamingAction::newASTConsumer() {
-  return llvm::make_unique<RenamingASTConsumer>(NewNames, PrevNames, USRList,
+  return std::make_unique<RenamingASTConsumer>(NewNames, PrevNames, USRList,
                                                 FileToReplaces, PrintLocations);
 }
 
 std::unique_ptr<ASTConsumer> QualifiedRenamingAction::newASTConsumer() {
-  return llvm::make_unique<USRSymbolRenamer>(NewNames, USRList, FileToReplaces);
+  return std::make_unique<USRSymbolRenamer>(NewNames, USRList, FileToReplaces);
 }
 
 } // end namespace tooling

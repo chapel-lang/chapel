@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -165,21 +165,21 @@ static bool catchesNotExhaustive(TryStmt* tryStmt);
 static bool shouldEnforceStrict(CallExpr* node, int taskFunctionDepth);
 static AList castToErrorNilable(Symbol* error, SymExpr* &castedError);
 
-class ErrorHandlingVisitor : public AstVisitorTraverse {
+class ErrorHandlingVisitor final : public AstVisitorTraverse {
 
 public:
   ErrorHandlingVisitor       (ArgSymbol* _outFormal, LabelSymbol* _epilogue);
 
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual void exitCatchStmt (CatchStmt* node);
-  virtual bool enterCallExpr (CallExpr*  node);
-  virtual bool enterForLoop  (ForLoop*   node);
-  virtual void exitForLoop   (ForLoop*   node);
-  virtual bool enterForallStmt(ForallStmt* node);
-  virtual void exitForallStmt (ForallStmt* node);
-  virtual bool enterDeferStmt(DeferStmt* node);
-  virtual void exitDeferStmt (DeferStmt* node);
+  bool enterTryStmt  (TryStmt*   node) override;
+  void exitTryStmt   (TryStmt*   node) override;
+  void exitCatchStmt (CatchStmt* node) override;
+  bool enterCallExpr (CallExpr*  node) override;
+  bool enterForLoop  (ForLoop*   node) override;
+  void exitForLoop   (ForLoop*   node) override;
+  bool enterForallStmt(ForallStmt* node) override;
+  void exitForallStmt (ForallStmt* node) override;
+  bool enterDeferStmt(DeferStmt* node) override;
+  void exitDeferStmt (DeferStmt* node) override;
 
 private:
   struct TryInfo {
@@ -477,7 +477,7 @@ static bool canForallStmtThrow(ForallStmt* fs) {
       if (canBlockStmtThrow(DB))
         // Error handling for the deinit blocks may be unimplemented.
         USR_FATAL_CONT(DB, "the deinitializer of the task-private variable '%s'"
-                       " throws - this is currently not supported");
+                       " throws - this is currently not supported", svar->name);
     }
   }
 
@@ -707,7 +707,7 @@ static AList castToErrorNilable(Symbol* error, SymExpr* &castedError) {
   return ret;
 }
 
-class ImplicitThrowsVisitor : public AstVisitorTraverse {
+class ImplicitThrowsVisitor final : public AstVisitorTraverse {
 
 public:
   ImplicitThrowsVisitor(std::set<FnSymbol*>* visited, implicitThrowsReasons_t* reasons);
@@ -715,10 +715,10 @@ public:
   // possibly record a throwing function call
   void handleCallToFunction(FnSymbol* calledFn, Expr* forExpr);
 
-  virtual bool enterTryStmt  (TryStmt*   node);
-  virtual void exitTryStmt   (TryStmt*   node);
-  virtual bool enterCallExpr (CallExpr*  node);
-  virtual bool enterForLoop  (ForLoop*  node);
+  bool enterTryStmt  (TryStmt*   node) override;
+  void exitTryStmt   (TryStmt*   node) override;
+  bool enterCallExpr (CallExpr*  node) override;
+  bool enterForLoop  (ForLoop*  node) override;
 
   // Does this function throw?
   bool throws() { return canThrow; }
@@ -843,16 +843,16 @@ typedef enum {
   ERROR_MODE_STRICT,
 } error_checking_mode_t;
 
-class ErrorCheckingVisitor : public AstVisitorTraverse {
+class ErrorCheckingVisitor final : public AstVisitorTraverse {
 
 public:
   ErrorCheckingVisitor(bool inThrowingFn, error_checking_mode_t inMode,
                        implicitThrowsReasons_t* reasons);
 
-  virtual bool enterTryStmt (TryStmt*   node);
-  virtual void exitTryStmt  (TryStmt*   node);
-  virtual bool enterCallExpr(CallExpr*  node);
-  virtual void exitDeferStmt(DeferStmt* node);
+  bool enterTryStmt (TryStmt*   node) override;
+  void exitTryStmt  (TryStmt*   node) override;
+  bool enterCallExpr(CallExpr*  node) override;
+  void exitDeferStmt(DeferStmt* node) override;
 
 private:
   int  tryDepth;
@@ -920,7 +920,7 @@ static void issueThrowingFnError(FnSymbol* calledFn,
                                  const char* problem) {
   const char* desc = "cast";
   bool cast = true;
-  if (calledFn->name != astr_cast) {
+  if (calledFn->name != astrScolon) {
     desc = astr("function ", calledFn->name);
     cast = false;
   }
@@ -1021,7 +1021,7 @@ bool canFunctionImplicitlyThrow(FnSymbol* fn)
     return true;
   // initCopy promoting iterators to arrays can be too
   if (fn->hasFlag(FLAG_INIT_COPY_FN))
-    if (fn->numFormals() >= 1)
+    if (fn->numFormals() >= 2)  // definedConst is always the last arg
       if (ArgSymbol* arg = fn->getFormal(1))
         if (arg->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
           return true;

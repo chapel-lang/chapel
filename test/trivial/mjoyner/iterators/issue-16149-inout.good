@@ -1,0 +1,3 @@
+in loop, j=1, y=0
+in loop, j=2, y=0
+after loop, y=1002

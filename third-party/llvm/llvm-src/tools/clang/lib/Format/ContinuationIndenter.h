@@ -1,9 +1,8 @@
 //===--- ContinuationIndenter.h - Format C++ code ---------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -112,12 +111,12 @@ private:
   unsigned reformatRawStringLiteral(const FormatToken &Current,
                                     LineState &State,
                                     const FormatStyle &RawStringStyle,
-                                    bool DryRun);
+                                    bool DryRun, bool Newline);
 
   /// If the current token is at the end of the current line, handle
   /// the transition to the next line.
   unsigned handleEndOfLine(const FormatToken &Current, LineState &State,
-                           bool DryRun, bool AllowBreak);
+                           bool DryRun, bool AllowBreak, bool Newline);
 
   /// If \p Current is a raw string that is configured to be reformatted,
   /// return the style to be used.
@@ -203,13 +202,16 @@ struct ParenState {
   ParenState(const FormatToken *Tok, unsigned Indent, unsigned LastSpace,
              bool AvoidBinPacking, bool NoLineBreak)
       : Tok(Tok), Indent(Indent), LastSpace(LastSpace),
-        NestedBlockIndent(Indent), BreakBeforeClosingBrace(false),
-        AvoidBinPacking(AvoidBinPacking), BreakBeforeParameter(false),
-        NoLineBreak(NoLineBreak), NoLineBreakInOperand(false),
-        LastOperatorWrapped(true), ContainsLineBreak(false),
-        ContainsUnwrappedBuilder(false), AlignColons(true),
-        ObjCSelectorNameFound(false), HasMultipleNestedBlocks(false),
-        NestedBlockInlined(false), IsInsideObjCArrayLiteral(false) {}
+        NestedBlockIndent(Indent), IsAligned(false),
+        BreakBeforeClosingBrace(false), AvoidBinPacking(AvoidBinPacking),
+        BreakBeforeParameter(false), NoLineBreak(NoLineBreak),
+        NoLineBreakInOperand(false), LastOperatorWrapped(true),
+        ContainsLineBreak(false), ContainsUnwrappedBuilder(false),
+        AlignColons(true), ObjCSelectorNameFound(false),
+        HasMultipleNestedBlocks(false), NestedBlockInlined(false),
+        IsInsideObjCArrayLiteral(false), IsCSharpGenericTypeConstraint(false),
+        IsChainedConditional(false), IsWrappedConditional(false),
+        UnindentOperator(false) {}
 
   /// \brief The token opening this parenthesis level, or nullptr if this level
   /// is opened by fake parenthesis.
@@ -264,6 +266,9 @@ struct ParenState {
   ///
   /// Used to align further variables if necessary.
   unsigned VariablePos = 0;
+
+  /// Whether this block's indentation is used for alignment.
+  bool IsAligned : 1;
 
   /// Whether a newline needs to be inserted before the block's closing
   /// brace.
@@ -330,6 +335,20 @@ struct ParenState {
   /// array literal.
   bool IsInsideObjCArrayLiteral : 1;
 
+  bool IsCSharpGenericTypeConstraint : 1;
+
+  /// \brief true if the current \c ParenState represents the false branch of
+  /// a chained conditional expression (e.g. else-if)
+  bool IsChainedConditional : 1;
+
+  /// \brief true if there conditionnal was wrapped on the first operator (the
+  /// question mark)
+  bool IsWrappedConditional : 1;
+
+  /// \brief Indicates the indent should be reduced by the length of the
+  /// operator.
+  bool UnindentOperator : 1;
+
   bool operator<(const ParenState &Other) const {
     if (Indent != Other.Indent)
       return Indent < Other.Indent;
@@ -339,6 +358,8 @@ struct ParenState {
       return NestedBlockIndent < Other.NestedBlockIndent;
     if (FirstLessLess != Other.FirstLessLess)
       return FirstLessLess < Other.FirstLessLess;
+    if (IsAligned != Other.IsAligned)
+      return IsAligned;
     if (BreakBeforeClosingBrace != Other.BreakBeforeClosingBrace)
       return BreakBeforeClosingBrace;
     if (QuestionColumn != Other.QuestionColumn)
@@ -367,6 +388,14 @@ struct ParenState {
       return ContainsUnwrappedBuilder;
     if (NestedBlockInlined != Other.NestedBlockInlined)
       return NestedBlockInlined;
+    if (IsCSharpGenericTypeConstraint != Other.IsCSharpGenericTypeConstraint)
+      return IsCSharpGenericTypeConstraint;
+    if (IsChainedConditional != Other.IsChainedConditional)
+      return IsChainedConditional;
+    if (IsWrappedConditional != Other.IsWrappedConditional)
+      return IsWrappedConditional;
+    if (UnindentOperator != Other.UnindentOperator)
+      return UnindentOperator;
     return false;
   }
 };

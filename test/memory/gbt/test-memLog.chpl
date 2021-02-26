@@ -1,4 +1,4 @@
-use Memory;
+use Memory.Diagnostics;
 
 class C {
   var i: int;

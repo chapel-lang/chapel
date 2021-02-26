@@ -1,0 +1,5 @@
+perfkeys: Warmup time =
+files: warmup-fastOns.dat
+graphkeys: FastExecuteOns to 1 node
+graphtitle: Remote AM Warmup Time
+ylabel: Time (seconds)

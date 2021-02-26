@@ -12,7 +12,7 @@ module grandparent {
   }
 
   module sibling {
-    use parent;
+    use super.parent;
 
     proc main() {
       writeln(parent.child.secretFunction(11));

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 BRANCH=unknown
-ENABLE_RV=0
+ENABLE_RV=1
 
 if [ "$#" -eq 0 ]
 then
@@ -29,11 +29,11 @@ echo Updating LLVM
 cd llvm-project
 git pull --rebase
 echo Updating RV
-if [ -d llvm/tools/rv ]
+if [ -d llvm-project/rv ]
 then
-cd llvm/tools/rv
+cd llvm-project/rv
 git pull --rebase
-cd ../../..
+cd ../..
 fi
 
 cd ..
@@ -41,15 +41,15 @@ cd ..
 else
 
 echo Checking out LLVM monorepo $BRANCH
-git clone https://github.com/llvm/llvm-project.git llvm-project
+git clone $CLONEARGS https://github.com/llvm/llvm-project.git llvm-project
 
 if [ "$ENABLE_RV" -ne 0 ]
 then
 echo Checking out RV $BRANCH
-git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm-project/llvm/tools/rv
-cd llvm-project/llvm/tools/rv
+git clone $CLONEARGS https://github.com/cdl-saarland/rv llvm-project/rv
+cd llvm-project/rv
 git submodule update --init
-cd ../../../..
+cd ../..
 fi
 
 fi

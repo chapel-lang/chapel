@@ -30,7 +30,7 @@ proc initGrid(latticeConstant: real, const ref force: unmanaged Force) {
 
   assert(locDom.size <= numLocales);
   const targetLocales : [locDom] locale =
-          for (_,l) in zip(0..#locDom.size, Locales) do l;
+          for l in Locales[0..#locDom.size] do l;
 
   const boxSpace = {1..numBoxes(0), 1..numBoxes(1), 1..numBoxes(2)};
   const distSpace = boxSpace dmapped Block(boundingBox=boxSpace, targetLocales=targetLocales);
@@ -445,7 +445,7 @@ tArray[timerEnum.ATOMHALO].start();
   for i in 1..6 by 2 {
     coforall ijk in locDom {
       on locGrid[ijk] {
-        if Grid[ijk]!.localDom.dim((i/2):int+1).size > 1 {
+        if Grid[ijk]!.localDom.dim((i/2):int).size > 1 {
           exchangeDataTwo(Grid[ijk]!, i);
         } else {
           exchangeData(Grid[ijk]!, i);

@@ -50,22 +50,12 @@ deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test7
-init (default)
 init 1 1
-lhs(0 0) = rhs(1 1)
-deinit 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
-deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test7a
 init (default)
-{1..1} (x = 0, ptr = {xx = 0})
-init (default)
 init 1 1
-lhs(0 0) = rhs(1 1)
-deinit 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
 (x = 1, ptr = {xx = 1})
@@ -75,21 +65,12 @@ init (default)
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test9
-init (default)
 init 1 1
-lhs(0 0) = rhs(1 1)
-deinit 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
-deinit 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
 test10
 init (default)
-init (default)
-lhs(0 0) = rhs(0 0)
 (x = 0, ptr = {xx = 0})
-deinit 0 0
 deinit 0 0
 test10b
 init (default)
@@ -100,31 +81,16 @@ deinit 0 0
 (x = 0, ptr = {xx = 0})
 deinit 0 0
 test11
-init (default)
 init 1 1
-lhs(0 0) = rhs(1 1)
-deinit 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
-deinit 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
 (x = 1, ptr = {xx = 1})
-deinit 1 1
 deinit 1 1
 test11a
 init (default)
 {1..1} (x = 0, ptr = {xx = 0})
-init (default)
 init 1 1
 lhs(0 0) = rhs(1 1)
 deinit 1 1
-lhs(0 0) = rhs(1 1)
-deinit 1 1
-init (default)
-lhs(0 0) = rhs(1 1)
 (x = 1, ptr = {xx = 1})
-deinit 1 1
 deinit 1 1
 test12
 init (default)
@@ -212,9 +178,3 @@ test26
 init 1 1
 (x = 1, ptr = {xx = 1})
 deinit 1 1
-
-=================================================================================================================
-Allocated Memory (Bytes)         Number   Size     Total    Description                      Address             
-=================================================================================================================
-=================================================================================================================
-

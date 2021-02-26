@@ -1,0 +1,2 @@
+--llvm --llvm-print-ir-stage basic --llvm-print-ir  main,compute 
+

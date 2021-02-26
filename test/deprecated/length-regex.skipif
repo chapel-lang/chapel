@@ -1,2 +1,0 @@
-# this test only works if Regexp.chpl is supported
-CHPL_REGEXP!=re2

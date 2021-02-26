@@ -3,3 +3,7 @@ pragmaMultipleVars.doc
 Usage:
    use pragmaMultipleVars.doc;
 
+or
+
+   import pragmaMultipleVars.doc;
+

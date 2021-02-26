@@ -1,1 +1,1 @@
---library --library-python
+--library --library-python --library-dir=lib

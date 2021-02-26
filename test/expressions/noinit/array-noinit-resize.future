@@ -1,0 +1,2 @@
+feature request: expanding noinited array does not init elements
+#15703

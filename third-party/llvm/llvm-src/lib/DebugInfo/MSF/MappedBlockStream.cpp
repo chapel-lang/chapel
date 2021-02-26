@@ -1,9 +1,8 @@
 //===- MappedBlockStream.cpp - Reads stream data from an MSF file ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -53,7 +52,7 @@ MappedBlockStream::MappedBlockStream(uint32_t BlockSize,
 std::unique_ptr<MappedBlockStream> MappedBlockStream::createStream(
     uint32_t BlockSize, const MSFStreamLayout &Layout, BinaryStreamRef MsfData,
     BumpPtrAllocator &Allocator) {
-  return llvm::make_unique<MappedBlockStreamImpl<MappedBlockStream>>(
+  return std::make_unique<MappedBlockStreamImpl<MappedBlockStream>>(
       BlockSize, Layout, MsfData, Allocator);
 }
 
@@ -64,7 +63,7 @@ std::unique_ptr<MappedBlockStream> MappedBlockStream::createIndexedStream(
   MSFStreamLayout SL;
   SL.Blocks = Layout.StreamMap[StreamIndex];
   SL.Length = Layout.StreamSizes[StreamIndex];
-  return llvm::make_unique<MappedBlockStreamImpl<MappedBlockStream>>(
+  return std::make_unique<MappedBlockStreamImpl<MappedBlockStream>>(
       Layout.SB->BlockSize, SL, MsfData, Allocator);
 }
 
@@ -319,7 +318,7 @@ WritableMappedBlockStream::createStream(uint32_t BlockSize,
                                         const MSFStreamLayout &Layout,
                                         WritableBinaryStreamRef MsfData,
                                         BumpPtrAllocator &Allocator) {
-  return llvm::make_unique<MappedBlockStreamImpl<WritableMappedBlockStream>>(
+  return std::make_unique<MappedBlockStreamImpl<WritableMappedBlockStream>>(
       BlockSize, Layout, MsfData, Allocator);
 }
 

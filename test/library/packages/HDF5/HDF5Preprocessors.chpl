@@ -22,7 +22,7 @@ module HDF5Preprocessors {
         //var f = opentmp();
         //const scriptName = f.realPath();
 
-        const scriptName = "hdf5TempScript.bash";
+        const scriptName = "./hdf5TempScript.bash";
         var f = open(scriptName, iomode.cw);
 
         // write the script to a file
@@ -32,6 +32,7 @@ module HDF5Preprocessors {
           writer.flush();
           f.fsync();
         }
+        f.close();
 
         // give the file executable permission
         chmod(scriptName, 0o755);
@@ -54,7 +55,6 @@ module HDF5Preprocessors {
           }
         }
 
-        f.close();
         remove(scriptName);
       }
     }

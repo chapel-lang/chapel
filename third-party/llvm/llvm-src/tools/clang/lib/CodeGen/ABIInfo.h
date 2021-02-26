@@ -1,9 +1,8 @@
 //===----- ABIInfo.h - ABI information access & encapsulation ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -61,6 +60,8 @@ namespace swiftcall {
 
     virtual bool supportsSwift() const { return false; }
 
+    virtual bool allowBFloatArgsAndRet() const { return false; }
+
     CodeGen::CGCXXABI &getCXXABI() const;
     ASTContext &getContext() const;
     llvm::LLVMContext &getVMContext() const;
@@ -102,6 +103,10 @@ namespace swiftcall {
 
     bool isHomogeneousAggregate(QualType Ty, const Type *&Base,
                                 uint64_t &Members) const;
+
+    // Implement the Type::IsPromotableIntegerType for ABI specific needs. The
+    // only difference is that this considers _ExtInt as well.
+    bool isPromotableIntegerTypeForABI(QualType Ty) const;
 
     /// A convenience method to return an indirect ABIArgInfo with an
     /// expected alignment equal to the ABI alignment of the given type.

@@ -1,6 +1,7 @@
 extern proc chpl_cache_print();
 extern proc printf(fmt: c_string, vals...?numvals): int;
 
+use CPtr;
 use BlockDist;
 
 config var n: int = 8;

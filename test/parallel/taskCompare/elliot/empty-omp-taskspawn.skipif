@@ -1,8 +1,5 @@
-# cce doesn't support running omp constructs from a pthread
-CHPL_TARGET_COMPILER==cray-prgenv-cray
-# older versions of clang don't support openmp
-# newer versions of clang require libomp-dev which might not be installed
-# additionally, libomp might not be available for static linking
-CHPL_TARGET_COMPILER==clang
-# same issues as CHPL_TARGET_COMPILER=clang apply to --llvm
-COMPOPTS <= --llvm
+# mppf: For some reason I havn't been able to understand yet,
+# nightly testing configurations that build LLVM have trouble
+# finding omp.h. I haven't been able to reproduce this myself.
+# Skip this test under LLVM configurations as a workaround.
+CHPL_LLVM!=none

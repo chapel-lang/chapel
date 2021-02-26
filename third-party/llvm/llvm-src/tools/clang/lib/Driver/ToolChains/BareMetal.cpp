@@ -1,9 +1,8 @@
-//===--- BaremMetal.cpp - Bare Metal ToolChain ------------------*- C++ -*-===//
+//===-- BareMetal.cpp - Bare Metal ToolChain --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -68,7 +67,7 @@ Tool *BareMetal::buildLinker() const {
 std::string BareMetal::getRuntimesDir() const {
   SmallString<128> Dir(getDriver().ResourceDir);
   llvm::sys::path::append(Dir, "lib", "baremetal");
-  return Dir.str();
+  return std::string(Dir.str());
 }
 
 void BareMetal::AddClangSystemIncludeArgs(const ArgList &DriverArgs,
@@ -158,7 +157,7 @@ void BareMetal::AddCXXStdlibLibArgs(const ArgList &Args,
 void BareMetal::AddLinkRuntimeLib(const ArgList &Args,
                                   ArgStringList &CmdArgs) const {
   CmdArgs.push_back(Args.MakeArgString("-lclang_rt.builtins-" +
-                                       getTriple().getArchName() + ".a"));
+                                       getTriple().getArchName()));
 }
 
 void baremetal::Linker::ConstructJob(Compilation &C, const JobAction &JA,
@@ -192,7 +191,7 @@ void baremetal::Linker::ConstructJob(Compilation &C, const JobAction &JA,
   CmdArgs.push_back("-o");
   CmdArgs.push_back(Output.getFilename());
 
-  C.addCommand(llvm::make_unique<Command>(JA, *this,
-                                          Args.MakeArgString(TC.GetLinkerPath()),
-                                          CmdArgs, Inputs));
+  C.addCommand(std::make_unique<Command>(JA, *this, ResponseFileSupport::None(),
+                                         Args.MakeArgString(TC.GetLinkerPath()),
+                                         CmdArgs, Inputs));
 }

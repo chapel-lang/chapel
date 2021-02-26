@@ -1,9 +1,8 @@
 //===-- CodeGen/AsmPrinter/ARMException.cpp - ARM EHABI Exception Impl ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,12 +46,12 @@ void ARMException::beginFunction(const MachineFunction *MF) {
   if (MoveType == AsmPrinter::CFI_M_Debug) {
     if (!hasEmittedCFISections) {
       if (Asm->needsOnlyDebugCFIMoves())
-        Asm->OutStreamer->EmitCFISections(false, true);
+        Asm->OutStreamer->emitCFISections(false, true);
       hasEmittedCFISections = true;
     }
 
     shouldEmitCFI = true;
-    Asm->OutStreamer->EmitCFIStartProc(false);
+    Asm->OutStreamer->emitCFIStartProc(false);
   }
 }
 
@@ -76,7 +75,7 @@ void ARMException::endFunction(const MachineFunction *MF) {
     // Emit references to personality.
     if (Per) {
       MCSymbol *PerSym = Asm->getSymbol(Per);
-      Asm->OutStreamer->EmitSymbolAttribute(PerSym, MCSA_Global);
+      Asm->OutStreamer->emitSymbolAttribute(PerSym, MCSA_Global);
       ATS.emitPersonality(PerSym);
     }
 
@@ -110,10 +109,10 @@ void ARMException::emitTypeInfos(unsigned TTypeEncoding,
   for (const GlobalValue *GV : reverse(TypeInfos)) {
     if (VerboseAsm)
       Asm->OutStreamer->AddComment("TypeInfo " + Twine(Entry--));
-    Asm->EmitTTypeReference(GV, TTypeEncoding);
+    Asm->emitTTypeReference(GV, TTypeEncoding);
   }
 
-  Asm->OutStreamer->EmitLabel(TTBaseLabel);
+  Asm->OutStreamer->emitLabel(TTBaseLabel);
 
   // Emit the Exception Specifications.
   if (VerboseAsm && !FilterIds.empty()) {
@@ -130,7 +129,7 @@ void ARMException::emitTypeInfos(unsigned TTypeEncoding,
         Asm->OutStreamer->AddComment("FilterInfo " + Twine(Entry));
     }
 
-    Asm->EmitTTypeReference((TypeID == 0 ? nullptr : TypeInfos[TypeID - 1]),
+    Asm->emitTTypeReference((TypeID == 0 ? nullptr : TypeInfos[TypeID - 1]),
                             TTypeEncoding);
   }
 }

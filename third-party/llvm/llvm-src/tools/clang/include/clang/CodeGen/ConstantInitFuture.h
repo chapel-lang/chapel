@@ -1,9 +1,8 @@
 //===- ConstantInitFuture.h - "Future" constant initializers ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,7 +35,7 @@ struct PointerLikeTypeTraits< ::clang::CodeGen::ConstantInitBuilderBase*> {
 
   static inline void *getAsVoidPointer(T p) { return p; }
   static inline T getFromVoidPointer(void *p) {return static_cast<T>(p);}
-  enum { NumLowBitsAvailable = 2 };
+  static constexpr int NumLowBitsAvailable = 2;
 };
 }
 
@@ -80,10 +79,8 @@ public:
     result.Data = PairTy::getFromOpaqueValue(value);
     return result;
   }
-  enum {
-    NumLowBitsAvailable =
-      llvm::PointerLikeTypeTraits<PairTy>::NumLowBitsAvailable
-  };
+  static constexpr int NumLowBitsAvailable =
+      llvm::PointerLikeTypeTraits<PairTy>::NumLowBitsAvailable;
 };
 
 }  // end namespace CodeGen
@@ -101,7 +98,7 @@ struct PointerLikeTypeTraits< ::clang::CodeGen::ConstantInitFuture> {
   static inline T getFromVoidPointer(void *p) {
     return T::getFromOpaqueValue(p);
   }
-  enum { NumLowBitsAvailable = T::NumLowBitsAvailable };
+  static constexpr int NumLowBitsAvailable = T::NumLowBitsAvailable;
 };
 
 } // end namespace llvm

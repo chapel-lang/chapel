@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -215,10 +215,11 @@ static bool isCallVectorHazard(CallExpr* call,
                                std::map<FnSymbol*, bool> &fnHasVectorHazard);
 
 namespace {
-  class VectorHazardVisitor : public AstVisitorTraverse {
+  class VectorHazardVisitor final : public AstVisitorTraverse {
     public:
       VectorHazardVisitor (std::map<FnSymbol*, bool> &fnHasVectorHazard);
-      virtual bool enterCallExpr (CallExpr*  node);
+
+      bool enterCallExpr (CallExpr*  node) override;
 
       bool hazard;
       CallExpr* reason;
@@ -1480,27 +1481,43 @@ expandBodyForIteratorInline(ForLoop*       forLoop,
                             TaskFnCopyMap& taskFnCopies,
                             bool&          addErrorArgToCall);
 
-static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody) {
-  bool isOrderIndependent = forLoop->isOrderIndependent();
-  bool hasVectorHazard = forLoop->hasVectorizationHazard();
+static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
+                               bool forVectorize) {
+  bool forIsOrderIndep = forLoop->isOrderIndependent();
+  bool forHasHazard = forLoop->hasVectorizationHazard();
+
+  if (forVectorize) {
+    forLoop->orderIndependentSet(true);
+    forIsOrderIndep = true;
+  }
+
+  // If forLoop is not marked order independent, then
+  // the yielding loops in the body should also not be marked
+  // order independent.
 
   // if the loop being expanded was order independent, all of the yielding
   // loops in the body are also order independent. Note that this must occur
   // after the ibody replaces the forLoop since findEnclosingLoop() requires
   // that its argument be in the AST. It must occur before yields are
   // replaced in the functions below though.
-  if (isOrderIndependent || hasVectorHazard) {
-    std::vector<CallExpr*> callExprs;
+  std::vector<CallExpr*> callExprs;
 
-    collectCallExprs(ibody, callExprs);
+  collectCallExprs(ibody, callExprs);
 
-    for_vector(CallExpr, call, callExprs) {
-      if (call->isPrimitive(PRIM_YIELD)) {
-        if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
-          if (loop->isCoforallLoop() == false) {
-            loop->orderIndependentSet(isOrderIndependent);
-            loop->setHasVectorizationHazard(hasVectorHazard);
-          }
+  for_vector(CallExpr, call, callExprs) {
+    if (call->isPrimitive(PRIM_YIELD)) {
+      if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
+        if (loop->isCoforallLoop() == false) {
+          // If the for loop is not order independent, neither
+          // should be the one we are replacing it with.
+          bool orderIndep = loop->isOrderIndependent();
+          orderIndep = orderIndep && forIsOrderIndep;
+          loop->orderIndependentSet(orderIndep);
+          // If the for loop had a vectorization hazard, so too
+          // does the one we are replacing it with.
+          bool hazard = loop->hasVectorizationHazard();
+          hazard = hazard || forHasHazard;
+          loop->setHasVectorizationHazard(hazard);
         }
       }
     }
@@ -1564,7 +1581,8 @@ expandIteratorInline(ForLoop* forLoop) {
     // and the entire for loop block is replaced by the iterator body.
     forLoop->replace(ibody);
 
-    markLoopProperties(forLoop, ibody);
+    markLoopProperties(forLoop, ibody,
+                       iterator->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS));
 
     // Replace yield statements in the inlined iterator body with copies
     // of the body of the For Loop that invoked the iterator, substituting
@@ -2217,7 +2235,8 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
-      if (!strcmp(type->substitutions.v[1].value->name, "bounded"))
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
         return true;
       else
         return false;
@@ -2482,7 +2501,7 @@ expandForLoop(ForLoop* forLoop) {
       bool curOrderIndependent = false;
       if (CallExpr* singleLoopYield = isSingleLoopIterator(iterFn, asts)) {
         if (LoopStmt* loop = LoopStmt::findEnclosingLoop(singleLoopYield)) {
-          curOrderIndependent = loop->isOrderIndependent() || forLoop->isOrderIndependent();
+          curOrderIndependent = loop->isOrderIndependent();
         }
       }
       allOrderIndependent = allOrderIndependent && curOrderIndependent;
@@ -2491,7 +2510,8 @@ expandForLoop(ForLoop* forLoop) {
     // The loop will be order independent if all the iters it zips are order
     // independent (all iters will be inlined and were all marked order
     // independent or the forLoop was marked independent prior zippering.)
-    forLoop->orderIndependentSet(allOrderIndependent);
+    if (forLoop->isOrderIndependent())
+      forLoop->orderIndependentSet(allOrderIndependent);
 
     // 2015-02-23 hilde:
     // TODO: I think this wants to be insertBefore, and moved before the call
@@ -2768,7 +2788,9 @@ static void reconstructIRAutoCopy(FnSymbol* fn)
       }
       copyResult = newTemp(autoCopy->retType);
       block->insertAtTail(new DefExpr(copyResult));
-      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult, new CallExpr(autoCopy, valueToCopy)));
+      block->insertAtTail(new CallExpr(PRIM_MOVE, copyResult,
+                                       new CallExpr(autoCopy, valueToCopy,
+                                                    new SymExpr(gFalse))));
     }
 
     // Now set the field
@@ -2808,7 +2830,7 @@ static void reconstructIRautoCopyAutoDestroy()
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (!fn->inTree()) continue;
 
-    if (fn->numFormals() == 1 &&
+    if (fn->numFormals() == 2 && // 2nd arg is `definedConst`
         fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD))
     {
       SET_LINENO(fn);

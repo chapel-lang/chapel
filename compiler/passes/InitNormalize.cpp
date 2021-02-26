@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -348,7 +348,7 @@ Expr* InitNormalize::genericFieldInitTypeWoutInit(Expr*    insertBefore,
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -401,6 +401,7 @@ Expr* InitNormalize::genericFieldInitTypeWithInit(Expr*    insertBefore,
 Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
                                                    DefExpr* field,
                                                    Expr*    initExpr) const {
+  bool isConst   = field->sym->hasFlag(FLAG_CONST);
   bool isParam   = field->sym->hasFlag(FLAG_PARAM);
   bool isTypeVar = field->sym->hasFlag(FLAG_TYPE_VARIABLE);
 
@@ -418,7 +419,7 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       insertBefore->insertBefore(fieldSet);
 
     } else {
-      VarSymbol* tmp      = newTemp("tmp");
+      VarSymbol* tmp      = newTemp(field->sym->name);
       DefExpr*   tmpDefn  = new DefExpr(tmp);
       PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
       CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -427,7 +428,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       Symbol*    name     = new_CStringSymbol(field->sym->name);
       CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-      if (isParam) {
+      if (isConst) {
+        tmp->addFlag(FLAG_CONST);
+      } else if (isParam) {
         tmp->addFlag(FLAG_PARAM);
       } else if (isTypeVar) {
         tmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -455,12 +458,12 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
       if ((isParam || isTypeVar) && initCall->isPrimitive(PRIM_NEW) == true) {
         const char* kind = isTypeVar ? "type" : "param";
         USR_FATAL(initExpr,
-                  "Cannot initialize %s field '%s' with 'new' expression",
+                  "cannot initialize %s field '%s' with 'new' expression",
                   kind, field->sym->name);
       }
     }
 
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     PrimitiveTag tag    = isTypeVar ? PRIM_MOVE : PRIM_INIT_VAR;
     CallExpr*  tmpInit  = new CallExpr(tag, tmp, initExpr);
@@ -469,7 +472,9 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
     Symbol*    name     = new_CStringSymbol(field->sym->name);
     CallExpr*  fieldSet = new CallExpr(PRIM_INIT_FIELD, _this, name, tmp);
 
-    if (isParam) {
+    if (isConst) {
+      tmp->addFlag(FLAG_CONST);
+    } else if (isParam) {
       tmp->addFlag(FLAG_PARAM);
     } else if (isTypeVar) {
       tmp->addFlag(FLAG_TYPE_VARIABLE);
@@ -493,11 +498,14 @@ Expr* InitNormalize::genericFieldInitTypeInference(Expr*    insertBefore,
 Expr* InitNormalize::fieldInitTypeWoutInit(Expr*    insertBefore,
                                            DefExpr* field) const {
 
+  if (field->sym->hasFlag(FLAG_NO_INIT))
+    return NULL;
+
   SET_LINENO(insertBefore);
 
   Type* type = field->sym->type;
 
-  VarSymbol* tmp      = newTemp("tmp", type);
+  VarSymbol* tmp      = newTemp(field->sym->name, type);
   DefExpr*   tmpDefn  = new DefExpr(tmp);
   CallExpr*  tmpInit  = new CallExpr(PRIM_DEFAULT_INIT_VAR,
                                      tmp, field->exprType->copy());
@@ -538,9 +546,14 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
 
   } else {
     // Do not set type of 'tmp' so that resolution will infer it later
-    VarSymbol* tmp       = newTemp("tmp");
+    VarSymbol* tmp       = newTemp(field->sym->name);
     DefExpr*   tmpDefn   = new DefExpr(tmp);
     Expr*      checkType = NULL;
+
+    bool noinit = false;
+    if (SymExpr* se = toSymExpr(initExpr))
+      if (se->symbol() == gNoInit)
+        noinit = true;
 
     if (field->exprType == NULL) {
       checkType = new SymExpr(type->symbol);
@@ -549,8 +562,12 @@ Expr* InitNormalize::fieldInitTypeWithInit(Expr*    insertBefore,
     }
 
     // Set the value for TMP
-    CallExpr*  tmpInit = new CallExpr(PRIM_INIT_VAR,
-                                      tmp,  initExpr, checkType);
+    CallExpr*  tmpInit = NULL;
+    if (noinit) {
+      tmpInit = new CallExpr(PRIM_NOINIT_INIT_VAR, tmp, checkType);
+    } else {
+      tmpInit = new CallExpr(PRIM_INIT_VAR, tmp,  initExpr, checkType);
+    }
 
     Symbol*    _this     = mFn->_this;
     Symbol*    name      = new_CStringSymbol(field->sym->name);
@@ -586,7 +603,7 @@ Expr* InitNormalize::fieldInitTypeInference(Expr*    insertBefore,
     insertBefore->insertBefore(fieldSet);
 
   } else {
-    VarSymbol* tmp      = newTemp("tmp");
+    VarSymbol* tmp      = newTemp(field->sym->name);
     DefExpr*   tmpDefn  = new DefExpr(tmp);
     CallExpr*  tmpInit  = new CallExpr(PRIM_INIT_VAR, tmp, initExpr);
 
@@ -882,7 +899,7 @@ static bool isThisDot(CallExpr* call) {
       retval = true;
     }
   }
-  
+
   return retval;
 }
 
@@ -925,17 +942,17 @@ static bool typeHasMethod(AggregateType* type, const char* methodName) {
   return retval;
 }
 
-class ProcessThisUses : public AstVisitorTraverse
+class ProcessThisUses final : public AstVisitorTraverse
 {
   public:
-    ProcessThisUses(const InitNormalize* state) {
-      this->state = state;
+    ProcessThisUses(const InitNormalize* state)
+      : state(state) {
     }
-    virtual ~ProcessThisUses() { }
+    ~ProcessThisUses() override = default;
 
-    virtual void visitSymExpr(SymExpr* node);
-    virtual bool enterCallExpr(CallExpr* node);
-    virtual bool enterFnSym(FnSymbol* node);
+    void visitSymExpr(SymExpr* node) override;
+    bool enterCallExpr(CallExpr* node) override;
+    bool enterFnSym(FnSymbol* node) override;
 
   private:
     const InitNormalize* state;
@@ -1061,8 +1078,8 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
         return false;
       }
     }
-  } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astr_cast)) {
-    if (SymExpr* se = toSymExpr(node->get(2))) {
+  } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astrScolon)) {
+    if (SymExpr* se = toSymExpr(node->get(1))) {
       if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
         USR_FATAL_CONT(node, "cannot cast \"this\" before this.complete()");
         return false;

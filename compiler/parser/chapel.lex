@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -150,6 +150,7 @@ extern           return processExtern(yyscanner);
 false            return processToken(yyscanner, TFALSE);
 for              return processToken(yyscanner, TFOR);
 forall           return processToken(yyscanner, TFORALL);
+foreach          return processToken(yyscanner, TFOREACH);
 forwarding       return processToken(yyscanner, TFORWARDING);
 if               return processToken(yyscanner, TIF);
 imag             return processToken(yyscanner, TIMAG);
@@ -160,6 +161,8 @@ index            return processToken(yyscanner, TINDEX);
 inline           return processToken(yyscanner, TINLINE);
 inout            return processToken(yyscanner, TINOUT);
 int              return processToken(yyscanner, TINT);
+implements       return processToken(yyscanner, TIMPLEMENTS);
+interface        return processToken(yyscanner, TINTERFACE);
 iter             return processToken(yyscanner, TITER);
 label            return processToken(yyscanner, TLABEL);
 lambda           return processToken(yyscanner, TLAMBDA);
@@ -175,6 +178,7 @@ none             return processToken(yyscanner, TNONE);
 nothing          return processToken(yyscanner, TNOTHING);
 on               return processToken(yyscanner, TON);
 only             return processToken(yyscanner, TONLY);
+operator         return processToken(yyscanner, TOPERATOR);
 otherwise        return processToken(yyscanner, TOTHERWISE);
 out              return processToken(yyscanner, TOUT);
 override         return processToken(yyscanner, TOVERRIDE);

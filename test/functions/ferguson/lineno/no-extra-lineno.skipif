@@ -1,2 +1,0 @@
-# This test inspects generated C, so skip under --llvm
-COMPOPTS<=--llvm

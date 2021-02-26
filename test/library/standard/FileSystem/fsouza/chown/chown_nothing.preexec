@@ -2,5 +2,5 @@
 
 touch file.txt
 
-python -c 'import os ; print(os.stat("file.txt").st_uid)' > file.uid
-python -c 'import os ; print(os.stat("file.txt").st_gid)' > file.gid
+python3 -c 'import os ; print(os.stat("file.txt").st_uid)' > file.uid
+python3 -c 'import os ; print(os.stat("file.txt").st_gid)' > file.gid

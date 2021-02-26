@@ -1,0 +1,2 @@
+versionCastIsParam.chpl:7: warning: version 1.23.0 (vass)
+versionCastIsParam.chpl:13: error: Yay!

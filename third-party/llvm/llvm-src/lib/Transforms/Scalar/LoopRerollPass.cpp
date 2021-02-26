@@ -1,9 +1,8 @@
 //===- LoopReroll.cpp - Loop rerolling pass -------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -25,10 +24,8 @@
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/Analysis/LoopPass.h"
 #include "llvm/Analysis/ScalarEvolution.h"
-#include "llvm/Analysis/ScalarEvolutionExpander.h"
 #include "llvm/Analysis/ScalarEvolutionExpressions.h"
 #include "llvm/Analysis/TargetLibraryInfo.h"
-#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Analysis/ValueTracking.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Constants.h"
@@ -46,6 +43,7 @@
 #include "llvm/IR/Use.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Value.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -54,7 +52,9 @@
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Transforms/Utils.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
+#include "llvm/Transforms/Utils/Local.h"
 #include "llvm/Transforms/Utils/LoopUtils.h"
+#include "llvm/Transforms/Utils/ScalarEvolutionExpander.h"
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -880,6 +880,12 @@ bool LoopReroll::DAGRootTracker::validateRootSet(DAGRootSet &DRS) {
   if (DRS.Roots.empty())
     return false;
 
+  // If the value of the base instruction is used outside the loop, we cannot
+  // reroll the loop. Check for other root instructions is unnecessary because
+  // they don't match any base instructions if their values are used outside.
+  if (hasUsesOutsideLoop(DRS.BaseInst, L))
+    return false;
+
   // Consider a DAGRootSet with N-1 roots (so N different values including
   //   BaseInst).
   // Define d = Roots[0] - BaseInst, which should be the same as
@@ -892,11 +898,21 @@ bool LoopReroll::DAGRootTracker::validateRootSet(DAGRootSet &DRS) {
   const auto *ADR = dyn_cast<SCEVAddRecExpr>(SE->getSCEV(DRS.BaseInst));
   if (!ADR)
     return false;
+
+  // Check that the first root is evenly spaced.
   unsigned N = DRS.Roots.size() + 1;
   const SCEV *StepSCEV = SE->getMinusSCEV(SE->getSCEV(DRS.Roots[0]), ADR);
   const SCEV *ScaleSCEV = SE->getConstant(StepSCEV->getType(), N);
   if (ADR->getStepRecurrence(*SE) != SE->getMulExpr(StepSCEV, ScaleSCEV))
     return false;
+
+  // Check that the remainling roots are evenly spaced.
+  for (unsigned i = 1; i < N - 1; ++i) {
+    const SCEV *NewStepSCEV = SE->getMinusSCEV(SE->getSCEV(DRS.Roots[i]),
+                                               SE->getSCEV(DRS.Roots[i-1]));
+    if (NewStepSCEV != StepSCEV)
+      return false;
+  }
 
   return true;
 }
@@ -1116,7 +1132,7 @@ static bool isIgnorableInst(const Instruction *I) {
     case Intrinsic::annotation:
     case Intrinsic::ptr_annotation:
     case Intrinsic::var_annotation:
-    // TODO: the following intrinsics may also be whitelisted:
+    // TODO: the following intrinsics may also be allowed:
     //   lifetime_start, lifetime_end, invariant_start, invariant_end
       return true;
   }
@@ -1635,7 +1651,8 @@ bool LoopReroll::runOnLoop(Loop *L, LPPassManager &LPM) {
   AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
   LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
   SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
-  TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
+  TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(
+      *L->getHeader()->getParent());
   DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
   PreserveLCSSA = mustPreserveAnalysisID(LCSSAID);
 

@@ -1,9 +1,8 @@
 //===--- AArch64.h - Declare AArch64 target feature support -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,12 +28,23 @@ class LLVM_LIBRARY_VISIBILITY AArch64TargetInfo : public TargetInfo {
   enum FPUModeEnum { FPUMode, NeonMode = (1 << 0), SveMode = (1 << 1) };
 
   unsigned FPU;
-  unsigned CRC;
-  unsigned Crypto;
-  unsigned Unaligned;
-  unsigned HasFullFP16;
-  unsigned HasDotProd;
-  unsigned HasFP16FML;
+  bool HasCRC;
+  bool HasCrypto;
+  bool HasUnaligned;
+  bool HasFullFP16;
+  bool HasDotProd;
+  bool HasFP16FML;
+  bool HasMTE;
+  bool HasTME;
+  bool HasMatMul;
+  bool HasSVE2;
+  bool HasSVE2AES;
+  bool HasSVE2SHA3;
+  bool HasSVE2SM4;
+  bool HasSVE2BitPerm;
+  bool HasMatmulFP64;
+  bool HasMatmulFP32;
+
   llvm::AArch64::ArchKind ArchKind;
 
   static const Builtin::Info BuiltinInfo[];
@@ -47,6 +57,9 @@ public:
   StringRef getABI() const override;
   bool setABI(const std::string &Name) override;
 
+  bool validateBranchProtection(StringRef, BranchProtectionInfo &,
+                                StringRef &) const override;
+
   bool isValidCPUName(StringRef Name) const override;
   void fillValidCPUList(SmallVectorImpl<StringRef> &Values) const override;
   bool setCPU(const std::string &Name) override;
@@ -58,6 +71,14 @@ public:
   void getTargetDefinesARMV81A(const LangOptions &Opts,
                                MacroBuilder &Builder) const;
   void getTargetDefinesARMV82A(const LangOptions &Opts,
+                               MacroBuilder &Builder) const;
+  void getTargetDefinesARMV83A(const LangOptions &Opts,
+                               MacroBuilder &Builder) const;
+  void getTargetDefinesARMV84A(const LangOptions &Opts,
+                               MacroBuilder &Builder) const;
+  void getTargetDefinesARMV85A(const LangOptions &Opts,
+                               MacroBuilder &Builder) const;
+  void getTargetDefinesARMV86A(const LangOptions &Opts,
                                MacroBuilder &Builder) const;
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
@@ -76,6 +97,21 @@ public:
 
   ArrayRef<const char *> getGCCRegNames() const override;
   ArrayRef<TargetInfo::GCCRegAlias> getGCCRegAliases() const override;
+
+  std::string convertConstraint(const char *&Constraint) const override {
+    std::string R;
+    switch (*Constraint) {
+    case 'U': // Three-character constraint; add "@3" hint for later parsing.
+      R = std::string("@3") + std::string(Constraint, 3);
+      Constraint += 2;
+      break;
+    default:
+      R = TargetInfo::convertConstraint(Constraint);
+      break;
+    }
+    return R;
+  }
+
   bool validateAsmConstraint(const char *&Name,
                              TargetInfo::ConstraintInfo &Info) const override;
   bool
@@ -89,6 +125,11 @@ public:
   }
 
   int getEHDataRegisterNumber(unsigned RegNo) const override;
+
+  const char *getBFloat16Mangling() const override { return "u6__bf16"; };
+  bool hasInt128Type() const override;
+
+  bool hasExtIntType() const override { return true; }
 };
 
 class LLVM_LIBRARY_VISIBILITY AArch64leTargetInfo : public AArch64TargetInfo {
@@ -123,12 +164,12 @@ public:
   MicrosoftARM64TargetInfo(const llvm::Triple &Triple,
                            const TargetOptions &Opts);
 
-  void getVisualStudioDefines(const LangOptions &Opts,
-                              MacroBuilder &Builder) const;
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
   TargetInfo::CallingConvKind
   getCallingConvKind(bool ClangABICompat4) const override;
+
+  unsigned getMinGlobalAlign(uint64_t TypeSize) const override;
 };
 
 // ARM64 MinGW target

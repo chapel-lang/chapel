@@ -1,9 +1,8 @@
 //===- llvm/Support/KnownBits.h - Stores known zeros/ones -------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -98,6 +97,9 @@ public:
   /// Returns true if this value is known to be non-negative.
   bool isNonNegative() const { return Zero.isSignBitSet(); }
 
+  /// Returns true if this value is known to be positive.
+  bool isStrictlyPositive() const { return Zero.isSignBitSet() && !One.isNullValue(); }
+
   /// Make this value negative.
   void makeNegative() {
     One.setSignBit();
@@ -108,28 +110,67 @@ public:
     Zero.setSignBit();
   }
 
-  /// Truncate the underlying known Zero and One bits. This is equivalent
-  /// to truncating the value we're tracking.
-  KnownBits trunc(unsigned BitWidth) {
+  /// Return the minimal value possible given these KnownBits.
+  APInt getMinValue() const {
+    // Assume that all bits that aren't known-ones are zeros.
+    return One;
+  }
+
+  /// Return the maximal value possible given these KnownBits.
+  APInt getMaxValue() const {
+    // Assume that all bits that aren't known-zeros are ones.
+    return ~Zero;
+  }
+
+  /// Return known bits for a truncation of the value we're tracking.
+  KnownBits trunc(unsigned BitWidth) const {
     return KnownBits(Zero.trunc(BitWidth), One.trunc(BitWidth));
   }
 
-  /// Zero extends the underlying known Zero and One bits. This is equivalent
-  /// to zero extending the value we're tracking.
-  KnownBits zext(unsigned BitWidth) {
+  /// Return known bits for an "any" extension of the value we're tracking,
+  /// where we don't know anything about the extended bits.
+  KnownBits anyext(unsigned BitWidth) const {
     return KnownBits(Zero.zext(BitWidth), One.zext(BitWidth));
   }
 
-  /// Sign extends the underlying known Zero and One bits. This is equivalent
-  /// to sign extending the value we're tracking.
-  KnownBits sext(unsigned BitWidth) {
+  /// Return known bits for a zero extension of the value we're tracking.
+  KnownBits zext(unsigned BitWidth) const {
+    unsigned OldBitWidth = getBitWidth();
+    APInt NewZero = Zero.zext(BitWidth);
+    NewZero.setBitsFrom(OldBitWidth);
+    return KnownBits(NewZero, One.zext(BitWidth));
+  }
+
+  /// Return known bits for a sign extension of the value we're tracking.
+  KnownBits sext(unsigned BitWidth) const {
     return KnownBits(Zero.sext(BitWidth), One.sext(BitWidth));
   }
 
-  /// Zero extends or truncates the underlying known Zero and One bits. This is
-  /// equivalent to zero extending or truncating the value we're tracking.
-  KnownBits zextOrTrunc(unsigned BitWidth) {
-    return KnownBits(Zero.zextOrTrunc(BitWidth), One.zextOrTrunc(BitWidth));
+  /// Return known bits for an "any" extension or truncation of the value we're
+  /// tracking.
+  KnownBits anyextOrTrunc(unsigned BitWidth) const {
+    if (BitWidth > getBitWidth())
+      return anyext(BitWidth);
+    if (BitWidth < getBitWidth())
+      return trunc(BitWidth);
+    return *this;
+  }
+
+  /// Return known bits for a zero extension or truncation of the value we're
+  /// tracking.
+  KnownBits zextOrTrunc(unsigned BitWidth) const {
+    if (BitWidth > getBitWidth())
+      return zext(BitWidth);
+    if (BitWidth < getBitWidth())
+      return trunc(BitWidth);
+    return *this;
+  }
+
+  /// Return a KnownBits with the extracted bits
+  /// [bitPosition,bitPosition+numBits).
+  KnownBits extractBits(unsigned NumBits, unsigned BitPosition) const {
+    return KnownBits(Zero.extractBits(NumBits, BitPosition),
+                     One.extractBits(NumBits, BitPosition));
   }
 
   /// Returns the minimum number of trailing zero bits.
@@ -192,10 +233,53 @@ public:
     return getBitWidth() - Zero.countPopulation();
   }
 
+  /// Compute known bits resulting from adding LHS, RHS and a 1-bit Carry.
+  static KnownBits computeForAddCarry(
+      const KnownBits &LHS, const KnownBits &RHS, const KnownBits &Carry);
+
   /// Compute known bits resulting from adding LHS and RHS.
   static KnownBits computeForAddSub(bool Add, bool NSW, const KnownBits &LHS,
                                     KnownBits RHS);
+
+  /// Update known bits based on ANDing with RHS.
+  KnownBits &operator&=(const KnownBits &RHS);
+
+  /// Update known bits based on ORing with RHS.
+  KnownBits &operator|=(const KnownBits &RHS);
+
+  /// Update known bits based on XORing with RHS.
+  KnownBits &operator^=(const KnownBits &RHS);
 };
+
+inline KnownBits operator&(KnownBits LHS, const KnownBits &RHS) {
+  LHS &= RHS;
+  return LHS;
+}
+
+inline KnownBits operator&(const KnownBits &LHS, KnownBits &&RHS) {
+  RHS &= LHS;
+  return std::move(RHS);
+}
+
+inline KnownBits operator|(KnownBits LHS, const KnownBits &RHS) {
+  LHS |= RHS;
+  return LHS;
+}
+
+inline KnownBits operator|(const KnownBits &LHS, KnownBits &&RHS) {
+  RHS |= LHS;
+  return std::move(RHS);
+}
+
+inline KnownBits operator^(KnownBits LHS, const KnownBits &RHS) {
+  LHS ^= RHS;
+  return LHS;
+}
+
+inline KnownBits operator^(const KnownBits &LHS, KnownBits &&RHS) {
+  RHS ^= LHS;
+  return std::move(RHS);
+}
 
 } // end namespace llvm
 

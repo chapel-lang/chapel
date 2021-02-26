@@ -87,7 +87,8 @@ config const initialEnergy = 3.948746e+7;            // initial energy value
 config const showProgress = false,   // print time and dt values on each step
              debug = false,          // print various debug info
              doTiming = true,        // time the main timestep loop
-             printCoords = true;     // print the final computed coordinates
+             printCoords = true,     // print the final computed coordinates
+             coordsStdout = false;   // print coordinates to stdout or coords.out
 
 
 /* Compile-time constants */
@@ -314,14 +315,12 @@ proc main() {
   use IO;
 
   if printCoords {
-    var outfile = open("coords.out", iomode.cw);
-    var writer = outfile.writer();
+    var writer = if coordsStdout then stdout
+                                 else open("coords.out", iomode.cw).writer();
     var fmtstr = if debug then "%1.9re %1.9er %1.9er\n" 
                           else "%1.4er %1.4er %1.4er\n";
     for i in Nodes do
       writer.writef(fmtstr, x[i], y[i], z[i]);
-    writer.close();
-    outfile.close();
   }
 }
 

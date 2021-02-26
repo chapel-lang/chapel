@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelArray.chpl:4558: error: Could not coerce 'nil' to '_ddata(unmanaged C)' in initialization
+yieldGeneric.chpl:14: error: Could not coerce 'nil' to '_ddata(unmanaged C)' in initialization

@@ -1,9 +1,8 @@
 //===- InterleavedAccessPass.cpp ------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -59,6 +58,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Type.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/Casting.h"
 #include "llvm/Support/CommandLine.h"
@@ -164,14 +164,19 @@ static bool isDeInterleaveMaskOfFactor(ArrayRef<int> Mask, unsigned Factor,
 ///     <0, 2, 4, 6>    (mask of index 0 to extract even elements)
 ///     <1, 3, 5, 7>    (mask of index 1 to extract odd elements)
 static bool isDeInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
-                               unsigned &Index, unsigned MaxFactor) {
+                               unsigned &Index, unsigned MaxFactor,
+                               unsigned NumLoadElements) {
   if (Mask.size() < 2)
     return false;
 
   // Check potential Factors.
-  for (Factor = 2; Factor <= MaxFactor; Factor++)
+  for (Factor = 2; Factor <= MaxFactor; Factor++) {
+    // Make sure we don't produce a load wider than the input load.
+    if (Mask.size() * Factor > NumLoadElements)
+      return false;
     if (isDeInterleaveMaskOfFactor(Mask, Factor, Index))
       return true;
+  }
 
   return false;
 }
@@ -275,7 +280,7 @@ static bool isReInterleaveMask(ArrayRef<int> Mask, unsigned &Factor,
 
 bool InterleavedAccess::lowerInterleavedLoad(
     LoadInst *LI, SmallVector<Instruction *, 32> &DeadInsts) {
-  if (!LI->isSimple())
+  if (!LI->isSimple() || isa<ScalableVectorType>(LI->getType()))
     return false;
 
   SmallVector<ShuffleVectorInst *, 4> Shuffles;
@@ -303,9 +308,11 @@ bool InterleavedAccess::lowerInterleavedLoad(
 
   unsigned Factor, Index;
 
+  unsigned NumLoadElements =
+      cast<FixedVectorType>(LI->getType())->getNumElements();
   // Check if the first shufflevector is DE-interleave shuffle.
   if (!isDeInterleaveMask(Shuffles[0]->getShuffleMask(), Factor, Index,
-                          MaxFactor))
+                          MaxFactor, NumLoadElements))
     return false;
 
   // Holds the corresponding index for each DE-interleave shuffle.
@@ -415,12 +422,13 @@ bool InterleavedAccess::lowerInterleavedStore(
     return false;
 
   ShuffleVectorInst *SVI = dyn_cast<ShuffleVectorInst>(SI->getValueOperand());
-  if (!SVI || !SVI->hasOneUse())
+  if (!SVI || !SVI->hasOneUse() || isa<ScalableVectorType>(SVI->getType()))
     return false;
 
   // Check if the shufflevector is RE-interleave shuffle.
   unsigned Factor;
-  unsigned OpNumElts = SVI->getOperand(0)->getType()->getVectorNumElements();
+  unsigned OpNumElts =
+      cast<FixedVectorType>(SVI->getOperand(0)->getType())->getNumElements();
   if (!isReInterleaveMask(SVI->getShuffleMask(), Factor, MaxFactor, OpNumElts))
     return false;
 

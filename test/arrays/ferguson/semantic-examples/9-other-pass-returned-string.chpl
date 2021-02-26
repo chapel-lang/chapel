@@ -7,6 +7,6 @@ proc createArray() {
   return s;
 }
 proc consumesArray(A) {
-  writeln(A[1]);
+  writeln(A[0]);
 }
 consumesArray(createArray());

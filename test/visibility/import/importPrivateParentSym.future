@@ -1,8 +1,0 @@
-bug: import of a private symbol in a parent module fails
-
-This shows a bug in which a child module cannot refer to a private
-symbol in its parent module.  On master today, the child module can
-simply name the parent module's symbol, so it seems it should be able
-to import it as well.  In the planned changes when a child module will
-have to import its parent to refer to its symbols, I suspect that
-we'll still want an import to be able to refer to that symbol by name.

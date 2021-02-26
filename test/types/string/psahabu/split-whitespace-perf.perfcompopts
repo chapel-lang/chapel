@@ -1,0 +1,3 @@
+-stestType=types.asciiString  # split-whitespace-perf
+-stestType=types.utf8String  # split-whitespace-perf-utf8
+-stestType=types.byteString  # split-whitespace-perf-bytes

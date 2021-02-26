@@ -22,7 +22,10 @@ _chpl ()
     -*)
       # developer options
       local devel_opts="\
+--allow-noinit-array-not-pod \
 --atomics \
+--auto-aggregation \
+--auto-local-access \
 --aux-filesys \
 --baseline \
 --bounds-checks \
@@ -35,6 +38,7 @@ _chpl ()
 --cast-checks \
 --cc-warnings \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -52,6 +56,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --early-deinit \
 --explain-call \
 --explain-call-id \
@@ -84,6 +89,7 @@ _chpl ()
 --ignore-user-errors \
 --incremental \
 --infer-const-refs \
+--infer-implements-decls \
 --infer-local-fields \
 --inline \
 --inline-iterators \
@@ -92,7 +98,6 @@ _chpl ()
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
---legacy-classes \
 --lib-linkage \
 --lib-search-path \
 --library \
@@ -136,6 +141,9 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-allow-noinit-array-not-pod \
+--no-auto-aggregation \
+--no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -153,6 +161,7 @@ _chpl ()
 --no-denormalize \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-early-deinit \
 --no-explain-verbose \
 --no-fast-followers \
@@ -169,11 +178,11 @@ _chpl ()
 --no-ignore-user-errors \
 --no-incremental \
 --no-infer-const-refs \
+--no-infer-implements-decls \
 --no-infer-local-fields \
 --no-inline \
 --no-inline-iterators \
 --no-interprocedural-alias-analysis \
---no-legacy-classes \
 --no-library-ml-debug \
 --no-lifetime-checking \
 --no-live-analysis \
@@ -218,6 +227,8 @@ _chpl ()
 --no-remove-unreachable-blocks \
 --no-replace-array-accesses-with-ref-temps \
 --no-report-aliases \
+--no-report-auto-aggregation \
+--no-report-auto-local-access \
 --no-report-blocking \
 --no-scalar-replacement \
 --no-specialize \
@@ -225,7 +236,7 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
+--no-use-color-terminal \
 --no-vectorize \
 --no-verify \
 --no-warn-const-loops \
@@ -249,6 +260,7 @@ _chpl ()
 --prepend-internal-module-dir \
 --prepend-standard-module-dir \
 --preserve-inlined-line-numbers \
+--print-additional-errors \
 --print-all-candidates \
 --print-callgraph \
 --print-callstack-on-error \
@@ -277,6 +289,8 @@ _chpl ()
 --remove-unreachable-blocks \
 --replace-array-accesses-with-ref-temps \
 --report-aliases \
+--report-auto-aggregation \
+--report-auto-local-access \
 --report-blocking \
 --report-dead-blocks \
 --report-dead-modules \
@@ -306,7 +320,7 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
+--use-color-terminal \
 --vectorize \
 --verify \
 --version \
@@ -329,12 +343,15 @@ _chpl ()
       # non-developer options
       local nodevel_opts="\
 --atomics \
+--auto-aggregation \
+--auto-local-access \
 --aux-filesys \
 --baseline \
 --bounds-checks \
 --cache-remote \
 --cast-checks \
 --ccflags \
+--checks \
 --codegen \
 --comm \
 --comm-substrate \
@@ -347,6 +364,7 @@ _chpl ()
 --devel \
 --div-by-zero-checks \
 --dynamic \
+--dynamic-auto-local-access \
 --explain-call \
 --explain-instantiation \
 --explain-verbose \
@@ -389,6 +407,8 @@ _chpl ()
 --munge-user-idents \
 --network-atomics \
 --nil-checks \
+--no-auto-aggregation \
+--no-auto-local-access \
 --no-bounds-checks \
 --no-cache-remote \
 --no-cast-checks \
@@ -401,6 +421,7 @@ _chpl ()
 --no-debug \
 --no-devel \
 --no-div-by-zero-checks \
+--no-dynamic-auto-local-access \
 --no-explain-verbose \
 --no-fast-followers \
 --no-formal-domain-checks \
@@ -440,7 +461,6 @@ _chpl ()
 --no-stack-checks \
 --no-task-tracking \
 --no-tuple-copy-opt \
---no-use-noinit \
 --no-vectorize \
 --no-warn-unstable \
 --no-warnings \
@@ -483,7 +503,6 @@ _chpl ()
 --timers \
 --tuple-copy-limit \
 --tuple-copy-opt \
---use-noinit \
 --vectorize \
 --version \
 --warn-unstable \

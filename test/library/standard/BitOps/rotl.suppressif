@@ -1,2 +1,0 @@
-# cray compiler bug jira 28
-CHPL_TARGET_COMPILER==cray-prgenv-cray

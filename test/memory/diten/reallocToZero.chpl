@@ -1,5 +1,5 @@
 proc main {
-  use MemAlloc, Memory;
+  use MemAlloc, Memory.Diagnostics;
   var m1, m2, m3:uint(64);
   m1 = memoryUsed();
   var o: opaque = chpl_mem_allocMany(1, 100, 0, 0, 0);

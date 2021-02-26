@@ -13,4 +13,4 @@ export GASNET_QUIET=Y
 # Test a GASNet compile using the fast segment
 export CHPL_GASNET_SEGMENT=fast
 
-$CWD/nightly -cron -multilocale $(get_nightly_paratest_args 3)
+$CWD/nightly -cron -multilocale $(get_nightly_paratest_args 6)

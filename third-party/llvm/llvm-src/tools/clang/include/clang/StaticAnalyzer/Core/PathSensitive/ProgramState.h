@@ -1,9 +1,8 @@
 //== ProgramState.h - Path-sensitive "State" for tracking values -*- C++ -*--=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,7 +20,6 @@
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState_Fwd.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SValBuilder.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/Store.h"
-#include "clang/StaticAnalyzer/Core/PathSensitive/TaintTag.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/ImmutableMap.h"
 #include "llvm/Support/Allocator.h"
@@ -41,10 +39,9 @@ class CallEvent;
 class CallEventManager;
 
 typedef std::unique_ptr<ConstraintManager>(*ConstraintManagerCreator)(
-    ProgramStateManager &, SubEngine *);
+    ProgramStateManager &, ExprEngine *);
 typedef std::unique_ptr<StoreManager>(*StoreManagerCreator)(
     ProgramStateManager &);
-typedef llvm::ImmutableMap<const SubRegion*, TaintTagType> TaintedSubRegions;
 
 //===----------------------------------------------------------------------===//
 // ProgramStateTrait - Traits used by the Generic Data Map of a ProgramState.
@@ -301,12 +298,19 @@ public:
   LLVM_NODISCARD ProgramStateRef enterStackFrame(
       const CallEvent &Call, const StackFrameContext *CalleeCtx) const;
 
+  /// Return the value of 'self' if available in the given context.
+  SVal getSelfSVal(const LocationContext *LC) const;
+
   /// Get the lvalue for a base class object reference.
   Loc getLValue(const CXXBaseSpecifier &BaseSpec, const SubRegion *Super) const;
 
   /// Get the lvalue for a base class object reference.
   Loc getLValue(const CXXRecordDecl *BaseClass, const SubRegion *Super,
                 bool IsVirtual) const;
+
+  /// Get the lvalue for a parameter.
+  Loc getLValue(const Expr *Call, unsigned Index,
+                const LocationContext *LC) const;
 
   /// Get the lvalue for a variable reference.
   Loc getLValue(const VarDecl *D, const LocationContext *LC) const;
@@ -368,38 +372,6 @@ public:
   template <typename CB> CB
   scanReachableSymbols(llvm::iterator_range<region_iterator> Reachable) const;
 
-  /// Create a new state in which the statement is marked as tainted.
-  LLVM_NODISCARD ProgramStateRef
-  addTaint(const Stmt *S, const LocationContext *LCtx,
-           TaintTagType Kind = TaintTagGeneric) const;
-
-  /// Create a new state in which the value is marked as tainted.
-  LLVM_NODISCARD ProgramStateRef
-  addTaint(SVal V, TaintTagType Kind = TaintTagGeneric) const;
-
-  /// Create a new state in which the symbol is marked as tainted.
-  LLVM_NODISCARD ProgramStateRef addTaint(SymbolRef S,
-                               TaintTagType Kind = TaintTagGeneric) const;
-
-  /// Create a new state in which the region symbol is marked as tainted.
-  LLVM_NODISCARD ProgramStateRef
-  addTaint(const MemRegion *R, TaintTagType Kind = TaintTagGeneric) const;
-
-  /// Create a new state in a which a sub-region of a given symbol is tainted.
-  /// This might be necessary when referring to regions that can not have an
-  /// individual symbol, e.g. if they are represented by the default binding of
-  /// a LazyCompoundVal.
-  LLVM_NODISCARD ProgramStateRef
-  addPartialTaint(SymbolRef ParentSym, const SubRegion *SubRegion,
-                  TaintTagType Kind = TaintTagGeneric) const;
-
-  /// Check if the statement is tainted in the current state.
-  bool isTainted(const Stmt *S, const LocationContext *LCtx,
-                 TaintTagType Kind = TaintTagGeneric) const;
-  bool isTainted(SVal V, TaintTagType Kind = TaintTagGeneric) const;
-  bool isTainted(SymbolRef Sym, TaintTagType Kind = TaintTagGeneric) const;
-  bool isTainted(const MemRegion *Reg, TaintTagType Kind=TaintTagGeneric) const;
-
   //==---------------------------------------------------------------------==//
   // Accessing the Generic Data Map (GDM).
   //==---------------------------------------------------------------------==//
@@ -459,14 +431,14 @@ public:
   }
 
   // Pretty-printing.
-  void print(raw_ostream &Out, const char *nl = "\n", const char *sep = "",
-             const LocationContext *CurrentLC = nullptr) const;
-  void printDOT(raw_ostream &Out,
-                const LocationContext *CurrentLC = nullptr) const;
-  void printTaint(raw_ostream &Out, const char *nl = "\n") const;
+  void printJson(raw_ostream &Out, const LocationContext *LCtx = nullptr,
+                 const char *NL = "\n", unsigned int Space = 0,
+                 bool IsDot = false) const;
+
+  void printDOT(raw_ostream &Out, const LocationContext *LCtx = nullptr,
+                unsigned int Space = 0) const;
 
   void dump() const;
-  void dumpTaint() const;
 
 private:
   friend void ProgramStateRetain(const ProgramState *state);
@@ -492,15 +464,14 @@ class ProgramStateManager {
   friend class ProgramState;
   friend void ProgramStateRelease(const ProgramState *state);
 private:
-  /// Eng - The SubEngine that owns this state manager.
-  SubEngine *Eng; /* Can be null. */
+  /// Eng - The ExprEngine that owns this state manager.
+  ExprEngine *Eng; /* Can be null. */
 
   EnvironmentManager                   EnvMgr;
   std::unique_ptr<StoreManager>        StoreMgr;
   std::unique_ptr<ConstraintManager>   ConstraintMgr;
 
   ProgramState::GenericDataMap::Factory     GDMFactory;
-  TaintedSubRegions::Factory TSRFactory;
 
   typedef llvm::DenseMap<void*,std::pair<void*,void (*)(void*)> > GDMContextsTy;
   GDMContextsTy GDMContexts;
@@ -526,7 +497,7 @@ public:
                  StoreManagerCreator CreateStoreManager,
                  ConstraintManagerCreator CreateConstraintManager,
                  llvm::BumpPtrAllocator& alloc,
-                 SubEngine *subeng);
+                 ExprEngine *expreng);
 
   ~ProgramStateManager();
 
@@ -540,6 +511,10 @@ public:
   }
 
   SValBuilder &getSValBuilder() {
+    return *svalBuilder;
+  }
+
+  const SValBuilder &getSValBuilder() const {
     return *svalBuilder;
   }
 
@@ -563,11 +538,12 @@ public:
 
   StoreManager &getStoreManager() { return *StoreMgr; }
   ConstraintManager &getConstraintManager() { return *ConstraintMgr; }
-  SubEngine &getOwningEngine() { return *Eng; }
+  ExprEngine &getOwningEngine() { return *Eng; }
 
-  ProgramStateRef removeDeadBindings(ProgramStateRef St,
-                                    const StackFrameContext *LCtx,
-                                    SymbolReaper& SymReaper);
+  ProgramStateRef
+  removeDeadBindingsFromEnvironmentAndStore(ProgramStateRef St,
+                                            const StackFrameContext *LCtx,
+                                            SymbolReaper &SymReaper);
 
 public:
 
@@ -589,11 +565,15 @@ public:
   ProgramStateRef getPersistentStateWithGDM(ProgramStateRef FromState,
                                            ProgramStateRef GDMState);
 
-  bool haveEqualEnvironments(ProgramStateRef S1, ProgramStateRef S2) {
+  bool haveEqualConstraints(ProgramStateRef S1, ProgramStateRef S2) const {
+    return ConstraintMgr->haveEqualConstraints(S1, S2);
+  }
+
+  bool haveEqualEnvironments(ProgramStateRef S1, ProgramStateRef S2) const {
     return S1->Env == S2->Env;
   }
 
-  bool haveEqualStores(ProgramStateRef S1, ProgramStateRef S2) {
+  bool haveEqualStores(ProgramStateRef S1, ProgramStateRef S2) const {
     return S1->store == S2->store;
   }
 
@@ -665,10 +645,6 @@ public:
                              ProgramStateTrait<T>::DeleteContext);
 
     return ProgramStateTrait<T>::MakeContext(p);
-  }
-
-  void EndPath(ProgramStateRef St) {
-    ConstraintMgr->EndPath(St);
   }
 };
 

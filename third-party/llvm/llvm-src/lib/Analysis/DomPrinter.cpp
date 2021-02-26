@@ -1,9 +1,8 @@
 //===- DomPrinter.cpp - DOT printer for the dominance trees    ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,6 +20,7 @@
 #include "llvm/Analysis/DomPrinter.h"
 #include "llvm/Analysis/DOTGraphTraitsPass.h"
 #include "llvm/Analysis/PostDominators.h"
+#include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
@@ -40,11 +40,11 @@ struct DOTGraphTraits<DomTreeNode*> : public DefaultDOTGraphTraits {
 
 
     if (isSimple())
-      return DOTGraphTraits<const Function*>
-        ::getSimpleNodeLabel(BB, BB->getParent());
+      return DOTGraphTraits<DOTFuncInfo *>
+        ::getSimpleNodeLabel(BB, nullptr);
     else
-      return DOTGraphTraits<const Function*>
-        ::getCompleteNodeLabel(BB, BB->getParent());
+      return DOTGraphTraits<DOTFuncInfo *>
+        ::getCompleteNodeLabel(BB, nullptr);
   }
 };
 

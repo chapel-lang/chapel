@@ -15,6 +15,11 @@ elif [[ $CHPL_COMM_SUBSTRATE == mpi \
   # a compopts-by-compopts basis, but we can't do that yet.
   #
   echo True
+elif [[ $CHPL_SANITIZE_EXE != "none" ]]; then
+  #
+  # -static isn't support with sanitizers
+  #
+  echo True
 elif [[ $CHPL_TARGET_COMPILER == *pgi* ]] ; then
   #
   # We pin to an old version of pgi that causes issues for some variants

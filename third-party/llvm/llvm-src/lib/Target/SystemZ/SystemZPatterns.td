@@ -1,9 +1,8 @@
 //===-- SystemZPatterns.td - SystemZ-specific pattern rules ---*- tblgen-*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -58,10 +57,10 @@ multiclass RMWIByte<SDPatternOperator operator, AddressingMode mode,
 // The inserted operand is loaded using LOAD from an address of mode MODE.
 multiclass InsertMem<string type, Instruction insn, RegisterOperand cls,
                      SDPatternOperator load, AddressingMode mode> {
-  def : Pat<(!cast<SDPatternOperator>("or_as_"##type)
+  def : Pat<(!cast<SDPatternOperator>("or_as_"#type)
               cls:$src1, (load mode:$src2)),
             (insn cls:$src1, mode:$src2)>;
-  def : Pat<(!cast<SDPatternOperator>("or_as_rev"##type)
+  def : Pat<(!cast<SDPatternOperator>("or_as_rev"#type)
               (load mode:$src2), cls:$src1),
             (insn cls:$src1, mode:$src2)>;
 }
@@ -101,12 +100,12 @@ multiclass CondStores64<Instruction insn, Instruction insninv,
                         SDPatternOperator store, SDPatternOperator load,
                         AddressingMode mode> {
   def : Pat<(store (z_select_ccmask GR64:$new, (load mode:$addr),
-                                    imm32zx4:$valid, imm32zx4:$cc),
+                                    imm32zx4_timm:$valid, imm32zx4_timm:$cc),
                    mode:$addr),
             (insn (EXTRACT_SUBREG GR64:$new, subreg_l32), mode:$addr,
                   imm32zx4:$valid, imm32zx4:$cc)>;
   def : Pat<(store (z_select_ccmask (load mode:$addr), GR64:$new,
-                                    imm32zx4:$valid, imm32zx4:$cc),
+                                    imm32zx4_timm:$valid, imm32zx4_timm:$cc),
                    mode:$addr),
             (insninv (EXTRACT_SUBREG GR64:$new, subreg_l32), mode:$addr,
                      imm32zx4:$valid, imm32zx4:$cc)>;
@@ -149,9 +148,9 @@ multiclass BlockLoadStore<SDPatternOperator load, ValueType vt,
 // registers in CLS against zero.  The instruction has separate R1 and R2
 // operands, but they must be the same when the instruction is used like this.
 multiclass CompareZeroFP<Instruction insn, RegisterOperand cls> {
-  def : Pat<(z_fcmp cls:$reg, (fpimm0)), (insn cls:$reg, cls:$reg)>;
+  def : Pat<(z_any_fcmp cls:$reg, (fpimm0)), (insn cls:$reg, cls:$reg)>;
   // The sign of the zero makes no difference.
-  def : Pat<(z_fcmp cls:$reg, (fpimmneg0)), (insn cls:$reg, cls:$reg)>;
+  def : Pat<(z_any_fcmp cls:$reg, (fpimmneg0)), (insn cls:$reg, cls:$reg)>;
 }
 
 // Use INSN for performing binary operation OPERATION of type VT
@@ -168,7 +167,7 @@ class FPConversion<Instruction insn, SDPatternOperator operator, TypedReg tr1,
   : Pat<(tr1.vt (operator (tr2.vt tr2.op:$vec))),
         (insn tr2.op:$vec, suppress, mode)>;
 
-// Use INSN to perform mininum/maximum operation OPERATOR on type TR.
+// Use INSN to perform minimum/maximum operation OPERATOR on type TR.
 // FUNCTION is the type of minimum/maximum function to perform.
 class FPMinMax<Instruction insn, SDPatternOperator operator, TypedReg tr,
                bits<4> function>

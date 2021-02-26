@@ -1,9 +1,8 @@
 //==-- llvm/Support/CheckedArithmetic.h - Safe arithmetical operations *- C++ //
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -26,8 +25,8 @@ namespace {
 /// \p RHS.
 /// \return Empty optional if the operation overflows, or result otherwise.
 template <typename T, typename F>
-typename std::enable_if<std::is_integral<T>::value && sizeof(T) * 8 <= 64,
-                        llvm::Optional<T>>::type
+std::enable_if_t<std::is_integral<T>::value && sizeof(T) * 8 <= 64,
+                 llvm::Optional<T>>
 checkedOp(T LHS, T RHS, F Op, bool Signed = true) {
   llvm::APInt ALHS(/*BitSize=*/sizeof(T) * 8, LHS, Signed);
   llvm::APInt ARHS(/*BitSize=*/sizeof(T) * 8, RHS, Signed);
@@ -45,16 +44,25 @@ namespace llvm {
 /// \return Optional of sum if no signed overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_signed<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_signed<T>::value, llvm::Optional<T>>
 checkedAdd(T LHS, T RHS) {
   return checkedOp(LHS, RHS, &llvm::APInt::sadd_ov);
+}
+
+/// Subtract two signed integers \p LHS and \p RHS.
+/// \return Optional of sum if no signed overflow occurred,
+/// \c None otherwise.
+template <typename T>
+std::enable_if_t<std::is_signed<T>::value, llvm::Optional<T>>
+checkedSub(T LHS, T RHS) {
+  return checkedOp(LHS, RHS, &llvm::APInt::ssub_ov);
 }
 
 /// Multiply two signed integers \p LHS and \p RHS.
 /// \return Optional of product if no signed overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_signed<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_signed<T>::value, llvm::Optional<T>>
 checkedMul(T LHS, T RHS) {
   return checkedOp(LHS, RHS, &llvm::APInt::smul_ov);
 }
@@ -63,7 +71,7 @@ checkedMul(T LHS, T RHS) {
 /// \return Optional of result if no signed overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_signed<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_signed<T>::value, llvm::Optional<T>>
 checkedMulAdd(T A, T B, T C) {
   if (auto Product = checkedMul(A, B))
     return checkedAdd(*Product, C);
@@ -74,7 +82,7 @@ checkedMulAdd(T A, T B, T C) {
 /// \return Optional of sum if no unsigned overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_unsigned<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_unsigned<T>::value, llvm::Optional<T>>
 checkedAddUnsigned(T LHS, T RHS) {
   return checkedOp(LHS, RHS, &llvm::APInt::uadd_ov, /*Signed=*/false);
 }
@@ -83,7 +91,7 @@ checkedAddUnsigned(T LHS, T RHS) {
 /// \return Optional of product if no unsigned overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_unsigned<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_unsigned<T>::value, llvm::Optional<T>>
 checkedMulUnsigned(T LHS, T RHS) {
   return checkedOp(LHS, RHS, &llvm::APInt::umul_ov, /*Signed=*/false);
 }
@@ -92,7 +100,7 @@ checkedMulUnsigned(T LHS, T RHS) {
 /// \return Optional of result if no unsigned overflow occurred,
 /// \c None otherwise.
 template <typename T>
-typename std::enable_if<std::is_unsigned<T>::value, llvm::Optional<T>>::type
+std::enable_if_t<std::is_unsigned<T>::value, llvm::Optional<T>>
 checkedMulAddUnsigned(T A, T B, T C) {
   if (auto Product = checkedMulUnsigned(A, B))
     return checkedAddUnsigned(*Product, C);

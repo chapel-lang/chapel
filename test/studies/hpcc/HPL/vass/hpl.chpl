@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Random, Time;
+use LinearAlgebra, Random, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -12,7 +12,7 @@ use HPCCProblemSize;
 //
 // Use the distributions we need for this computation
 //
-use DimensionalDist2D, ReplicatedDim, BlockCycDim;
+use DimensionalDist2D, ReplicatedDim, BlockCycDim, DSIUtil;
 
 //
 // The number of matrices and the element type of those matrices

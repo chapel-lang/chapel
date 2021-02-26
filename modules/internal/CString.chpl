@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -25,16 +25,17 @@
 // representation, being in essence the common NUL-terminated C string.
 module CString {
   private use ChapelStandard, SysCTypes;
+  private use CPtr;
 
   //inline proc c_string.c_str() return this;
 
   pragma "init copy fn"
-  inline proc chpl__initCopy(x: c_string) : c_string {
+  inline proc chpl__initCopy(x: c_string, definedConst: bool) : c_string {
     return x;
   }
 
   pragma "auto copy fn"
-  inline proc chpl__autoCopy(x: c_string) : c_string {
+  inline proc chpl__autoCopy(x: c_string, definedConst: bool) : c_string {
     return x;
   }
 
@@ -94,27 +95,27 @@ module CString {
   //
   // casts from nil to c_string
   //
-  inline proc _cast(type t:c_string, x: _nilType) {
+  inline operator :(x: _nilType, type t:c_string) {
     return __primitive("cast", t, x);
   }
 
   //
   // casts from c_string to c_void_ptr
   //
-  inline proc _cast(type t:c_void_ptr, x: c_string) {
+  inline operator :(x: c_string, type t:c_void_ptr) {
     return __primitive("cast", t, x);
   }
   //
   // casts from c_void_ptr to c_string
   //
-  inline proc _cast(type t:c_string, x: c_void_ptr) {
+  inline operator :(x: c_void_ptr, type t:c_string) {
     return __primitive("cast", t, x);
   }
 
   //
   // casts from c_string to c_ptr(c_char/int(8)/uint(8))
   //
-  inline proc _cast(type t:c_ptr, x: c_string)
+  inline operator :(x: c_string, type t:c_ptr)
     where t.eltType == c_char || t.eltType == int(8) || t.eltType == uint(8)
   {
     return __primitive("cast", t, x);
@@ -122,7 +123,7 @@ module CString {
   //
   // casts from c_ptr(c_char/int(8)/uint(8)) to c_string
   //
-  inline proc _cast(type t:c_string, x: c_ptr)
+  inline operator :(x: c_ptr, type t:c_string)
     where x.eltType == c_char || x.eltType == int(8) || x.eltType == uint(8)
   {
     return __primitive("cast", t, x);
@@ -131,7 +132,7 @@ module CString {
   //
   // casts from c_string to bool types
   //
-  inline proc _cast(type t:chpl_anybool, x:c_string) throws {
+  inline operator :(x:c_string, type t:chpl_anybool) throws {
     var chplString: string;
     try! {
       chplString = createStringWithNewBuffer(x);
@@ -142,7 +143,7 @@ module CString {
   //
   // casts from c_string to integer types
   //
-  inline proc _cast(type t:integral, x:c_string) throws {
+  inline operator :(x:c_string, type t:integral) throws {
     var chplString: string;
     try! {
       chplString = createStringWithNewBuffer(x);
@@ -153,7 +154,7 @@ module CString {
   //
   // casts from c_string to real/imag types
   //
-  inline proc _cast(type t:chpl_anyreal, x:c_string) throws {
+  inline operator :(x:c_string, type t:chpl_anyreal)  throws {
     var chplString: string;
     try! {
       chplString = createStringWithNewBuffer(x);
@@ -161,7 +162,7 @@ module CString {
     return try (chplString.strip()): t;
   }
 
-  inline proc _cast(type t:chpl_anyimag, x:c_string) throws {
+  inline operator :(x:c_string, type t:chpl_anyimag) throws {
     var chplString: string;
     try! {
       chplString = createStringWithNewBuffer(x);
@@ -172,7 +173,7 @@ module CString {
   //
   // casts from c_string to complex types
   //
-  inline proc _cast(type t:chpl_anycomplex, x:c_string) throws {
+  inline operator :(x:c_string, type t:chpl_anycomplex)  throws {
     var chplString: string;
     try! {
       chplString = createStringWithNewBuffer(x);
@@ -185,11 +186,6 @@ module CString {
   //
 
   inline proc c_string.size return __primitive("string_length_bytes", this);
-  inline proc c_string.length {
-    compilerWarning("'c_string.length' is deprecated - " +
-                    "please use 'c_string.size' instead");
-    return this.size;
-  }
 
   inline proc c_string.substring(i: int)
     return __primitive("string_index", this, i);
@@ -200,12 +196,6 @@ module CString {
     return __primitive("string_select", this, lo, hi, r2.stride);
   }
 
-  pragma "last resort" // avoids param string to c_string coercion
-  inline proc param c_string.length param {
-    compilerWarning("'c_string.length' is deprecated - " +
-                    "please use 'c_string.size' instead");
-    return __primitive("string_length_bytes", this);
-  }
   pragma "last resort" // avoids param string to c_string coercion
   inline proc param c_string.size param {
     return __primitive("string_length_bytes", this);

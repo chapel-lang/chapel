@@ -1,9 +1,8 @@
 //===- Marshallers.h - Generic matcher function marshallers -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -27,12 +26,16 @@
 #include "clang/ASTMatchers/Dynamic/VariantValue.h"
 #include "clang/Basic/AttrKinds.h"
 #include "clang/Basic/LLVM.h"
+#include "clang/Basic/OpenMPKinds.h"
+#include "clang/Basic/TypeTraits.h"
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/None.h"
+#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/StringSwitch.h"
 #include "llvm/ADT/Twine.h"
+#include "llvm/Support/Regex.h"
 #include <cassert>
 #include <cstddef>
 #include <iterator>
@@ -64,6 +67,10 @@ template <> struct ArgTypeTraits<std::string> {
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_String);
   }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &) {
+    return llvm::None;
+  }
 };
 
 template <>
@@ -80,7 +87,11 @@ template <class T> struct ArgTypeTraits<ast_matchers::internal::Matcher<T>> {
   }
 
   static ArgKind getKind() {
-    return ArgKind(ast_type_traits::ASTNodeKind::getFromNodeKind<T>());
+    return ArgKind(ASTNodeKind::getFromNodeKind<T>());
+  }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &) {
+    return llvm::None;
   }
 };
 
@@ -94,6 +105,10 @@ template <> struct ArgTypeTraits<bool> {
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_Boolean);
   }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &) {
+    return llvm::None;
+  }
 };
 
 template <> struct ArgTypeTraits<double> {
@@ -106,6 +121,10 @@ template <> struct ArgTypeTraits<double> {
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_Double);
   }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &) {
+    return llvm::None;
+  }
 };
 
 template <> struct ArgTypeTraits<unsigned> {
@@ -117,6 +136,10 @@ template <> struct ArgTypeTraits<unsigned> {
 
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_Unsigned);
+  }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &) {
+    return llvm::None;
   }
 };
 
@@ -141,13 +164,15 @@ public:
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_String);
   }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &Value);
 };
 
 template <> struct ArgTypeTraits<CastKind> {
 private:
   static Optional<CastKind> getCastKind(llvm::StringRef AttrKind) {
     return llvm::StringSwitch<Optional<CastKind>>(AttrKind)
-#define CAST_OPERATION(Name) .Case( #Name, CK_##Name)
+#define CAST_OPERATION(Name) .Case("CK_" #Name, CK_##Name)
 #include "clang/AST/OperationKinds.def"
         .Default(llvm::None);
   }
@@ -164,6 +189,76 @@ public:
   static ArgKind getKind() {
     return ArgKind(ArgKind::AK_String);
   }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &Value);
+};
+
+template <> struct ArgTypeTraits<llvm::Regex::RegexFlags> {
+private:
+  static Optional<llvm::Regex::RegexFlags> getFlags(llvm::StringRef Flags);
+
+public:
+  static bool is(const VariantValue &Value) {
+    return Value.isString() && getFlags(Value.getString());
+  }
+
+  static llvm::Regex::RegexFlags get(const VariantValue &Value) {
+    return *getFlags(Value.getString());
+  }
+
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_String); }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &Value);
+};
+
+template <> struct ArgTypeTraits<OpenMPClauseKind> {
+private:
+  static Optional<OpenMPClauseKind> getClauseKind(llvm::StringRef ClauseKind) {
+    return llvm::StringSwitch<Optional<OpenMPClauseKind>>(ClauseKind)
+#define OMP_CLAUSE_CLASS(Enum, Str, Class) .Case(#Enum, llvm::omp::Clause::Enum)
+#include "llvm/Frontend/OpenMP/OMPKinds.def"
+        .Default(llvm::None);
+  }
+
+public:
+  static bool is(const VariantValue &Value) {
+    return Value.isString() && getClauseKind(Value.getString());
+  }
+
+  static OpenMPClauseKind get(const VariantValue &Value) {
+    return *getClauseKind(Value.getString());
+  }
+
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_String); }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &Value);
+};
+
+template <> struct ArgTypeTraits<UnaryExprOrTypeTrait> {
+private:
+  static Optional<UnaryExprOrTypeTrait>
+  getUnaryOrTypeTraitKind(llvm::StringRef ClauseKind) {
+    return llvm::StringSwitch<Optional<UnaryExprOrTypeTrait>>(ClauseKind)
+#define UNARY_EXPR_OR_TYPE_TRAIT(Spelling, Name, Key)                          \
+  .Case("UETT_" #Name, UETT_##Name)
+#define CXX11_UNARY_EXPR_OR_TYPE_TRAIT(Spelling, Name, Key)                    \
+  .Case("UETT_" #Name, UETT_##Name)
+#include "clang/Basic/TokenKinds.def"
+        .Default(llvm::None);
+  }
+
+public:
+  static bool is(const VariantValue &Value) {
+    return Value.isString() && getUnaryOrTypeTraitKind(Value.getString());
+  }
+
+  static UnaryExprOrTypeTrait get(const VariantValue &Value) {
+    return *getUnaryOrTypeTraitKind(Value.getString());
+  }
+
+  static ArgKind getKind() { return ArgKind(ArgKind::AK_String); }
+
+  static llvm::Optional<std::string> getBestGuess(const VariantValue &Value);
 };
 
 /// Matcher descriptor interface.
@@ -189,7 +284,7 @@ public:
   /// set of argument types accepted for argument \p ArgNo to \p ArgKinds.
   // FIXME: We should provide the ability to constrain the output of this
   // function based on the types of other matcher arguments.
-  virtual void getArgKinds(ast_type_traits::ASTNodeKind ThisKind, unsigned ArgNo,
+  virtual void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
                            std::vector<ArgKind> &ArgKinds) const = 0;
 
   /// Returns whether this matcher is convertible to the given type.  If it is
@@ -199,20 +294,19 @@ public:
   /// same matcher overload.  Zero specificity indicates that this conversion
   /// would produce a trivial matcher that will either always or never match.
   /// Such matchers are excluded from code completion results.
-  virtual bool isConvertibleTo(
-      ast_type_traits::ASTNodeKind Kind, unsigned *Specificity = nullptr,
-      ast_type_traits::ASTNodeKind *LeastDerivedKind = nullptr) const = 0;
+  virtual bool
+  isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity = nullptr,
+                  ASTNodeKind *LeastDerivedKind = nullptr) const = 0;
 
   /// Returns whether the matcher will, given a matcher of any type T, yield a
   /// matcher of type T.
   virtual bool isPolymorphic() const { return false; }
 };
 
-inline bool isRetKindConvertibleTo(
-    ArrayRef<ast_type_traits::ASTNodeKind> RetKinds,
-    ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-    ast_type_traits::ASTNodeKind *LeastDerivedKind) {
-  for (const ast_type_traits::ASTNodeKind &NodeKind : RetKinds) {
+inline bool isRetKindConvertibleTo(ArrayRef<ASTNodeKind> RetKinds,
+                                   ASTNodeKind Kind, unsigned *Specificity,
+                                   ASTNodeKind *LeastDerivedKind) {
+  for (const ASTNodeKind &NodeKind : RetKinds) {
     if (ArgKind(NodeKind).isConvertibleTo(Kind, Specificity)) {
       if (LeastDerivedKind)
         *LeastDerivedKind = NodeKind;
@@ -242,10 +336,10 @@ public:
   /// \param RetKinds The list of matcher types to which the matcher is
   ///   convertible.
   /// \param ArgKinds The types of the arguments this matcher takes.
-  FixedArgCountMatcherDescriptor(
-      MarshallerType Marshaller, void (*Func)(), StringRef MatcherName,
-      ArrayRef<ast_type_traits::ASTNodeKind> RetKinds,
-      ArrayRef<ArgKind> ArgKinds)
+  FixedArgCountMatcherDescriptor(MarshallerType Marshaller, void (*Func)(),
+                                 StringRef MatcherName,
+                                 ArrayRef<ASTNodeKind> RetKinds,
+                                 ArrayRef<ArgKind> ArgKinds)
       : Marshaller(Marshaller), Func(Func), MatcherName(MatcherName),
         RetKinds(RetKinds.begin(), RetKinds.end()),
         ArgKinds(ArgKinds.begin(), ArgKinds.end()) {}
@@ -259,14 +353,13 @@ public:
   bool isVariadic() const override { return false; }
   unsigned getNumArgs() const override { return ArgKinds.size(); }
 
-  void getArgKinds(ast_type_traits::ASTNodeKind ThisKind, unsigned ArgNo,
+  void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
                    std::vector<ArgKind> &Kinds) const override {
     Kinds.push_back(ArgKinds[ArgNo]);
   }
 
-  bool isConvertibleTo(
-      ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-      ast_type_traits::ASTNodeKind *LeastDerivedKind) const override {
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
     return isRetKindConvertibleTo(RetKinds, Kind, Specificity,
                                   LeastDerivedKind);
   }
@@ -275,7 +368,7 @@ private:
   const MarshallerType Marshaller;
   void (* const Func)();
   const std::string MatcherName;
-  const std::vector<ast_type_traits::ASTNodeKind> RetKinds;
+  const std::vector<ASTNodeKind> RetKinds;
   const std::vector<ArgKind> ArgKinds;
 };
 
@@ -299,7 +392,7 @@ static void mergePolyMatchers(const PolyMatcher &Poly,
 /// polymorphic matcher. For the former, we just construct the VariantMatcher.
 /// For the latter, we instantiate all the possible Matcher<T> of the poly
 /// matcher.
-static VariantMatcher outvalueToVariantMatcher(const DynTypedMatcher &Matcher) {
+inline VariantMatcher outvalueToVariantMatcher(const DynTypedMatcher &Matcher) {
   return VariantMatcher::SingleMatcher(Matcher);
 }
 
@@ -314,36 +407,35 @@ static VariantMatcher outvalueToVariantMatcher(const T &PolyMatcher,
 }
 
 template <typename T>
-inline void buildReturnTypeVectorFromTypeList(
-    std::vector<ast_type_traits::ASTNodeKind> &RetTypes) {
-  RetTypes.push_back(
-      ast_type_traits::ASTNodeKind::getFromNodeKind<typename T::head>());
+inline void
+buildReturnTypeVectorFromTypeList(std::vector<ASTNodeKind> &RetTypes) {
+  RetTypes.push_back(ASTNodeKind::getFromNodeKind<typename T::head>());
   buildReturnTypeVectorFromTypeList<typename T::tail>(RetTypes);
 }
 
 template <>
 inline void
 buildReturnTypeVectorFromTypeList<ast_matchers::internal::EmptyTypeList>(
-    std::vector<ast_type_traits::ASTNodeKind> &RetTypes) {}
+    std::vector<ASTNodeKind> &RetTypes) {}
 
 template <typename T>
 struct BuildReturnTypeVector {
-  static void build(std::vector<ast_type_traits::ASTNodeKind> &RetTypes) {
+  static void build(std::vector<ASTNodeKind> &RetTypes) {
     buildReturnTypeVectorFromTypeList<typename T::ReturnTypes>(RetTypes);
   }
 };
 
 template <typename T>
 struct BuildReturnTypeVector<ast_matchers::internal::Matcher<T>> {
-  static void build(std::vector<ast_type_traits::ASTNodeKind> &RetTypes) {
-    RetTypes.push_back(ast_type_traits::ASTNodeKind::getFromNodeKind<T>());
+  static void build(std::vector<ASTNodeKind> &RetTypes) {
+    RetTypes.push_back(ASTNodeKind::getFromNodeKind<T>());
   }
 };
 
 template <typename T>
 struct BuildReturnTypeVector<ast_matchers::internal::BindableMatcher<T>> {
-  static void build(std::vector<ast_type_traits::ASTNodeKind> &RetTypes) {
-    RetTypes.push_back(ast_type_traits::ASTNodeKind::getFromNodeKind<T>());
+  static void build(std::vector<ASTNodeKind> &RetTypes) {
+    RetTypes.push_back(ASTNodeKind::getFromNodeKind<T>());
   }
 };
 
@@ -417,14 +509,13 @@ public:
   bool isVariadic() const override { return true; }
   unsigned getNumArgs() const override { return 0; }
 
-  void getArgKinds(ast_type_traits::ASTNodeKind ThisKind, unsigned ArgNo,
+  void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
                    std::vector<ArgKind> &Kinds) const override {
     Kinds.push_back(ArgsKind);
   }
 
-  bool isConvertibleTo(
-      ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-      ast_type_traits::ASTNodeKind *LeastDerivedKind) const override {
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
     return isRetKindConvertibleTo(RetKinds, Kind, Specificity,
                                   LeastDerivedKind);
   }
@@ -432,7 +523,7 @@ public:
 private:
   const RunFunc Func;
   const std::string MatcherName;
-  std::vector<ast_type_traits::ASTNodeKind> RetKinds;
+  std::vector<ASTNodeKind> RetKinds;
   const ArgKind ArgsKind;
 };
 
@@ -444,12 +535,10 @@ public:
       ast_matchers::internal::VariadicDynCastAllOfMatcher<BaseT, DerivedT> Func,
       StringRef MatcherName)
       : VariadicFuncMatcherDescriptor(Func, MatcherName),
-        DerivedKind(ast_type_traits::ASTNodeKind::getFromNodeKind<DerivedT>()) {
-  }
+        DerivedKind(ASTNodeKind::getFromNodeKind<DerivedT>()) {}
 
-  bool
-  isConvertibleTo(ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-                ast_type_traits::ASTNodeKind *LeastDerivedKind) const override {
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
     // If Kind is not a base of DerivedKind, either DerivedKind is a base of
     // Kind (in which case the match will always succeed) or Kind and
     // DerivedKind are unrelated (in which case it will always fail), so set
@@ -467,7 +556,7 @@ public:
   }
 
 private:
-  const ast_type_traits::ASTNodeKind DerivedKind;
+  const ASTNodeKind DerivedKind;
 };
 
 /// Helper macros to check the arguments on all marshaller functions.
@@ -480,9 +569,16 @@ private:
 
 #define CHECK_ARG_TYPE(index, type)                                            \
   if (!ArgTypeTraits<type>::is(Args[index].Value)) {                           \
-    Error->addError(Args[index].Range, Error->ET_RegistryWrongArgType)         \
-        << (index + 1) << ArgTypeTraits<type>::getKind().asString()            \
-        << Args[index].Value.getTypeAsString();                                \
+    if (llvm::Optional<std::string> BestGuess =                                \
+            ArgTypeTraits<type>::getBestGuess(Args[index].Value)) {            \
+      Error->addError(Args[index].Range,                                       \
+                      Error->ET_RegistryUnknownEnumWithReplace)                \
+          << index + 1 << Args[index].Value.getString() << *BestGuess;         \
+    } else {                                                                   \
+      Error->addError(Args[index].Range, Error->ET_RegistryWrongArgType)       \
+          << (index + 1) << ArgTypeTraits<type>::getKind().asString()          \
+          << Args[index].Value.getTypeAsString();                              \
+    }                                                                          \
     return VariantMatcher();                                                   \
   }
 
@@ -613,7 +709,7 @@ public:
     return Overload0NumArgs;
   }
 
-  void getArgKinds(ast_type_traits::ASTNodeKind ThisKind, unsigned ArgNo,
+  void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
                    std::vector<ArgKind> &Kinds) const override {
     for (const auto &O : Overloads) {
       if (O->isConvertibleTo(ThisKind))
@@ -621,9 +717,8 @@ public:
     }
   }
 
-  bool isConvertibleTo(
-      ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-      ast_type_traits::ASTNodeKind *LeastDerivedKind) const override {
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
     for (const auto &O : Overloads) {
       if (O->isConvertibleTo(Kind, Specificity, LeastDerivedKind))
         return true;
@@ -633,6 +728,71 @@ public:
 
 private:
   std::vector<std::unique_ptr<MatcherDescriptor>> Overloads;
+};
+
+template <typename ReturnType>
+class RegexMatcherDescriptor : public MatcherDescriptor {
+public:
+  RegexMatcherDescriptor(ReturnType (*WithFlags)(StringRef,
+                                                 llvm::Regex::RegexFlags),
+                         ReturnType (*NoFlags)(StringRef),
+                         ArrayRef<ASTNodeKind> RetKinds)
+      : WithFlags(WithFlags), NoFlags(NoFlags),
+        RetKinds(RetKinds.begin(), RetKinds.end()) {}
+  bool isVariadic() const override { return true; }
+  unsigned getNumArgs() const override { return 0; }
+
+  void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
+                   std::vector<ArgKind> &Kinds) const override {
+    assert(ArgNo < 2);
+    Kinds.push_back(ArgKind::AK_String);
+  }
+
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
+    return isRetKindConvertibleTo(RetKinds, Kind, Specificity,
+                                  LeastDerivedKind);
+  }
+
+  VariantMatcher create(SourceRange NameRange, ArrayRef<ParserValue> Args,
+                        Diagnostics *Error) const override {
+    if (Args.size() < 1 || Args.size() > 2) {
+      Error->addError(NameRange, Diagnostics::ET_RegistryWrongArgCount)
+          << "1 or 2" << Args.size();
+      return VariantMatcher();
+    }
+    if (!ArgTypeTraits<StringRef>::is(Args[0].Value)) {
+      Error->addError(Args[0].Range, Error->ET_RegistryWrongArgType)
+          << 1 << ArgTypeTraits<StringRef>::getKind().asString()
+          << Args[0].Value.getTypeAsString();
+      return VariantMatcher();
+    }
+    if (Args.size() == 1) {
+      return outvalueToVariantMatcher(
+          NoFlags(ArgTypeTraits<StringRef>::get(Args[0].Value)));
+    }
+    if (!ArgTypeTraits<llvm::Regex::RegexFlags>::is(Args[1].Value)) {
+      if (llvm::Optional<std::string> BestGuess =
+              ArgTypeTraits<llvm::Regex::RegexFlags>::getBestGuess(
+                  Args[1].Value)) {
+        Error->addError(Args[1].Range, Error->ET_RegistryUnknownEnumWithReplace)
+            << 2 << Args[1].Value.getString() << *BestGuess;
+      } else {
+        Error->addError(Args[1].Range, Error->ET_RegistryWrongArgType)
+            << 2 << ArgTypeTraits<llvm::Regex::RegexFlags>::getKind().asString()
+            << Args[1].Value.getTypeAsString();
+      }
+      return VariantMatcher();
+    }
+    return outvalueToVariantMatcher(
+        WithFlags(ArgTypeTraits<StringRef>::get(Args[0].Value),
+                  ArgTypeTraits<llvm::Regex::RegexFlags>::get(Args[1].Value)));
+  }
+
+private:
+  ReturnType (*const WithFlags)(StringRef, llvm::Regex::RegexFlags);
+  ReturnType (*const NoFlags)(StringRef);
+  const std::vector<ASTNodeKind> RetKinds;
 };
 
 /// Variadic operator marshaller function.
@@ -675,13 +835,13 @@ public:
   bool isVariadic() const override { return true; }
   unsigned getNumArgs() const override { return 0; }
 
-  void getArgKinds(ast_type_traits::ASTNodeKind ThisKind, unsigned ArgNo,
+  void getArgKinds(ASTNodeKind ThisKind, unsigned ArgNo,
                    std::vector<ArgKind> &Kinds) const override {
     Kinds.push_back(ThisKind);
   }
 
-  bool isConvertibleTo(ast_type_traits::ASTNodeKind Kind, unsigned *Specificity,
-                       ast_type_traits::ASTNodeKind *LeastDerivedKind) const override {
+  bool isConvertibleTo(ASTNodeKind Kind, unsigned *Specificity,
+                       ASTNodeKind *LeastDerivedKind) const override {
     if (Specificity)
       *Specificity = 1;
     if (LeastDerivedKind)
@@ -705,9 +865,9 @@ private:
 template <typename ReturnType>
 std::unique_ptr<MatcherDescriptor>
 makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
-  std::vector<ast_type_traits::ASTNodeKind> RetTypes;
+  std::vector<ASTNodeKind> RetTypes;
   BuildReturnTypeVector<ReturnType>::build(RetTypes);
-  return llvm::make_unique<FixedArgCountMatcherDescriptor>(
+  return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshall0<ReturnType>, reinterpret_cast<void (*)()>(Func),
       MatcherName, RetTypes, None);
 }
@@ -716,10 +876,10 @@ makeMatcherAutoMarshall(ReturnType (*Func)(), StringRef MatcherName) {
 template <typename ReturnType, typename ArgType1>
 std::unique_ptr<MatcherDescriptor>
 makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1), StringRef MatcherName) {
-  std::vector<ast_type_traits::ASTNodeKind> RetTypes;
+  std::vector<ASTNodeKind> RetTypes;
   BuildReturnTypeVector<ReturnType>::build(RetTypes);
   ArgKind AK = ArgTypeTraits<ArgType1>::getKind();
-  return llvm::make_unique<FixedArgCountMatcherDescriptor>(
+  return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshall1<ReturnType, ArgType1>,
       reinterpret_cast<void (*)()>(Func), MatcherName, RetTypes, AK);
 }
@@ -729,13 +889,23 @@ template <typename ReturnType, typename ArgType1, typename ArgType2>
 std::unique_ptr<MatcherDescriptor>
 makeMatcherAutoMarshall(ReturnType (*Func)(ArgType1, ArgType2),
                         StringRef MatcherName) {
-  std::vector<ast_type_traits::ASTNodeKind> RetTypes;
+  std::vector<ASTNodeKind> RetTypes;
   BuildReturnTypeVector<ReturnType>::build(RetTypes);
   ArgKind AKs[] = { ArgTypeTraits<ArgType1>::getKind(),
                     ArgTypeTraits<ArgType2>::getKind() };
-  return llvm::make_unique<FixedArgCountMatcherDescriptor>(
+  return std::make_unique<FixedArgCountMatcherDescriptor>(
       matcherMarshall2<ReturnType, ArgType1, ArgType2>,
       reinterpret_cast<void (*)()>(Func), MatcherName, RetTypes, AKs);
+}
+
+template <typename ReturnType>
+std::unique_ptr<MatcherDescriptor> makeMatcherRegexMarshall(
+    ReturnType (*FuncFlags)(llvm::StringRef, llvm::Regex::RegexFlags),
+    ReturnType (*Func)(llvm::StringRef)) {
+  std::vector<ASTNodeKind> RetTypes;
+  BuildReturnTypeVector<ReturnType>::build(RetTypes);
+  return std::make_unique<RegexMatcherDescriptor<ReturnType>>(FuncFlags, Func,
+                                                              RetTypes);
 }
 
 /// Variadic overload.
@@ -744,7 +914,7 @@ template <typename ResultT, typename ArgT,
 std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
     ast_matchers::internal::VariadicFunction<ResultT, ArgT, Func> VarFunc,
     StringRef MatcherName) {
-  return llvm::make_unique<VariadicFuncMatcherDescriptor>(VarFunc, MatcherName);
+  return std::make_unique<VariadicFuncMatcherDescriptor>(VarFunc, MatcherName);
 }
 
 /// Overload for VariadicDynCastAllOfMatchers.
@@ -756,7 +926,7 @@ std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
     ast_matchers::internal::VariadicDynCastAllOfMatcher<BaseT, DerivedT>
         VarFunc,
     StringRef MatcherName) {
-  return llvm::make_unique<DynCastAllOfMatcherDescriptor>(VarFunc, MatcherName);
+  return std::make_unique<DynCastAllOfMatcherDescriptor>(VarFunc, MatcherName);
 }
 
 /// Argument adaptative overload.
@@ -769,7 +939,7 @@ std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
   std::vector<std::unique_ptr<MatcherDescriptor>> Overloads;
   AdaptativeOverloadCollector<ArgumentAdapterT, FromTypes, ToTypes>(MatcherName,
                                                                     Overloads);
-  return llvm::make_unique<OverloadedMatcherDescriptor>(Overloads);
+  return std::make_unique<OverloadedMatcherDescriptor>(Overloads);
 }
 
 template <template <typename ToArg, typename FromArg> class ArgumentAdapterT,
@@ -788,7 +958,7 @@ std::unique_ptr<MatcherDescriptor> makeMatcherAutoMarshall(
     ast_matchers::internal::VariadicOperatorMatcherFunc<MinCount, MaxCount>
         Func,
     StringRef MatcherName) {
-  return llvm::make_unique<VariadicOperatorMatcherDescriptor>(
+  return std::make_unique<VariadicOperatorMatcherDescriptor>(
       MinCount, MaxCount, Func.Op, MatcherName);
 }
 

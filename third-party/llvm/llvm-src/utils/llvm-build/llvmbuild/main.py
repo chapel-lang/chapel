@@ -275,10 +275,9 @@ subdirectories = %s
             f.write("""\
 %s
 ;
-;                     The LLVM Compiler Infrastructure
-;
-; This file is distributed under the University of Illinois Open Source
-; License. See LICENSE.TXT for details.
+; Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+; See https://llvm.org/LICENSE.txt for license information.
+; SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 ;
 ;===------------------------------------------------------------------------===;
 ;
@@ -360,7 +359,7 @@ subdirectories = %s
         root_entries = set(e[0] for e in entries)
         for _,_,deps,_ in entries:
             root_entries -= set(deps)
-        entries.append(('all', None, root_entries, True))
+        entries.append(('all', None, sorted(root_entries), True))
 
         entries.sort()
 
@@ -545,10 +544,9 @@ subdirectories = %s
         f.write("""\
 %s
 #
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License. See LICENSE.TXT for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
 #===------------------------------------------------------------------------===#
 #
@@ -565,19 +563,10 @@ subdirectories = %s
         f.write("""
 # LLVMBuild CMake fragment dependencies.
 #
-# CMake has no builtin way to declare that the configuration depends on
-# a particular file. However, a side effect of configure_file is to add
-# said input file to CMake's internal dependency list. So, we use that
-# and a dummy output file to communicate the dependency information to
-# CMake.
-#
-# FIXME: File a CMake RFE to get a properly supported version of this
-# feature.
 """)
         for dep in dependencies:
             f.write("""\
-configure_file(\"%s\"
-               ${CMAKE_CURRENT_BINARY_DIR}/DummyConfigureOutput)\n""" % (
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS \"%s\")\n""" % (
                 cmake_quote_path(dep),))
 
         # Write the properties we use to encode the required library dependency

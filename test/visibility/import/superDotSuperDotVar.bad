@@ -1,1 +1,0 @@
-superDotSuperDotVar.chpl:6: error: import must name a module ('x' is not a module)

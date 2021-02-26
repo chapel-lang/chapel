@@ -7,7 +7,7 @@
 #define SCRATCH_SIZE (2*1024*1024)
 
 #ifndef TEST_SEGSZ
-#define TEST_SEGSZ (PAGESZ + 5*SCRATCH_SIZE) // 5 teams's scratch + page for comms
+#define TEST_SEGSZ (PAGESZ + 6*SCRATCH_SIZE) // 6 teams's scratch + page for comms
 #endif
 
 #include <math.h> /* for sqrt() */
@@ -20,9 +20,11 @@
 
 static gex_Client_t  myclient;
 static gex_EP_t      myep;
-static gex_TM_t      myteam;
+static gex_TM_t      myteam, rowtm, coltm;
 static gex_Segment_t mysegment;
 static gex_Rank_t    myrank;
+
+static uintptr_t scratch_addr, scratch_end;
 
 // handler indices
 #define hidx_pong_shorthandler       200
@@ -60,13 +62,73 @@ gex_AM_Entry_t htable[] = {
  };
 #define HANDLER_TABLE_SIZE (sizeof(htable)/sizeof(gex_AM_Entry_t))
 
+// Odds-in-row team (exercise new_tmp_p = NULL case):
+static gex_TM_t oddtm;
+static void *odd_scratch;
+static size_t odd_scratch_sz;
+static void do_odds(void) {
+  oddtm = rowtm; // init just to check whether overwritten
+  int odd = myrank & 1;
+  gex_TM_t *new_tm_p = odd ? &oddtm : NULL;
+  gex_TM_Split(new_tm_p, rowtm, 0, 0, odd_scratch, odd_scratch_sz, 0);
+  if (odd) {
+    assert_always(oddtm != rowtm);
+    gex_Rank_t size = gex_TM_QuerySize(oddtm);
+    assert_always(size <= gex_TM_QuerySize(rowtm));
+    // Check that tie-breaks on key==0 respect order in parent team.
+    // Taking a short-cut here knowning parent (rowtm) is in jobrank order and contiguous.
+    gex_Rank_t first = gex_TM_TranslateRankToJobrank(oddtm, 0);
+    for (gex_Rank_t rank = 1; rank < size; ++rank) {
+      gex_Rank_t jobrank = gex_TM_TranslateRankToJobrank(oddtm, rank);
+      assert_always(jobrank == first + 2*rank);
+    }
+    // Check gex_TM_TranslateJobrankToRank() for a guaranteed non-member
+    assert_always(GEX_RANK_INVALID == gex_TM_TranslateJobrankToRank(oddtm,0));
+  } else {
+    assert_always(oddtm == rowtm); // Should be unchanged
+  }
+}
+
+// Evens only team (exercise Create)
+static gex_TM_t eventm;
+static void *even_scratch;
+static size_t even_scratch_sz;
+static void do_evens(void) {
+  eventm = coltm; // init just to check whether overwritten
+  int even = !(myrank & 1);
+  gex_Rank_t nmembers = even ? (gex_TM_QuerySize(myteam) + 1)/2 : 0;
+  gex_EP_Location_t *members = test_calloc(sizeof(gex_EP_Location_t), nmembers);
+  for (gex_Rank_t i = 0; i < nmembers; ++ i) members[i].gex_rank = i * 2;
+  gex_TM_Create(&eventm, 1, myteam, members, nmembers, &even_scratch, even_scratch_sz, GEX_FLAG_TM_LOCAL_SCRATCH);
+  if (even) {
+    assert_always(eventm != coltm);
+    assert_always(gex_TM_QuerySize(eventm) == nmembers);
+    for (gex_Rank_t rank = 0; rank < nmembers; ++rank) {
+      gex_Rank_t jobrank = gex_TM_TranslateRankToJobrank(eventm, rank);
+      assert_always(jobrank == 2*rank);
+    }
+  } else {
+    assert_always(eventm == coltm); // Should be unchanged
+  }
+  test_free(members);
+}
+
+static void *threadmain(void *id) {
+  if (id) {
+    do_evens();
+  } else {
+    do_odds();
+  }
+  return NULL;
+}
+
 int main(int argc, char **argv)
 {
   gex_Rank_t peer;
 
   GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testsplit", &argc, &argv, 0));
 
-  test_init("testsplit", 1, "(nrows) (ncols)");
+  test_init("testsplit", 0, "(nrows) (ncols)");
 
   myrank = gex_TM_QueryRank(myteam);
   gex_Rank_t nranks = gex_TM_QuerySize(myteam);
@@ -97,8 +159,8 @@ int main(int argc, char **argv)
   BARRIER();
 
   // Will reserve all but first page of segment for scratch space
-  uintptr_t scratch_addr = PAGESZ + (uintptr_t)TEST_MYSEG();
-  uintptr_t scratch_end = TEST_SEGSZ + (uintptr_t)TEST_MYSEG();
+  scratch_addr = PAGESZ + (uintptr_t)TEST_MYSEG();
+  scratch_end = TEST_SEGSZ + (uintptr_t)TEST_MYSEG();
   size_t scratch_sz;
 
   // Spec says NULL new_tm_p returns zero.
@@ -108,7 +170,7 @@ int main(int argc, char **argv)
   assert_always(scratch_sz == 0);
 
   // Row team:
-  gex_TM_t rowtm = myteam; // init just to check whether overwritten
+  rowtm = myteam; // init just to check whether overwritten
   scratch_sz = gex_TM_Split(&rowtm, myteam, myrow, 1+2*mycol, 0, 0, SCRATCH_QUERY_FLAG);
   assert_always((scratch_addr + scratch_sz) <= scratch_end);
   gex_TM_Split(&rowtm, myteam, myrow, 1+2*mycol, (void*)scratch_addr, scratch_sz, 0);
@@ -120,10 +182,13 @@ int main(int argc, char **argv)
     gex_Rank_t jobrank = myrow*ncols + rank;
     assert_always(gex_TM_TranslateRankToJobrank(rowtm, rank) == jobrank);
     assert_always(gex_TM_TranslateJobrankToRank(rowtm, jobrank) == rank);
+    gex_EP_Location_t ep_loc = gex_TM_TranslateRankToEP(rowtm, rank, 0);
+    assert_always(ep_loc.gex_rank     == jobrank);
+    assert_always(ep_loc.gex_ep_index == 0);
   }
 
   // Column team:
-  gex_TM_t coltm = myteam; // init just to check whether overwritten
+  coltm = myteam; // init just to check whether overwritten
   scratch_sz = gex_TM_Split(&coltm, myteam, mycol, myrow, 0, 0, SCRATCH_QUERY_FLAG);
   assert_always((scratch_addr + scratch_sz) <= scratch_end);
   gex_TM_Split(&coltm, myteam, mycol, myrow, (void*)scratch_addr, scratch_sz, 0);
@@ -135,6 +200,9 @@ int main(int argc, char **argv)
     gex_Rank_t jobrank = mycol + ncols*rank;
     assert_always(gex_TM_TranslateRankToJobrank(coltm, rank) == jobrank);
     assert_always(gex_TM_TranslateJobrankToRank(coltm, jobrank) == rank);
+    gex_EP_Location_t ep_loc = gex_TM_TranslateRankToEP(coltm, rank, 0);
+    assert_always(ep_loc.gex_rank     == jobrank);
+    assert_always(ep_loc.gex_ep_index == 0);
   }
 
   // Singleton team (also tests a 2nd-level split, of coltm):
@@ -149,30 +217,19 @@ int main(int argc, char **argv)
   assert_always(gex_TM_TranslateRankToJobrank(onetm, 0) == myrank);
   assert_always(gex_TM_TranslateJobrankToRank(onetm, myrank) == 0);
 
-  // Odds only team (exercise new_tmp_p = NULL case):
-  gex_TM_t oddtm = rowtm; // init just to check whether overwritten
-  int odd = myrank & 1;
-  gex_TM_t *new_tm_p = odd ? &oddtm : NULL;
-  scratch_sz = gex_TM_Split(new_tm_p, rowtm, 0, 0, 0, 0, SCRATCH_QUERY_FLAG);
-  assert_always((scratch_addr + scratch_sz) <= scratch_end);
-  gex_TM_Split(new_tm_p, rowtm, 0, 0, (void*)scratch_addr, scratch_sz, 0);
-  scratch_addr += scratch_sz;
-  if (odd) {
-    assert_always(oddtm != rowtm);
-    gex_Rank_t size = gex_TM_QuerySize(oddtm);
-    assert_always(size <= gex_TM_QuerySize(rowtm));
-    // Check that tie-breaks on key==0 respect order in parent team.
-    // Taking a short-cut here knowning parent (rowtm) is in jobrank order and contiguous.
-    gex_Rank_t first = gex_TM_TranslateRankToJobrank(oddtm, 0);
-    for (gex_Rank_t rank = 1; rank < size; ++rank) {
-      gex_Rank_t jobrank = gex_TM_TranslateRankToJobrank(oddtm, rank);
-      assert_always(jobrank == first + 2*rank);
-    }
-    // Check gex_TM_TranslateJobrankToRank() for a guaranteed non-member
-    assert_always(GEX_RANK_INVALID == gex_TM_TranslateJobrankToRank(oddtm,0));
-  } else {
-    assert_always(oddtm == rowtm); // Should be unchanged
-  }
+  // Odds team tests
+  odd_scratch = (void*)scratch_addr;
+  odd_scratch_sz = gex_TM_Split((myrank & 1) ? &oddtm : NULL, rowtm, 0, 0, 0, 0, SCRATCH_QUERY_FLAG);
+  assert_always((scratch_addr + odd_scratch_sz) <= scratch_end);
+  scratch_addr += odd_scratch_sz;
+  do_odds();
+
+  // Evens team test
+  even_scratch = (void*)scratch_addr;
+  even_scratch_sz = gex_TM_Create(NULL, 1, myteam, NULL, myrank & 1 ? 0 : (nranks+1)/2, NULL, 0, SCRATCH_QUERY_FLAG);
+  assert_always((scratch_addr + even_scratch_sz) <= scratch_end);
+  scratch_addr += even_scratch_sz;
+  do_evens();
 
   // "Rev" team reversing order of TM0
   gex_TM_t revtm = myteam; // init just to check whether overwritten
@@ -185,7 +242,7 @@ int main(int argc, char **argv)
   assert_always(revtm != myteam);
   assert_always(gex_TM_QuerySize(revtm) == nranks);
   assert_always(gex_TM_QueryRank(revtm) == (nranks - (myrank + 1)));
-
+ 
   //
   // Some basic validation by communicating w/i the new teams
   //
@@ -253,6 +310,30 @@ int main(int argc, char **argv)
                       (gex_AM_Arg_t)myrank, (gex_AM_Arg_t)myrank);
   GASNET_BLOCKUNTIL(gasnett_atomic_read(&am_cntr,0) == 3);
   BARRIER();
+
+  // Barrier over evens or odds (to exercise them) and then destroy
+  {
+    gex_TM_t tm = (myrank & 1) ? oddtm : eventm;
+    gex_Event_Wait(gex_Coll_BarrierNB(tm, 0));
+    gex_Memvec_t scratch_out;
+    int rc = gex_TM_Destroy(tm, &scratch_out, GEX_FLAG_GLOBALLY_QUIESCED);
+    assert_always(rc);
+    assert_always(scratch_out.gex_addr == (void*)((myrank & 1) ? odd_scratch : even_scratch));
+    assert_always(scratch_out.gex_len == ((myrank & 1) ? odd_scratch_sz : even_scratch_sz));
+  }
+
+  // REcreate and REdestroy repeatedly in an attempt to exhaust 12-bit space
+  for (int i=0; i<4096; ++i) {
+    do_evens();
+    do_odds();
+    assert_always(! gex_TM_Destroy((myrank & 1) ? oddtm : eventm, NULL, 0));
+  }
+
+  // More destruction
+  assert_always(! gex_TM_Destroy(onetm, NULL, 0));
+  assert_always(! gex_TM_Destroy(rowtm, NULL, 0));
+  assert_always(! gex_TM_Destroy(coltm, NULL, 0));
+  assert_always(! gex_TM_Destroy(revtm, NULL, 0));
 
   MSG("done.");
 

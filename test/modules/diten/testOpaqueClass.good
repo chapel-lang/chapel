@@ -1,3 +1,2 @@
-testOpaqueClass.chpl:23: In function 'main':
-testOpaqueClass.chpl:27: error: unresolved call 'unmanaged C.a'
-testOpaqueClass.chpl:27: note: because no functions named a found in scope
+{a = 2}
+2

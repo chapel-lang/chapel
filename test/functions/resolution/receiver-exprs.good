@@ -1,0 +1,4 @@
+receiver-exprs.chpl:17: warning: typeAlias.methodTA
+receiver-exprs.chpl:18: warning: parenlessFun.methodPLF
+receiver-exprs.chpl:19: warning: parenfulFun.methodPFF
+receiver-exprs.chpl:20: error: done

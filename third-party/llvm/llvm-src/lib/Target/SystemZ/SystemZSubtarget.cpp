@@ -1,15 +1,15 @@
 //===-- SystemZSubtarget.cpp - SystemZ subtarget information --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
 #include "SystemZSubtarget.h"
 #include "MCTargetDesc/SystemZMCTargetDesc.h"
 #include "llvm/IR/GlobalValue.h"
+#include "llvm/Target/TargetMachine.h"
 
 using namespace llvm;
 
@@ -29,11 +29,16 @@ void SystemZSubtarget::anchor() {}
 
 SystemZSubtarget &
 SystemZSubtarget::initializeSubtargetDependencies(StringRef CPU, StringRef FS) {
-  std::string CPUName = CPU;
+  StringRef CPUName = CPU;
   if (CPUName.empty())
     CPUName = "generic";
   // Parse features string.
   ParseSubtargetFeatures(CPUName, FS);
+
+  // -msoft-float implies -mno-vx.
+  if (HasSoftFloat)
+    HasVector = false;
+
   return *this;
 }
 
@@ -56,6 +61,9 @@ SystemZSubtarget::SystemZSubtarget(const Triple &TT, const std::string &CPU,
       HasMessageSecurityAssist7(false), HasMessageSecurityAssist8(false),
       HasVectorEnhancements1(false), HasVectorPackedDecimal(false),
       HasInsertReferenceBitsMultiple(false),
+      HasMiscellaneousExtensions3(false), HasMessageSecurityAssist9(false),
+      HasVectorEnhancements2(false), HasVectorPackedDecimalEnhancement(false),
+      HasEnhancedSort(false), HasDeflateConversion(false), HasSoftFloat(false),
       TargetTriple(TT), InstrInfo(initializeSubtargetDependencies(CPU, FS)),
       TLInfo(TM, *this), TSInfo(), FrameLowering() {}
 
@@ -66,9 +74,12 @@ bool SystemZSubtarget::enableSubRegLiveness() const {
 
 bool SystemZSubtarget::isPC32DBLSymbol(const GlobalValue *GV,
                                        CodeModel::Model CM) const {
-  // PC32DBL accesses require the low bit to be clear.  Note that a zero
-  // value selects the default alignment and is therefore OK.
-  if (GV->getAlignment() == 1)
+  // PC32DBL accesses require the low bit to be clear.
+  //
+  // FIXME: Explicitly check for functions: the datalayout is currently
+  // missing information about function pointers.
+  const DataLayout &DL = GV->getParent()->getDataLayout();
+  if (GV->getPointerAlignment(DL) == 1 && !GV->getValueType()->isFunctionTy())
     return false;
 
   // For the small model, all locally-binding symbols are in range.

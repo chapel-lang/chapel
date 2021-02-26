@@ -1,8 +1,8 @@
 .. _readme-allocators:
 
-==========================
-Chapel's Use of Allocators
-==========================
+=================================
+Using the Chapel Allocator from C
+=================================
 
 The Chapel runtime will select an allocator according to the ``CHPL_MEM``
 environment variable. See :ref:`readme-chplenv` for details on how that

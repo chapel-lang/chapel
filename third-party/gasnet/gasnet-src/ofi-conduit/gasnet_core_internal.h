@@ -110,22 +110,22 @@ typedef struct gasnetc_ofi_op_ctxt {
 extern gex_AM_Entry_t *gasnetc_handler;
 
 /* ------------------------------------------------------------------------------------ */
-/* Unnamed struct to hold all the locks needed */
+/* struct to hold all the locks needed */
 #if GASNET_PAR && GASNETC_OFI_USE_THREAD_DOMAIN
-struct {
+struct gasnetc_ofi_locks_ {
     gasneti_atomic_t big_lock;
-} gasnetc_ofi_locks;
+};
 #elif GASNET_PAR
-struct {
+struct gasnetc_ofi_locks_ {
     gasneti_atomic_t rx_request_cq;
     char _pad0[GASNETI_CACHE_PAD(sizeof(gasneti_atomic_t))];
     gasneti_atomic_t rx_reply_cq;
-} gasnetc_ofi_locks;
+};
 /* This is left here for the purpose of supporting future providers that require fine
  * grained locking. For now, all supported providers either support FI_THREAD_DOMAIN or
  * FI_THREAD_SAFE */
 #elif 0 && GASNET_PAR && !GASNETC_OFI_USE_THREAD_DOMAIN
-struct {
+struct gasnetc_ofi_locks_ {
     gasneti_atomic_t rx_cq;
     char _pad0[GASNETI_CACHE_PAD(sizeof(gasneti_atomic_t))];
     gasneti_atomic_t tx_cq;
@@ -138,7 +138,10 @@ struct {
     char _pad4[GASNETI_CACHE_PAD(sizeof(gasneti_atomic_t))];
     gasneti_atomic_t am_rx;
 
-} gasnetc_ofi_locks;
+};
+#endif
+#if GASNET_PAR
+extern struct gasnetc_ofi_locks_ gasnetc_ofi_locks;
 #endif
 
 /* These definitions are just to make the polling of the two different AM

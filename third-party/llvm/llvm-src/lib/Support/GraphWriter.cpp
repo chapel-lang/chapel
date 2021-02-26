@@ -1,9 +1,8 @@
 //===- GraphWriter.cpp - Implements GraphWriter support routines ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -77,17 +76,42 @@ StringRef llvm::DOT::getColorString(unsigned ColorNumber) {
   return Colors[ColorNumber % NumColors];
 }
 
+static std::string replaceIllegalFilenameChars(std::string Filename,
+                                               const char ReplacementChar) {
+#ifdef _WIN32
+  std::string IllegalChars = "\\/:?\"<>|";
+#else
+  std::string IllegalChars = "/";
+#endif
+
+  for (char IllegalChar : IllegalChars) {
+    std::replace(Filename.begin(), Filename.end(), IllegalChar,
+                 ReplacementChar);
+  }
+
+  return Filename;
+}
+
 std::string llvm::createGraphFilename(const Twine &Name, int &FD) {
   FD = -1;
   SmallString<128> Filename;
-  std::error_code EC = sys::fs::createTemporaryFile(Name, "dot", FD, Filename);
+
+  // Windows can't always handle long paths, so limit the length of the name.
+  std::string N = Name.str();
+  N = N.substr(0, std::min<std::size_t>(N.size(), 140));
+
+  // Replace illegal characters in graph Filename with '_' if needed
+  std::string CleansedName = replaceIllegalFilenameChars(N, '_');
+
+  std::error_code EC =
+      sys::fs::createTemporaryFile(CleansedName, "dot", FD, Filename);
   if (EC) {
     errs() << "Error: " << EC.message() << "\n";
     return "";
   }
 
   errs() << "Writing '" << Filename << "'... ";
-  return Filename.str();
+  return std::string(Filename.str());
 }
 
 // Execute the graph viewer. Return true if there were errors.
@@ -148,7 +172,7 @@ static const char *getProgramName(GraphProgram::Name program) {
 
 bool llvm::DisplayGraph(StringRef FilenameRef, bool wait,
                         GraphProgram::Name program) {
-  std::string Filename = FilenameRef;
+  std::string Filename = std::string(FilenameRef);
   std::string ErrMsg;
   std::string ViewerPath;
   GraphSession S;

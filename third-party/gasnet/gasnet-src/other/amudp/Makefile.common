@@ -15,7 +15,7 @@ CXX = g++
 #CXX = /project/cs/titanium/srs/i686-pc-linux-gnu/bin/g++-3.0.2 -static
 
 #otherflags := $(otherflags) -pg
-#otherflags := $(otherflags) -DFREEZE_SLAVE=1
+#otherflags := $(otherflags) -DFREEZE_WORKER=1
 #otherflags := $(otherflags) -static
 
 #ccdebugflags = -O0 -g3 -ansi -Wall -Wno-unused-variable -Wno-unused-function $(otherflags)

@@ -1,2 +1,2 @@
 nilStorageNonNilAssocArr.chpl:17: In function 'main':
-nilStorageNonNilAssocArr.chpl:19: error: Cannot initialize associative array because element type unmanaged C is a non-nilable class
+nilStorageNonNilAssocArr.chpl:19: error: Cannot default initialize associative array because element type unmanaged C is a non-nilable class

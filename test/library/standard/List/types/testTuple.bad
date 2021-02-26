@@ -1,8 +1,0 @@
-$CHPL_HOME/modules/standard/List.chpl:994: In function '_popAtIndex':
-$CHPL_HOME/modules/standard/List.chpl:1020: error: Cannot default-initialize a tuple component of the type shared T
-note: non-nil class types do not support default initialization
-note: Consider using the type shared T? instead
-$CHPL_HOME/modules/standard/List.chpl:1020: error: Cannot default-initialize a tuple component of the type shared T
-note: non-nil class types do not support default initialization
-note: Consider using the type shared T? instead
-$CHPL_HOME/modules/standard/List.chpl:1049: Function '_popAtIndex' instantiated as: _popAtIndex(this: list(2*shared T,false))

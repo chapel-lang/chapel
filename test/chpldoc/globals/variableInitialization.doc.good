@@ -1,0 +1,21 @@
+.. default-domain:: chpl
+
+.. module:: variableInitialization.doc
+
+variableInitialization.doc
+==========================
+**Usage**
+
+.. code-block:: chapel
+
+   use variableInitialization.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import variableInitialization.doc;
+
+.. data:: var a = foo("this is", a, "function", call)
+

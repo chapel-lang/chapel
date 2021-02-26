@@ -1,0 +1,2 @@
+bug: Split-initing arrays using `proc =` overload doesn't compile
+#15806

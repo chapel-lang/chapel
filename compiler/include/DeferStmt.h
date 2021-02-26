@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,7 +23,7 @@
 
 #include "stmt.h"
 
-class DeferStmt : public Stmt
+class DeferStmt final : public Stmt
 {
 
 public:
@@ -36,15 +36,17 @@ public:
 
                       DeferStmt(BlockStmt* body);
                       DeferStmt(CallExpr* call);
-                      ~DeferStmt();
+                     ~DeferStmt() override = default;
 
-  void                accept(AstVisitor* visitor);
-  void                replaceChild(Expr* old_ast, Expr* new_ast);
-  Expr*               getFirstExpr();
-  Expr*               getNextExpr(Expr* expr);
-  void                verify();
-  GenRet              codegen();
+  void                accept(AstVisitor* visitor) override;
+  void                replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr*               getFirstExpr() override;
+  Expr*               getNextExpr(Expr* expr) override;
+  void                verify() override;
+  GenRet              codegen() override;
   DECLARE_COPY(DeferStmt);
+  DeferStmt* copyInner(SymbolMap* map) override;
+
 private:
   static BlockStmt*   buildChplStmt(Expr* expr);
                       DeferStmt();

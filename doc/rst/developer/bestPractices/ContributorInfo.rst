@@ -10,7 +10,7 @@ Chapel workflow recommendations.
 Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: A `contributor license agreement`_ must be signed before any contributing pull requests can be merged.
+.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
 
 Overview:
 
@@ -18,17 +18,17 @@ Overview:
 
 #. `Design`_
 
-    #. `When design discussion is needed`_
-    #. `Creating a design issue`_
-    #. `Leading a design discussion`_
+   #. `When design discussion is needed`_
+   #. `Creating a design issue`_
+   #. `Leading a design discussion`_
 
 #. `Development`_
 
-    #. `Get set up`_
-    #. `Create new branch`_
-    #. `Develop and test contributions locally`_
+   #. `Get set up`_
+   #. `Create new branch`_
+   #. `Develop and test contributions locally`_
 
-       #. `Add new tests`_
+      #. `Add new tests`_
 
 
 #. `Contributing changes`_
@@ -43,7 +43,6 @@ Overview:
 
 #. `Other useful information`_
 
-   #. `Chapel git workflow`_
    #. `Policy details`_
    #. `Chapel release process`_
 
@@ -107,7 +106,8 @@ decisions. Here are some strategies to make a good design issue:
 - It can be useful to consider alternative solutions to the problem and
   describe the trade-offs among them.
 - A design issue should have two developers not involved in the effort to review.
-- To find reviewers, send an email to chapel-developers_.
+- To find reviewers, post an inquiry to the `Chapel Developers`_
+  Discourse forum.
 
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation
@@ -178,23 +178,29 @@ grow).
 #. `Set up a GitHub account`_. The "Free" plan is sufficient for contributing to
    Chapel.
 
-#. Make sure you have configured your environment to work with git. See
-   `initial git setup`_ instructions.
-
 #. Use the GitHub web interface to create a fork of the Chapel repo by visiting
    https://github.com/chapel-lang/chapel and clicking the 'Fork' button (see
-   also `Fork the repo`_).  Then `configure your local git`_ and check out your
-   fork
+   also `Fork the repo`_).
 
-#. If you're working on a long-term effort, announce it on the
-   chapel-developers_ mailing list to make sure toes are not being stepped on,
+#. Make sure you have configured your environment to work with
+   git. See `Git tips for Chapel developers`_ for details,
+   particularly if you are new to git.
+
+#. Make sure you understand how to sign your commits with respect to the DCO.
+
+   Chapel enforces the Developer Certificate of Origin (DCO) on all
+   pull requests.  This requires all commits you make to be signed to
+   indicate that they adhere to the DCO policy.  If you're not already
+   familiar with DCOs, read `Getting started with Chapel and the
+   Developer Certificate of Origin`_ to learn more about them and how
+   to sign your commits.
+
+#. If you're working on a long-term effort, announce it in the
+   `Chapel Developers`_ Discourse category to make sure toes are not being stepped on,
    work is not being pursued redundantly, etc.  Similarly, fundamental changes
-   to the language or architecture should be circulated to the
-   chapel-developers_ and/or chapel-users_ lists to make sure effort is not
-   wasted.
-
-#. Sign a Chapel `contributor license agreement`_ and mail it, with your GitHub
-   ID.
+   to the language or architecture should be circulated in the
+   `Chapel Developers`_ and/or `Chapel Users`_ categories to make sure effort is not
+   wasted pursuing an unpopular idea.
 
 * You do not need commit/push access to the main repo in order to
   contribute code.  See
@@ -203,6 +209,10 @@ grow).
 * Third-party code requires additional approvals, see the policy details on
   `Third-party code`_.
 
+.. _Git tips for Chapel developers: git.rst
+.. _Getting started with Chapel and the Developer Certificate of Origin: DCO.rst
+
+   
 .. _Create new branch:
 
 Create new branch
@@ -210,8 +220,11 @@ Create new branch
 
 This should happen once for every new effort.
 
-Develop your feature, bug fix, etc on your fork.  To create a new branch, use
-the `New branch command`_.  Using a concisely named branch is encouraged.
+Develop your feature, bug fix, etc. on your fork.  To create a new
+branch, use ``git checkout -b <branch_name>``.  Using a concisely
+named branch is encouraged.
+
+
 
 .. _Develop and test contributions locally:
 
@@ -222,12 +235,14 @@ Your contribution will take the form of a series of commits.  While including
 sensible commit messages is a good idea, it is more important to have a good
 merge message once the pull request is going in. Likewise, it is OK to have many
 small commits that reflect the history of development rather than commits for
-the feature.  See `Development commands`_ for how to perform some common
+the feature.  Review git `Development commands`_ for how to perform some common
 operations during development.
 
 As you work, you will want to periodically bring in changes from the main Chapel
 project to your feature branch (described in `Development commands`_), to avoid
 code drift.
+
+.. _Development commands: git.rst#development-commands
 
 .. _Add new tests:
 
@@ -260,6 +275,8 @@ work (see `How to push`_ for command details).  Note that if you have already
 created a pull request from a feature branch, pushing your work to that feature
 branch will update the pull request.
 
+.. _How to push: git.rst#how-to-push
+
 .. _Ask for feedback on your branch early (optional):
 
 Ask for feedback on your branch early (optional)
@@ -277,7 +294,7 @@ Discussion can take place in:
 
 - the `Work-in-progress pull request`_
 - a separate GitHub issue
-- the chapel-developers_ mailing list
+- the `Chapel Developers`_ Discourse forum
 - a private communication
 - some other strategy agreed upon by all involved parties
 
@@ -300,6 +317,8 @@ Just do your local development and then update your feature branch as in
 
 Please follow the `Pull request guidance`_ and keep PRs reasonably sized.
 
+.. _How to open a PR: git.rst#how-to-open-a-pr
+
 .. _Find a reviewer:
 
 Find a reviewer
@@ -308,9 +327,9 @@ Find a reviewer
 * Once your PR is ready, you'll need to request a review.  If you know who you'd
   like to review it, @ mention them in a comment on the PR and ask them to have
   a look.  If you don't know their GitHub id, you can find them in the chat room
-  or send them an email.  If you don't know who should review the change, send
-  an email to the chapel-developers_ list requesting a review and linking to the
-  PR.  Such an email should have a subject line starting with `[PR]`.
+  or send them an email.  If you don't know who should review the change, post
+  to the `Chapel Developers`_ Discourse topic requesting a review and linking to the
+  PR.  By convention, such topics often use a `[PR]` prefix in their titles.
 
   Note: Ideally, someone should volunteer to review your pull request within a
   day or two. If this doesn't happen, feel free to make some noise. Ideally the
@@ -330,7 +349,7 @@ Work with your reviewers
   something really hard.  Try to make sure they understand the magnitude of the
   request, and try to discuss if it's really necessary to do before merging.  If
   you can't come to an agreement, one of you should bring other developers
-  (individually or via chapel-developers_) into the conversation to get a
+  (individually or via the `Chapel Developers`_ forum) into the conversation to get a
   broader opinion.  One of the jobs of the reviewer is to serve as a proxy for
   other developers, or to bring those developers into the conversation if they
   feel unqualified to do so.
@@ -343,8 +362,9 @@ Before merging
 Before the change can be merged, go through this checklist to ensure:
 
 - all design changes have been discussed
+- all commits contain the required "Signed-off-by:" line to indicate
+  compliance with the `Developer Certificate of Origin`_ (DCO)
 - the PR has been reviewed
-- the `contributor license agreement`_ (CLA) has been signed
 - the `Git history is clear`_ of anything that should not be in the repo
 - relevant configurations pass testing
 
@@ -367,6 +387,9 @@ appropriate amount of testing before merging the final PR may be found at
 After the final version of the change has been agreed upon, the person making
 the merge should follow the steps for `How to merge a PR`_.
 
+.. _Developer Certificate of Origin: DCO.rst
+.. _How to merge a PR: git.rst#how-to-merge-a-pr
+
 
 .. _After merging:
 
@@ -377,481 +400,16 @@ After merging, a good contributor should watch automatic testing results for
 failures that they may need to address:
 
 * In short order, a smoke-test will be run against the commit to make sure that
-  nothing basic has been broken by it.  Monitor the
-  chapel-test-results-regressions_ mailing list to make sure that nothing
-  breaks.
+  nothing basic has been broken by it.  Your reviewer should alert you to any
+  problems.
 
-* For the day or two after the commit has gone in, check the
-  chapel-test-results-regressions_ mailing list to ensure that there are no new
-  failures caused by your commit.  Use the chapel-developers_ mailing list if
-  you are unsure (a member of the core Chapel team will be tasked with
-  diagnosing any testing failures on any given night, but it's nice when
-  developers notice the issue first themselves to save wasted effort).
+* After the commit has gone in, check with your reviewer to ensure that
+  there are no new failures caused by your commit in our nightly testing.
 
 .. _Other useful information:
 
 Other useful information
 ------------------------
-
-.. _Chapel git workflow:
-
-Chapel git workflow
-~~~~~~~~~~~~~~~~~~~~
-
-The following section walks through some basics of git and GitHub that
-are helpful in contributing to Chapel.
-
-.. _initial git setup:
-
-Initial Git Setup
-+++++++++++++++++
-
-Follow the GitHub directions to set up a new account.
-
-https://help.github.com/articles/signing-up-for-a-new-github-account/
-
-If you plan to use ssh to push/pull, set up SSH keys.
-
-https://help.github.com/articles/connecting-to-github-with-ssh/
-
-
-
-.. _Configure your local git:
-
-Configure your local git
-++++++++++++++++++++++++
-
-.. code-block:: bash
-
-    git config --global user.name 'Thomas Van Doren'
-    git config --global user.email 'thomas@example.com'
-
-    # linux/mac
-    git config --global core.autocrlf input
-
-    # windows
-    git config --global core.autocrlf true
-
-    # If using ssh keys, verify access to GitHub. It should respond with a
-    # message including your GitHub username.
-    ssh git@github.com
-
-    # Clone your fork of the chapel repo!
-    git clone git@github.com:<github_username>/chapel.git
-
-    # Or, if using HTTPS instead of SSH.
-    git clone https://github.com/<github_username>/chapel.git
-
-    # Set up remotes for GitHub
-    cd chapel
-    git remote add upstream https://github.com/chapel-lang/chapel.git
-    # Make sure it works, get up-to-date without modifying your files
-    git fetch upstream
-    # Change remote for upstream push to "no_push"
-    git remote set-url --push upstream no_push
-    # Optionally add remotes for commonly viewed branches
-    git remote add <branch_owner_username> https://github.com/<branch_owner_username>/chapel.git
-
-.. _New branch command:
-
-New branch command
-++++++++++++++++++
-
-.. code-block:: bash
-
-    git checkout -b <branch_name>
-
-.. _Development commands:
-
-Development commands
-++++++++++++++++++++
-
-Stage a file/dir for commit:
-
-.. code-block:: bash
-
-    git add path/to/file
-
-    # (sort of) similar to: svn add path/to/file
-
-Delete a file/dir and stage the change for commit:
-
-.. code-block:: bash
-
-    git rm [-r] path/to/dir/or/file
-
-    # similar to: svn delete path/to/dir/or/file
-
-Move a file/dir:
-
-.. code-block:: bash
-
-    git mv orig/path/a.txt new/path/to/b.txt
-
-    # similar to: svn move orig/path/a.txt new/path/to/b.txt
-
-Copy a file/dir and stage target for commit:
-
-.. code-block:: bash
-
-    cp <src> <target>
-    git add <target>
-
-    # similar to: svn copy <src> <target>
-
-Get the status of files/dirs (staged and unstaged):
-
-.. code-block:: bash
-
-    git status
-
-    # similar to: svn status
-
-Get the diff of unstaged changes:
-
-.. code-block:: bash
-
-    git diff
-
-    # similar to: svn diff
-
-Get the diff of staged changes (those that were staged with ``git add``):
-
-.. code-block:: bash
-
-    git diff --cached
-
-Backing out unstaged changes:
-
-.. code-block:: bash
-
-    git checkout path/to/file/a.txt
-
-    # similar to: svn revert path/to/file/a.txt
-
-Committing staged changes:
-
-.. code-block:: bash
-
-    git commit [-m <message>]
-
-    # similar to: svn commit [-m <message>]
-
-There are two different strategies available to bringing changes from Chapel
-master into your development branch:
-
-Rebase (replay your changes on top of the master branch):
-
-.. code-block:: bash
-
-    git fetch upstream
-    git rebase upstream/master
-
-    # If branch has already been pushed, you will need to force push to update:
-    git push -f -u origin <branch_name>
-
-
-If there are conflicts, you will be asked to resolve them. Once the affected
-files have been fixed, stage them with ``git add``, and then call ``git
-rebase --continue`` to finish the rebase process.
-
-If there are other development branches working off of your development branch
-(something not common in Chapel development), then you should not use this
-strategy. Instead, merge the Chapel master branch into your branch as shown
-below, which does not require a force push to rewrite git history.
-
-
-Merge (merge master into your branch):
-
-.. code-block:: bash
-
-    git fetch upstream
-    git merge upstream/master
-
-    # or:
-    git pull upstream master
-
-    # with feature branch checked out:
-    git merge [--no-ff] upstream/master
-
-If there are conflicts, you will be asked to resolve them. Once the affected
-files have been fixed, stage them with ``git add``, and then call ``git
-commit`` to finish the merge process.
-
-If you want to understand the changes that occurred upstream, see
-`Read commit messages for changes from the main Chapel project`_ below.
-
-Using ``git merge upstream/master`` or ``git pull upstream master`` is not
-recommended when working in development branches that have no other references
-to them (which is typical in Chapel development), because
-it pollutes the git history with non-meaningful merge commits. These show up in
-the git history as:
-
-.. code-block:: bash
-
-    Merge branch 'master' of github.com:chapel-lang/chapel into dev-branch
-
-
-.. _How to modify git history:
-
-How to modify git history
-+++++++++++++++++++++++++
-
-The following commands **may cause problems** if the changes they overwrite
-have been pulled by other repositories.
-
-Fixing a commit message:
-
-.. code-block:: bash
-
-    git commit --amend
-
-Un-do the last commit (leaving changed files in your working directory):
-
-.. code-block:: bash
-
-    git reset --soft HEAD~1
-
-Reapplying changes from the current branch onto an updated version of master:
-
-.. code-block:: bash
-
-    git rebase master
-
-Reapplying changes from the current branch onto an updated version of
-upstream/master, without updating your local master (note: you will need to
-perform a pull next time you checkout your local master):
-
-.. code-block:: bash
-
-    git fetch upstream
-    git rebase upstream/master
-
-Pushing such changes to your repository (again, **this may cause problems** if
-other repositories have pulled the changes -- however this is uncommon in the
-Chapel development workflow):
-
-.. code-block:: bash
-
-    git push -f origin <branch_name>
-
-.. _Read commit messages for changes from the main Chapel project:
-
-Read commit messages for changes from the main Chapel project
-+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-To view only the commits that happened on master (in other words, the old svn
-commits and the merge commits for pull requests):
-
-.. code-block:: bash
-
-    git log --first-parent
-
-    # or with line wrapping
-    git log --first-parent | less
-
-    # or including files changed
-    git log --first-parent -m --stat
-
-    # or similar to svn log
-    git log --first-parent -m --name-status
-
-More logging commands are described in `Other logging commands`_ below.
-
-.. _How to push:
-
-How to push
-+++++++++++
-
-.. code-block:: bash
-
-    git push origin <branch_name>
-
-    # or if you don't like typing your complicated branch name,
-    # you can use this command to push the current branch:
-    git push origin HEAD
-
-    # if you forgot your branch name, you can get it by running
-    git branch
-
-    # it is the starred one...
-
-Note that ``-f`` is necessary if you've modified changes on your feature branch
-(see `How to modify git history`_).
-
-.. _How to open a PR:
-
-How to open a PR:
-+++++++++++++++++
-
-* `Submit a pull request`_ with your changes (make sure you have `synced with
-  the main repo`_).
-
-  To do this, after pushing your changes to your feature branch on GitHub,
-  you can use the GitHub web interface to create a pull request. Visit
-
-  ``https://github.com/<username>/chapel``
-
-  and look for a "Compare & pull request" button for your feature branch.
-  Alternatively, navigate to your feature branch, and click the green icon next
-  to the branch dropdown to "Compare, review, create a pull request".
-
-  Next, put in a message to your reviewer about the purpose of your pull request
-  and give the pull request a useful title.  Your PR message will introduce the
-  changes to reviewers and form the basis for the merge message.  See
-  `Final merge message`_ for recommendations on what that commit message should
-  look like.
-
-  You will have to have signed a `contributor license agreement`_ (CLA).
-
-  Your pull request will be available at a URL like:
-
-  ``https://github.com/chapel-lang/chapel/pull/<number>``
-
-  and you can discuss the patch with your reviewers there.
-
-.. _contributor license agreement: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/contributorAgreements/
-
-.. _How to merge a PR:
-
-How to merge a PR:
-++++++++++++++++++
-
-If you have commit privileges (see
-`Who has or needs commit access to the main repository?`_), navigate to the
-pull request:
-
-go to
-
-https://github.com/chapel-lang/chapel/pulls
-
-or
-
-``https://github.com/chapel-lang/chapel/pull/<number>``
-
-and click the friendly green button "Merge pull request" (it is possible to
-merge the pull request from the command line also and the pull request page has
-details). When you click "Merge pull request", you will need to enter a commit
-message. See `Final merge message`_ for a reminder on what that commit message
-should entail (generally, this will closely resemble the PR message).
-
-More information on using git
-+++++++++++++++++++++++++++++
-
-Additional docs available online at: http://git-scm.com/docs/
-
-Git help pages can be viewed with:
-
-.. code-block:: bash
-
-    git help <command>
-
-Other git commands
-++++++++++++++++++
-
-Update to HEAD:
-
-(If you use this command on a feature branch, you'll just be updating to the
-latest work stored on GitHub. See `Development commands`_ for how to update a
-feature branch with new changes from the main Chapel project)
-
-.. code-block:: bash
-
-    git pull
-
-    # or:
-    git fetch origin
-    git merge origin/master
-
-    # similar to: svn update
-
-Update to specific revision number:
-
-.. code-block:: bash
-
-    git checkout <commit sha1>
-
-    # similar to: svn update -r<revision number>
-
-To view "dirty" files, or all those files that are not tracked (includes
-ignored files):
-
-.. code-block:: bash
-
-    git ls-files --others
-
-
-If you've gotten your master branch mucked up but haven't pushed the branch
-with errors to your remote fork, you can fix it with the following series of
-commands:
-
-.. code-block:: bash
-
-    # This will save your old master state to a different branch name, removing
-    # the name "master" from the list of branches you can access on your fork
-    git branch -m <name for old, messed up master>
-
-    # You will get a message indicating you are in a "detached HEAD state".  This
-    # is expected (and desired).  Now the repository you are in is in line with
-    # your fork's master branch.
-    git checkout origin/master
-
-    # This will save the state of the repository right now to a new branch, named
-    # master.
-    git checkout -b master
-
-At this point, a `git push origin master` should work as expected.  Remember, do
-not try this with a master branch that has been corrupted on your remote fork.
-
-An alternate method, if you know or can easily find out the last commit that
-should be kept:
-
-.. code-block:: bash
-
-   # on any branch that contains commits you do not want.
-   git branch <new branch name>
-
-   # do not use --hard if you wish to leave untracked files in your tree
-   git reset --hard <last commit you want to keep>
-
-
-.. _Other logging commands:
-
-Other logging commands
-++++++++++++++++++++++
-
-To view commits grouped by author (for example, show me commits by author from
-1.9.0.1 tag to now):
-
-.. code-block:: bash
-
-    git shortlog --numbered --no-merges
-
-    # With commit sha1 and relative date:
-    git shortlog --numbered --no-merges \
-      --format='* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset'
-
-    # Set alias
-    git config --global alias.sl \
-      'shortlog --numbered --no-merges \
-       --format=\'* %Cred[%h]%Creset %s %Cgreen(%cr)%Creset\''
-
-    # Show commits by author between 1.8.0 and 1.9.0.1 releases:
-    git sl 1.8.0..1.9.0.1
-
-
-Finding a Pull Request by Commit
-++++++++++++++++++++++++++++++++
-
-Suppose you have figured out that a particular commit is causing a problem
-and you'd like to view the pull request discussion on GitHub. You can go
-to
-
-``https://github.com/chapel-lang/chapel/commit/<commit-hash>``
-
-and GitHub shows the pull request number at the bottom of the commit message
-complete with a link to the pull request page.
-
 
 
 .. _Policy details:
@@ -881,8 +439,8 @@ Third-party code
 
 If your work will require committing any third-party code that you are not
 developing yourself (or code that you've developed as a standalone package),
-alert the chapel-developers_ mailing list of this as, presently, such code
-packages must be approved by our lawyers before being committed.
+alert the `Chapel Developers`_ Discourse forum of this as, presently, such code
+packages must be approved before being committed.
 
 Here are some guiding questions to determine whether a third-party package you
 rely on should be committed to the chapel repository:
@@ -929,8 +487,8 @@ rely on should be committed to the chapel repository:
   - If so, we will probably want to distribute this package, or at least include
     the modifications and an easy way to install them.
 
-Please include the answers to these questions when you contact the
-chapel-developers_ mailing list, if you believe the code should be included or
+Please include the answers to these questions when you post to the
+`Chapel Developers`_ forum, if you believe the code should be included or
 you remain uncertain.
 
 .. _Testing your patch:
@@ -1092,10 +650,15 @@ Reviewer responsibilities
 +++++++++++++++++++++++++
 
 * If you're reviewing a commit from a developer outside the Chapel core
-  team, be sure they have signed the `contributor license agreement`_ (see the
-  `Developer Workflow`_ instructions for this).  If the developer cannot
-  or will not sign the agreement, bring the situation to the attention
-  of the Chapel project leadership.
+  team, be sure their commits are signed via the DCO bot (one of several
+  github action checks that will run on each PR).  If they're not, help
+  the developer understand the requirement.
+
+  Note that using GitHub's "squash and merge" feature will effectively
+  drop all DCO signature lines from the pull request, and so should
+  not be used on external commits (or potentially even for commits
+  from the core team?) in order to preserve the signed nature of the
+  commits.
 
   Care may need to be taken when committing third-party code that
   originates from a different git[hub] repository.  As an example, in
@@ -1120,19 +683,16 @@ Reviewer responsibilities
   decisions may need to be made (or at least understood) at a high
   level.
 
-.. _chapel-developers: chapel-developers@lists.sourceforge.net
-.. _chapel-test-results-regressions: chapel-test-results-regressions@lists.sourceforge.net
-.. _chapel-users: chapel-users@lists.sourceforge.net
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
+.. _Chapel Users: https://chapel.discourse.group/c/users
 .. _chapel-lang/chapel: https://github.com/chapel-lang/chapel
 .. _Set up a GitHub account: https://help.github.com/articles/signing-up-for-a-new-github-account
 .. _Fork the repo: https://guides.github.com/activities/forking/
-.. _Submit a pull request: https://help.github.com/articles/using-pull-requests
-.. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
 
 What Copyright Should I Use?
 ++++++++++++++++++++++++++++
 
-By signing a Contributor Agreement, you have agreed that code you contribute
+By opening a PR with signed commits, you are agreeing that code you contribute
 will be governed by the license and copyright of the project as a whole.  A
 standard block of license text is required at the top of every compiler,
 runtime, and module code file.  Browse other files of the same type to see the

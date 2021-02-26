@@ -48,7 +48,7 @@ proc =(ref A : Box, B : Box) {
     A.atoms[1..A.count] = B.atoms[1..A.count];
 }
 
-proc +=(ref A : Box, B : Box) {
+proc accum(ref A : Box, B : Box) {
   const bc = B.count;
   if A.count + bc > MAXATOMS then halt("Attempting to add too many atoms (", bc, ") to Box with ", A.count, " atoms (maximum ", MAXATOMS, ")");
 

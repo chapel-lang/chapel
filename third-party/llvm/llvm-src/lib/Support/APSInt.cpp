@@ -1,9 +1,8 @@
 //===-- llvm/ADT/APSInt.cpp - Arbitrary Precision Signed Int ---*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #include "llvm/ADT/APSInt.h"
 #include "llvm/ADT/FoldingSet.h"
 #include "llvm/ADT/StringRef.h"
+#include <cassert>
 
 using namespace llvm;
 
@@ -23,18 +23,18 @@ APSInt::APSInt(StringRef Str) {
 
   // (Over-)estimate the required number of bits.
   unsigned NumBits = ((Str.size() * 64) / 19) + 2;
-  APInt Tmp(NumBits, Str, /*Radix=*/10);
+  APInt Tmp(NumBits, Str, /*radix=*/10);
   if (Str[0] == '-') {
     unsigned MinBits = Tmp.getMinSignedBits();
-    if (MinBits > 0 && MinBits < NumBits)
-      Tmp = Tmp.trunc(MinBits);
-    *this = APSInt(Tmp, /*IsUnsigned=*/false);
+    if (MinBits < NumBits)
+      Tmp = Tmp.trunc(std::max<unsigned>(1, MinBits));
+    *this = APSInt(Tmp, /*isUnsigned=*/false);
     return;
   }
   unsigned ActiveBits = Tmp.getActiveBits();
-  if (ActiveBits > 0 && ActiveBits < NumBits)
-    Tmp = Tmp.trunc(ActiveBits);
-  *this = APSInt(Tmp, /*IsUnsigned=*/true);
+  if (ActiveBits < NumBits)
+    Tmp = Tmp.trunc(std::max<unsigned>(1, ActiveBits));
+  *this = APSInt(Tmp, /*isUnsigned=*/true);
 }
 
 void APSInt::Profile(FoldingSetNodeID& ID) const {

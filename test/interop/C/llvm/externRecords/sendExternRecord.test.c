@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
   // Call the function
   rec arg;
   arg.x = 3;
-  foo(&arg);
+  foo(arg);
 
   // Shutdown the Chapel runtime and standard modules
   chpl_library_finalize();

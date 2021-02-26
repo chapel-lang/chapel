@@ -1,9 +1,8 @@
 //===- unittest/Tooling/ASTSelectionTest.cpp ------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -102,22 +101,22 @@ void checkDeclName(const SelectedASTNode &Node, StringRef Name) {
 }
 
 template <typename T>
-const SelectedASTNode &
-checkNode(const SelectedASTNode &StmtNode, SourceSelectionKind SelectionKind,
-          unsigned NumChildren = 0,
-          typename std::enable_if<std::is_base_of<Stmt, T>::value, T>::type
-              *StmtOverloadChecker = nullptr) {
+const SelectedASTNode &checkNode(
+    const SelectedASTNode &StmtNode, SourceSelectionKind SelectionKind,
+    unsigned NumChildren = 0,
+    std::enable_if_t<std::is_base_of<Stmt, T>::value, T> *StmtOverloadChecker =
+        nullptr) {
   checkNodeImpl(isa<T>(StmtNode.Node.get<Stmt>()), StmtNode, SelectionKind,
                 NumChildren);
   return StmtNode;
 }
 
 template <typename T>
-const SelectedASTNode &
-checkNode(const SelectedASTNode &DeclNode, SourceSelectionKind SelectionKind,
-          unsigned NumChildren = 0, StringRef Name = "",
-          typename std::enable_if<std::is_base_of<Decl, T>::value, T>::type
-              *DeclOverloadChecker = nullptr) {
+const SelectedASTNode &checkNode(
+    const SelectedASTNode &DeclNode, SourceSelectionKind SelectionKind,
+    unsigned NumChildren = 0, StringRef Name = "",
+    std::enable_if_t<std::is_base_of<Decl, T>::value, T> *DeclOverloadChecker =
+        nullptr) {
   checkNodeImpl(isa<T>(DeclNode.Node.get<Decl>()), DeclNode, SelectionKind,
                 NumChildren);
   if (!Name.empty())

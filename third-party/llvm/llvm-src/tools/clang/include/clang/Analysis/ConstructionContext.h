@@ -1,9 +1,8 @@
 //===- ConstructionContext.h - CFG constructor information ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -111,6 +110,9 @@ public:
   ConstructionContextItem(const CXXConstructExpr *CE, unsigned Index)
       : Data(CE), Kind(ArgumentKind), Index(Index) {}
 
+  ConstructionContextItem(const CXXInheritedCtorInitExpr *CE, unsigned Index)
+      : Data(CE), Kind(ArgumentKind), Index(Index) {}
+
   ConstructionContextItem(const ObjCMessageExpr *ME, unsigned Index)
       : Data(ME), Kind(ArgumentKind), Index(Index) {}
 
@@ -118,7 +120,7 @@ public:
   ConstructionContextItem(const Expr *E, unsigned Index)
       : Data(E), Kind(ArgumentKind), Index(Index) {
     assert(isa<CallExpr>(E) || isa<CXXConstructExpr>(E) ||
-           isa<ObjCMessageExpr>(E));
+           isa<CXXInheritedCtorInitExpr>(E) || isa<ObjCMessageExpr>(E));
   }
 
   ConstructionContextItem(const CXXCtorInitializer *Init)

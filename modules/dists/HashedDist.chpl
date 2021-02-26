@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -133,10 +133,6 @@ class Hashed : BaseDist {
   const targetLocDom: domain(1);
   const targetLocales: [targetLocDom] locale;
 
-
-  // privatized object id
-  var pid: int = -1;
-
   // LINKAGE:
 
   //
@@ -153,7 +149,7 @@ class Hashed : BaseDist {
             mapper:?t = new DefaultMapper(),
             targetLocales: [] locale = Locales) {
     this.idxType = idxType;
-    this.mapper = mapper;
+    this.mapper = _to_unmanaged(mapper);
     //
     // 0-base the local capture of the targetLocDom for simplicity
     // later on
@@ -182,6 +178,19 @@ class Hashed : BaseDist {
     this.targetLocales = other.targetLocales;
     // commented out b/c locDist is not currently used
     //locDist = other.locDist;
+  }
+
+
+  override proc dsiSupportsPrivatization() param return true;
+  proc dsiGetPrivatizeData() return this.mapper;
+
+  proc dsiPrivatize(privatizeData) {
+    return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
+  }
+  proc dsiGetReprivatizeData() return 0;
+
+  proc dsiReprivatize(other, reprivatizeData) {
+    this.mapper = other.mapper;
   }
 
   proc dsiClone() {
@@ -310,15 +319,13 @@ class UserMapAssocDom: BaseAssociativeDom {
   // a domain describing the complete domain
   //
 
-  var pid: int = -1;
-
   // GLOBAL DOMAIN INTERFACE:
 
   override proc dsiMyDist() {
     return dist;
   }
 
-  proc dsiAdd(i: idxType) {
+  proc dsiAdd(in i: idxType) {
     return locDoms(dist.indexToLocaleIndex(i))!.add(i);
   }
 
@@ -471,9 +478,9 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // how to allocate a new array over this domain
   //
-  proc dsiBuildArray(type elemType) {
+  proc dsiBuildArray(type elemType, param initElts:bool) {
     var arr = new unmanaged UserMapAssocArr(idxType=idxType, mapperType=mapperType, eltType=elemType, dom=_to_unmanaged(this));
-    arr.setup();
+    arr.setup(initElts=initElts);
     return arr;
   }
 
@@ -519,11 +526,13 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   }
 
+  override proc dsiSupportsAutoLocalAccess() param { return true; }
+
   override proc dsiSupportsPrivatization() param return true;
-  proc dsiGetPrivatizeData() return 0;
+  proc dsiGetPrivatizeData() return dist.pid;
   proc dsiGetReprivatizeData() return 0;
   proc dsiPrivatize(privatizeData) {
-    var privateDist = new unmanaged Hashed(idxType, dist.mapper, dist);
+    var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
     var c = new unmanaged UserMapAssocDom(idxType=idxType, mapperType=mapperType, dist=privateDist);
     c.locDoms = locDoms;
     return c;
@@ -670,14 +679,21 @@ class UserMapAssocArr: AbsBaseArr {
   //var locAssocDoms: domain(BaseAssociativeDom);
   //var locArrsByAssoc: [locAssocDoms] LocUserMapAssocArr(idxType, mapperType, eltType);
 
-  var pid: int = -1; // privatized object id
-
   override proc dsiGetBaseDom() return dom;
 
-  proc setup() {
-    coforall localeIdx in dom.dist.targetLocDom do
-      on dom.dist.targetLocales(localeIdx) do
-        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType, mapperType, eltType, dom.locDoms(localeIdx)!);
+  override proc dsiIteratorYieldsLocalElements() param {
+    return true;
+  }
+
+  proc setup(param initElts: bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        locArrs(localeIdx) = new unmanaged LocUserMapAssocArr(idxType,
+                                                  mapperType, eltType,
+                                                  dom.locDoms(localeIdx)!,
+                                                  initElts=initElts);
+      }
+    }
     for localeIdx in dom.dist.targetLocDom {
       var locDomImpl = dom.locDoms(localeIdx)!.myInds._value;
       //locAssocDoms += locDomImpl;
@@ -685,10 +701,34 @@ class UserMapAssocArr: AbsBaseArr {
     }
   }
 
-  override proc dsiDestroyArr() {
-    coforall localeIdx in dom.dist.targetLocDom do
-      on dom.dist.targetLocales(localeIdx) do
-        delete locArrs(localeIdx);
+  override proc dsiElementInitializationComplete() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        var arr = locArrs(localeIdx);
+        arr!.myElems.dsiElementInitializationComplete();
+      }
+    }
+  }
+
+  override proc dsiElementDeinitializationComplete() {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        var arr = locArrs(localeIdx);
+        arr!.myElems.dsiElementDeinitializationComplete();
+      }
+    }
+  }
+
+  override proc dsiDestroyArr(deinitElts:bool) {
+    coforall localeIdx in dom.dist.targetLocDom {
+      on dom.dist.targetLocales(localeIdx) {
+        var arr = locArrs(localeIdx);
+        if deinitElts then
+          _deinitElements(arr!.myElems);
+        arr!.myElems.dsiElementDeinitializationComplete();
+        delete arr;
+      }
+    }
   }
 
   override proc dsiSupportsPrivatization() param return true;
@@ -763,12 +803,13 @@ class UserMapAssocArr: AbsBaseArr {
     return locArr[i];
   }
 
-  proc dsiTargetLocales() {
+  proc dsiTargetLocales() const ref {
     return dom.dist.targetLocales;
   }
 
   proc dsiHasSingleLocalSubdomain() param return false;
 
+  pragma "order independent yielding loops"
   iter dsiLocalSubdomains(loc: locale) {
     for (idx,l) in zip(dom.dist.targetLocDom, dom.dist.targetLocales) {
       if l == loc {
@@ -889,9 +930,26 @@ class LocUserMapAssocArr {
   //
   // the block of local array data
   //
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [locDom.myInds] eltType;
 
+
+  proc init(type idxType,
+            type mapperType,
+            type eltType,
+            const locDom: unmanaged LocUserMapAssocDom(idxType, mapperType),
+            param initElts: bool) {
+    this.idxType = idxType;
+    this.mapperType = mapperType;
+    this.eltType = eltType;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myInds.buildArray(eltType, initElts=initElts);
+  }
+
+  proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+  }
 
   // LOCAL ARRAY INTERFACE:
 

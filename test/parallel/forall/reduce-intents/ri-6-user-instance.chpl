@@ -28,10 +28,12 @@ proc main {
   writeln("n = ", n);
 
   var sumUsr1 = 35, sumUsr2 = 36, sumUsr3 = 37;
-  const userReduceInstance = new unmanaged UserReduceOp(eltType=int);
+  const userReduceInstance1 = new unmanaged UserReduceOp(eltType=int);
+  const userReduceInstance2 = new unmanaged UserReduceOp(eltType=int);
+  const userReduceInstance3 = new unmanaged UserReduceOp(eltType=int);
 
-  forall arrElm in ARR with (userReduceInstance reduce sumUsr1,
-                             new unmanaged UserReduceOp(eltType=int) reduce sumUsr2)
+  forall arrElm in ARR with (userReduceInstance1 reduce sumUsr1,
+                             userReduceInstance2 reduce sumUsr2)
   {
     sumUsr1 = sumUsr1 + arrElm;
     sumUsr2 += arrElm;
@@ -39,7 +41,7 @@ proc main {
 
   writeln("forall finished");
 
-  testFormals(sumUsr3, new unmanaged UserReduceOp(eltType=int));
+  testFormals(sumUsr3, userReduceInstance3);
 
   check("sumUsr1", 35 + n*(n+1)/2, sumUsr1);
   check("sumUsr2", 36 + n*(n+1)/2, sumUsr2);
@@ -50,6 +52,10 @@ proc main {
     writeln("NUMERRORS: ", numErrors);
   else
     writeln("success");
+
+  delete userReduceInstance1;
+  delete userReduceInstance2;
+  delete userReduceInstance3;
 }
 
 proc testFormals(ref sumUsr3: int, userOp: unmanaged UserReduceOp(int)) {

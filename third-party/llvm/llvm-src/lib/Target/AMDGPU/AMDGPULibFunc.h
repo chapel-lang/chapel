@@ -1,9 +1,8 @@
 //===-- AMDGPULibFunc.h ----------------------------------------*- C++ -*--===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -14,6 +13,7 @@
 
 namespace llvm {
 
+class FunctionCallee;
 class FunctionType;
 class Function;
 class Module;
@@ -342,7 +342,7 @@ public:
   /// and unmangled function name for unmangled library functions.
   virtual std::string mangle() const = 0;
 
-  void setName(StringRef N) { Name = N; }
+  void setName(StringRef N) { Name = std::string(N); }
   void setPrefix(ENamePrefix pfx) { FKind = pfx; }
 
   virtual FunctionType *getFunctionType(Module &M) const = 0;
@@ -394,8 +394,8 @@ public:
   }
   static Function *getFunction(llvm::Module *M, const AMDGPULibFunc &fInfo);
 
-  static Function *getOrInsertFunction(llvm::Module *M,
-                                       const AMDGPULibFunc &fInfo);
+  static FunctionCallee getOrInsertFunction(llvm::Module *M,
+                                            const AMDGPULibFunc &fInfo);
   static bool parse(StringRef MangledName, AMDGPULibFunc &Ptr);
 
 private:
@@ -439,7 +439,7 @@ class AMDGPUUnmangledLibFunc : public AMDGPULibFuncImpl {
 public:
   explicit AMDGPUUnmangledLibFunc();
   explicit AMDGPUUnmangledLibFunc(StringRef FName, FunctionType *FT) {
-    Name = FName;
+    Name = std::string(FName);
     FuncTy = FT;
   }
   std::string getName() const override { return Name; }

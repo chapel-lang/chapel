@@ -1,0 +1,23 @@
+.. default-domain:: chpl
+
+.. module:: ifParamCondition.doc
+
+ifParamCondition.doc
+====================
+**Usage**
+
+.. code-block:: chapel
+
+   use ifParamCondition.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import ifParamCondition.doc;
+
+.. data:: param check: bool
+
+.. data:: var unit: if check then int(64) else int(32)
+

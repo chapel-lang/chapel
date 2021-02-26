@@ -1,3 +1,4 @@
 iter-return-first-borrow.chpl:14: In function 'getfirstborrow':
 iter-return-first-borrow.chpl:16: error: Scoped variable i cannot be returned
 iter-return-first-borrow.chpl:15: note: consider scope of i
+  iter-return-first-borrow.chpl:26: called as getfirstborrow(arg0: borrowed MyClass, arg1: borrowed MyClass, arg2: borrowed MyClass, arg3: borrowed MyClass)

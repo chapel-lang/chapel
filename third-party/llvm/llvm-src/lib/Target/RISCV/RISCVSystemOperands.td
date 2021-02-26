@@ -1,9 +1,8 @@
 //===- RISCVSystemOperands.td ----------------------------*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,6 +20,8 @@ include "llvm/TableGen/SearchableTable.td"
 class SysReg<string name, bits<12> op> {
   string Name = name;
   bits<12> Encoding = op;
+  // A maximum of one alias is supported right now.
+  string AltName = name;
   // FIXME: add these additional fields when needed.
   // Privilege Access: Read and Write = 0, 1, 2; Read-Only = 3.
   // Privilege Mode: User = 0, System = 1 or Machine = 3.
@@ -37,7 +38,7 @@ class SysReg<string name, bits<12> op> {
 def SysRegsList : GenericTable {
   let FilterClass = "SysReg";
   // FIXME: add "ReadWrite", "Mode", "Extra", "Number" fields when needed.
-  let Fields = [ "Name", "Encoding", "FeaturesRequired", "isRV32Only" ];
+  let Fields = [ "Name", "Encoding", "AltName", "FeaturesRequired", "isRV32Only" ];
 
   let PrimaryKey = [ "Encoding" ];
   let PrimaryKeyName = "lookupSysRegByEncoding";
@@ -46,6 +47,11 @@ def SysRegsList : GenericTable {
 def lookupSysRegByName : SearchIndex {
   let Table = SysRegsList;
   let Key = [ "Name" ];
+}
+
+def lookupSysRegByAltName : SearchIndex {
+  let Table = SysRegsList;
+  let Key = [ "AltName" ];
 }
 
 // The following CSR encodings match those given in Tables 2.2,
@@ -72,18 +78,16 @@ def : SysReg<"uip", 0x044>;
 // User Floating-Point CSRs
 //===--------------------------
 
-let FeaturesRequired = [{ {RISCV::FeatureStdExtF} }] in {
-def : SysReg<"fflags", 0x001>;
-def : SysReg<"frm", 0x002>;
-def : SysReg<"fcsr", 0x003>;
-}
+def FFLAGS : SysReg<"fflags", 0x001>;
+def FRM    : SysReg<"frm", 0x002>;
+def FCSR   : SysReg<"fcsr", 0x003>;
 
 //===--------------------------
 // User Counter/Timers
 //===--------------------------
-def : SysReg<"cycle", 0xC00>;
-def : SysReg<"time", 0xC01>;
-def : SysReg<"instret", 0xC02>;
+def CYCLE   : SysReg<"cycle", 0xC00>;
+def TIME    : SysReg<"time", 0xC01>;
+def INSTRET : SysReg<"instret", 0xC02>;
 
 def : SysReg<"hpmcounter3", 0xC03>;
 def : SysReg<"hpmcounter4", 0xC04>;
@@ -116,9 +120,9 @@ def : SysReg<"hpmcounter30", 0xC1E>;
 def : SysReg<"hpmcounter31", 0xC1F>;
 
 let isRV32Only = 1 in {
-def: SysReg<"cycleh", 0xC80>;
-def: SysReg<"timeh", 0xC81>;
-def: SysReg<"instreth", 0xC82>;
+def CYCLEH   : SysReg<"cycleh", 0xC80>;
+def TIMEH    : SysReg<"timeh", 0xC81>;
+def INSTRETH : SysReg<"instreth", 0xC82>;
 
 def: SysReg<"hpmcounter3h", 0xC83>;
 def: SysReg<"hpmcounter4h", 0xC84>;
@@ -306,6 +310,7 @@ def: SysReg<"mhpmcounter31h", 0xB9F>;
 //===--------------------------
 // Machine Counter Setup
 //===--------------------------
+def : SysReg<"mcountinhibit", 0x320>;
 def : SysReg<"mhpmevent3", 0x323>;
 def : SysReg<"mhpmevent4", 0x324>;
 def : SysReg<"mhpmevent5", 0x325>;
@@ -349,4 +354,19 @@ def : SysReg<"tdata3", 0x7A3>;
 //===-----------------------------------------------
 def : SysReg<"dcsr", 0x7B0>;
 def : SysReg<"dpc", 0x7B1>;
-def : SysReg<"dscratch", 0x7B2>;
+
+// "dscratch" is an alternative name for "dscratch0" which appeared in earlier
+// drafts of the RISC-V debug spec
+let AltName = "dscratch" in
+def : SysReg<"dscratch0", 0x7B2>;
+def : SysReg<"dscratch1", 0x7B3>;
+
+//===-----------------------------------------------
+// User Vector CSRs
+//===-----------------------------------------------
+def : SysReg<"vstart", 0x008>;
+def : SysReg<"vxsat", 0x009>;
+def : SysReg<"vxrm", 0x00A>;
+def : SysReg<"vl", 0xC20>;
+def : SysReg<"vtype", 0xC21>;
+def : SysReg<"vlenb", 0xC22>;

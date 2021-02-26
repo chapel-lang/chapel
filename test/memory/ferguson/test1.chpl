@@ -1,3 +1,4 @@
+use CPtr;
 extern proc c_function_malloc():c_ptr(uint(64));
 extern proc c_function_calloc():c_ptr(uint(64));
 extern proc c_function_strdup():c_ptr(uint(64));

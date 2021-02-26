@@ -1,1 +1,2 @@
--suseOn=true --no-warnings --main-module ra
+-suseOn=true --main-module ra --no-warnings
+# --no-warnings for ambiguous module source file

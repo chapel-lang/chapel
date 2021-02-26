@@ -1,9 +1,8 @@
 //===- Endian.h - Utilities for IO with endian specific data ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,9 +13,7 @@
 #ifndef LLVM_SUPPORT_ENDIAN_H
 #define LLVM_SUPPORT_ENDIAN_H
 
-#include "llvm/Support/AlignOf.h"
 #include "llvm/Support/Compiler.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/SwapByteOrder.h"
 #include <cassert>
 #include <cstddef>
@@ -112,7 +109,7 @@ inline void write(void *memory, value_type value) {
 }
 
 template <typename value_type>
-using make_unsigned_t = typename std::make_unsigned<value_type>::type;
+using make_unsigned_t = std::make_unsigned_t<value_type>;
 
 /// Read a value of a particular endianness from memory, for a location
 /// that starts at the given bit offset within the first byte.
@@ -204,10 +201,13 @@ inline void writeAtBitAlignment(void *memory, value_type value,
 
 namespace detail {
 
-template<typename value_type,
-         endianness endian,
-         std::size_t alignment>
+template <typename ValueType, endianness Endian, std::size_t Alignment,
+          std::size_t ALIGN = PickAlignment<ValueType, Alignment>::value>
 struct packed_endian_specific_integral {
+  using value_type = ValueType;
+  static constexpr endianness endian = Endian;
+  static constexpr std::size_t alignment = Alignment;
+
   packed_endian_specific_integral() = default;
 
   explicit packed_endian_specific_integral(value_type val) { *this = val; }
@@ -243,8 +243,9 @@ struct packed_endian_specific_integral {
   }
 
 private:
-  AlignedCharArray<PickAlignment<value_type, alignment>::value,
-                   sizeof(value_type)> Value;
+  struct {
+    alignas(ALIGN) char buffer[sizeof(value_type)];
+  } Value;
 
 public:
   struct ref {
@@ -334,6 +335,17 @@ using unaligned_int32_t =
     detail::packed_endian_specific_integral<int32_t, native, unaligned>;
 using unaligned_int64_t =
     detail::packed_endian_specific_integral<int64_t, native, unaligned>;
+
+template <typename T>
+using little_t = detail::packed_endian_specific_integral<T, little, unaligned>;
+template <typename T>
+using big_t = detail::packed_endian_specific_integral<T, big, unaligned>;
+
+template <typename T>
+using aligned_little_t =
+    detail::packed_endian_specific_integral<T, little, aligned>;
+template <typename T>
+using aligned_big_t = detail::packed_endian_specific_integral<T, big, aligned>;
 
 namespace endian {
 

@@ -1,9 +1,8 @@
 //===-- TargetInstrInfo.cpp - Target Instruction Information --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -12,10 +11,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/CodeGen/TargetInstrInfo.h"
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
 #include "llvm/CodeGen/MachineMemOperand.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
+#include "llvm/CodeGen/MachineScheduler.h"
 #include "llvm/CodeGen/PseudoSourceValue.h"
 #include "llvm/CodeGen/ScoreboardHazardRecognizer.h"
 #include "llvm/CodeGen/StackMaps.h"
@@ -24,6 +25,7 @@
 #include "llvm/CodeGen/TargetRegisterInfo.h"
 #include "llvm/CodeGen/TargetSchedule.h"
 #include "llvm/IR/DataLayout.h"
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCInstrItineraries.h"
 #include "llvm/Support/CommandLine.h"
@@ -86,11 +88,13 @@ static bool isAsmComment(const char *Str, const MCAsmInfo &MAI) {
 /// simple--i.e. not a logical or arithmetic expression--size values without
 /// the optional fill value. This is primarily used for creating arbitrary
 /// sized inline asm blocks for testing purposes.
-unsigned TargetInstrInfo::getInlineAsmLength(const char *Str,
-                                             const MCAsmInfo &MAI) const {
+unsigned TargetInstrInfo::getInlineAsmLength(
+  const char *Str,
+  const MCAsmInfo &MAI, const TargetSubtargetInfo *STI) const {
   // Count the number of instructions in the asm.
   bool AtInsnStart = true;
   unsigned Length = 0;
+  const unsigned MaxInstLength = MAI.getMaxInstLength(STI);
   for (; *Str; ++Str) {
     if (*Str == '\n' || strncmp(Str, MAI.getSeparatorString(),
                                 strlen(MAI.getSeparatorString())) == 0) {
@@ -101,14 +105,14 @@ unsigned TargetInstrInfo::getInlineAsmLength(const char *Str,
       AtInsnStart = false;
     }
 
-    if (AtInsnStart && !std::isspace(static_cast<unsigned char>(*Str))) {
-      unsigned AddLength = MAI.getMaxInstLength();
+    if (AtInsnStart && !isSpace(static_cast<unsigned char>(*Str))) {
+      unsigned AddLength = MaxInstLength;
       if (strncmp(Str, ".space", 6) == 0) {
         char *EStr;
         int SpaceSize;
         SpaceSize = strtol(Str + 6, &EStr, 10);
         SpaceSize = SpaceSize < 0 ? 0 : SpaceSize;
-        while (*EStr != '\n' && std::isspace(static_cast<unsigned char>(*EStr)))
+        while (*EStr != '\n' && isSpace(static_cast<unsigned char>(*EStr)))
           ++EStr;
         if (*EStr == '\0' || *EStr == '\n' ||
             isAsmComment(EStr, MAI)) // Successfully parsed .space argument
@@ -136,8 +140,14 @@ TargetInstrInfo::ReplaceTailWithBranchTo(MachineBasicBlock::iterator Tail,
   // Save off the debug loc before erasing the instruction.
   DebugLoc DL = Tail->getDebugLoc();
 
-  // Remove all the dead instructions from the end of MBB.
-  MBB->erase(Tail, MBB->end());
+  // Update call site info and remove all the dead instructions
+  // from the end of MBB.
+  while (Tail != MBB->end()) {
+    auto MI = Tail++;
+    if (MI->shouldUpdateCallSiteInfo())
+      MBB->getParent()->eraseCallSiteInfo(&*MI);
+    MBB->erase(MI);
+  }
 
   // If MBB isn't immediately before MBB, insert a branch to it.
   if (++MachineFunction::iterator(MBB) != MachineFunction::iterator(NewDest))
@@ -162,9 +172,9 @@ MachineInstr *TargetInstrInfo::commuteInstructionImpl(MachineInstr &MI,
   assert(MI.getOperand(Idx1).isReg() && MI.getOperand(Idx2).isReg() &&
          "This only knows how to commute register operands so far");
 
-  unsigned Reg0 = HasDef ? MI.getOperand(0).getReg() : 0;
-  unsigned Reg1 = MI.getOperand(Idx1).getReg();
-  unsigned Reg2 = MI.getOperand(Idx2).getReg();
+  Register Reg0 = HasDef ? MI.getOperand(0).getReg() : Register();
+  Register Reg1 = MI.getOperand(Idx1).getReg();
+  Register Reg2 = MI.getOperand(Idx2).getReg();
   unsigned SubReg0 = HasDef ? MI.getOperand(0).getSubReg() : 0;
   unsigned SubReg1 = MI.getOperand(Idx1).getSubReg();
   unsigned SubReg2 = MI.getOperand(Idx2).getSubReg();
@@ -176,10 +186,10 @@ MachineInstr *TargetInstrInfo::commuteInstructionImpl(MachineInstr &MI,
   bool Reg2IsInternal = MI.getOperand(Idx2).isInternalRead();
   // Avoid calling isRenamable for virtual registers since we assert that
   // renamable property is only queried/set for physical registers.
-  bool Reg1IsRenamable = TargetRegisterInfo::isPhysicalRegister(Reg1)
+  bool Reg1IsRenamable = Register::isPhysicalRegister(Reg1)
                              ? MI.getOperand(Idx1).isRenamable()
                              : false;
-  bool Reg2IsRenamable = TargetRegisterInfo::isPhysicalRegister(Reg2)
+  bool Reg2IsRenamable = Register::isPhysicalRegister(Reg2)
                              ? MI.getOperand(Idx2).isRenamable()
                              : false;
   // If destination is tied to either of the commuted source register, then
@@ -221,9 +231,9 @@ MachineInstr *TargetInstrInfo::commuteInstructionImpl(MachineInstr &MI,
   CommutedMI->getOperand(Idx1).setIsInternalRead(Reg2IsInternal);
   // Avoid calling setIsRenamable for virtual registers since we assert that
   // renamable property is only queried/set for physical registers.
-  if (TargetRegisterInfo::isPhysicalRegister(Reg1))
+  if (Register::isPhysicalRegister(Reg1))
     CommutedMI->getOperand(Idx2).setIsRenamable(Reg1IsRenamable);
-  if (TargetRegisterInfo::isPhysicalRegister(Reg2))
+  if (Register::isPhysicalRegister(Reg2))
     CommutedMI->getOperand(Idx1).setIsRenamable(Reg2IsRenamable);
   return CommutedMI;
 }
@@ -274,7 +284,7 @@ bool TargetInstrInfo::fixCommutedOpIndices(unsigned &ResultIdx1,
   return true;
 }
 
-bool TargetInstrInfo::findCommutedOpIndices(MachineInstr &MI,
+bool TargetInstrInfo::findCommutedOpIndices(const MachineInstr &MI,
                                             unsigned &SrcOpIdx1,
                                             unsigned &SrcOpIdx2) const {
   assert(!MI.isBundle() &&
@@ -386,7 +396,7 @@ bool TargetInstrInfo::getStackSlotRange(const TargetRegisterClass *RC,
   if (BitOffset < 0 || BitOffset % 8)
     return false;
 
-  Size = BitSize /= 8;
+  Size = BitSize / 8;
   Offset = (unsigned)BitOffset / 8;
 
   assert(TRI->getSpillSize(*RC) >= (Offset + Size) && "bad subregister range");
@@ -399,7 +409,7 @@ bool TargetInstrInfo::getStackSlotRange(const TargetRegisterClass *RC,
 
 void TargetInstrInfo::reMaterialize(MachineBasicBlock &MBB,
                                     MachineBasicBlock::iterator I,
-                                    unsigned DestReg, unsigned SubIdx,
+                                    Register DestReg, unsigned SubIdx,
                                     const MachineInstr &Orig,
                                     const TargetRegisterInfo &TRI) const {
   MachineInstr *MI = MBB.getParent()->CloneMachineInstr(&Orig);
@@ -435,16 +445,15 @@ static const TargetRegisterClass *canFoldCopy(const MachineInstr &MI,
   if (FoldOp.getSubReg() || LiveOp.getSubReg())
     return nullptr;
 
-  unsigned FoldReg = FoldOp.getReg();
-  unsigned LiveReg = LiveOp.getReg();
+  Register FoldReg = FoldOp.getReg();
+  Register LiveReg = LiveOp.getReg();
 
-  assert(TargetRegisterInfo::isVirtualRegister(FoldReg) &&
-         "Cannot fold physregs");
+  assert(Register::isVirtualRegister(FoldReg) && "Cannot fold physregs");
 
   const MachineRegisterInfo &MRI = MI.getMF()->getRegInfo();
   const TargetRegisterClass *RC = MRI.getRegClass(FoldReg);
 
-  if (TargetRegisterInfo::isPhysicalRegister(LiveOp.getReg()))
+  if (Register::isPhysicalRegister(LiveOp.getReg()))
     return RC->contains(LiveOp.getReg()) ? RC : nullptr;
 
   if (RC->hasSubClassEq(MRI.getRegClass(LiveReg)))
@@ -523,7 +532,8 @@ static MachineInstr *foldPatchpoint(MachineFunction &MF, MachineInstr &MI,
 
 MachineInstr *TargetInstrInfo::foldMemoryOperand(MachineInstr &MI,
                                                  ArrayRef<unsigned> Ops, int FI,
-                                                 LiveIntervals *LIS) const {
+                                                 LiveIntervals *LIS,
+                                                 VirtRegMap *VRM) const {
   auto Flags = MachineMemOperand::MONone;
   for (unsigned OpIdx : Ops)
     Flags |= MI.getOperand(OpIdx).isDef() ? MachineMemOperand::MOStore
@@ -569,7 +579,7 @@ MachineInstr *TargetInstrInfo::foldMemoryOperand(MachineInstr &MI,
       MBB->insert(MI, NewMI);
   } else {
     // Ask the target to do the actual folding.
-    NewMI = foldMemoryOperandImpl(MF, MI, Ops, MI, FI, LIS);
+    NewMI = foldMemoryOperandImpl(MF, MI, Ops, MI, FI, LIS, VRM);
   }
 
   if (NewMI) {
@@ -582,10 +592,14 @@ MachineInstr *TargetInstrInfo::foldMemoryOperand(MachineInstr &MI,
             NewMI->mayLoad()) &&
            "Folded a use to a non-load!");
     assert(MFI.getObjectOffset(FI) != -1);
-    MachineMemOperand *MMO = MF.getMachineMemOperand(
-        MachinePointerInfo::getFixedStack(MF, FI), Flags, MemSize,
-        MFI.getObjectAlignment(FI));
+    MachineMemOperand *MMO =
+        MF.getMachineMemOperand(MachinePointerInfo::getFixedStack(MF, FI),
+                                Flags, MemSize, MFI.getObjectAlign(FI));
     NewMI->addMemOperand(MF, MMO);
+
+    // The pass "x86 speculative load hardening" always attaches symbols to
+    // call instructions. We need copy it form old instruction.
+    NewMI->cloneInstrSymbols(MF, MI);
 
     return NewMI;
   }
@@ -666,9 +680,9 @@ bool TargetInstrInfo::hasReassociableOperands(
   // reassociate.
   MachineInstr *MI1 = nullptr;
   MachineInstr *MI2 = nullptr;
-  if (Op1.isReg() && TargetRegisterInfo::isVirtualRegister(Op1.getReg()))
+  if (Op1.isReg() && Register::isVirtualRegister(Op1.getReg()))
     MI1 = MRI.getUniqueVRegDef(Op1.getReg());
-  if (Op2.isReg() && TargetRegisterInfo::isVirtualRegister(Op2.getReg()))
+  if (Op2.isReg() && Register::isVirtualRegister(Op2.getReg()))
     MI2 = MRI.getUniqueVRegDef(Op2.getReg());
 
   // And they need to be in the trace (otherwise, they won't have a depth).
@@ -690,10 +704,13 @@ bool TargetInstrInfo::hasReassociableSibling(const MachineInstr &Inst,
     std::swap(MI1, MI2);
 
   // 1. The previous instruction must be the same type as Inst.
-  // 2. The previous instruction must have virtual register definitions for its
+  // 2. The previous instruction must also be associative/commutative (this can
+  //    be different even for instructions with the same opcode if traits like
+  //    fast-math-flags are included).
+  // 3. The previous instruction must have virtual register definitions for its
   //    operands in the same basic block as Inst.
-  // 3. The previous instruction's result must only be used by Inst.
-  return MI1->getOpcode() == AssocOpcode &&
+  // 4. The previous instruction's result must only be used by Inst.
+  return MI1->getOpcode() == AssocOpcode && isAssociativeAndCommutative(*MI1) &&
          hasReassociableOperands(*MI1, MBB) &&
          MRI.hasOneNonDBGUse(MI1->getOperand(0).getReg());
 }
@@ -797,27 +814,27 @@ void TargetInstrInfo::reassociateOps(
   MachineOperand &OpY = Root.getOperand(OpIdx[Row][3]);
   MachineOperand &OpC = Root.getOperand(0);
 
-  unsigned RegA = OpA.getReg();
-  unsigned RegB = OpB.getReg();
-  unsigned RegX = OpX.getReg();
-  unsigned RegY = OpY.getReg();
-  unsigned RegC = OpC.getReg();
+  Register RegA = OpA.getReg();
+  Register RegB = OpB.getReg();
+  Register RegX = OpX.getReg();
+  Register RegY = OpY.getReg();
+  Register RegC = OpC.getReg();
 
-  if (TargetRegisterInfo::isVirtualRegister(RegA))
+  if (Register::isVirtualRegister(RegA))
     MRI.constrainRegClass(RegA, RC);
-  if (TargetRegisterInfo::isVirtualRegister(RegB))
+  if (Register::isVirtualRegister(RegB))
     MRI.constrainRegClass(RegB, RC);
-  if (TargetRegisterInfo::isVirtualRegister(RegX))
+  if (Register::isVirtualRegister(RegX))
     MRI.constrainRegClass(RegX, RC);
-  if (TargetRegisterInfo::isVirtualRegister(RegY))
+  if (Register::isVirtualRegister(RegY))
     MRI.constrainRegClass(RegY, RC);
-  if (TargetRegisterInfo::isVirtualRegister(RegC))
+  if (Register::isVirtualRegister(RegC))
     MRI.constrainRegClass(RegC, RC);
 
   // Create a new virtual register for the result of (X op Y) instead of
   // recycling RegB because the MachineCombiner's computation of the critical
   // path requires a new register definition rather than an existing one.
-  unsigned NewVR = MRI.createVirtualRegister(RC);
+  Register NewVR = MRI.createVirtualRegister(RC);
   InstrIdxForVirtReg.insert(std::make_pair(NewVR, 0));
 
   unsigned Opcode = Root.getOpcode();
@@ -872,21 +889,21 @@ void TargetInstrInfo::genAlternativeCodeSequence(
 }
 
 bool TargetInstrInfo::isReallyTriviallyReMaterializableGeneric(
-    const MachineInstr &MI, AliasAnalysis *AA) const {
+    const MachineInstr &MI, AAResults *AA) const {
   const MachineFunction &MF = *MI.getMF();
   const MachineRegisterInfo &MRI = MF.getRegInfo();
 
   // Remat clients assume operand 0 is the defined register.
   if (!MI.getNumOperands() || !MI.getOperand(0).isReg())
     return false;
-  unsigned DefReg = MI.getOperand(0).getReg();
+  Register DefReg = MI.getOperand(0).getReg();
 
   // A sub-register definition can only be rematerialized if the instruction
   // doesn't read the other parts of the register.  Otherwise it is really a
   // read-modify-write operation on the full virtual register which cannot be
   // moved safely.
-  if (TargetRegisterInfo::isVirtualRegister(DefReg) &&
-      MI.getOperand(0).getSubReg() && MI.readsVirtualRegister(DefReg))
+  if (Register::isVirtualRegister(DefReg) && MI.getOperand(0).getSubReg() &&
+      MI.readsVirtualRegister(DefReg))
     return false;
 
   // A load from a fixed stack slot can be rematerialized. This may be
@@ -898,7 +915,8 @@ bool TargetInstrInfo::isReallyTriviallyReMaterializableGeneric(
     return true;
 
   // Avoid instructions obviously unsafe for remat.
-  if (MI.isNotDuplicable() || MI.mayStore() || MI.hasUnmodeledSideEffects())
+  if (MI.isNotDuplicable() || MI.mayStore() || MI.mayRaiseFPException() ||
+      MI.hasUnmodeledSideEffects())
     return false;
 
   // Don't remat inline asm. We have no idea how expensive it is
@@ -915,12 +933,12 @@ bool TargetInstrInfo::isReallyTriviallyReMaterializableGeneric(
   for (unsigned i = 0, e = MI.getNumOperands(); i != e; ++i) {
     const MachineOperand &MO = MI.getOperand(i);
     if (!MO.isReg()) continue;
-    unsigned Reg = MO.getReg();
+    Register Reg = MO.getReg();
     if (Reg == 0)
       continue;
 
     // Check for a well-behaved physical register.
-    if (TargetRegisterInfo::isPhysicalRegister(Reg)) {
+    if (Register::isPhysicalRegister(Reg)) {
       if (MO.isUse()) {
         // If the physreg has no defs anywhere, it's just an ambient register
         // and we can freely move its uses. Alternatively, if it's allocatable,
@@ -981,6 +999,10 @@ bool TargetInstrInfo::isSchedulingBoundary(const MachineInstr &MI,
   if (MI.isTerminator() || MI.isPosition())
     return true;
 
+  // INLINEASM_BR can jump to another block
+  if (MI.getOpcode() == TargetOpcode::INLINEASM_BR)
+    return true;
+
   // Don't attempt to schedule around any instruction that defines
   // a stack-oriented pointer, as it's unlikely to be profitable. This
   // saves compile time, because it doesn't require every single
@@ -1006,19 +1028,30 @@ CreateTargetHazardRecognizer(const TargetSubtargetInfo *STI,
 }
 
 // Default implementation of CreateTargetMIHazardRecognizer.
-ScheduleHazardRecognizer *TargetInstrInfo::
-CreateTargetMIHazardRecognizer(const InstrItineraryData *II,
-                               const ScheduleDAG *DAG) const {
-  return (ScheduleHazardRecognizer *)
-    new ScoreboardHazardRecognizer(II, DAG, "misched");
+ScheduleHazardRecognizer *TargetInstrInfo::CreateTargetMIHazardRecognizer(
+    const InstrItineraryData *II, const ScheduleDAGMI *DAG) const {
+  return new ScoreboardHazardRecognizer(II, DAG, "machine-scheduler");
 }
 
 // Default implementation of CreateTargetPostRAHazardRecognizer.
 ScheduleHazardRecognizer *TargetInstrInfo::
 CreateTargetPostRAHazardRecognizer(const InstrItineraryData *II,
                                    const ScheduleDAG *DAG) const {
-  return (ScheduleHazardRecognizer *)
-    new ScoreboardHazardRecognizer(II, DAG, "post-RA-sched");
+  return new ScoreboardHazardRecognizer(II, DAG, "post-RA-sched");
+}
+
+// Default implementation of getMemOperandWithOffset.
+bool TargetInstrInfo::getMemOperandWithOffset(
+    const MachineInstr &MI, const MachineOperand *&BaseOp, int64_t &Offset,
+    bool &OffsetIsScalable, const TargetRegisterInfo *TRI) const {
+  SmallVector<const MachineOperand *, 4> BaseOps;
+  unsigned Width;
+  if (!getMemOperandsWithOffsetWidth(MI, BaseOps, Offset, OffsetIsScalable,
+                                     Width, TRI) ||
+      BaseOps.size() != 1)
+    return false;
+  BaseOp = BaseOps.front();
+  return true;
 }
 
 //===----------------------------------------------------------------------===//
@@ -1109,6 +1142,87 @@ bool TargetInstrInfo::hasLowDefLatency(const TargetSchedModel &SchedModel,
   unsigned DefClass = DefMI.getDesc().getSchedClass();
   int DefCycle = ItinData->getOperandCycle(DefClass, DefIdx);
   return (DefCycle != -1 && DefCycle <= 1);
+}
+
+Optional<ParamLoadedValue>
+TargetInstrInfo::describeLoadedValue(const MachineInstr &MI,
+                                     Register Reg) const {
+  const MachineFunction *MF = MI.getMF();
+  const TargetRegisterInfo *TRI = MF->getSubtarget().getRegisterInfo();
+  DIExpression *Expr = DIExpression::get(MF->getFunction().getContext(), {});
+  int64_t Offset;
+  bool OffsetIsScalable;
+
+  // To simplify the sub-register handling, verify that we only need to
+  // consider physical registers.
+  assert(MF->getProperties().hasProperty(
+      MachineFunctionProperties::Property::NoVRegs));
+
+  if (auto DestSrc = isCopyInstr(MI)) {
+    Register DestReg = DestSrc->Destination->getReg();
+
+    // If the copy destination is the forwarding reg, describe the forwarding
+    // reg using the copy source as the backup location. Example:
+    //
+    //   x0 = MOV x7
+    //   call callee(x0)      ; x0 described as x7
+    if (Reg == DestReg)
+      return ParamLoadedValue(*DestSrc->Source, Expr);
+
+    // Cases where super- or sub-registers needs to be described should
+    // be handled by the target's hook implementation.
+    assert(!TRI->isSuperOrSubRegisterEq(Reg, DestReg) &&
+           "TargetInstrInfo::describeLoadedValue can't describe super- or "
+           "sub-regs for copy instructions");
+    return None;
+  } else if (auto RegImm = isAddImmediate(MI, Reg)) {
+    Register SrcReg = RegImm->Reg;
+    Offset = RegImm->Imm;
+    Expr = DIExpression::prepend(Expr, DIExpression::ApplyOffset, Offset);
+    return ParamLoadedValue(MachineOperand::CreateReg(SrcReg, false), Expr);
+  } else if (MI.hasOneMemOperand()) {
+    // Only describe memory which provably does not escape the function. As
+    // described in llvm.org/PR43343, escaped memory may be clobbered by the
+    // callee (or by another thread).
+    const auto &TII = MF->getSubtarget().getInstrInfo();
+    const MachineFrameInfo &MFI = MF->getFrameInfo();
+    const MachineMemOperand *MMO = MI.memoperands()[0];
+    const PseudoSourceValue *PSV = MMO->getPseudoValue();
+
+    // If the address points to "special" memory (e.g. a spill slot), it's
+    // sufficient to check that it isn't aliased by any high-level IR value.
+    if (!PSV || PSV->mayAlias(&MFI))
+      return None;
+
+    const MachineOperand *BaseOp;
+    if (!TII->getMemOperandWithOffset(MI, BaseOp, Offset, OffsetIsScalable,
+                                      TRI))
+      return None;
+
+    // FIXME: Scalable offsets are not yet handled in the offset code below.
+    if (OffsetIsScalable)
+      return None;
+
+    // TODO: Can currently only handle mem instructions with a single define.
+    // An example from the x86 target:
+    //    ...
+    //    DIV64m $rsp, 1, $noreg, 24, $noreg, implicit-def dead $rax, implicit-def $rdx
+    //    ...
+    //
+    if (MI.getNumExplicitDefs() != 1)
+      return None;
+
+    // TODO: In what way do we need to take Reg into consideration here?
+
+    SmallVector<uint64_t, 8> Ops;
+    DIExpression::appendOffset(Ops, Offset);
+    Ops.push_back(dwarf::DW_OP_deref_size);
+    Ops.push_back(MMO->getSize());
+    Expr = DIExpression::prependOpcodes(Expr, Ops);
+    return ParamLoadedValue(*BaseOp, Expr);
+  }
+
+  return None;
 }
 
 /// Both DefMI and UseMI must be valid.  By default, call directly to the
@@ -1218,3 +1332,61 @@ bool TargetInstrInfo::getInsertSubregInputs(
   InsertedReg.SubIdx = (unsigned)MOSubIdx.getImm();
   return true;
 }
+
+// Returns a MIRPrinter comment for this machine operand.
+std::string TargetInstrInfo::createMIROperandComment(
+    const MachineInstr &MI, const MachineOperand &Op, unsigned OpIdx,
+    const TargetRegisterInfo *TRI) const {
+
+  if (!MI.isInlineAsm())
+    return "";
+
+  std::string Flags;
+  raw_string_ostream OS(Flags);
+
+  if (OpIdx == InlineAsm::MIOp_ExtraInfo) {
+    // Print HasSideEffects, MayLoad, MayStore, IsAlignStack
+    unsigned ExtraInfo = Op.getImm();
+    bool First = true;
+    for (StringRef Info : InlineAsm::getExtraInfoNames(ExtraInfo)) {
+      if (!First)
+        OS << " ";
+      First = false;
+      OS << Info;
+    }
+
+    return OS.str();
+  }
+
+  int FlagIdx = MI.findInlineAsmFlagIdx(OpIdx);
+  if (FlagIdx < 0 || (unsigned)FlagIdx != OpIdx)
+    return "";
+
+  assert(Op.isImm() && "Expected flag operand to be an immediate");
+  // Pretty print the inline asm operand descriptor.
+  unsigned Flag = Op.getImm();
+  unsigned Kind = InlineAsm::getKind(Flag);
+  OS << InlineAsm::getKindName(Kind);
+
+  unsigned RCID = 0;
+  if (!InlineAsm::isImmKind(Flag) && !InlineAsm::isMemKind(Flag) &&
+      InlineAsm::hasRegClassConstraint(Flag, RCID)) {
+    if (TRI) {
+      OS << ':' << TRI->getRegClassName(TRI->getRegClass(RCID));
+    } else
+      OS << ":RC" << RCID;
+  }
+
+  if (InlineAsm::isMemKind(Flag)) {
+    unsigned MCID = InlineAsm::getMemoryConstraintID(Flag);
+    OS << ":" << InlineAsm::getMemConstraintName(MCID);
+  }
+
+  unsigned TiedTo = 0;
+  if (InlineAsm::isUseOperandTiedToDef(Flag, TiedTo))
+    OS << " tiedto:$" << TiedTo;
+
+  return OS.str();
+}
+
+TargetInstrInfo::PipelinerLoopInfo::~PipelinerLoopInfo() {}

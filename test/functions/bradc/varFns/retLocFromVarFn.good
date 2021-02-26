@@ -1,2 +1,2 @@
-retLocFromVarFn.chpl:4: In function 'this':
+retLocFromVarFn.chpl:4: In method 'this':
 retLocFromVarFn.chpl:8: error: illegal expression to return by ref

@@ -1,9 +1,8 @@
 //===- transforms_pmbuilder.go - Bindings for PassManagerBuilder ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@ package llvm
 
 /*
 #include "llvm-c/Transforms/PassManagerBuilder.h"
+#include "llvm-c/Transforms/Coroutines.h"
 */
 import "C"
 
@@ -65,4 +65,8 @@ func (pmb PassManagerBuilder) SetDisableSimplifyLibCalls(val bool) {
 
 func (pmb PassManagerBuilder) UseInlinerWithThreshold(threshold uint) {
 	C.LLVMPassManagerBuilderUseInlinerWithThreshold(pmb.C, C.uint(threshold))
+}
+
+func (pmb PassManagerBuilder) AddCoroutinePassesToExtensionPoints() {
+	C.LLVMPassManagerBuilderAddCoroutinePassesToExtensionPoints(pmb.C);
 }

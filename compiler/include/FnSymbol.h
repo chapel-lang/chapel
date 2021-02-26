@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,7 +24,9 @@
 #include "library.h"
 #include "symbol.h"
 
-class IteratorGroup;
+class IteratorGroup;     // see iterator.h
+class GenericsCacheInfo; // see caches.h
+void cleanupCacheInfo(FnSymbol* fn);
 
 enum RetTag {
   RET_VALUE,
@@ -40,7 +42,37 @@ enum TagGenericResult {
   TGR_TAGGING_ABORTED
 };
 
-class FnSymbol : public Symbol {
+// Additional data for interface constraints / constrained generics / CG.
+// Stored in a FnSymbol for a constrained-generic function.
+class InterfaceInfo {
+public:
+  InterfaceInfo(FnSymbol* parent);
+  void addConstrainedType(DefExpr* def);
+  void addInterfaceConstraint(IfcConstraint* icon);
+
+  // each element is a DefExpr of a ConstrainedType
+  // that is used in the type of this function's formal
+  AList constrainedTypes;
+
+  // each element is an IfcConstraint representing
+  // an interface constraint of this function
+  AList interfaceConstraints;
+
+  //
+  // Contains one SymbolMap per IfcConstraint in 'interfaceConstraints'.
+  // If IFC is the constraint's interface, the corresponding SymbolMap
+  // is a mapping:
+  // - from each symbol defined in IFC body, such as a required function or
+  //   an associated type,
+  // - to the symbol that represents that throughout the body of this function
+  //
+  // a single SymbolMap for all constraints in a CG function is not sufficient
+  // when the same interface is implemented by different ConstrainedTypes
+  //
+  std::vector<SymbolMap> repsForIfcSymbols;
+};
+
+class FnSymbol final : public Symbol {
 public:
   // each formal is an ArgSymbol, but the elements are DefExprs
   AList                      formals;
@@ -61,10 +93,16 @@ public:
   IteratorInfo*              iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.
   IteratorGroup*             iteratorGroup;
+  // Support for genericsCache.
+  GenericsCacheInfo*         cacheInfo;
+  // Support for interface constraints / constrained generics / CG.
+  InterfaceInfo*             interfaceInfo;
 
   Symbol*                    _this;
   FnSymbol*                  instantiatedFrom;
+
   SymbolMap                  substitutions;
+  SymbolNameVec              substitutionsPostResolve;
 
   astlocT                    userInstantiationPointLoc;
 
@@ -95,15 +133,16 @@ public:
 
 
                              FnSymbol(const char* initName);
-                            ~FnSymbol();
+                            ~FnSymbol() override;
 
-  void                       verify();
-  virtual void               accept(AstVisitor* visitor);
+  void                       verify() override;
+  void                       accept(AstVisitor* visitor) override;
 
   DECLARE_SYMBOL_COPY(FnSymbol);
+  FnSymbol* copyInner(SymbolMap* map) override;
 
   FnSymbol*                  copyInnerCore(SymbolMap* map);
-  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst);
+  void                       replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
 
   FnSymbol*                  partialCopy(SymbolMap* map);
   void                       finalizeCopy();
@@ -112,10 +151,10 @@ public:
   GenRet                     codegenFunctionType(bool forHeader);
   GenRet                     codegenCast(GenRet fnPtr);
 
-  GenRet                     codegen();
+  GenRet                     codegen() override;
   void                       codegenHeaderC();
-  void                       codegenPrototype();
-  void                       codegenDef();
+  void                       codegenPrototype() override;
+  void                       codegenDef() override;
   void                       codegenFortran(int indent);
   void                       codegenPython(PythonFileType pxd);
   GenRet                     codegenPXDType();
@@ -186,12 +225,16 @@ public:
   bool                       isDefaultInit()                             const;
   bool                       isCopyInit()                                const;
 
-  bool                       isGeneric();
-  bool                       isGenericIsValid();
+  bool                       isGeneric()                                 const;
+  bool                       isGenericIsValid()                          const;
   void                       setGeneric(bool generic);
   void                       clearGeneric();
+  bool                       isConstrainedGeneric()                      const;
+  InterfaceInfo*             ensureInterfaceInfo();
+  void                       addConstrainedType(DefExpr* def);
+  void                       addInterfaceConstraint(IfcConstraint* icon);
 
-  AggregateType*             getReceiver()                               const;
+  AggregateType*             getReceiverType()                           const;
 
   bool                       isIterator()                                const;
 
@@ -199,7 +242,7 @@ public:
 
   QualifiedType              getReturnQualType()                         const;
 
-  virtual void               printDocs(std::ostream* file,
+  void                       printDocs(std::ostream* file,
                                        unsigned int  tabs);
 
   void                       throwsErrorInit();
@@ -207,10 +250,14 @@ public:
 
   bool                       retExprDefinesNonVoid()                     const;
 
-  const char*                substitutionsToString(const char* sep)      const;
+  Symbol*                    getSubstitutionWithName(const char* name)   const;
+
+  std::string                nameAndArgsToString(const char* sep,
+                                                 bool forError,
+                                                 bool& printedUnderline) const;
 
 private:
-  virtual std::string        docsDirective();
+  std::string                docsDirective();
 
   bool                       hasGenericFormals(SymbolMap* map)           const;
 

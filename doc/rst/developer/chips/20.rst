@@ -2,7 +2,7 @@ Function Hijacking
 ==================
 
 Status
-  Draft
+  Partially Implemented - Need to check which cases are not
 
 Authors
   Lydia Duncan

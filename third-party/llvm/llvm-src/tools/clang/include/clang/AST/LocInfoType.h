@@ -1,9 +1,8 @@
 //===--- LocInfoType.h - Parsed Type with Location Information---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -36,10 +35,7 @@ class LocInfoType : public Type {
   TypeSourceInfo *DeclInfo;
 
   LocInfoType(QualType ty, TypeSourceInfo *TInfo)
-      : Type((TypeClass)LocInfo, ty, ty->isDependentType(),
-             ty->isInstantiationDependentType(), ty->isVariablyModifiedType(),
-             ty->containsUnexpandedParameterPack()),
-        DeclInfo(TInfo) {
+      : Type((TypeClass)LocInfo, ty, ty->getDependence()), DeclInfo(TInfo) {
     assert(getTypeClass() == (TypeClass)LocInfo && "LocInfo didn't fit in TC?");
   }
   friend class Sema;

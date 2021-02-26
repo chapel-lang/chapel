@@ -1,9 +1,8 @@
 //===-- xray-graph.cpp: XRay Function Call Graph Renderer -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -209,8 +208,8 @@ ColorHelper::getColorTuple(double Point) const {
 // string.
 std::string
 ColorHelper::getColorString(std::tuple<uint8_t, uint8_t, uint8_t> t) {
-  return llvm::formatv("#{0:X-2}{1:X-2}{2:X-2}", std::get<0>(t), std::get<1>(t),
-                       std::get<2>(t));
+  return std::string(llvm::formatv("#{0:X-2}{1:X-2}{2:X-2}", std::get<0>(t),
+                                   std::get<1>(t), std::get<2>(t)));
 }
 
 // Gets a color in a gradient given a number in the interval [0,1], it does this

@@ -1,9 +1,8 @@
 //===-- llvm/Target/ARMTargetObjectFile.cpp - ARM Object Info Impl --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,7 +49,7 @@ void ARMElfTargetObjectFile::Initialize(MCContext &Ctx,
     // Since we cannot modify flags for an existing section, we create a new
     // section with the right flags, and use 0 as the unique ID for
     // execute-only text
-    TextSection = Ctx.getELFSection(".text", Type, Flags, 0, "", 0U);
+    TextSection = Ctx.getELFSection(".text", Type, Flags, 0, "", 0U, nullptr);
   }
 }
 

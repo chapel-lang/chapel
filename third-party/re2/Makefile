@@ -12,7 +12,7 @@ else
   RE_DEBUG_CXX += -DNDEBUG
 endif
 
-# re2's makefile explicity throws flags that cray and pgi don't support. This
+# re2's makefile explicity throws flags that pgi doesn't support. This
 # is intended to basically replace the re2 makefiles lines:
 #
 #     RE2_CXXFLAGS?=-Wsign-compare -c -I. $(CCPCRE)  # required
@@ -22,7 +22,7 @@ endif
 #
 #     RE2_CXXFLAGS?= -c -I. $(CCPCRE)
 #     LDFLAGS?=
-ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),pgi cray-prgenv-pgi cray-prgenv-cray))
+ifneq (, $(filter $(CHPL_MAKE_TARGET_COMPILER),pgi cray-prgenv-pgi))
 CHPL_RE2_CFG_OPTIONS += LDFLAGS=
 CHPL_RE2_CFG_OPTIONS += 'RE2_CXXFLAGS= -c -I. $$(CCPCRE)'
 endif
@@ -74,7 +74,7 @@ $(RE2_H_FILE): $(RE2_BUILD_SUBDIR)
 	cd $(RE2_SUBDIR) && \
 	$(MAKE) clean && \
 	$(MAKE) CXX='$(CXX)' NODEBUG= CPPFLAGS='$(CPPFLAGS)' CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) obj/libre2.a && \
-	$(MAKE) CXX='$(CXX)' NODEBUG= CPPFLAGS='$(CPPFLAGS)' CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) install-static && \
+	$(MAKE) CXX='$(CXX)' NODEBUG= CPPFLAGS='$(CPPFLAGS)' CXXFLAGS='$(RE_DEBUG_CXX) $(CHPL_RE2_CXXFLAGS)' $(CHPL_RE2_CFG_OPTIONS) prefix=$(RE2_INSTALL_DIR) static-install && \
 	mkdir -p ../build/$(RE2_UNIQUE_SUBDIR) && \
 	rm -rf ../build/$(RE2_UNIQUE_SUBDIR) && \
 	mv obj ../build/$(RE2_UNIQUE_SUBDIR)

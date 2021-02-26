@@ -1,9 +1,9 @@
 index-variable-const-errors.chpl:23: In function 'main':
-index-variable-const-errors.chpl:35: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:51: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:52: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:53: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:70: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:71: error: illegal lvalue in assignment
-index-variable-const-errors.chpl:83: error: illegal lvalue in assignment
+index-variable-const-errors.chpl:35: error: cannot assign to const variable
+index-variable-const-errors.chpl:51: error: cannot assign to const variable
+index-variable-const-errors.chpl:52: error: cannot assign to const variable
+index-variable-const-errors.chpl:53: error: cannot assign to const variable
+index-variable-const-errors.chpl:70: error: cannot assign to const variable
+index-variable-const-errors.chpl:71: error: cannot assign to const variable
+index-variable-const-errors.chpl:83: error: cannot assign to const variable
 index-variable-const-errors.chpl:23: error: done

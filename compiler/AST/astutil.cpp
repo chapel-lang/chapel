@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -34,6 +34,7 @@
 #include "LoopExpr.h"
 #include "passes.h"
 #include "ParamForLoop.h"
+#include "resolution.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "symbol.h"
@@ -52,7 +53,6 @@
 
 static void pruneUnusedAggregateTypes(Vec<TypeSymbol*>& types);
 static void pruneUnusedRefs(Vec<TypeSymbol*>& types);
-static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types);
 
 
 void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
@@ -61,6 +61,14 @@ void collectFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
     if (call->isResolved())
       calls.push_back(call);
 }
+
+void collectVirtualAndFnCalls(BaseAST* ast, std::vector<CallExpr*>& calls) {
+  AST_CHILDREN_CALL(ast, collectFnCalls, calls);
+  if (CallExpr* call = toCallExpr(ast))
+    if (call->resolvedOrVirtualFunction() != NULL)
+      calls.push_back(call);
+}
+
 
 void collectExprs(BaseAST* ast, std::vector<Expr*>& exprs) {
   AST_CHILDREN_CALL(ast, collectExprs, exprs);
@@ -109,6 +117,7 @@ void collectGotoStmts(BaseAST* ast, std::vector<GotoStmt*>& gotoStmts) {
     gotoStmts.push_back(gotoStmt);
 }
 
+
 // This is a specialized helper for lowerIterators.
 // Collects the gotos whose target is inTree() into 'GOTOs' and
 // the iterator break blocks into 'IBBs'.
@@ -129,6 +138,29 @@ void collectTreeBoundGotosAndIteratorBreakBlocks(BaseAST* ast,
     if (SymExpr* labelSE = toSymExpr(gt->label))
       if (labelSE->symbol()->inTree())
         GOTOs.push_back(gt);
+}
+
+//
+// This is a specialized helper for lowerForalls.
+// Traverse the body of the iterator looking for "top-level" yields.
+// Do not descend into calls as they should not contain inner yields.
+// Do not descend into a forall loop because any yields in it will be
+// handled when lowering the forall and inlining **its** iterator.
+// Yields in a parallel construct will not come up upon this traversal
+// because parallel constructs are represented with calls to task functions.
+// While task functions have been outlined by now, lowerForalls places
+// a clone of a task function right next to a call to it, and this
+// traversal does not descend into symbols.
+//
+void computeHasToplevelYields(BaseAST* ast, bool& result) {
+  if (result)
+    return;
+  else if (CallExpr* call = toCallExpr(ast))
+    result = call->isPrimitive(PRIM_YIELD); // do not dig further
+  else if (isSymbol(ast) || isForallStmt(ast))
+    ; // do not descend into these
+  else
+    AST_CHILDREN_CALL(ast, computeHasToplevelYields, result);
 }
 
 
@@ -250,7 +282,7 @@ void computeNonvirtualCallSites(FnSymbol* fn) {
       } else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
         FnSymbol* vFn = toFnSymbol(toSymExpr(call->get(1))->symbol());
         if (vFn == fn) {
-          INT_FATAL(call, "unexpected case calling %d", fn->name);
+          INT_FATAL(call, "unexpected case calling %s", fn->name);
         }
       }
     }
@@ -790,6 +822,11 @@ bool isTypeExpr(Expr* expr) {
         }
       }
 
+    } else if (call->isPrimitive(PRIM_GET_RUNTIME_TYPE_FIELD)) {
+      bool isType = false;
+      getPrimGetRuntimeTypeFieldReturnType(call, isType);
+      retval = isType;
+
     } else if (call->numActuals() == 1 &&
                call->baseExpr &&
                isNumericTypeSymExpr(call->baseExpr)) {
@@ -888,7 +925,7 @@ visitVisibleFunctions(Vec<FnSymbol*>& fns, Vec<TypeSymbol*>& types)
 
   // Mark exported symbols and module init/deinit functions as visible.
   forv_Vec(FnSymbol, fn, gFnSymbols)
-    if (fn->hasFlag(FLAG_EXPORT))
+    if (fn->hasFlag(FLAG_EXPORT) || fn->hasFlag(FLAG_ALWAYS_RESOLVE))
       pruneVisit(fn, fns, types);
 
   // Mark well-known functions as visible
@@ -913,7 +950,7 @@ pruneUnusedTypes(Vec<TypeSymbol*>& types)
 
   pruneUnusedAggregateTypes(types);
   pruneUnusedRefs(types);
-  changeDeadTypesToVoid(types);
+  cleanupAfterTypeRemoval();
 }
 
 
@@ -997,7 +1034,7 @@ static void pruneUnusedRefs(Vec<TypeSymbol*>& types)
 }
 
 
-static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
+void cleanupAfterTypeRemoval()
 {
   //
   // change symbols with dead types to void (important for baseline)
@@ -1007,8 +1044,30 @@ static void changeDeadTypesToVoid(Vec<TypeSymbol*>& types)
         def->sym->type                   != NULL  &&
         isAggregateType(def->sym->type)  ==  true &&
         isTypeSymbol(def->sym)           == false &&
-        !types.set_in(def->sym->type->symbol))
+        def->sym->type->symbol->inTree() == false)
       def->sym->type = dtNothing;
+  }
+
+  // Clear out any uses of removed types in Type::substitutionsPostResolve
+  for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      for (size_t i = 0; i < at->substitutionsPostResolve.size(); i++) {
+        NameAndSymbol& ns = at->substitutionsPostResolve[i];
+        if (ns.value && !ns.value->inTree()) {
+          ns.value = dtNothing->symbol;
+        }
+      }
+    }
+  }
+
+  // and in FnSymbol::substitutionsPostResolve
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    for (size_t i = 0; i < fn->substitutionsPostResolve.size(); i++) {
+      NameAndSymbol& ns = fn->substitutionsPostResolve[i];
+      if (ns.value && !ns.value->inTree()) {
+        ns.value = dtNothing->symbol;
+      }
+    }
   }
 }
 

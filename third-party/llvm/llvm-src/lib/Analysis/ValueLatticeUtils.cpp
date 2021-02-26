@@ -1,9 +1,8 @@
 //===-- ValueLatticeUtils.cpp - Utils for solving lattices ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -29,16 +28,14 @@ bool llvm::canTrackGlobalVariableInterprocedurally(GlobalVariable *GV) {
   if (GV->isConstant() || !GV->hasLocalLinkage() ||
       !GV->hasDefinitiveInitializer())
     return false;
-  return !any_of(GV->users(), [&](User *U) {
-    if (auto *Store = dyn_cast<StoreInst>(U)) {
-      if (Store->getValueOperand() == GV || Store->isVolatile())
-        return true;
-    } else if (auto *Load = dyn_cast<LoadInst>(U)) {
-      if (Load->isVolatile())
-        return true;
-    } else {
-      return true;
-    }
+  return all_of(GV->users(), [&](User *U) {
+    // Currently all users of a global variable have to be none-volatile loads
+    // or stores and the global cannot be stored itself.
+    if (auto *Store = dyn_cast<StoreInst>(U))
+      return Store->getValueOperand() != GV && !Store->isVolatile();
+    if (auto *Load = dyn_cast<LoadInst>(U))
+      return !Load->isVolatile();
+
     return false;
   });
 }

@@ -1,9 +1,8 @@
 //===-- AVRISelDAGToDAG.cpp - A dag to dag inst selector for AVR ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -252,7 +251,7 @@ bool AVRDAGToDAGISel::SelectInlineAsmMemoryOperand(const SDValue &Op,
       RegisterSDNode *RegNode =
           cast<RegisterSDNode>(CopyFromRegOp->getOperand(1));
       Reg = RegNode->getReg();
-      CanHandleRegImmOpt &= (TargetRegisterInfo::isVirtualRegister(Reg) ||
+      CanHandleRegImmOpt &= (Register::isVirtualRegister(Reg) ||
                              AVR::PTRDISPREGSRegClass.contains(Reg));
     } else {
       CanHandleRegImmOpt = false;
@@ -266,7 +265,7 @@ bool AVRDAGToDAGISel::SelectInlineAsmMemoryOperand(const SDValue &Op,
       if (RI.getRegClass(Reg) != &AVR::PTRDISPREGSRegClass) {
         SDLoc dl(CopyFromRegOp);
 
-        unsigned VReg = RI.createVirtualRegister(&AVR::PTRDISPREGSRegClass);
+        Register VReg = RI.createVirtualRegister(&AVR::PTRDISPREGSRegClass);
 
         SDValue CopyToReg =
             CurDAG->getCopyToReg(CopyFromRegOp, dl, VReg, CopyFromRegOp);
@@ -295,7 +294,7 @@ bool AVRDAGToDAGISel::SelectInlineAsmMemoryOperand(const SDValue &Op,
   // More generic case.
   // Create chain that puts Op into pointer register
   // and return that register.
-  unsigned VReg = RI.createVirtualRegister(&AVR::PTRDISPREGSRegClass);
+  Register VReg = RI.createVirtualRegister(&AVR::PTRDISPREGSRegClass);
 
   SDValue CopyToReg = CurDAG->getCopyToReg(Op, dl, VReg, Op);
   SDValue CopyFromReg =

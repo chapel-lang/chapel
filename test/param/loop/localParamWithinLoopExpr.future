@@ -1,0 +1,7 @@
+bug: param-ness lost in loop expression at local scopes
+
+This test demonstrates that we seem to lose the param-ness of the loop
+index variable `j` when it's at a local scope, but not at global
+scope.  The two loops demonstrate that it seems to be independent of
+whether the local loop expression is parallel or not, which was one
+of my suspicions.

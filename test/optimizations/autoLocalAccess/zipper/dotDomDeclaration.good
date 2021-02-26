@@ -1,0 +1,101 @@
+
+Start analyzing forall (dotDomDeclaration.chpl:14)
+| Found loop domain (dotDomDeclaration.chpl:4)
+| Will attempt static and dynamic optimizations (dotDomDeclaration.chpl:14)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:15)
+|   Found the domain of the access base (dotDomDeclaration.chpl:4)
+|   Can optimize: Access base's domain is the iterator (dotDomDeclaration.chpl:15)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:15)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:15)
+|   Found the domain of the access base (dotDomDeclaration.chpl:4)
+|   Can optimize: Access base's domain is the iterator (dotDomDeclaration.chpl:15)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:15)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:15)
+|   Found the domain of the access base (dotDomDeclaration.chpl:4)
+|   Can optimize: Access base's domain is the iterator (dotDomDeclaration.chpl:15)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:15)
+|
+End analyzing forall (dotDomDeclaration.chpl:14)
+
+
+Start analyzing forall (dotDomDeclaration.chpl:31)
+| Found loop domain (dotDomDeclaration.chpl:23)
+| Will attempt static and dynamic optimizations (dotDomDeclaration.chpl:31)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:32)
+|   Can optimize: Access base is the iterator's base (dotDomDeclaration.chpl:32)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:32)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:32)
+|   Found the domain of the access base (dotDomDeclaration.chpl:21)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:32)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:32)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:32)
+|   Found the domain of the access base (dotDomDeclaration.chpl:21)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:32)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:32)
+|
+End analyzing forall (dotDomDeclaration.chpl:31)
+
+
+Start analyzing forall (dotDomDeclaration.chpl:48)
+| Found loop domain (dotDomDeclaration.chpl:41)
+| Will attempt static and dynamic optimizations (dotDomDeclaration.chpl:48)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:49)
+|   Found the domain of the access base (dotDomDeclaration.chpl:38)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:49)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:49)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:49)
+|   Can optimize: Access base is the iterator's base (dotDomDeclaration.chpl:49)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:49)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:49)
+|   Found the domain of the access base (dotDomDeclaration.chpl:38)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:49)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:49)
+|
+End analyzing forall (dotDomDeclaration.chpl:48)
+
+
+Start analyzing forall (dotDomDeclaration.chpl:65)
+| Found loop domain (dotDomDeclaration.chpl:59)
+| Will attempt static and dynamic optimizations (dotDomDeclaration.chpl:65)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:66)
+|   Found the domain of the access base (dotDomDeclaration.chpl:55)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:66)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:66)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:66)
+|   Found the domain of the access base (dotDomDeclaration.chpl:55)
+|   Can optimize: Access base has the same domain as iterator's base (dotDomDeclaration.chpl:66)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:66)
+|
+|  Start analyzing call (dotDomDeclaration.chpl:66)
+|   Can optimize: Access base is the iterator's base (dotDomDeclaration.chpl:66)
+|  This call is a static optimization candidate (dotDomDeclaration.chpl:66)
+|
+End analyzing forall (dotDomDeclaration.chpl:65)
+
+Static check successful. Using localAccess (dotDomDeclaration.chpl:15)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:15)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:15)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:32)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:32)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:32)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:49)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:49)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:49)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:66)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:66)
+Static check successful. Using localAccess (dotDomDeclaration.chpl:66)
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0
+10.0 17.0 24.0 31.0 38.0 45.0 52.0 59.0 66.0 73.0

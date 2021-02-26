@@ -1,4 +1,0 @@
-tup-ret.chpl:12: error: const actual is passed to 'ref' formal 'this' of f()
-tup-ret.chpl:1: note: to formal of type R
-tup-ret.chpl:4: note: passed as ref here
-tup-ret.chpl:4: note: passed as ref here

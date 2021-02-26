@@ -1,0 +1,378 @@
+/*
+ * Copyright (C) 2016 by Argonne National Laboratory.
+ *
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+#ifndef _FI_BGQ_DIRECT_H_
+#define _FI_BGQ_DIRECT_H_
+
+#ifdef FABRIC_DIRECT
+#define FABRIC_DIRECT_ 1
+
+#include "rdma/fabric.h"
+
+struct fi_context {
+	void			*internal[8];
+};
+
+#endif
+
+static const uint64_t FI_BGQ_MAX_MSG_SIZE	= (0x7FFFFFFFULL);	/* 2^31-1 */
+static const uint64_t FI_BGQ_MAX_PREFIX_SIZE	= (0ULL);
+static const uint64_t FI_BGQ_INJECT_SIZE	= (512ULL);
+static const uint64_t FI_BGQ_MAX_ORDER_RAW_SIZE	= (256ULL);		/* FI_MR_BASIC: 2^37 */
+static const uint64_t FI_BGQ_MAX_ORDER_WAR_SIZE	= (256ULL);		/* FI_MR_BASIC: 2^37 */
+static const uint64_t FI_BGQ_MAX_ORDER_WAW_SIZE	= (256ULL);		/* FI_MR_BASIC: 2^37 */
+static const size_t FI_BGQ_TOTAL_BUFFERED_RECV	= (512ULL);
+static const uint64_t FI_BGQ_TX_SIZE		= (16*1024);
+static const uint64_t FI_BGQ_RX_SIZE		= (16*1024);
+static const uint64_t FI_BGQ_MR_KEY_SIZE	= (2);
+static const size_t   FI_BGQ_REMOTE_CQ_DATA_SIZE= 4;
+/* TODO: revisit these values, these are just placeholders now */
+/*
+static const uint64_t FI_BGQ_CMD_SLOT_AVAIL_POLL= (1ULL<<10);
+static const uint64_t FI_BGQ_LE_ME_COUNT	= (1ULL<<8);
+static const uint64_t FI_BGQ_UNEXPECTED_COUNT	= (1ULL<<8);
+static const uint64_t FI_BGQ_TRIG_OP_COUNT	= (0);
+static const uint64_t FI_BGQ_MAX_NUM_EP		= (1ULL<<10); // TODO: is it needed?
+static const size_t   FI_BGQ_CACHE_LINE_SIZE	= 128;
+static const size_t   FI_BGQ_DEFAULT_CQ_DEPTH   = 32768;
+*/
+static const uint64_t FI_BGQ_MEM_TAG_FORMAT	= (0xFFFFFFFFFFFFFFFFULL);
+
+static const uint64_t FI_BGQ_DEFAULT_MSG_ORDER = (FI_ORDER_RAR |
+							FI_ORDER_RAW |
+							FI_ORDER_WAW |
+							FI_ORDER_WAS |
+							FI_ORDER_SAW |
+							FI_ORDER_SAS);
+
+static const uint64_t FI_BGQ_DEFAULT_CAPS = (FI_MSG | FI_RMA | FI_TAGGED | FI_ATOMIC |
+						FI_SEND | FI_RECV | FI_READ | FI_WRITE | FI_REMOTE_READ | FI_REMOTE_WRITE |
+						FI_NAMED_RX_CTX | FI_DIRECTED_RECV |
+						FI_MULTI_RECV | FI_SOURCE);
+
+#define FI_BGQ_FABRIC_DIRECT_PROGRESS	@bgq_fabric_direct_progress@
+#define FI_BGQ_FABRIC_DIRECT_AV		@bgq_fabric_direct_av@
+#define FI_BGQ_FABRIC_DIRECT_MR		@bgq_fabric_direct_mr@
+#define FI_BGQ_FABRIC_DIRECT_THREAD	@bgq_fabric_direct_thread@
+
+
+/* Macro indirection in order to support other macros as arguments
+ * C requires another indirection for expanding macros since
+ * operands of the token pasting operator are not expanded */
+
+#define FI_BGQ_RMA_SPECIALIZED_FUNC(LOCK)				\
+	FI_BGQ_RMA_SPECIALIZED_FUNC_(LOCK)
+
+#define FI_BGQ_RMA_SPECIALIZED_FUNC_(LOCK)				\
+	static inline ssize_t						\
+	fi_bgq_writemsg_ ## LOCK					\
+		(struct fid_ep *ep, const struct fi_msg_rma *msg,	\
+			uint64_t flags)					\
+	{								\
+		return fi_bgq_writemsg_generic(ep, msg, flags,		\
+				LOCK);					\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_writev_ ## LOCK						\
+		(struct fid_ep *ep, const struct iovec *iov,		\
+			void **desc, size_t count, fi_addr_t dest_addr,	\
+			uint64_t addr, uint64_t key, void *context)	\
+	{								\
+		return fi_bgq_writev_generic(ep, iov, desc, count,	\
+				dest_addr, addr, key, context, LOCK);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_write_ ## LOCK						\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			void *desc, fi_addr_t dst_addr, uint64_t addr,	\
+			uint64_t key, void *context)			\
+	{								\
+		return fi_bgq_write_generic(ep, buf, len, desc,		\
+				dst_addr, addr, key, context, LOCK);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_inject_write_ ## LOCK 					\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			fi_addr_t dst_addr, uint64_t addr,		\
+			uint64_t key)					\
+	{								\
+		return fi_bgq_inject_write_generic(ep, buf, len,	\
+				dst_addr, addr, key, LOCK);		\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_readmsg_ ## LOCK						\
+		(struct fid_ep *ep, const struct fi_msg_rma *msg,	\
+			uint64_t flags)					\
+	{								\
+		return fi_bgq_readmsg_generic(ep, msg, flags,		\
+				LOCK);					\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_readv_ ## LOCK						\
+		(struct fid_ep *ep, const struct iovec *iov,		\
+			void **desc, size_t count, fi_addr_t src_addr,	\
+			uint64_t addr, uint64_t key, void *context)	\
+	{								\
+		return fi_bgq_writev_generic(ep, iov, desc, count,	\
+				src_addr, addr, key, context, LOCK);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_read_ ## LOCK						\
+		(struct fid_ep *ep, void *buf, size_t len,		\
+			void *desc, fi_addr_t src_addr, uint64_t addr,	\
+			uint64_t key, void *context)			\
+	{								\
+		return fi_bgq_read_generic(ep, buf, len, desc,		\
+				src_addr, addr, key, context, LOCK);	\
+	}
+
+#define FI_BGQ_RMA_SPECIALIZED_FUNC_NAME(TYPE, LOCK)			\
+	FI_BGQ_RMA_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)
+
+#define FI_BGQ_RMA_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)			\
+		fi_bgq_ ## TYPE ## _ ## LOCK
+
+
+
+#define FI_BGQ_CQ_SPECIALIZED_FUNC(FORMAT, LOCK)			\
+	FI_BGQ_CQ_SPECIALIZED_FUNC_(FORMAT, LOCK)
+
+#define FI_BGQ_CQ_SPECIALIZED_FUNC_(FORMAT, LOCK)			\
+	static inline ssize_t						\
+	fi_bgq_cq_read_ ## FORMAT ## _ ## LOCK				\
+		(struct fid_cq *cq, void *buf, size_t count)		\
+	{								\
+		return fi_bgq_cq_read_generic(cq, buf, count,		\
+				FORMAT, LOCK);				\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_cq_readfrom_ ## FORMAT ## _ ## LOCK			\
+		(struct fid_cq *cq, void *buf, size_t count,		\
+			fi_addr_t *src_addr)				\
+	{								\
+		return fi_bgq_cq_readfrom_generic(cq, buf, count, src_addr,	\
+				FORMAT, LOCK);				\
+	}								\
+
+#define FI_BGQ_CQ_SPECIALIZED_FUNC_NAME(TYPE, FORMAT, LOCK)		\
+	FI_BGQ_CQ_SPECIALIZED_FUNC_NAME_(TYPE, FORMAT, LOCK)
+
+#define FI_BGQ_CQ_SPECIALIZED_FUNC_NAME_(TYPE, FORMAT, LOCK)		\
+		fi_bgq_ ## TYPE ## _ ## FORMAT ## _ ## LOCK
+
+
+
+
+#define FI_BGQ_ATOMIC_SPECIALIZED_FUNC(LOCK)				\
+	FI_BGQ_ATOMIC_SPECIALIZED_FUNC_(LOCK)
+
+#define FI_BGQ_ATOMIC_SPECIALIZED_FUNC_(LOCK)				\
+	static inline ssize_t						\
+	fi_bgq_atomic_ ## LOCK 						\
+		(struct fid_ep *ep, const void *buf, size_t count,	\
+			void *desc, fi_addr_t dst_addr, uint64_t addr,	\
+			uint64_t key, enum fi_datatype datatype,	\
+			enum fi_op op, void *context)			\
+	{								\
+		return fi_bgq_atomic_generic(ep, buf, count,		\
+				dst_addr, addr, key, datatype, op,	\
+				context, LOCK);				\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_inject_atomic_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t count,	\
+			fi_addr_t dst_addr, uint64_t addr,		\
+			uint64_t key, enum fi_datatype datatype,	\
+			enum fi_op op)					\
+	{								\
+		return fi_bgq_inject_atomic_generic(ep, buf, count,	\
+				dst_addr, addr, key, datatype, op,	\
+				LOCK);					\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_fetch_atomic_ ## LOCK 					\
+		(struct fid_ep *ep, const void *buf, size_t count,	\
+		 void *desc, void *result, void *result_desc,		\
+		 fi_addr_t dest_addr, uint64_t addr,			\
+		 uint64_t key, enum fi_datatype datatype,		\
+		 enum fi_op op, void *context)				\
+	{								\
+		return fi_bgq_fetch_atomic_generic(ep, buf, count, desc,\
+				result, result_desc, dest_addr, addr,	\
+				key, datatype, op, context,		\
+				LOCK);					\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_compare_atomic_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t count,	\
+			void *desc, const void *compare,		\
+			void *compare_desc, void *result,		\
+			void *result_desc, fi_addr_t dest_addr,		\
+			uint64_t addr, uint64_t key,			\
+			enum fi_datatype datatype, enum fi_op op,	\
+			void *context)					\
+	{								\
+		return fi_bgq_compare_atomic_generic(ep, buf, count,	\
+				desc, compare, compare_desc, result,	\
+				result_desc, dest_addr, addr, key,	\
+				datatype, op, context, LOCK);		\
+	}
+
+#define FI_BGQ_ATOMIC_SPECIALIZED_FUNC_NAME(TYPE, LOCK)			\
+	FI_BGQ_ATOMIC_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)
+
+#define FI_BGQ_ATOMIC_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)		\
+		fi_bgq_ ## TYPE ## _ ## LOCK
+
+
+#define FI_BGQ_MSG_SPECIALIZED_FUNC(LOCK)				\
+	FI_BGQ_MSG_SPECIALIZED_FUNC_(LOCK)
+
+#define FI_BGQ_MSG_SPECIALIZED_FUNC_(LOCK)				\
+	static inline ssize_t						\
+	fi_bgq_send_ ## LOCK						\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			void *desc, fi_addr_t dst_addr, void *context)	\
+	{								\
+		return fi_bgq_send_generic(ep, buf, len, desc,		\
+				dst_addr, 0, context, LOCK, 1);		\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_recv_ ## LOCK 						\
+		(struct fid_ep *ep, void *buf, size_t len,		\
+			void *desc, fi_addr_t src_addr, void *context)	\
+	{								\
+		return fi_bgq_recv_generic(ep, buf, len, desc,		\
+				src_addr, 0, (uint64_t)-1, context, LOCK, 1);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_inject_ ## LOCK						\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			fi_addr_t dst_addr)				\
+	{								\
+		return fi_bgq_inject(ep, buf, len,			\
+				dst_addr, LOCK);			\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_recvmsg_ ## LOCK 					\
+		(struct fid_ep *ep, const struct fi_msg *msg,		\
+			uint64_t flags)					\
+	{								\
+		return fi_bgq_recvmsg_generic(ep, msg, flags,		\
+				LOCK);					\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_senddata_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			void *desc, uint64_t data, fi_addr_t dest_addr,	\
+			void *context)					\
+	{								\
+		return fi_bgq_senddata_generic(ep, buf, len, desc, data,\
+				dest_addr, 0, context, LOCK, 1);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_injectdata_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			uint64_t data, fi_addr_t dest_addr)		\
+	{								\
+		return fi_bgq_injectdata_generic(ep, buf, len, data,	\
+				dest_addr, 0, LOCK, 1);			\
+	}
+
+#define FI_BGQ_MSG_SPECIALIZED_FUNC_NAME(TYPE, LOCK)			\
+	FI_BGQ_MSG_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)
+
+#define FI_BGQ_MSG_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)			\
+		fi_bgq_ ## TYPE ## _ ## LOCK
+
+
+#define FI_BGQ_TAGGED_SPECIALIZED_FUNC(LOCK)				\
+	FI_BGQ_TAGGED_SPECIALIZED_FUNC_(LOCK)
+
+#define FI_BGQ_TAGGED_SPECIALIZED_FUNC_(LOCK)				\
+	static inline ssize_t						\
+	fi_bgq_tsend_ ## LOCK						\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			void *desc, fi_addr_t dst_addr, uint64_t tag, void *context)	\
+	{								\
+		return fi_bgq_send_generic(ep, buf, len, desc,		\
+				dst_addr, tag, context, LOCK, 0);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_trecv_ ## LOCK						\
+		(struct fid_ep *ep, void *buf, size_t len,		\
+			void *desc, fi_addr_t src_addr, uint64_t tag, uint64_t ignore, void *context)	\
+	{								\
+		return fi_bgq_recv_generic(ep, buf, len, desc,		\
+				src_addr, tag, ignore, context, LOCK, 0);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_tinject_ ## LOCK						\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			fi_addr_t dst_addr, uint64_t tag)		\
+	{								\
+		return fi_bgq_tinject(ep, buf, len,			\
+				dst_addr, tag, LOCK);			\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_tsenddata_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			void *desc, uint64_t data, fi_addr_t dest_addr,	\
+			uint64_t tag, void *context)			\
+	{								\
+		return fi_bgq_senddata_generic(ep, buf, len, desc, data,\
+				dest_addr, tag, context, LOCK, 0);	\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_tinjectdata_ ## LOCK					\
+		(struct fid_ep *ep, const void *buf, size_t len,	\
+			uint64_t data, fi_addr_t dest_addr,		\
+			uint64_t tag)					\
+	{								\
+		return fi_bgq_injectdata_generic(ep, buf, len, data,	\
+				dest_addr, tag, LOCK, 0);		\
+	}								\
+	static inline ssize_t						\
+	fi_bgq_trecvmsg_ ## LOCK					\
+		(struct fid_ep *ep, const struct fi_msg_tagged *msg,	\
+			uint64_t flags)					\
+	{								\
+		return fi_bgq_trecvmsg_generic(ep, msg, flags,		\
+				LOCK);					\
+	}
+
+#define FI_BGQ_TAGGED_SPECIALIZED_FUNC_NAME(TYPE, LOCK)			\
+	FI_BGQ_TAGGED_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)
+
+#define FI_BGQ_TAGGED_SPECIALIZED_FUNC_NAME_(TYPE, LOCK)		\
+		fi_bgq_ ## TYPE ## _ ## LOCK
+
+#endif /* _FI_BGQ_DIRECT_H_ */

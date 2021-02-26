@@ -1,9 +1,8 @@
 //===- llvm/unittest/IR/InstructionsTest.cpp - Instructions unit tests ----===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -187,17 +186,23 @@ TEST(InstructionsTest, CastInst) {
   Type *Int16Ty = Type::getInt16Ty(C);
   Type *Int32Ty = Type::getInt32Ty(C);
   Type *Int64Ty = Type::getInt64Ty(C);
-  Type *V8x8Ty = VectorType::get(Int8Ty, 8);
-  Type *V8x64Ty = VectorType::get(Int64Ty, 8);
+  Type *V8x8Ty = FixedVectorType::get(Int8Ty, 8);
+  Type *V8x64Ty = FixedVectorType::get(Int64Ty, 8);
   Type *X86MMXTy = Type::getX86_MMXTy(C);
 
   Type *HalfTy = Type::getHalfTy(C);
   Type *FloatTy = Type::getFloatTy(C);
   Type *DoubleTy = Type::getDoubleTy(C);
 
-  Type *V2Int32Ty = VectorType::get(Int32Ty, 2);
-  Type *V2Int64Ty = VectorType::get(Int64Ty, 2);
-  Type *V4Int16Ty = VectorType::get(Int16Ty, 4);
+  Type *V2Int32Ty = FixedVectorType::get(Int32Ty, 2);
+  Type *V2Int64Ty = FixedVectorType::get(Int64Ty, 2);
+  Type *V4Int16Ty = FixedVectorType::get(Int16Ty, 4);
+  Type *V1Int16Ty = FixedVectorType::get(Int16Ty, 1);
+
+  Type *VScaleV2Int32Ty = VectorType::get(Int32Ty, 2, true);
+  Type *VScaleV2Int64Ty = VectorType::get(Int64Ty, 2, true);
+  Type *VScaleV4Int16Ty = VectorType::get(Int16Ty, 4, true);
+  Type *VScaleV1Int16Ty = VectorType::get(Int16Ty, 1, true);
 
   Type *Int32PtrTy = PointerType::get(Int32Ty, 0);
   Type *Int64PtrTy = PointerType::get(Int64Ty, 0);
@@ -205,14 +210,18 @@ TEST(InstructionsTest, CastInst) {
   Type *Int32PtrAS1Ty = PointerType::get(Int32Ty, 1);
   Type *Int64PtrAS1Ty = PointerType::get(Int64Ty, 1);
 
-  Type *V2Int32PtrAS1Ty = VectorType::get(Int32PtrAS1Ty, 2);
-  Type *V2Int64PtrAS1Ty = VectorType::get(Int64PtrAS1Ty, 2);
-  Type *V4Int32PtrAS1Ty = VectorType::get(Int32PtrAS1Ty, 4);
-  Type *V4Int64PtrAS1Ty = VectorType::get(Int64PtrAS1Ty, 4);
+  Type *V2Int32PtrAS1Ty = FixedVectorType::get(Int32PtrAS1Ty, 2);
+  Type *V2Int64PtrAS1Ty = FixedVectorType::get(Int64PtrAS1Ty, 2);
+  Type *V4Int32PtrAS1Ty = FixedVectorType::get(Int32PtrAS1Ty, 4);
+  Type *VScaleV4Int32PtrAS1Ty = VectorType::get(Int32PtrAS1Ty, 4, true);
+  Type *V4Int64PtrAS1Ty = FixedVectorType::get(Int64PtrAS1Ty, 4);
 
-  Type *V2Int64PtrTy = VectorType::get(Int64PtrTy, 2);
-  Type *V2Int32PtrTy = VectorType::get(Int32PtrTy, 2);
-  Type *V4Int32PtrTy = VectorType::get(Int32PtrTy, 4);
+  Type *V2Int64PtrTy = FixedVectorType::get(Int64PtrTy, 2);
+  Type *V2Int32PtrTy = FixedVectorType::get(Int32PtrTy, 2);
+  Type *VScaleV2Int32PtrTy = VectorType::get(Int32PtrTy, 2, true);
+  Type *V4Int32PtrTy = FixedVectorType::get(Int32PtrTy, 4);
+  Type *VScaleV4Int32PtrTy = VectorType::get(Int32PtrTy, 4, true);
+  Type *VScaleV4Int64PtrTy = VectorType::get(Int64PtrTy, 4, true);
 
   const Constant* c8 = Constant::getNullValue(V8x8Ty);
   const Constant* c64 = Constant::getNullValue(V8x64Ty);
@@ -287,6 +296,75 @@ TEST(InstructionsTest, CastInst) {
                                      Constant::getNullValue(V2Int32PtrTy),
                                      V4Int32PtrAS1Ty));
 
+  // Address space cast of fixed/scalable vectors of pointers to scalable/fixed
+  // vector of pointers.
+  EXPECT_FALSE(CastInst::castIsValid(
+      Instruction::AddrSpaceCast, Constant::getNullValue(VScaleV4Int32PtrAS1Ty),
+      V4Int32PtrTy));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::AddrSpaceCast,
+                                     Constant::getNullValue(V4Int32PtrTy),
+                                     VScaleV4Int32PtrAS1Ty));
+  // Address space cast of scalable vectors of pointers to scalable vector of
+  // pointers.
+  EXPECT_FALSE(CastInst::castIsValid(
+      Instruction::AddrSpaceCast, Constant::getNullValue(VScaleV4Int32PtrAS1Ty),
+      VScaleV2Int32PtrTy));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::AddrSpaceCast,
+                                     Constant::getNullValue(VScaleV2Int32PtrTy),
+                                     VScaleV4Int32PtrAS1Ty));
+  EXPECT_TRUE(CastInst::castIsValid(Instruction::AddrSpaceCast,
+                                    Constant::getNullValue(VScaleV4Int64PtrTy),
+                                    VScaleV4Int32PtrAS1Ty));
+  // Same number of lanes, different address space.
+  EXPECT_TRUE(CastInst::castIsValid(
+      Instruction::AddrSpaceCast, Constant::getNullValue(VScaleV4Int32PtrAS1Ty),
+      VScaleV4Int32PtrTy));
+  // Same number of lanes, same address space.
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::AddrSpaceCast,
+                                     Constant::getNullValue(VScaleV4Int64PtrTy),
+                                     VScaleV4Int32PtrTy));
+
+  // Bit casting fixed/scalable vector to scalable/fixed vectors.
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(V2Int32Ty),
+                                     VScaleV2Int32Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(V2Int64Ty),
+                                     VScaleV2Int64Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(V4Int16Ty),
+                                     VScaleV4Int16Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV2Int32Ty),
+                                     V2Int32Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV2Int64Ty),
+                                     V2Int64Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV4Int16Ty),
+                                     V4Int16Ty));
+
+  // Bit casting scalable vectors to scalable vectors.
+  EXPECT_TRUE(CastInst::castIsValid(Instruction::BitCast,
+                                    Constant::getNullValue(VScaleV4Int16Ty),
+                                    VScaleV2Int32Ty));
+  EXPECT_TRUE(CastInst::castIsValid(Instruction::BitCast,
+                                    Constant::getNullValue(VScaleV2Int32Ty),
+                                    VScaleV4Int16Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV2Int64Ty),
+                                     VScaleV2Int32Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV2Int32Ty),
+                                     VScaleV2Int64Ty));
+
+  // Bitcasting to/from <vscale x 1 x Ty>
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(VScaleV1Int16Ty),
+                                     V1Int16Ty));
+  EXPECT_FALSE(CastInst::castIsValid(Instruction::BitCast,
+                                     Constant::getNullValue(V1Int16Ty),
+                                     VScaleV1Int16Ty));
 
   // Check that assertion is not hit when creating a cast with a vector of
   // pointers
@@ -312,8 +390,8 @@ TEST(InstructionsTest, VectorGep) {
   PointerType *Ptri8Ty = PointerType::get(I8Ty, 0);
   PointerType *Ptri32Ty = PointerType::get(I32Ty, 0);
 
-  VectorType *V2xi8PTy = VectorType::get(Ptri8Ty, 2);
-  VectorType *V2xi32PTy = VectorType::get(Ptri32Ty, 2);
+  VectorType *V2xi8PTy = FixedVectorType::get(Ptri8Ty, 2);
+  VectorType *V2xi32PTy = FixedVectorType::get(Ptri32Ty, 2);
 
   // Test different aspects of the vector-of-pointers type
   // and GEPs which use this type.
@@ -505,14 +583,15 @@ TEST(InstructionsTest, CloneCall) {
   LLVMContext C;
   Type *Int32Ty = Type::getInt32Ty(C);
   Type *ArgTys[] = {Int32Ty, Int32Ty, Int32Ty};
-  Type *FnTy = FunctionType::get(Int32Ty, ArgTys, /*isVarArg=*/false);
+  FunctionType *FnTy = FunctionType::get(Int32Ty, ArgTys, /*isVarArg=*/false);
   Value *Callee = Constant::getNullValue(FnTy->getPointerTo());
   Value *Args[] = {
     ConstantInt::get(Int32Ty, 1),
     ConstantInt::get(Int32Ty, 2),
     ConstantInt::get(Int32Ty, 3)
   };
-  std::unique_ptr<CallInst> Call(CallInst::Create(Callee, Args, "result"));
+  std::unique_ptr<CallInst> Call(
+      CallInst::Create(FnTy, Callee, Args, "result"));
 
   // Test cloning the tail call kind.
   CallInst::TailCallKind Kinds[] = {CallInst::TCK_None, CallInst::TCK_Tail,
@@ -538,12 +617,12 @@ TEST(InstructionsTest, CloneCall) {
 TEST(InstructionsTest, AlterCallBundles) {
   LLVMContext C;
   Type *Int32Ty = Type::getInt32Ty(C);
-  Type *FnTy = FunctionType::get(Int32Ty, Int32Ty, /*isVarArg=*/false);
+  FunctionType *FnTy = FunctionType::get(Int32Ty, Int32Ty, /*isVarArg=*/false);
   Value *Callee = Constant::getNullValue(FnTy->getPointerTo());
   Value *Args[] = {ConstantInt::get(Int32Ty, 42)};
   OperandBundleDef OldBundle("before", UndefValue::get(Int32Ty));
   std::unique_ptr<CallInst> Call(
-      CallInst::Create(Callee, Args, OldBundle, "result"));
+      CallInst::Create(FnTy, Callee, Args, OldBundle, "result"));
   Call->setTailCallKind(CallInst::TailCallKind::TCK_NoTail);
   AttrBuilder AB;
   AB.addAttribute(Attribute::Cold);
@@ -565,14 +644,15 @@ TEST(InstructionsTest, AlterCallBundles) {
 TEST(InstructionsTest, AlterInvokeBundles) {
   LLVMContext C;
   Type *Int32Ty = Type::getInt32Ty(C);
-  Type *FnTy = FunctionType::get(Int32Ty, Int32Ty, /*isVarArg=*/false);
+  FunctionType *FnTy = FunctionType::get(Int32Ty, Int32Ty, /*isVarArg=*/false);
   Value *Callee = Constant::getNullValue(FnTy->getPointerTo());
   Value *Args[] = {ConstantInt::get(Int32Ty, 42)};
   std::unique_ptr<BasicBlock> NormalDest(BasicBlock::Create(C));
   std::unique_ptr<BasicBlock> UnwindDest(BasicBlock::Create(C));
   OperandBundleDef OldBundle("before", UndefValue::get(Int32Ty));
-  std::unique_ptr<InvokeInst> Invoke(InvokeInst::Create(
-      Callee, NormalDest.get(), UnwindDest.get(), Args, OldBundle, "result"));
+  std::unique_ptr<InvokeInst> Invoke(
+      InvokeInst::Create(FnTy, Callee, NormalDest.get(), UnwindDest.get(), Args,
+                         OldBundle, "result"));
   AttrBuilder AB;
   AB.addAttribute(Attribute::Cold);
   Invoke->setAttributes(
@@ -646,7 +726,8 @@ TEST_F(ModuleWithFunctionTest, DropPoisonGeneratingFlags) {
 
   {
     Value *GEPBase = Constant::getNullValue(B.getInt8PtrTy());
-    auto *GI = cast<GetElementPtrInst>(B.CreateInBoundsGEP(GEPBase, {Arg0}));
+    auto *GI = cast<GetElementPtrInst>(
+        B.CreateInBoundsGEP(B.getInt8Ty(), GEPBase, Arg0));
     ASSERT_TRUE(GI->isInBounds());
     GI->dropPoisonGeneratingFlags();
     ASSERT_FALSE(GI->isInBounds());
@@ -749,6 +830,47 @@ TEST(InstructionsTest, SwitchInst) {
   const auto &Handle = *CCI;
   EXPECT_EQ(1, Handle.getCaseValue()->getSExtValue());
   EXPECT_EQ(BB1.get(), Handle.getCaseSuccessor());
+}
+
+TEST(InstructionsTest, SwitchInstProfUpdateWrapper) {
+  LLVMContext C;
+
+  std::unique_ptr<BasicBlock> BB1, BB2, BB3;
+  BB1.reset(BasicBlock::Create(C));
+  BB2.reset(BasicBlock::Create(C));
+  BB3.reset(BasicBlock::Create(C));
+
+  // We create block 0 after the others so that it gets destroyed first and
+  // clears the uses of the other basic blocks.
+  std::unique_ptr<BasicBlock> BB0(BasicBlock::Create(C));
+
+  auto *Int32Ty = Type::getInt32Ty(C);
+
+  SwitchInst *SI =
+      SwitchInst::Create(UndefValue::get(Int32Ty), BB0.get(), 4, BB0.get());
+  SI->addCase(ConstantInt::get(Int32Ty, 1), BB1.get());
+  SI->addCase(ConstantInt::get(Int32Ty, 2), BB2.get());
+  SI->setMetadata(LLVMContext::MD_prof,
+                  MDBuilder(C).createBranchWeights({ 9, 1, 22 }));
+
+  {
+    SwitchInstProfUpdateWrapper SIW(*SI);
+    EXPECT_EQ(*SIW.getSuccessorWeight(0), 9u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(1), 1u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(2), 22u);
+    SIW.setSuccessorWeight(0, 99u);
+    SIW.setSuccessorWeight(1, 11u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(0), 99u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(1), 11u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(2), 22u);
+  }
+
+  { // Create another wrapper and check that the data persist.
+    SwitchInstProfUpdateWrapper SIW(*SI);
+    EXPECT_EQ(*SIW.getSuccessorWeight(0), 99u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(1), 11u);
+    EXPECT_EQ(*SIW.getSuccessorWeight(2), 22u);
+  }
 }
 
 TEST(InstructionsTest, CommuteShuffleMask) {
@@ -952,6 +1074,46 @@ TEST(InstructionsTest, ShuffleMaskQueries) {
   delete Id12;
 }
 
+TEST(InstructionsTest, GetSplat) {
+  // Create the elements for various constant vectors.
+  LLVMContext Ctx;
+  Type *Int32Ty = Type::getInt32Ty(Ctx);
+  Constant *CU = UndefValue::get(Int32Ty);
+  Constant *C0 = ConstantInt::get(Int32Ty, 0);
+  Constant *C1 = ConstantInt::get(Int32Ty, 1);
+
+  Constant *Splat0 = ConstantVector::get({C0, C0, C0, C0});
+  Constant *Splat1 = ConstantVector::get({C1, C1, C1, C1 ,C1});
+  Constant *Splat0Undef = ConstantVector::get({C0, CU, C0, CU});
+  Constant *Splat1Undef = ConstantVector::get({CU, CU, C1, CU});
+  Constant *NotSplat = ConstantVector::get({C1, C1, C0, C1 ,C1});
+  Constant *NotSplatUndef = ConstantVector::get({CU, C1, CU, CU ,C0});
+
+  // Default - undefs are not allowed.
+  EXPECT_EQ(Splat0->getSplatValue(), C0);
+  EXPECT_EQ(Splat1->getSplatValue(), C1);
+  EXPECT_EQ(Splat0Undef->getSplatValue(), nullptr);
+  EXPECT_EQ(Splat1Undef->getSplatValue(), nullptr);
+  EXPECT_EQ(NotSplat->getSplatValue(), nullptr);
+  EXPECT_EQ(NotSplatUndef->getSplatValue(), nullptr);
+
+  // Disallow undefs explicitly.
+  EXPECT_EQ(Splat0->getSplatValue(false), C0);
+  EXPECT_EQ(Splat1->getSplatValue(false), C1);
+  EXPECT_EQ(Splat0Undef->getSplatValue(false), nullptr);
+  EXPECT_EQ(Splat1Undef->getSplatValue(false), nullptr);
+  EXPECT_EQ(NotSplat->getSplatValue(false), nullptr);
+  EXPECT_EQ(NotSplatUndef->getSplatValue(false), nullptr);
+
+  // Allow undefs.
+  EXPECT_EQ(Splat0->getSplatValue(true), C0);
+  EXPECT_EQ(Splat1->getSplatValue(true), C1);
+  EXPECT_EQ(Splat0Undef->getSplatValue(true), C0);
+  EXPECT_EQ(Splat1Undef->getSplatValue(true), C1);
+  EXPECT_EQ(NotSplat->getSplatValue(true), nullptr);
+  EXPECT_EQ(NotSplatUndef->getSplatValue(true), nullptr);
+}
+
 TEST(InstructionsTest, SkipDebug) {
   LLVMContext C;
   std::unique_ptr<Module> M = parseIR(C,
@@ -989,6 +1151,157 @@ TEST(InstructionsTest, SkipDebug) {
 
   // After the terminator, there are no non-debug instructions.
   EXPECT_EQ(nullptr, Term->getNextNonDebugInstruction());
+}
+
+TEST(InstructionsTest, PhiMightNotBeFPMathOperator) {
+  LLVMContext Context;
+  IRBuilder<> Builder(Context);
+  MDBuilder MDHelper(Context);
+  Instruction *I = Builder.CreatePHI(Builder.getInt32Ty(), 0);
+  EXPECT_FALSE(isa<FPMathOperator>(I));
+  I->deleteValue();
+  Instruction *FP = Builder.CreatePHI(Builder.getDoubleTy(), 0);
+  EXPECT_TRUE(isa<FPMathOperator>(FP));
+  FP->deleteValue();
+}
+
+TEST(InstructionsTest, FPCallIsFPMathOperator) {
+  LLVMContext C;
+
+  Type *ITy = Type::getInt32Ty(C);
+  FunctionType *IFnTy = FunctionType::get(ITy, {});
+  Value *ICallee = Constant::getNullValue(IFnTy->getPointerTo());
+  std::unique_ptr<CallInst> ICall(CallInst::Create(IFnTy, ICallee, {}, ""));
+  EXPECT_FALSE(isa<FPMathOperator>(ICall));
+
+  Type *VITy = FixedVectorType::get(ITy, 2);
+  FunctionType *VIFnTy = FunctionType::get(VITy, {});
+  Value *VICallee = Constant::getNullValue(VIFnTy->getPointerTo());
+  std::unique_ptr<CallInst> VICall(CallInst::Create(VIFnTy, VICallee, {}, ""));
+  EXPECT_FALSE(isa<FPMathOperator>(VICall));
+
+  Type *AITy = ArrayType::get(ITy, 2);
+  FunctionType *AIFnTy = FunctionType::get(AITy, {});
+  Value *AICallee = Constant::getNullValue(AIFnTy->getPointerTo());
+  std::unique_ptr<CallInst> AICall(CallInst::Create(AIFnTy, AICallee, {}, ""));
+  EXPECT_FALSE(isa<FPMathOperator>(AICall));
+
+  Type *FTy = Type::getFloatTy(C);
+  FunctionType *FFnTy = FunctionType::get(FTy, {});
+  Value *FCallee = Constant::getNullValue(FFnTy->getPointerTo());
+  std::unique_ptr<CallInst> FCall(CallInst::Create(FFnTy, FCallee, {}, ""));
+  EXPECT_TRUE(isa<FPMathOperator>(FCall));
+
+  Type *VFTy = FixedVectorType::get(FTy, 2);
+  FunctionType *VFFnTy = FunctionType::get(VFTy, {});
+  Value *VFCallee = Constant::getNullValue(VFFnTy->getPointerTo());
+  std::unique_ptr<CallInst> VFCall(CallInst::Create(VFFnTy, VFCallee, {}, ""));
+  EXPECT_TRUE(isa<FPMathOperator>(VFCall));
+
+  Type *AFTy = ArrayType::get(FTy, 2);
+  FunctionType *AFFnTy = FunctionType::get(AFTy, {});
+  Value *AFCallee = Constant::getNullValue(AFFnTy->getPointerTo());
+  std::unique_ptr<CallInst> AFCall(CallInst::Create(AFFnTy, AFCallee, {}, ""));
+  EXPECT_TRUE(isa<FPMathOperator>(AFCall));
+
+  Type *AVFTy = ArrayType::get(VFTy, 2);
+  FunctionType *AVFFnTy = FunctionType::get(AVFTy, {});
+  Value *AVFCallee = Constant::getNullValue(AVFFnTy->getPointerTo());
+  std::unique_ptr<CallInst> AVFCall(
+      CallInst::Create(AVFFnTy, AVFCallee, {}, ""));
+  EXPECT_TRUE(isa<FPMathOperator>(AVFCall));
+
+  Type *AAVFTy = ArrayType::get(AVFTy, 2);
+  FunctionType *AAVFFnTy = FunctionType::get(AAVFTy, {});
+  Value *AAVFCallee = Constant::getNullValue(AAVFFnTy->getPointerTo());
+  std::unique_ptr<CallInst> AAVFCall(
+      CallInst::Create(AAVFFnTy, AAVFCallee, {}, ""));
+  EXPECT_TRUE(isa<FPMathOperator>(AAVFCall));
+}
+
+TEST(InstructionsTest, FNegInstruction) {
+  LLVMContext Context;
+  Type *FltTy = Type::getFloatTy(Context);
+  Constant *One = ConstantFP::get(FltTy, 1.0);
+  BinaryOperator *FAdd = BinaryOperator::CreateFAdd(One, One);
+  FAdd->setHasNoNaNs(true);
+  UnaryOperator *FNeg = UnaryOperator::CreateFNegFMF(One, FAdd);
+  EXPECT_TRUE(FNeg->hasNoNaNs());
+  EXPECT_FALSE(FNeg->hasNoInfs());
+  EXPECT_FALSE(FNeg->hasNoSignedZeros());
+  EXPECT_FALSE(FNeg->hasAllowReciprocal());
+  EXPECT_FALSE(FNeg->hasAllowContract());
+  EXPECT_FALSE(FNeg->hasAllowReassoc());
+  EXPECT_FALSE(FNeg->hasApproxFunc());
+  FAdd->deleteValue();
+  FNeg->deleteValue();
+}
+
+TEST(InstructionsTest, CallBrInstruction) {
+  LLVMContext Context;
+  std::unique_ptr<Module> M = parseIR(Context, R"(
+define void @foo() {
+entry:
+  callbr void asm sideeffect "// XXX: ${0:l}", "X"(i8* blockaddress(@foo, %branch_test.exit))
+          to label %land.rhs.i [label %branch_test.exit]
+
+land.rhs.i:
+  br label %branch_test.exit
+
+branch_test.exit:
+  %0 = phi i1 [ true, %entry ], [ false, %land.rhs.i ]
+  br i1 %0, label %if.end, label %if.then
+
+if.then:
+  ret void
+
+if.end:
+  ret void
+}
+)");
+  Function *Foo = M->getFunction("foo");
+  auto BBs = Foo->getBasicBlockList().begin();
+  CallBrInst &CBI = cast<CallBrInst>(BBs->front());
+  ++BBs;
+  ++BBs;
+  BasicBlock &BranchTestExit = *BBs;
+  ++BBs;
+  BasicBlock &IfThen = *BBs;
+
+  // Test that setting the first indirect destination of callbr updates the dest
+  EXPECT_EQ(&BranchTestExit, CBI.getIndirectDest(0));
+  CBI.setIndirectDest(0, &IfThen);
+  EXPECT_EQ(&IfThen, CBI.getIndirectDest(0));
+
+  // Further, test that changing the indirect destination updates the arg
+  // operand to use the block address of the new indirect destination basic
+  // block. This is a critical invariant of CallBrInst.
+  BlockAddress *IndirectBA = BlockAddress::get(CBI.getIndirectDest(0));
+  BlockAddress *ArgBA = cast<BlockAddress>(CBI.getArgOperand(0));
+  EXPECT_EQ(IndirectBA, ArgBA)
+      << "After setting the indirect destination, callbr had an indirect "
+         "destination of '"
+      << CBI.getIndirectDest(0)->getName() << "', but a argument of '"
+      << ArgBA->getBasicBlock()->getName() << "'. These should always match:\n"
+      << CBI;
+  EXPECT_EQ(IndirectBA->getBasicBlock(), &IfThen);
+  EXPECT_EQ(ArgBA->getBasicBlock(), &IfThen);
+}
+
+TEST(InstructionsTest, UnaryOperator) {
+  LLVMContext Context;
+  IRBuilder<> Builder(Context);
+  Instruction *I = Builder.CreatePHI(Builder.getDoubleTy(), 0);
+  Value *F = Builder.CreateFNeg(I);
+
+  EXPECT_TRUE(isa<Value>(F));
+  EXPECT_TRUE(isa<Instruction>(F));
+  EXPECT_TRUE(isa<UnaryInstruction>(F));
+  EXPECT_TRUE(isa<UnaryOperator>(F));
+  EXPECT_FALSE(isa<BinaryOperator>(F));
+
+  F->deleteValue();
+  I->deleteValue();
 }
 
 } // end anonymous namespace

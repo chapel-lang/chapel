@@ -15,6 +15,7 @@ add_llvm_unittest(LLVMExegesisTests
   ClusteringTest.cpp
   PerfHelperTest.cpp
   RegisterValueTest.cpp
+  SnippetGeneratorTest.cpp
   )
 target_link_libraries(LLVMExegesisTests PRIVATE LLVMExegesis)
 
@@ -29,4 +30,7 @@ if(LLVM_TARGETS_TO_BUILD MATCHES "AArch64")
 endif()
 if(LLVM_TARGETS_TO_BUILD MATCHES "PowerPC")
   add_subdirectory(PowerPC)
+endif()
+if(LLVM_TARGETS_TO_BUILD MATCHES "Mips")
+  add_subdirectory(Mips)
 endif()

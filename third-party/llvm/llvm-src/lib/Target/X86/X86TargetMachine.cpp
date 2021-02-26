@@ -1,9 +1,8 @@
 //===-- X86TargetMachine.cpp - Define TargetMachine for the X86 -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -13,6 +12,7 @@
 
 #include "X86TargetMachine.h"
 #include "MCTargetDesc/X86MCTargetDesc.h"
+#include "TargetInfo/X86TargetInfo.h"
 #include "X86.h"
 #include "X86CallLowering.h"
 #include "X86LegalizerInfo.h"
@@ -38,6 +38,7 @@
 #include "llvm/IR/Attributes.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/Function.h"
+#include "llvm/MC/MCAsmInfo.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CodeGen.h"
 #include "llvm/Support/CommandLine.h"
@@ -45,6 +46,7 @@
 #include "llvm/Support/TargetRegistry.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetOptions.h"
+#include "llvm/Transforms/CFGuard.h"
 #include <memory>
 #include <string>
 
@@ -59,7 +61,7 @@ static cl::opt<bool> EnableCondBrFoldingPass("x86-condbr-folding",
                                         "folding pass"),
                                cl::init(false), cl::Hidden);
 
-extern "C" void LLVMInitializeX86Target() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeX86Target() {
   // Register the target.
   RegisterTargetMachine<X86TargetMachine> X(getTheX86_32Target());
   RegisterTargetMachine<X86TargetMachine> Y(getTheX86_64Target());
@@ -70,37 +72,35 @@ extern "C" void LLVMInitializeX86Target() {
   initializeFixupBWInstPassPass(PR);
   initializeEvexToVexInstPassPass(PR);
   initializeFixupLEAPassPass(PR);
-  initializeShadowCallStackPass(PR);
+  initializeFPSPass(PR);
+  initializeX86FixupSetCCPassPass(PR);
   initializeX86CallFrameOptimizationPass(PR);
   initializeX86CmovConverterPassPass(PR);
+  initializeX86ExpandPseudoPass(PR);
   initializeX86ExecutionDomainFixPass(PR);
   initializeX86DomainReassignmentPass(PR);
   initializeX86AvoidSFBPassPass(PR);
+  initializeX86AvoidTrailingCallPassPass(PR);
   initializeX86SpeculativeLoadHardeningPassPass(PR);
+  initializeX86SpeculativeExecutionSideEffectSuppressionPass(PR);
   initializeX86FlagsCopyLoweringPassPass(PR);
   initializeX86CondBrFoldingPassPass(PR);
+  initializeX86LoadValueInjectionLoadHardeningPassPass(PR);
+  initializeX86LoadValueInjectionRetHardeningPassPass(PR);
+  initializeX86OptimizeLEAPassPass(PR);
+  initializeX86PartialReductionPass(PR);
 }
 
 static std::unique_ptr<TargetLoweringObjectFile> createTLOF(const Triple &TT) {
   if (TT.isOSBinFormatMachO()) {
     if (TT.getArch() == Triple::x86_64)
-      return llvm::make_unique<X86_64MachoTargetObjectFile>();
-    return llvm::make_unique<TargetLoweringObjectFileMachO>();
+      return std::make_unique<X86_64MachoTargetObjectFile>();
+    return std::make_unique<TargetLoweringObjectFileMachO>();
   }
 
-  if (TT.isOSFreeBSD())
-    return llvm::make_unique<X86FreeBSDTargetObjectFile>();
-  if (TT.isOSLinux() || TT.isOSNaCl() || TT.isOSIAMCU())
-    return llvm::make_unique<X86LinuxNaClTargetObjectFile>();
-  if (TT.isOSSolaris())
-    return llvm::make_unique<X86SolarisTargetObjectFile>();
-  if (TT.isOSFuchsia())
-    return llvm::make_unique<X86FuchsiaTargetObjectFile>();
-  if (TT.isOSBinFormatELF())
-    return llvm::make_unique<X86ELFTargetObjectFile>();
   if (TT.isOSBinFormatCOFF())
-    return llvm::make_unique<TargetLoweringObjectFileCOFF>();
-  llvm_unreachable("unknown subtarget type");
+    return std::make_unique<TargetLoweringObjectFileCOFF>();
+  return std::make_unique<X86ELFTargetObjectFile>();
 }
 
 static std::string computeDataLayout(const Triple &TT) {
@@ -113,6 +113,9 @@ static std::string computeDataLayout(const Triple &TT) {
        (TT.getEnvironment() == Triple::GNUX32 || TT.isOSNaCl())) ||
       !TT.isArch64Bit())
     Ret += "-p:32:32";
+
+  // Address spaces for 32 bit signed, 32 bit unsigned, and 64 bit pointers.
+  Ret += "-p270:32:32-p271:32:32-p272:64:64";
 
   // Some ABIs align 64 bit integers and doubles to 64 bits, others to 32.
   if (TT.isArch64Bit() || TT.isOSWindows() || TT.isOSNaCl())
@@ -194,7 +197,7 @@ static CodeModel::Model getEffectiveX86CodeModel(Optional<CodeModel::Model> CM,
                                                  bool JIT, bool Is64Bit) {
   if (CM) {
     if (*CM == CodeModel::Tiny)
-      report_fatal_error("Target does not support the tiny CodeModel");
+      report_fatal_error("Target does not support the tiny CodeModel", false);
     return *CM;
   }
   if (JIT)
@@ -215,25 +218,18 @@ X86TargetMachine::X86TargetMachine(const Target &T, const Triple &TT,
           getEffectiveRelocModel(TT, JIT, RM),
           getEffectiveX86CodeModel(CM, JIT, TT.getArch() == Triple::x86_64),
           OL),
-      TLOF(createTLOF(getTargetTriple())) {
-  // Windows stack unwinder gets confused when execution flow "falls through"
-  // after a call to 'noreturn' function.
-  // To prevent that, we emit a trap for 'unreachable' IR instructions.
-  // (which on X86, happens to be the 'ud2' instruction)
+      TLOF(createTLOF(getTargetTriple())), IsJIT(JIT) {
   // On PS4, the "return address" of a 'noreturn' call must still be within
   // the calling function, and TrapUnreachable is an easy way to get that.
-  // The check here for 64-bit windows is a bit icky, but as we're unlikely
-  // to ever want to mix 32 and 64-bit windows code in a single module
-  // this should be fine.
-  if ((TT.isOSWindows() && TT.getArch() == Triple::x86_64) || TT.isPS4() ||
-      TT.isOSBinFormatMachO()) {
+  if (TT.isPS4() || TT.isOSBinFormatMachO()) {
     this->Options.TrapUnreachable = true;
     this->Options.NoTrapAfterNoreturn = TT.isOSBinFormatMachO();
   }
 
-  // Outlining is available for x86-64.
-  if (TT.getArch() == Triple::x86_64)
-    setMachineOutliner(true);
+  setMachineOutliner(true);
+
+  // x86 supports the debug entry values.
+  setSupportsDebugEntryValues(true);
 
   initAsmInfo();
 }
@@ -309,21 +305,13 @@ X86TargetMachine::getSubtargetImpl(const Function &F) const {
     // creation will depend on the TM and the code generation flags on the
     // function that reside in TargetOptions.
     resetTargetOptions(F);
-    I = llvm::make_unique<X86Subtarget>(TargetTriple, CPU, FS, *this,
-                                        Options.StackAlignmentOverride,
-                                        PreferVectorWidthOverride,
-                                        RequiredVectorWidth);
+    I = std::make_unique<X86Subtarget>(
+        TargetTriple, CPU, FS, *this,
+        MaybeAlign(Options.StackAlignmentOverride), PreferVectorWidthOverride,
+        RequiredVectorWidth);
   }
   return I.get();
 }
-
-//===----------------------------------------------------------------------===//
-// Command line options for x86
-//===----------------------------------------------------------------------===//
-static cl::opt<bool>
-UseVZeroUpper("x86-use-vzeroupper", cl::Hidden,
-  cl::desc("Minimize AVX to SSE transition penalty"),
-  cl::init(true));
 
 //===----------------------------------------------------------------------===//
 // X86 TTI query.
@@ -357,6 +345,13 @@ public:
     return DAG;
   }
 
+  ScheduleDAGInstrs *
+  createPostMachineScheduler(MachineSchedContext *C) const override {
+    ScheduleDAGMI *DAG = createGenericSchedPostRA(C);
+    DAG->addMutation(createX86MacroFusionDAGMutation());
+    return DAG;
+  }
+
   void addIRPasses() override;
   bool addInstSelector() override;
   bool addIRTranslator() override;
@@ -371,6 +366,8 @@ public:
   void addPreEmitPass() override;
   void addPreEmitPass2() override;
   void addPreSched2() override;
+
+  std::unique_ptr<CSEConfigBase> getCSEConfig() const override;
 };
 
 class X86ExecutionDomainFix : public ExecutionDomainFix {
@@ -400,13 +397,25 @@ void X86PassConfig::addIRPasses() {
 
   TargetPassConfig::addIRPasses();
 
-  if (TM->getOptLevel() != CodeGenOpt::None)
+  if (TM->getOptLevel() != CodeGenOpt::None) {
     addPass(createInterleavedAccessPass());
+    addPass(createX86PartialReductionPass());
+  }
 
   // Add passes that handle indirect branch removal and insertion of a retpoline
   // thunk. These will be a no-op unless a function subtarget has the retpoline
   // feature enabled.
   addPass(createIndirectBrExpandPass());
+
+  // Add Control Flow Guard checks.
+  const Triple &TT = TM->getTargetTriple();
+  if (TT.isOSWindows()) {
+    if (TT.getArch() == Triple::x86_64) {
+      addPass(createCFGuardDispatchPass());
+    } else {
+      addPass(createCFGuardCheckPass());
+    }
+  }
 }
 
 bool X86PassConfig::addInstSelector() {
@@ -480,6 +489,12 @@ void X86PassConfig::addMachineSSAOptimization() {
 
 void X86PassConfig::addPostRegAlloc() {
   addPass(createX86FloatingPointStackifierPass());
+  // When -O0 is enabled, the Load Value Injection Hardening pass will fall back
+  // to using the Speculative Execution Side Effect Suppression pass for
+  // mitigation. This is to prevent slow downs due to
+  // analyses needed by the LVIHardening pass when compiling at -O0.
+  if (getOptLevel() != CodeGenOpt::None)
+    addPass(createX86LoadValueInjectionLoadHardeningPass());
 }
 
 void X86PassConfig::addPreSched2() { addPass(createX86ExpandPseudoPass()); }
@@ -490,28 +505,55 @@ void X86PassConfig::addPreEmitPass() {
     addPass(createBreakFalseDeps());
   }
 
-  addPass(createShadowCallStackPass());
   addPass(createX86IndirectBranchTrackingPass());
 
-  if (UseVZeroUpper)
-    addPass(createX86IssueVZeroUpperPass());
+  addPass(createX86IssueVZeroUpperPass());
 
   if (getOptLevel() != CodeGenOpt::None) {
     addPass(createX86FixupBWInsts());
     addPass(createX86PadShortFunctions());
     addPass(createX86FixupLEAs());
-    addPass(createX86EvexToVexInsts());
   }
+  addPass(createX86EvexToVexInsts());
   addPass(createX86DiscriminateMemOpsPass());
   addPass(createX86InsertPrefetchPass());
+  addPass(createX86InsertX87waitPass());
 }
 
 void X86PassConfig::addPreEmitPass2() {
-  addPass(createX86RetpolineThunksPass());
+  const Triple &TT = TM->getTargetTriple();
+  const MCAsmInfo *MAI = TM->getMCAsmInfo();
+
+  // The X86 Speculative Execution Pass must run after all control
+  // flow graph modifying passes. As a result it was listed to run right before
+  // the X86 Retpoline Thunks pass. The reason it must run after control flow
+  // graph modifications is that the model of LFENCE in LLVM has to be updated
+  // (FIXME: https://bugs.llvm.org/show_bug.cgi?id=45167). Currently the
+  // placement of this pass was hand checked to ensure that the subsequent
+  // passes don't move the code around the LFENCEs in a way that will hurt the
+  // correctness of this pass. This placement has been shown to work based on
+  // hand inspection of the codegen output.
+  addPass(createX86SpeculativeExecutionSideEffectSuppression());
+  addPass(createX86IndirectThunksPass());
+
+  // Insert extra int3 instructions after trailing call instructions to avoid
+  // issues in the unwinder.
+  if (TT.isOSWindows() && TT.getArch() == Triple::x86_64)
+    addPass(createX86AvoidTrailingCallPass());
+
   // Verify basic block incoming and outgoing cfa offset and register values and
   // correct CFA calculation rule where needed by inserting appropriate CFI
   // instructions.
-  const Triple &TT = TM->getTargetTriple();
-  if (!TT.isOSDarwin() && !TT.isOSWindows())
+  if (!TT.isOSDarwin() &&
+      (!TT.isOSWindows() ||
+       MAI->getExceptionHandlingType() == ExceptionHandling::DwarfCFI))
     addPass(createCFIInstrInserter());
+  // Identify valid longjmp targets for Windows Control Flow Guard.
+  if (TT.isOSWindows())
+    addPass(createCFGuardLongjmpPass());
+  addPass(createX86LoadValueInjectionRetHardeningPass());
+}
+
+std::unique_ptr<CSEConfigBase> X86PassConfig::getCSEConfig() const {
+  return getStandardCSEConfigForOpt(TM->getOptLevel());
 }

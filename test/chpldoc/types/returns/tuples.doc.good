@@ -33,7 +33,7 @@ or
 
    This method returns a tuple of tuples of complex numbers 
 
-.. function:: proc singleDimension(): (uint)
+.. function:: proc singleDimension(): (uint,)
 
    This method returns a one dimensional tuple 
 

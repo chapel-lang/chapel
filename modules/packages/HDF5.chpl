@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -55,7 +55,7 @@ The native HDF5 functions can be called directly by calling into the
 :mod:`C_HDF5` submodule.
 */
 module HDF5 {
-  use SysCTypes;
+  use SysCTypes, BlockDist, CPtr;
 
   // This interface was generated with HDF5 1.10.1. Due to a change of the
   // `hid_t` type from 32-bit to 64-bit in this version, versions prior
@@ -75,7 +75,7 @@ module HDF5 {
      https://portal.hdfgroup.org/display/HDF5/HDF5
   */
   module C_HDF5 {
-    public use SysCTypes;
+    public use SysCTypes, SysBasic, CPtr;
 
     // Header given to c2chapel:
     require "hdf5_hl.h";
@@ -3467,7 +3467,8 @@ module HDF5 {
     pragma "no doc"
     module HDF5_WAR {
       require "HDF5Helper/hdf5_helper.h";
-      use C_HDF5;
+      use HDF5.C_HDF5;
+      use CPtr;
 
       extern proc H5LTget_dataset_info_WAR(loc_id: hid_t,
                                            dset_name: c_string,
@@ -3528,17 +3529,20 @@ module HDF5 {
   proc readAllHDF5Files(locs: [] locale, dirName: string, dsetName: string,
                         filenameStart: string, type eltType, param rank,
                         preprocessor: borrowed HDF5Preprocessor? = nil) {
-    use FileSystem;
+    use FileSystem, List;
 
-    var filenames: [1..0] string;
+    var filenames: list(string);
     for f in findfiles(dirName) {
       if f.startsWith(dirName + '/' + filenameStart:string) &&
          f.endsWith(".h5") {
-        filenames.push_back(f);
+        filenames.append(f);
       }
     }
-
-    return readAllNamedHDF5Files(locs, filenames, dsetName,
+    var fArray: [1..filenames.size] string;
+    for (l, a) in zip(filenames, fArray) {
+      a = l;
+    }
+    return readAllNamedHDF5Files(locs, fArray, dsetName,
                                  eltType, rank, preprocessor=preprocessor);
   }
 
@@ -3569,7 +3573,7 @@ module HDF5 {
       readHDF5Dataset(file_id, dsetName, data);
 
       var rngTup: rank*range;
-      for param i in 0..rank-1 do rngTup[i+1] = 1..dims[i]:int;
+      for param i in 0..rank-1 do rngTup[i] = 1..dims[i]:int;
 
       const D = {(...rngTup)};
 
@@ -3651,7 +3655,7 @@ module HDF5 {
       }
 
       otherwise {
-        halt("Unhandled type in getHDF5Type: ", eltType:string);
+        compilerError("Unhandled type in getHDF5Type: " + eltType:string);
       }
     }
     return hdf5Type;
@@ -3746,7 +3750,7 @@ module HDF5 {
 
     C_HDF5.H5LTget_dataset_ndims(file_id, dset.c_str(), dsetRank);
 
-    var dims: [1..dsetRank] C_HDF5.hsize_t;
+    var dims: [0..#dsetRank] C_HDF5.hsize_t;
     C_HDF5.HDF5_WAR.H5LTget_dataset_info_WAR(file_id, dset.c_str(),
                                              c_ptrTo(dims), nil, nil);
 
@@ -3758,9 +3762,9 @@ module HDF5 {
 
     if outRank == 1 {
       if dsetRank == 1 {
-        for inOffset in 0..#dims[1] by chunkShape.size {
-          const readCount = min(dims[1]:int-inOffset, chunkShape.size);
-          var A: [1..readCount] eltType;
+        for inOffset in 0..#dims[0] by chunkShape.size {
+          const readCount = min(dims[0]:int-inOffset, chunkShape.size);
+          var A: [0..#readCount] eltType;
 
           var inOffsetArr = [inOffset: C_HDF5.hsize_t],
               inCountArr  = [readCount: C_HDF5.hsize_t];
@@ -3806,15 +3810,15 @@ module HDF5 {
       //
       // The set of all of these blocks make the full space
       // representing the data set in the file to be read.
-      iter blockStartsCounts(param dim=1) {
+      iter blockStartsCounts(param dim=0) {
         for inOffset in 0..#dims[dim] by chunkShape.dim[dim].size {
           const readCount = min(dims[dim]:int - inOffset, chunkShape.dim[dim].size);
-          if dim == outRank {
+          if dim == outRank-1 {
             yield ((inOffset,), (readCount,));
           } else {
             for inOffset2 in blockStartsCounts(dim+1) {
-              yield ((inOffset, (...inOffset2(1))),
-                     (readCount, (...inOffset2(2))));
+              yield ((inOffset, (...inOffset2(0))),
+                     (readCount, (...inOffset2(1))));
             }
           }
         }
@@ -3830,9 +3834,9 @@ module HDF5 {
         var rangeTup: outRank * range;
 
         var inOffsetArr, inCountArr,
-            outOffsetArr, outCountArr: [1..outRank] C_HDF5.hsize_t;
+            outOffsetArr, outCountArr: [0..#outRank] C_HDF5.hsize_t;
 
-        for param i in 1..outRank {
+        for param i in 0..<outRank {
           inOffsetArr[i] = starts(i): C_HDF5.hsize_t;
           inCountArr[i] = counts(i): C_HDF5.hsize_t;
           outOffsetArr[i] = 0: C_HDF5.hsize_t;
@@ -3910,7 +3914,7 @@ module HDF5 {
        can use arrays distributed over different numbers of locales.
      */
     proc hdf5WriteDistributedArray(A: [], filename: string, dsetName: string) {
-      use MPI, C_HDF5, BlockDist;
+      use MPI, super.C_HDF5, BlockDist;
 
       // Declare some extern symbols this function uses
       extern type MPI_Info;
@@ -3959,7 +3963,7 @@ module HDF5 {
 
         var dims: c_array(uint, A.rank);
         for param i in 0..A.rank-1 {
-          dims[i] = A.domain.dim(i+1).size: uint;
+          dims[i] = A.domain.dim(i).size: uint;
         }
 
         var sid = H5Screate_simple(A.rank, dims, nil);
@@ -3982,8 +3986,8 @@ module HDF5 {
 
         for i in 0..#A.rank {
           stride[i] = 1;
-          count[i] = locDom.dim(i+1).size: uint;
-          start[i] = (locDom.dim(i+1).low - A.domain.dim(i+1).low): uint;
+          count[i] = locDom.dim(i).size: uint;
+          start[i] = (locDom.dim(i).low - A.domain.dim(i).low): uint;
         }
 
         ret = H5Sselect_hyperslab(fileDataspace, H5S_SELECT_SET, start,
@@ -4044,7 +4048,7 @@ module HDF5 {
       // instead of:
       // A11, A12, B11, B12
       // A21, A22, B21, B22
-      use BlockDist, CyclicDist, C_HDF5;
+      use BlockDist, CyclicDist, super.C_HDF5;
       proc isBlock(D: Block) param return true;
       proc isBlock(D) param return false;
       proc isCyclic(D: Cyclic) param return true;
@@ -4115,7 +4119,7 @@ module HDF5 {
                                      c_ptrTo(memOffsetArr),
                                      c_ptrTo(memStrideArr),
                                      c_ptrTo(memCountArr), nil);
-          ref AA = A[dom];
+          ref AA = A.localSlice[dom];
           C_HDF5.H5Dread(dataset, getHDF5Type(A.eltType), memspace, dataspace,
                          C_HDF5.H5P_DEFAULT, c_ptrTo(AA));
 

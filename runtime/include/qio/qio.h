@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -85,6 +85,10 @@ typedef uint32_t qio_hint_t;
 #ifdef _chplrt_H_
 #include "chpl-atomics.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // also export iohint_t and fdflag_t
 typedef qio_hint_t iohints;
 typedef qio_fdflag_t fdflag_t;
@@ -98,10 +102,6 @@ typedef struct {
 } qio_lock_t;
 
 #define NULL_OWNER chpl_nullTaskID
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 qioerr qio_lock(qio_lock_t* x);
 void qio_unlock(qio_lock_t* x);
@@ -171,14 +171,13 @@ static inline void qio_lock_destroy(qio_lock_t* x) { int rc = pthread_mutex_dest
 
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 extern ssize_t qio_too_small_for_default_mmap;
 extern ssize_t qio_too_large_for_default_mmap;
 extern ssize_t qio_mmap_chunk_iobufs;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 /* Wrap system calls readv, writev, preadv, pwritev
  * to take a buffer.

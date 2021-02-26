@@ -1,10 +1,14 @@
 //===- GCNIterativeScheduler.cpp ------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
-//
+//===----------------------------------------------------------------------===//
+///
+/// \file
+/// This file implements the class GCNIterativeScheduler.
+///
 //===----------------------------------------------------------------------===//
 
 #include "GCNIterativeScheduler.h"
@@ -238,7 +242,7 @@ public:
 
 GCNIterativeScheduler::GCNIterativeScheduler(MachineSchedContext *C,
                                              StrategyKind S)
-  : BaseClass(C, llvm::make_unique<SchedStrategyStub>())
+  : BaseClass(C, std::make_unique<SchedStrategyStub>())
   , Context(C)
   , Strategy(S)
   , UPTracker(*LIS) {

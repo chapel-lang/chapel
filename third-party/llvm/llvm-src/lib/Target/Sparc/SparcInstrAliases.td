@@ -1,9 +1,8 @@
 //===-- SparcInstrAliases.td - Instruction Aliases for Sparc Target -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -282,7 +281,7 @@ defm : int_cond_alias<"pos",  0b1110>;
 defm : int_cond_alias<"neg",  0b0110>;
 defm : int_cond_alias<"vc",   0b1111>;
 defm : int_cond_alias<"vs",   0b0111>;
-let EmitPriority = 0 in 
+let EmitPriority = 0 in
 {
   defm : int_cond_alias<"",     0b1000>; // same as a; gnu asm, not in manual
   defm : int_cond_alias<"nz",   0b1001>; // same as ne
@@ -307,7 +306,7 @@ defm : fp_cond_alias<"uge",   0b1100>;
 defm : fp_cond_alias<"le",    0b1101>;
 defm : fp_cond_alias<"ule",   0b1110>;
 defm : fp_cond_alias<"o",     0b1111>;
-let EmitPriority = 0 in 
+let EmitPriority = 0 in
 {
   defm : fp_cond_alias<"",      0b1000>; // same as a; gnu asm, not in manual
   defm : fp_cond_alias<"nz",    0b0001>; // same as ne

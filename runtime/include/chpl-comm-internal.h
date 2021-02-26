@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -25,6 +25,10 @@
 #include "chpltypes.h"
 #include "chpl-mem-desc.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //
 // Support for broadcasting globals.  Comm layer implementations must
 // supply this.  It is called collectively.  On node 0 it must arrange
@@ -49,6 +53,7 @@ extern size_t chpl_rt_priv_bcast_lens[];
   MACRO(chpl_verbose_comm)                   \
   MACRO(chpl_comm_diagnostics)               \
   MACRO(chpl_comm_diags_print_unstable)      \
+  MACRO(chpl_verbose_comm_stacktrace)        \
   MACRO(chpl_verbose_mem)
 
 #define _RT_PRV_BCAST_M(sym)  chpl_rt_prv_tab_ ## sym ## _idx,
@@ -74,5 +79,9 @@ void chpl_comm_really_bcast_rt_private(int id) {
   chpl_comm_broadcast_private(chpl_private_broadcast_table_len + id,
                               chpl_rt_priv_bcast_lens[id]);
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

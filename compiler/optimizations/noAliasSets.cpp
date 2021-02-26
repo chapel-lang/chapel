@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,16 +96,7 @@ void addNoAliasSetForFormal(ArgSymbol* arg,
 
 static
 bool isNonAliasingArrayImplType(Type* t) {
-  // Array views are marked with this flag because they
-  // can alias other arrays.
-  if (t->symbol->hasFlag(FLAG_ALIASING_ARRAY))
-    return false;
-
-  // Non-array view array classes
-  if (isArrayImplType(t))
-    return true;
-
-  return false;
+  return isArrayImplType(t) && !isAliasingArrayImplType(t);
 }
 
 static
@@ -144,8 +135,7 @@ static
 bool isUsedInArrayGet(Symbol* sym) {
   for_SymbolSymExprs(se, sym) {
     if (CallExpr* call = toCallExpr(se->parentExpr))
-      if (call->isPrimitive(PRIM_ARRAY_GET) ||
-          call->isPrimitive(PRIM_ARRAY_GET_VALUE))
+      if (call->isPrimitive(PRIM_ARRAY_GET))
         if (se == call->get(1))
           return true;
   }
@@ -738,7 +728,7 @@ void computeNoAliasSets() {
   forv_Vec(FnSymbol, p, gFnSymbols) {
     if (fnHasRefFormal(p)) {
       calls.clear();
-      collectFnCalls(p, calls);
+      collectVirtualAndFnCalls(p, calls);
 
       for_vector(CallExpr, call, calls) {
         FnSymbol* q = call->resolvedOrVirtualFunction();
@@ -936,7 +926,7 @@ void computeNoAliasSets() {
     INT_ASSERT(f1 != f2);
 
     calls.clear();
-    collectFnCalls(p, calls);
+    collectVirtualAndFnCalls(p, calls);
 
     for_vector(CallExpr, call, calls) {
       FnSymbol* q = call->resolvedOrVirtualFunction();

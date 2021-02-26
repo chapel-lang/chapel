@@ -1,5 +1,7 @@
 require "externLong.h";
 
+use SysCTypes;
+
 extern record hasLong {
   var i: c_long;
   var j: c_longlong;

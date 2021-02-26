@@ -9,12 +9,7 @@ use FileSystem;
 config const toml = "";
 
 proc main() {
-  var args = new list(string);
-  args.append("foo");
-  args.append("update");
-  args.append("--no-update");
-
-  UpdateLock(args, toml);
+  updateLock(true, tf=toml);
 
   if exists("Mason.lock") {
     writeln("----- lock file -----");

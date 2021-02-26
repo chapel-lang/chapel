@@ -17,7 +17,7 @@ var SparseDom = if layoutType == layoutTypes.csr then
                   cooDom;
 
 const indices = [(3,8), (5,7), (1,5), (9,9), (4,4)];
-SparseDom += indices[..2];
+SparseDom += indices[..1];
 
 var SparseArr: [SparseDom] int;
 

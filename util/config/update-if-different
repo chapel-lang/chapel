@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import filecmp
 import optparse
@@ -6,20 +6,99 @@ import os
 import shutil
 import sys
 
-parser = optparse.OptionParser(
-    usage = 'usage: %prog dst src',
-    description = 'Updates dst with src. If they differ, copies dst to src. '
-                  'Deletes src either way.')
+def main():
+    parser = optparse.OptionParser(
+        usage = 'usage: %prog dst src',
+        description = 'Updates dst with src. If they differ, copies dst to src. '
+                      'Deletes src either way.')
+    parser.add_option("--update", action="store_true", dest="update",
+                      help=("given dst src - update dst with src. "
+                            "If they differ, copy dst to src. "
+                            "Removes src either way"))
+    parser.add_option("--copy", action="store_true", dest="copy",
+                      help=("given src dst - copy src to dst. "
+                            "Only updates files that differ."
+                            "Multiple src args are OK if dst is a directory."))
 
-(options, args) = parser.parse_args()
 
-if len(args) != 2:
-    parser.error("Requires exactly 2 arguments")
+    (options, args) = parser.parse_args()
 
-(dst, src) = args
 
-if not os.path.exists(dst) or not filecmp.cmp(src, dst):
-    sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
-    shutil.copyfile(src, dst)
+    if options.update:
+        if len(args) != 2:
+            parser.error("--update requires exactly 2 arguments")
+        (dst, src) = args
+        update(dst, src)
 
-os.remove(src)
+    elif options.copy:
+        if len(args) < 2:
+            parser.error("--copy requires at least 2 arguments")
+        if len(args) == 2:
+            (src, dst) = args
+            copy(src, dst)
+        else:
+            srcs = args
+            dst = srcs.pop()
+            if not os.path.isdir(dst):
+                parser.error("dst must be a directory for multi-file copy")
+            else:
+                for src in srcs:
+                    copy(src, dst)
+
+def update(dst, src):
+    if not os.path.exists(dst) or not filecmp.cmp(src, dst):
+        sys.stdout.write("Updating {0} from {1}\n".format(dst, src))
+        shutil.copyfile(src, dst)
+
+    os.remove(src)
+
+def copy(src, dst):
+    """ copy src into dst.
+        The copy handles these two cases in a special way:
+          * If dst is a directory containing a file not in a src directory,
+            that file will be removed.
+          * If dst contains a file that is the same as the file in src,
+            the file will not be copied (so that it is not "updated"
+            for follow-on build steps).
+        Additionally, this function handles the case where src is a file
+        and dst is a directory similarly to the 'cp' command.
+    """
+
+    if not os.path.isdir(src):
+        # handle regular files
+
+        if os.path.isdir(dst):
+            # handle copying a file to a directory
+            # like cp some/path/to/file somedir/
+            # in that case, use dst=somedir/file
+            sub = os.path.basename(src)
+            dst = os.path.join(dst, sub)
+        # do the copy
+        if not os.path.exists(dst) or not filecmp.cmp(src, dst):
+            sys.stdout.write("Copying {0} to {1}\n".format(src, dst))
+            shutil.copyfile(src, dst)
+    else:
+        # handle directories
+        if not os.path.exists(dst):
+            sys.stdout.write("Copying dir {0} to {1}\n".format(src, dst))
+            shutil.copytree(src, dst)
+        else:
+            srclist = sorted(os.listdir(src))
+            srcset = set(srclist)
+            # delete anything in dst that is not in src
+            dstlist = sorted(os.listdir(dst))
+            for sub in dstlist:
+                if not sub in srcset:
+                    rm = os.path.join(dst, sub)
+                    if os.path.isdir(rm):
+                        sys.stdout.write("Removing dir {0} not present in {1}\n".format(rm, src))
+                        shutil.rmtree(rm)
+                    else:
+                        sys.stdout.write("Removing {0} not present in {1}\n".format(rm, src))
+                        os.remove(rm)
+            # recursively copy anything from src
+            for sub in srclist:
+                copy(os.path.join(src, sub), os.path.join(dst, sub))
+
+if __name__ == '__main__':
+    main()

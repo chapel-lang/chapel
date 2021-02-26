@@ -1,26 +1,17 @@
 //===-- AVRCallingConv.td - Calling Conventions for AVR ----*- tablegen -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // This describes the calling conventions for AVR architecture.
+// Normal functions use a special calling convention, solved in code.
 //===----------------------------------------------------------------------===//
 
 //===----------------------------------------------------------------------===//
 // AVR Return Value Calling Convention
 //===----------------------------------------------------------------------===//
-
-def RetCC_AVR : CallingConv
-<[
-  // i8 is returned in R24.
-  CCIfType<[i8], CCAssignToReg<[R24]>>,
-
-  // i16 are returned in R25:R24, R23:R22, R21:R20 and R19:R18.
-  CCIfType<[i16], CCAssignToReg<[R25R24, R23R22, R21R20, R19R18]>>
-]>;
 
 // Special return value calling convention for runtime functions.
 def RetCC_AVR_BUILTIN : CallingConv
@@ -40,14 +31,6 @@ def ArgCC_AVR_Vararg : CallingConv
 <[
   // i16 are always passed through the stack with an alignment of 1.
   CCAssignToStack<2, 1>
-]>;
-
-// Special argument calling convention for
-// division runtime functions.
-def ArgCC_AVR_BUILTIN_DIV : CallingConv
-<[
-  CCIfType<[i8], CCAssignToReg<[R24,R22]>>,
-  CCIfType<[i16], CCAssignToReg<[R25R24, R23R22]>>
 ]>;
 
 //===----------------------------------------------------------------------===//

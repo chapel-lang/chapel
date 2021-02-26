@@ -1,9 +1,8 @@
 //===- llvm/unittest/ADT/TestGraph.h - Graph for testing ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -176,8 +175,8 @@ public:
 
   public:
     /// ChildIterator - Copy constructor.
-    ChildIterator(const ChildIterator& other) : FirstNode(other.FirstNode),
-      Children(other.Children) {}
+    ChildIterator(const ChildIterator &other) = default;
+    ChildIterator &operator=(const ChildIterator &other) = default;
 
     /// Comparison operators.
     bool operator==(const ChildIterator &other) const {

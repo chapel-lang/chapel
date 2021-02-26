@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import optparse
 import os
 import platform
@@ -21,11 +21,11 @@ def get(flag='host'):
         raise error("Invalid flag: '{0}'".format(flag), ValueError)
 
     if not platform_val:
-        # Check for cray platform. It is a cray platform if there is an CLEinfo
-        # config file and it has a known network value in it.
-        cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo')
+        # Check for cray platform. It is a cray platform if there is a
+        # cle-release/CLEinfo config file with a known network value in it.
+        cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release') # CLE >= 6
         if not os.path.exists(cle_info_file):
-            cle_info_file = os.path.abspath('/etc/opt/cray/release/cle-release')
+            cle_info_file = os.path.abspath('/etc/opt/cray/release/CLEinfo') # CLE <= 5
 
         if os.path.exists(cle_info_file):
             with open(cle_info_file, 'r') as fp:
@@ -34,15 +34,13 @@ def get(flag='host'):
             net_match = net_pattern.search(cle_info)
             if net_match is not None and len(net_match.groups()) == 1:
                 net = net_match.group('net')
-                if net.lower() == 'gem':
-                    platform_val = 'cray-xe'
-                elif net.lower() == 'ari':
+                if net.lower() == 'ari':
                     platform_val = 'cray-xc'
 
     if not platform_val:
         network = os.environ.get('CRAYPE_NETWORK_TARGET', '')
         if network.startswith("slingshot") or network == "ofi":
-            platform_val = 'cray-shasta'
+            platform_val = 'hpe-cray-ex'
 
     if not platform_val:
         # uname() -> (system, node, release, version, machine, processor)
@@ -76,11 +74,6 @@ def get(flag='host'):
                 platform_val = 'netbsd32'
 
     return platform_val
-
-
-@memoize
-def is_cross_compiling():
-    return get('host') != get('target')
 
 
 def _main():

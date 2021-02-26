@@ -1,9 +1,8 @@
 //===-- AMDGPULowerKernelArguments.cpp ------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -59,6 +58,21 @@ public:
 
 } // end anonymous namespace
 
+// skip allocas
+static BasicBlock::iterator getInsertPt(BasicBlock &BB) {
+  BasicBlock::iterator InsPt = BB.getFirstInsertionPt();
+  for (BasicBlock::iterator E = BB.end(); InsPt != E; ++InsPt) {
+    AllocaInst *AI = dyn_cast<AllocaInst>(&*InsPt);
+
+    // If this is a dynamic alloca, the value may depend on the loaded kernargs,
+    // so loads will need to be inserted before it.
+    if (!AI || !AI->isStaticAlloca())
+      break;
+  }
+
+  return InsPt;
+}
+
 bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
   CallingConv::ID CC = F.getCallingConv();
   if (CC != CallingConv::AMDGPU_KERNEL || F.arg_empty())
@@ -71,12 +85,12 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
   LLVMContext &Ctx = F.getParent()->getContext();
   const DataLayout &DL = F.getParent()->getDataLayout();
   BasicBlock &EntryBlock = *F.begin();
-  IRBuilder<> Builder(&*EntryBlock.begin());
+  IRBuilder<> Builder(&*getInsertPt(EntryBlock));
 
-  const unsigned KernArgBaseAlign = 16; // FIXME: Increase if necessary
+  const Align KernArgBaseAlign(16); // FIXME: Increase if necessary
   const uint64_t BaseOffset = ST.getExplicitKernelArgOffset(F);
 
-  unsigned MaxAlign;
+  Align MaxAlign;
   // FIXME: Alignment is broken broken with explicit arg offset.;
   const uint64_t TotalKernArgSize = ST.getKernArgSegmentSize(F, MaxAlign);
   if (TotalKernArgSize == 0)
@@ -95,12 +109,12 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
 
   for (Argument &Arg : F.args()) {
     Type *ArgTy = Arg.getType();
-    unsigned Align = DL.getABITypeAlignment(ArgTy);
+    Align ABITypeAlign = DL.getABITypeAlign(ArgTy);
     unsigned Size = DL.getTypeSizeInBits(ArgTy);
     unsigned AllocSize = DL.getTypeAllocSize(ArgTy);
 
-    uint64_t EltOffset = alignTo(ExplicitArgOffset, Align) + BaseOffset;
-    ExplicitArgOffset = alignTo(ExplicitArgOffset, Align) + AllocSize;
+    uint64_t EltOffset = alignTo(ExplicitArgOffset, ABITypeAlign) + BaseOffset;
+    ExplicitArgOffset = alignTo(ExplicitArgOffset, ABITypeAlign) + AllocSize;
 
     if (Arg.use_empty())
       continue;
@@ -110,8 +124,9 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
       // modes on SI to know the high bits are 0 so pointer adds don't wrap. We
       // can't represent this with range metadata because it's only allowed for
       // integer types.
-      if (PT->getAddressSpace() == AMDGPUAS::LOCAL_ADDRESS &&
-          ST.getGeneration() == AMDGPUSubtarget::SOUTHERN_ISLANDS)
+      if ((PT->getAddressSpace() == AMDGPUAS::LOCAL_ADDRESS ||
+           PT->getAddressSpace() == AMDGPUAS::REGION_ADDRESS) &&
+          !ST.hasUsableDSOffset())
         continue;
 
       // FIXME: We can replace this with equivalent alias.scope/noalias
@@ -120,7 +135,7 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
         continue;
     }
 
-    VectorType *VT = dyn_cast<VectorType>(ArgTy);
+    auto *VT = dyn_cast<FixedVectorType>(ArgTy);
     bool IsV3 = VT && VT->getNumElements() == 3;
     bool DoShiftOpt = Size < 32 && !ArgTy->isAggregateType();
 
@@ -128,10 +143,11 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
 
     int64_t AlignDownOffset = alignDown(EltOffset, 4);
     int64_t OffsetDiff = EltOffset - AlignDownOffset;
-    unsigned AdjustedAlign = MinAlign(DoShiftOpt ? AlignDownOffset : EltOffset,
-                                      KernArgBaseAlign);
+    Align AdjustedAlign = commonAlignment(
+        KernArgBaseAlign, DoShiftOpt ? AlignDownOffset : EltOffset);
 
     Value *ArgPtr;
+    Type *AdjustedArgTy;
     if (DoShiftOpt) { // FIXME: Handle aggregate types
       // Since we don't have sub-dword scalar loads, avoid doing an extload by
       // loading earlier than the argument address, and extracting the relevant
@@ -139,30 +155,27 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
       //
       // Additionally widen any sub-dword load to i32 even if suitably aligned,
       // so that CSE between different argument loads works easily.
-
       ArgPtr = Builder.CreateConstInBoundsGEP1_64(
-        KernArgSegment,
-        AlignDownOffset,
-        Arg.getName() + ".kernarg.offset.align.down");
-      ArgPtr = Builder.CreateBitCast(ArgPtr,
-                                     Builder.getInt32Ty()->getPointerTo(AS),
-                                     ArgPtr->getName() + ".cast");
+          Builder.getInt8Ty(), KernArgSegment, AlignDownOffset,
+          Arg.getName() + ".kernarg.offset.align.down");
+      AdjustedArgTy = Builder.getInt32Ty();
     } else {
       ArgPtr = Builder.CreateConstInBoundsGEP1_64(
-        KernArgSegment,
-        EltOffset,
-        Arg.getName() + ".kernarg.offset");
-      ArgPtr = Builder.CreateBitCast(ArgPtr, ArgTy->getPointerTo(AS),
-                                     ArgPtr->getName() + ".cast");
+          Builder.getInt8Ty(), KernArgSegment, EltOffset,
+          Arg.getName() + ".kernarg.offset");
+      AdjustedArgTy = ArgTy;
     }
 
     if (IsV3 && Size >= 32) {
-      V4Ty = VectorType::get(VT->getVectorElementType(), 4);
+      V4Ty = FixedVectorType::get(VT->getElementType(), 4);
       // Use the hack that clang uses to avoid SelectionDAG ruining v3 loads
-      ArgPtr = Builder.CreateBitCast(ArgPtr, V4Ty->getPointerTo(AS));
+      AdjustedArgTy = V4Ty;
     }
 
-    LoadInst *Load = Builder.CreateAlignedLoad(ArgPtr, AdjustedAlign);
+    ArgPtr = Builder.CreateBitCast(ArgPtr, AdjustedArgTy->getPointerTo(AS),
+                                   ArgPtr->getName() + ".cast");
+    LoadInst *Load =
+        Builder.CreateAlignedLoad(AdjustedArgTy, ArgPtr, AdjustedAlign);
     Load->setMetadata(LLVMContext::MD_invariant_load, MDNode::get(Ctx, {}));
 
     MDBuilder MDB(Ctx);
@@ -212,7 +225,7 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
       Arg.replaceAllUsesWith(NewVal);
     } else if (IsV3) {
       Value *Shuf = Builder.CreateShuffleVector(Load, UndefValue::get(V4Ty),
-                                                {0, 1, 2},
+                                                ArrayRef<int>{0, 1, 2},
                                                 Arg.getName() + ".load");
       Arg.replaceAllUsesWith(Shuf);
     } else {
@@ -222,8 +235,8 @@ bool AMDGPULowerKernelArguments::runOnFunction(Function &F) {
   }
 
   KernArgSegment->addAttribute(
-    AttributeList::ReturnIndex,
-    Attribute::getWithAlignment(Ctx, std::max(KernArgBaseAlign, MaxAlign)));
+      AttributeList::ReturnIndex,
+      Attribute::getWithAlignment(Ctx, std::max(KernArgBaseAlign, MaxAlign)));
 
   return true;
 }

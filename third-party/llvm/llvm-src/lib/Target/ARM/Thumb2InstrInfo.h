@@ -1,9 +1,8 @@
 //===-- Thumb2InstrInfo.h - Thumb-2 Instruction Information -----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -40,18 +39,18 @@ public:
                            MachineBasicBlock::iterator MBBI) const override;
 
   void copyPhysReg(MachineBasicBlock &MBB, MachineBasicBlock::iterator I,
-                   const DebugLoc &DL, unsigned DestReg, unsigned SrcReg,
+                   const DebugLoc &DL, MCRegister DestReg, MCRegister SrcReg,
                    bool KillSrc) const override;
 
   void storeRegToStackSlot(MachineBasicBlock &MBB,
                            MachineBasicBlock::iterator MBBI,
-                           unsigned SrcReg, bool isKill, int FrameIndex,
+                           Register SrcReg, bool isKill, int FrameIndex,
                            const TargetRegisterClass *RC,
                            const TargetRegisterInfo *TRI) const override;
 
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MBBI,
-                            unsigned DestReg, int FrameIndex,
+                            Register DestReg, int FrameIndex,
                             const TargetRegisterClass *RC,
                             const TargetRegisterInfo *TRI) const override;
 
@@ -68,7 +67,24 @@ private:
 /// getITInstrPredicate - Valid only in Thumb2 mode. This function is identical
 /// to llvm::getInstrPredicate except it returns AL for conditional branch
 /// instructions which are "predicated", but are not in IT blocks.
-ARMCC::CondCodes getITInstrPredicate(const MachineInstr &MI, unsigned &PredReg);
+ARMCC::CondCodes getITInstrPredicate(const MachineInstr &MI, Register &PredReg);
+
+// getVPTInstrPredicate: VPT analogue of that, plus a helper function
+// corresponding to MachineInstr::findFirstPredOperandIdx.
+int findFirstVPTPredOperandIdx(const MachineInstr &MI);
+ARMVCC::VPTCodes getVPTInstrPredicate(const MachineInstr &MI,
+                                      Register &PredReg);
+inline ARMVCC::VPTCodes getVPTInstrPredicate(const MachineInstr &MI) {
+  Register PredReg;
+  return getVPTInstrPredicate(MI, PredReg);
 }
+
+// Recomputes the Block Mask of Instr, a VPT or VPST instruction.
+// This rebuilds the block mask of the instruction depending on the predicates
+// of the instructions following it. This should only be used after the
+// MVEVPTBlockInsertion pass has run, and should be used whenever a predicated
+// instruction is added to/removed from the block.
+void recomputeVPTBlockMask(MachineInstr &Instr);
+} // namespace llvm
 
 #endif

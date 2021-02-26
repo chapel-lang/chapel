@@ -1,3 +1,3 @@
-modifyIndicesStandalone.chpl:5: error: illegal lvalue in assignment
-modifyIndicesStandalone.chpl:10: error: illegal lvalue in assignment
-modifyIndicesStandalone.chpl:15: error: illegal lvalue in assignment
+modifyIndicesStandalone.chpl:5: error: cannot assign to const variable
+modifyIndicesStandalone.chpl:10: error: cannot assign to const variable
+modifyIndicesStandalone.chpl:15: error: cannot assign to const variable

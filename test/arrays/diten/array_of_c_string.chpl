@@ -1,5 +1,7 @@
 require "array_of_c_string.h";//, "array_of_c_string.c";
 
+use CPtr;
+
 extern proc foo(argc: int, argv: c_void_ptr);
 
 proc main(args: [] string) {

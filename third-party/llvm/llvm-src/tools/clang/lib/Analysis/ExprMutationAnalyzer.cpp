@@ -1,9 +1,8 @@
 //===---------- ExprMutationAnalyzer.cpp ----------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 #include "clang/Analysis/Analyses/ExprMutationAnalyzer.h"
@@ -25,15 +24,24 @@ AST_MATCHER_P(CXXForRangeStmt, hasRangeStmt,
   return InnerMatcher.matches(*Range, Finder, Builder);
 }
 
+AST_MATCHER_P(Expr, maybeEvalCommaExpr,
+             ast_matchers::internal::Matcher<Expr>, InnerMatcher) {
+  const Expr* Result = &Node;
+  while (const auto *BOComma =
+               dyn_cast_or_null<BinaryOperator>(Result->IgnoreParens())) {
+    if (!BOComma->isCommaOp())
+      break;
+    Result = BOComma->getRHS();
+  }
+  return InnerMatcher.matches(*Result, Finder, Builder);
+}
+
 const ast_matchers::internal::VariadicDynCastAllOfMatcher<Stmt, CXXTypeidExpr>
     cxxTypeidExpr;
 
 AST_MATCHER(CXXTypeidExpr, isPotentiallyEvaluated) {
   return Node.isPotentiallyEvaluated();
 }
-
-const ast_matchers::internal::VariadicDynCastAllOfMatcher<Stmt, CXXNoexceptExpr>
-    cxxNoexceptExpr;
 
 const ast_matchers::internal::VariadicDynCastAllOfMatcher<Stmt,
                                                           GenericSelectionExpr>
@@ -65,10 +73,10 @@ const auto isMoveOnly = [] {
 };
 
 template <class T> struct NodeID;
-template <> struct NodeID<Expr> { static const std::string value; };
-template <> struct NodeID<Decl> { static const std::string value; };
-const std::string NodeID<Expr>::value = "expr";
-const std::string NodeID<Decl>::value = "decl";
+template <> struct NodeID<Expr> { static constexpr StringRef value = "expr"; };
+template <> struct NodeID<Decl> { static constexpr StringRef value = "decl"; };
+constexpr StringRef NodeID<Expr>::value;
+constexpr StringRef NodeID<Decl>::value;
 
 template <class T, class F = const Stmt *(ExprMutationAnalyzer::*)(const T *)>
 const Stmt *tryEachMatch(ArrayRef<ast_matchers::BoundNodes> Matches,
@@ -193,25 +201,30 @@ const Stmt *ExprMutationAnalyzer::findDeclPointeeMutation(
 
 const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
   // LHS of any assignment operators.
-  const auto AsAssignmentLhs =
-      binaryOperator(isAssignmentOperator(), hasLHS(equalsNode(Exp)));
+  const auto AsAssignmentLhs = binaryOperator(
+      isAssignmentOperator(),
+      hasLHS(maybeEvalCommaExpr(ignoringParenImpCasts(equalsNode(Exp)))));
 
   // Operand of increment/decrement operators.
   const auto AsIncDecOperand =
       unaryOperator(anyOf(hasOperatorName("++"), hasOperatorName("--")),
-                    hasUnaryOperand(equalsNode(Exp)));
+                    hasUnaryOperand(maybeEvalCommaExpr(
+                        ignoringParenImpCasts(equalsNode(Exp)))));
 
   // Invoking non-const member function.
   // A member function is assumed to be non-const when it is unresolved.
   const auto NonConstMethod = cxxMethodDecl(unless(isConst()));
   const auto AsNonConstThis =
-      expr(anyOf(cxxMemberCallExpr(callee(NonConstMethod), on(equalsNode(Exp))),
+      expr(anyOf(cxxMemberCallExpr(callee(NonConstMethod),
+                                   on(maybeEvalCommaExpr(equalsNode(Exp)))),
                  cxxOperatorCallExpr(callee(NonConstMethod),
-                                     hasArgument(0, equalsNode(Exp))),
+                                     hasArgument(0,
+                                                 maybeEvalCommaExpr(equalsNode(Exp)))),
                  callExpr(callee(expr(anyOf(
-                     unresolvedMemberExpr(hasObjectExpression(equalsNode(Exp))),
+                     unresolvedMemberExpr(
+                       hasObjectExpression(maybeEvalCommaExpr(equalsNode(Exp)))),
                      cxxDependentScopeMemberExpr(
-                         hasObjectExpression(equalsNode(Exp)))))))));
+                         hasObjectExpression(maybeEvalCommaExpr(equalsNode(Exp))))))))));
 
   // Taking address of 'Exp'.
   // We're assuming 'Exp' is mutated as soon as its address is taken, though in
@@ -221,10 +234,11 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
       unaryOperator(hasOperatorName("&"),
                     // A NoOp implicit cast is adding const.
                     unless(hasParent(implicitCastExpr(hasCastKind(CK_NoOp)))),
-                    hasUnaryOperand(equalsNode(Exp)));
+                    hasUnaryOperand(maybeEvalCommaExpr(equalsNode(Exp))));
   const auto AsPointerFromArrayDecay =
       castExpr(hasCastKind(CK_ArrayToPointerDecay),
-               unless(hasParent(arraySubscriptExpr())), has(equalsNode(Exp)));
+               unless(hasParent(arraySubscriptExpr())),
+               has(maybeEvalCommaExpr(equalsNode(Exp))));
   // Treat calling `operator->()` of move-only classes as taking address.
   // These are typically smart pointers with unique ownership so we treat
   // mutation of pointee as mutation of the smart pointer itself.
@@ -232,7 +246,8 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
       cxxOperatorCallExpr(hasOverloadedOperatorName("->"),
                           callee(cxxMethodDecl(ofClass(isMoveOnly()),
                                                returns(nonConstPointerType()))),
-                          argumentCountIs(1), hasArgument(0, equalsNode(Exp)));
+                          argumentCountIs(1),
+                          hasArgument(0, maybeEvalCommaExpr(equalsNode(Exp))));
 
   // Used as non-const-ref argument when calling a function.
   // An argument is assumed to be non-const-ref when the function is unresolved.
@@ -240,7 +255,8 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
   // findFunctionArgMutation which has additional smarts for handling forwarding
   // references.
   const auto NonConstRefParam = forEachArgumentWithParam(
-      equalsNode(Exp), parmVarDecl(hasType(nonConstReferenceType())));
+      maybeEvalCommaExpr(equalsNode(Exp)),
+      parmVarDecl(hasType(nonConstReferenceType())));
   const auto NotInstantiated = unless(hasDeclaration(isInstantiated()));
   const auto AsNonConstRefArg = anyOf(
       callExpr(NonConstRefParam, NotInstantiated),
@@ -248,8 +264,8 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
       callExpr(callee(expr(anyOf(unresolvedLookupExpr(), unresolvedMemberExpr(),
                                  cxxDependentScopeMemberExpr(),
                                  hasType(templateTypeParmType())))),
-               hasAnyArgument(equalsNode(Exp))),
-      cxxUnresolvedConstructExpr(hasAnyArgument(equalsNode(Exp))));
+               hasAnyArgument(maybeEvalCommaExpr(equalsNode(Exp)))),
+      cxxUnresolvedConstructExpr(hasAnyArgument(maybeEvalCommaExpr(equalsNode(Exp)))));
 
   // Captured by a lambda by reference.
   // If we're initializing a capture with 'Exp' directly then we're initializing
@@ -262,15 +278,18 @@ const Stmt *ExprMutationAnalyzer::findDirectMutation(const Expr *Exp) {
   // For returning by value there will be an ImplicitCastExpr <LValueToRValue>.
   // For returning by const-ref there will be an ImplicitCastExpr <NoOp> (for
   // adding const.)
-  const auto AsNonConstRefReturn = returnStmt(hasReturnValue(equalsNode(Exp)));
+  const auto AsNonConstRefReturn = returnStmt(hasReturnValue(
+                                                maybeEvalCommaExpr(equalsNode(Exp))));
 
-  const auto Matches =
-      match(findAll(stmt(anyOf(AsAssignmentLhs, AsIncDecOperand, AsNonConstThis,
-                               AsAmpersandOperand, AsPointerFromArrayDecay,
-                               AsOperatorArrowThis, AsNonConstRefArg,
-                               AsLambdaRefCaptureInit, AsNonConstRefReturn))
-                        .bind("stmt")),
-            Stm, Context);
+  const auto Matches = match(
+      traverse(
+          ast_type_traits::TK_AsIs,
+          findAll(stmt(anyOf(AsAssignmentLhs, AsIncDecOperand, AsNonConstThis,
+                             AsAmpersandOperand, AsPointerFromArrayDecay,
+                             AsOperatorArrowThis, AsNonConstRefArg,
+                             AsLambdaRefCaptureInit, AsNonConstRefReturn))
+                      .bind("stmt"))),
+      Stm, Context);
   return selectFirst<Stmt>("stmt", Matches);
 }
 
@@ -369,12 +388,15 @@ const Stmt *ExprMutationAnalyzer::findFunctionArgMutation(const Expr *Exp) {
   const auto IsInstantiated = hasDeclaration(isInstantiated());
   const auto FuncDecl = hasDeclaration(functionDecl().bind("func"));
   const auto Matches = match(
-      findAll(expr(anyOf(callExpr(NonConstRefParam, IsInstantiated, FuncDecl,
+      traverse(
+          ast_type_traits::TK_AsIs,
+          findAll(
+              expr(anyOf(callExpr(NonConstRefParam, IsInstantiated, FuncDecl,
                                   unless(callee(namedDecl(hasAnyName(
                                       "::std::move", "::std::forward"))))),
                          cxxConstructExpr(NonConstRefParam, IsInstantiated,
                                           FuncDecl)))
-                  .bind(NodeID<Expr>::value)),
+                  .bind(NodeID<Expr>::value))),
       Stm, Context);
   for (const auto &Nodes : Matches) {
     const auto *Exp = Nodes.getNodeAs<Expr>(NodeID<Expr>::value);

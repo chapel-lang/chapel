@@ -1,9 +1,8 @@
 //===- InstrInfoEmitter.cpp - Generate a Instruction Set Desc. --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -77,7 +76,9 @@ private:
                   std::map<std::vector<Record*>, unsigned> &EL,
                   const OperandInfoMapTy &OpInfo,
                   raw_ostream &OS);
-  void emitOperandTypesEnum(raw_ostream &OS, const CodeGenTarget &Target);
+  void emitOperandTypeMappings(
+      raw_ostream &OS, const CodeGenTarget &Target,
+      ArrayRef<const CodeGenInstruction *> NumberedInstructions);
   void initOperandMapData(
             ArrayRef<const CodeGenInstruction *> NumberedInstructions,
             StringRef Namespace,
@@ -163,6 +164,11 @@ InstrInfoEmitter::GetOperandInfo(const CodeGenInstruction &Inst) {
       if (Op.Rec->isSubClassOf("OptionalDefOperand"))
         Res += "|(1<<MCOI::OptionalDef)";
 
+      // Branch target operands.  Check to see if the original unexpanded
+      // operand was of type BranchTargetOperand.
+      if (Op.Rec->isSubClassOf("BranchTargetOperand"))
+        Res += "|(1<<MCOI::BranchTarget)";
+
       // Fill in operand type.
       Res += ", ";
       assert(!Op.OperandType.empty() && "Invalid operand type.");
@@ -212,7 +218,7 @@ void InstrInfoEmitter::EmitOperandInfo(raw_ostream &OS,
 }
 
 /// Initialize data structures for generating operand name mappings.
-/// 
+///
 /// \param Operands [out] A map used to generate the OpName enum with operand
 ///        names as its keys and operand enum values as its values.
 /// \param OperandMap [out] A map for representing the operand name mappings for
@@ -325,11 +331,16 @@ void InstrInfoEmitter::emitOperandNameMappings(raw_ostream &OS,
 /// Generate an enum for all the operand types for this target, under the
 /// llvm::TargetNamespace::OpTypes namespace.
 /// Operand types are all definitions derived of the Operand Target.td class.
-void InstrInfoEmitter::emitOperandTypesEnum(raw_ostream &OS,
-                                            const CodeGenTarget &Target) {
+void InstrInfoEmitter::emitOperandTypeMappings(
+    raw_ostream &OS, const CodeGenTarget &Target,
+    ArrayRef<const CodeGenInstruction *> NumberedInstructions) {
 
   StringRef Namespace = Target.getInstNamespace();
   std::vector<Record *> Operands = Records.getAllDerivedDefinitions("Operand");
+  std::vector<Record *> RegisterOperands =
+      Records.getAllDerivedDefinitions("RegisterOperand");
+  std::vector<Record *> RegisterClasses =
+      Records.getAllDerivedDefinitions("RegisterClass");
 
   OS << "#ifdef GET_INSTRINFO_OPERAND_TYPES_ENUM\n";
   OS << "#undef GET_INSTRINFO_OPERAND_TYPES_ENUM\n";
@@ -339,10 +350,13 @@ void InstrInfoEmitter::emitOperandTypesEnum(raw_ostream &OS,
   OS << "enum OperandType {\n";
 
   unsigned EnumVal = 0;
-  for (const Record *Op : Operands) {
-    if (!Op->isAnonymous())
-      OS << "  " << Op->getName() << " = " << EnumVal << ",\n";
-    ++EnumVal;
+  for (const std::vector<Record *> *RecordsToAdd :
+       {&Operands, &RegisterOperands, &RegisterClasses}) {
+    for (const Record *Op : *RecordsToAdd) {
+      if (!Op->isAnonymous())
+        OS << "  " << Op->getName() << " = " << EnumVal << ",\n";
+      ++EnumVal;
+    }
   }
 
   OS << "  OPERAND_TYPE_LIST_END" << "\n};\n";
@@ -350,6 +364,73 @@ void InstrInfoEmitter::emitOperandTypesEnum(raw_ostream &OS,
   OS << "} // end namespace " << Namespace << "\n";
   OS << "} // end namespace llvm\n";
   OS << "#endif // GET_INSTRINFO_OPERAND_TYPES_ENUM\n\n";
+
+  OS << "#ifdef GET_INSTRINFO_OPERAND_TYPE\n";
+  OS << "#undef GET_INSTRINFO_OPERAND_TYPE\n";
+  OS << "namespace llvm {\n";
+  OS << "namespace " << Namespace << " {\n";
+  OS << "LLVM_READONLY\n";
+  OS << "static int getOperandType(uint16_t Opcode, uint16_t OpIdx) {\n";
+  // TODO: Factor out instructions with same operands to compress the tables.
+  if (!NumberedInstructions.empty()) {
+    std::vector<int> OperandOffsets;
+    std::vector<Record *> OperandRecords;
+    int CurrentOffset = 0;
+    for (const CodeGenInstruction *Inst : NumberedInstructions) {
+      OperandOffsets.push_back(CurrentOffset);
+      for (const auto &Op : Inst->Operands) {
+        const DagInit *MIOI = Op.MIOperandInfo;
+        if (!MIOI || MIOI->getNumArgs() == 0) {
+          // Single, anonymous, operand.
+          OperandRecords.push_back(Op.Rec);
+          ++CurrentOffset;
+        } else {
+          for (Init *Arg : make_range(MIOI->arg_begin(), MIOI->arg_end())) {
+            OperandRecords.push_back(cast<DefInit>(Arg)->getDef());
+            ++CurrentOffset;
+          }
+        }
+      }
+    }
+
+    // Emit the table of offsets for the opcode lookup.
+    OS << "  const int Offsets[] = {\n";
+    for (int I = 0, E = OperandOffsets.size(); I != E; ++I)
+      OS << "    " << OperandOffsets[I] << ",\n";
+    OS << "  };\n";
+
+    // Add an entry for the end so that we don't need to special case it below.
+    OperandOffsets.push_back(OperandRecords.size());
+    // Emit the actual operand types in a flat table.
+    OS << "  const int OpcodeOperandTypes[] = {\n    ";
+    for (int I = 0, E = OperandRecords.size(), CurOffset = 1; I != E; ++I) {
+      // We print each Opcode's operands in its own row.
+      if (I == OperandOffsets[CurOffset]) {
+        OS << "\n    ";
+        // If there are empty rows, mark them with an empty comment.
+        while (OperandOffsets[++CurOffset] == I)
+          OS << "/**/\n    ";
+      }
+      Record *OpR = OperandRecords[I];
+      if ((OpR->isSubClassOf("Operand") ||
+           OpR->isSubClassOf("RegisterOperand") ||
+           OpR->isSubClassOf("RegisterClass")) &&
+          !OpR->isAnonymous())
+        OS << "OpTypes::" << OpR->getName();
+      else
+        OS << -1;
+      OS << ", ";
+    }
+    OS << "\n  };\n";
+
+    OS << "  return OpcodeOperandTypes[Offsets[Opcode] + OpIdx];\n";
+  } else {
+    OS << "  llvm_unreachable(\"No instructions defined\");\n";
+  }
+  OS << "}\n";
+  OS << "} // end namespace " << Namespace << "\n";
+  OS << "} // end namespace llvm\n";
+  OS << "#endif // GET_INSTRINFO_OPERAND_TYPE\n\n";
 }
 
 void InstrInfoEmitter::emitMCIIHelperMethods(raw_ostream &OS,
@@ -371,8 +452,8 @@ void InstrInfoEmitter::emitMCIIHelperMethods(raw_ostream &OS,
         << "(const MCInst &MI);\n";
   }
 
-  OS << "\n} // end " << TargetName << "_MC namespace\n";
-  OS << "} // end llvm namespace\n\n";
+  OS << "\n} // end namespace " << TargetName << "_MC\n";
+  OS << "} // end namespace llvm\n\n";
 
   OS << "#endif // GET_INSTRINFO_MC_HELPER_DECLS\n\n";
 
@@ -394,8 +475,8 @@ void InstrInfoEmitter::emitMCIIHelperMethods(raw_ostream &OS,
     OS << "\n}\n\n";
   }
 
-  OS << "} // end " << TargetName << "_MC namespace\n";
-  OS << "} // end llvm namespace\n\n";
+  OS << "} // end namespace " << TargetName << "_MC\n";
+  OS << "} // end namespace llvm\n\n";
 
   OS << "#endif // GET_GENISTRINFO_MC_HELPERS\n";
 }
@@ -443,7 +524,7 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
   OS << "namespace llvm {\n\n";
 
   CodeGenTarget &Target = CDP.getTargetInfo();
-  const std::string &TargetName = Target.getName();
+  const std::string &TargetName = std::string(Target.getName());
   Record *InstrInfo = Target.getInstructionSet();
 
   // Keep track of all of the def lists we have emitted already.
@@ -480,7 +561,7 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
   unsigned Num = 0;
   for (const CodeGenInstruction *Inst : NumberedInstructions) {
     // Keep a list of the instruction names.
-    InstrNames.add(Inst->TheDef->getName());
+    InstrNames.add(std::string(Inst->TheDef->getName()));
     // Emit the record into the table.
     emitRecord(*Inst, Num++, InstrInfo, EmittedLists, OperandInfoIDs, OS);
   }
@@ -488,9 +569,8 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
 
   // Emit the array of instruction names.
   InstrNames.layout();
-  OS << "extern const char " << TargetName << "InstrNameData[] = {\n";
-  InstrNames.emit(OS, printChar);
-  OS << "};\n\n";
+  InstrNames.emitStringLiteralDef(OS, Twine("extern const char ") + TargetName +
+                                          "InstrNameData[]");
 
   OS << "extern const unsigned " << TargetName <<"InstrNameIndices[] = {";
   Num = 0;
@@ -498,20 +578,71 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
     // Newline every eight entries.
     if (Num % 8 == 0)
       OS << "\n    ";
-    OS << InstrNames.get(Inst->TheDef->getName()) << "U, ";
+    OS << InstrNames.get(std::string(Inst->TheDef->getName())) << "U, ";
     ++Num;
   }
-
   OS << "\n};\n\n";
+
+  bool HasDeprecationFeatures =
+      llvm::any_of(NumberedInstructions, [](const CodeGenInstruction *Inst) {
+        return !Inst->HasComplexDeprecationPredicate &&
+               !Inst->DeprecatedReason.empty();
+      });
+  if (HasDeprecationFeatures) {
+    OS << "extern const uint8_t " << TargetName
+       << "InstrDeprecationFeatures[] = {";
+    Num = 0;
+    for (const CodeGenInstruction *Inst : NumberedInstructions) {
+      if (Num % 8 == 0)
+        OS << "\n    ";
+      if (!Inst->HasComplexDeprecationPredicate &&
+          !Inst->DeprecatedReason.empty())
+        OS << Target.getInstNamespace() << "::" << Inst->DeprecatedReason
+           << ", ";
+      else
+        OS << "uint8_t(-1), ";
+      ++Num;
+    }
+    OS << "\n};\n\n";
+  }
+
+  bool HasComplexDeprecationInfos =
+      llvm::any_of(NumberedInstructions, [](const CodeGenInstruction *Inst) {
+        return Inst->HasComplexDeprecationPredicate;
+      });
+  if (HasComplexDeprecationInfos) {
+    OS << "extern const MCInstrInfo::ComplexDeprecationPredicate " << TargetName
+       << "InstrComplexDeprecationInfos[] = {";
+    Num = 0;
+    for (const CodeGenInstruction *Inst : NumberedInstructions) {
+      if (Num % 8 == 0)
+        OS << "\n    ";
+      if (Inst->HasComplexDeprecationPredicate)
+        // Emit a function pointer to the complex predicate method.
+        OS << "&get" << Inst->DeprecatedReason << "DeprecationInfo, ";
+      else
+        OS << "nullptr, ";
+      ++Num;
+    }
+    OS << "\n};\n\n";
+  }
 
   // MCInstrInfo initialization routine.
   OS << "static inline void Init" << TargetName
      << "MCInstrInfo(MCInstrInfo *II) {\n";
-  OS << "  II->InitMCInstrInfo(" << TargetName << "Insts, "
-     << TargetName << "InstrNameIndices, " << TargetName << "InstrNameData, "
-     << NumberedInstructions.size() << ");\n}\n\n";
+  OS << "  II->InitMCInstrInfo(" << TargetName << "Insts, " << TargetName
+     << "InstrNameIndices, " << TargetName << "InstrNameData, ";
+  if (HasDeprecationFeatures)
+    OS << TargetName << "InstrDeprecationFeatures, ";
+  else
+    OS << "nullptr, ";
+  if (HasComplexDeprecationInfos)
+    OS << TargetName << "InstrComplexDeprecationInfos, ";
+  else
+    OS << "nullptr, ";
+  OS << NumberedInstructions.size() << ");\n}\n\n";
 
-  OS << "} // end llvm namespace\n";
+  OS << "} // end namespace llvm\n";
 
   OS << "#endif // GET_INSTRINFO_MC_DESC\n\n";
 
@@ -527,7 +658,7 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
      << "  ~" << ClassName << "() override = default;\n";
 
 
-  OS << "\n};\n} // end llvm namespace\n";
+  OS << "\n};\n} // end namespace llvm\n";
 
   OS << "#endif // GET_INSTRINFO_HEADER\n\n";
 
@@ -549,19 +680,35 @@ void InstrInfoEmitter::run(raw_ostream &OS) {
   OS << "extern const MCInstrDesc " << TargetName << "Insts[];\n";
   OS << "extern const unsigned " << TargetName << "InstrNameIndices[];\n";
   OS << "extern const char " << TargetName << "InstrNameData[];\n";
+  if (HasDeprecationFeatures)
+    OS << "extern const uint8_t " << TargetName
+       << "InstrDeprecationFeatures[];\n";
+  if (HasComplexDeprecationInfos)
+    OS << "extern const MCInstrInfo::ComplexDeprecationPredicate " << TargetName
+       << "InstrComplexDeprecationInfos[];\n";
   OS << ClassName << "::" << ClassName
-     << "(int CFSetupOpcode, int CFDestroyOpcode, int CatchRetOpcode, int ReturnOpcode)\n"
-     << "  : TargetInstrInfo(CFSetupOpcode, CFDestroyOpcode, CatchRetOpcode, ReturnOpcode) {\n"
+     << "(int CFSetupOpcode, int CFDestroyOpcode, int CatchRetOpcode, int "
+        "ReturnOpcode)\n"
+     << "  : TargetInstrInfo(CFSetupOpcode, CFDestroyOpcode, CatchRetOpcode, "
+        "ReturnOpcode) {\n"
      << "  InitMCInstrInfo(" << TargetName << "Insts, " << TargetName
-     << "InstrNameIndices, " << TargetName << "InstrNameData, "
-     << NumberedInstructions.size() << ");\n}\n";
-  OS << "} // end llvm namespace\n";
+     << "InstrNameIndices, " << TargetName << "InstrNameData, ";
+  if (HasDeprecationFeatures)
+    OS << TargetName << "InstrDeprecationFeatures, ";
+  else
+    OS << "nullptr, ";
+  if (HasComplexDeprecationInfos)
+    OS << TargetName << "InstrComplexDeprecationInfos, ";
+  else
+    OS << "nullptr, ";
+  OS << NumberedInstructions.size() << ");\n}\n";
+  OS << "} // end namespace llvm\n";
 
   OS << "#endif // GET_INSTRINFO_CTOR_DTOR\n\n";
 
   emitOperandNameMappings(OS, Target, NumberedInstructions);
 
-  emitOperandTypesEnum(OS, Target);
+  emitOperandTypeMappings(OS, Target, NumberedInstructions);
 
   emitMCIIHelperMethods(OS, TargetName);
 }
@@ -586,6 +733,7 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
   CodeGenTarget &Target = CDP.getTargetInfo();
 
   // Emit all of the target independent flags...
+  if (Inst.isPreISelOpcode)    OS << "|(1ULL<<MCID::PreISelOpcode)";
   if (Inst.isPseudo)           OS << "|(1ULL<<MCID::Pseudo)";
   if (Inst.isReturn)           OS << "|(1ULL<<MCID::Return)";
   if (Inst.isEHScopeReturn)    OS << "|(1ULL<<MCID::EHScopeReturn)";
@@ -604,6 +752,7 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
   if (Inst.canFoldAsLoad)      OS << "|(1ULL<<MCID::FoldableAsLoad)";
   if (Inst.mayLoad)            OS << "|(1ULL<<MCID::MayLoad)";
   if (Inst.mayStore)           OS << "|(1ULL<<MCID::MayStore)";
+  if (Inst.mayRaiseFPException) OS << "|(1ULL<<MCID::MayRaiseFPException)";
   if (Inst.isPredicable)       OS << "|(1ULL<<MCID::Predicable)";
   if (Inst.isConvertibleToThreeAddress) OS << "|(1ULL<<MCID::ConvertibleTo3Addr)";
   if (Inst.isCommutable)       OS << "|(1ULL<<MCID::Commutable)";
@@ -625,17 +774,19 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
   if (Inst.isInsertSubreg) OS << "|(1ULL<<MCID::InsertSubreg)";
   if (Inst.isConvergent) OS << "|(1ULL<<MCID::Convergent)";
   if (Inst.variadicOpsAreDefs) OS << "|(1ULL<<MCID::VariadicOpsAreDefs)";
+  if (Inst.isAuthenticated) OS << "|(1ULL<<MCID::Authenticated)";
 
   // Emit all of the target-specific flags...
   BitsInit *TSF = Inst.TheDef->getValueAsBitsInit("TSFlags");
   if (!TSF)
-    PrintFatalError("no TSFlags?");
+    PrintFatalError(Inst.TheDef->getLoc(), "no TSFlags?");
   uint64_t Value = 0;
   for (unsigned i = 0, e = TSF->getNumBits(); i != e; ++i) {
     if (const auto *Bit = dyn_cast<BitInit>(TSF->getBit(i)))
       Value |= uint64_t(Bit->getValue()) << i;
     else
-      PrintFatalError("Invalid TSFlags bit in " + Inst.TheDef->getName());
+      PrintFatalError(Inst.TheDef->getLoc(),
+                      "Invalid TSFlags bit in " + Inst.TheDef->getName());
   }
   OS << ", 0x";
   OS.write_hex(Value);
@@ -661,18 +812,6 @@ void InstrInfoEmitter::emitRecord(const CodeGenInstruction &Inst, unsigned Num,
   else
     OS << "OperandInfo" << OpInfo.find(OperandInfo)->second;
 
-  if (Inst.HasComplexDeprecationPredicate)
-    // Emit a function pointer to the complex predicate method.
-    OS << ", -1 "
-       << ",&get" << Inst.DeprecatedReason << "DeprecationInfo";
-  else if (!Inst.DeprecatedReason.empty())
-    // Emit the Subtarget feature.
-    OS << ", " << Target.getInstNamespace() << "::" << Inst.DeprecatedReason
-       << " ,nullptr";
-  else
-    // Instruction isn't deprecated.
-    OS << ", -1 ,nullptr";
-
   OS << " },  // Inst #" << Num << " = " << Inst.TheDef->getName() << "\n";
 }
 
@@ -683,7 +822,7 @@ void InstrInfoEmitter::emitEnums(raw_ostream &OS) {
 
   OS << "namespace llvm {\n\n";
 
-  CodeGenTarget Target(Records);
+  const CodeGenTarget &Target = CDP.getTargetInfo();
 
   // We must emit the PHI opcode first...
   StringRef Namespace = Target.getInstNamespace();
@@ -698,8 +837,8 @@ void InstrInfoEmitter::emitEnums(raw_ostream &OS) {
     OS << "    " << Inst->TheDef->getName() << "\t= " << Num++ << ",\n";
   OS << "    INSTRUCTION_LIST_END = " << Num << "\n";
   OS << "  };\n\n";
-  OS << "} // end " << Namespace << " namespace\n";
-  OS << "} // end llvm namespace\n";
+  OS << "} // end namespace " << Namespace << "\n";
+  OS << "} // end namespace llvm\n";
   OS << "#endif // GET_INSTRINFO_ENUM\n\n";
 
   OS << "#ifdef GET_INSTRINFO_SCHED_ENUM\n";
@@ -713,9 +852,9 @@ void InstrInfoEmitter::emitEnums(raw_ostream &OS) {
     OS << "    " << Class.Name << "\t= " << Num++ << ",\n";
   OS << "    SCHED_LIST_END = " << Num << "\n";
   OS << "  };\n";
-  OS << "} // end Sched namespace\n";
-  OS << "} // end " << Namespace << " namespace\n";
-  OS << "} // end llvm namespace\n";
+  OS << "} // end namespace Sched\n";
+  OS << "} // end namespace " << Namespace << "\n";
+  OS << "} // end namespace llvm\n";
 
   OS << "#endif // GET_INSTRINFO_SCHED_ENUM\n\n";
 }
@@ -727,4 +866,4 @@ void EmitInstrInfo(RecordKeeper &RK, raw_ostream &OS) {
   EmitMapTable(RK, OS);
 }
 
-} // end llvm namespace
+} // end namespace llvm

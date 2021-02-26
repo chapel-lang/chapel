@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,7 +54,7 @@ module ArrayViewSlice {
     // TODO: Can we privatize upon creation of the array-view slice and cache
     // the results?
     const _DomPid;
-    const dom; // Seems like the compiler requires a field called 'dom'...
+    var dom; // Seems like the compiler requires a field called 'dom'...
 
     // the representation of the sliced array
     const _ArrPid;
@@ -188,6 +188,7 @@ module ArrayViewSlice {
       }
     }
 
+    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis) ref
       where tag == iterKind.follower {
       const ref myarr = arr;
@@ -381,6 +382,14 @@ module ArrayViewSlice {
     proc _getRCREView() {
       compilerAssert(this._containsRCRE());
       return arr._getRCREView();
+    }
+
+    override proc dsiElementInitializationComplete() {
+      // no elements allocated here, so no action necessary
+    }
+
+    override proc dsiDestroyArr(deinitElts:bool) {
+      // no elements allocated here, so no action necessary
     }
 
     override proc doiCanBulkTransferRankChange() param {

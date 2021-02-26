@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -35,46 +35,68 @@
 #include <rdma/fabric.h>
 #include <rdma/fi_domain.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // Debugging
 //
 #ifdef CHPL_COMM_DEBUG
 
-uint64_t chpl_comm_ofi_dbg_level;
-FILE* chpl_comm_ofi_dbg_file;
+#define OFI_ALL_DEBUGS(m)                                               \
+  m(CFG,                    "config: fabric resources used")            \
+  m(CFG_AV,                 "config: address vectors")                  \
+  m(PROV,                   "provider: selection")                      \
+  m(PROV_HINTS,             "provider: hints")                          \
+  m(PROV_ALL,               "provider: all matching")                   \
+  m(IFACE,                  "interface calls")                          \
+  m(IFACE_SETUP,            "interface calls: setup")                   \
+  m(IFACE_AMO,              "interface calls: AMOs")                    \
+  m(IFACE_AMO_READ,         "interface calls: AMO reads")               \
+  m(IFACE_AMO_WRITE,        "interface calls: AMO writes")              \
+  m(IFACE_MCM,              "interface calls: MCM conformance")         \
+  m(AM,                     "AMs")                                      \
+  m(AM_SEND,                "AMs: sends")                               \
+  m(AM_RECV,                "AMs: receives")                            \
+  m(AM_BUF,                 "AMs: receive buffers")                     \
+  m(RMA,                    "RMA")                                      \
+  m(RMA_READ,               "RMA: reads (loads, GETs)")                 \
+  m(RMA_WRITE,              "RMA: writes (stores, PUTs)")               \
+  m(RMA_UNORD,              "RMA: unordered operations")                \
+  m(AMO,                    "AMOs")                                     \
+  m(AMO_READ,               "AMOs: reads")                              \
+  m(AMO_UNORD,              "AMOs: unordered operations")               \
+  m(ACK,                    "tx acknowledgements")                      \
+  m(ORDER,                  "ops done only for ordering")               \
+  m(MR,                     "mem reg: regions")                         \
+  m(MR_DESC,                "mem reg: local region descs")              \
+  m(MR_KEY,                 "mem reg: remote region keys")              \
+  m(HUGEPAGES,              "hugepages")                                \
+  m(TCIPS,                  "tx context alloc/free")                    \
+  m(OOB,                    "out-of-band calls")                        \
+  m(BARRIER,                "barriers")                                 \
+  m(TSTAMP,                 "timestamp output")
 
-#define DBG_STATS                   0x1UL
-#define DBG_STATSNODES              0x2UL
-#define DBG_STATSTHREADS            0x4UL
-#define DBG_STATSPROGRESS           0x8UL
-#define DBG_CFG                    0x10UL
-#define DBG_CFGFAB                 0x20UL
-#define DBG_CFGFABSALL             0x40UL
-#define DBG_CFGAV                  0x80UL
-#define DBG_THREADS               0x100UL
-#define DBG_THREADDETAILS         0x200UL
-#define DBG_TCIPS                 0x800UL
-#define DBG_INTERFACE            0x1000UL
-#define DBG_AM                  0x10000UL
-#define DBG_AMSEND              0x20000UL
-#define DBG_AMRECV              0x40000UL
-#define DBG_RMA                0x100000UL
-#define DBG_RMAWRITE           0x200000UL
-#define DBG_RMAREAD            0x400000UL
-#define DBG_RMAUNORD           0x800000UL
-#define DBG_AMO               0x1000000UL
-#define DBG_AMOREAD           0x2000000UL
-#define DBG_ACK               0x4000000UL
-#define DBG_ORDER             0x8000000UL
-#define DBG_MR               0x10000000UL
-#define DBG_MRDESC           0x20000000UL
-#define DBG_MRKEY            0x40000000UL
-#define DBG_HUGEPAGES        0x80000000UL
-#define DBG_BARRIER         0x100000000UL
-#define DBG_OOB            0x1000000000UL
-#define DBG_TSTAMP        0x10000000000UL
+//
+// Define the enumeration constants for the debug code bit offsets.
+//
+#define OFIDBG_MACRO(_enum, _desc)  DBG_##_enum##_BOFF,
+typedef enum {
+  OFI_ALL_DEBUGS(OFIDBG_MACRO)
+} ofiDbgBOff_t;
+#undef OFIDBG_MACRO
 
+//
+// Define the debug codes themselves.
+//
+#define OFIDBG_MACRO(_enum, _desc)  \
+  static const uint64_t DBG_##_enum = (uint64_t) 1 << DBG_##_enum##_BOFF;
+OFI_ALL_DEBUGS(OFIDBG_MACRO)
+#undef OFIDBG_MACRO
+
+extern uint64_t chpl_comm_ofi_dbg_level;
+extern FILE* chpl_comm_ofi_dbg_file;
 void chpl_comm_ofi_dbg_init(void);
 char* chpl_comm_ofi_dbg_prefix(void);
 char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
@@ -83,7 +105,8 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 
 #define DBG_DO_PRINTF(fmt, ...)                                         \
   do {                                                                  \
-    fprintf(chpl_comm_ofi_dbg_file, fmt "\n", ## __VA_ARGS__);          \
+    fprintf(chpl_comm_ofi_dbg_file, "%s" fmt "\n",                      \
+            chpl_comm_ofi_dbg_prefix(), ## __VA_ARGS__);                \
   } while (0)
 
 #define DBG_TEST_MASK(mask) ((chpl_comm_ofi_dbg_level & (mask)) != 0)
@@ -91,10 +114,16 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_PRINTF(mask, fmt, ...)                                      \
   do {                                                                  \
     if (DBG_TEST_MASK(mask)) {                                          \
-      DBG_DO_PRINTF("%s" fmt, chpl_comm_ofi_dbg_prefix(),               \
-                    ## __VA_ARGS__);                                    \
+      DBG_DO_PRINTF(fmt, ## __VA_ARGS__);                               \
     }                                                                   \
   } while (0)
+
+#define DBG_PRINTF_NODE0(mask, fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        DBG_PRINTF(mask, fmt, ## __VA_ARGS__);                          \
+      }                                                                 \
+    } while (0)
 
 #define DBG_VAL(pV, typ) chpl_comm_ofi_dbg_val(pV, typ)
 
@@ -109,6 +138,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 #define DBG_DO_PRINTF(fmt, ...) do { } while (0)
 #define DBG_TEST_MASK(mask) 0
 #define DBG_PRINTF(mask, fmt, ...) do { } while (0)
+#define DBG_PRINTF_NODE0(mask, fmt, ...) do { } while (0)
 
 #endif // CHPL_COMM_DEBUG
 
@@ -116,7 +146,7 @@ char* chpl_comm_ofi_dbg_val(const void*, enum fi_datatype);
 //
 // Simplify internal error checking
 //
-int chpl_comm_ofi_abort_on_error;
+extern int chpl_comm_ofi_abort_on_error;
 
 #define INTERNAL_ERROR_V(fmt, ...)                                      \
   do {                                                                  \
@@ -129,6 +159,16 @@ int chpl_comm_ofi_abort_on_error;
                             __FILE__, (int) __LINE__, ## __VA_ARGS__);  \
     }                                                                   \
   } while (0)
+
+#define INTERNAL_ERROR_V_NODE0(fmt, ...)                                \
+    do {                                                                \
+      if (chpl_nodeID == 0) {                                           \
+        INTERNAL_ERROR_V(fmt, ## __VA_ARGS__);                          \
+      } else {                                                          \
+        chpl_comm_ofi_oob_fini();                                       \
+        chpl_exit_any(0);                                               \
+      }                                                                 \
+    } while (0)
 
 #define CHK_TRUE(expr)                                                  \
     do {                                                                \
@@ -196,7 +236,11 @@ int chpl_comm_ofi_abort_on_error;
 
 #define CHPL_CALLOC(p, n) CHPL_CALLOC_SZ(p, n, sizeof(*(p)))
 
-#define CHPL_FREE(p) chpl_mem_free((p), 0, 0)
+#define CHPL_FREE(p)                                                    \
+  do {                                                                  \
+    chpl_mem_free((p), 0, 0);                                           \
+    p = NULL;                                                           \
+  } while (0)
 
 
 //
@@ -227,5 +271,9 @@ size_t chpl_comm_ofi_hp_gethugepagesize(void);
 // Other/utility
 //
 double chpl_comm_ofi_time_get(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

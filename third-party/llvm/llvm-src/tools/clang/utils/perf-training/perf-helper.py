@@ -1,9 +1,8 @@
 #===- perf-helper.py - Clang Python Bindings -----------------*- python -*--===#
 #
-#                     The LLVM Compiler Infrastructure
-#
-# This file is distributed under the University of Illinois Open Source
-# License. See LICENSE.TXT for details.
+# Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+# See https://llvm.org/LICENSE.txt for license information.
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
 #===------------------------------------------------------------------------===#
 
@@ -124,6 +123,7 @@ def get_cc1_command_for_args(cmd, env):
           ln.startswith('Thread model:') or
           ln.startswith('InstalledDir:') or
           ln.startswith('LLVM Profile Note') or
+          ln.startswith(' (in-process)') or
           ' version ' in ln):
           continue
       cc_commands.append(ln)

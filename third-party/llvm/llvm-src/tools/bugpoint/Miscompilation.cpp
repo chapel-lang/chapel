@@ -1,9 +1,8 @@
 //===- Miscompilation.cpp - Debug program miscompilations -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -390,7 +389,8 @@ ExtractLoops(BugDriver &BD,
 
       std::vector<std::pair<std::string, FunctionType *>> MisCompFunctions;
       for (Function *F : MiscompiledFunctions) {
-        MisCompFunctions.emplace_back(F->getName(), F->getFunctionType());
+        MisCompFunctions.emplace_back(std::string(F->getName()),
+                                      F->getFunctionType());
       }
 
       if (Linker::linkModules(*ToNotOptimize,
@@ -416,7 +416,8 @@ ExtractLoops(BugDriver &BD,
                           E = ToOptimizeLoopExtracted->end();
          I != E; ++I)
       if (!I->isDeclaration())
-        MisCompFunctions.emplace_back(I->getName(), I->getFunctionType());
+        MisCompFunctions.emplace_back(std::string(I->getName()),
+                                      I->getFunctionType());
 
     // Okay, great!  Now we know that we extracted a loop and that loop
     // extraction both didn't break the program, and didn't mask the problem.
@@ -587,13 +588,11 @@ ExtractBlocks(BugDriver &BD,
   for (Module::iterator I = Extracted->begin(), E = Extracted->end(); I != E;
        ++I)
     if (!I->isDeclaration())
-      MisCompFunctions.emplace_back(I->getName(), I->getFunctionType());
+      MisCompFunctions.emplace_back(std::string(I->getName()),
+                                    I->getFunctionType());
 
   if (Linker::linkModules(*ProgClone, std::move(Extracted)))
     exit(1);
-
-  // Set the new program and delete the old one.
-  BD.setNewProgram(std::move(ProgClone));
 
   // Update the list of miscompiled functions.
   MiscompiledFunctions.clear();
@@ -603,6 +602,9 @@ ExtractBlocks(BugDriver &BD,
     assert(NewF && "Function not found??");
     MiscompiledFunctions.push_back(NewF);
   }
+
+  // Set the new program and delete the old one.
+  BD.setNewProgram(std::move(ProgClone));
 
   return true;
 }
@@ -706,8 +708,8 @@ static Expected<bool> TestOptimizer(BugDriver &BD, std::unique_ptr<Module> Test,
   if (!Optimized) {
     errs() << " Error running this sequence of passes"
            << " on the input program!\n";
-    BD.setNewProgram(std::move(Test));
     BD.EmitProgressBitcode(*Test, "pass-error", false);
+    BD.setNewProgram(std::move(Test));
     if (Error E = BD.debugOptimizerCrash())
       return std::move(E);
     return false;
@@ -827,13 +829,14 @@ CleanupAndPrepareModules(BugDriver &BD, std::unique_ptr<Module> Test,
 
   // Add the resolver to the Safe module.
   // Prototype: void *getPointerToNamedFunction(const char* Name)
-  Constant *resolverFunc = Safe->getOrInsertFunction(
+  FunctionCallee resolverFunc = Safe->getOrInsertFunction(
       "getPointerToNamedFunction", Type::getInt8PtrTy(Safe->getContext()),
       Type::getInt8PtrTy(Safe->getContext()));
 
   // Use the function we just added to get addresses of functions we need.
   for (Module::iterator F = Safe->begin(), E = Safe->end(); F != E; ++F) {
-    if (F->isDeclaration() && !F->use_empty() && &*F != resolverFunc &&
+    if (F->isDeclaration() && !F->use_empty() &&
+        &*F != resolverFunc.getCallee() &&
         !F->isIntrinsic() /* ignore intrinsics */) {
       Function *TestFn = Test->getFunction(F->getName());
 
@@ -879,7 +882,8 @@ CleanupAndPrepareModules(BugDriver &BD, std::unique_ptr<Module> Test,
               BasicBlock::Create(F->getContext(), "lookupfp", FuncWrapper);
 
           // Check to see if we already looked up the value.
-          Value *CachedVal = new LoadInst(Cache, "fpcache", EntryBB);
+          Value *CachedVal =
+              new LoadInst(F->getType(), Cache, "fpcache", EntryBB);
           Value *IsNull = new ICmpInst(*EntryBB, ICmpInst::ICMP_EQ, CachedVal,
                                        NullPtr, "isNull");
           BranchInst::Create(LookupBB, DoCallBB, IsNull, EntryBB);
@@ -911,11 +915,11 @@ CleanupAndPrepareModules(BugDriver &BD, std::unique_ptr<Module> Test,
 
           // Pass on the arguments to the real function, return its result
           if (F->getReturnType()->isVoidTy()) {
-            CallInst::Create(FuncPtr, Args, "", DoCallBB);
+            CallInst::Create(FuncTy, FuncPtr, Args, "", DoCallBB);
             ReturnInst::Create(F->getContext(), DoCallBB);
           } else {
             CallInst *Call =
-                CallInst::Create(FuncPtr, Args, "retval", DoCallBB);
+                CallInst::Create(FuncTy, FuncPtr, Args, "retval", DoCallBB);
             ReturnInst::Create(F->getContext(), Call, DoCallBB);
           }
 
@@ -952,7 +956,8 @@ static Expected<bool> TestCodeGenerator(BugDriver &BD,
            << "Error making unique filename: " << EC.message() << "\n";
     exit(1);
   }
-  if (BD.writeProgramToFile(TestModuleBC.str(), TestModuleFD, *Test)) {
+  if (BD.writeProgramToFile(std::string(TestModuleBC.str()), TestModuleFD,
+                            *Test)) {
     errs() << "Error writing bitcode to `" << TestModuleBC.str()
            << "'\nExiting.";
     exit(1);
@@ -971,7 +976,8 @@ static Expected<bool> TestCodeGenerator(BugDriver &BD,
     exit(1);
   }
 
-  if (BD.writeProgramToFile(SafeModuleBC.str(), SafeModuleFD, *Safe)) {
+  if (BD.writeProgramToFile(std::string(SafeModuleBC.str()), SafeModuleFD,
+                            *Safe)) {
     errs() << "Error writing bitcode to `" << SafeModuleBC << "'\nExiting.";
     exit(1);
   }
@@ -979,7 +985,7 @@ static Expected<bool> TestCodeGenerator(BugDriver &BD,
   FileRemover SafeModuleBCRemover(SafeModuleBC.str(), !SaveTemps);
 
   Expected<std::string> SharedObject =
-      BD.compileSharedObject(SafeModuleBC.str());
+      BD.compileSharedObject(std::string(SafeModuleBC.str()));
   if (Error E = SharedObject.takeError())
     return std::move(E);
 
@@ -987,8 +993,8 @@ static Expected<bool> TestCodeGenerator(BugDriver &BD,
 
   // Run the code generator on the `Test' code, loading the shared library.
   // The function returns whether or not the new output differs from reference.
-  Expected<bool> Result =
-      BD.diffProgram(BD.getProgram(), TestModuleBC.str(), *SharedObject, false);
+  Expected<bool> Result = BD.diffProgram(
+      BD.getProgram(), std::string(TestModuleBC.str()), *SharedObject, false);
   if (Error E = Result.takeError())
     return std::move(E);
 
@@ -1045,7 +1051,8 @@ Error BugDriver::debugCodeGenerator() {
     exit(1);
   }
 
-  if (writeProgramToFile(TestModuleBC.str(), TestModuleFD, *ToCodeGen)) {
+  if (writeProgramToFile(std::string(TestModuleBC.str()), TestModuleFD,
+                         *ToCodeGen)) {
     errs() << "Error writing bitcode to `" << TestModuleBC << "'\nExiting.";
     exit(1);
   }
@@ -1061,11 +1068,13 @@ Error BugDriver::debugCodeGenerator() {
     exit(1);
   }
 
-  if (writeProgramToFile(SafeModuleBC.str(), SafeModuleFD, *ToNotCodeGen)) {
+  if (writeProgramToFile(std::string(SafeModuleBC.str()), SafeModuleFD,
+                         *ToNotCodeGen)) {
     errs() << "Error writing bitcode to `" << SafeModuleBC << "'\nExiting.";
     exit(1);
   }
-  Expected<std::string> SharedObject = compileSharedObject(SafeModuleBC.str());
+  Expected<std::string> SharedObject =
+      compileSharedObject(std::string(SafeModuleBC.str()));
   if (Error E = SharedObject.takeError())
     return E;
 

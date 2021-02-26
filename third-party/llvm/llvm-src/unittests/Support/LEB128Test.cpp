@@ -1,9 +1,8 @@
 //===- llvm/unittest/Support/LEB128Test.cpp - LEB128 function tests -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -114,6 +113,9 @@ TEST(LEB128Test, DecodeULEB128) {
     EXPECT_EQ(EXPECTED, Actual); \
   } while (0)
 
+  // Don't crash
+  EXPECT_EQ(0u, decodeULEB128(nullptr, nullptr, nullptr));
+
   // Decode ULEB128
   EXPECT_DECODE_ULEB128_EQ(0u, "\x00");
   EXPECT_DECODE_ULEB128_EQ(1u, "\x01");
@@ -148,6 +150,9 @@ TEST(LEB128Test, DecodeSLEB128) {
     EXPECT_EQ(sizeof(VALUE) - 1, ActualSize); \
     EXPECT_EQ(EXPECTED, Actual); \
   } while (0)
+
+  // Don't crash
+  EXPECT_EQ(0, decodeSLEB128(nullptr, nullptr, nullptr));
 
   // Decode SLEB128
   EXPECT_DECODE_SLEB128_EQ(0L, "\x00");

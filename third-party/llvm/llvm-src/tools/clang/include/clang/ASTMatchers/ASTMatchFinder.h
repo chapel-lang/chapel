@@ -1,9 +1,8 @@
 //===--- ASTMatchFinder.h - Structural query framework ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -183,10 +182,9 @@ public:
   ///
   /// @{
   template <typename T> void match(const T &Node, ASTContext &Context) {
-    match(clang::ast_type_traits::DynTypedNode::create(Node), Context);
+    match(clang::DynTypedNode::create(Node), Context);
   }
-  void match(const clang::ast_type_traits::DynTypedNode &Node,
-             ASTContext &Context);
+  void match(const clang::DynTypedNode &Node, ASTContext &Context);
   /// @}
 
   /// Finds all matches in the given AST.
@@ -243,9 +241,8 @@ SmallVector<BoundNodes, 1>
 match(MatcherT Matcher, const NodeT &Node, ASTContext &Context);
 
 template <typename MatcherT>
-SmallVector<BoundNodes, 1>
-match(MatcherT Matcher, const ast_type_traits::DynTypedNode &Node,
-      ASTContext &Context);
+SmallVector<BoundNodes, 1> match(MatcherT Matcher, const DynTypedNode &Node,
+                                 ASTContext &Context);
 /// @}
 
 /// Returns the results of matching \p Matcher on the translation unit of
@@ -284,9 +281,8 @@ public:
 }
 
 template <typename MatcherT>
-SmallVector<BoundNodes, 1>
-match(MatcherT Matcher, const ast_type_traits::DynTypedNode &Node,
-      ASTContext &Context) {
+SmallVector<BoundNodes, 1> match(MatcherT Matcher, const DynTypedNode &Node,
+                                 ASTContext &Context) {
   internal::CollectMatchesCallback Callback;
   MatchFinder Finder;
   Finder.addMatcher(Matcher, &Callback);
@@ -297,7 +293,7 @@ match(MatcherT Matcher, const ast_type_traits::DynTypedNode &Node,
 template <typename MatcherT, typename NodeT>
 SmallVector<BoundNodes, 1>
 match(MatcherT Matcher, const NodeT &Node, ASTContext &Context) {
-  return match(Matcher, ast_type_traits::DynTypedNode::create(Node), Context);
+  return match(Matcher, DynTypedNode::create(Node), Context);
 }
 
 template <typename MatcherT>
@@ -306,6 +302,32 @@ match(MatcherT Matcher, ASTContext &Context) {
   internal::CollectMatchesCallback Callback;
   MatchFinder Finder;
   Finder.addMatcher(Matcher, &Callback);
+  Finder.matchAST(Context);
+  return std::move(Callback.Nodes);
+}
+
+inline SmallVector<BoundNodes, 1>
+matchDynamic(internal::DynTypedMatcher Matcher, const DynTypedNode &Node,
+             ASTContext &Context) {
+  internal::CollectMatchesCallback Callback;
+  MatchFinder Finder;
+  Finder.addDynamicMatcher(Matcher, &Callback);
+  Finder.match(Node, Context);
+  return std::move(Callback.Nodes);
+}
+
+template <typename NodeT>
+SmallVector<BoundNodes, 1> matchDynamic(internal::DynTypedMatcher Matcher,
+                                        const NodeT &Node,
+                                        ASTContext &Context) {
+  return matchDynamic(Matcher, DynTypedNode::create(Node), Context);
+}
+
+inline SmallVector<BoundNodes, 1>
+matchDynamic(internal::DynTypedMatcher Matcher, ASTContext &Context) {
+  internal::CollectMatchesCallback Callback;
+  MatchFinder Finder;
+  Finder.addDynamicMatcher(Matcher, &Callback);
   Finder.matchAST(Context);
   return std::move(Callback.Nodes);
 }

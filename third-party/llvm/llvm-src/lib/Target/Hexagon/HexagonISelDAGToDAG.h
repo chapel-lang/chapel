@@ -1,9 +1,8 @@
 //===-- HexagonISelDAGToDAG.h -----------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 // Hexagon specific code to select Hexagon machine instructions for
@@ -26,7 +25,6 @@ namespace llvm {
 class MachineFunction;
 class HexagonInstrInfo;
 class HexagonRegisterInfo;
-class HexagonTargetLowering;
 
 class HexagonDAGToDAGISel : public SelectionDAGISel {
   const HexagonSubtarget *HST;
@@ -44,6 +42,7 @@ public:
     HII = HST->getInstrInfo();
     HRI = HST->getRegisterInfo();
     SelectionDAGISel::runOnMachineFunction(MF);
+    updateAligna();
     return true;
   }
 
@@ -51,7 +50,7 @@ public:
     return true;
   }
   void PreprocessISelDAG() override;
-  void EmitFunctionEntryCode() override;
+  void emitFunctionEntryCode() override;
 
   void Select(SDNode *N) override;
 
@@ -60,9 +59,8 @@ public:
   inline bool SelectAddrGP(SDValue &N, SDValue &R);
   inline bool SelectAnyImm(SDValue &N, SDValue &R);
   inline bool SelectAnyInt(SDValue &N, SDValue &R);
-  bool SelectAnyImmediate(SDValue &N, SDValue &R, uint32_t LogAlign);
-  bool SelectGlobalAddress(SDValue &N, SDValue &R, bool UseGP,
-                           uint32_t LogAlign);
+  bool SelectAnyImmediate(SDValue &N, SDValue &R, Align Alignment);
+  bool SelectGlobalAddress(SDValue &N, SDValue &R, bool UseGP, Align Alignment);
   bool SelectAddrFI(SDValue &N, SDValue &R);
   bool DetectUseSxtw(SDValue &N, SDValue &R);
 
@@ -144,6 +142,9 @@ private:
   void ppAddrReorderAddShl(std::vector<SDNode*> &&Nodes);
   void ppAddrRewriteAndSrl(std::vector<SDNode*> &&Nodes);
   void ppHoistZextI1(std::vector<SDNode*> &&Nodes);
+
+  // Function postprocessing.
+  void updateAligna();
 
   SmallDenseMap<SDNode *,int> RootWeights;
   SmallDenseMap<SDNode *,int> RootHeights;

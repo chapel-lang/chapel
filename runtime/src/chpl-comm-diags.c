@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -36,8 +36,12 @@
 #include <stdlib.h>
 
 int chpl_verbose_comm = 0;
+int chpl_verbose_comm_stacktrace = 0;
 int chpl_comm_diagnostics = 0;
 int chpl_comm_diags_print_unstable = 0;
+
+atomic_int_least16_t chpl_comm_diags_disable_flag;
+chpl_atomic_commDiagnostics chpl_comm_diags_counters;
 
 static pthread_once_t bcastPrintUnstable_once = PTHREAD_ONCE_INIT;
 
@@ -50,8 +54,9 @@ void broadcast_print_unstable(void) {
 }
 
 
-void chpl_comm_startVerbose(chpl_bool print_unstable) {
-    chpl_comm_diags_print_unstable = (print_unstable == true);
+void chpl_comm_startVerbose(chpl_bool stacktrace, chpl_bool print_unstable) {
+  chpl_comm_diags_print_unstable = (print_unstable == true);
+  chpl_verbose_comm_stacktrace = (stacktrace == true);
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
     chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
   }
@@ -59,6 +64,7 @@ void chpl_comm_startVerbose(chpl_bool print_unstable) {
   chpl_verbose_comm = 1;
   chpl_comm_diags_disable();
   chpl_comm_bcast_rt_private(chpl_verbose_comm);
+  chpl_comm_bcast_rt_private(chpl_verbose_comm_stacktrace);
   chpl_comm_diags_enable();
 }
 
@@ -71,8 +77,9 @@ void chpl_comm_stopVerbose() {
 }
 
 
-void chpl_comm_startVerboseHere(chpl_bool print_unstable) {
+void chpl_comm_startVerboseHere(chpl_bool stacktrace, chpl_bool print_unstable) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
+  chpl_verbose_comm_stacktrace = (stacktrace == true);
   chpl_verbose_comm = 1;
 }
 
@@ -84,6 +91,7 @@ void chpl_comm_stopVerboseHere() {
 
 void chpl_comm_startDiagnostics(chpl_bool print_unstable) {
   chpl_comm_diags_print_unstable = (print_unstable == true);
+
   if (pthread_once(&bcastPrintUnstable_once, broadcast_print_unstable) != 0) {
     chpl_internal_error("pthread_once(&bcastPrintUnstable_once) failed");
   }

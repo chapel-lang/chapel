@@ -1,9 +1,8 @@
 //===--- HexagonPseudo.td -------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -113,7 +112,7 @@ let isExtendable = 1, isExtentSigned = 1, opExtentBits = 9, opExtentAlign = 2,
     opExtendable = 0, hasSideEffects = 0 in
 class LOOP_iBase<string mnemonic, InstHexagon rootInst>
          : InstHexagon <(outs), (ins b30_2Imm:$offset, u10_0Imm:$src2),
-           #mnemonic#"($offset,#$src2)",
+           mnemonic#"($offset,#$src2)",
            [], "", rootInst.Itinerary, rootInst.Type>, OpcodeHexagon {
     bits<9> offset;
     bits<10> src2;
@@ -133,7 +132,7 @@ let isExtendable = 1, isExtentSigned = 1, opExtentBits = 9, opExtentAlign = 2,
     opExtendable = 0, hasSideEffects = 0 in
 class LOOP_rBase<string mnemonic, InstHexagon rootInst>
          : InstHexagon<(outs), (ins b30_2Imm:$offset, IntRegs:$src2),
-           #mnemonic#"($offset,$src2)",
+           mnemonic#"($offset,$src2)",
            [], "", rootInst.Itinerary, rootInst.Type>, OpcodeHexagon {
     bits<9> offset;
     bits<5> src2;
@@ -409,15 +408,17 @@ let isCall = 1, Uses = [R29, R31], isAsmParserOnly = 1 in {
 // Vector store pseudos
 let Predicates = [HasV60,UseHVX], isPseudo = 1, isCodeGenOnly = 1,
     mayStore = 1, accessSize = HVXVectorAccess, hasSideEffects = 0 in
-class STrivv_template<RegisterClass RC, InstHexagon rootInst>
+class STriv_template<RegisterClass RC, InstHexagon rootInst>
   : InstHexagon<(outs), (ins IntRegs:$addr, s32_0Imm:$off, RC:$src),
     "", [], "", rootInst.Itinerary, rootInst.Type>;
 
-def PS_vstorerw_ai: STrivv_template<HvxWR, V6_vS32b_ai>,
+def PS_vstorerv_ai: STriv_template<HvxVR, V6_vS32b_ai>,
       Requires<[HasV60,UseHVX]>;
-def PS_vstorerw_nt_ai: STrivv_template<HvxWR, V6_vS32b_nt_ai>,
+def PS_vstorerv_nt_ai: STriv_template<HvxVR, V6_vS32b_nt_ai>,
       Requires<[HasV60,UseHVX]>;
-def PS_vstorerwu_ai: STrivv_template<HvxWR, V6_vS32Ub_ai>,
+def PS_vstorerw_ai: STriv_template<HvxWR, V6_vS32b_ai>,
+      Requires<[HasV60,UseHVX]>;
+def PS_vstorerw_nt_ai: STriv_template<HvxWR, V6_vS32b_nt_ai>,
       Requires<[HasV60,UseHVX]>;
 
 let isPseudo = 1, isCodeGenOnly = 1, mayStore = 1, hasSideEffects = 0 in
@@ -428,15 +429,17 @@ def PS_vstorerq_ai: Pseudo<(outs),
 // Vector load pseudos
 let Predicates = [HasV60, UseHVX], isPseudo = 1, isCodeGenOnly = 1,
     mayLoad = 1, accessSize = HVXVectorAccess, hasSideEffects = 0 in
-class LDrivv_template<RegisterClass RC, InstHexagon rootInst>
+class LDriv_template<RegisterClass RC, InstHexagon rootInst>
   : InstHexagon<(outs RC:$dst), (ins IntRegs:$addr, s32_0Imm:$off),
     "", [], "", rootInst.Itinerary, rootInst.Type>;
 
-def PS_vloadrw_ai: LDrivv_template<HvxWR, V6_vL32b_ai>,
+def PS_vloadrv_ai: LDriv_template<HvxVR, V6_vL32b_ai>,
       Requires<[HasV60,UseHVX]>;
-def PS_vloadrw_nt_ai: LDrivv_template<HvxWR, V6_vL32b_nt_ai>,
+def PS_vloadrv_nt_ai: LDriv_template<HvxVR, V6_vL32b_nt_ai>,
       Requires<[HasV60,UseHVX]>;
-def PS_vloadrwu_ai: LDrivv_template<HvxWR, V6_vL32Ub_ai>,
+def PS_vloadrw_ai: LDriv_template<HvxWR, V6_vL32b_ai>,
+      Requires<[HasV60,UseHVX]>;
+def PS_vloadrw_nt_ai: LDriv_template<HvxWR, V6_vL32b_nt_ai>,
       Requires<[HasV60,UseHVX]>;
 
 let isPseudo = 1, isCodeGenOnly = 1, mayLoad = 1, hasSideEffects = 0 in
@@ -487,7 +490,7 @@ def TFRI64_V4 : InstHexagon<(outs DoubleRegs:$dst),
     A2_combineii.Itinerary, TypeALU32_2op>, OpcodeHexagon;
 
 // Hexagon doesn't have a vector multiply with C semantics.
-// Instead, generate a pseudo instruction that gets expaneded into two
+// Instead, generate a pseudo instruction that gets expanded into two
 // scalar MPYI instructions.
 // This is expanded by ExpandPostRAPseudos.
 let isPseudo = 1 in
@@ -524,13 +527,15 @@ multiclass NewCircularLoad<RegisterClass RC, MemAccessSize MS> {
 
 let isCodeGenOnly = 1, isPseudo = 1, Defs = [CS], Uses = [CS],
     addrMode = PostInc, accessSize = MS, hasSideEffects = 0 in {
+  // Use timing class of L2_loadrb_pci.
   def NAME#_pci : LDInst<(outs RC:$Rd32, IntRegs:$Rx32),
        (ins IntRegs:$Rx32in, s4_0Imm:$Ii, ModRegs:$Mu2, IntRegs:$Cs),
-       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_e93a3d71>;
+       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_5ceb2f9e>;
 
+  // Use timing class of L2_loadrb_pcr.
   def NAME#_pcr : LDInst<(outs RC:$Rd32, IntRegs:$Rx32),
        (ins IntRegs:$Rx32in, ModRegs:$Mu2, IntRegs:$Cs),
-       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_44d3da28>;
+       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_075c8dd8>;
 }
 }
 
@@ -545,13 +550,15 @@ multiclass NewCircularStore<RegisterClass RC, MemAccessSize MS> {
 
 let isCodeGenOnly = 1, isPseudo = 1, Defs = [CS], Uses = [CS],
     addrMode = PostInc, accessSize = MS, hasSideEffects = 0 in {
+  // Use timing class of S2_storerb_pci.
   def NAME#_pci : STInst<(outs IntRegs:$Rx32),
        (ins IntRegs:$Rx32in, s4_0Imm:$Ii, ModRegs:$Mu2, RC:$Rt32, IntRegs:$Cs),
-       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_e86aa961>;
+       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_b4dc7630>;
 
+  // Use timing class of S2_storerb_pcr.
   def NAME#_pcr : STInst<(outs IntRegs:$Rx32),
        (ins IntRegs:$Rx32in, ModRegs:$Mu2, RC:$Rt32, IntRegs:$Cs),
-       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_da97ee82>;
+       ".error \"should not emit\" ", [], "$Rx32 = $Rx32in", tc_a2b365d2>;
 }
 }
 
@@ -560,3 +567,8 @@ defm PS_storerh : NewCircularStore<IntRegs, HalfWordAccess>;
 defm PS_storerf : NewCircularStore<IntRegs, HalfWordAccess>;
 defm PS_storeri : NewCircularStore<IntRegs, WordAccess>;
 defm PS_storerd : NewCircularStore<DoubleRegs, WordAccess>;
+
+// A pseudo that generates a runtime crash. This is used to implement
+// __builtin_trap.
+let hasSideEffects = 1, isPseudo = 1, isCodeGenOnly = 1, isSolo = 1 in
+def PS_crash: InstHexagon<(outs), (ins), "", [], "", PSEUDO, TypePSEUDO>;

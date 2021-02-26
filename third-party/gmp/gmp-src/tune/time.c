@@ -151,7 +151,6 @@ see https://www.gnu.org/licenses/.  */
    speed, on 4xx chips it's either that or an external clock.  Measuring
    against gettimeofday might be ok.  */
 
-
 #include "config.h"
 
 #include <errno.h>
@@ -207,7 +206,6 @@ see https://www.gnu.org/licenses/.  */
 #include <sys/times.h>  /* for times() and struct tms */
 #endif
 
-#include "gmp.h"
 #include "gmp-impl.h"
 
 #include "speed.h"
@@ -1473,18 +1471,22 @@ speed_endtime (void)
 
       if (use_cgt)
 	printf ("   clock_gettime  %ld.%09ld -> %ld.%09ld\n",
-		start_cgt.tv_sec, start_cgt.tv_nsec,
-		end_cgt.tv_sec, end_cgt.tv_nsec);
+		(long) start_cgt.tv_sec, (long) start_cgt.tv_nsec,
+		(long) end_cgt.tv_sec, (long) end_cgt.tv_nsec);
 
       if (use_gtod)
 	printf ("   gettimeofday  %ld.%06ld -> %ld.%06ld\n",
-		start_gtod.tv_sec, start_gtod.tv_usec,
-		end_gtod.tv_sec, end_gtod.tv_usec);
+		(long) start_gtod.tv_sec,
+		(long) start_gtod.tv_usec,
+		(long) end_gtod.tv_sec,
+		(long) end_gtod.tv_usec);
 
       if (use_grus)
 	printf ("   getrusage  %ld.%06ld -> %ld.%06ld\n",
-		start_grus.ru_utime.tv_sec, start_grus.ru_utime.tv_usec,
-		end_grus.ru_utime.tv_sec, end_grus.ru_utime.tv_usec);
+		(long) start_grus.ru_utime.tv_sec,
+		(long) start_grus.ru_utime.tv_usec,
+		(long) end_grus.ru_utime.tv_sec,
+		(long) end_grus.ru_utime.tv_usec);
 
       if (use_times)
 	printf ("   times  %ld -> %ld\n",

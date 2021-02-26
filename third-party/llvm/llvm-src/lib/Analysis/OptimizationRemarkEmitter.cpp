@@ -1,9 +1,8 @@
 //===- OptimizationRemarkEmitter.cpp - Optimization Diagnostic --*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,6 +18,7 @@
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/Dominators.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/InitializePasses.h"
 
 using namespace llvm;
 
@@ -36,17 +36,20 @@ OptimizationRemarkEmitter::OptimizationRemarkEmitter(const Function *F)
   LI.analyze(DT);
 
   // Then compute BranchProbabilityInfo.
-  BranchProbabilityInfo BPI;
-  BPI.calculate(*F, LI);
+  BranchProbabilityInfo BPI(*F, LI);
 
   // Finally compute BFI.
-  OwnedBFI = llvm::make_unique<BlockFrequencyInfo>(*F, BPI, LI);
+  OwnedBFI = std::make_unique<BlockFrequencyInfo>(*F, BPI, LI);
   BFI = OwnedBFI.get();
 }
 
 bool OptimizationRemarkEmitter::invalidate(
     Function &F, const PreservedAnalyses &PA,
     FunctionAnalysisManager::Invalidator &Inv) {
+  if (OwnedBFI.get()) {
+    OwnedBFI.reset();
+    BFI = nullptr;
+  }
   // This analysis has no state and so can be trivially preserved but it needs
   // a fresh view of BFI if it was constructed with one.
   if (BFI && Inv.invalidate<BlockFrequencyAnalysis>(F, PA))
@@ -98,7 +101,7 @@ bool OptimizationRemarkEmitterWrapperPass::runOnFunction(Function &Fn) {
   else
     BFI = nullptr;
 
-  ORE = llvm::make_unique<OptimizationRemarkEmitter>(&Fn, BFI);
+  ORE = std::make_unique<OptimizationRemarkEmitter>(&Fn, BFI);
   return false;
 }
 

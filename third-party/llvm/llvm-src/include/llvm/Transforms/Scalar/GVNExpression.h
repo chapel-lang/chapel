@@ -1,9 +1,8 @@
 //===- GVNExpression.h - GVN Expression classes -----------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -324,7 +323,6 @@ public:
 class LoadExpression final : public MemoryExpression {
 private:
   LoadInst *Load;
-  unsigned Alignment;
 
 public:
   LoadExpression(unsigned NumOperands, LoadInst *L,
@@ -333,9 +331,7 @@ public:
 
   LoadExpression(enum ExpressionType EType, unsigned NumOperands, LoadInst *L,
                  const MemoryAccess *MemoryLeader)
-      : MemoryExpression(NumOperands, EType, MemoryLeader), Load(L) {
-    Alignment = L ? L->getAlignment() : 0;
-  }
+      : MemoryExpression(NumOperands, EType, MemoryLeader), Load(L) {}
 
   LoadExpression() = delete;
   LoadExpression(const LoadExpression &) = delete;
@@ -348,9 +344,6 @@ public:
 
   LoadInst *getLoadInst() const { return Load; }
   void setLoadInst(LoadInst *L) { Load = L; }
-
-  unsigned getAlignment() const { return Alignment; }
-  void setAlignment(unsigned Align) { Alignment = Align; }
 
   bool equals(const Expression &Other) const override;
   bool exactlyEquals(const Expression &Other) const override {

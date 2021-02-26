@@ -1,9 +1,9 @@
 const-checking.elems.chpl:8: In function 'main':
-const-checking.elems.chpl:10: error: illegal lvalue in assignment
-const-checking.elems.chpl:12: error: illegal lvalue in assignment
-const-checking.elems.chpl:22: error: illegal lvalue in assignment
-const-checking.elems.chpl:23: error: illegal lvalue in assignment
-const-checking.elems.chpl:24: error: illegal lvalue in assignment
-const-checking.elems.chpl:26: error: illegal lvalue in assignment
-const-checking.elems.chpl:27: error: illegal lvalue in assignment
-const-checking.elems.chpl:28: error: illegal lvalue in assignment
+const-checking.elems.chpl:10: error: cannot assign to const variable
+const-checking.elems.chpl:12: error: cannot assign to const variable
+const-checking.elems.chpl:22: error: cannot assign to const variable
+const-checking.elems.chpl:23: error: cannot assign to const variable
+const-checking.elems.chpl:24: error: cannot assign to const variable
+const-checking.elems.chpl:26: error: cannot assign to const variable
+const-checking.elems.chpl:27: error: cannot assign to const variable
+const-checking.elems.chpl:28: error: cannot assign to const variable

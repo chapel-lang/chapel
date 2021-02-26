@@ -51,13 +51,7 @@ int main(int argc, char **argv)
     int inner_iterations = 0;
     int seedoffset = 0;
     int numprocs, myproc;
-#if PLATFORM_COMPILER_CLANG
-    // The addition of a gratuitous 'volatile' here has been observed to
-    // work-around Bug 3630 in which Clang 4 and newer misoptimize this test.
-    volatile int peerproc;
-#else
     int peerproc;
-#endif
     int sender_p;
     char *shadow_region_1, *shadow_region_2;
     int i,j;
@@ -94,7 +88,7 @@ int main(int argc, char **argv)
 
     if (seedoffset == 0) {
       seedoffset = (((unsigned int)TIME()) & 0xFFFF);
-      TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(&seedoffset));
+      TEST_BCAST(&seedoffset, 0, &seedoffset, sizeof(seedoffset));
     }
     TEST_SRAND(myproc+seedoffset);
 

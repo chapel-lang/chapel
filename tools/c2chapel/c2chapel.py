@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 #
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -181,6 +181,22 @@ def computeArgName(decl):
         decl.show()
         raise c_parser.ParseError("Unhandled Node type")
 
+def isStructType(ast):
+    inner = ast
+
+    if type(inner) == c_ast.TypeDecl:
+        inner = inner.type
+
+    if type(inner) == c_ast.IdentifierType:
+        name = " ".join(inner.names)
+        if name in typeDefs:
+            return isStructType(typeDefs[name].type)
+
+    if type(inner) == c_ast.Struct:
+        return True
+
+    return False
+
 def getIntentInfo(ty):
     refIntent = ""
     retType   = ""
@@ -216,7 +232,10 @@ def computeArgs(pl):
             (intent, typeName, ptrTypeName) = getIntentInfo(arg.type)
             argName = computeArgName(arg)
             if typeName != "":
-                if intent != "":
+                if intent == "":
+                    if isStructType(arg.type):
+                        intent = "in "
+                else:
                     intent += " "
                 if argName == "":
                     argName = "arg" + str(i)
@@ -225,7 +244,8 @@ def computeArgs(pl):
                 if ptrTypeName != "":
                     ptrFormals.append(argName + " : " + ptrTypeName)
                 else:
-                    ptrFormals.append(argName + " : " + typeName)
+                    ptrFormals.append(intent + argName + " : " + typeName)
+
     return (", ".join(formals), ", ".join(ptrFormals))
 
 def isPointerTo(ty, text):
@@ -336,7 +356,7 @@ def genStruct(struct, name=""):
     if not struct.decls:
         print()
         return
-    
+
     members = ""
     warnKeyword = False
     for decl in struct.decls:
@@ -368,9 +388,9 @@ def genVar(decl):
 
 def genEnum(decl):
     if type(decl) == c_ast.Enum:
-        if decl.name: 
+        if decl.name:
             genComment("Enum: " + decl.name)
-        else: 
+        else:
             genComment("Enum: anonymous")
         for val in decl.values.enumerators:
             print("extern const " + val.name + " :c_int;")
@@ -556,6 +576,10 @@ def preamble(args, fakes):
     if len(fakes) != 0:
         genComment("Note: Generated with fake std headers")
         print()
+
+    # Arguably we can tighten the use of this module based on what we actually
+    # generate, but for now this is good enough
+    print("use CPtr;")
 
 # TODO: accept file from stdin?
 if __name__=="__main__":

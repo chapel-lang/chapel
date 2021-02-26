@@ -1,3 +1,4 @@
+use CPtr;
 use LayoutCS;
 use BlockDist;
 use ExternalArray;

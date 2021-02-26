@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -346,6 +346,19 @@ bool AstDumpToNode::enterBlockStmt(BlockStmt* node)
     mOffset = mOffset + 2;
     newline();
     node->useList->accept(this);
+    mOffset = mOffset - 2;
+  }
+
+  if (node->modRefs)
+  {
+    fprintf(mFP, "\n");
+
+    newline();
+
+    write(false, "ModRefs:", false);
+    mOffset = mOffset + 2;
+    newline();
+    node->modRefs->accept(this);
     mOffset = mOffset - 2;
   }
 
@@ -933,6 +946,19 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
   return false;
 }
 
+bool AstDumpToNode::enterInterfaceSym(InterfaceSymbol* node) {
+  enterNode(node);
+  fprintf(mFP, " %s", node->name);
+  mOffset = mOffset + 2;
+  newline(); fprintf(mFP, "ifcFormals:");
+  for_alist(formal, node->ifcFormals) formal->accept(this);
+  newline(); fprintf(mFP, "ifcBody:");
+  node->ifcBody->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
+}
+
 //
 //
 //
@@ -1030,6 +1056,23 @@ void AstDumpToNode::exitNamedExpr(NamedExpr* node)
   if (!compact)
     write(")");
   exitNode(node);
+}
+
+//
+//
+//
+
+bool AstDumpToNode::enterIfcConstraint(IfcConstraint* node) {
+  enterNode(node);
+  fprintf(mFP, " implements");
+  mOffset = mOffset + 2;
+  newline(); fprintf(mFP, "interfaceExpr:");
+  node->interfaceExpr->accept(this);
+  newline(); fprintf(mFP, "consActuals:");
+  for_alist(actual, node->consActuals) actual->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
 }
 
 //
@@ -1145,6 +1188,25 @@ void AstDumpToNode::visitImportStmt(ImportStmt* node)
 
   newline();
   node->src->accept(this);
+
+  if (node->isARename()) {
+    fprintf(mFP, " 'as' %s", node->getRename());
+  }
+
+  if (node->providesUnqualifiedAccess()) {
+    fprintf(mFP, ".{");
+
+    for_vector(const char, str, node->unqualified) {
+      newline();
+      fprintf(mFP, "%s", str);
+    }
+
+    for (std::map<const char*, const char*>::iterator it = node->renamed.begin();
+         it != node->renamed.end(); ++it) {
+      newline();
+      fprintf(mFP, "%s 'as' %s", it->second, it->first);
+    }
+  }
 
   mOffset = mOffset - 2;
   newline();
@@ -1348,6 +1410,18 @@ bool AstDumpToNode::enterDeferStmt(DeferStmt* node)
   return false;
 }
 
+bool AstDumpToNode::enterImplementsStmt(ImplementsStmt* node) {
+  enterNode(node);
+  fprintf(mFP, " implements iConstraint:");
+  mOffset = mOffset + 2;
+  node->iConstraint->accept(this);
+  newline(); fprintf(mFP, "implBody:");
+  node->implBody->accept(this);
+  mOffset = mOffset - 2;
+  exitNode(node);
+  return false;
+}
+
 //
 //
 //
@@ -1436,6 +1510,13 @@ bool AstDumpToNode::enterEnumType(EnumType* node)
 //
 
 void AstDumpToNode::visitPrimType(PrimitiveType* node)
+{
+  enterNode(node);
+  fprintf(mFP, " %s", node->symbol->name);
+  exitNode(node);
+}
+
+void AstDumpToNode::visitConstrainedType(ConstrainedType* node)
 {
   enterNode(node);
   fprintf(mFP, " %s", node->symbol->name);

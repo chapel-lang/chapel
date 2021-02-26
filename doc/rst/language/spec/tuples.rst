@@ -1,3 +1,5 @@
+.. default-domain:: chpl
+
 .. _Chapter-Tuples:
 
 Tuples
@@ -114,14 +116,14 @@ The syntax of a tuple expression is given by:
 
    tuple-component:
      expression
-     `_'
+     '_'
 
    tuple-component-list:
      tuple-component
      tuple-component , tuple-component-list
 
-An underscore can be used to omit components when splitting a tuple (see
-`16.6.1 <#Assignments_in_a_Tuple>`__).
+An underscore can be used to omit components when splitting a tuple
+(see :ref:`Assignments_in_a_Tuple`).
 
    *Example (values.chpl)*.
 
@@ -759,12 +761,12 @@ capture elements.
 
 Tuple expressions or tuple arguments with default argument intent are two
 examples of referential tuples. They store elements by reference where it
-makes sense to do so. Referential tuples may be viewed as analagous to a
+makes sense to do so. Referential tuples may be viewed as analogous to a
 group of function arguments that each have default argument intent.
 
 Tuple variables or tuple arguments with ``in`` intent are two examples of
 value tuples. They store all elements by value and may store elements copy
-initialized from another tuple. Value tuples may be viewed as analagous to
+initialized from another tuple. Value tuples may be viewed as analogous to
 a group of function arguments that each have the ``in`` intent.
 
 In short, some or all of the elements of a referential tuple may be
@@ -1164,60 +1166,46 @@ in the two operand tuples. Otherwise, a compile-time error will result.
 Predefined Functions and Methods on Tuples
 ------------------------------------------
 
-.. code-block:: chapel
+.. function:: proc tuple.size param
 
-   proc tuple.size param
-
-Returns the size of the tuple.
+   Returns the size of the tuple.
 
 
-.. code-block:: chapel
+.. function:: proc tuple.indices
 
-   proc tuple.indices
-
-Returns the range ``1..this.size`` representing the indices that are
-legal for indexing into the tuple.
+   Returns the range ``1..this.size`` representing the indices that are
+   legal for indexing into the tuple.
 
 
-.. code-block:: chapel
+.. function:: proc isHomogeneousTuple(t: tuple) param
 
-   proc isHomogeneousTuple(t: tuple) param
-
-Returns true if ``t`` is a homogeneous tuple; otherwise false.
+   Returns true if ``t`` is a homogeneous tuple; otherwise false.
 
 
 
-.. code-block:: chapel
+.. function:: proc isTuple(t: tuple) param
 
-   proc isTuple(t: tuple) param
-
-Returns true if ``t`` is a tuple; otherwise false.
+   Returns true if ``t`` is a tuple; otherwise false.
 
 
 
-.. code-block:: chapel
+.. function:: proc isTupleType(type t) param
 
-  proc isTupleType(type t) param
-
-Returns true if ``t`` is a tuple of types; otherwise false.
+   Returns true if ``t`` is a tuple of types; otherwise false.
 
 
 
-.. code-block:: chapel
+.. function:: proc max(type t) where isTupleType(t)
 
-   proc max(type t) where isTupleType(t)
-
-Returns a tuple of type ``t`` with each component set to the maximum
-value that can be stored in its position.
+   Returns a tuple of type ``t`` with each component set to the maximum
+   value that can be stored in its position.
 
 
 
-.. code-block:: chapel
+.. function:: proc min(type t) where isTupleType(t)
 
-   proc min(type t) where isTupleType(t)
-
-Returns a tuple of type ``t`` with each component set to the minimum
-value that can be stored in its position.
+   Returns a tuple of type ``t`` with each component set to the minimum
+   value that can be stored in its position.
 
 
 

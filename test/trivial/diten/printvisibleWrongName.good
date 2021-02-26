@@ -1,0 +1,4 @@
+printvisibleWrongName.chpl:2: error: unrecognized argument to 'get visible symbols': ignore
+printvisibleWrongName.chpl:2: error: recognized names are:
+printvisibleWrongName.chpl:2: error:   ignoreInternalModules
+printvisibleWrongName.chpl:2: error:   ignoreBuiltinModules

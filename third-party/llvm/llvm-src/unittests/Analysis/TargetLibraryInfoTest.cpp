@@ -1,9 +1,8 @@
 //===--- TargetLibraryInfoTest.cpp - TLI/LibFunc unit tests ---------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -68,7 +67,7 @@ TEST_F(TargetLibraryInfoTest, InvalidProto) {
   for (unsigned FI = 0; FI != LibFunc::NumLibFuncs; ++FI) {
     LibFunc LF = (LibFunc)FI;
     auto *F = cast<Function>(
-        M->getOrInsertFunction(TLI.getName(LF), InvalidFTy));
+        M->getOrInsertFunction(TLI.getName(LF), InvalidFTy).getCallee());
     EXPECT_FALSE(isLibFunc(F, LF));
   }
 }
@@ -97,6 +96,7 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare float @acoshf(float)\n"
       "declare x86_fp80 @acoshl(x86_fp80)\n"
       "declare x86_fp80 @acosl(x86_fp80)\n"
+      "declare i8* @aligned_alloc(i64, i64)\n"
       "declare double @asin(double)\n"
       "declare float @asinf(float)\n"
       "declare double @asinh(double)\n"
@@ -263,6 +263,9 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare i64 @readlink(i8*, i8*, i64)\n"
       "declare i8* @realloc(i8*, i64)\n"
       "declare i8* @reallocf(i8*, i64)\n"
+      "declare double @remainder(double, double)\n"
+      "declare float @remainderf(float, float)\n"
+      "declare x86_fp80 @remainderl(x86_fp80, x86_fp80)\n"
       "declare i32 @remove(i8*)\n"
       "declare i32 @rename(i8*, i8*)\n"
       "declare void @rewind(%struct*)\n"
@@ -273,6 +276,9 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare double @round(double)\n"
       "declare float @roundf(float)\n"
       "declare x86_fp80 @roundl(x86_fp80)\n"
+      "declare double @roundeven(double)\n"
+      "declare float @roundevenf(float)\n"
+      "declare x86_fp80 @roundevenl(x86_fp80)\n"
       "declare i32 @scanf(i8*, ...)\n"
       "declare void @setbuf(%struct*, i8*)\n"
       "declare i32 @setitimer(i32, %struct*, %struct*)\n"
@@ -314,6 +320,8 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare i8* @strtok(i8*, i8*)\n"
       "declare i8* @strtok_r(i8*, i8*, i8**)\n"
       "declare i64 @strtol(i8*, i8**, i32)\n"
+      "declare i64 @strlcat(i8*, i8**, i64)\n"
+      "declare i64 @strlcpy(i8*, i8**, i64)\n"
       "declare x86_fp80 @strtold(i8*, i8**)\n"
       "declare i64 @strtoll(i8*, i8**, i32)\n"
       "declare i64 @strtoul(i8*, i8**, i32)\n"
@@ -407,13 +415,17 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare void @_ZdaPvSt11align_val_t(i8*, i64)\n"
       "declare void @_ZdaPvSt11align_val_tRKSt9nothrow_t(i8*, i64, %struct*)\n"
       "declare void @_ZdaPvj(i8*, i32)\n"
+      "declare void @_ZdaPvjSt11align_val_t(i8*, i32, i32)\n"
       "declare void @_ZdaPvm(i8*, i64)\n"
+      "declare void @_ZdaPvmSt11align_val_t(i8*, i64, i64)\n"
       "declare void @_ZdlPv(i8*)\n"
       "declare void @_ZdlPvRKSt9nothrow_t(i8*, %struct*)\n"
       "declare void @_ZdlPvSt11align_val_t(i8*, i64)\n"
       "declare void @_ZdlPvSt11align_val_tRKSt9nothrow_t(i8*, i64, %struct*)\n"
       "declare void @_ZdlPvj(i8*, i32)\n"
+      "declare void @_ZdlPvjSt11align_val_t(i8*, i32, i32)\n"
       "declare void @_ZdlPvm(i8*, i64)\n"
+      "declare void @_ZdlPvmSt11align_val_t(i8*, i64, i64)\n"
       "declare i8* @_Znaj(i32)\n"
       "declare i8* @_ZnajRKSt9nothrow_t(i32, %struct*)\n"
       "declare i8* @_ZnajSt11align_val_t(i32, i32)\n"
@@ -468,6 +480,16 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare i8* @__stpncpy_chk(i8*, i8*, i64, i64)\n"
       "declare i8* @__strcpy_chk(i8*, i8*, i64)\n"
       "declare i8* @__strncpy_chk(i8*, i8*, i64, i64)\n"
+      "declare i8* @__memccpy_chk(i8*, i8*, i32, i64)\n"
+      "declare i32 @__snprintf_chk(i8*, i64, i32, i64, i8*, ...)\n"
+      "declare i32 @__sprintf_chk(i8*, i32, i64, i8*, ...)\n"
+      "declare i8* @__strcat_chk(i8*, i8*, i64)\n"
+      "declare i64 @__strlcat_chk(i8*, i8*, i64, i64)\n"
+      "declare i64 @__strlen_chk(i8*, i64)\n"
+      "declare i8* @__strncat_chk(i8*, i8*, i64, i64)\n"
+      "declare i64 @__strlcpy_chk(i8*, i8*, i64, i64)\n"
+      "declare i32 @__vsnprintf_chk(i8*, i64, i32, i64, i8*, %struct*)\n"
+      "declare i32 @__vsprintf_chk(i8*, i32, i64, i8*, %struct*)\n"
 
       "declare i8* @memalign(i64, i64)\n"
       "declare i8* @mempcpy(i8*, i8*, i64)\n"
@@ -494,6 +516,11 @@ TEST_F(TargetLibraryInfoTest, ValidProto) {
       "declare i32 @fiprintf(%struct*, i8*, ...)\n"
       "declare i32 @iprintf(i8*, ...)\n"
       "declare i32 @siprintf(i8*, i8*, ...)\n"
+
+      // __small_printf variants have the same prototype as the non-'i' versions.
+      "declare i32 @__small_fprintf(%struct*, i8*, ...)\n"
+      "declare i32 @__small_printf(i8*, ...)\n"
+      "declare i32 @__small_sprintf(i8*, i8*, ...)\n"
 
       "declare i32 @htonl(i32)\n"
       "declare i16 @htons(i16)\n"

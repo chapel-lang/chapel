@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -18,9 +18,12 @@
  * limitations under the License.
  */
 
-use TOML;
+use FileSystem;
 use Path;
 use Spawn;
+use TOML;
+private use List;
+
 use MasonEnv;
 use MasonNew;
 use MasonBuild;
@@ -28,33 +31,38 @@ use MasonHelp;
 use MasonUtils;
 use MasonExample;
 use MasonModify;
-use FileSystem;
-private use List;
 
 /*
 Initialises a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
-proc masonInit(args) throws {
+proc masonInit(args: [] string) throws {
   try! {
     var dirName = '';
     var show = false;
     var packageName = '';
     var countArgs = args.domain.low + 2;
+    var defaultBehavior = false;
     for arg in args[args.domain.low+2..] {
       countArgs += 1;
       select (arg) {
         when '-h' {
-          masonNewHelp();
+          masonInitHelp();
           exit();
         }
         when '--help' {
-          masonNewHelp();
+          masonInitHelp();
           exit();
         }
         when '--show' {
           show = true;
+        }
+        when '-d' {
+          defaultBehavior = true;
+        }
+        when '--default' {
+          defaultBehavior = true;
         }
         when '--name' {
           packageName = args[countArgs];
@@ -62,7 +70,7 @@ proc masonInit(args) throws {
         otherwise {
           if arg.startsWith('--name=') {
             var res = arg.split("=");
-            packageName = res[2];
+            packageName = res[1];
           }
           else {
             if args[countArgs - 2] != "--name" then dirName = arg;
@@ -70,18 +78,51 @@ proc masonInit(args) throws {
         }
       }
     }
-    
+
     if dirName == '' {
-      const cwd = getEnv("PWD");
-      var name = basename(cwd); 
-      const path = '.';
-      if packageName.size > 0 then name = packageName;
-      var resName = validatePackageNameChecks(path, name);
-      name = resName;
-      validateMasonFile(path, name, show);
-      var isInitialized = validateInit(path, name, true, show);
-      if isInitialized > 0 then 
-      writeln("Initialized new library project: " + basename(cwd));
+      if defaultBehavior {
+        const cwd = here.cwd();
+        var name = basename(cwd);
+        const path = '.';
+        if packageName.size > 0 then name = packageName;
+        var resName = validatePackageNameChecks(path, name);
+        name = resName;
+        validateMasonFile(path, name, show);
+        var isInitialized = validateInit(path, name, true, show, false);
+        if isInitialized > 0 then
+        writeln("Initialized new library project: " + name);
+      } else {
+        // check if Mason.toml file and src/moduleFile is present
+        var isMasonTomlPresent = false;
+        var isSrcPresent = false;
+        if isFile('./Mason.toml') then isMasonTomlPresent = true;
+        if isDir('./src') then isSrcPresent = true;
+        // parse values from TOML File && module file
+        var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
+        if isMasonTomlPresent then
+          (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
+        if isSrcPresent then 
+          moduleName = readPartialSrc();
+       // begin interactive session and get values input by user
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion, 
+                                              defaultChplVersion, defaultLicense);
+        const newPackageName = result[0],
+              newVersion = result[1],
+              newChplVersion = result[2],
+              newLicense = result[3];
+        // validate Mason.toml file 
+        validateMasonFile('.', newPackageName, show);
+        isMasonTomlPresent = true;
+        // overwrite to update existing values in Mason.toml
+        overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
+          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+          defaultChplVersion, defaultLicense);
+        if newPackageName + '.chpl' != moduleName {
+          if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
+        }
+        var isInitialized = validateInit('.', newPackageName, true, show, true);
+        writeln("Initialised new library project: " + newPackageName);
+      }
     }
     else {
       // if the target directory in path doesnt exist, throw error
@@ -95,9 +136,9 @@ proc masonInit(args) throws {
         var resName = validatePackageNameChecks(path, name);
         name = resName;
         validateMasonFile(path, name, show);
-        var isInitialized = validateInit(path, name, true, show);
-        if isInitialized > 0 then 
-        writeln("Initialized new library project in " + path + ": " + basename(path));
+        var isInitialized = validateInit(path, name, true, show, false);
+        if isInitialized > 0 then
+        writeln("Initialized new library project in " + path + ": " + name);
       }
       else {
         throw new owned MasonError("Directory does not exist: " + path +
@@ -111,16 +152,58 @@ proc masonInit(args) throws {
   }
 }
 
+// Overwrites values of existing Mason.toml file
+proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
+    newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+    defaultChplVersion, defaultLicense) {
+  const tomlPath = "./Mason.toml";
+  const toParse = open(tomlPath, iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  if isMasonTomlPresent {
+    if newPackageName != defaultPackageName then
+      tomlFile["brick"]!.set("name", newPackageName);
+    if newVersion != defaultVersion then
+      tomlFile["brick"]!.set("version", newVersion);
+    if newChplVersion != defaultChplVersion then
+      tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+    if newLicense != defaultLicense then
+      tomlFile["brick"]!.set("license", newLicense);
+  }
+  generateToml(tomlFile, tomlPath);
+}
+
+// Returns the name of the moduleFile in src/
+proc readPartialSrc(){
+  const file: string = listdir("./src");
+  return file;
+}
+
+// Returns default values from existing Mason.toml file
+proc readPartialManifest() {
+  var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense: string;
+  const toParse = open("./Mason.toml", iomode.r);
+  const tomlFile = owned.create(parseToml(toParse));
+  if tomlFile.pathExists("brick.name") then
+    defaultPackageName = tomlFile["brick"]!["name"]!.s;
+  if tomlFile.pathExists("brick.version") then
+    defaultVersion = tomlFile["brick"]!["version"]!.s;
+  if tomlFile.pathExists("brick.chplVersion") then
+    defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
+  if tomlFile.pathExists("brick.license") then 
+    defaultLicense = tomlFile["brick"]!["license"]!.s;
+  return (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense);
+}
+
 /*
 Validates directories and files in project directory to avoid overwriting
 */
-proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) throws {
+proc validateInit(path: string, name: string, isNameDiff: bool, show: bool, interactive: bool) throws {
   var fileName = "";
   if path != '.' {
     fileName = basename(path);
   }
   else {
-    const pwd = getEnv("PWD");
+    const pwd = here.cwd();
     fileName = basename(pwd);
   }
   var moduleName = fileName + '.chpl';
@@ -128,7 +211,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
 
   var files = [ "/Mason.toml", "/src" , "/test" , "/example", "/.git", "/.gitignore", "/src/" + moduleName ];
   var toBeCreated : list(string);
-  for idx in 1..files.size do {
+  for idx in 0..<files.size do {
     const metafile = files(idx);
     const dir = metafile;
     if dir == "/Mason.toml" || dir == "/.gitignore" {
@@ -148,7 +231,7 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     }
   }
 
-  if toBeCreated.size == 0 {
+  if toBeCreated.size == 0 && !interactive {
       writeln("Library project has already been initialised.");
       return 0;
   }
@@ -161,14 +244,14 @@ proc validateInit(path: string, name: string, isNameDiff: bool, show: bool) thro
     else if metafile == "/src/" + moduleName {
       var moduleFileName = moduleName.split(".");
       if !isFile(path + "/src/" + moduleName) then
-      makeModule(path, moduleFileName[1]);
+      makeModule(path, moduleFileName[0]);
     }
     else if metafile == "/.gitignore" {
       addGitIgnore(path);
       if show then writeln("Created .gitignore");
     }
     else if metafile == '/src' && path == '.' {
-      const pwd = getEnv("PWD");
+      const pwd = here.cwd();
       const newPath = basename(pwd);
       var fileName = basename(newPath);
       if isNameDiff then fileName = name;
@@ -204,13 +287,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     var projectName = "";
     var version = "";
     var chplVersion = "";
+    var license = "None";
     const toParse = open(path + "/Mason.toml", iomode.r);
     const tomlFile = owned.create(parseToml(toParse));
 
     if !tomlFile.pathExists("brick") {
       if tomlFile.pathExists("name") ||
          tomlFile.pathExists("version") ||
-         tomlFile.pathExists("chplVersion") {
+         tomlFile.pathExists("chplVersion") ||
+         tomlFile.pathExists("license") {
         throw new owned MasonError("The [brick] header is missing in Mason.toml");
       }
       else {
@@ -226,6 +311,15 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
       throw new owned MasonError("Mason could not find valid version in Mason.toml file");
     } else {
       version = tomlFile["brick"]!["version"]!.s;
+    }
+
+    if !tomlFile.pathExists("brick.license") {
+      tomlFile["brick"]!.set("license", license);
+      var tomlPath = path + "/Mason.toml";
+      generateToml(tomlFile, tomlPath);
+      if show then writeln("Added license to Mason.toml");
+    } else {
+      license = tomlFile["brick"]!["license"]!.s;
     }
 
     if tomlFile.pathExists("brick.name") {
@@ -245,7 +339,7 @@ proc validateMasonFile(path: string, name: string, show: bool) throws {
     checkVersion(version);
   }
   else {
-    makeBasicToml(name, path);
+    makeBasicToml(name, path, "0.1.0", getChapelVersionStr(), "None");
     if show then writeln("Created Mason.toml file.");
   }
 }
@@ -263,9 +357,9 @@ proc addSection(sectionName: string, path: string, tomlFile: owned Toml, show: b
 }
 
 /*
-  validates Mason.toml for an already existing brick-name. 
-  If brick-name doesn't exist, it creates a module with the 
-  given packageName. 
+  validates Mason.toml for an already existing brick-name.
+  If brick-name doesn't exist, it creates a module with the
+  given packageName.
 */
 proc createModule(path: string, packageName: string, show: bool) throws {
   if validatePackageName(packageName) {
@@ -286,8 +380,8 @@ proc createModule(path: string, packageName: string, show: bool) throws {
 }
 
 /*
-  Logic for determining legal project name : 
-  Precedence Followed : 
+  Logic for determining legal project name :
+  Precedence Followed :
   1. `--name` if thrown
   2. Mason.toml's [brick][name] , if found
   3. Filename of src/<project>.chpl , if found
@@ -301,15 +395,15 @@ proc validatePackageNameChecks(path: string, name: string) {
       const tomlFile = owned.create(parseToml(toParse));
       if tomlFile.pathExists("brick.name") {
         const nameTOML = tomlFile["brick"]!["name"]!.s;
-        if validateNameInit(nameTOML) then actualName = nameTOML; 
+        if validateNameInit(nameTOML) then actualName = nameTOML;
       }
-    } 
+    }
     else {
       if isDir(path + '/src') {
         const files = listdir(path + '/src');
-        const file = files[1];
+        const file = files[0];
         const fileName = file.split(".");
-        const nameModule = fileName[1];
+        const nameModule = fileName[0];
         if validateNameInit(nameModule) then actualName = nameModule;
       }
       else {

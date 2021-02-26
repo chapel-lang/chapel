@@ -8,35 +8,30 @@ Getting Started with the LLVM System
 Overview
 ========
 
-Welcome to the LLVM project! In order to get started, you first need to know
-some basic information.
+Welcome to the LLVM project!
 
-First, the LLVM project has multiple components. The core of the project is
+The LLVM project has multiple components. The core of the project is
 itself called "LLVM". This contains all of the tools, libraries, and header
-files needed to process an intermediate representation and convert it into
-object files.  It contains an assembler, disassembler, bitcode analyzer and
+files needed to process intermediate representations and converts it into
+object files.  Tools include an assembler, disassembler, bitcode analyzer, and
 bitcode optimizer.  It also contains basic regression tests.
 
-Another piece is the `Clang <http://clang.llvm.org/>`_ front end.  This
+C-like languages use the `Clang <https://clang.llvm.org/>`_ front end.  This
 component compiles C, C++, Objective C, and Objective C++ code into LLVM bitcode
 -- and from there into object files, using LLVM.
 
-There are other components as well:
+Other components include:
 the `libc++ C++ standard library <https://libcxx.llvm.org>`_,
 the `LLD linker <https://lld.llvm.org>`_, and more.
 
-Getting Started Quickly (A Summary)
-===================================
+Getting the Source Code and Building LLVM
+=========================================
 
-The LLVM Getting Started documentation may be out of date.  So, the `Clang
-Getting Started <http://clang.llvm.org/get_started.html>`_ page might also be a
-good place to start.
+The LLVM Getting Started documentation may be out of date.  The `Clang
+Getting Started <https://clang.llvm.org/get_started.html>`_ page might have more
+accurate information.
 
-Here's the short story for getting up and running quickly with LLVM:
-
-#. Read the documentation.
-#. Read the documentation.
-#. Remember that you were warned twice about reading the documentation.
+This is an example workflow and configuration to get and build the LLVM source:
 
 #. Checkout LLVM (including related subprojects like Clang):
 
@@ -44,14 +39,14 @@ Here's the short story for getting up and running quickly with LLVM:
    * Or, on windows, ``git clone --config core.autocrlf=false
      https://github.com/llvm/llvm-project.git``
 
-#. Configure and build LLVM and Clang:.
+#. Configure and build LLVM and Clang:
 
    * ``cd llvm-project``
    * ``mkdir build``
    * ``cd build``
    * ``cmake -G <generator> [options] ../llvm``
 
-     Some common generators are:
+     Some common build system generators are:
 
      * ``Ninja`` --- for generating `Ninja <https://ninja-build.org>`_
        build files. Most llvm developers use Ninja.
@@ -64,8 +59,8 @@ Here's the short story for getting up and running quickly with LLVM:
 
      * ``-DLLVM_ENABLE_PROJECTS='...'`` --- semicolon-separated list of the LLVM
        subprojects you'd like to additionally build. Can include any of: clang,
-       libcxx, libcxxabi, libunwind, lldb, compiler-rt, lld, polly, or
-       debuginfo-tests.
+       clang-tools-extra, libcxx, libcxxabi, libunwind, lldb, compiler-rt, lld,
+       polly, or debuginfo-tests.
 
        For example, to build LLVM, Clang, libcxx, and libcxxabi, use
        ``-DLLVM_ENABLE_PROJECTS="clang;libcxx;libcxxabi"``.
@@ -80,9 +75,11 @@ Here's the short story for getting up and running quickly with LLVM:
      * ``-DLLVM_ENABLE_ASSERTIONS=On`` --- Compile with assertion checks enabled
        (default is Yes for Debug builds, No for all other build types).
 
-   * Run your build tool of choice!
+   * ``cmake --build . [--target <target>]`` or the build system specified
+     above directly.
 
-     * The default target (i.e. ``ninja`` or ``make``) will build all of LLVM.
+     * The default target (i.e. ``cmake --build .`` or ``make``) will build all of
+       LLVM.
 
      * The ``check-all`` target (i.e. ``ninja check-all``) will run the
        regression tests to ensure everything is in working order.
@@ -90,12 +87,12 @@ Here's the short story for getting up and running quickly with LLVM:
      * CMake will generate build targets for each tool and library, and most
        LLVM sub-projects generate their own ``check-<project>`` target.
 
-     * Running a serial build will be *slow*.  Make sure you run a parallel
-       build. That's already done by default in Ninja; for ``make``, use
-       ``make -j NNN`` (with an appropriate value of NNN, e.g. number of CPUs
-       you have.)
+     * Running a serial build will be **slow**.  To improve speed, try running a
+       parallel build. That's done by default in Ninja; for ``make``, use the
+       option ``-j NN``, where ``NN`` is the number of parallel jobs, e.g. the
+       number of available CPUs.
 
-   * For more information see `CMake <CMake.html>`_
+   * For more information see `CMake <CMake.html>`__
 
    * If you get an "internal compiler error (ICE)" or test failures, see
      `below`_.
@@ -122,14 +119,15 @@ OS                 Arch                  Compilers
 Linux              x86\ :sup:`1`         GCC, Clang
 Linux              amd64                 GCC, Clang
 Linux              ARM                   GCC, Clang
+Linux              Mips                  GCC, Clang
 Linux              PowerPC               GCC, Clang
 Solaris            V9 (Ultrasparc)       GCC
 FreeBSD            x86\ :sup:`1`         GCC, Clang
 FreeBSD            amd64                 GCC, Clang
 NetBSD             x86\ :sup:`1`         GCC, Clang
 NetBSD             amd64                 GCC, Clang
-MacOS X\ :sup:`2`  PowerPC               GCC
-MacOS X            x86                   GCC, Clang
+macOS\ :sup:`2`    PowerPC               GCC
+macOS              x86                   GCC, Clang
 Cygwin/Win32       x86\ :sup:`1, 3`      GCC
 Windows            x86\ :sup:`1`         Visual Studio
 Windows x64        x86-64                Visual Studio
@@ -169,10 +167,11 @@ uses the package and provides other details.
 =========================================================== ============ ==========================================
 Package                                                     Version      Notes
 =========================================================== ============ ==========================================
-`GNU Make <http://savannah.gnu.org/projects/make>`_         3.79, 3.79.1 Makefile/build processor
+`CMake <http://cmake.org/>`__                               >=3.4.3      Makefile/workspace generator
 `GCC <http://gcc.gnu.org/>`_                                >=5.1.0      C/C++ compiler\ :sup:`1`
 `python <http://www.python.org/>`_                          >=2.7        Automated test suite\ :sup:`2`
 `zlib <http://zlib.net>`_                                   >=1.2.3.4    Compression library\ :sup:`3`
+`GNU Make <http://savannah.gnu.org/projects/make>`_         3.79, 3.79.1 Makefile/build processor\ :sup:`4`
 =========================================================== ============ ==========================================
 
 .. note::
@@ -184,6 +183,7 @@ Package                                                     Version      Notes
       ``llvm/test`` directory.
    #. Optional, adds compression / uncompression capabilities to selected LLVM
       tools.
+   #. Optional, you can use any other build tool supported by CMake.
 
 Additionally, your compilation host is expected to have the usual plethora of
 Unix utilities. Specifically:
@@ -233,15 +233,6 @@ popular host toolchains for specific minimum versions in our build systems:
 * GCC 5.1
 * Visual Studio 2017
 
-The below versions currently soft-error as we transition to the new compiler
-versions listed above. The LLVM codebase is currently known to compile correctly
-with the following compilers, though this will change in the near future:
-
-* Clang 3.1
-* Apple Clang 3.1
-* GCC 4.8
-* Visual Studio 2015 (Update 3)
-
 Anything older than these toolchains *may* work, but will require forcing the
 build system with a special option and is not really a supported host platform.
 Also note that older versions of these compilers have often crashed or
@@ -272,10 +263,10 @@ newer version of Gold.
 Getting a Modern Host C++ Toolchain
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This section mostly applies to Linux and older BSDs. On Mac OS X, you should
+This section mostly applies to Linux and older BSDs. On macOS, you should
 have a sufficiently modern Xcode, or you will likely need to upgrade until you
 do. Windows does not have a "system compiler", so you must install either Visual
-Studio 2015 or a recent version of mingw64. FreeBSD 10.0 and newer have a modern
+Studio 2017 or a recent version of mingw64. FreeBSD 10.0 and newer have a modern
 Clang as the system compiler.
 
 However, some Linux distributions and some other or older BSDs sometimes have
@@ -349,6 +340,16 @@ If you fail to set rpath, most LLVM binaries will fail on startup with a message
 from the loader similar to ``libstdc++.so.6: version `GLIBCXX_3.4.20' not
 found``. This means you need to tweak the -rpath linker flag.
 
+This method will add an absolute path to the rpath of all executables. That's
+fine for local development. If you want to distribute the binaries you build
+so that they can run on older systems, copy ``libstdc++.so.6`` into the
+``lib/`` directory.  All of LLVM's shipping binaries have an rpath pointing at
+``$ORIGIN/../lib``, so they will find ``libstdc++.so.6`` there.  Non-distributed
+binaries don't have an rpath set and won't find ``libstdc++.so.6``. Pass
+``-DLLVM_LOCAL_RPATH="$HOME/toolchains/lib64"`` to cmake to add an absolute
+path to ``libstdc++.so.6`` as above. Since these binaries are not distributed,
+having an absolute local path is fine for them.
+
 When you build Clang, you will need to give *it* access to modern C++
 standard library in order to use it as your new host in part of a bootstrap.
 There are two easy ways to do this, either build (and install) libc++ along
@@ -413,10 +414,7 @@ The files are as follows, with *x.y* marking the version number:
 Checkout LLVM from Git
 ----------------------
 
-You can also checkout the source code for LLVM from Git. While the LLVM
-project's official source-code repository is Subversion, we are in the process
-of migrating to git. We currently recommend that all developers use Git for
-day-to-day development.
+You can also checkout the source code for LLVM from Git.
 
 .. note::
 
@@ -428,7 +426,7 @@ Simply run:
 
 .. code-block:: console
 
-  % git clone https://github.com/llvm/llvm-project.git`
+  % git clone https://github.com/llvm/llvm-project.git
 
 or on Windows,
 
@@ -459,8 +457,8 @@ either via emailing to llvm-commits, or, preferably, via :ref:`Phabricator
 You'll generally want to make sure your branch has a single commit,
 corresponding to the review you wish to send, up-to-date with the upstream
 ``origin/master`` branch, and doesn't contain merges. Once you have that, you
-can use ``git show`` or ``git format-patch`` to output the diff, and attach it
-to a Phabricator review (or to an email message).
+can start `a Phabricator review <Phabricator.html>`_ (or use ``git show`` or
+``git format-patch`` to output the diff, and attach it to an email message).
 
 However, using the "Arcanist" tool is often easier. After `installing
 arcanist`_, you can upload the latest commit using:
@@ -501,38 +499,69 @@ in order to update the last commit with all pending changes.
 For developers to commit changes from Git
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-A helper script is provided in ``llvm/utils/git-svn/git-llvm``. After you add it
-to your path, you can push committed changes upstream with ``git llvm
-push``. While this creates a Subversion checkout and patches it under the hood,
-it does not require you to have interaction with it.
+Once a patch is reviewed, you should rebase it, re-test locally, and commit the
+changes to LLVM's master branch. This is done using `git push` if you have the
+required access rights. See `committing a change
+<Phabricator.html#committing-a-change>`_ for Phabricator based commits or
+`obtaining commit access <DeveloperPolicy.html#obtaining-commit-access>`_
+for commit access.
+
+Here is an example workflow using git. This workflow assumes you have an
+accepted commit on the branch named `branch-with-change`.
 
 .. code-block:: console
 
-  % export PATH=$PATH:$TOP_LEVEL_DIR/llvm-project/llvm/utils/git-svn/
-  % git llvm push
+  # Go to the branch with your accepted commit.
+  % git checkout branch-with-change
+  # Rebase your change onto the latest commits on Github.
+  % git pull --rebase origin master
+  # Rerun the appropriate tests if needed.
+  % ninja check-$whatever
+  # Check that the list of commits about to be pushed is correct.
+  % git log origin/master...HEAD --oneline
+  # Push to Github.
+  % git push origin HEAD:master
 
-Within a couple minutes after pushing to subversion, the svn commit will have
-been converted back to a Git commit, and made its way into the official Git
-repository. At that point, ``git pull`` should get back the changes as they were
-committed.
+LLVM currently has a linear-history policy, which means that merge commits are
+not allowed. The `llvm-project` repo on github is configured to reject pushes
+that include merges, so the `git rebase` step above is required.
 
-You'll likely want to ``git pull --rebase`` to get the official git commit
-downloaded back to your repository. The SVN revision numbers of each commit can
-be found at the end of the commit message, e.g. ``llvm-svn: 350914``.
+Please ask for help if you're having trouble with your particular git workflow.
 
-You may also find the ``-n`` flag useful, like ``git llvm push -n``. This runs
-through all the steps of committing _without_ actually doing the commit, and
-tell you what it would have done. That can be useful if you're unsure whether
-the right thing will happen.
+Git pre-push hook
+^^^^^^^^^^^^^^^^^
+
+We include an optional pre-push hook that run some sanity checks on the revisions
+you are about to push and ask confirmation if you push multiple commits at once.
+You can set it up (on Unix systems) by running from the repository root:
+
+.. code-block:: console
+
+  % ln -sf ../../llvm/utils/git/pre-push.py .git/hooks/pre-push
+
+Bisecting commits
+^^^^^^^^^^^^^^^^^
+
+See `Bisecting LLVM code <GitBisecting.html>`_ for how to use ``git bisect``
+on LLVM.
+
+Reverting a change
+^^^^^^^^^^^^^^^^^^
+
+When reverting changes using git, the default message will say "This reverts
+commit XYZ". Leave this at the end of the commit message, but add some details
+before it as to why the commit is being reverted. A brief explanation and/or
+links to bots that demonstrate the problem are sufficient.
 
 Checkout via SVN (deprecated)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Until we have fully migrated to Git, you may also get a fresh copy of
-the code from the official Subversion repository.
+The SVN repository is no longer updated, but it is still available for now. If
+you need to check the code out of SVN rather than git for some reason, you can
+do it like so:
 
 * ``cd where-you-want-llvm-to-live``
-* Read-Only: ``svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm``
+* Read-Only: ``svn co https://llvm.org/svn/llvm-project/llvm/trunk llvm``
 * Read-Write: ``svn co https://user@llvm.org/svn/llvm-project/llvm/trunk llvm``
 
 This will create an '``llvm``' directory in the current directory and fully
@@ -578,6 +607,11 @@ used by people developing LLVM.
 | CMAKE_INSTALL_PREFIX    | Specifies the install directory to target when     |
 |                         | running the install action of the build files.     |
 +-------------------------+----------------------------------------------------+
+| PYTHON_EXECUTABLE       | Forces CMake to use a specific Python version by   |
+|                         | passing a path to a Python interpreter. By default |
+|                         | the Python version of the interpreter in your PATH |
+|                         | is used.                                           |
++-------------------------+----------------------------------------------------+
 | LLVM_TARGETS_TO_BUILD   | A semicolon delimited list controlling which       |
 |                         | targets will be built and linked into llvm.        |
 |                         | The default list is defined as                     |
@@ -608,7 +642,8 @@ used by people developing LLVM.
 |                         | default set of LLVM components that can be         |
 |                         | overridden with ``LLVM_DYLIB_COMPONENTS``. The     |
 |                         | default contains most of LLVM and is defined in    |
-|                         | ``tools/llvm-shlib/CMakelists.txt``.               |
+|                         | ``tools/llvm-shlib/CMakelists.txt``. This option is|
+|                         | not available on Windows.                          |
 +-------------------------+----------------------------------------------------+
 | LLVM_OPTIMIZED_TABLEGEN | Builds a release tablegen that gets used during    |
 |                         | the LLVM build. This can dramatically speed up     |
@@ -711,7 +746,7 @@ define compiler flags and variables used during the CMake test operations.
 
 The result of such a build is executables that are not runnable on the build
 host but can be executed on the target. As an example the following CMake
-invocation can generate build files targeting iOS. This will work on Mac OS X
+invocation can generate build files targeting iOS. This will work on macOS
 with the latest Xcode:
 
 .. code-block:: console
@@ -726,7 +761,7 @@ Note: There are some additional flags that need to be passed when building for
 iOS due to limitations in the iOS SDK.
 
 Check :doc:`HowToCrossCompileLLVM` and `Clang docs on how to cross-compile in general
-<http://clang.llvm.org/docs/CrossCompilation.html>`_ for more information
+<https://clang.llvm.org/docs/CrossCompilation.html>`_ for more information
 about cross-compiling.
 
 The Location of LLVM Object Files
@@ -793,7 +828,7 @@ Directory Layout
 
 One useful source of information about the LLVM source base is the LLVM `doxygen
 <http://www.doxygen.org/>`_ documentation available at
-`<http://llvm.org/doxygen/>`_.  The following is a brief introduction to code
+`<https://llvm.org/doxygen/>`_.  The following is a brief introduction to code
 layout:
 
 ``llvm/examples``
@@ -1099,6 +1134,70 @@ If you are having problems building or using LLVM, or if you have any other
 general questions about LLVM, please consult the `Frequently Asked
 Questions <FAQ.html>`_ page.
 
+If you are having problems with limited memory and build time, please try
+building with ninja instead of make. Please consider configuring the
+following options with cmake:
+
+ * -G Ninja
+   Setting this option will allow you to build with ninja instead of make.
+   Building with ninja significantly improves your build time, especially with
+   incremental builds, and improves your memory usage.
+
+ * -DLLVM_USE_LINKER
+   Setting this option to lld will significantly reduce linking time for LLVM
+   executables on ELF-based platforms, such as Linux. If you are building LLVM
+   for the first time and lld is not available to you as a binary package, then
+   you may want to use the gold linker as a faster alternative to GNU ld.
+
+ * -DCMAKE_BUILD_TYPE
+
+    - Debug --- This is the default build type. This disables optimizations while
+      compiling LLVM and enables debug info. On ELF-based platforms (e.g. Linux)
+      linking with debug info may consume a large amount of memory.
+
+    - Release --- Turns on optimizations and disables debug info. Combining the
+      Release build type with -DLLVM_ENABLE_ASSERTIONS=ON may be a good trade-off
+      between speed and debugability during development, particularly for running
+      the test suite.
+
+ * -DLLVM_ENABLE_ASSERTIONS
+   This option defaults to ON for Debug builds and defaults to OFF for Release
+   builds. As mentioned in the previous option, using the Release build type and
+   enabling assertions may be a good alternative to using the Debug build type.
+
+ * -DLLVM_PARALLEL_LINK_JOBS
+   Set this equal to number of jobs you wish to run simultaneously. This is
+   similar to the -j option used with make, but only for link jobs. This option
+   can only be used with ninja. You may wish to use a very low number of jobs,
+   as this will greatly reduce the amount of memory used during the build
+   process. If you have limited memory, you may wish to set this to 1.
+
+ * -DLLVM_TARGETS_TO_BUILD
+   Set this equal to the target you wish to build. You may wish to set this to
+   X86; however, you will find a full list of targets within the
+   llvm-project/llvm/lib/Target directory.
+
+ * -DLLVM_OPTIMIZED_TABLEGEN
+   Set this to ON to generate a fully optimized tablegen during your build. This
+   will significantly improve your build time. This is only useful if you are
+   using the Debug build type.
+
+ * -DLLVM_ENABLE_PROJECTS
+   Set this equal to the projects you wish to compile (e.g. clang, lld, etc.) If
+   compiling more than one project, separate the items with a semicolon. Should
+   you run into issues with the semicolon, try surrounding it with single quotes.
+
+ * -DCLANG_ENABLE_STATIC_ANALYZER
+   Set this option to OFF if you do not require the clang static analyzer. This
+   should improve your build time slightly.
+
+ * -DLLVM_USE_SPLIT_DWARF
+   Consider setting this to ON if you require a debug build, as this will ease
+   memory pressure on the linker. This will make linking much faster, as the
+   binaries will not contain any of the debug information; however, this will
+   generate the debug information in the form of a DWARF object file (with the
+   extension .dwo). This only applies to host platforms using ELF, such as Linux.
+
 .. _links:
 
 Links
@@ -1109,8 +1208,8 @@ things... there are many more interesting and complicated things that you can do
 that aren't documented here (but we'll gladly accept a patch if you want to
 write something up!).  For more information about LLVM, check out:
 
-* `LLVM Homepage <http://llvm.org/>`_
-* `LLVM Doxygen Tree <http://llvm.org/doxygen/>`_
-* `Starting a Project that Uses LLVM <http://llvm.org/docs/Projects.html>`_
+* `LLVM Homepage <https://llvm.org/>`_
+* `LLVM Doxygen Tree <https://llvm.org/doxygen/>`_
+* `Starting a Project that Uses LLVM <https://llvm.org/docs/Projects.html>`_
 
 .. _installing arcanist: https://secure.phabricator.com/book/phabricator/article/arcanist_quick_start/

@@ -1,9 +1,8 @@
 //========- unittests/Support/TaskQueue.cpp - TaskQueue.h tests ------========//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -23,7 +22,7 @@ protected:
 };
 
 TEST_F(TaskQueueTest, OrderedFutures) {
-  ThreadPool TP(1);
+  ThreadPool TP(hardware_concurrency(1));
   TaskQueue TQ(TP);
   std::atomic<int> X{ 0 };
   std::atomic<int> Y{ 0 };
@@ -67,7 +66,7 @@ TEST_F(TaskQueueTest, OrderedFutures) {
 }
 
 TEST_F(TaskQueueTest, UnOrderedFutures) {
-  ThreadPool TP(1);
+  ThreadPool TP(hardware_concurrency(1));
   TaskQueue TQ(TP);
   std::atomic<int> X{ 0 };
   std::atomic<int> Y{ 0 };
@@ -97,7 +96,7 @@ TEST_F(TaskQueueTest, UnOrderedFutures) {
 }
 
 TEST_F(TaskQueueTest, FutureWithReturnValue) {
-  ThreadPool TP(1);
+  ThreadPool TP(hardware_concurrency(1));
   TaskQueue TQ(TP);
   std::future<std::string> F1 = TQ.async([&] { return std::string("Hello"); });
   std::future<int> F2 = TQ.async([&] { return 42; });

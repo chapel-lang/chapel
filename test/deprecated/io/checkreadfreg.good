@@ -1,3 +1,0 @@
-checkreadfreg.chpl:1: warning: readf will no longer be available by default,
-please insert a use of the IO module to continue calling it.
-true

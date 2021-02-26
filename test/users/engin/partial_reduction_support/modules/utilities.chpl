@@ -1,3 +1,4 @@
+use DSIUtil;
 
 proc _tuple.withIdx(idx, mergeVal) where isHomogeneousTuple(this) {
 

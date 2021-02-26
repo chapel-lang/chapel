@@ -1,0 +1,1 @@
+usedWithRange.chpl:1: error: noinit is only supported for arrays

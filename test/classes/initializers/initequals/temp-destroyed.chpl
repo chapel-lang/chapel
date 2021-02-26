@@ -16,6 +16,11 @@ record R {
   }
 }
 
+operator :(other: ?T, type t: R(T)) {
+  var tmp: t = other;
+  return tmp;
+}
+
 record X {
   var x : int;
 

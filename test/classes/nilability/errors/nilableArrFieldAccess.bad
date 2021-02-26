@@ -1,0 +1,4 @@
+nilableArrFieldAccess.chpl:6: error: unresolved call 'owned C?.vect[2]'
+nilableArrFieldAccess.chpl:2: note: this candidate did not match: C.vect
+nilableArrFieldAccess.chpl:6: note: because call includes 1 argument
+nilableArrFieldAccess.chpl:2: note: but function can only accept 0 arguments

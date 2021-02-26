@@ -1,3 +1,0 @@
-# Use this test only under valgrind.
-# Otherwise use its origin, qio_test.test.c
-CHPL_TEST_VGRND_EXE != on

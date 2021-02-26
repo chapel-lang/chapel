@@ -1,9 +1,8 @@
 //===-- WebAssemblyOptimizeReturned.cpp - Optimize "returned" attributes --===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 ///
@@ -37,13 +36,13 @@ class OptimizeReturned final : public FunctionPass,
 
   bool runOnFunction(Function &F) override;
 
-  DominatorTree *DT;
+  DominatorTree *DT = nullptr;
 
 public:
   static char ID;
-  OptimizeReturned() : FunctionPass(ID), DT(nullptr) {}
+  OptimizeReturned() : FunctionPass(ID) {}
 
-  void visitCallSite(CallSite CS);
+  void visitCallBase(CallBase &CB);
 };
 } // End anonymous namespace
 
@@ -56,20 +55,16 @@ FunctionPass *llvm::createWebAssemblyOptimizeReturned() {
   return new OptimizeReturned();
 }
 
-void OptimizeReturned::visitCallSite(CallSite CS) {
-  for (unsigned i = 0, e = CS.getNumArgOperands(); i < e; ++i)
-    if (CS.paramHasAttr(i, Attribute::Returned)) {
-      Instruction *Inst = CS.getInstruction();
-      Value *Arg = CS.getArgOperand(i);
+void OptimizeReturned::visitCallBase(CallBase &CB) {
+  for (unsigned I = 0, E = CB.getNumArgOperands(); I < E; ++I)
+    if (CB.paramHasAttr(I, Attribute::Returned)) {
+      Value *Arg = CB.getArgOperand(I);
       // Ignore constants, globals, undef, etc.
       if (isa<Constant>(Arg))
         continue;
       // Like replaceDominatedUsesWith but using Instruction/Use dominance.
-      for (auto UI = Arg->use_begin(), UE = Arg->use_end(); UI != UE;) {
-        Use &U = *UI++;
-        if (DT->dominates(Inst, U))
-          U.set(Inst);
-      }
+      Arg->replaceUsesWithIf(&CB,
+                             [&](Use &U) { return DT->dominates(&CB, U); });
     }
 }
 

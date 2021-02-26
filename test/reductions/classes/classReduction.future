@@ -1,0 +1,3 @@
+bug: Using a class field in user defined reduction causes internal error
+
+     issue: #16144

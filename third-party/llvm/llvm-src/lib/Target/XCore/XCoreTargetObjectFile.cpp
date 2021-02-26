@@ -1,9 +1,8 @@
 //===-- XCoreTargetObjectFile.cpp - XCore object files --------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -141,10 +140,9 @@ MCSection *XCoreTargetObjectFile::SelectSectionForGlobal(
   report_fatal_error("Target does not support TLS or Common sections");
 }
 
-MCSection *XCoreTargetObjectFile::getSectionForConstant(const DataLayout &DL,
-                                                        SectionKind Kind,
-                                                        const Constant *C,
-                                                        unsigned &Align) const {
+MCSection *XCoreTargetObjectFile::getSectionForConstant(
+    const DataLayout &DL, SectionKind Kind, const Constant *C,
+    Align &Alignment) const {
   if (Kind.isMergeableConst4())           return MergeableConst4Section;
   if (Kind.isMergeableConst8())           return MergeableConst8Section;
   if (Kind.isMergeableConst16())          return MergeableConst16Section;

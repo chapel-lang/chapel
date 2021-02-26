@@ -1,0 +1,2 @@
+bug: issue trying to write type with generic record field by itself
+#16044

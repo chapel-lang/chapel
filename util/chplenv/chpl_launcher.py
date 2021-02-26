@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from distutils.spawn import find_executable
 import sys
 
@@ -13,14 +13,14 @@ def get():
         comm_val = chpl_comm.get()
         platform_val = chpl_platform.get('target')
 
-        if platform_val.startswith('cray-') or chpl_platform.is_cross_compiling():
+        if platform_val.startswith('cray-') or platform_val.startswith('hpe-cray-'):
             has_aprun = find_executable('aprun')
             has_slurm = find_executable('srun')
             if has_aprun and has_slurm:
                 launcher_val = 'none'
             elif has_aprun:
                 launcher_val = 'aprun'
-            elif has_slurm or platform_val == 'aarch64':
+            elif has_slurm:
                 launcher_val = 'slurm-srun'
             else:
                 # FIXME: Need to detect aprun/srun differently. On a cray
@@ -44,6 +44,8 @@ def get():
                 launcher_val = 'gasnetrun_mpi'
             elif substrate_val == 'ibv':
                 launcher_val = 'gasnetrun_ibv'
+            elif substrate_val == 'ucx':
+                launcher_val = 'gasnetrun_ucx'
             elif substrate_val == 'mxm':
                 launcher_val = 'gasnetrun_ibv'
             elif substrate_val == 'ofi':

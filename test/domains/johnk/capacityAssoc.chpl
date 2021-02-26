@@ -38,7 +38,7 @@ proc test(cap : int) {
 proc verify(A : [], cap : int) {
 
   const minSize = 2 * (cap + 1);
-  const correct = A.domain._value.tableSize > cap &&
+  const correct = A.domain._value.table.tableSize > cap &&
                   A.size == 2 &&
                   A["foo"] == 4 &&
                   A["bar"] == 5;

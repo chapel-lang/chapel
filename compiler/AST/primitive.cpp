@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,7 +209,8 @@ returnInfoCast(CallExpr* call) {
     if (wideRefMap.get(t1))
       t1 = wideRefMap.get(t1);
   }
-  return QualifiedType(t1); // what should qual be here?
+  INT_ASSERT(!isReferenceType(t1));
+  return QualifiedType(t1, QUAL_VAL);
 }
 
 static QualifiedType
@@ -272,15 +273,15 @@ returnInfoArrayIndexValue(CallExpr* call) {
   Type* type = call->get(1)->getValType();
   if (type->symbol->hasFlag(FLAG_WIDE_CLASS))
     type = type->getField("addr")->type;
-  if (!type->substitutions.n)
-    INT_FATAL(call, "bad primitive");
   // Is this conditional necessary?  Can just assume condition is true?
   if (type->symbol->hasFlag(FLAG_DATA_CLASS) ||
       type->symbol->hasFlag(FLAG_C_ARRAY)) {
-    return QualifiedType(toTypeSymbol(getDataClassType(type->symbol))->type, QUAL_VAL);
-  }
-  else {
-    return QualifiedType(toTypeSymbol(type->substitutions.v[0].value)->type, QUAL_VAL);
+    TypeSymbol* eltTypeSymbol = getDataClassType(type->symbol);
+    INT_ASSERT(eltTypeSymbol);
+    return QualifiedType(eltTypeSymbol->type, QUAL_VAL);
+  } else {
+    INT_FATAL("unsupported case");
+    return QualifiedType(NULL);
   }
 }
 
@@ -562,7 +563,9 @@ returnInfoToNonNilable(CallExpr* call) {
 
 static QualifiedType
 returnInfoRuntimeTypeField(CallExpr* call) {
-  return call->get(1)->qualType();
+  bool isType = false;
+  Type* t = getPrimGetRuntimeTypeFieldReturnType(call, isType);
+  return QualifiedType(t, QUAL_VAL);
 }
 
 
@@ -654,11 +657,10 @@ initPrimitive() {
   // dst, src. PRIM_MOVE can set a reference.
   prim_def(PRIM_MOVE, "move", returnInfoVoid, false);
 
-  // dst, aggregate name, field name, type to default-init, value to init from
-  prim_def(PRIM_DEFAULT_INIT_FIELD, "default init field", returnInfoVoid);
-
   // dst, type to default-init
   prim_def(PRIM_DEFAULT_INIT_VAR, "default init var", returnInfoVoid);
+  // dst, type to noinit-init
+  prim_def(PRIM_NOINIT_INIT_VAR, "noinit init var", returnInfoVoid);
 
   // fn->_this, the name of the field, value/type, optional declared type
   prim_def(PRIM_INIT_FIELD, "init field", returnInfoVoid, false);
@@ -761,6 +763,10 @@ initPrimitive() {
 
   prim_def(PRIM_CHECK_NIL, "_check_nil", returnInfoVoid, true, true);
 
+  // PRIM_IF_VAR: DefExpr of NAME, RHS expr
+  // represents the condition in "if var NAME = RHS then ..."
+  prim_def(PRIM_IF_VAR, "if var", returnInfoVoid);
+
   // new keyword
   prim_def(PRIM_NEW, "new", returnInfoFirst);
   // get complex real component
@@ -852,8 +858,11 @@ initPrimitive() {
   // Args are variable, field name.
   prim_def(PRIM_STATIC_FIELD_TYPE, "static field type", returnInfoStaticFieldType);
 
-  // used modules in BlockStmt::modUses
+  // used modules in BlockStmt::useList
   prim_def(PRIM_USED_MODULES_LIST, "used modules list", returnInfoVoid);
+  // modules named explicitly in BlockStmt::modRefs
+  prim_def(PRIM_REFERENCED_MODULES_LIST, "referenced modules list",
+           returnInfoVoid);
   prim_def(PRIM_TUPLE_EXPAND, "expand_tuple", returnInfoVoid);
 
   // Direct calls to the Chapel comm layer
@@ -868,13 +877,12 @@ initPrimitive() {
 
   prim_def(PRIM_ARRAY_SHIFT_BASE_POINTER, "shift_base_pointer", returnInfoVoid, true);
 
-  // PRIM_ARRAY_GET{_VALUE} arguments
+  // PRIM_ARRAY_GET arguments
   //  base pointer
   //  index
   //  no alias set
   // This is similar to A[i] in C
   prim_def(PRIM_ARRAY_GET, "array_get", returnInfoArrayIndex, false);
-  prim_def(PRIM_ARRAY_GET_VALUE, "array_get_value", returnInfoArrayIndexValue, false);
   // PRIM_ARRAY_SET is unused by compiler, runtime, modules
   // PRIM_ARRAY_SET / PRIM_ARRAY_SET_FIRST have these arguments
   //   base pointer
@@ -882,6 +890,10 @@ initPrimitive() {
   //   value
   prim_def(PRIM_ARRAY_SET, "array_set", returnInfoVoid, true);
   prim_def(PRIM_ARRAY_SET_FIRST, "array_set_first", returnInfoVoid, true);
+
+  prim_def(PRIM_MAYBE_LOCAL_THIS, "may be local access", returnInfoUnknown);
+  prim_def(PRIM_MAYBE_LOCAL_ARR_ELEM, "may be local array element", returnInfoUnknown);
+  prim_def(PRIM_MAYBE_AGGREGATE_ASSIGN, "may be aggregated assignment", returnInfoUnknown);
 
   prim_def(PRIM_ERROR, "error", returnInfoVoid, true);
   prim_def(PRIM_WARNING, "warning", returnInfoVoid, true);
@@ -991,6 +1003,11 @@ initPrimitive() {
   prim_def(PRIM_GET_USER_LINE, "_get_user_line", returnInfoDefaultInt, true, true);
   prim_def(PRIM_GET_USER_FILE, "_get_user_file", returnInfoInt32, true, true);
 
+  // A marker that goes into a module init function. Indicates that
+  // its argument symbol, defined directly in the module scope,
+  // needs to be resolved at this point during resolution of the init function.
+  prim_def(PRIM_RESOLUTION_POINT, "resolution point", returnInfoVoid, false);
+
   prim_def(PRIM_FTABLE_CALL, "call ftable function", returnInfoVoid, true);
 
   prim_def(PRIM_IS_TUPLE_TYPE, "is tuple type", returnInfoBool);
@@ -1050,6 +1067,7 @@ initPrimitive() {
   prim_def(PRIM_LOOKUP_FILENAME, "chpl_lookupFilename", returnInfoStringC, false, false);
 
   prim_def(PRIM_GET_COMPILER_VAR, "get compiler variable", returnInfoString);
+  prim_def(PRIM_GET_VISIBLE_SYMBOLS, "get visible symbols", returnInfoVoid);
 
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
@@ -1079,7 +1097,13 @@ initPrimitive() {
   prim_def(PRIM_TO_NILABLE_CLASS, "to nilable class", returnInfoToNilable, false, false);
   prim_def(PRIM_TO_NON_NILABLE_CLASS, "to non nilable class", returnInfoToNonNilable, false, false);
 
+  prim_def(PRIM_SET_ALIASING_ARRAY_ON_TYPE, "set aliasing array on type", returnInfoVoid, false, false);
+
   prim_def(PRIM_NEEDS_AUTO_DESTROY, "needs auto destroy", returnInfoBool, false, false);
+
+  // if the argument is a value, mark it with "no auto destroy"
+  // (no effect on a reference)
+  prim_def(PRIM_STEAL, "steal", returnInfoFirst, false, false);
 
   // Indicates the end of a statement. This is important for the
   // deinitialization location for some variables.
@@ -1089,10 +1113,9 @@ initPrimitive() {
 
   prim_def(PRIM_AUTO_DESTROY_RUNTIME_TYPE, "auto destroy runtime type", returnInfoVoid, false, false);
 
-  // Accepts 3 arguments:
-  // 1) type variable representing static type of field in _RuntimeTypeInfo
-  // 2) type variable that will become the _RuntimeTypeInfo
-  // 3) param-string name of the field in the _RuntimeTypeInfo
+  // Accepts 2 arguments:
+  // 1) type variable that will become the _RuntimeTypeInfo
+  // 2) field symbol or param-string name of the field in the _RuntimeTypeInfo
   prim_def(PRIM_GET_RUNTIME_TYPE_FIELD, "get runtime type field", returnInfoRuntimeTypeField, false, false);
 
   // Corresponds to LLVM's invariant start
@@ -1120,6 +1143,12 @@ initPrimitive() {
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);
   prim_def(PRIM_GET_TEST_BY_NAME, "get test by name", returnInfoVoid);
   prim_def(PRIM_GET_TEST_BY_INDEX, "get test by index", returnInfoVoid);
+
+  // version info for 'chpl'
+  prim_def(PRIM_VERSION_MAJOR, "version major", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
+  prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

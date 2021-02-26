@@ -1,9 +1,8 @@
 //===- DivergenceAnalysis.cpp --------- Divergence Analysis Implementation -==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -185,6 +184,17 @@ bool DivergenceAnalysis::inRegion(const BasicBlock &BB) const {
   return (!RegionLoop && BB.getParent() == &F) || RegionLoop->contains(&BB);
 }
 
+static bool usesLiveOut(const Instruction &I, const Loop *DivLoop) {
+  for (auto &Op : I.operands()) {
+    auto *OpInst = dyn_cast<Instruction>(&Op);
+    if (!OpInst)
+      continue;
+    if (DivLoop->contains(OpInst->getParent()))
+      return true;
+  }
+  return false;
+}
+
 // marks all users of loop-carried values of the loop headed by LoopHeader as
 // divergent
 void DivergenceAnalysis::taintLoopLiveOuts(const BasicBlock &LoopHeader) {
@@ -228,16 +238,14 @@ void DivergenceAnalysis::taintLoopLiveOuts(const BasicBlock &LoopHeader) {
         continue;
       if (isDivergent(I))
         continue;
+      if (!usesLiveOut(I, DivLoop))
+        continue;
 
-      for (auto &Op : I.operands()) {
-        auto *OpInst = dyn_cast<Instruction>(&Op);
-        if (!OpInst)
-          continue;
-        if (DivLoop->contains(OpInst->getParent())) {
-          markDivergent(I);
-          pushUsers(I);
-          break;
-        }
+      markDivergent(I);
+      if (I.isTerminator()) {
+        propagateBranchDivergence(I);
+      } else {
+        pushUsers(I);
       }
     }
 
@@ -287,20 +295,21 @@ bool DivergenceAnalysis::propagateJoinDivergence(const BasicBlock &JoinBlock,
   // push non-divergent phi nodes in JoinBlock to the worklist
   pushPHINodes(JoinBlock);
 
-  // JoinBlock is a divergent loop exit
-  if (BranchLoop && !BranchLoop->contains(&JoinBlock)) {
-    return true;
-  }
-
   // disjoint-paths divergent at JoinBlock
   markBlockJoinDivergent(JoinBlock);
-  return false;
+
+  // JoinBlock is a divergent loop exit
+  return BranchLoop && !BranchLoop->contains(&JoinBlock);
 }
 
 void DivergenceAnalysis::propagateBranchDivergence(const Instruction &Term) {
   LLVM_DEBUG(dbgs() << "propBranchDiv " << Term.getParent()->getName() << "\n");
 
   markDivergent(Term);
+
+  // Don't propagate divergence from unreachable blocks.
+  if (!DT.isReachableFromEntry(Term.getParent()))
+    return;
 
   const auto *BranchLoop = LI.getLoopFor(Term.getParent());
 
@@ -413,6 +422,12 @@ bool DivergenceAnalysis::isDivergent(const Value &V) const {
   return DivergentValues.find(&V) != DivergentValues.end();
 }
 
+bool DivergenceAnalysis::isDivergentUse(const Use &U) const {
+  Value &V = *U.get();
+  Instruction &I = *cast<Instruction>(U.getUser());
+  return isDivergent(V) || isTemporalDivergent(*I.getParent(), V);
+}
+
 void DivergenceAnalysis::print(raw_ostream &OS, const Module *) const {
   if (DivergentValues.empty())
     return;
@@ -448,6 +463,10 @@ GPUDivergenceAnalysis::GPUDivergenceAnalysis(Function &F,
 
 bool GPUDivergenceAnalysis::isDivergent(const Value &val) const {
   return DA.isDivergent(val);
+}
+
+bool GPUDivergenceAnalysis::isDivergentUse(const Use &use) const {
+  return DA.isDivergentUse(use);
 }
 
 void GPUDivergenceAnalysis::print(raw_ostream &OS, const Module *mod) const {

@@ -1,9 +1,8 @@
 //===-- ARMAsmBackendDarwin.h   ARM Asm Backend Darwin ----------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,16 +16,20 @@
 namespace llvm {
 class ARMAsmBackendDarwin : public ARMAsmBackend {
   const MCRegisterInfo &MRI;
+  Triple TT;
 public:
   const MachO::CPUSubTypeARM Subtype;
   ARMAsmBackendDarwin(const Target &T, const MCSubtargetInfo &STI,
-                      const MCRegisterInfo &MRI, MachO::CPUSubTypeARM st)
-      : ARMAsmBackend(T, STI, support::little), MRI(MRI), Subtype(st) {}
+                      const MCRegisterInfo &MRI)
+      : ARMAsmBackend(T, STI, support::little), MRI(MRI),
+        TT(STI.getTargetTriple()),
+        Subtype((MachO::CPUSubTypeARM)cantFail(
+            MachO::getCPUSubType(STI.getTargetTriple()))) {}
 
   std::unique_ptr<MCObjectTargetWriter>
   createObjectTargetWriter() const override {
-    return createARMMachObjectWriter(/*Is64Bit=*/false, MachO::CPU_TYPE_ARM,
-                                     Subtype);
+    return createARMMachObjectWriter(
+        /*Is64Bit=*/false, cantFail(MachO::getCPUType(TT)), Subtype);
   }
 
   uint32_t generateCompactUnwindEncoding(

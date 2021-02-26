@@ -1,4 +1,0 @@
-bug: super can't access parent variable, only module
-
-This test shows that 'super' can't be used to refer to a parent module
-variable.

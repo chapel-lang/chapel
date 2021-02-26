@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -81,22 +81,18 @@ bool viewFlagsExtras  = true;
 static void viewSymbolFlags(Symbol* sym) {
     for (int flagNum = FLAG_FIRST; flagNum <= FLAG_LAST; flagNum++) {
       if (sym->flags[flagNum]) {
-        if (viewFlagsName) {
+        if (viewFlagsName)
           printf("%s ", flagNames[flagNum]);
-        }
 
-        if (viewFlagsPragma) {
+        if (viewFlagsPragma)
           printf("%s", flagPragma[flagNum] ? "ypr " : "npr ");
-        }
 
-        if (viewFlagsShort) {
+        if (viewFlagsShort)
           printf("\"%s\" ", flagShortNames[flagNum]);
-        }
 
-        if (viewFlagsComment) {
+        if (viewFlagsComment)
           printf("// %s",
                  *flagComments[flagNum] ? flagComments[flagNum] : "ncm");
-        }
 
         printf("\n");
       }
@@ -118,8 +114,17 @@ static void viewSymbolFlags(Symbol* sym) {
         printf("%s arg  qual %s\n",
                as->intentDescrString(), qualifierToStr(as->qual));
 
-      } else if (toTypeSymbol(sym)) {
-        printf("a TypeSymbol\n");
+      } else if (TypeSymbol* ts = toTypeSymbol(sym)) {
+        if (Type* tp = ts->type) {
+          printf("TypeSymbol  %s", tp->astTagAsString());
+          if (AggregateType* at = toAggregateType(tp))
+            printf(" %s", at->aggregateString());
+          else if (ConstrainedType* ct = toConstrainedType(tp))
+            printf(" %s", ct->useString());
+          printf("\n");
+        } else {
+          printf("TypeSymbol  type=NULL\n");
+        }
 
       } else if (FnSymbol* fs = toFnSymbol(sym)) {
         printf("isGeneric %s\n", fs->isGenericIsValid() ?
@@ -141,6 +146,9 @@ static void viewSymbolFlags(Symbol* sym) {
 
       } else if (toLabelSymbol(sym)) {
         printf("a LabelSymbol\n");
+
+      } else if (toInterfaceSymbol(sym)) {
+        printf("an InterfaceSymbol\n");
 
       } else {
         printf("unknown symbol kind\n");
@@ -220,22 +228,3 @@ void addFlag(BaseAST* ast, Flag flag)    { addFlag(ast, (int)flag); }
 void removeFlag(BaseAST* ast, Flag flag) { removeFlag(ast, (int)flag); }
 
 // end gdb support
-
-
-TypeSymbol*
-getDataClassType(TypeSymbol* ts) {
-  form_Map(SymbolMapElem, e, ts->type->substitutions) {
-    if (TypeSymbol* ets = toTypeSymbol(e->value))
-      return ets;
-  }
-  return NULL;
-}
-
-
-void
-setDataClassType(TypeSymbol* ts, TypeSymbol* ets) {
-  form_Map(SymbolMapElem, e, ts->type->substitutions) {
-    if (isTypeSymbol(e->value))
-      e->value = ets;
-  }
-}

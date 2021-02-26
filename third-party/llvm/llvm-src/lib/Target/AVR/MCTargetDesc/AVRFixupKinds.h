@@ -1,9 +1,8 @@
 //===-- AVRFixupKinds.h - AVR Specific Fixup Entries ------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -138,7 +137,7 @@ namespace fixups {
 /// of the fact that all instructions are aligned to addresses of size
 /// 2, so bit 0 of an address is always 0. This gives us another bit
 /// of precision.
-/// \param[in,out] The target to adjust.
+/// \param [in,out] val The target to adjust.
 template <typename T> inline void adjustBranchTarget(T &val) { val >>= 1; }
 
 } // end of namespace fixups

@@ -1,10 +1,12 @@
 nt 0
+starting task
+starting task
+finished task
+finished task
 asdf(1), returning
 asdf(10), returning
-starting task
-starting task
-finished task
-finished task
+asdf(1000), returning
+1101000
 asdf(2), returning
 asdf(20), returning
 asdf(2000), returning

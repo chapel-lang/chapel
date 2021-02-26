@@ -1,9 +1,8 @@
 //===- OperationsTest.cpp - Tests for fuzzer operations -------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -93,8 +92,8 @@ TEST(OperationsTest, SourcePreds) {
       ConstantStruct::get(StructType::create(Ctx, "OpaqueStruct"));
   Constant *a =
       ConstantArray::get(ArrayType::get(i32->getType(), 2), {i32, i32});
-  Constant *v8i8 = ConstantVector::getSplat(8, i8);
-  Constant *v4f16 = ConstantVector::getSplat(4, f16);
+  Constant *v8i8 = ConstantVector::getSplat({8, false}, i8);
+  Constant *v4f16 = ConstantVector::getSplat({4, false}, f16);
   Constant *p0i32 =
       ConstantPointerNull::get(PointerType::get(i32->getType(), 0));
 
@@ -338,7 +337,7 @@ TEST(OperationsTest, ExtractAndInsertValue) {
   Type *OpaqueTy = StructType::create(Ctx, "OpaqueStruct");
   Type *ZeroSizedArrayTy = ArrayType::get(Int64Ty, 0);
   Type *ArrayTy = ArrayType::get(Int64Ty, 4);
-  Type *VectorTy = VectorType::get(Int32Ty, 2);
+  Type *VectorTy = FixedVectorType::get(Int32Ty, 2);
 
   auto EVOp = fuzzerop::extractValueDescriptor(1);
   auto IVOp = fuzzerop::insertValueDescriptor(1);

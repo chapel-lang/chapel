@@ -1,9 +1,8 @@
 //===-- Analysis/CFG.h - BasicBlock Analyses --------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,8 +14,9 @@
 #ifndef LLVM_ANALYSIS_CFG_H
 #define LLVM_ANALYSIS_CFG_H
 
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CFG.h"
+#include "llvm/ADT/GraphTraits.h"
+#include "llvm/ADT/SmallPtrSet.h"
+#include <utility>
 
 namespace llvm {
 
@@ -25,6 +25,7 @@ class DominatorTree;
 class Function;
 class Instruction;
 class LoopInfo;
+template <typename T> class SmallVectorImpl;
 
 /// Analyze the specified function to find all of the loop backedges in the
 /// function and return them.  This is a relatively cheap (compared to
@@ -47,9 +48,11 @@ unsigned GetSuccessorNumber(const BasicBlock *BB, const BasicBlock *Succ);
 ///
 bool isCriticalEdge(const Instruction *TI, unsigned SuccNum,
                     bool AllowIdenticalEdges = false);
+bool isCriticalEdge(const Instruction *TI, const BasicBlock *Succ,
+                    bool AllowIdenticalEdges = false);
 
-/// Determine whether instruction 'To' is reachable from 'From',
-/// returning true if uncertain.
+/// Determine whether instruction 'To' is reachable from 'From', without passing
+/// through any blocks in ExclusionSet, returning true if uncertain.
 ///
 /// Determine whether there is a path from From to To within a single function.
 /// Returns false only if we can prove that once 'From' has been executed then
@@ -63,9 +66,10 @@ bool isCriticalEdge(const Instruction *TI, unsigned SuccNum,
 /// we find a block that dominates the block containing 'To'. DT is most useful
 /// on branchy code but not loops, and LI is most useful on code with loops but
 /// does not help on branchy code outside loops.
-bool isPotentiallyReachable(const Instruction *From, const Instruction *To,
-                            const DominatorTree *DT = nullptr,
-                            const LoopInfo *LI = nullptr);
+bool isPotentiallyReachable(
+    const Instruction *From, const Instruction *To,
+    const SmallPtrSetImpl<BasicBlock *> *ExclusionSet = nullptr,
+    const DominatorTree *DT = nullptr, const LoopInfo *LI = nullptr);
 
 /// Determine whether block 'To' is reachable from 'From', returning
 /// true if uncertain.
@@ -88,6 +92,20 @@ bool isPotentiallyReachableFromMany(SmallVectorImpl<BasicBlock *> &Worklist,
                                     BasicBlock *StopBB,
                                     const DominatorTree *DT = nullptr,
                                     const LoopInfo *LI = nullptr);
+
+/// Determine whether there is at least one path from a block in
+/// 'Worklist' to 'StopBB' without passing through any blocks in
+/// 'ExclusionSet', returning true if uncertain.
+///
+/// Determine whether there is a path from at least one block in Worklist to
+/// StopBB within a single function without passing through any of the blocks
+/// in 'ExclusionSet'. Returns false only if we can prove that once any block
+/// in 'Worklist' has been reached then 'StopBB' can not be executed.
+/// Conservatively returns true.
+bool isPotentiallyReachableFromMany(
+    SmallVectorImpl<BasicBlock *> &Worklist, BasicBlock *StopBB,
+    const SmallPtrSetImpl<BasicBlock *> *ExclusionSet,
+    const DominatorTree *DT = nullptr, const LoopInfo *LI = nullptr);
 
 /// Return true if the control flow in \p RPOTraversal is irreducible.
 ///

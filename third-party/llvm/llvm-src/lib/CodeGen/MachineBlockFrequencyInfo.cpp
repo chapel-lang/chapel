@@ -1,9 +1,8 @@
 //===- MachineBlockFrequencyInfo.cpp - MBB Frequency Analysis -------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -20,6 +19,7 @@
 #include "llvm/CodeGen/MachineBranchProbabilityInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineLoopInfo.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/GraphWriter.h"
@@ -173,6 +173,13 @@ MachineBlockFrequencyInfo::MachineBlockFrequencyInfo()
   initializeMachineBlockFrequencyInfoPass(*PassRegistry::getPassRegistry());
 }
 
+MachineBlockFrequencyInfo::MachineBlockFrequencyInfo(
+      MachineFunction &F,
+      MachineBranchProbabilityInfo &MBPI,
+      MachineLoopInfo &MLI) : MachineFunctionPass(ID) {
+  calculate(F, MBPI, MLI);
+}
+
 MachineBlockFrequencyInfo::~MachineBlockFrequencyInfo() = default;
 
 void MachineBlockFrequencyInfo::getAnalysisUsage(AnalysisUsage &AU) const {
@@ -238,6 +245,12 @@ bool
 MachineBlockFrequencyInfo::isIrrLoopHeader(const MachineBasicBlock *MBB) {
   assert(MBFI && "Expected analysis to be available");
   return MBFI->isIrrLoopHeader(MBB);
+}
+
+void MachineBlockFrequencyInfo::setBlockFreq(const MachineBasicBlock *MBB,
+                                             uint64_t Freq) {
+  assert(MBFI && "Expected analysis to be available");
+  MBFI->setBlockFreq(MBB, Freq);
 }
 
 const MachineFunction *MachineBlockFrequencyInfo::getFunction() const {

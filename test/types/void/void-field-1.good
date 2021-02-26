@@ -1,0 +1,1 @@
+void-field-1.chpl:2: error: Field 'a' cannot be declared 'void'. Consider using 'nothing' instead.

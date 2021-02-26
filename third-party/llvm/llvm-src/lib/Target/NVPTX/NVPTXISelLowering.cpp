@@ -1,9 +1,8 @@
 //===-- NVPTXISelLowering.cpp - NVPTX DAG Lowering Implementation ---------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,7 +31,6 @@
 #include "llvm/CodeGen/ValueTypes.h"
 #include "llvm/IR/Argument.h"
 #include "llvm/IR/Attributes.h"
-#include "llvm/IR/CallSite.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/DerivedTypes.h"
@@ -40,6 +38,7 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
+#include "llvm/IR/IntrinsicsNVPTX.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Value.h"
@@ -88,11 +87,6 @@ static cl::opt<bool> UsePrecSqrtF32(
     cl::desc("NVPTX Specific: 0 use sqrt.approx, 1 use sqrt.rn."),
     cl::init(true));
 
-static cl::opt<bool> FtzEnabled(
-    "nvptx-f32ftz", cl::ZeroOrMore, cl::Hidden,
-    cl::desc("NVPTX Specific: Flush f32 subnormals to sign-preserving zero."),
-    cl::init(false));
-
 int NVPTXTargetLowering::getDivF32Level() const {
   if (UsePrecDivF32.getNumOccurrences() > 0) {
     // If nvptx-prec-div32=N is used on the command-line, always honor it
@@ -117,18 +111,8 @@ bool NVPTXTargetLowering::usePrecSqrtF32() const {
 }
 
 bool NVPTXTargetLowering::useF32FTZ(const MachineFunction &MF) const {
-  // TODO: Get rid of this flag; there can be only one way to do this.
-  if (FtzEnabled.getNumOccurrences() > 0) {
-    // If nvptx-f32ftz is used on the command-line, always honor it
-    return FtzEnabled;
-  } else {
-    const Function &F = MF.getFunction();
-    // Otherwise, check for an nvptx-f32ftz attribute on the function
-    if (F.hasFnAttribute("nvptx-f32ftz"))
-      return F.getFnAttribute("nvptx-f32ftz").getValueAsString() == "true";
-    else
-      return false;
-  }
+  return MF.getDenormalMode(APFloat::IEEEsingle()).Output ==
+         DenormalMode::PreserveSign;
 }
 
 static bool IsPTXVectorType(MVT VT) {
@@ -233,11 +217,10 @@ static void ComputePTXValueVTs(const TargetLowering &TLI, const DataLayout &DL,
 // covered by the vector op. Otherwise, it returns 1.
 static unsigned CanMergeParamLoadStoresStartingAt(
     unsigned Idx, uint32_t AccessSize, const SmallVectorImpl<EVT> &ValueVTs,
-    const SmallVectorImpl<uint64_t> &Offsets, unsigned ParamAlignment) {
-  assert(isPowerOf2_32(AccessSize) && "must be a power of 2!");
+    const SmallVectorImpl<uint64_t> &Offsets, Align ParamAlignment) {
 
   // Can't vectorize if param alignment is not sufficient.
-  if (AccessSize > ParamAlignment)
+  if (ParamAlignment < AccessSize)
     return 1;
   // Can't vectorize if offset is not aligned.
   if (Offsets[Idx] & (AccessSize - 1))
@@ -297,7 +280,7 @@ enum ParamVectorizationFlags {
 static SmallVector<ParamVectorizationFlags, 16>
 VectorizePTXValueVTs(const SmallVectorImpl<EVT> &ValueVTs,
                      const SmallVectorImpl<uint64_t> &Offsets,
-                     unsigned ParamAlignment) {
+                     Align ParamAlignment) {
   // Set vector size to match ValueVTs and mark all elements as
   // scalars by default.
   SmallVector<ParamVectorizationFlags, 16> VectorInfo;
@@ -481,7 +464,7 @@ NVPTXTargetLowering::NVPTXTargetLowering(const NVPTXTargetMachine &TM,
   setOperationAction(ISD::TRAP, MVT::Other, Legal);
 
   // Register custom handling for vector loads/stores
-  for (MVT VT : MVT::vector_valuetypes()) {
+  for (MVT VT : MVT::fixedlen_vector_valuetypes()) {
     if (IsPTXVectorType(VT)) {
       setOperationAction(ISD::LOAD, VT, Custom);
       setOperationAction(ISD::STORE, VT, Custom);
@@ -547,12 +530,18 @@ NVPTXTargetLowering::NVPTXTargetLowering(const NVPTXTargetMachine &TM,
 
   // These map to conversion instructions for scalar FP types.
   for (const auto &Op : {ISD::FCEIL, ISD::FFLOOR, ISD::FNEARBYINT, ISD::FRINT,
-                         ISD::FROUND, ISD::FTRUNC}) {
+                         ISD::FTRUNC}) {
     setOperationAction(Op, MVT::f16, Legal);
     setOperationAction(Op, MVT::f32, Legal);
     setOperationAction(Op, MVT::f64, Legal);
     setOperationAction(Op, MVT::v2f16, Expand);
   }
+
+  setOperationAction(ISD::FROUND, MVT::f16, Promote);
+  setOperationAction(ISD::FROUND, MVT::v2f16, Expand);
+  setOperationAction(ISD::FROUND, MVT::f32, Custom);
+  setOperationAction(ISD::FROUND, MVT::f64, Custom);
+
 
   // 'Expand' implements FCOPYSIGN without calling an external library.
   setOperationAction(ISD::FCOPYSIGN, MVT::f16, Expand);
@@ -1252,8 +1241,8 @@ NVPTXTargetLowering::LowerGlobalAddress(SDValue Op, SelectionDAG &DAG) const {
 
 std::string NVPTXTargetLowering::getPrototype(
     const DataLayout &DL, Type *retTy, const ArgListTy &Args,
-    const SmallVectorImpl<ISD::OutputArg> &Outs, unsigned retAlignment,
-    ImmutableCallSite CS) const {
+    const SmallVectorImpl<ISD::OutputArg> &Outs, MaybeAlign retAlignment,
+    const CallBase &CB) const {
   auto PtrVT = getPointerTy(DL);
 
   bool isABI = (STI.getSmVersion() >= 20);
@@ -1286,10 +1275,10 @@ std::string NVPTXTargetLowering::getPrototype(
       O << ".param .b" << size << " _";
     } else if (isa<PointerType>(retTy)) {
       O << ".param .b" << PtrVT.getSizeInBits() << " _";
-    } else if (retTy->isAggregateType() || retTy->isVectorTy() || retTy->isIntegerTy(128)) {
-      auto &DL = CS.getCalledFunction()->getParent()->getDataLayout();
-      O << ".param .align " << retAlignment << " .b8 _["
-        << DL.getTypeAllocSize(retTy) << "]";
+    } else if (retTy->isAggregateType() || retTy->isVectorTy() ||
+               retTy->isIntegerTy(128)) {
+      O << ".param .align " << (retAlignment ? retAlignment->value() : 0)
+        << " .b8 _[" << DL.getTypeAllocSize(retTy) << "]";
     } else {
       llvm_unreachable("Unknown return type");
     }
@@ -1310,7 +1299,7 @@ std::string NVPTXTargetLowering::getPrototype(
     if (!Outs[OIdx].Flags.isByVal()) {
       if (Ty->isAggregateType() || Ty->isVectorTy() || Ty->isIntegerTy(128)) {
         unsigned align = 0;
-        const CallInst *CallI = cast<CallInst>(CS.getInstruction());
+        const CallInst *CallI = cast<CallInst>(&CB);
         // +1 because index 0 is reserved for return type alignment
         if (!getAlign(*CallI, i + 1, align))
           align = DL.getABITypeAlignment(Ty);
@@ -1352,9 +1341,9 @@ std::string NVPTXTargetLowering::getPrototype(
     assert(PTy && "Param with byval attribute should be a pointer type");
     Type *ETy = PTy->getElementType();
 
-    unsigned align = Outs[OIdx].Flags.getByValAlign();
+    Align align = Outs[OIdx].Flags.getNonZeroByValAlign();
     unsigned sz = DL.getTypeAllocSize(ETy);
-    O << ".param .align " << align << " .b8 ";
+    O << ".param .align " << align.value() << " .b8 ";
     O << "_";
     O << "[" << sz << "]";
   }
@@ -1362,31 +1351,29 @@ std::string NVPTXTargetLowering::getPrototype(
   return O.str();
 }
 
-unsigned NVPTXTargetLowering::getArgumentAlignment(SDValue Callee,
-                                                   ImmutableCallSite CS,
-                                                   Type *Ty, unsigned Idx,
-                                                   const DataLayout &DL) const {
-  if (!CS) {
+Align NVPTXTargetLowering::getArgumentAlignment(SDValue Callee,
+                                                const CallBase *CB, Type *Ty,
+                                                unsigned Idx,
+                                                const DataLayout &DL) const {
+  if (!CB) {
     // CallSite is zero, fallback to ABI type alignment
-    return DL.getABITypeAlignment(Ty);
+    return DL.getABITypeAlign(Ty);
   }
 
-  unsigned Align = 0;
-  const Value *DirectCallee = CS.getCalledFunction();
+  unsigned Alignment = 0;
+  const Function *DirectCallee = CB->getCalledFunction();
 
   if (!DirectCallee) {
     // We don't have a direct function symbol, but that may be because of
     // constant cast instructions in the call.
-    const Instruction *CalleeI = CS.getInstruction();
-    assert(CalleeI && "Call target is not a function or derived value?");
 
     // With bitcast'd call targets, the instruction will be the call
-    if (isa<CallInst>(CalleeI)) {
+    if (const auto *CI = dyn_cast<CallInst>(CB)) {
       // Check if we have call alignment metadata
-      if (getAlign(*cast<CallInst>(CalleeI), Idx, Align))
-        return Align;
+      if (getAlign(*CI, Idx, Alignment))
+        return Align(Alignment);
 
-      const Value *CalleeV = cast<CallInst>(CalleeI)->getCalledValue();
+      const Value *CalleeV = CI->getCalledOperand();
       // Ignore any bitcast instructions
       while (isa<ConstantExpr>(CalleeV)) {
         const ConstantExpr *CE = cast<ConstantExpr>(CalleeV);
@@ -1398,20 +1385,20 @@ unsigned NVPTXTargetLowering::getArgumentAlignment(SDValue Callee,
 
       // We have now looked past all of the bitcasts.  Do we finally have a
       // Function?
-      if (isa<Function>(CalleeV))
-        DirectCallee = CalleeV;
+      if (const auto *CalleeF = dyn_cast<Function>(CalleeV))
+        DirectCallee = CalleeF;
     }
   }
 
   // Check for function alignment information if we found that the
   // ultimate target is a Function
   if (DirectCallee)
-    if (getAlign(*cast<Function>(DirectCallee), Idx, Align))
-      return Align;
+    if (getAlign(*DirectCallee, Idx, Alignment))
+      return Align(Alignment);
 
   // Call is indirect or alignment information is not available, fall back to
   // the ABI type alignment
-  return DL.getABITypeAlignment(Ty);
+  return DL.getABITypeAlign(Ty);
 }
 
 SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
@@ -1426,7 +1413,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   bool &isTailCall = CLI.IsTailCall;
   ArgListTy &Args = CLI.getArgs();
   Type *RetTy = CLI.RetTy;
-  ImmutableCallSite CS = CLI.CS;
+  const CallBase *CB = CLI.CB;
   const DataLayout &DL = DAG.getDataLayout();
 
   bool isABI = (STI.getSmVersion() >= 20);
@@ -1459,15 +1446,14 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
       SmallVector<EVT, 16> VTs;
       SmallVector<uint64_t, 16> Offsets;
       ComputePTXValueVTs(*this, DL, Ty, VTs, &Offsets);
-      unsigned ArgAlign =
-          getArgumentAlignment(Callee, CS, Ty, paramCount + 1, DL);
+      Align ArgAlign = getArgumentAlignment(Callee, CB, Ty, paramCount + 1, DL);
       unsigned AllocSize = DL.getTypeAllocSize(Ty);
       SDVTList DeclareParamVTs = DAG.getVTList(MVT::Other, MVT::Glue);
       bool NeedAlign; // Does argument declaration specify alignment?
       if (Ty->isAggregateType() || Ty->isVectorTy() || Ty->isIntegerTy(128)) {
         // declare .param .align <align> .b8 .param<n>[<size>];
         SDValue DeclareParamOps[] = {
-            Chain, DAG.getConstant(ArgAlign, dl, MVT::i32),
+            Chain, DAG.getConstant(ArgAlign.value(), dl, MVT::i32),
             DAG.getConstant(paramCount, dl, MVT::i32),
             DAG.getConstant(AllocSize, dl, MVT::i32), InFlag};
         Chain = DAG.getNode(NVPTXISD::DeclareParam, dl, DeclareParamVTs,
@@ -1503,7 +1489,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
       for (unsigned j = 0, je = VTs.size(); j != je; ++j) {
         // New store.
         if (VectorInfo[j] & PVF_FIRST) {
-          assert(StoreOperands.empty() && "Unfinished preceeding store.");
+          assert(StoreOperands.empty() && "Unfinished preceding store.");
           StoreOperands.push_back(Chain);
           StoreOperands.push_back(DAG.getConstant(paramCount, dl, MVT::i32));
           StoreOperands.push_back(DAG.getConstant(Offsets[j], dl, MVT::i32));
@@ -1548,8 +1534,9 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
           // Adjust type of the store op if we've extended the scalar
           // return value.
           EVT TheStoreType = ExtendIntegerParam ? MVT::i32 : VTs[j];
-          unsigned EltAlign =
-              NeedAlign ? GreatestCommonDivisor64(ArgAlign, Offsets[j]) : 0;
+          MaybeAlign EltAlign;
+          if (NeedAlign)
+            EltAlign = commonAlignment(ArgAlign, Offsets[j]);
 
           Chain = DAG.getMemIntrinsicNode(
               Op, dl, DAG.getVTList(MVT::Other, MVT::Glue), StoreOperands,
@@ -1579,7 +1566,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // declare .param .align <align> .b8 .param<n>[<size>];
     unsigned sz = Outs[OIdx].Flags.getByValSize();
     SDVTList DeclareParamVTs = DAG.getVTList(MVT::Other, MVT::Glue);
-    unsigned ArgAlign = Outs[OIdx].Flags.getByValAlign();
+    Align ArgAlign = Outs[OIdx].Flags.getNonZeroByValAlign();
     // The ByValAlign in the Outs[OIdx].Flags is alway set at this point,
     // so we don't need to worry about natural alignment or not.
     // See TargetLowering::LowerCallTo().
@@ -1587,18 +1574,19 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // Enforce minumum alignment of 4 to work around ptxas miscompile
     // for sm_50+. See corresponding alignment adjustment in
     // emitFunctionParamList() for details.
-    if (ArgAlign < 4)
-      ArgAlign = 4;
-    SDValue DeclareParamOps[] = {Chain, DAG.getConstant(ArgAlign, dl, MVT::i32),
-                                 DAG.getConstant(paramCount, dl, MVT::i32),
-                                 DAG.getConstant(sz, dl, MVT::i32), InFlag};
+    if (ArgAlign < Align(4))
+      ArgAlign = Align(4);
+    SDValue DeclareParamOps[] = {
+        Chain, DAG.getConstant(ArgAlign.value(), dl, MVT::i32),
+        DAG.getConstant(paramCount, dl, MVT::i32),
+        DAG.getConstant(sz, dl, MVT::i32), InFlag};
     Chain = DAG.getNode(NVPTXISD::DeclareParam, dl, DeclareParamVTs,
                         DeclareParamOps);
     InFlag = Chain.getValue(1);
     for (unsigned j = 0, je = VTs.size(); j != je; ++j) {
       EVT elemtype = VTs[j];
       int curOffset = Offsets[j];
-      unsigned PartAlign = GreatestCommonDivisor64(ArgAlign, curOffset);
+      unsigned PartAlign = GreatestCommonDivisor64(ArgAlign.value(), curOffset);
       auto PtrVT = getPointerTy(DL);
       SDValue srcAddr = DAG.getNode(ISD::ADD, dl, PtrVT, OutVals[OIdx],
                                     DAG.getConstant(curOffset, dl, PtrVT));
@@ -1612,10 +1600,9 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
                                  DAG.getConstant(paramCount, dl, MVT::i32),
                                  DAG.getConstant(curOffset, dl, MVT::i32),
                                  theVal, InFlag };
-      Chain = DAG.getMemIntrinsicNode(NVPTXISD::StoreParam, dl, CopyParamVTs,
-                                      CopyParamOps, elemtype,
-                                      MachinePointerInfo(), /* Align */ 0,
-                                      MachineMemOperand::MOStore);
+      Chain = DAG.getMemIntrinsicNode(
+          NVPTXISD::StoreParam, dl, CopyParamVTs, CopyParamOps, elemtype,
+          MachinePointerInfo(), /* Align */ None, MachineMemOperand::MOStore);
 
       InFlag = Chain.getValue(1);
     }
@@ -1623,7 +1610,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   }
 
   GlobalAddressSDNode *Func = dyn_cast<GlobalAddressSDNode>(Callee.getNode());
-  unsigned retAlignment = 0;
+  MaybeAlign retAlignment = None;
 
   // Handle Result
   if (Ins.size() > 0) {
@@ -1651,12 +1638,13 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
                           DeclareRetOps);
       InFlag = Chain.getValue(1);
     } else {
-      retAlignment = getArgumentAlignment(Callee, CS, RetTy, 0, DL);
+      retAlignment = getArgumentAlignment(Callee, CB, RetTy, 0, DL);
+      assert(retAlignment && "retAlignment is guaranteed to be set");
       SDVTList DeclareRetVTs = DAG.getVTList(MVT::Other, MVT::Glue);
-      SDValue DeclareRetOps[] = { Chain,
-                                  DAG.getConstant(retAlignment, dl, MVT::i32),
-                                  DAG.getConstant(resultsz / 8, dl, MVT::i32),
-                                  DAG.getConstant(0, dl, MVT::i32), InFlag };
+      SDValue DeclareRetOps[] = {
+          Chain, DAG.getConstant(retAlignment->value(), dl, MVT::i32),
+          DAG.getConstant(resultsz / 8, dl, MVT::i32),
+          DAG.getConstant(0, dl, MVT::i32), InFlag};
       Chain = DAG.getNode(NVPTXISD::DeclareRetParam, dl, DeclareRetVTs,
                           DeclareRetOps);
       InFlag = Chain.getValue(1);
@@ -1666,7 +1654,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
   // Both indirect calls and libcalls have nullptr Func. In order to distinguish
   // between them we must rely on the call site value which is valid for
   // indirect calls but is always null for libcalls.
-  bool isIndirectCall = !Func && CS;
+  bool isIndirectCall = !Func && CB;
 
   if (isa<ExternalSymbolSDNode>(Callee)) {
     Function* CalleeFunc = nullptr;
@@ -1689,7 +1677,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     // The prototype is embedded in a string and put as the operand for a
     // CallPrototype SDNode which will print out to the value of the string.
     SDVTList ProtoVTs = DAG.getVTList(MVT::Other, MVT::Glue);
-    std::string Proto = getPrototype(DL, RetTy, Args, Outs, retAlignment, CS);
+    std::string Proto = getPrototype(DL, RetTy, Args, Outs, retAlignment, *CB);
     const char *ProtoStr =
       nvTM->getManagedStrPool()->getManagedString(Proto.c_str())->c_str();
     SDValue ProtoOps[] = {
@@ -1762,7 +1750,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
     ComputePTXValueVTs(*this, DL, RetTy, VTs, &Offsets, 0);
     assert(VTs.size() == Ins.size() && "Bad value decomposition");
 
-    unsigned RetAlign = getArgumentAlignment(Callee, CS, RetTy, 0, DL);
+    Align RetAlign = getArgumentAlignment(Callee, CB, RetTy, 0, DL);
     auto VectorInfo = VectorizePTXValueVTs(VTs, Offsets, RetAlign);
 
     SmallVector<EVT, 6> LoadVTs;
@@ -1778,7 +1766,7 @@ SDValue NVPTXTargetLowering::LowerCall(TargetLowering::CallLoweringInfo &CLI,
       bool needTruncate = false;
       EVT TheLoadType = VTs[i];
       EVT EltType = Ins[i].VT;
-      unsigned EltAlign = GreatestCommonDivisor64(RetAlign, Offsets[i]);
+      Align EltAlign = commonAlignment(RetAlign, Offsets[i]);
       if (ExtendIntegerRetVal) {
         TheLoadType = MVT::i32;
         EltType = MVT::i32;
@@ -2069,6 +2057,100 @@ SDValue NVPTXTargetLowering::LowerShiftLeftParts(SDValue Op,
   }
 }
 
+SDValue NVPTXTargetLowering::LowerFROUND(SDValue Op, SelectionDAG &DAG) const {
+  EVT VT = Op.getValueType();
+
+  if (VT == MVT::f32)
+    return LowerFROUND32(Op, DAG);
+
+  if (VT == MVT::f64)
+    return LowerFROUND64(Op, DAG);
+
+  llvm_unreachable("unhandled type");
+}
+
+// This is the the rounding method used in CUDA libdevice in C like code:
+// float roundf(float A)
+// {
+//   float RoundedA = (float) (int) ( A > 0 ? (A + 0.5f) : (A - 0.5f));
+//   RoundedA = abs(A) > 0x1.0p23 ? A : RoundedA;
+//   return abs(A) < 0.5 ? (float)(int)A : RoundedA;
+// }
+SDValue NVPTXTargetLowering::LowerFROUND32(SDValue Op,
+                                           SelectionDAG &DAG) const {
+  SDLoc SL(Op);
+  SDValue A = Op.getOperand(0);
+  EVT VT = Op.getValueType();
+
+  SDValue AbsA = DAG.getNode(ISD::FABS, SL, VT, A);
+
+  // RoundedA = (float) (int) ( A > 0 ? (A + 0.5f) : (A - 0.5f))
+  SDValue Bitcast  = DAG.getNode(ISD::BITCAST, SL, MVT::i32, A);
+  const int SignBitMask = 0x80000000;
+  SDValue Sign = DAG.getNode(ISD::AND, SL, MVT::i32, Bitcast,
+                             DAG.getConstant(SignBitMask, SL, MVT::i32));
+  const int PointFiveInBits = 0x3F000000;
+  SDValue PointFiveWithSignRaw =
+      DAG.getNode(ISD::OR, SL, MVT::i32, Sign,
+                  DAG.getConstant(PointFiveInBits, SL, MVT::i32));
+  SDValue PointFiveWithSign =
+      DAG.getNode(ISD::BITCAST, SL, VT, PointFiveWithSignRaw);
+  SDValue AdjustedA = DAG.getNode(ISD::FADD, SL, VT, A, PointFiveWithSign);
+  SDValue RoundedA = DAG.getNode(ISD::FTRUNC, SL, VT, AdjustedA);
+
+  // RoundedA = abs(A) > 0x1.0p23 ? A : RoundedA;
+  EVT SetCCVT = getSetCCResultType(DAG.getDataLayout(), *DAG.getContext(), VT);
+  SDValue IsLarge =
+      DAG.getSetCC(SL, SetCCVT, AbsA, DAG.getConstantFP(pow(2.0, 23.0), SL, VT),
+                   ISD::SETOGT);
+  RoundedA = DAG.getNode(ISD::SELECT, SL, VT, IsLarge, A, RoundedA);
+
+  // return abs(A) < 0.5 ? (float)(int)A : RoundedA;
+  SDValue IsSmall =DAG.getSetCC(SL, SetCCVT, AbsA,
+                                DAG.getConstantFP(0.5, SL, VT), ISD::SETOLT);
+  SDValue RoundedAForSmallA = DAG.getNode(ISD::FTRUNC, SL, VT, A);
+  return DAG.getNode(ISD::SELECT, SL, VT, IsSmall, RoundedAForSmallA, RoundedA);
+}
+
+// The implementation of round(double) is similar to that of round(float) in
+// that they both separate the value range into three regions and use a method
+// specific to the region to round the values. However, round(double) first
+// calculates the round of the absolute value and then adds the sign back while
+// round(float) directly rounds the value with sign.
+SDValue NVPTXTargetLowering::LowerFROUND64(SDValue Op,
+                                           SelectionDAG &DAG) const {
+  SDLoc SL(Op);
+  SDValue A = Op.getOperand(0);
+  EVT VT = Op.getValueType();
+
+  SDValue AbsA = DAG.getNode(ISD::FABS, SL, VT, A);
+
+  // double RoundedA = (double) (int) (abs(A) + 0.5f);
+  SDValue AdjustedA = DAG.getNode(ISD::FADD, SL, VT, AbsA,
+                                  DAG.getConstantFP(0.5, SL, VT));
+  SDValue RoundedA = DAG.getNode(ISD::FTRUNC, SL, VT, AdjustedA);
+
+  // RoundedA = abs(A) < 0.5 ? (double)0 : RoundedA;
+  EVT SetCCVT = getSetCCResultType(DAG.getDataLayout(), *DAG.getContext(), VT);
+  SDValue IsSmall =DAG.getSetCC(SL, SetCCVT, AbsA,
+                                DAG.getConstantFP(0.5, SL, VT), ISD::SETOLT);
+  RoundedA = DAG.getNode(ISD::SELECT, SL, VT, IsSmall,
+                         DAG.getConstantFP(0, SL, VT),
+                         RoundedA);
+
+  // Add sign to rounded_A
+  RoundedA = DAG.getNode(ISD::FCOPYSIGN, SL, VT, RoundedA, A);
+  DAG.getNode(ISD::FTRUNC, SL, VT, A);
+
+  // RoundedA = abs(A) > 0x1.0p52 ? A : RoundedA;
+  SDValue IsLarge =
+      DAG.getSetCC(SL, SetCCVT, AbsA, DAG.getConstantFP(pow(2.0, 52.0), SL, VT),
+                   ISD::SETOGT);
+  return DAG.getNode(ISD::SELECT, SL, VT, IsLarge, A, RoundedA);
+}
+
+
+
 SDValue
 NVPTXTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
   switch (Op.getOpcode()) {
@@ -2099,6 +2181,8 @@ NVPTXTargetLowering::LowerOperation(SDValue Op, SelectionDAG &DAG) const {
     return LowerShiftRightParts(Op, DAG);
   case ISD::SELECT:
     return LowerSelect(Op, DAG);
+  case ISD::FROUND:
+    return LowerFROUND(Op, DAG);
   default:
     llvm_unreachable("Custom lowering not defined for operation");
   }
@@ -2129,8 +2213,8 @@ SDValue NVPTXTargetLowering::LowerLOAD(SDValue Op, SelectionDAG &DAG) const {
   if (Op.getValueType() == MVT::v2f16) {
     LoadSDNode *Load = cast<LoadSDNode>(Op);
     EVT MemVT = Load->getMemoryVT();
-    if (!allowsMemoryAccess(*DAG.getContext(), DAG.getDataLayout(), MemVT,
-                            Load->getAddressSpace(), Load->getAlignment())) {
+    if (!allowsMemoryAccessForAlignment(*DAG.getContext(), DAG.getDataLayout(),
+                                        MemVT, *Load->getMemOperand())) {
       SDValue Ops[2];
       std::tie(Ops[0], Ops[1]) = expandUnalignedLoad(Load, DAG);
       return DAG.getMergeValues(Ops, SDLoc(Op));
@@ -2172,8 +2256,8 @@ SDValue NVPTXTargetLowering::LowerSTORE(SDValue Op, SelectionDAG &DAG) const {
   // v2f16 is legal, so we can't rely on legalizer to handle unaligned
   // stores and have to handle it here.
   if (VT == MVT::v2f16 &&
-      !allowsMemoryAccess(*DAG.getContext(), DAG.getDataLayout(), VT,
-                          Store->getAddressSpace(), Store->getAlignment()))
+      !allowsMemoryAccessForAlignment(*DAG.getContext(), DAG.getDataLayout(),
+                                      VT, *Store->getMemOperand()))
     return expandUnalignedStore(Store, DAG);
 
   if (VT.isVector())
@@ -2218,10 +2302,10 @@ NVPTXTargetLowering::LowerSTOREVector(SDValue Op, SelectionDAG &DAG) const {
     MemSDNode *MemSD = cast<MemSDNode>(N);
     const DataLayout &TD = DAG.getDataLayout();
 
-    unsigned Align = MemSD->getAlignment();
-    unsigned PrefAlign =
-        TD.getPrefTypeAlignment(ValVT.getTypeForEVT(*DAG.getContext()));
-    if (Align < PrefAlign) {
+    Align Alignment = MemSD->getAlign();
+    Align PrefAlign =
+        TD.getPrefTypeAlign(ValVT.getTypeForEVT(*DAG.getContext()));
+    if (Alignment < PrefAlign) {
       // This store is not sufficiently aligned, so bail out and let this vector
       // store be scalarized.  Note that we may still be able to emit smaller
       // vector stores.  For example, if we are storing a <4 x float> with an
@@ -2457,7 +2541,7 @@ SDValue NVPTXTargetLowering::LowerFormalArguments(
       ComputePTXValueVTs(*this, DL, Ty, VTs, &Offsets, 0);
       assert(VTs.size() > 0 && "Unexpected empty type.");
       auto VectorInfo =
-          VectorizePTXValueVTs(VTs, Offsets, DL.getABITypeAlignment(Ty));
+          VectorizePTXValueVTs(VTs, Offsets, DL.getABITypeAlign(Ty));
 
       SDValue Arg = getParamSymbol(DAG, idx, PtrVT);
       int VecIdx = -1; // Index of the first element of the current vector.
@@ -2576,7 +2660,7 @@ NVPTXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
   assert(VTs.size() == OutVals.size() && "Bad return value decomposition");
 
   auto VectorInfo = VectorizePTXValueVTs(
-      VTs, Offsets, RetTy->isSized() ? DL.getABITypeAlignment(RetTy) : 1);
+      VTs, Offsets, RetTy->isSized() ? DL.getABITypeAlign(RetTy) : Align(1));
 
   // PTX Interoperability Guide 3.3(A): [Integer] Values shorter than
   // 32-bits are sign extended or zero extended, depending on whether
@@ -2628,10 +2712,9 @@ NVPTXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
       // Adjust type of load/store op if we've extended the scalar
       // return value.
       EVT TheStoreType = ExtendIntegerRetVal ? MVT::i32 : VTs[i];
-      Chain = DAG.getMemIntrinsicNode(Op, dl, DAG.getVTList(MVT::Other),
-                                      StoreOperands, TheStoreType,
-                                      MachinePointerInfo(), /* Align */ 1,
-                                      MachineMemOperand::MOStore);
+      Chain = DAG.getMemIntrinsicNode(
+          Op, dl, DAG.getVTList(MVT::Other), StoreOperands, TheStoreType,
+          MachinePointerInfo(), Align(1), MachineMemOperand::MOStore);
       // Cleanup vector state.
       StoreOperands.clear();
     }
@@ -3396,7 +3479,95 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
+    return true;
+  }
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_s8_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_u8_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_s8_row:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_a_u8_row:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_s8_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_u8_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_s8_row:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_b_u8_row: {
+    Info.opc = ISD::INTRINSIC_W_CHAIN;
+    Info.memVT = MVT::v2i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOLoad;
+    Info.align = Align(8);
+    return true;
+  }
+
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_s8_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_u8_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_s8_row:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_a_u8_row:
+
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_s8_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_u8_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_s8_row:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_b_u8_row: {
+    Info.opc = ISD::INTRINSIC_W_CHAIN;
+    Info.memVT = MVT::v4i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOLoad;
+    Info.align = Align(16);
+    return true;
+  }
+
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_s8_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_u8_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_s8_row:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_b_u8_row:
+
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_s8_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_s8_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_u8_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_u8_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_s8_row:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_s8_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_u8_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_a_u8_row:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_a_b1_row:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_a_b1_row_stride:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_b_b1_col:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_b_b1_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_a_s4_row:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_a_s4_row_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_a_u4_row_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_a_u4_row:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_b_s4_col:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_b_s4_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_b_u4_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_b_u4_col: {
+    Info.opc = ISD::INTRINSIC_W_CHAIN;
+    Info.memVT = MVT::i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOLoad;
+    Info.align = Align(4);
     return true;
   }
 
@@ -3417,7 +3588,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
   }
 
@@ -3438,7 +3609,45 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
+    return true;
+  }
+
+  case Intrinsic::nvvm_wmma_m16n16k16_load_c_s32_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_c_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_c_s32_row:
+  case Intrinsic::nvvm_wmma_m16n16k16_load_c_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_c_s32_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_c_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_c_s32_row:
+  case Intrinsic::nvvm_wmma_m32n8k16_load_c_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_c_s32_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_c_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_c_s32_row:
+  case Intrinsic::nvvm_wmma_m8n32k16_load_c_s32_row_stride: {
+    Info.opc = ISD::INTRINSIC_W_CHAIN;
+    Info.memVT = MVT::v8i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOLoad;
+    Info.align = Align(16);
+    return true;
+  }
+
+  case Intrinsic::nvvm_wmma_m8n8k128_load_c_s32_col:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_c_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_c_s32_row:
+  case Intrinsic::nvvm_wmma_m8n8k128_load_c_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_c_s32_col:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_c_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_c_s32_row:
+  case Intrinsic::nvvm_wmma_m8n8k32_load_c_s32_row_stride: {
+    Info.opc = ISD::INTRINSIC_W_CHAIN;
+    Info.memVT = MVT::v2i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOLoad;
+    Info.align = Align(8);
     return true;
   }
 
@@ -3459,7 +3668,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOStore;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
   }
 
@@ -3480,12 +3689,48 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOStore;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
   }
 
-  case Intrinsic::nvvm_atomic_load_add_f32:
-  case Intrinsic::nvvm_atomic_load_add_f64:
+  case Intrinsic::nvvm_wmma_m16n16k16_store_d_s32_col:
+  case Intrinsic::nvvm_wmma_m16n16k16_store_d_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m16n16k16_store_d_s32_row:
+  case Intrinsic::nvvm_wmma_m16n16k16_store_d_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_store_d_s32_col:
+  case Intrinsic::nvvm_wmma_m32n8k16_store_d_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m32n8k16_store_d_s32_row:
+  case Intrinsic::nvvm_wmma_m32n8k16_store_d_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_store_d_s32_col:
+  case Intrinsic::nvvm_wmma_m8n32k16_store_d_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n32k16_store_d_s32_row:
+  case Intrinsic::nvvm_wmma_m8n32k16_store_d_s32_row_stride: {
+    Info.opc = ISD::INTRINSIC_VOID;
+    Info.memVT = MVT::v8i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOStore;
+    Info.align = Align(16);
+    return true;
+  }
+
+  case Intrinsic::nvvm_wmma_m8n8k128_store_d_s32_col:
+  case Intrinsic::nvvm_wmma_m8n8k128_store_d_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k128_store_d_s32_row:
+  case Intrinsic::nvvm_wmma_m8n8k128_store_d_s32_row_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_store_d_s32_col:
+  case Intrinsic::nvvm_wmma_m8n8k32_store_d_s32_col_stride:
+  case Intrinsic::nvvm_wmma_m8n8k32_store_d_s32_row:
+  case Intrinsic::nvvm_wmma_m8n8k32_store_d_s32_row_stride: {
+    Info.opc = ISD::INTRINSIC_VOID;
+    Info.memVT = MVT::v2i32;
+    Info.ptrVal = I.getArgOperand(0);
+    Info.offset = 0;
+    Info.flags = MachineMemOperand::MOStore;
+    Info.align = Align(8);
+    return true;
+  }
+
   case Intrinsic::nvvm_atomic_load_inc_32:
   case Intrinsic::nvvm_atomic_load_dec_32:
 
@@ -3517,7 +3762,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad | MachineMemOperand::MOStore;
-    Info.align = 0;
+    Info.align.reset();
     return true;
   }
 
@@ -3535,7 +3780,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = cast<ConstantInt>(I.getArgOperand(1))->getZExtValue();
+    Info.align = cast<ConstantInt>(I.getArgOperand(1))->getMaybeAlignValue();
 
     return true;
   }
@@ -3554,7 +3799,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = I.getArgOperand(0);
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = cast<ConstantInt>(I.getArgOperand(1))->getZExtValue();
+    Info.align = cast<ConstantInt>(I.getArgOperand(1))->getMaybeAlignValue();
 
     return true;
   }
@@ -3620,7 +3865,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
 
   case Intrinsic::nvvm_tex_1d_v4s32_s32:
@@ -3740,7 +3985,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
 
   case Intrinsic::nvvm_suld_1d_i8_clamp:
@@ -3793,7 +4038,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
 
   case Intrinsic::nvvm_suld_1d_i16_clamp:
@@ -3846,7 +4091,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
 
   case Intrinsic::nvvm_suld_1d_i32_clamp:
@@ -3899,7 +4144,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
 
   case Intrinsic::nvvm_suld_1d_i64_clamp:
@@ -3937,7 +4182,7 @@ bool NVPTXTargetLowering::getTgtMemIntrinsic(
     Info.ptrVal = nullptr;
     Info.offset = 0;
     Info.flags = MachineMemOperand::MOLoad;
-    Info.align = 16;
+    Info.align = Align(16);
     return true;
   }
   return false;
@@ -4544,11 +4789,10 @@ static void ReplaceLoadVector(SDNode *N, SelectionDAG &DAG,
 
   LoadSDNode *LD = cast<LoadSDNode>(N);
 
-  unsigned Align = LD->getAlignment();
+  Align Alignment = LD->getAlign();
   auto &TD = DAG.getDataLayout();
-  unsigned PrefAlign =
-      TD.getPrefTypeAlignment(ResVT.getTypeForEVT(*DAG.getContext()));
-  if (Align < PrefAlign) {
+  Align PrefAlign = TD.getPrefTypeAlign(ResVT.getTypeForEVT(*DAG.getContext()));
+  if (Alignment < PrefAlign) {
     // This load is not sufficiently aligned, so bail out and let this vector
     // load be scalarized.  Note that we may still be able to emit smaller
     // vector loads.  For example, if we are loading a <4 x float> with an

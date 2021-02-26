@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import collections
 import optparse
 import os
@@ -488,13 +488,20 @@ class InvalidLocationError(ValueError):
 # cpu architecture is actually loaded. Note that this MUST be kept in sync with
 # what we have in the module build script.
 def get_module_lcd_cpu(platform_val, cpu):
-    if platform_val == "cray-xc" or platform_val == "cray-shasta":
+    if platform_val == "cray-xc":
         if is_known_arm(cpu):
             return "arm-thunderx2"
         else:
             return "sandybridge"
-    elif platform_val == "cray-xe" or platform_val == "cray-xk":
-        return "barcelona"
+    elif platform_val == "hpe-cray-ex":
+        if is_known_arm(cpu):
+            return "none"    # we don't know what we need here yet
+        else:
+            cray_network = os.environ.get('CRAYPE_NETWORK_TARGET', 'none')
+            if cray_network.startswith("slingshot") or cray_network == "ofi":
+                return "x86-rome"       # We're building on an HPE Cray EX system!
+            else:
+                return "sandybridge"    # We're still building on an XC.
     elif platform_val == "aarch64":
         return "arm-thunderx"
     else:

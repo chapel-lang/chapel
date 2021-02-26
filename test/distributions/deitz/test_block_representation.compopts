@@ -1,1 +1,1 @@
--sdisableBlockLazyRAD=true
+-sdisableBlockLazyRAD=true --no-print-callstack-on-error

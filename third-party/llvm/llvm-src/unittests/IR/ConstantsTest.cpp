@@ -1,9 +1,8 @@
 //===- llvm/unittest/IR/ConstantsTest.cpp - Constants unit tests ----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -132,9 +131,9 @@ TEST(ConstantsTest, PointerCast) {
   Type *Int8PtrTy = Type::getInt8PtrTy(C);
   Type *Int32PtrTy = Type::getInt32PtrTy(C);
   Type *Int64Ty = Type::getInt64Ty(C);
-  VectorType *Int8PtrVecTy = VectorType::get(Int8PtrTy, 4);
-  VectorType *Int32PtrVecTy = VectorType::get(Int32PtrTy, 4);
-  VectorType *Int64VecTy = VectorType::get(Int64Ty, 4);
+  VectorType *Int8PtrVecTy = FixedVectorType::get(Int8PtrTy, 4);
+  VectorType *Int32PtrVecTy = FixedVectorType::get(Int32PtrTy, 4);
+  VectorType *Int64VecTy = FixedVectorType::get(Int64Ty, 4);
 
   // ptrtoint i8* to i64
   EXPECT_EQ(Constant::getNullValue(Int64Ty),
@@ -211,7 +210,7 @@ TEST(ConstantsTest, AsInstructionsTest) {
   Constant *P3 = ConstantExpr::getTrunc(P0, Int1Ty);
   Constant *P4 = ConstantExpr::getPtrToInt(Global2, Int32Ty);
   Constant *P5 = ConstantExpr::getUIToFP(P4, FloatTy);
-  Constant *P6 = ConstantExpr::getBitCast(P4, VectorType::get(Int16Ty, 2));
+  Constant *P6 = ConstantExpr::getBitCast(P4, FixedVectorType::get(Int16Ty, 2));
 
   Constant *One = ConstantInt::get(Int32Ty, 1);
   Constant *Two = ConstantInt::get(Int64Ty, 2);
@@ -230,7 +229,7 @@ TEST(ConstantsTest, AsInstructionsTest) {
   #define P6STR "bitcast (i32 ptrtoint (i32** @dummy2 to i32) to <2 x i16>)"
 
   CHECK(ConstantExpr::getNeg(P0), "sub i32 0, " P0STR);
-  CHECK(ConstantExpr::getFNeg(P1), "fsub float -0.000000e+00, " P1STR);
+  CHECK(ConstantExpr::getFNeg(P1), "fneg float " P1STR);
   CHECK(ConstantExpr::getNot(P0), "xor i32 " P0STR ", -1");
   CHECK(ConstantExpr::getAdd(P0, P0), "add i32 " P0STR ", " P0STR);
   CHECK(ConstantExpr::getAdd(P0, P0, false, true), "add nsw i32 " P0STR ", "
@@ -474,6 +473,198 @@ TEST(ConstantsTest, BitcastToGEP) {
   auto *PtrTy = PointerType::get(i32, 0);
   auto *C = ConstantExpr::getBitCast(G, PtrTy);
   ASSERT_EQ(cast<ConstantExpr>(C)->getOpcode(), Instruction::BitCast);
+}
+
+bool foldFuncPtrAndConstToNull(LLVMContext &Context, Module *TheModule,
+                               uint64_t AndValue,
+                               MaybeAlign FunctionAlign = llvm::None) {
+  Type *VoidType(Type::getVoidTy(Context));
+  FunctionType *FuncType(FunctionType::get(VoidType, false));
+  Function *Func(Function::Create(
+      FuncType, GlobalValue::ExternalLinkage, "", TheModule));
+
+  if (FunctionAlign)
+    Func->setAlignment(*FunctionAlign);
+
+  IntegerType *ConstantIntType(Type::getInt32Ty(Context));
+  ConstantInt *TheConstant(ConstantInt::get(ConstantIntType, AndValue));
+
+  Constant *TheConstantExpr(
+      ConstantExpr::getPtrToInt(Func, ConstantIntType));
+
+
+  bool result = ConstantExpr::get(Instruction::And, TheConstantExpr,
+                           TheConstant)->isNullValue();
+
+  if (!TheModule) {
+    // If the Module exists then it will delete the Function.
+    delete Func;
+  }
+
+  return result;
+}
+
+TEST(ConstantsTest, FoldFunctionPtrAlignUnknownAnd2) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  // When the DataLayout doesn't specify a function pointer alignment we
+  // assume in this case that it is 4 byte aligned. This is a bug but we can't
+  // fix it directly because it causes a code size regression on X86.
+  // FIXME: This test should be changed once existing targets have
+  // appropriate defaults. See associated FIXME in ConstantFoldBinaryInstruction
+  ASSERT_TRUE(foldFuncPtrAndConstToNull(Context, &TheModule, 2));
+}
+
+TEST(ConstantsTest, DontFoldFunctionPtrAlignUnknownAnd4) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, &TheModule, 4));
+}
+
+TEST(ConstantsTest, FoldFunctionPtrAlign4) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  const char* AlignmentStrings[] = { "Fi32", "Fn32" };
+
+  for (unsigned AndValue = 1; AndValue <= 2; ++AndValue) {
+    for (const char *AlignmentString : AlignmentStrings) {
+      TheModule.setDataLayout(AlignmentString);
+      ASSERT_TRUE(foldFuncPtrAndConstToNull(Context, &TheModule, AndValue));
+    }
+  }
+}
+
+TEST(ConstantsTest, DontFoldFunctionPtrAlign1) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  const char* AlignmentStrings[] = { "Fi8", "Fn8" };
+
+  for (const char* AlignmentString : AlignmentStrings) {
+    TheModule.setDataLayout(AlignmentString);
+    ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, &TheModule, 2));
+  }
+}
+
+TEST(ConstantsTest, FoldFunctionAlign4PtrAlignMultiple) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  TheModule.setDataLayout("Fn8");
+  ASSERT_TRUE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, Align(4)));
+}
+
+TEST(ConstantsTest, DontFoldFunctionAlign4PtrAlignIndependent) {
+  LLVMContext Context;
+  Module TheModule("TestModule", Context);
+  TheModule.setDataLayout("Fi8");
+  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, &TheModule, 2, Align(4)));
+}
+
+TEST(ConstantsTest, DontFoldFunctionPtrIfNoModule) {
+  LLVMContext Context;
+  // Even though the function is explicitly 4 byte aligned, in the absence of a
+  // DataLayout we can't assume that the function pointer is aligned.
+  ASSERT_FALSE(foldFuncPtrAndConstToNull(Context, nullptr, 2, Align(4)));
+}
+
+TEST(ConstantsTest, FoldGlobalVariablePtr) {
+  LLVMContext Context;
+
+  IntegerType *IntType(Type::getInt32Ty(Context));
+
+  std::unique_ptr<GlobalVariable> Global(
+      new GlobalVariable(IntType, true, GlobalValue::ExternalLinkage));
+
+  Global->setAlignment(Align(4));
+
+  ConstantInt *TheConstant(ConstantInt::get(IntType, 2));
+
+  Constant *TheConstantExpr(
+      ConstantExpr::getPtrToInt(Global.get(), IntType));
+
+  ASSERT_TRUE(ConstantExpr::get( \
+      Instruction::And, TheConstantExpr, TheConstant)->isNullValue());
+}
+
+// Check that undefined elements in vector constants are matched
+// correctly for both integer and floating-point types. Just don't
+// crash on vectors of pointers (could be handled?).
+
+TEST(ConstantsTest, isElementWiseEqual) {
+  LLVMContext Context;
+
+  Type *Int32Ty = Type::getInt32Ty(Context);
+  Constant *CU = UndefValue::get(Int32Ty);
+  Constant *C1 = ConstantInt::get(Int32Ty, 1);
+  Constant *C2 = ConstantInt::get(Int32Ty, 2);
+
+  Constant *C1211 = ConstantVector::get({C1, C2, C1, C1});
+  Constant *C12U1 = ConstantVector::get({C1, C2, CU, C1});
+  Constant *C12U2 = ConstantVector::get({C1, C2, CU, C2});
+  Constant *C12U21 = ConstantVector::get({C1, C2, CU, C2, C1});
+
+  EXPECT_TRUE(C1211->isElementWiseEqual(C12U1));
+  EXPECT_TRUE(C12U1->isElementWiseEqual(C1211));
+  EXPECT_FALSE(C12U2->isElementWiseEqual(C12U1));
+  EXPECT_FALSE(C12U1->isElementWiseEqual(C12U2));
+  EXPECT_FALSE(C12U21->isElementWiseEqual(C12U2));
+
+  Type *FltTy = Type::getFloatTy(Context);
+  Constant *CFU = UndefValue::get(FltTy);
+  Constant *CF1 = ConstantFP::get(FltTy, 1.0);
+  Constant *CF2 = ConstantFP::get(FltTy, 2.0);
+
+  Constant *CF1211 = ConstantVector::get({CF1, CF2, CF1, CF1});
+  Constant *CF12U1 = ConstantVector::get({CF1, CF2, CFU, CF1});
+  Constant *CF12U2 = ConstantVector::get({CF1, CF2, CFU, CF2});
+  Constant *CFUU1U = ConstantVector::get({CFU, CFU, CF1, CFU});
+
+  EXPECT_TRUE(CF1211->isElementWiseEqual(CF12U1));
+  EXPECT_TRUE(CF12U1->isElementWiseEqual(CF1211));
+  EXPECT_TRUE(CFUU1U->isElementWiseEqual(CF12U1));
+  EXPECT_FALSE(CF12U2->isElementWiseEqual(CF12U1));
+  EXPECT_FALSE(CF12U1->isElementWiseEqual(CF12U2));
+
+  PointerType *PtrTy = Type::getInt8PtrTy(Context);
+  Constant *CPU = UndefValue::get(PtrTy);
+  Constant *CP0 = ConstantPointerNull::get(PtrTy);
+
+  Constant *CP0000 = ConstantVector::get({CP0, CP0, CP0, CP0});
+  Constant *CP00U0 = ConstantVector::get({CP0, CP0, CPU, CP0});
+  Constant *CP00U = ConstantVector::get({CP0, CP0, CPU});
+
+  EXPECT_FALSE(CP0000->isElementWiseEqual(CP00U0));
+  EXPECT_FALSE(CP00U0->isElementWiseEqual(CP0000));
+  EXPECT_FALSE(CP0000->isElementWiseEqual(CP00U));
+  EXPECT_FALSE(CP00U->isElementWiseEqual(CP00U0));
+}
+
+TEST(ConstantsTest, GetSplatValueRoundTrip) {
+  LLVMContext Context;
+
+  Type *FloatTy = Type::getFloatTy(Context);
+  Type *Int32Ty = Type::getInt32Ty(Context);
+  Type *Int8Ty = Type::getInt8Ty(Context);
+
+  for (unsigned Min : {1, 2, 8}) {
+    ElementCount ScalableEC = {Min, true};
+    ElementCount FixedEC = {Min, false};
+
+    for (auto EC : {ScalableEC, FixedEC}) {
+      for (auto *Ty : {FloatTy, Int32Ty, Int8Ty}) {
+        Constant *Zero = Constant::getNullValue(Ty);
+        Constant *One = Constant::getAllOnesValue(Ty);
+
+        for (auto *C : {Zero, One}) {
+          Constant *Splat = ConstantVector::getSplat(EC, C);
+          ASSERT_NE(nullptr, Splat);
+
+          Constant *SplatVal = Splat->getSplatValue();
+          EXPECT_NE(nullptr, SplatVal);
+          EXPECT_EQ(SplatVal, C);
+        }
+      }
+    }
+  }
 }
 
 }  // end anonymous namespace

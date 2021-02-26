@@ -3,7 +3,7 @@ use MasonInit;
 use MasonUtils;
 
 proc main(){
-  const args = ['mason', 'init'];
+  const args = ['mason', 'init', '-d'];
   masonInit(args);
 
   //check if files have been created 

@@ -11,66 +11,37 @@ Note: this is work in progress and is subject to change.
 Overview
 --------
 
-Reduce intents are a kind of forall intent - see Section 26.3
-"Forall Intents" of the Chapel Language Specification.
+A reduce intent is defined as a :ref:`forall intent <Forall_Intents>`
+for forall loops and a :ref:`task intent <Task_Intents>` for
+task-parallel constructs.
 
-As with any forall intent, a reduce intent can be specified on any
-*outer variable* - that is, a variable used within the body of a
-forall loop and declared outside that loop.  References to such a
-variable within the loop implicitly refer to the corresponding formal
-argument of the task function created by the parallel iterator.
-If/when the parallel iterator executes a yield outside any parallel
-constructs, the reference is implicitly to the corresponding formal
-argument of the parallel iterator itself. In both cases, these formals
-are added implicitly by the compiler.
+Reduce intents are distinct from other forall/task intents:
 
-Reduce intents are distinct:
+* The shadow variable for a reduce intent implicitly references
+  the accumulation state for the reduction. At the beginning of
+  each task, its accumulation state is initialized to the
+  identity value for the corresponding reduction. At the end of
+  each task, its accumulation state is combined into the
+  accumulation state of its parent task, if any, or into
+  the top-level accumulation state.
 
-* The references, within the loop body, to a reduce-intented outer variable
-  implicitly refer to the reduction state corresponding to the task
-  function's formal. At the beginning of the task, this reduction state
-  is initialized to the identity value for the corresponding reduction.
+* The top-level accumulation state is accessed through the shadow
+  variable for those loop iterations that correspond to top-level
+  yield statements. Those are the yields that occur outside any
+  task constructs in the iterator that is leading the loop.
 
-* The value of the outer variable immediately after the forall loop is a
-  reduction of the values of the corresponding formals at the end of
-  their tasks and the value of the outer variable immediately before
-  the forall/coforall loop.
+* The value of the corresponding outer variable immediately prior
+  the forall loop or the task-parallel construct is accumulated
+  into the top-level accumulation state. The value of the outer
+  variable immediately after the loop / construct is the result
+  of applying the reduction's ``generate`` operation to the top-level
+  accumulation state at that point. If this ``generate`` operation
+  returns the accumulation state unchanged, then the implementation
+  can be optimized by reusing the outer variable as the top-level
+  accumulation state.
 
-Reduce intents are currently available for forall and coforall statements.
-
-
-------
-Syntax
-------
-
-The syntax of ``task-intent-list`` is extended to allow ``reduce-intent``:
-
-  ::
-
-    task-intent-list:
-      // no change with these
-      formal-intent identifier
-      formal-intent identifier, task-intent-list
-      // added for reduce intents:
-      reduce-intent
-      reduce-intent, task-intent-list
-
-    reduce-intent:
-      reduce-operator 'reduce' identifier
-      reduce-class    'reduce' identifier
-      reduce-expr     'reduce' identifier
-
-    reduce-operator: one of
-       // these have the same meaning as in a reduction expression
-       +  *  &&  ||  &  |  ^  min  max
-
-    reduce-class:
-       // the name of the class that implements a user-defined reduction
-       identifier
-
-    reduce-expr:
-       // an expression producing an instance of a user-defined reduction class
-       expr
+Reduce intents are currently implemented for ``forall`` and
+``coforall`` statements.
 
 
 --------
@@ -165,20 +136,11 @@ or coforall loop. Here is an example of such a class:
 Future Work
 -----------
 
+* Switch to a light-weight interface for user-defined reductions.
+  The current proposal is discussed in
+  `GitHub issue 9879 <https://github.com/chapel-lang/chapel/issues/9879>`_.
+
+* Implement ``reduce=`` for task intents.
+
 * Implement reduce intents for cobegin statements.
-
-* Provide the other predefined reduction operators as reduce intents:
-
-  .. code-block:: chapel
-
-    minloc maxloc
-
-* We are working on a new interface for user-defined reductions,
-  addressing the need for user-defined synchronization choices
-  and the ability to provide reduction state without the overhead
-  of synchronization support for partial reductions.
-
-* We are also considering replacing classes with records for user-defined
-  reductions. The goal is to eliminate the required malloc+free,
-  which is possible because the lifetime of a reduction class instance
-  matches the forall or coforall statement.
+  Consider reduce intents for begin statements.

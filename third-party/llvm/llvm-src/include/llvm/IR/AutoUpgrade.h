@@ -1,9 +1,8 @@
 //===- AutoUpgrade.h - AutoUpgrade Helpers ----------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "llvm/ADT/StringRef.h"
 
 namespace llvm {
+  class AttrBuilder;
   class CallInst;
   class Constant;
   class Function;
@@ -47,19 +47,22 @@ namespace llvm {
   /// so that it can update all calls to the old function.
   void UpgradeCallsToIntrinsic(Function* F);
 
-  /// This checks for global variables which should be upgraded. It returns true
-  /// if it requires upgrading.
-  bool UpgradeGlobalVariable(GlobalVariable *GV);
+  /// This checks for global variables which should be upgraded. It it requires
+  /// upgrading, returns a pointer to the upgraded variable.
+  GlobalVariable *UpgradeGlobalVariable(GlobalVariable *GV);
 
   /// This checks for module flags which should be upgraded. It returns true if
   /// module is modified.
   bool UpgradeModuleFlags(Module &M);
 
-  /// This checks for objc retain release marker which should be upgraded. It
-  /// returns true if module is modified.
-  bool UpgradeRetainReleaseMarker(Module &M);
+  /// Convert calls to ARC runtime functions to intrinsic calls and upgrade the
+  /// old retain release marker to new module flag format.
+  void UpgradeARCRuntime(Module &M);
 
   void UpgradeSectionAttributes(Module &M);
+
+  /// Correct any IR that is relying on old function attribute behavior.
+  void UpgradeFunctionAttributes(Function &F);
 
   /// If the given TBAA tag uses the scalar TBAA format, create a new node
   /// corresponding to the upgrade to the struct-path aware TBAA format.
@@ -87,6 +90,13 @@ namespace llvm {
 
   /// Upgrade the loop attachment metadata node.
   MDNode *upgradeInstructionLoopAttachment(MDNode &N);
+
+  /// Upgrade the datalayout string by adding a section for address space
+  /// pointers.
+  std::string UpgradeDataLayoutString(StringRef DL, StringRef Triple);
+
+  /// Upgrade attributes that changed format or kind.
+  void UpgradeAttributes(AttrBuilder &B);
 
 } // End llvm namespace
 

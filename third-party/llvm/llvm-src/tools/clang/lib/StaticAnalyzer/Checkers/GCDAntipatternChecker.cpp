@@ -1,9 +1,8 @@
 //===- GCDAntipatternChecker.cpp ---------------------------------*- C++ -*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -53,18 +52,16 @@ public:
                         BugReporter &BR) const;
 };
 
-auto callsName(const char *FunctionName)
-    -> decltype(callee(functionDecl())) {
+decltype(auto) callsName(const char *FunctionName) {
   return callee(functionDecl(hasName(FunctionName)));
 }
 
-auto equalsBoundArgDecl(int ArgIdx, const char *DeclName)
-    -> decltype(hasArgument(0, expr())) {
+decltype(auto) equalsBoundArgDecl(int ArgIdx, const char *DeclName) {
   return hasArgument(ArgIdx, ignoringParenCasts(declRefExpr(
                                  to(varDecl(equalsBoundNode(DeclName))))));
 }
 
-auto bindAssignmentToDecl(const char *DeclName) -> decltype(hasLHS(expr())) {
+decltype(auto) bindAssignmentToDecl(const char *DeclName) {
   return hasLHS(ignoringParenImpCasts(
                          declRefExpr(to(varDecl().bind(DeclName)))));
 }
@@ -197,7 +194,7 @@ static void emitDiagnostics(const BoundNodes &Nodes,
     ADC->getDecl(),
     Checker,
     /*Name=*/"GCD performance anti-pattern",
-    /*Category=*/"Performance",
+    /*BugCategory=*/"Performance",
     OS.str(),
     PathDiagnosticLocation::createBegin(SW, BR.getSourceManager(), ADC),
     SW->getSourceRange());
@@ -222,8 +219,12 @@ void GCDAntipatternChecker::checkASTCodeBody(const Decl *D,
     emitDiagnostics(Match, "group", BR, ADC, this);
 }
 
-}
+} // end of anonymous namespace
 
 void ento::registerGCDAntipattern(CheckerManager &Mgr) {
   Mgr.registerChecker<GCDAntipatternChecker>();
+}
+
+bool ento::shouldRegisterGCDAntipattern(const CheckerManager &mgr) {
+  return true;
 }

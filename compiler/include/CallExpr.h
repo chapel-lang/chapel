@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -29,7 +29,7 @@ enum TryTag {
   TRY_TAG_IN_TRYBANG
 };
 
-class CallExpr : public Expr {
+class CallExpr final : public Expr {
 public:
   PrimitiveOp* primitive;        // primitive expression (baseExpr == NULL)
   Expr*        baseExpr;         // function expression
@@ -69,22 +69,23 @@ public:
            BaseAST*     arg4 = NULL,
            BaseAST*     arg5 = NULL);
 
-  ~CallExpr();
+  ~CallExpr() override = default;
 
-  virtual void    verify();
+  void    verify() override;
 
   DECLARE_COPY(CallExpr);
+  CallExpr* copyInner(SymbolMap* map) override;
 
 
-  virtual void    accept(AstVisitor* visitor);
+  void    accept(AstVisitor* visitor) override;
 
-  virtual GenRet  codegen();
-  virtual void    prettyPrint(std::ostream* o);
-  virtual QualifiedType qualType();
+  GenRet  codegen() override;
+  void    prettyPrint(std::ostream* o) override;
+  QualifiedType qualType() override;
 
-  virtual void    replaceChild(Expr* old_ast, Expr* new_ast);
-  virtual Expr*   getFirstExpr();
-  virtual Expr*   getNextExpr(Expr* expr);
+  void    replaceChild(Expr* old_ast, Expr* new_ast) override;
+  Expr*   getFirstExpr() override;
+  Expr*   getNextExpr(Expr* expr) override;
 
   void            insertAtHead(BaseAST* ast);
   void            insertAtTail(BaseAST* ast);
@@ -160,6 +161,21 @@ static inline bool isEndOfStatementMarker(Expr* e) {
       return true;
 
   return false;
+}
+
+inline FnSymbol* CallExpr::resolvedFunction() const {
+  if (SymExpr* base = toSymExpr(baseExpr))
+    return toFnSymbol(base->symbol());
+  else
+    return NULL;
+}
+
+inline FnSymbol* CallExpr::theFnSymbol() const {
+  return resolvedFunction();
+}
+
+inline bool CallExpr::isResolved() const {
+  return resolvedFunction() != NULL;
 }
 
 // TODO: rename these

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -59,10 +59,6 @@ TryStmt::TryStmt(bool tryBang, BlockStmt* body, BlockStmt* catches,
   }
 
   gTryStmts.add(this);
-}
-
-TryStmt::~TryStmt() {
-
 }
 
 BlockStmt* TryStmt::body() const {

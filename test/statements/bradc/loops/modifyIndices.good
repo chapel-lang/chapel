@@ -1,1 +1,1 @@
-modifyIndices.chpl:2: error: illegal lvalue in assignment
+modifyIndices.chpl:2: error: cannot assign to const variable

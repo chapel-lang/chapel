@@ -1,9 +1,8 @@
 //===--------- AVRMCELFStreamer.cpp - AVR subclass of MCELFStreamer -------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,7 +20,7 @@
 
 using namespace llvm;
 
-void AVRMCELFStreamer::EmitValueForModiferKind(
+void AVRMCELFStreamer::emitValueForModiferKind(
     const MCSymbol *Sym, unsigned SizeInBytes, SMLoc Loc,
     AVRMCExpr::VariantKind ModifierKind) {
   MCSymbolRefExpr::VariantKind Kind = MCSymbolRefExpr::VK_AVR_NONE;
@@ -37,7 +36,7 @@ void AVRMCELFStreamer::EmitValueForModiferKind(
     Kind = MCSymbolRefExpr::VK_AVR_HI8;
   else if (ModifierKind == AVRMCExpr::VK_AVR_HH8)
     Kind = MCSymbolRefExpr::VK_AVR_HLO8;
-  MCELFStreamer::EmitValue(MCSymbolRefExpr::create(Sym, Kind, getContext()),
+  MCELFStreamer::emitValue(MCSymbolRefExpr::create(Sym, Kind, getContext()),
                            SizeInBytes, Loc);
 }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -54,6 +54,8 @@ bool                 parsed                        = false;
 
 static bool          sFirstFile                    = true;
 static bool          sHandlingInternalModulesNow   = false;
+
+static const char* stdGenModulesPath;
 
 static void          countTokensInCmdLineFiles();
 
@@ -112,7 +114,6 @@ void parse() {
 *                            ./tasktable/on/ChapelTaskTable.chpl              *
 *                                                                             *
 *   LocaleModel              ./localeModels/flat/LocaleModel.chpl             *
-*                            ./localeModels/knl/LocaleModel.chpl              *
 *                            ./localeModels/numa/LocaleModel.chpl             *
 *                                                                             *
 *   NetworkAtomicTypes       ./comm/ugni/NetworkAtomicTypes.chpl              *
@@ -190,15 +191,16 @@ void setupModulePaths() {
   //
   // Set up the search path for modulesRoot/standard
   //
-  sStdModPath.add(astr(CHPL_HOME,
-                      "/",
-                      modulesRoot,
-                      "/standard/gen/",
-                      CHPL_TARGET_PLATFORM,
-                      "-",
-                      CHPL_TARGET_ARCH,
-                      "-",
-                      CHPL_TARGET_COMPILER));
+  stdGenModulesPath = astr(CHPL_HOME,
+                           "/",
+                           modulesRoot,
+                           "/standard/gen/",
+                           CHPL_TARGET_PLATFORM,
+                           "-",
+                           CHPL_TARGET_ARCH,
+                           "-",
+                           CHPL_TARGET_COMPILER);
+  sStdModPath.add(stdGenModulesPath);
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
 
@@ -283,6 +285,12 @@ static void parseInternalModules() {
     printModuleInitModule = parseMod("PrintModuleInitOrder", true);
     if (fLibraryFortran) {
                             parseMod("ISO_Fortran_binding", true);
+    }
+
+    // parse SysCTypes right away to provide well-known types.
+    ModuleSymbol* sysctypes = parseMod("SysCTypes", false);
+    if (sysctypes == NULL && fMinimalModules == false) {
+      USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
     }
 
     parseDependentModules(true);
@@ -413,6 +421,17 @@ static void ensureRequiredStandardModulesAreParsed() {
       }
 
       UnresolvedSymExpr* oldModNameExpr = toUnresolvedSymExpr(moduleExpr);
+
+      if (oldModNameExpr == NULL) {
+        // Handle the case of `[use|import] Mod.symbol` by extracting `Mod`
+        // from the `Mod.symbol` expression
+        if (CallExpr* call = toCallExpr(moduleExpr)) {
+          UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->get(1));
+          if (call->isNamedAstr(astrSdot) && urse) {
+            oldModNameExpr = urse;
+          }
+        }
+      }
 
       if (oldModNameExpr == NULL) {
         continue;
@@ -807,7 +826,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   // save parser global variables to restore after parsing the submodule
   BlockStmt*  s_yyblock = yyblock;
   const char* s_yyfilename = yyfilename;
-  int         s_yystarlineno = yystartlineno;
+  int         s_yystartlineno = yystartlineno;
   ModTag      s_currentModuleType = currentModuleType;
   const char* s_currentModuleName = currentModuleName;
   int         s_chplLineno = chplLineno;
@@ -836,7 +855,7 @@ ModuleSymbol* parseIncludedSubmodule(const char* name) {
   // restore parser global variables
   yyblock = s_yyblock;
   yyfilename = s_yyfilename;
-  yystartlineno = s_yystarlineno;
+  yystartlineno = s_yystartlineno;
   currentModuleType = s_currentModuleType;
   currentModuleName = s_currentModuleName;
   chplLineno = s_chplLineno;

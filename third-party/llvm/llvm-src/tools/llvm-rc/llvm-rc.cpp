@@ -1,9 +1,8 @@
 //===-- llvm-rc.cpp - Compile .rc scripts into .res -------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -169,7 +168,7 @@ int main(int Argc, const char **Argv) {
     if (OutArgsInfo.empty()) {
       SmallString<128> OutputFile = InputFile;
       llvm::sys::path::replace_extension(OutputFile, "res");
-      OutArgsInfo.push_back(OutputFile.str());
+      OutArgsInfo.push_back(std::string(OutputFile.str()));
     }
 
     if (OutArgsInfo.size() != 1)
@@ -177,18 +176,27 @@ int main(int Argc, const char **Argv) {
           "No more than one output file should be provided (using /FO flag).");
 
     std::error_code EC;
-    auto FOut = llvm::make_unique<raw_fd_ostream>(
+    auto FOut = std::make_unique<raw_fd_ostream>(
         OutArgsInfo[0], EC, sys::fs::FA_Read | sys::fs::FA_Write);
     if (EC)
       fatalError("Error opening output file '" + OutArgsInfo[0] +
                  "': " + EC.message());
-    Visitor = llvm::make_unique<ResourceFileWriter>(Params, std::move(FOut));
+    Visitor = std::make_unique<ResourceFileWriter>(Params, std::move(FOut));
     Visitor->AppendNull = InputArgs.hasArg(OPT_ADD_NULL);
 
     ExitOnErr(NullResource().visit(Visitor.get()));
 
     // Set the default language; choose en-US arbitrarily.
-    ExitOnErr(LanguageResource(0x09, 0x01).visit(Visitor.get()));
+    unsigned PrimaryLangId = 0x09, SubLangId = 0x01;
+    if (InputArgs.hasArg(OPT_LANG_ID)) {
+      unsigned LangId;
+      if (InputArgs.getLastArgValue(OPT_LANG_ID).getAsInteger(16, LangId))
+        fatalError("Invalid language id: " +
+                   InputArgs.getLastArgValue(OPT_LANG_ID));
+      PrimaryLangId = LangId & 0x3ff;
+      SubLangId = LangId >> 10;
+    }
+    ExitOnErr(LanguageResource(PrimaryLangId, SubLangId).visit(Visitor.get()));
   }
 
   rc::RCParser Parser{std::move(Tokens)};

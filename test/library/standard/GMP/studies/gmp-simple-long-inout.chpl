@@ -1,4 +1,4 @@
-use GMP, SysCTypes;
+use GMP, SysCTypes, CPtr;
 
 var depth = 4: c_long;
 
@@ -10,7 +10,7 @@ proc main() {
   mpz_init(x[0]);
   mpz_set_ui(x[0], 123);
 
-  gmp_printf("x[0] is: %Zd\n", x[0]);
+  gmp_printf("x[0] is: %Zd\n", c_ptrTo(x[0]));
 
   mpz_clear(x[0]);
 }

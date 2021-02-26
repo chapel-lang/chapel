@@ -1,7 +1,7 @@
 // find out how much memory is leaked when a function with a local array
 // is called
 
-use Memory;
+use Memory.Diagnostics;
 
 const N = 5;
 

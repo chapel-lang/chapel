@@ -1,9 +1,8 @@
 //===--- CharUnits.h - Character units for sizes and offsets ----*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -15,6 +14,7 @@
 #define LLVM_CLANG_AST_CHARUNITS_H
 
 #include "llvm/ADT/DenseMapInfo.h"
+#include "llvm/Support/Alignment.h"
 #include "llvm/Support/DataTypes.h"
 #include "llvm/Support/MathExtras.h"
 
@@ -178,6 +178,10 @@ namespace clang {
       /// getQuantity - Get the raw integer representation of this quantity.
       QuantityType getQuantity() const { return Quantity; }
 
+      /// getAsAlign - Returns Quantity as a valid llvm::Align,
+      /// Beware llvm::Align assumes power of two 8-bit bytes.
+      llvm::Align getAsAlign() const { return llvm::Align(Quantity); }
+
       /// alignTo - Returns the next integer (mod 2**64) that is
       /// greater than or equal to this quantity and is a multiple of \p Align.
       /// Align must be non-zero.
@@ -236,10 +240,6 @@ template<> struct DenseMapInfo<clang::CharUnits> {
                       const clang::CharUnits &RHS) {
     return LHS == RHS;
   }
-};
-
-template <> struct isPodLike<clang::CharUnits> {
-  static const bool value = true;
 };
 
 } // end namespace llvm

@@ -1,9 +1,8 @@
 //===- Replacement.cpp - Framework for clang refactoring tools ------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -47,8 +46,8 @@ Replacement::Replacement() : FilePath(InvalidLocation) {}
 
 Replacement::Replacement(StringRef FilePath, unsigned Offset, unsigned Length,
                          StringRef ReplacementText)
-    : FilePath(FilePath), ReplacementRange(Offset, Length),
-      ReplacementText(ReplacementText) {}
+    : FilePath(std::string(FilePath)), ReplacementRange(Offset, Length),
+      ReplacementText(std::string(ReplacementText)) {}
 
 Replacement::Replacement(const SourceManager &Sources, SourceLocation Start,
                          unsigned Length, StringRef ReplacementText) {
@@ -68,11 +67,11 @@ bool Replacement::isApplicable() const {
 
 bool Replacement::apply(Rewriter &Rewrite) const {
   SourceManager &SM = Rewrite.getSourceMgr();
-  const FileEntry *Entry = SM.getFileManager().getFile(FilePath);
+  auto Entry = SM.getFileManager().getFile(FilePath);
   if (!Entry)
     return false;
 
-  FileID ID = SM.getOrCreateFileID(Entry, SrcMgr::C_User);
+  FileID ID = SM.getOrCreateFileID(*Entry, SrcMgr::C_User);
   const SourceLocation Start =
     SM.getLocForStartOfFile(ID).
     getLocWithOffset(ReplacementRange.getOffset());
@@ -124,9 +123,9 @@ void Replacement::setFromSourceLocation(const SourceManager &Sources,
   const std::pair<FileID, unsigned> DecomposedLocation =
       Sources.getDecomposedLoc(Start);
   const FileEntry *Entry = Sources.getFileEntryForID(DecomposedLocation.first);
-  this->FilePath = Entry ? Entry->getName() : InvalidLocation;
+  this->FilePath = std::string(Entry ? Entry->getName() : InvalidLocation);
   this->ReplacementRange = Range(DecomposedLocation.second, Length);
-  this->ReplacementText = ReplacementText;
+  this->ReplacementText = std::string(ReplacementText);
 }
 
 // FIXME: This should go into the Lexer, but we need to figure out how
@@ -368,8 +367,8 @@ class MergedReplacement {
 public:
   MergedReplacement(const Replacement &R, bool MergeSecond, int D)
       : MergeSecond(MergeSecond), Delta(D), FilePath(R.getFilePath()),
-        Offset(R.getOffset() + (MergeSecond ? 0 : Delta)), Length(R.getLength()),
-        Text(R.getReplacementText()) {
+        Offset(R.getOffset() + (MergeSecond ? 0 : Delta)),
+        Length(R.getLength()), Text(std::string(R.getReplacementText())) {
     Delta += MergeSecond ? 0 : Text.size() - Length;
     DeltaFirst = MergeSecond ? Text.size() - Length : 0;
   }
@@ -520,12 +519,11 @@ calculateRangesAfterReplacements(const Replacements &Replaces,
     return MergedRanges;
   tooling::Replacements FakeReplaces;
   for (const auto &R : MergedRanges) {
-    auto Err = FakeReplaces.add(Replacement(Replaces.begin()->getFilePath(),
-                                            R.getOffset(), R.getLength(),
-                                            std::string(R.getLength(), ' ')));
-    assert(!Err &&
-           "Replacements must not conflict since ranges have been merged.");
-    llvm::consumeError(std::move(Err));
+    llvm::cantFail(
+        FakeReplaces.add(Replacement(Replaces.begin()->getFilePath(),
+                                     R.getOffset(), R.getLength(),
+                                     std::string(R.getLength(), ' '))),
+        "Replacements must not conflict since ranges have been merged.");
   }
   return FakeReplaces.merge(Replaces).getAffectedRanges();
 }
@@ -593,7 +591,8 @@ llvm::Expected<std::string> applyAllReplacements(StringRef Code,
   Rewriter Rewrite(SourceMgr, LangOptions());
   InMemoryFileSystem->addFile(
       "<stdin>", 0, llvm::MemoryBuffer::getMemBuffer(Code, "<stdin>"));
-  FileID ID = SourceMgr.createFileID(Files.getFile("<stdin>"), SourceLocation(),
+  FileID ID = SourceMgr.createFileID(*Files.getFile("<stdin>"),
+                                     SourceLocation(),
                                      clang::SrcMgr::C_User);
   for (auto I = Replaces.rbegin(), E = Replaces.rend(); I != E; ++I) {
     Replacement Replace("<stdin>", I->getOffset(), I->getLength(),
@@ -615,10 +614,10 @@ std::map<std::string, Replacements> groupReplacementsByFile(
   std::map<std::string, Replacements> Result;
   llvm::SmallPtrSet<const FileEntry *, 16> ProcessedFileEntries;
   for (const auto &Entry : FileToReplaces) {
-    const FileEntry *FE = FileMgr.getFile(Entry.first);
+    auto FE = FileMgr.getFile(Entry.first);
     if (!FE)
       llvm::errs() << "File path " << Entry.first << " is invalid.\n";
-    else if (ProcessedFileEntries.insert(FE).second)
+    else if (ProcessedFileEntries.insert(*FE).second)
       Result[Entry.first] = std::move(Entry.second);
   }
   return Result;

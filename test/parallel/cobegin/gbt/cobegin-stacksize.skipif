@@ -12,3 +12,6 @@ CHPL_TARGET_PLATFORM <= cygwin
 # opted to just skip those configurations for now.
 CHPL_COMM != none
 
+# ASAN will report a stack overflow, which is great but not what the .good file
+# expects
+CHPL_SANITIZE_EXE <= address

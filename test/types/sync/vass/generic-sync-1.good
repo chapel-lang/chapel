@@ -1,6 +1,6 @@
 generic-sync-1.chpl:7: In function 'test':
 generic-sync-1.chpl:8: warning: sync int(64)
-generic-sync-1.chpl:4: Function 'test' instantiated as: test(s: sync int(64))
+  generic-sync-1.chpl:4: called as test(s: sync int(64))
 generic-sync-1.chpl:5: warning: sync int(64)
 got lock
 isFull = true

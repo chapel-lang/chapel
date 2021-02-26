@@ -1,9 +1,8 @@
 //===------- Legacy.cpp - Adapters for ExecutionEngine API interop --------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -24,7 +23,8 @@ void JITSymbolResolverAdapter::lookup(const LookupSet &Symbols,
   for (auto &S : Symbols)
     InternedSymbols.insert(ES.intern(S));
 
-  auto OnResolvedWithUnwrap = [OnResolved](Expected<SymbolMap> InternedResult) {
+  auto OnResolvedWithUnwrap = [OnResolved = std::move(OnResolved)](
+                                  Expected<SymbolMap> InternedResult) mutable {
     if (!InternedResult) {
       OnResolved(InternedResult.takeError());
       return;
@@ -37,8 +37,8 @@ void JITSymbolResolverAdapter::lookup(const LookupSet &Symbols,
   };
 
   auto Q = std::make_shared<AsynchronousSymbolQuery>(
-      InternedSymbols, OnResolvedWithUnwrap,
-      [this](Error Err) { ES.reportError(std::move(Err)); });
+      SymbolLookupSet(InternedSymbols), SymbolState::Resolved,
+      std::move(OnResolvedWithUnwrap));
 
   auto Unresolved = R.lookup(Q, InternedSymbols);
   if (Unresolved.empty()) {

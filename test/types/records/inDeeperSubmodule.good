@@ -1,0 +1,4 @@
+inDeeperSubmodule.chpl:12: warning: This file-scope code is outside of any explicit module declarations (e.g., module A), so an implicit module named 'inDeeperSubmodule' is being introduced to contain the file's contents.
+blah
+0
+0

@@ -1,6 +1,6 @@
 /* Test mpf_trunc, mpf_ceil, mpf_floor.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -19,7 +19,6 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "gmp.h"
 #include "gmp-impl.h"
 #include "tests.h"
 
@@ -79,7 +78,7 @@ check_one (mpf_srcptr src, mpf_srcptr trunc, mpf_srcptr ceil, mpf_srcptr floor)
 
   /* Can't do these unconditionally in case truncation by mpf_set strips
      some low non-zero limbs which would have rounded the result.  */
-  if (ABSIZ(src) <= PREC(trunc)+1)
+  if (mpf_size (src) <= PREC(trunc)+1)
     {
       CHECK_INPLACE ("mpf_ceil",  mpf_ceil,  ceil);
       CHECK_INPLACE ("mpf_floor", mpf_floor, floor);

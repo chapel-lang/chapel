@@ -1,15 +1,15 @@
-/*===-- CIndexDiagnostics.cpp - Diagnostics C Interface ---------*- C++ -*-===*\
-|*                                                                            *|
-|*                     The LLVM Compiler Infrastructure                       *|
-|*                                                                            *|
-|* This file is distributed under the University of Illinois Open Source      *|
-|* License. See LICENSE.TXT for details.                                      *|
-|*                                                                            *|
-|*===----------------------------------------------------------------------===*|
-|*                                                                            *|
-|* Implements the diagnostic functions of the Clang C interface.              *|
-|*                                                                            *|
-\*===----------------------------------------------------------------------===*/
+//===- CIndexDiagnostic.cpp - Diagnostics C Interface ---------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+//
+// Implements the diagnostic functions of the Clang C interface.
+//
+//===----------------------------------------------------------------------===//
+
 #include "CIndexDiagnostic.h"
 #include "CIndexer.h"
 #include "CXTranslationUnit.h"
@@ -42,8 +42,8 @@ class CXDiagnosticCustomNoteImpl : public CXDiagnosticImpl {
   CXSourceLocation Loc;
 public:
   CXDiagnosticCustomNoteImpl(StringRef Msg, CXSourceLocation L)
-    : CXDiagnosticImpl(CustomNoteDiagnosticKind),
-      Message(Msg), Loc(L) {}
+      : CXDiagnosticImpl(CustomNoteDiagnosticKind), Message(std::string(Msg)),
+        Loc(L) {}
 
   ~CXDiagnosticCustomNoteImpl() override {}
 
@@ -51,9 +51,7 @@ public:
     return CXDiagnostic_Note;
   }
 
-  CXSourceLocation getLocation() const override {
-    return Loc;
-  }
+  CXSourceLocation getLocation() const override { return Loc; }
 
   CXString getSpelling() const override {
     return cxstring::createRef(Message.c_str());
@@ -101,7 +99,7 @@ public:
     if (Level != DiagnosticsEngine::Note)
       CurrentSet = MainSet;
 
-    auto Owner = llvm::make_unique<CXStoredDiagnostic>(*SD, LangOpts);
+    auto Owner = std::make_unique<CXStoredDiagnostic>(*SD, LangOpts);
     CXStoredDiagnostic &CD = *Owner;
     CurrentSet->appendDiagnostic(std::move(Owner));
 
@@ -122,7 +120,7 @@ public:
     else
       L = clang_getNullLocation();
     CurrentSet->appendDiagnostic(
-        llvm::make_unique<CXDiagnosticCustomNoteImpl>(Message, L));
+        std::make_unique<CXDiagnosticCustomNoteImpl>(Message, L));
   }
 
   void emitDiagnosticLoc(FullSourceLoc Loc, PresumedLoc PLoc,
@@ -140,7 +138,7 @@ public:
     else
       L = clang_getNullLocation();
     CurrentSet->appendDiagnostic(
-        llvm::make_unique<CXDiagnosticCustomNoteImpl>(Message, L));
+        std::make_unique<CXDiagnosticCustomNoteImpl>(Message, L));
   }
 
   CXDiagnosticSetImpl *CurrentSet;

@@ -1,7 +1,10 @@
-add_llvm_library(LLVMMIRParser
+add_llvm_component_library(LLVMMIRParser
   MILexer.cpp
   MIParser.cpp
   MIRParser.cpp
+
+  ADDITIONAL_HEADER_DIRS
+  ${LLVM_MAIN_INCLUDE_DIR}/llvm/CodeGen/MIRParser
 
   DEPENDS
   intrinsics_gen

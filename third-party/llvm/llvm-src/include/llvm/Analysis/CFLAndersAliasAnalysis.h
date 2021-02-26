@@ -1,9 +1,8 @@
 //==- CFLAndersAliasAnalysis.h - Unification-based Alias Analysis -*- C++-*-==//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 /// \file
@@ -42,7 +41,8 @@ class CFLAndersAAResult : public AAResultBase<CFLAndersAAResult> {
   class FunctionInfo;
 
 public:
-  explicit CFLAndersAAResult(const TargetLibraryInfo &TLI);
+  explicit CFLAndersAAResult(
+      std::function<const TargetLibraryInfo &(Function &F)> GetTLI);
   CFLAndersAAResult(CFLAndersAAResult &&RHS);
   ~CFLAndersAAResult();
 
@@ -61,7 +61,8 @@ public:
   const cflaa::AliasSummary *getAliasSummary(const Function &);
 
   AliasResult query(const MemoryLocation &, const MemoryLocation &);
-  AliasResult alias(const MemoryLocation &, const MemoryLocation &);
+  AliasResult alias(const MemoryLocation &, const MemoryLocation &,
+                    AAQueryInfo &);
 
 private:
   /// Ensures that the given function is available in the cache.
@@ -74,7 +75,7 @@ private:
   /// Build summary for a given function
   FunctionInfo buildInfoFrom(const Function &);
 
-  const TargetLibraryInfo &TLI;
+  std::function<const TargetLibraryInfo &(Function &F)> GetTLI;
 
   /// Cached mapping of Functions to their StratifiedSets.
   /// If a function's sets are currently being built, it is marked

@@ -1,9 +1,8 @@
 //===- AArch64Disassembler.cpp - Disassembler for AArch64 -----------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -14,6 +13,7 @@
 #include "AArch64ExternalSymbolizer.h"
 #include "MCTargetDesc/AArch64AddressingModes.h"
 #include "MCTargetDesc/AArch64MCTargetDesc.h"
+#include "TargetInfo/AArch64TargetInfo.h"
 #include "Utils/AArch64BaseInfo.h"
 #include "llvm-c/Disassembler.h"
 #include "llvm/MC/MCDisassembler/MCRelocationInfo.h"
@@ -146,6 +146,9 @@ static DecodeStatus DecodeExclusiveLdStInstruction(MCInst &Inst, uint32_t insn,
 static DecodeStatus DecodePairLdStInstruction(MCInst &Inst, uint32_t insn,
                                               uint64_t Address,
                                               const void *Decoder);
+static DecodeStatus DecodeAuthLoadInstruction(MCInst &Inst, uint32_t insn,
+                                              uint64_t Address,
+                                              const void *Decoder);
 static DecodeStatus DecodeAddSubERegInstruction(MCInst &Inst, uint32_t insn,
                                                 uint64_t Address,
                                                 const void *Decoder);
@@ -220,11 +223,6 @@ static DecodeStatus DecodeImm8OptLsl(MCInst &Inst, unsigned Imm,
 static DecodeStatus DecodeSVEIncDecImm(MCInst &Inst, unsigned Imm,
                                        uint64_t Addr, const void *Decoder);
 
-static DecodeStatus DecodeLoadAllocTagArrayInstruction(MCInst &Inst,
-                                                       uint32_t insn,
-                                                       uint64_t address,
-                                                       const void* Decoder);
-
 static bool Check(DecodeStatus &Out, DecodeStatus In) {
   switch (In) {
     case MCDisassembler::Success:
@@ -256,7 +254,6 @@ static MCDisassembler *createAArch64Disassembler(const Target &T,
 DecodeStatus AArch64Disassembler::getInstruction(MCInst &MI, uint64_t &Size,
                                                  ArrayRef<uint8_t> Bytes,
                                                  uint64_t Address,
-                                                 raw_ostream &OS,
                                                  raw_ostream &CS) const {
   CommentStream = &CS;
 
@@ -283,7 +280,7 @@ createAArch64ExternalSymbolizer(const Triple &TT, LLVMOpInfoCallback GetOpInfo,
                                        SymbolLookUp, DisInfo);
 }
 
-extern "C" void LLVMInitializeAArch64Disassembler() {
+extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeAArch64Disassembler() {
   TargetRegistry::RegisterMCDisassembler(getTheAArch64leTarget(),
                                          createAArch64Disassembler);
   TargetRegistry::RegisterMCDisassembler(getTheAArch64beTarget(),
@@ -292,10 +289,18 @@ extern "C" void LLVMInitializeAArch64Disassembler() {
                                        createAArch64ExternalSymbolizer);
   TargetRegistry::RegisterMCSymbolizer(getTheAArch64beTarget(),
                                        createAArch64ExternalSymbolizer);
+  TargetRegistry::RegisterMCDisassembler(getTheAArch64_32Target(),
+                                         createAArch64Disassembler);
+  TargetRegistry::RegisterMCSymbolizer(getTheAArch64_32Target(),
+                                       createAArch64ExternalSymbolizer);
 
   TargetRegistry::RegisterMCDisassembler(getTheARM64Target(),
                                          createAArch64Disassembler);
   TargetRegistry::RegisterMCSymbolizer(getTheARM64Target(),
+                                       createAArch64ExternalSymbolizer);
+  TargetRegistry::RegisterMCDisassembler(getTheARM64_32Target(),
+                                         createAArch64Disassembler);
+  TargetRegistry::RegisterMCSymbolizer(getTheARM64_32Target(),
                                        createAArch64ExternalSymbolizer);
 }
 
@@ -1499,6 +1504,39 @@ static DecodeStatus DecodePairLdStInstruction(MCInst &Inst, uint32_t insn,
   return Success;
 }
 
+static DecodeStatus DecodeAuthLoadInstruction(MCInst &Inst, uint32_t insn,
+                                              uint64_t Addr,
+                                              const void *Decoder) {
+  unsigned Rt = fieldFromInstruction(insn, 0, 5);
+  unsigned Rn = fieldFromInstruction(insn, 5, 5);
+  uint64_t offset = fieldFromInstruction(insn, 22, 1) << 9 |
+                    fieldFromInstruction(insn, 12, 9);
+  unsigned writeback = fieldFromInstruction(insn, 11, 1);
+
+  switch (Inst.getOpcode()) {
+  default:
+    return Fail;
+  case AArch64::LDRAAwriteback:
+  case AArch64::LDRABwriteback:
+    DecodeGPR64spRegisterClass(Inst, Rn /* writeback register */, Addr,
+                               Decoder);
+    break;
+  case AArch64::LDRAAindexed:
+  case AArch64::LDRABindexed:
+    break;
+  }
+
+  DecodeGPR64RegisterClass(Inst, Rt, Addr, Decoder);
+  DecodeGPR64spRegisterClass(Inst, Rn, Addr, Decoder);
+  DecodeSImm<10>(Inst, offset, Addr, Decoder);
+
+  if (writeback && Rt == Rn && Rn != 31) {
+    return SoftFail;
+  }
+
+  return Success;
+}
+
 static DecodeStatus DecodeAddSubERegInstruction(MCInst &Inst, uint32_t insn,
                                                 uint64_t Addr,
                                                 const void *Decoder) {
@@ -1619,7 +1657,7 @@ static DecodeStatus DecodeModImmInstruction(MCInst &Inst, uint32_t insn,
   case AArch64::MOVIv4s_msl:
   case AArch64::MVNIv2s_msl:
   case AArch64::MVNIv4s_msl:
-    Inst.addOperand(MCOperand::createImm(cmode & 1 ? 0x110 : 0x108));
+    Inst.addOperand(MCOperand::createImm((cmode & 1) ? 0x110 : 0x108));
     break;
   }
 
@@ -1851,26 +1889,4 @@ static DecodeStatus DecodeSVEIncDecImm(MCInst &Inst, unsigned Imm,
                                        uint64_t Addr, const void *Decoder) {
   Inst.addOperand(MCOperand::createImm(Imm + 1));
   return Success;
-}
-
-static DecodeStatus DecodeLoadAllocTagArrayInstruction(MCInst &Inst,
-                                                       uint32_t insn,
-                                                       uint64_t address,
-                                                       const void* Decoder) {
-  unsigned Rn = fieldFromInstruction(insn, 5, 5);
-  unsigned Rt = fieldFromInstruction(insn, 0, 5);
-
-  // Outputs
-  DecodeGPR64spRegisterClass(Inst, Rn, address, Decoder);
-  DecodeGPR64RegisterClass(Inst, Rt, address, Decoder);
-
-  // Input (Rn again)
-  Inst.addOperand(Inst.getOperand(0));
-
-  //Do this post decode since the raw number for xzr and sp is the same
-  if (Inst.getOperand(0).getReg() == Inst.getOperand(1).getReg()) {
-    return SoftFail;
-  } else {
-    return Success;
-  }
 }

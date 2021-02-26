@@ -1,0 +1,6 @@
+in cgFun
+R1.reqFun(66: int(64))
+in IFC.dfltImpl
+in cgFun
+R2(hello).reqFun(world: string)
+in IFC.dfltImpl

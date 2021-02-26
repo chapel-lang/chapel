@@ -1,9 +1,8 @@
 //===- BlockFrequencyInfo.cpp - Block Frequency Analysis ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -21,6 +20,7 @@
 #include "llvm/IR/CFG.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/InitializePasses.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/GraphWriter.h"
@@ -98,7 +98,7 @@ static GVDAGType getGVDT() {
 template <>
 struct GraphTraits<BlockFrequencyInfo *> {
   using NodeRef = const BasicBlock *;
-  using ChildIteratorType = succ_const_iterator;
+  using ChildIteratorType = const_succ_iterator;
   using nodes_iterator = pointer_iterator<Function::const_iterator>;
 
   static NodeRef getEntryNode(const BlockFrequencyInfo *G) {
@@ -204,11 +204,12 @@ BlockFrequency BlockFrequencyInfo::getBlockFreq(const BasicBlock *BB) const {
 }
 
 Optional<uint64_t>
-BlockFrequencyInfo::getBlockProfileCount(const BasicBlock *BB) const {
+BlockFrequencyInfo::getBlockProfileCount(const BasicBlock *BB,
+                                         bool AllowSynthetic) const {
   if (!BFI)
     return None;
 
-  return BFI->getBlockProfileCount(*getFunction(), BB);
+  return BFI->getBlockProfileCount(*getFunction(), BB, AllowSynthetic);
 }
 
 Optional<uint64_t>
@@ -284,6 +285,11 @@ void BlockFrequencyInfo::releaseMemory() { BFI.reset(); }
 void BlockFrequencyInfo::print(raw_ostream &OS) const {
   if (BFI)
     BFI->print(OS);
+}
+
+void BlockFrequencyInfo::verifyMatch(BlockFrequencyInfo &Other) const {
+  if (BFI)
+    BFI->verifyMatch(*Other.BFI);
 }
 
 INITIALIZE_PASS_BEGIN(BlockFrequencyInfoWrapperPass, "block-freq",

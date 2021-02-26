@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -23,6 +23,10 @@
 
 #include "chpltypes.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define CHPL_FILE_IDX_INTERNAL 1 // <internal>
 
 #define CHPL_FILE_IDX_COMMAND_LINE -1     // (command-line)
@@ -44,5 +48,9 @@
 void chpl_saveFilename(const char *filename);
 
 c_string chpl_lookupFilename(const int32_t idx);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // _chpl_linefile_support_h_

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -24,6 +24,10 @@
 #include "chpltypes.h" // for c_string
 
 #include <stdint.h> // for int32_t
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 //
 // defined in arg.c
@@ -53,5 +57,10 @@ int handleNonstandardArg(int* argc, char* argv[], int argNum,
 void printAdditionalHelp(void);
 
 void printHelpTable(void);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

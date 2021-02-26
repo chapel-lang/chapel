@@ -11,7 +11,6 @@ Major Platforms
 
    macosx
    cray
-   knl
    cygwin
    aws
 

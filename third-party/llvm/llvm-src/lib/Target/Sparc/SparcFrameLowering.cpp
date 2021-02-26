@@ -1,9 +1,8 @@
 //===-- SparcFrameLowering.cpp - Sparc Frame Information ------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -35,7 +34,8 @@ DisableLeafProc("disable-sparc-leaf-proc",
 
 SparcFrameLowering::SparcFrameLowering(const SparcSubtarget &ST)
     : TargetFrameLowering(TargetFrameLowering::StackGrowsDown,
-                          ST.is64Bit() ? 16 : 8, 0, ST.is64Bit() ? 16 : 8) {}
+                          ST.is64Bit() ? Align(16) : Align(8), 0,
+                          ST.is64Bit() ? Align(16) : Align(8)) {}
 
 void SparcFrameLowering::emitSPAdjustment(MachineFunction &MF,
                                           MachineBasicBlock &MBB,
@@ -104,7 +104,7 @@ void SparcFrameLowering::emitPrologue(MachineFunction &MF,
   // rather than reporting an error, as would be sensible. This is
   // poor, but fixing that bogosity is going to be a large project.
   // For now, just see if it's lied, and report an error here.
-  if (!NeedsStackRealignment && MFI.getMaxAlignment() > getStackAlignment())
+  if (!NeedsStackRealignment && MFI.getMaxAlign() > getStackAlign())
     report_fatal_error("Function \"" + Twine(MF.getName()) + "\" required "
                        "stack re-alignment, but LLVM couldn't handle it "
                        "(probably because it has a dynamic alloca).");
@@ -146,9 +146,7 @@ void SparcFrameLowering::emitPrologue(MachineFunction &MF,
 
   // Finally, ensure that the size is sufficiently aligned for the
   // data on the stack.
-  if (MFI.getMaxAlignment() > 0) {
-    NumBytes = alignTo(NumBytes, MFI.getMaxAlignment());
-  }
+  NumBytes = alignTo(NumBytes, MFI.getMaxAlign());
 
   // Update stack size with corrected value.
   MFI.setStackSize(NumBytes);
@@ -189,9 +187,10 @@ void SparcFrameLowering::emitPrologue(MachineFunction &MF,
       regUnbiased = SP::O6;
 
     // andn %regUnbiased, MaxAlign-1, %regUnbiased
-    int MaxAlign = MFI.getMaxAlignment();
+    Align MaxAlign = MFI.getMaxAlign();
     BuildMI(MBB, MBBI, dl, TII.get(SP::ANDNri), regUnbiased)
-      .addReg(regUnbiased).addImm(MaxAlign - 1);
+        .addReg(regUnbiased)
+        .addImm(MaxAlign.value() - 1U);
 
     if (Bias) {
       // add %g1, -BIAS, %o6
@@ -258,9 +257,9 @@ bool SparcFrameLowering::hasFP(const MachineFunction &MF) const {
       MFI.isFrameAddressTaken();
 }
 
-
-int SparcFrameLowering::getFrameIndexReference(const MachineFunction &MF, int FI,
-                                               unsigned &FrameReg) const {
+int SparcFrameLowering::getFrameIndexReference(const MachineFunction &MF,
+                                               int FI,
+                                               Register &FrameReg) const {
   const SparcSubtarget &Subtarget = MF.getSubtarget<SparcSubtarget>();
   const MachineFrameInfo &MFI = MF.getFrameInfo();
   const SparcRegisterInfo *RegInfo = Subtarget.getRegisterInfo();

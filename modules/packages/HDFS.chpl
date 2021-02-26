@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -39,8 +39,8 @@ connecting to an HDFS name node.
 
   import HDFS;
 
-  fs = HDFS.connect(); // can pass a nameNode host and port here,
-                       // otherwise uses HDFS default settings.
+  var fs = HDFS.connect(); // can pass a nameNode host and port here,
+                           // otherwise uses HDFS default settings.
 
 The filesystem connection will be closed when `fs` and any files
 it refers to go out of scope.
@@ -125,7 +125,7 @@ HDFS Support Types and Functions
  */
 module HDFS {
 
-  use IO, SysBasic, SysError;
+  use IO, SysBasic, SysError, Sys, CPtr;
   public use SysCTypes;
 
   require "hdfs.h";

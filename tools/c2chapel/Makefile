@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -33,6 +33,8 @@ include $(CHPL_MAKE_HOME)/third-party/chpl-venv/Makefile.include
 bdir=$(CHPL_BIN_DIR)
 link=$(bdir)/c2chapel
 
+# Note, this version is used only for the fake headers,
+# but it should probably match third-party/chpl-venv/c2chapel-requirements.txt
 VERSION=2.17
 TAR=release_v$(VERSION).tar.gz
 
@@ -45,41 +47,23 @@ VENV_DIR=$(INSTALL)/venv
 
 FAKES=$(INSTALL)/fakeHeaders
 
-VIRTUAL_ENV=$(shell which virtualenv)
-THIRD_PARTY_VENV=$(CHPL_VENV_DIR)/$(CHPL_VENV_VIRTUALENV)
+.PHONY: clean clobber c2chapel c2chapel-venv install venv
 
-.PHONY: clean clobber c2chapel install venv
+all: c2chapel install
 
-all: c2chapel
+c2chapel-venv:
+	cd ../../third-party && $(MAKE) c2chapel-venv
 
-venv:
-ifneq ($(wildcard $(VIRTUAL_ENV)),)
-	$(info Using system virtualenv)
-else ifneq ($(wildcard $(THIRD_PARTY_VENV)),)
-	$(eval VIRTUAL_ENV=PYTHONPATH=$(PIPLIBS) && $(THIRD_PARTY_VENV))
-	# Add warning suppression flags
-	$(eval VENV_PIP_FLAGS=--no-warn-conflicts --no-warn-script-location)
-	$(info Using chpl-venv virtualenv ($(VIRTUAL_ENV)))
-else
-	$(error Unable to find virtualenv. Either install virtualenv yourself \
-  or 'make test-venv' from $$CHPL_HOME)
-endif
+c2chapel: c2chapel-venv $(FAKES)
 
-c2chapel: venv
-	mkdir -p $(VENV_DIR)
+$(FAKES):
 	mkdir -p $(FAKES)
 	cd $(INSTALL) && \
-	echo "Fetching release $(VERSION) tarball..." && \
+	echo "Fetching pycparser release $(VERSION) tarball for fake headers..." && \
 	wget $(RELEASE) -O $(TAR) && \
 	tar xzf $(TAR) -C $(FAKES) --strip 3 pycparser-release_v$(VERSION)/utils/fake_libc_include
 
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
-
-	$(VIRTUAL_ENV) $(VENV_DIR)
-
-	. $(VENV_DIR)/bin/activate && \
-	  python $(VENV_DIR)/bin/pip install $(VENV_PIP_FLAGS) $(INSTALL)/$(TAR) && \
-	  python $(VENV_DIR)/bin/pip install $(VENV_PIP_FLAGS) $(CHPL_PIP_INSTALL_PARAMS) argparse
 
 check:
 	cd test && ./tester.sh
@@ -96,7 +80,8 @@ cleanall: clean
 
 clobber: clean
 
-install:
+
+$(link):
 	@echo "Installing c2chapel..."
 ifneq ($(wildcard $(link)),)
 	@echo "Removing old symbolic link..."
@@ -106,3 +91,5 @@ endif
 	@echo "Installing symbolic link..."
 	mkdir -p $(bdir)
 	ln -s $(shell pwd)/c2chapel $(link)
+
+install: c2chapel $(link)

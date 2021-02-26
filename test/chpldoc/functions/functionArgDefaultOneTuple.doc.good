@@ -1,0 +1,25 @@
+.. default-domain:: chpl
+
+.. module:: functionArgDefaultOneTuple.doc
+
+functionArgDefaultOneTuple.doc
+==============================
+**Usage**
+
+.. code-block:: chapel
+
+   use functionArgDefaultOneTuple.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import functionArgDefaultOneTuple.doc;
+
+.. function:: proc tuple1Default(arg = (x,))
+
+.. function:: proc tuple2Default(arg = (x, y))
+
+.. function:: proc tuple3Default(arg = (x, y, z))
+

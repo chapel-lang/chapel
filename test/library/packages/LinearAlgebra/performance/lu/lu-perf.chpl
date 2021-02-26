@@ -7,14 +7,14 @@ config const m=4,
              iters=10,
              /* Omit timing output */
              correctness=false;
-             
+
 config type eltType = real;
 
 const nbytes = numBytes(eltType);
 
 proc main() {
 
-  const Space = {1..m, 1..m};
+  const Space = {0..<m, 0..<m};
 
   var t: Timer;
 
@@ -49,7 +49,7 @@ proc main() {
   else
     writeln(LU);
 
-  
+
 
   t.clear();
 }

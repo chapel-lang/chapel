@@ -1,1 +1,0 @@
-const.chpl:1: error: const variables specified with noinit must be explicitly initialized.

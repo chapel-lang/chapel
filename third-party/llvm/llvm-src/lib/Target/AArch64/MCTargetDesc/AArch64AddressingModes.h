@@ -1,9 +1,8 @@
 //===- AArch64AddressingModes.h - AArch64 Addressing Modes ------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -764,10 +763,10 @@ static inline bool isSVECpyImm(int64_t Imm) {
   bool IsImm8 = int8_t(Imm) == Imm;
   bool IsImm16 = int16_t(Imm & ~0xff) == Imm;
 
-  if (std::is_same<int8_t, typename std::make_signed<T>::type>::value)
+  if (std::is_same<int8_t, std::make_signed_t<T>>::value)
     return IsImm8 || uint8_t(Imm) == Imm;
 
-  if (std::is_same<int16_t, typename std::make_signed<T>::type>::value)
+  if (std::is_same<int16_t, std::make_signed_t<T>>::value)
     return IsImm8 || IsImm16 || uint16_t(Imm & ~0xff) == Imm;
 
   return IsImm8 || IsImm16;
@@ -776,8 +775,7 @@ static inline bool isSVECpyImm(int64_t Imm) {
 /// Returns true if Imm is valid for ADD/SUB.
 template <typename T>
 static inline bool isSVEAddSubImm(int64_t Imm) {
-  bool IsInt8t =
-      std::is_same<int8_t, typename std::make_signed<T>::type>::value;
+  bool IsInt8t = std::is_same<int8_t, std::make_signed_t<T>>::value;
   return uint8_t(Imm) == Imm || (!IsInt8t && uint16_t(Imm & ~0xff) == Imm);
 }
 

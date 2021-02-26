@@ -1,1 +1,9 @@
-../EXECENV
+# Ensure mason in PATH
+PATH=$CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR:$PATH
+
+# Mason envs
+MASON_HOME=$PWD/mason_search_home
+# Note, this registry should only ever be used by mason update tests
+MASON_REGISTRY=registry|https://github.com/chapel-lang/mason-registry
+MASON_OFFLINE=false
+SPACK_ROOT=$PWD/mason_home/spack

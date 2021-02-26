@@ -14,6 +14,18 @@ function subtest_end() {
   echo "[Finished subtest \"studies/arkouda\" - $elapsed seconds"
 }
 
+function test_start() {
+  subtest_test_name=$1
+  echo "[test: \"$subtest_test_name\"]"
+  SECONDS=0
+}
+
+function test_end() {
+  elapsed=$SECONDS
+  echo "[Elapsed time to compile and execute all versions of \"$subtest_test_name\" - $elapsed.000 seconds]"
+  unset subtest_test_name
+}
+
 function log_error() {
   local msg=$@
   echo "[Error ${msg}]"
@@ -22,6 +34,9 @@ function log_error() {
 function log_fatal_error() {
   local msg=$@
   echo "[Error ${msg}]"
+  if [[ -n $subtest_test_name ]]; then
+    test_end
+  fi
   subtest_end
   exit 0
 }
@@ -29,16 +44,4 @@ function log_fatal_error() {
 function log_success() {
   local msg=$@
   echo "[Success matching ${msg}]"
-}
-
-function test_start() {
-  local tname=$1
-  echo "[test: \"$tname\"]"
-  SECONDS=0
-}
-
-function test_end() {
-  local tname="$1"
-  elapsed=$SECONDS
-  echo "[Elapsed time to compile and execute all versions of \"$tname\" - $elapsed.000 seconds]"
 }

@@ -1,9 +1,8 @@
 //===- StackMaps.cpp ------------------------------------------------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -114,7 +113,7 @@ StackMaps::parseOperand(MachineInstr::const_mop_iterator MOI,
       unsigned Size = DL.getPointerSizeInBits();
       assert((Size % 8) == 0 && "Need pointer size in bytes.");
       Size /= 8;
-      unsigned Reg = (++MOI)->getReg();
+      Register Reg = (++MOI)->getReg();
       int64_t Imm = (++MOI)->getImm();
       Locs.emplace_back(StackMaps::Location::Direct, Size,
                         getDwarfRegNum(Reg, TRI), Imm);
@@ -123,7 +122,7 @@ StackMaps::parseOperand(MachineInstr::const_mop_iterator MOI,
     case StackMaps::IndirectMemRefOp: {
       int64_t Size = (++MOI)->getImm();
       assert(Size > 0 && "Need a valid size for indirect memory locations.");
-      unsigned Reg = (++MOI)->getReg();
+      Register Reg = (++MOI)->getReg();
       int64_t Imm = (++MOI)->getImm();
       Locs.emplace_back(StackMaps::Location::Indirect, Size,
                         getDwarfRegNum(Reg, TRI), Imm);
@@ -149,14 +148,14 @@ StackMaps::parseOperand(MachineInstr::const_mop_iterator MOI,
     if (MOI->isImplicit())
       return ++MOI;
 
-    assert(TargetRegisterInfo::isPhysicalRegister(MOI->getReg()) &&
+    assert(Register::isPhysicalRegister(MOI->getReg()) &&
            "Virtreg operands should have been rewritten before now.");
     const TargetRegisterClass *RC = TRI->getMinimalPhysRegClass(MOI->getReg());
     assert(!MOI->getSubReg() && "Physical subreg still around.");
 
     unsigned Offset = 0;
     unsigned DwarfRegNum = getDwarfRegNum(MOI->getReg(), TRI);
-    unsigned LLVMRegNum = TRI->getLLVMRegNum(DwarfRegNum, false);
+    unsigned LLVMRegNum = *TRI->getLLVMRegNum(DwarfRegNum, false);
     unsigned SubRegIdx = TRI->getSubRegIndex(LLVMRegNum, MOI->getReg());
     if (SubRegIdx)
       Offset = TRI->getSubRegIdxOffset(SubRegIdx);
@@ -261,7 +260,7 @@ StackMaps::parseRegisterLiveOutMask(const uint32_t *Mask) const {
 
   // Create a LiveOutReg for each bit that is set in the register mask.
   for (unsigned Reg = 0, NumRegs = TRI->getNumRegs(); Reg != NumRegs; ++Reg)
-    if ((Mask[Reg / 32] >> Reg % 32) & 1)
+    if ((Mask[Reg / 32] >> (Reg % 32)) & 1)
       LiveOuts.push_back(createLiveOutReg(Reg, TRI));
 
   // We don't need to keep track of a register if its super-register is already
@@ -295,13 +294,12 @@ StackMaps::parseRegisterLiveOutMask(const uint32_t *Mask) const {
   return LiveOuts;
 }
 
-void StackMaps::recordStackMapOpers(const MachineInstr &MI, uint64_t ID,
+void StackMaps::recordStackMapOpers(const MCSymbol &MILabel,
+                                    const MachineInstr &MI, uint64_t ID,
                                     MachineInstr::const_mop_iterator MOI,
                                     MachineInstr::const_mop_iterator MOE,
                                     bool recordResult) {
   MCContext &OutContext = AP.OutStreamer->getContext();
-  MCSymbol *MILabel = OutContext.createTempSymbol();
-  AP.OutStreamer->EmitLabel(MILabel);
 
   LocationVec Locations;
   LiveOutVec LiveOuts;
@@ -341,7 +339,7 @@ void StackMaps::recordStackMapOpers(const MachineInstr &MI, uint64_t ID,
   // Create an expression to calculate the offset of the callsite from function
   // entry.
   const MCExpr *CSOffsetExpr = MCBinaryExpr::createSub(
-      MCSymbolRefExpr::create(MILabel, OutContext),
+      MCSymbolRefExpr::create(&MILabel, OutContext),
       MCSymbolRefExpr::create(AP.CurrentFnSymForSize, OutContext), OutContext);
 
   CSInfos.emplace_back(CSOffsetExpr, ID, std::move(Locations),
@@ -361,22 +359,23 @@ void StackMaps::recordStackMapOpers(const MachineInstr &MI, uint64_t ID,
     FnInfos.insert(std::make_pair(AP.CurrentFnSym, FunctionInfo(FrameSize)));
 }
 
-void StackMaps::recordStackMap(const MachineInstr &MI) {
+void StackMaps::recordStackMap(const MCSymbol &L, const MachineInstr &MI) {
   assert(MI.getOpcode() == TargetOpcode::STACKMAP && "expected stackmap");
 
   StackMapOpers opers(&MI);
   const int64_t ID = MI.getOperand(PatchPointOpers::IDPos).getImm();
-  recordStackMapOpers(MI, ID, std::next(MI.operands_begin(), opers.getVarIdx()),
+  recordStackMapOpers(L, MI, ID, std::next(MI.operands_begin(),
+                                           opers.getVarIdx()),
                       MI.operands_end());
 }
 
-void StackMaps::recordPatchPoint(const MachineInstr &MI) {
+void StackMaps::recordPatchPoint(const MCSymbol &L, const MachineInstr &MI) {
   assert(MI.getOpcode() == TargetOpcode::PATCHPOINT && "expected patchpoint");
 
   PatchPointOpers opers(&MI);
   const int64_t ID = opers.getID();
   auto MOI = std::next(MI.operands_begin(), opers.getStackMapStartIdx());
-  recordStackMapOpers(MI, ID, MOI, MI.operands_end(),
+  recordStackMapOpers(L, MI, ID, MOI, MI.operands_end(),
                       opers.isAnyReg() && opers.hasDef());
 
 #ifndef NDEBUG
@@ -391,14 +390,14 @@ void StackMaps::recordPatchPoint(const MachineInstr &MI) {
 #endif
 }
 
-void StackMaps::recordStatepoint(const MachineInstr &MI) {
+void StackMaps::recordStatepoint(const MCSymbol &L, const MachineInstr &MI) {
   assert(MI.getOpcode() == TargetOpcode::STATEPOINT && "expected statepoint");
 
   StatepointOpers opers(&MI);
   // Record all the deopt and gc operands (they're contiguous and run from the
   // initial index to the end of the operand list)
   const unsigned StartIdx = opers.getVarIdx();
-  recordStackMapOpers(MI, opers.getID(), MI.operands_begin() + StartIdx,
+  recordStackMapOpers(L, MI, opers.getID(), MI.operands_begin() + StartIdx,
                       MI.operands_end(), false);
 }
 
@@ -414,19 +413,19 @@ void StackMaps::recordStatepoint(const MachineInstr &MI) {
 /// uint32 : NumRecords
 void StackMaps::emitStackmapHeader(MCStreamer &OS) {
   // Header.
-  OS.EmitIntValue(StackMapVersion, 1); // Version.
-  OS.EmitIntValue(0, 1);               // Reserved.
-  OS.EmitIntValue(0, 2);               // Reserved.
+  OS.emitIntValue(StackMapVersion, 1); // Version.
+  OS.emitIntValue(0, 1);               // Reserved.
+  OS.emitInt16(0);                     // Reserved.
 
   // Num functions.
   LLVM_DEBUG(dbgs() << WSMP << "#functions = " << FnInfos.size() << '\n');
-  OS.EmitIntValue(FnInfos.size(), 4);
+  OS.emitInt32(FnInfos.size());
   // Num constants.
   LLVM_DEBUG(dbgs() << WSMP << "#constants = " << ConstPool.size() << '\n');
-  OS.EmitIntValue(ConstPool.size(), 4);
+  OS.emitInt32(ConstPool.size());
   // Num callsites.
   LLVM_DEBUG(dbgs() << WSMP << "#callsites = " << CSInfos.size() << '\n');
-  OS.EmitIntValue(CSInfos.size(), 4);
+  OS.emitInt32(CSInfos.size());
 }
 
 /// Emit the function frame record for each function.
@@ -443,9 +442,9 @@ void StackMaps::emitFunctionFrameRecords(MCStreamer &OS) {
     LLVM_DEBUG(dbgs() << WSMP << "function addr: " << FR.first
                       << " frame size: " << FR.second.StackSize
                       << " callsite count: " << FR.second.RecordCount << '\n');
-    OS.EmitSymbolValue(FR.first, 8);
-    OS.EmitIntValue(FR.second.StackSize, 8);
-    OS.EmitIntValue(FR.second.RecordCount, 8);
+    OS.emitSymbolValue(FR.first, 8);
+    OS.emitIntValue(FR.second.StackSize, 8);
+    OS.emitIntValue(FR.second.RecordCount, 8);
   }
 }
 
@@ -457,7 +456,7 @@ void StackMaps::emitConstantPoolEntries(MCStreamer &OS) {
   LLVM_DEBUG(dbgs() << WSMP << "constants:\n");
   for (const auto &ConstEntry : ConstPool) {
     LLVM_DEBUG(dbgs() << WSMP << ConstEntry.second << '\n');
-    OS.EmitIntValue(ConstEntry.second, 8);
+    OS.emitIntValue(ConstEntry.second, 8);
   }
 }
 
@@ -502,46 +501,46 @@ void StackMaps::emitCallsiteEntries(MCStreamer &OS) {
     // simple overflow checks, but we may eventually communicate other
     // compilation errors this way.
     if (CSLocs.size() > UINT16_MAX || LiveOuts.size() > UINT16_MAX) {
-      OS.EmitIntValue(UINT64_MAX, 8); // Invalid ID.
-      OS.EmitValue(CSI.CSOffsetExpr, 4);
-      OS.EmitIntValue(0, 2); // Reserved.
-      OS.EmitIntValue(0, 2); // 0 locations.
-      OS.EmitIntValue(0, 2); // padding.
-      OS.EmitIntValue(0, 2); // 0 live-out registers.
-      OS.EmitIntValue(0, 4); // padding.
+      OS.emitIntValue(UINT64_MAX, 8); // Invalid ID.
+      OS.emitValue(CSI.CSOffsetExpr, 4);
+      OS.emitInt16(0); // Reserved.
+      OS.emitInt16(0); // 0 locations.
+      OS.emitInt16(0); // padding.
+      OS.emitInt16(0); // 0 live-out registers.
+      OS.emitInt32(0); // padding.
       continue;
     }
 
-    OS.EmitIntValue(CSI.ID, 8);
-    OS.EmitValue(CSI.CSOffsetExpr, 4);
+    OS.emitIntValue(CSI.ID, 8);
+    OS.emitValue(CSI.CSOffsetExpr, 4);
 
     // Reserved for flags.
-    OS.EmitIntValue(0, 2);
-    OS.EmitIntValue(CSLocs.size(), 2);
+    OS.emitInt16(0);
+    OS.emitInt16(CSLocs.size());
 
     for (const auto &Loc : CSLocs) {
-      OS.EmitIntValue(Loc.Type, 1);
-      OS.EmitIntValue(0, 1);  // Reserved
-      OS.EmitIntValue(Loc.Size, 2);
-      OS.EmitIntValue(Loc.Reg, 2);
-      OS.EmitIntValue(0, 2);  // Reserved
-      OS.EmitIntValue(Loc.Offset, 4);
+      OS.emitIntValue(Loc.Type, 1);
+      OS.emitIntValue(0, 1);  // Reserved
+      OS.emitInt16(Loc.Size);
+      OS.emitInt16(Loc.Reg);
+      OS.emitInt16(0); // Reserved
+      OS.emitInt32(Loc.Offset);
     }
 
     // Emit alignment to 8 byte.
-    OS.EmitValueToAlignment(8);
+    OS.emitValueToAlignment(8);
 
     // Num live-out registers and padding to align to 4 byte.
-    OS.EmitIntValue(0, 2);
-    OS.EmitIntValue(LiveOuts.size(), 2);
+    OS.emitInt16(0);
+    OS.emitInt16(LiveOuts.size());
 
     for (const auto &LO : LiveOuts) {
-      OS.EmitIntValue(LO.DwarfRegNum, 2);
-      OS.EmitIntValue(0, 1);
-      OS.EmitIntValue(LO.Size, 1);
+      OS.emitInt16(LO.DwarfRegNum);
+      OS.emitIntValue(0, 1);
+      OS.emitIntValue(LO.Size, 1);
     }
     // Emit alignment to 8 byte.
-    OS.EmitValueToAlignment(8);
+    OS.emitValueToAlignment(8);
   }
 }
 
@@ -565,7 +564,7 @@ void StackMaps::serializeToStackMapSection() {
   OS.SwitchSection(StackMapSection);
 
   // Emit a dummy symbol to force section inclusion.
-  OS.EmitLabel(OutContext.getOrCreateSymbol(Twine("__LLVM_StackMaps")));
+  OS.emitLabel(OutContext.getOrCreateSymbol(Twine("__LLVM_StackMaps")));
 
   // Serialize data.
   LLVM_DEBUG(dbgs() << "********** Stack Map Output **********\n");

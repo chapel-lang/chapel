@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -557,8 +557,16 @@ printMemAllocs(chpl_mem_descInt_t description, int64_t threshold,
   }
 
   totalWidth = filenameWidth+numberWidth*4+descWidth+20;
-  for (i = 0; i < totalWidth; i++)
+  const int headerWidth = strlen(" Memory Leaks ");
+  const int leftHeaderWidth = (totalWidth-headerWidth)/2;
+  const int rightHeaderWidth = totalWidth-leftHeaderWidth-headerWidth;
+
+  for (i = 0; i < leftHeaderWidth; i++)
     fprintf(memLogFile, "=");
+  fprintf(memLogFile, "%s", " Memory Leaks ");
+  for (i = 0; i < rightHeaderWidth; i++)
+    fprintf(memLogFile, "=");
+
   fprintf(memLogFile, "\n");
   fprintf(memLogFile, "%-*s%-*s%-*s%-*s%-*s%-*s\n",
          filenameWidth+numberWidth, "Allocated Memory (Bytes)",
@@ -622,16 +630,22 @@ void chpl_reportMemInfo() {
     chpl_printMemAllocStats(0, 0);
   }
   if (memLeaksByType) {
-    fprintf(memLogFile, "\n");
-    printMemAllocsByType(true /* forLeaks */, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      printMemAllocsByType(true /* forLeaks */, 0, 0);
+    }
   }
   if (memLeaksByDesc && strcmp(memLeaksByDesc, "")) {
-    fprintf(memLogFile, "\n");
-    chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      chpl_printMemAllocsByDesc(memLeaksByDesc, memThreshold, 0, 0);
+    }
   }
   if (memLeaks) {
-    fprintf(memLogFile, "\n");
-    printMemAllocs(-1, memThreshold, 0, 0);
+    if (totalMem) {
+      fprintf(memLogFile, "\n");
+      printMemAllocs(-1, memThreshold, 0, 0);
+    }
   }
   if (memLogFile && memLogFile != stdout)
     fclose(memLogFile);

@@ -1,0 +1,1 @@
+usesTypeVar.chpl:2: error: noinit is only supported for arrays

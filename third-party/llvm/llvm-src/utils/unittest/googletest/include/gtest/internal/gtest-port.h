@@ -345,7 +345,7 @@
 #if GTEST_LANG_CXX11 && \
     (!defined(__GLIBCXX__) || ( \
         __GLIBCXX__ >= 20110325ul &&  /* GCC >= 4.6.0 */ \
-        /* Blacklist of patch releases of older branches: */ \
+        /* Exclude patch releases of older branches: */ \
         __GLIBCXX__ != 20110416ul &&  /* GCC 4.4.6 */ \
         __GLIBCXX__ != 20120313ul &&  /* GCC 4.4.7 */ \
         __GLIBCXX__ != 20110428ul &&  /* GCC 4.5.3 */ \
@@ -870,12 +870,12 @@ using ::std::tuple_size;
 // A macro to disallow operator=
 // This should be used in the private: declarations for a class.
 #define GTEST_DISALLOW_ASSIGN_(type)\
-  void operator=(type const &)
+  void operator=(type const &) = delete
 
 // A macro to disallow copy constructor and operator=
 // This should be used in the private: declarations for a class.
 #define GTEST_DISALLOW_COPY_AND_ASSIGN_(type)\
-  type(type const &);\
+  type(type const &) = delete;\
   GTEST_DISALLOW_ASSIGN_(type)
 
 // Tell the compiler to warn about unused return values for functions declared

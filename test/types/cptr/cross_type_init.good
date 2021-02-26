@@ -1,0 +1,1 @@
+cross_type_init.chpl:4: error: cannot initialize 'y' of type 'c_ptr(uint(64))' from a 'c_ptr(int(64))'

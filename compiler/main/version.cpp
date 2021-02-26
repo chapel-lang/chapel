@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -34,14 +34,17 @@
 
 void
 get_version(char *v) {
-  v += sprintf(v, "%d.%s.%s", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
-  if (strcmp(BUILD_VERSION, "0") != 0 || developer)
+  v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
+  if (!officialRelease) {
+    sprintf(v, " pre-release (%s)", BUILD_VERSION);
+  } else if (developer && strcmp(BUILD_VERSION, "0") != 0) {
     sprintf(v, ".%s", BUILD_VERSION);
+  }
 }
 
 void
 get_major_minor_version(char *v) {
-  sprintf(v, "%d.%s", MAJOR_VERSION, MINOR_VERSION);
+  sprintf(v, "%d.%d", MAJOR_VERSION, MINOR_VERSION);
 }
 
 const char*

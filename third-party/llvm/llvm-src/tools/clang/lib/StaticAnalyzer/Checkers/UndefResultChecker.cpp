@@ -1,9 +1,8 @@
 //=== UndefResultChecker.cpp ------------------------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -17,6 +16,7 @@
 #include "clang/StaticAnalyzer/Core/Checker.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/CheckerContext.h"
+#include "clang/StaticAnalyzer/Core/PathSensitive/DynamicSize.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ExprEngine.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/Support/raw_ostream.h"
@@ -51,10 +51,10 @@ static bool isArrayIndexOutOfBounds(CheckerContext &C, const Expr *Ex) {
     return false;
 
   DefinedOrUnknownSVal Idx = ER->getIndex().castAs<DefinedOrUnknownSVal>();
-  DefinedOrUnknownSVal NumElements = C.getStoreManager().getSizeInElements(
-      state, ER->getSuperRegion(), ER->getValueType());
-  ProgramStateRef StInBound = state->assumeInBound(Idx, NumElements, true);
-  ProgramStateRef StOutBound = state->assumeInBound(Idx, NumElements, false);
+  DefinedOrUnknownSVal ElementCount = getDynamicElementCount(
+      state, ER->getSuperRegion(), C.getSValBuilder(), ER->getValueType());
+  ProgramStateRef StInBound = state->assumeInBound(Idx, ElementCount, true);
+  ProgramStateRef StOutBound = state->assumeInBound(Idx, ElementCount, false);
   return StOutBound && !StInBound;
 }
 
@@ -171,7 +171,7 @@ void UndefResultChecker::checkPostStmt(const BinaryOperator *B,
            << "' expression is undefined";
       }
     }
-    auto report = llvm::make_unique<BugReport>(*BT, OS.str(), N);
+    auto report = std::make_unique<PathSensitiveBugReport>(*BT, OS.str(), N);
     if (Ex) {
       report->addRange(Ex->getSourceRange());
       bugreporter::trackExpressionValue(N, Ex, *report);
@@ -185,4 +185,8 @@ void UndefResultChecker::checkPostStmt(const BinaryOperator *B,
 
 void ento::registerUndefResultChecker(CheckerManager &mgr) {
   mgr.registerChecker<UndefResultChecker>();
+}
+
+bool ento::shouldRegisterUndefResultChecker(const CheckerManager &mgr) {
+  return true;
 }

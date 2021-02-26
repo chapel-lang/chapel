@@ -1,0 +1,37 @@
+
+Start analyzing forall (dynamicChecks.chpl:28)
+| Found loop domain (dynamicChecks.chpl:16)
+| Will attempt static and dynamic optimizations (dynamicChecks.chpl:28)
+|
+|  Start analyzing call (dynamicChecks.chpl:29)
+|   Found the domain of the access base (dynamicChecks.chpl:16)
+|   Can optimize: Access base's domain is the iterator (dynamicChecks.chpl:29)
+|  This call is a static optimization candidate (dynamicChecks.chpl:29)
+|
+|  Start analyzing call (dynamicChecks.chpl:29)
+|   Found the domain of the access base (dynamicChecks.chpl:16)
+|   Can optimize: Access base's domain is the iterator (dynamicChecks.chpl:29)
+|  This call is a static optimization candidate (dynamicChecks.chpl:29)
+|
+|  Start analyzing call (dynamicChecks.chpl:30)
+|   Can't determine the domain of access base (dynamicChecks.chpl:20)
+|  This call is a dynamic optimization candidate (dynamicChecks.chpl:30)
+|
+|  Start analyzing call (dynamicChecks.chpl:31)
+|   Found the domain of the access base (dynamicChecks.chpl:15)
+|  This call is a dynamic optimization candidate (dynamicChecks.chpl:31)
+|
+|  Start analyzing call (dynamicChecks.chpl:32)
+|   Can't determine the domain of access base (dynamicChecks.chpl:22)
+|  This call is a dynamic optimization candidate (dynamicChecks.chpl:32)
+|
+End analyzing forall (dynamicChecks.chpl:28)
+
+Static check successful. Using localAccess (dynamicChecks.chpl:29)
+Static check successful. Using localAccess (dynamicChecks.chpl:29)
+Static check successful. Using localAccess with dynamic check (dynamicChecks.chpl:30)
+Static check failed. Reverting optimization (dynamicChecks.chpl:31)
+Static check failed. Reverting optimization (dynamicChecks.chpl:32)
+Static check successful. Using localAccess (dynamicChecks.chpl:29)
+Static check successful. Using localAccess (dynamicChecks.chpl:29)
+6.0 13.0 24.0 39.0 58.0 81.0 108.0 139.0 174.0 213.0

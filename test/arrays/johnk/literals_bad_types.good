@@ -1,1 +1,1 @@
-literals_bad_types.chpl:1: error: Array literal element 2 expected to be of type imag(64) but is of type string
+literals_bad_types.chpl:1: error: Array literal element 1 expected to be of type imag(64) but is of type string

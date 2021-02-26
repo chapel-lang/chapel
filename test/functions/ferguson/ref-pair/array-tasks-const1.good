@@ -4,11 +4,13 @@ note: to formal of type [domain(1,int(64),false)] int(64)
 array-tasks-const1.chpl:57: note: The shadow variable 'A' is constant due to forall intents in this loop
 array-tasks-const1.chpl:51: note: to ref formal here
 array-tasks-const1.chpl:52: note: passed as ref here
+  array-tasks-const1.chpl:84: called as writeCaptureForall(A: [domain(1,int(64),false)] int(64))
 array-tasks-const1.chpl:62: In function 'writeCaptureCoforall':
 array-tasks-const1.chpl:64: error: const actual is passed to 'ref' formal 'x' of writeit()
 note: to formal of type [domain(1,int(64),false)] int(64)
 array-tasks-const1.chpl:51: note: to ref formal here
 array-tasks-const1.chpl:52: note: passed as ref here
+  array-tasks-const1.chpl:85: called as writeCaptureCoforall(A: [domain(1,int(64),false)] int(64))
 array-tasks-const1.chpl:68: In function 'writeCaptureCobegin':
 array-tasks-const1.chpl:70: error: const actual is passed to 'ref' formal 'x' of writeit()
 note: to formal of type [domain(1,int(64),false)] int(64)
@@ -18,8 +20,10 @@ array-tasks-const1.chpl:71: error: const actual is passed to 'ref' formal 'x' of
 note: to formal of type [domain(1,int(64),false)] int(64)
 array-tasks-const1.chpl:51: note: to ref formal here
 array-tasks-const1.chpl:52: note: passed as ref here
+  array-tasks-const1.chpl:86: called as writeCaptureCobegin(A: [domain(1,int(64),false)] int(64))
 array-tasks-const1.chpl:75: In function 'writeCaptureBegin':
 array-tasks-const1.chpl:78: error: const actual is passed to 'ref' formal 'x' of writeit()
 note: to formal of type [domain(1,int(64),false)] int(64)
 array-tasks-const1.chpl:51: note: to ref formal here
 array-tasks-const1.chpl:52: note: passed as ref here
+  array-tasks-const1.chpl:87: called as writeCaptureBegin(A: [domain(1,int(64),false)] int(64))

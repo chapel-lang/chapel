@@ -24,8 +24,8 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
 
     # current list of selected components initially empty
     components=
-    valid_components="compiler,runtime,tools,clean"
-    default_components="compiler,runtime"
+    valid_components="compiler,runtime,venv,mason,clean"
+    default_components="compiler,runtime,venv,mason"
         ## clean is not default; more developer-friendly
         ## tools could be default, except that would makes this example script less portable
 
@@ -166,6 +166,61 @@ if [ -z "$BUILD_CONFIGS_CALLBACK" ]; then
         ;;
     ( * )
         log_info "NO building Chapel component: runtime"
+        ;;
+    esac
+
+    venv_targets="test-venv chpldoc"
+    case ",$components," in
+    ( *,venv,* )
+
+        log_info "Building Chapel component: venv ($venv_targets)"
+
+        log_debug "Checking the system-installed Python"
+
+        # Chapel python-venv tools requires a working internet connection and either:
+        # - modern version of libssl that supports TLS 1.1
+        # - local workarounds such as the variables shown in the "venv" callback, below.
+
+        log_info "Start build_configs $dry_run $verbose -- $venv_targets"
+
+        $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv.log" \
+            --target-compiler=venv -- $venv_targets
+
+        # If we are not using the system-installed python, update
+        # the scripts in chpl-venv to use the system-installed python.
+        findPy=$($CHPL_HOME/util/config/find-python.sh)
+        whichPy=$( which $findPy || : ok )
+        case "$whichPy" in
+        ( /usr/bin/python* )
+            log_info "Found system python $whichPy"
+            ;;
+        ( * )
+            log_info "Found non-system python $whichPy - adjusting paths"
+            # Custom Chapel make target to rm files or links named "python3"
+            # from the installed bin dir, forcing users of the installed
+            # Chapel RPM to get "python3" from the system.
+            use_system_python="-C third-party/chpl-venv use-system-python"
+            $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.venv_py27-use_system_python.log" \
+                --target-compiler=venv -- $use_system_python
+            ;;
+        esac
+        ;;
+    ( * )
+        log_info "NO building Chapel component: venv"
+        ;;
+    esac
+
+    case "$components" in
+    ( *mason* )
+        log_info "Building Chapel component: mason"
+
+        log_info "Start build_configs $dry_run $verbose -- mason"
+
+        $cwd/build_configs.py $dry_run $verbose -s $cwd/$setenv -l "$project.mason.log" \
+            --target-compiler=gnu -- mason
+        ;;
+    ( * )
+        log_info "NO building Chapel component: mason"
         ;;
     esac
 
@@ -312,6 +367,9 @@ else
     ##  export CHPL_PIP_INSTALL_PARAMS="-i http://mirror-pypi.example.com/pypi/simple --trusted-host mirror-pypi.example.com"
     ##  export CHPL_PIP=/data/example/opt/lib/pip/__main__.py
     ##  export CHPL_PYTHONPATH=/data/example/opt/lib
+        ;;
+    ( venv )
+        load_prgenv_gnu
         ;;
     ( gnu )
         load_prgenv_gnu

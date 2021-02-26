@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  * 
@@ -414,11 +414,35 @@ class LocBlockArr {
   param stridable: bool;
   const locDom: unmanaged LocBlockDom(rank, idxType, stridable);
   var locRAD: unmanaged LocRADCache(eltType, rank, idxType, stridable)?; // non-nil if doRADOpt=true
-  pragma "local field" pragma "unsafe" // initialized separately
+  pragma "local field" pragma "unsafe"
+  // may be initialized separately
   var myElems: [locDom.myBlock] eltType;
   var locRADLock: chpl_LocalSpinlock;
 
+  proc init(type eltType,
+            param rank: int,
+            type idxType,
+            param stridable: bool,
+            const locDom: unmanaged LocBlockDom(rank, idxType, stridable),
+            param initElts: bool) {
+    this.eltType = eltType;
+    this.rank = rank;
+    this.idxType = idxType;
+    this.stridable = stridable;
+    this.locDom = locDom;
+    this.myElems = this.locDom.myBlock.buildArray(eltType, initElts=initElts);
+  }
+
+  // guard against dynamic dispatch resolution trying to resolve
+  // write()ing out an array of sync vars and hitting the sync var
+  // type's compilerError()
+  override proc writeThis(f) throws {
+    halt("LocBlockArr.writeThis() is not implemented / should not be needed");
+  }
+
   proc deinit() {
+    // Elements in myElems are deinited in dsiDestroyArr if necessary.
+    // Here we need to clean up the rest of the array.
     if locRAD != nil then
       delete locRAD;
   }
@@ -576,11 +600,13 @@ override proc Block.dsiNewRectangularDom(param rank: int, type idxType,
 
 override proc Block.dsiNewSparseDom(param rank: int, type idxType,
                                     dom: domain) {
-  return new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
+  var ret =  new unmanaged SparseBlockDom(rank=rank, idxType=idxType,
                             sparseLayoutType=sparseLayoutType,
                             stridable=dom.stridable,
                             dist=_to_unmanaged(this), whole=dom._value.whole,
                             parentDom=dom);
+  ret.setup();
+  return ret;
 }
 
 //
@@ -649,6 +675,7 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
+pragma "order independent yielding loops"
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -847,12 +874,12 @@ proc BlockDom.dsiSerialWrite(x) {
 //
 // how to allocate a new array over this domain
 //
-proc BlockDom.dsiBuildArray(type eltType) {
+proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
   const creationLocale = here.id;
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, stridable);
   const dummyLBA = new unmanaged LocBlockArr(eltType, rank, idxType,
-                                             stridable, dummyLBD);
+                                             stridable, dummyLBD, false);
   var locArrTemp: [dom.dist.targetLocDom]
         unmanaged LocBlockArr(eltType, rank, idxType, stridable) = dummyLBA;
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
@@ -861,7 +888,8 @@ proc BlockDom.dsiBuildArray(type eltType) {
   coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
-                                            dom.getLocDom(localeIdx));
+                                            dom.getLocDom(localeIdx),
+                                            initElts=initElts);
       locArrTemp(localeIdx) = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
@@ -973,6 +1001,14 @@ override proc BlockArr.dsiDisplayRepresentation() {
 
 override proc BlockArr.dsiGetBaseDom() return dom;
 
+override proc BlockArr.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
+override proc BlockDom.dsiIteratorYieldsLocalElements() param {
+  return true;
+}
+
 //
 // NOTE: Each locale's myElems array must be initialized prior to
 // setting up the RAD cache.
@@ -997,10 +1033,30 @@ proc BlockArr.setupRADOpt() {
   }
 }
 
-override proc BlockArr.dsiDestroyArr() {
+override proc BlockArr.dsiElementInitializationComplete() {
   coforall localeIdx in dom.dist.targetLocDom {
     on locArr(localeIdx) {
-      delete locArr(localeIdx);
+      locArr(localeIdx).myElems.dsiElementInitializationComplete();
+    }
+  }
+}
+
+override proc BlockArr.dsiElementDeinitializationComplete() {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      locArr(localeIdx).myElems.dsiElementDeinitializationComplete();
+    }
+  }
+}
+
+override proc BlockArr.dsiDestroyArr(deinitElts:bool) {
+  coforall localeIdx in dom.dist.targetLocDom {
+    on locArr(localeIdx) {
+      var arr = locArr(localeIdx);
+      if deinitElts then
+        _deinitElements(arr.myElems);
+      arr.myElems.dsiElementDeinitializationComplete();
+      delete arr;
     }
   }
 }
@@ -1019,8 +1075,9 @@ inline proc BlockArr.dsiLocalAccess(i: rank*idxType) ref {
 //
 inline proc BlockArr.dsiAccess(const in idx: rank*idxType) ref {
   local {
-    if myLocArr != nil && _to_nonnil(myLocArr).locDom.contains(idx) then
-      return _to_nonnil(myLocArr).this(idx);
+    if const myLocArrNN = myLocArr then
+      if myLocArrNN.locDom.contains(idx) then
+        return myLocArrNN.this(idx);
   }
   return nonLocalAccess(idx);
 }
@@ -1032,8 +1089,7 @@ inline proc BlockArr.dsiBoundsCheck(i: rank*idxType) {
 pragma "fn unordered safe"
 proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
   if doRADOpt {
-    if this.myLocArr {
-      const myLocArr = _to_nonnil(this.myLocArr);
+    if const myLocArr = this.myLocArr {
       var rlocIdx = dom.dist.targetLocsIdx(i);
       if !disableBlockLazyRAD {
         if myLocArr.locRAD == nil {
@@ -1069,6 +1125,7 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
 proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
+pragma "order independent yielding loops"
 iter BlockArr.these() ref {
   for i in dom do
     yield dsiAccess(i);
@@ -1105,6 +1162,7 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
+pragma "order independent yielding loops"
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1150,6 +1208,7 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       arrSection = _to_nonnil(myLocArr);
 
     local {
+      use CPtr; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
       for i in myFollowThisDom do yield myElems[i];
@@ -1250,6 +1309,9 @@ inline proc LocBlockArr.this(i) ref {
   return myElems(i);
 }
 
+override proc BlockDom.dsiSupportsAutoLocalAccess() param {
+  return true;
+}
 
 ///// Privatization and serialization ///////////////////////////////////////
 
@@ -1388,15 +1450,15 @@ proc BlockArr.dsiPrivatize(privatizeData) {
 
 ////// more /////////////////////////////////////////////////////////////////
 
-proc BlockArr.dsiTargetLocales() {
+proc BlockArr.dsiTargetLocales() const ref {
   return dom.dist.targetLocales;
 }
 
-proc BlockDom.dsiTargetLocales() {
+proc BlockDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
 
-proc Block.dsiTargetLocales() {
+proc Block.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1417,8 +1479,8 @@ proc BlockDom.dsiHasSingleLocalSubdomain() param return true;
 proc BlockArr.dsiLocalSubdomain(loc: locale) {
   if (loc == here) {
     // quick solution if we have a local array
-    if myLocArr != nil then
-      return _to_nonnil(myLocArr).locDom.myBlock;
+    if const myLocArrNN = myLocArr then
+      return myLocArrNN.locDom.myBlock;
     // if not, we must not own anything
     var d: domain(rank, idxType, stridable);
     return d;
@@ -1483,6 +1545,69 @@ where this.sparseLayoutType == unmanaged DefaultDist &&
       !disableBlockDistBulkTransfer {
   _doSimpleBlockTransfer(this, destDom, srcClass, srcDom);
   return true;
+}
+
+proc BlockArr.canDoOptimizedSwap(other) {
+  var domsMatch = true;
+
+  if this.dom != other.dom { // no need to check if this is true
+    if domsMatch {
+      for param i in 0..this.dom.rank-1 {
+        if this.dom.whole.dim(i) != other.dom.whole.dim(i) {
+          domsMatch = false;
+        }
+      }
+    }
+  }
+
+  if domsMatch {
+    // distributions must be equal, too
+    return this.dom.dist.dsiEqualDMaps(other.dom.dist);
+  }
+  return false;
+}
+
+// A helper routine that will perform a pointer swap on an array
+// instead of doing a deep copy of that array. Returns true
+// if used the optimized swap, false otherwise
+//
+// TODO: stridability causes issues with RAD swap, and somehow isn't captured by
+// the formal type when we check whether this resolves.
+proc BlockArr.doiOptimizedSwap(other: this.type)  
+  where this.stridable == other.stridable {
+
+  if(canDoOptimizedSwap(other)) {
+    if debugOptimizedSwap {
+      writeln("BlockArr doing optimized swap. Domains: ", 
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    coforall (locarr1, locarr2) in zip(this.locArr, other.locArr) {
+      on locarr1 {
+        locarr1.myElems <=> locarr2.myElems;
+        locarr1.locRAD <=> locarr2.locRAD;
+      }
+    }
+    return true;
+  } else {
+    if debugOptimizedSwap {
+      writeln("BlockArr doing unoptimized swap. Domains: ", 
+              this.dom.whole, " ", other.dom.whole, " Bounding boxes: ",
+              this.dom.dist.boundingBox, " ", other.dom.dist.boundingBox);
+    }
+    return false;
+  }
+}
+
+
+// The purpose of this overload is to provide debugging output in the event that
+// debugOptimizedSwap is on and the main routine doesn't resolve (e.g., due to a
+// type, stridability, or rank mismatch in the other argument). When
+// debugOptimizedSwap is off, this overload will be ignored due to its where
+// clause.
+proc BlockArr.doiOptimizedSwap(other) where debugOptimizedSwap {
+  writeln("BlockArr doing unoptimized swap. Type mismatch");
+  return false;
 }
 
 private proc _doSimpleBlockTransfer(Dest, destDom, Src, srcDom) {
@@ -1607,14 +1732,14 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
 
   // The result of this scan, which will be Block-distributed as well
   type resType = op.generate().type;
-  var res: [dom] resType;
+  var res = dom.buildArray(resType, initElts=!isPOD(resType));
 
   // Store one element per locale in order to track our local total
   // for a cross-locale scan as well as flags to negotiate reading and
   // writing it.  This domain really wants an easier way to express
   // it...
   use ReplicatedDist;
-  ref targetLocs = this.dsiTargetLocales();
+  const ref targetLocs = this.dsiTargetLocales();
   const elemPerLocDom = {1..1} dmapped Replicated(targetLocs);
   var elemPerLoc: [elemPerLocDom] resType;
   var inputReady$: [elemPerLocDom] sync bool;
@@ -1683,6 +1808,7 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
       delete myop;
     }
   }
+  if isPOD(resType) then res.dsiElementInitializationComplete();
 
   delete op;
   return res;

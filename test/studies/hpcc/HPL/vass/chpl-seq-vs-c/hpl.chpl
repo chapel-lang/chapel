@@ -2,7 +2,7 @@
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use Norm, Time;
+use LinearAlgebra, Time;
 
 // compile with stdlib.h
 extern proc rand(): int;

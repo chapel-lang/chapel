@@ -17,7 +17,6 @@ Public License for more details.
 You should have received a copy of the GNU General Public License along with
 the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 
-#include "gmp.h"
 #include "gmpxx.h"
 #include "gmp-impl.h"
 #include "tests.h"
@@ -50,7 +49,7 @@ check_randinit (void)
       unsigned long m2exp = ULONG_MAX;
       gmp_randclass r(gmp_randinit_lc_2exp_size, m2exp);
       ASSERT_ALWAYS (0);  /* should not be reached */
-    } catch (length_error) {
+    } catch (length_error&) {
     }
   }
 

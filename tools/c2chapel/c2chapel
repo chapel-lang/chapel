@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 
 #
-# Copyright 2020 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -20,8 +20,11 @@
 # limitations under the License.
 #
 
-PREFIX=$CHPL_HOME/tools/c2chapel
+if [ -z "$CHPL_HOME" ]; then
+  echo "Error: CHPL_HOME is not set"
+  exit 1
+fi
 
-. ${PREFIX}/install/venv/bin/activate
+exec $CHPL_HOME/util/config/run-in-venv.bash \
+     $CHPL_HOME/tools/c2chapel/c2chapel.py "$@"
 
-exec ${PREFIX}/c2chapel.py "${@}"

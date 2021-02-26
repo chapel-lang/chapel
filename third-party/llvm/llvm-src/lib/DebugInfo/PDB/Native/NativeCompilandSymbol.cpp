@@ -1,9 +1,8 @@
 //===- NativeCompilandSymbol.cpp - Native impl for compilands ---*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 
@@ -50,11 +49,11 @@ SymIndexId NativeCompilandSymbol::getLexicalParentId() const { return 0; }
 // this potential confusion.
 
 std::string NativeCompilandSymbol::getLibraryName() const {
-  return Module.getObjFileName();
+  return std::string(Module.getObjFileName());
 }
 
 std::string NativeCompilandSymbol::getName() const {
-  return Module.getModuleName();
+  return std::string(Module.getModuleName());
 }
 
 } // namespace pdb

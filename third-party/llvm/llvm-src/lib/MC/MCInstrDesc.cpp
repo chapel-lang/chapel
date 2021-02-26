@@ -1,9 +1,8 @@
 //===------ llvm/MC/MCInstrDesc.cpp- Instruction Descriptors --------------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -19,17 +18,6 @@
 
 using namespace llvm;
 
-bool MCInstrDesc::getDeprecatedInfo(MCInst &MI, const MCSubtargetInfo &STI,
-                                    std::string &Info) const {
-  if (ComplexDeprecationInfo)
-    return ComplexDeprecationInfo(MI, STI, Info);
-  if (DeprecatedFeature != -1 && STI.getFeatureBits()[DeprecatedFeature]) {
-    // FIXME: it would be nice to include the subtarget feature here.
-    Info = "deprecated";
-    return true;
-  }
-  return false;
-}
 bool MCInstrDesc::mayAffectControlFlow(const MCInst &MI,
                                        const MCRegisterInfo &RI) const {
   if (isBranch() || isCall() || isReturn() || isIndirectBranch())

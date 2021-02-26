@@ -1,9 +1,8 @@
 //===- Parser.cpp - Main dispatch module for the Parser library -----------===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -18,44 +17,50 @@
 #include "llvm/IR/ModuleSummaryIndex.h"
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/SourceMgr.h"
-#include "llvm/Support/raw_ostream.h"
 #include <cstring>
 #include <system_error>
+
 using namespace llvm;
 
-bool llvm::parseAssemblyInto(MemoryBufferRef F, Module *M,
-                             ModuleSummaryIndex *Index, SMDiagnostic &Err,
-                             SlotMapping *Slots, bool UpgradeDebugInfo,
-                             StringRef DataLayoutString) {
+static bool parseAssemblyInto(MemoryBufferRef F, Module *M,
+                              ModuleSummaryIndex *Index, SMDiagnostic &Err,
+                              SlotMapping *Slots, bool UpgradeDebugInfo,
+                              DataLayoutCallbackTy DataLayoutCallback) {
   SourceMgr SM;
   std::unique_ptr<MemoryBuffer> Buf = MemoryBuffer::getMemBuffer(F);
   SM.AddNewSourceBuffer(std::move(Buf), SMLoc());
 
   LLVMContext Context;
   return LLParser(F.getBuffer(), SM, Err, M, Index,
-                  M ? M->getContext() : Context, Slots, UpgradeDebugInfo,
-                  DataLayoutString)
-      .Run();
+                  M ? M->getContext() : Context, Slots)
+      .Run(UpgradeDebugInfo, DataLayoutCallback);
+}
+
+bool llvm::parseAssemblyInto(MemoryBufferRef F, Module *M,
+                             ModuleSummaryIndex *Index, SMDiagnostic &Err,
+                             SlotMapping *Slots,
+                             DataLayoutCallbackTy DataLayoutCallback) {
+  return ::parseAssemblyInto(F, M, Index, Err, Slots,
+                             /*UpgradeDebugInfo*/ true, DataLayoutCallback);
 }
 
 std::unique_ptr<Module>
 llvm::parseAssembly(MemoryBufferRef F, SMDiagnostic &Err, LLVMContext &Context,
-                    SlotMapping *Slots, bool UpgradeDebugInfo,
-                    StringRef DataLayoutString) {
+                    SlotMapping *Slots,
+                    DataLayoutCallbackTy DataLayoutCallback) {
   std::unique_ptr<Module> M =
-      make_unique<Module>(F.getBufferIdentifier(), Context);
+      std::make_unique<Module>(F.getBufferIdentifier(), Context);
 
-  if (parseAssemblyInto(F, M.get(), nullptr, Err, Slots, UpgradeDebugInfo,
-                        DataLayoutString))
+  if (parseAssemblyInto(F, M.get(), nullptr, Err, Slots, DataLayoutCallback))
     return nullptr;
 
   return M;
 }
 
-std::unique_ptr<Module>
-llvm::parseAssemblyFile(StringRef Filename, SMDiagnostic &Err,
-                        LLVMContext &Context, SlotMapping *Slots,
-                        bool UpgradeDebugInfo, StringRef DataLayoutString) {
+std::unique_ptr<Module> llvm::parseAssemblyFile(StringRef Filename,
+                                                SMDiagnostic &Err,
+                                                LLVMContext &Context,
+                                                SlotMapping *Slots) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr =
       MemoryBuffer::getFileOrSTDIN(Filename);
   if (std::error_code EC = FileOrErr.getError()) {
@@ -64,28 +69,40 @@ llvm::parseAssemblyFile(StringRef Filename, SMDiagnostic &Err,
     return nullptr;
   }
 
-  return parseAssembly(FileOrErr.get()->getMemBufferRef(), Err, Context, Slots,
-                       UpgradeDebugInfo, DataLayoutString);
+  return parseAssembly(FileOrErr.get()->getMemBufferRef(), Err, Context, Slots);
 }
 
-ParsedModuleAndIndex llvm::parseAssemblyWithIndex(
-    MemoryBufferRef F, SMDiagnostic &Err, LLVMContext &Context,
-    SlotMapping *Slots, bool UpgradeDebugInfo, StringRef DataLayoutString) {
+static ParsedModuleAndIndex
+parseAssemblyWithIndex(MemoryBufferRef F, SMDiagnostic &Err,
+                       LLVMContext &Context, SlotMapping *Slots,
+                       bool UpgradeDebugInfo,
+                       DataLayoutCallbackTy DataLayoutCallback) {
   std::unique_ptr<Module> M =
-      make_unique<Module>(F.getBufferIdentifier(), Context);
+      std::make_unique<Module>(F.getBufferIdentifier(), Context);
   std::unique_ptr<ModuleSummaryIndex> Index =
-      make_unique<ModuleSummaryIndex>(/*HaveGVs=*/true);
+      std::make_unique<ModuleSummaryIndex>(/*HaveGVs=*/true);
 
   if (parseAssemblyInto(F, M.get(), Index.get(), Err, Slots, UpgradeDebugInfo,
-                        DataLayoutString))
+                        DataLayoutCallback))
     return {nullptr, nullptr};
 
   return {std::move(M), std::move(Index)};
 }
 
-ParsedModuleAndIndex llvm::parseAssemblyFileWithIndex(
-    StringRef Filename, SMDiagnostic &Err, LLVMContext &Context,
-    SlotMapping *Slots, bool UpgradeDebugInfo, StringRef DataLayoutString) {
+ParsedModuleAndIndex llvm::parseAssemblyWithIndex(MemoryBufferRef F,
+                                                  SMDiagnostic &Err,
+                                                  LLVMContext &Context,
+                                                  SlotMapping *Slots) {
+  return ::parseAssemblyWithIndex(F, Err, Context, Slots,
+                                  /*UpgradeDebugInfo*/ true,
+                                  [](StringRef) { return None; });
+}
+
+static ParsedModuleAndIndex
+parseAssemblyFileWithIndex(StringRef Filename, SMDiagnostic &Err,
+                           LLVMContext &Context, SlotMapping *Slots,
+                           bool UpgradeDebugInfo,
+                           DataLayoutCallbackTy DataLayoutCallback) {
   ErrorOr<std::unique_ptr<MemoryBuffer>> FileOrErr =
       MemoryBuffer::getFileOrSTDIN(Filename);
   if (std::error_code EC = FileOrErr.getError()) {
@@ -96,16 +113,32 @@ ParsedModuleAndIndex llvm::parseAssemblyFileWithIndex(
 
   return parseAssemblyWithIndex(FileOrErr.get()->getMemBufferRef(), Err,
                                 Context, Slots, UpgradeDebugInfo,
-                                DataLayoutString);
+                                DataLayoutCallback);
 }
 
-std::unique_ptr<Module>
-llvm::parseAssemblyString(StringRef AsmString, SMDiagnostic &Err,
-                          LLVMContext &Context, SlotMapping *Slots,
-                          bool UpgradeDebugInfo, StringRef DataLayoutString) {
+ParsedModuleAndIndex
+llvm::parseAssemblyFileWithIndex(StringRef Filename, SMDiagnostic &Err,
+                                 LLVMContext &Context, SlotMapping *Slots,
+                                 DataLayoutCallbackTy DataLayoutCallback) {
+  return ::parseAssemblyFileWithIndex(Filename, Err, Context, Slots,
+                                      /*UpgradeDebugInfo*/ true,
+                                      DataLayoutCallback);
+}
+
+ParsedModuleAndIndex llvm::parseAssemblyFileWithIndexNoUpgradeDebugInfo(
+    StringRef Filename, SMDiagnostic &Err, LLVMContext &Context,
+    SlotMapping *Slots, DataLayoutCallbackTy DataLayoutCallback) {
+  return ::parseAssemblyFileWithIndex(Filename, Err, Context, Slots,
+                                      /*UpgradeDebugInfo*/ false,
+                                      DataLayoutCallback);
+}
+
+std::unique_ptr<Module> llvm::parseAssemblyString(StringRef AsmString,
+                                                  SMDiagnostic &Err,
+                                                  LLVMContext &Context,
+                                                  SlotMapping *Slots) {
   MemoryBufferRef F(AsmString, "<string>");
-  return parseAssembly(F, Err, Context, Slots, UpgradeDebugInfo,
-                       DataLayoutString);
+  return parseAssembly(F, Err, Context, Slots);
 }
 
 static bool parseSummaryIndexAssemblyInto(MemoryBufferRef F,
@@ -118,13 +151,14 @@ static bool parseSummaryIndexAssemblyInto(MemoryBufferRef F,
   // The parser holds a reference to a context that is unused when parsing the
   // index, but we need to initialize it.
   LLVMContext unusedContext;
-  return LLParser(F.getBuffer(), SM, Err, nullptr, &Index, unusedContext).Run();
+  return LLParser(F.getBuffer(), SM, Err, nullptr, &Index, unusedContext)
+      .Run(true, [](StringRef) { return None; });
 }
 
 std::unique_ptr<ModuleSummaryIndex>
 llvm::parseSummaryIndexAssembly(MemoryBufferRef F, SMDiagnostic &Err) {
   std::unique_ptr<ModuleSummaryIndex> Index =
-      make_unique<ModuleSummaryIndex>(/*HaveGVs=*/false);
+      std::make_unique<ModuleSummaryIndex>(/*HaveGVs=*/false);
 
   if (parseSummaryIndexAssemblyInto(F, *Index, Err))
     return nullptr;

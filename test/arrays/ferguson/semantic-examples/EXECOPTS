@@ -1,1 +1,1 @@
---dataParTasksPerLocale=1 --memLeaksLog=memlog
+--dataParTasksPerLocale=1 --memLeaks

@@ -1,2 +1,2 @@
-testmunge-extern.h --savec genCode
+--no-llvm testmunge-extern.h --savec genCode
 

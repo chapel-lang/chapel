@@ -1,9 +1,8 @@
 //=- Mips64r6InstrInfo.td - Mips64r6 Instruction Information -*- tablegen -*-=//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -37,6 +36,7 @@ class DMUHU_ENC   : SPECIAL_3R_FM<0b00011, 0b011101>;
 class DMUL_R6_ENC : SPECIAL_3R_FM<0b00010, 0b011100>;
 class DMULU_ENC   : SPECIAL_3R_FM<0b00010, 0b011101>;
 class LDPC_ENC    : PCREL18_FM<OPCODE3_LDPC>;
+class LWUPC_ENC   : PCREL19_FM<OPCODE2_LWUPC>;
 class LLD_R6_ENC : SPECIAL3_LL_SC_FM<OPCODE6_LLD>;
 class SCD_R6_ENC : SPECIAL3_LL_SC_FM<OPCODE6_SCD>;
 class CRC32D_ENC  : SPECIAL3_2R_SZ_CRC<3,0>;
@@ -48,7 +48,8 @@ class CRC32CD_ENC : SPECIAL3_2R_SZ_CRC<3,1>;
 //
 //===----------------------------------------------------------------------===//
 
-class AHI_ATI_DESC_BASE<string instr_asm, RegisterOperand GPROpnd, InstrItinClass itin> {
+class AHI_ATI_DESC_BASE<string instr_asm, RegisterOperand GPROpnd,
+                        InstrItinClass itin> {
   dag OutOperandList = (outs GPROpnd:$rs);
   dag InOperandList = (ins GPROpnd:$rt, uimm16_altrelaxed:$imm);
   string AsmString = !strconcat(instr_asm, "\t$rs, $rt, $imm");
@@ -73,7 +74,8 @@ class DMUHU_DESC   : MUL_R6_DESC_BASE<"dmuhu", GPR64Opnd, II_DMUHU, mulhu>;
 class DMUL_R6_DESC : MUL_R6_DESC_BASE<"dmul", GPR64Opnd, II_DMUL, mul>;
 class DMULU_DESC   : MUL_R6_DESC_BASE<"dmulu", GPR64Opnd, II_DMUL>;
 class LDPC_DESC    : PCREL_DESC_BASE<"ldpc", GPR64Opnd, simm18_lsl3, II_LDPC>;
-class LLD_R6_DESC   : LL_R6_DESC_BASE<"lld", GPR64Opnd, mem_simmptr, II_LLD>;
+class LWUPC_DESC   : PCREL_DESC_BASE<"lwupc", GPR32Opnd, simm19_lsl2, II_LWUPC>;
+class LLD_R6_DESC   : LL_R6_DESC_BASE<"lld", GPR64Opnd, mem_simm9_exp, II_LLD>;
 class SCD_R6_DESC   : SC_R6_DESC_BASE<"scd", GPR64Opnd, II_SCD>;
 class SELEQZ64_DESC : SELEQNE_Z_DESC_BASE<"seleqz", GPR64Opnd>;
 class SELNEZ64_DESC : SELEQNE_Z_DESC_BASE<"selnez", GPR64Opnd>;
@@ -104,7 +106,7 @@ class JIC64_DESC : JMP_IDX_COMPACT_DESC_BASE<"jic", jmpoffset16, GPR64Opnd,
   list<Register> Defs = [AT];
 }
 
-class LL64_R6_DESC : LL_R6_DESC_BASE<"ll", GPR32Opnd, mem_simm9, II_LL>;
+class LL64_R6_DESC : LL_R6_DESC_BASE<"ll", GPR32Opnd, mem_simm9_exp, II_LL>;
 class SC64_R6_DESC : SC_R6_DESC_BASE<"sc", GPR32Opnd, II_SC>;
 
 class JR_HB64_R6_DESC : JR_HB_DESC_BASE<"jr.hb", GPR64Opnd> {
@@ -148,6 +150,7 @@ let AdditionalPredicates = [NotInMicroMips] in {
   def LLD_R6 : LLD_R6_ENC, LLD_R6_DESC, ISA_MIPS64R6;
 }
 def LDPC: LDPC_ENC, LDPC_DESC, ISA_MIPS64R6;
+def LWUPC : LWUPC_ENC, LWUPC_DESC, ISA_MIPS64R6;
 def SCD_R6 : SCD_R6_ENC, SCD_R6_DESC, ISA_MIPS32R6;
 let DecoderNamespace = "Mips32r6_64r6_GP64" in {
   def SELEQZ64 : SELEQZ_ENC, SELEQZ64_DESC, ISA_MIPS32R6, GPR_64;

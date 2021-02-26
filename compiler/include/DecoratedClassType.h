@@ -1,5 +1,5 @@
 /*
- * Copyright 2020 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,18 +47,20 @@
 
 const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);
 
-class DecoratedClassType : public Type {
+class DecoratedClassType final : public Type {
 
 public:
                           DecoratedClassType(AggregateType* cls,
                                              ClassTypeDecorator d);
-                          ~DecoratedClassType();
+                         ~DecoratedClassType() override = default;
 
-  void                    accept(AstVisitor* visitor);
-  void                    replaceChild(BaseAST* oldAst, BaseAST* newAst);
-  void                    verify();
-  GenRet                  codegen();
+  void                    accept(AstVisitor* visitor) override;
+  void              replaceChild(BaseAST* oldAst, BaseAST* newAst) override;
+  void                    verify() override;
+  GenRet                  codegen() override;
   DECLARE_COPY(DecoratedClassType);
+  DecoratedClassType* copyInner(SymbolMap* map) override;
+
 
   AggregateType*          getCanonicalClass() const;
 

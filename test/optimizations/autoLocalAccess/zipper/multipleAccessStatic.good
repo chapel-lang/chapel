@@ -1,0 +1,19 @@
+
+Start analyzing forall (multipleAccessStatic.chpl:8)
+| Found loop domain (multipleAccessStatic.chpl:3)
+| Will attempt static and dynamic optimizations (multipleAccessStatic.chpl:8)
+|
+|  Start analyzing call (multipleAccessStatic.chpl:10)
+|   Found the domain of the access base (multipleAccessStatic.chpl:3)
+|   Can optimize: Access base's domain is the iterator (multipleAccessStatic.chpl:10)
+|  This call is a static optimization candidate (multipleAccessStatic.chpl:10)
+|
+|  Start analyzing call (multipleAccessStatic.chpl:10)
+|   Found the domain of the access base (multipleAccessStatic.chpl:3)
+|   Can optimize: Access base's domain is the iterator (multipleAccessStatic.chpl:10)
+|  This call is a static optimization candidate (multipleAccessStatic.chpl:10)
+|
+End analyzing forall (multipleAccessStatic.chpl:8)
+
+Static check successful. Using localAccess (multipleAccessStatic.chpl:10)
+Static check successful. Using localAccess (multipleAccessStatic.chpl:10)

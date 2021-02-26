@@ -4,7 +4,12 @@
 record Foo {
   var x;
 
-  proc init(x) where !isSubtype(x.type, Foo) {
+  proc init() {
+    var default: this.type.x;
+    this.x = default;
+  }
+
+  proc init(x) {
     this.x = x;
   }
 }

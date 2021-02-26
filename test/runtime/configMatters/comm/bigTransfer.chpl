@@ -1,11 +1,11 @@
-use Memory, Time, SysCTypes;
+use Memory.Diagnostics, Time, SysCTypes;
 
 type elemType = int;
 
 config const memFraction = 3;
 config const maxMem = here.physicalMemory(unit = MemUnits.Bytes) / memFraction;
 
-// default xferMem (2gb) is much larger than Gemini/Aries xfer max (1gb)
+// default xferMem (2gb) is much larger than Aries xfer max (1gb)
 config const xferMB = 2**11;
 config var xferMem = xferMB * 2**20;
 

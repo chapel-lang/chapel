@@ -1,3 +1,4 @@
+use CPtr;
 extern record mycomplex {
   var dat: c_array(real(64), 2);
 }

@@ -1,3 +1,4 @@
+use CPtr;
 extern record mycomplex {
   var dat: c_ptr(real(64)); // a lie we intentionally support
 }

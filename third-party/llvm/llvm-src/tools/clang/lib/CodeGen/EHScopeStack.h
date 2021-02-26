@@ -1,9 +1,8 @@
 //===-- EHScopeStack.h - Stack for cleanup IR generation --------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -86,11 +85,6 @@ enum CleanupKind : unsigned {
 
   NormalAndEHCleanup = EHCleanup | NormalCleanup,
 
-  InactiveCleanup = 0x4,
-  InactiveEHCleanup = EHCleanup | InactiveCleanup,
-  InactiveNormalCleanup = NormalCleanup | InactiveCleanup,
-  InactiveNormalAndEHCleanup = NormalAndEHCleanup | InactiveCleanup,
-
   LifetimeMarker = 0x8,
   NormalEHLifetimeMarker = LifetimeMarker | NormalAndEHCleanup,
 };
@@ -159,9 +153,10 @@ public:
     /// Generation flags.
     class Flags {
       enum {
-        F_IsForEH             = 0x1,
+        F_IsForEH = 0x1,
         F_IsNormalCleanupKind = 0x2,
-        F_IsEHCleanupKind     = 0x4
+        F_IsEHCleanupKind = 0x4,
+        F_HasExitSwitch = 0x8,
       };
       unsigned flags;
 
@@ -180,8 +175,10 @@ public:
       /// cleanup.
       bool isEHCleanupKind() const { return flags & F_IsEHCleanupKind; }
       void setIsEHCleanupKind() { flags |= F_IsEHCleanupKind; }
-    };
 
+      bool hasExitSwitch() const { return flags & F_HasExitSwitch; }
+      void setHasExitSwitch() { flags |= F_HasExitSwitch; }
+    };
 
     /// Emit the cleanup.  For normal cleanups, this is run in the
     /// same EH context as when the cleanup was pushed, i.e. the
@@ -200,14 +197,14 @@ public:
     SavedTuple Saved;
 
     template <std::size_t... Is>
-    T restore(CodeGenFunction &CGF, llvm::index_sequence<Is...>) {
+    T restore(CodeGenFunction &CGF, std::index_sequence<Is...>) {
       // It's important that the restores are emitted in order. The braced init
       // list guarantees that.
       return T{DominatingValue<As>::restore(CGF, std::get<Is>(Saved))...};
     }
 
     void Emit(CodeGenFunction &CGF, Flags flags) override {
-      restore(CGF, llvm::index_sequence_for<As...>()).Emit(CGF, flags);
+      restore(CGF, std::index_sequence_for<As...>()).Emit(CGF, flags);
     }
 
   public:

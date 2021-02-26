@@ -1,0 +1,1 @@
+deinit-extern-record.chpl:4: error: deinit may not be currently defined for extern types

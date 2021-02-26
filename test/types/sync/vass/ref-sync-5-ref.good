@@ -1,4 +1,4 @@
 ref-sync-5-ref.chpl:5: error: unresolved call 'MYPROC(sync int(64))'
 ref-sync-5-ref.chpl:7: note: this candidate did not match: MYPROC(ref FORMAL: singleint)
-ref-sync-5-ref.chpl:5: note: because call actual argument #1 with type sync int(64)
+ref-sync-5-ref.chpl:5: note: because actual argument #1 with type 'sync int(64)'
 ref-sync-5-ref.chpl:7: note: is passed to formal 'ref FORMAL: single int(64)'

@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
           if (next >= GASNETT_TICK_MAX) 
             ERR("gasnett_ticks_to_us()=%" PRIu64 " >= GASNETT_TICK_MAX=%" PRIu64,
                  (uint64_t)next, (uint64_t)GASNETT_TICK_MAX);
-          d_junk *= 1.0001;
+          d_junk = 1.0001 * d_junk;
           last = next;
         } while (gasnett_ticks_to_us(last-start) < us_delay);
       }

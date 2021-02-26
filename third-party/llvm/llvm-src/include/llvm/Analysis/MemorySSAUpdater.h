@@ -1,9 +1,8 @@
 //===- MemorySSAUpdater.h - Memory SSA Updater-------------------*- C++ -*-===//
 //
-//                     The LLVM Compiler Infrastructure
-//
-// This file is distributed under the University of Illinois Open Source
-// License. See LICENSE.TXT for details.
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 //
 //===----------------------------------------------------------------------===//
 //
@@ -32,34 +31,23 @@
 #ifndef LLVM_ANALYSIS_MEMORYSSAUPDATER_H
 #define LLVM_ANALYSIS_MEMORYSSAUPDATER_H
 
+#include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
-#include "llvm/Analysis/LoopInfo.h"
-#include "llvm/Analysis/LoopIterator.h"
 #include "llvm/Analysis/MemorySSA.h"
-#include "llvm/IR/BasicBlock.h"
-#include "llvm/IR/CFGDiff.h"
-#include "llvm/IR/Dominators.h"
-#include "llvm/IR/Module.h"
-#include "llvm/IR/OperandTraits.h"
-#include "llvm/IR/Type.h"
-#include "llvm/IR/Use.h"
-#include "llvm/IR/User.h"
-#include "llvm/IR/Value.h"
 #include "llvm/IR/ValueHandle.h"
 #include "llvm/IR/ValueMap.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/Casting.h"
-#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Support/CFGDiff.h"
+#include <utility>
 
 namespace llvm {
 
-class Function;
+class BasicBlock;
+class BranchInst;
+class DominatorTree;
 class Instruction;
-class MemoryAccess;
-class LLVMContext;
-class raw_ostream;
+class LoopBlocksRPO;
 
 using ValueToValueMapTy = ValueMap<const Value *, WeakTrackingVH>;
 using PhiToDefMap = SmallDenseMap<MemoryPhi *, MemoryAccess *>;
@@ -99,14 +87,19 @@ public:
   /// load a
   /// Where a mayalias b, *does* require RenameUses be set to true.
   void insertDef(MemoryDef *Def, bool RenameUses = false);
-  void insertUse(MemoryUse *Use);
+  void insertUse(MemoryUse *Use, bool RenameUses = false);
   /// Update the MemoryPhi in `To` following an edge deletion between `From` and
   /// `To`. If `To` becomes unreachable, a call to removeBlocks should be made.
   void removeEdge(BasicBlock *From, BasicBlock *To);
   /// Update the MemoryPhi in `To` to have a single incoming edge from `From`,
   /// following a CFG change that replaced multiple edges (switch) with a direct
   /// branch.
-  void removeDuplicatePhiEdgesBetween(BasicBlock *From, BasicBlock *To);
+  void removeDuplicatePhiEdgesBetween(const BasicBlock *From,
+                                      const BasicBlock *To);
+  /// Update MemorySSA when inserting a unique backedge block for a loop.
+  void updatePhisWhenInsertingUniqueBackedgeBlock(BasicBlock *LoopHeader,
+                                                  BasicBlock *LoopPreheader,
+                                                  BasicBlock *BackedgeBlock);
   /// Update MemorySSA after a loop was cloned, given the blocks in RPO order,
   /// the exit blocks and a 1:1 mapping of all blocks and instructions
   /// cloned. This involves duplicating all defs and uses in the cloned blocks
@@ -222,14 +215,14 @@ public:
   /// associated with it is erased from the program.  For example, if a store or
   /// load is simply erased (not replaced), removeMemoryAccess should be called
   /// on the MemoryAccess for that store/load.
-  void removeMemoryAccess(MemoryAccess *);
+  void removeMemoryAccess(MemoryAccess *, bool OptimizePhis = false);
 
   /// Remove MemoryAccess for a given instruction, if a MemoryAccess exists.
   /// This should be called when an instruction (load/store) is deleted from
   /// the program.
-  void removeMemoryAccess(const Instruction *I) {
+  void removeMemoryAccess(const Instruction *I, bool OptimizePhis = false) {
     if (MemoryAccess *MA = MSSA->getMemoryAccess(I))
-      removeMemoryAccess(MA);
+      removeMemoryAccess(MA, OptimizePhis);
   }
 
   /// Remove all MemoryAcceses in a set of BasicBlocks about to be deleted.
@@ -239,7 +232,17 @@ public:
   /// Deleted blocks still have successor info, but their predecessor edges and
   /// Phi nodes may already be updated. Instructions in DeadBlocks should be
   /// deleted after this call.
-  void removeBlocks(const SmallPtrSetImpl<BasicBlock *> &DeadBlocks);
+  void removeBlocks(const SmallSetVector<BasicBlock *, 8> &DeadBlocks);
+
+  /// Instruction I will be changed to an unreachable. Remove all accesses in
+  /// I's block that follow I (inclusive), and update the Phis in the blocks'
+  /// successors.
+  void changeToUnreachable(const Instruction *I);
+
+  /// Conditional branch BI is changed or replaced with an unconditional branch
+  /// to `To`. Update Phis in BI's successors to remove BI's BB.
+  void changeCondBranchToUnconditionalTo(const BranchInst *BI,
+                                         const BasicBlock *To);
 
   /// Get handle on MemorySSA.
   MemorySSA* getMemorySSA() const { return MSSA; }
@@ -260,8 +263,10 @@ private:
   getPreviousDefRecursive(BasicBlock *,
                           DenseMap<BasicBlock *, TrackingVH<MemoryAccess>> &);
   MemoryAccess *recursePhi(MemoryAccess *Phi);
+  MemoryAccess *tryRemoveTrivialPhi(MemoryPhi *Phi);
   template <class RangeType>
   MemoryAccess *tryRemoveTrivialPhi(MemoryPhi *Phi, RangeType &Operands);
+  void tryRemoveTrivialPhis(ArrayRef<WeakVH> UpdatedPHIs);
   void fixupDefs(const SmallVectorImpl<WeakVH> &);
   // Clone all uses and defs from BB to NewBB given a 1:1 map of all
   // instructions and blocks cloned, and a map of MemoryPhi : Definition
@@ -272,8 +277,14 @@ private:
   // not necessarily be MemoryPhis themselves, they may be MemoryDefs. As such,
   // the map is between MemoryPhis and MemoryAccesses, where the MemoryAccesses
   // may be MemoryPhis or MemoryDefs and not MemoryUses.
+  // If CloneWasSimplified = true, the clone was exact. Otherwise, assume that
+  // the clone involved simplifications that may have: (1) turned a MemoryUse
+  // into an instruction that MemorySSA has no representation for, or (2) turned
+  // a MemoryDef into a MemoryUse or an instruction that MemorySSA has no
+  // representation for. No other cases are supported.
   void cloneUsesAndDefs(BasicBlock *BB, BasicBlock *NewBB,
-                        const ValueToValueMapTy &VMap, PhiToDefMap &MPhiMap);
+                        const ValueToValueMapTy &VMap, PhiToDefMap &MPhiMap,
+                        bool CloneWasSimplified = false);
   template <typename Iter>
   void privateUpdateExitBlocksForClonedLoop(ArrayRef<BasicBlock *> ExitBlocks,
                                             Iter ValuesBegin, Iter ValuesEnd,
