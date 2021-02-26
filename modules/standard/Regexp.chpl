@@ -597,6 +597,23 @@ record regexp {
     }
   }
 
+  /* did this regular expression compile ? */
+  pragma "no doc"
+  proc ok:bool {
+    compilerWarning("regexp: 'ok' is deprecated; errors are used to detect regexp compile errors");
+    return qio_regexp_ok(_regexp);
+  }
+  /*
+     returns a string describing any error encountered when compiling this
+               regular expression
+   */
+  pragma "no doc"
+  proc error():string {
+    param msg = "regexp: 'error()' is deprecated; errors are used to detect regexp compile errors";
+    compilerWarning(msg);
+    return msg;
+  }
+
   // note - more = overloads are below.
   pragma "no doc"
   proc ref deinit() {

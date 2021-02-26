@@ -135,8 +135,8 @@ void doPreNormalizeArrayOptimizations() {
 
 Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
 
-  // This primitive is created with 3 arguments:
-  // (call "may be local arr elem": elem, arr, paramFlag)
+  // This primitive is created with 4 arguments:
+  // (call "may be local arr elem": elem, arr, paramFlag, fastFollowerControl)
   //
   // But we remove the second argument right after using it, because it can be
   // an expression with side effects
@@ -144,10 +144,14 @@ Expr *preFoldMaybeLocalArrElem(CallExpr *call) {
   SymExpr *maybeArrElemSymExpr = toSymExpr(call->get(1));
   INT_ASSERT(maybeArrElemSymExpr);
 
-  SymExpr *controlSymExp = toSymExpr(call->get(2));
-  INT_ASSERT(controlSymExp);
+  SymExpr *controlSymExpr = toSymExpr(call->get(2));
+  INT_ASSERT(controlSymExpr);
 
-  bool confirmed = (controlSymExp->symbol() == gTrue);
+  SymExpr *ffControlSymExpr = toSymExpr(call->get(3));
+  INT_ASSERT(ffControlSymExpr);
+
+  bool confirmed = (controlSymExpr->symbol() == gTrue &&
+                    ffControlSymExpr->symbol() == gTrue);
 
   if (fAutoAggregation) {
     findAndUpdateMaybeAggAssign(call, confirmed);
@@ -784,12 +788,6 @@ static void gatherForallInfo(ForallStmt *forall) {
       }
 
       forall->optInfo.multiDIndices.push_back(multiDIndices);
-    }
-
-    if (!forall->optInfo.hasAlignedFollowers) {
-      // this means we couldn't prove that the followers are aligned, so, we'll
-      // not look at the indices yielded by the followers
-      break;
     }
   }
 
@@ -1435,28 +1433,38 @@ static void autoAggregation(ForallStmt *forall) {
     autoLocalAccess(forall);
   }
 
+  if (!forall->optInfo.infoGathered) {
+    gatherForallInfo(forall);
+  }
+
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
-  std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
+  if (loopHasValidInductionVariables(forall)) {
+    std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
 
-  for_vector(Expr, lastStmt, lastStmts) {
-    if (CallExpr *lastCall = toCallExpr(lastStmt)) {
-      if (lastCall->isNamedAstr(astrSassign)) {
-        // no need to do anything if it is array access
-        if (assignmentSuitableForAggregation(lastCall, forall)) {
-          LOG_AA(1, "Found an aggregation candidate", lastCall);
+    for_vector(Expr, lastStmt, lastStmts) {
+      if (CallExpr *lastCall = toCallExpr(lastStmt)) {
+        if (lastCall->isNamedAstr(astrSassign)) {
+          // no need to do anything if it is array access
+          if (assignmentSuitableForAggregation(lastCall, forall)) {
+            LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-          insertAggCandidate(lastCall, forall);
-        }
-        // we need special handling if it is a symbol that is an array element
-        else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
-          LOG_AA(1, "Found an aggregation candidate", lastCall);
+            insertAggCandidate(lastCall, forall);
+          }
+          // we need special handling if it is a symbol that is an array element
+          else if (handleYieldedArrayElementsInAssignment(lastCall, forall)) {
+            LOG_AA(1, "Found an aggregation candidate", lastCall);
 
-          insertAggCandidate(lastCall, forall);
+            insertAggCandidate(lastCall, forall);
+          }
         }
       }
     }
   }
+  else {
+    LOG_AA(1, "Can't optimize this forall: invalid induction variables", forall);
+  }
+
   LOG_AA(0, "End analyzing forall for automatic aggregation", forall);
   LOGLN_AA(forall);
 }
@@ -1512,7 +1520,7 @@ void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      if (childCall->numActuals() == 3) {
+      if (childCall->numActuals() == 4) {
         childCall->get(2)->remove();
       }
     }
@@ -1520,7 +1528,7 @@ void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(2))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
-      if (childCall->numActuals() == 3) {
+      if (childCall->numActuals() == 4) {
         childCall->get(2)->remove();
       }
     }
@@ -1739,6 +1747,21 @@ Expr *preFoldMaybeAggregateAssign(CallExpr *call) {
   return replacement;
 }
 
+// 3rd argument of PRIM_MAYBE_LOCAL_ARR_ELEM controls the optimization and it is
+// initially set to `false` if the optimization can be done only in a fast
+// follower body.  This function takes that body as an argument, and adjusts
+// such primitives' 3rd arguments to enable optimization
+void adjustPrimsInFastFollowerBody(BlockStmt *body) {
+  std::vector<CallExpr *> calls;
+  collectCallExprs(body, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
+      call->get(3)->replace(new SymExpr(gTrue));
+    }
+  }
+}
+
 void AggregationCandidateInfo::transformCandidate() {
   SET_LINENO(this->candidate);
   Expr *rhs = this->candidate->get(2)->remove();
@@ -1808,16 +1831,22 @@ static void insertAggCandidate(CallExpr *call, ForallStmt *forall) {
   info->transformCandidate();
 }
 
-static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall) {
+static Expr *getAlignedIterandForTheYieldedSym(Symbol *sym, ForallStmt *forall,
+                                               bool *onlyIfFastFollower) {
   AList &iterExprs = forall->iteratedExpressions();
   AList &indexVars = forall->inductionVariables();
 
   if (!forall->optInfo.hasAlignedFollowers) {
-    // either not zippered, or followers are not aligned:
-    //   only check if the symbol is the same as the one yielded by the leader
-    if (DefExpr *idxDef = toDefExpr(indexVars.get(1))) {
-      if (sym == idxDef->sym) {
-        return iterExprs.get(1);
+    // either not zippered, or followers are not statically aligned:
+    // we set `onlyIfFastFollower` to true only if the iterand is a follower.
+    // We can argue about this symbols locality only dynamically if it is in a
+    // fast follower body.
+    for (int i = 1 ; i <= indexVars.length ; i++){
+      if (DefExpr *idxDef = toDefExpr(indexVars.get(i))) {
+        if (sym == idxDef->sym) {
+          *onlyIfFastFollower = (i>1);
+          return iterExprs.get(i);
+        }
       }
     }
   }
@@ -1855,12 +1884,15 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   SymExpr *lhsSymExpr = toSymExpr(call->get(1));
   SymExpr *rhsSymExpr = toSymExpr(call->get(2));
 
+  bool onlyIfFastFollower = false;
+
   // note that if we hit both inner if's below, that would mean we have
   // something like `a=a`. We check for this case right after and don't continue
   // with the optimization
   if (lhsSymExpr) {
     Symbol *tmpSym = lhsSymExpr->symbol();
-    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
+                                                     &onlyIfFastFollower);
     if (maybeArrExpr != NULL) {
       lhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
@@ -1868,7 +1900,8 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   }
   if (rhsSymExpr) {
     Symbol *tmpSym = rhsSymExpr->symbol();
-    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall);
+    maybeArrExpr = getAlignedIterandForTheYieldedSym(tmpSym, forall,
+                                                     &onlyIfFastFollower);
     if (maybeArrExpr != NULL) {
       rhsMaybeArrSym = true;
       maybeArrElemSym = tmpSym;
@@ -1911,13 +1944,24 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
   DefExpr *checkSymDef = new DefExpr(checkSym, checkCall);
   forall->insertBefore(checkSymDef);
 
+  // We want the `fastFollowerControl` flag to be false for the non-fast
+  // follower, and true elsewhere. So, if `onlyIfFastFollower` is set, we
+  // initally set `fastFollowerControl` to be `false`. We will switch it to
+  // `true` when we copy the fast follower body, later on.
+  //
+  // If `onlyIfFastFollower` is unset, this flag shouldn't hinder the
+  // optimization, so we set it to `true`.
+  SymExpr *fastFollowerControl = new SymExpr(onlyIfFastFollower ? gFalse:gTrue);
+
   // replace the call with PRIM_MAYBE_LOCAL_ARR_ELEM
   // we are adding `maybeArrExpr` that may have side effects, but we'll remove
   // it before we start normalization
   CallExpr *primCall = new CallExpr(PRIM_MAYBE_LOCAL_ARR_ELEM,
                                     new SymExpr(maybeArrElemSym),
                                     maybeArrExpr->copy(),
-                                    new SymExpr(checkSym));
+                                    new SymExpr(checkSym),
+                                    fastFollowerControl);
+
   symExprToReplace->replace(primCall);
 
   return true;
@@ -1945,14 +1989,46 @@ static CallExpr *findMaybeAggAssignInBlock(BlockStmt *block) {
 
 // called during resolution when we revert an aggregation
 static void removeAggregatorFromFunction(Symbol *aggregator, FnSymbol *parent) {
-  // remove the definition
-  aggregator->defPoint->remove();
 
-  // find and remove other SymExprs within the function
+  // find other SymExprs within the function and remove the aggregator if it is
+  // not being used by other primitives, or its `copy` function.
+  
+  std::vector<SymExpr *> symExprsToCheck;
+  collectSymExprsFor(parent, aggregator, symExprsToCheck);
+
   std::vector<SymExpr *> symExprsToRemove;
-  collectSymExprsFor(parent, aggregator, symExprsToRemove);
-  for_vector(SymExpr, se, symExprsToRemove) {
-    se->remove();
+  bool shouldRemove = true;
+
+  for_vector(SymExpr, se, symExprsToCheck) {
+    if (CallExpr *parentCall = toCallExpr(se->parentExpr)) {
+      // is `aggregator used in another `PRIM_MAYBE_AGGREGATE_ASSIGN`?
+      if (parentCall->isPrimitive(PRIM_MAYBE_AGGREGATE_ASSIGN)) {
+        shouldRemove = false;
+        break;
+      }
+
+      // is `aggregator` receiver of a `copy` call?
+      if (parentCall->isNamed("copy")) {
+        // this check should be enough to make sure that this is an aggregated
+        // copy call. The following asserts make sure of that:
+        INT_ASSERT(toSymExpr(parentCall->get(2))->symbol() == aggregator);
+        INT_ASSERT(parentCall->resolvedFunction()->_this->getValType() ==
+                   aggregator->getValType());
+        shouldRemove = false;
+        break;
+      }
+    }
+
+    symExprsToRemove.push_back(se);
+  }
+  
+  if (shouldRemove) {
+    // remove the definition
+    aggregator->defPoint->remove();
+
+    for_vector(SymExpr, se, symExprsToRemove) {
+      se->remove();
+    }
   }
 }
 

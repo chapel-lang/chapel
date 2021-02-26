@@ -270,7 +270,8 @@ static found_init_t doFindInitPoints(Symbol* sym,
     // { x = ... }
     } else if (BlockStmt* block = toBlockStmt(cur)) {
 
-      if (block->isLoopStmt() || block->isRealBlockStmt() == false) {
+      if (block->isLoopStmt() ||
+          (block->isRealBlockStmt() == false && !block->blockInfoGet()->isPrimitive(PRIM_BLOCK_LOCAL))) {
         // Loop / on / begin / etc - just check for uses
         if (SymExpr* se = findSymExprFor(cur, sym)) {
           usePreventingSplitInit = se;
@@ -843,6 +844,11 @@ static bool doFindCopyElisionPoints(Expr* start,
       Expr* start = forall->loopBody()->body.first();
       VariablesSet newEligible;
       doFindCopyElisionPoints(start, map, newEligible);
+
+      // note the uses of symbols in the zip call
+      if (CallExpr *zipCall = forall->zipCall()) {
+        noteUses(zipCall, map);
+      }
 
     // try { ... }
     } else if (isTryStmt(cur)) {
