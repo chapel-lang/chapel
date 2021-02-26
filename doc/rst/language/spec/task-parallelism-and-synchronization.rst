@@ -212,9 +212,9 @@ full and store the value from that expression.
              return value;
 
           var x$: sync int;
-          begin x$ = left!.sum();
+          begin x$.writeEF(left!.sum());
           var y = right!.sum();
-          return x$ + y;
+          return x$.readFE() + y;
         }
       }
 
@@ -249,43 +249,6 @@ full and store the value from that expression.
 
 ..
 
-   *Example (syncCounter.chpl)*.
-
-   Sync variables are useful for tallying data from multiple tasks as
-   well. If all updates to an initialized sync variable are via compound
-   assignment operators (or equivalently, traditional assignments that
-   read and write the variable once), the full/empty state of the sync
-   variable guarantees that the reads and writes will be interleaved in
-   a manner that makes the updates atomic. For example, the code:
-   
-
-   .. code-block:: chapel
-
-      var count$: sync int = 0;
-      cobegin {
-        count$ += 1;
-        count$ += 1;
-        count$ += 1;
-      }
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      writeln("count is: ", count$.readFF());
-
-   
-
-   .. BLOCK-test-chapeloutput
-
-      count is: 3
-
-   creates three tasks that increment ``count$``. If
-   ``count$`` were not a sync variable, this code
-   would be unsafe because two tasks could then read the same value
-   before either had written its updated value, causing one of the
-   increments to be lost.
-
    *Example (singleVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
@@ -307,14 +270,14 @@ full and store the value from that expression.
 
       forall t in 1..n do begin {
         work(t);
-        var myc = count$;  // read the count, set state to empty
+        var myc = count$.readFE();  // read the count, set state to empty
         if myc!=1 {
           write(".");
-          count$ = myc-1;  // update the count, set state to full
+          count$.writeEF(myc-1);   // update the count, set state to full
           // we could also do some work here before blocking
-          release$;
+          release$.readFF();
         } else {
-          release$ = true;  // last one here, release everyone
+          release$.writeEF(true);  // last one here, release everyone
           writeln("done");
         }
       }
@@ -441,69 +404,6 @@ is set to empty when this method completes.
 Returns ``true`` if the sync or single variable is full and ``false``
 otherwise. This method is non-blocking and the state of the sync or
 single variable is unchanged when this method completes.
-
-Note that ``writeEF`` and ``readFE``/``readFF`` methods (for ``sync``
-and ``single`` variables, respectively) are implicitly invoked for
-normal writes and reads of synchronization variables.
-
-   *Example (syncMethods.chpl)*.
-
-   Given the following declarations 
-
-   .. BLOCK-test-chapelpre
-
-      { // }
-
-   
-
-   .. code-block:: chapel
-
-      var x$: sync int;
-      var y$: single int;
-      var z: int;
-
-   the code 
-
-   .. code-block:: chapel
-
-      x$ = 5;
-      y$ = 6;
-      z = x$ + y$;
-
-   
-
-   .. BLOCK-test-chapelnoprint
-
-      writeln((x$.readXX(), y$.readFF(), z));
-      // {
-      }
-      { // }
-      var x$: sync int;
-      var y$: single int;
-      var z: int;
-
-   is equivalent to 
-
-   .. code-block:: chapel
-
-      x$.writeEF(5);
-      y$.writeEF(6);
-      z = x$.readFE() + y$.readFF();
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      writeln((x$.readXX(), y$.readFF(), z));
-      // {
-      }
-
-   
-
-   .. BLOCK-test-chapeloutput
-
-      (5, 6, 11)
-      (5, 6, 11)
 
 .. _Atomic_Variables:
 
@@ -716,9 +616,9 @@ statements may not be used to exit a cobegin block.
    .. BLOCK-test-chapelpre
 
       var s1, s2: sync int;
-      proc stmt1() { s1; }
-      proc stmt2() { s2; s1 = 1; }
-      proc stmt3() { s2 = 1; }
+      proc stmt1() { s1.readFE(); }
+      proc stmt2() { s2.readFE(); s1.writeEF(1); }
+      proc stmt3() { s2.writeEF(1); }
 
    
 
@@ -737,10 +637,10 @@ statements may not be used to exit a cobegin block.
    .. code-block:: chapel
 
       var s1$, s2$, s3$: single bool;
-      begin { stmt1(); s1$ = true; }
-      begin { stmt2(); s2$ = true; }
-      begin { stmt3(); s3$ = true; }
-      s1$; s2$; s3$;
+      begin { stmt1(); s1$.writeEF(true); }
+      begin { stmt2(); s2$.writeEF(true); }
+      begin { stmt3(); s3$.writeEF(true); }
+      s1$.readFF(); s2$.readFF(); s3$.readFF();
 
    Each begin statement is executed concurrently but control does not
    continue past the final line above until each of the single variables
@@ -803,18 +703,18 @@ statements may not be used to exit a coforall block.
       var runningCount$: sync int = 1;
       var finished$: single bool;
       for i in iterator() {
-        runningCount$ += 1;
+        runningCount$.writeEF(runningCount$.readFE() + 1);
         begin {
           body();
-          var tmp = runningCount$;
-          runningCount$ = tmp-1;
-          if tmp == 1 then finished$ = true;
+          var tmp = runningCount$.readFE();
+          runningCount$.writeEF(tmp-1);
+          if tmp == 1 then finished$.writeEF(true);
         }
       }
-      var tmp = runningCount$;
-      runningCount$ = tmp-1;
-      if tmp == 1 then finished$ = true;
-      finished$;
+      var tmp = runningCount$.readFE();
+      runningCount$.writeEF(tmp-1);
+      if tmp == 1 then finished$.writeEF(true);
+      finished$.readFF();
 
    Each call to ``body()`` executes concurrently because it is in a
    begin statement. The sync variable
