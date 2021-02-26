@@ -144,11 +144,17 @@ module Set {
     // Returns true if the key was added to the hashtable.
     pragma "no doc"
     proc _addElem(in elem: eltType): bool {
-      var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+      var result = false;
 
-      if isFullSlot then return false;
-      _htb.fillSlot(idx, elem, none);
-      return true;
+      on this {
+        var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+        if !isFullSlot {
+          _htb.fillSlot(idx, elem, none);
+          result = true;
+        }
+      }
+
+      return result;
     }
 
     /*
