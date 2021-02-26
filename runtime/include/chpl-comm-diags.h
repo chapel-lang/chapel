@@ -62,7 +62,7 @@ extern int chpl_comm_diags_print_unstable;
 
 
 typedef struct _chpl_commDiagnostics {
-#define _COMM_DIAGS_DECL(cdv) uint64_t cdv;
+#define _COMM_DIAGS_DECL(cdv) int64_t cdv;
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL)
 #undef _COMM_DIAGS_DECL
 } chpl_commDiagnostics;
@@ -85,7 +85,7 @@ void chpl_comm_getDiagnosticsHere(chpl_commDiagnostics *cd);
 // Private
 //
 typedef struct _chpl_atomic_commDiagnostics {
-#define _COMM_DIAGS_DECL_ATOMIC(cdv) atomic_uint_least64_t cdv;
+#define _COMM_DIAGS_DECL_ATOMIC(cdv) atomic_int_least64_t cdv;
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_DECL_ATOMIC)
 #undef _COMM_DIAGS_DECL_ATOMIC
 } chpl_atomic_commDiagnostics;
@@ -96,7 +96,7 @@ extern atomic_int_least16_t chpl_comm_diags_disable_flag;
 static inline
 void chpl_comm_diags_init(void) {
 #define _COMM_DIAGS_INIT(cdv) \
-        atomic_init_uint_least64_t(&chpl_comm_diags_counters.cdv, 0);
+        atomic_init_int_least64_t(&chpl_comm_diags_counters.cdv, 0);
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_INIT);
 #undef _COMM_DIAGS_INIT
   atomic_init_int_least16_t(&chpl_comm_diags_disable_flag, 0);
@@ -105,7 +105,7 @@ void chpl_comm_diags_init(void) {
 static inline
 void chpl_comm_diags_reset(void) {
 #define _COMM_DIAGS_RESET(cdv) \
-        atomic_store_uint_least64_t(&chpl_comm_diags_counters.cdv, 0);
+        atomic_store_int_least64_t(&chpl_comm_diags_counters.cdv, 0);
  CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_RESET);
 #undef _COMM_DIAGS_RESET
 }
@@ -113,7 +113,7 @@ void chpl_comm_diags_reset(void) {
 static inline
 void chpl_comm_diags_copy(chpl_commDiagnostics* cd) {
 #define _COMM_DIAGS_COPY(cdv) \
-        cd->cdv = atomic_load_uint_least64_t(&chpl_comm_diags_counters.cdv);
+        cd->cdv = atomic_load_int_least64_t(&chpl_comm_diags_counters.cdv);
   CHPL_COMM_DIAGS_VARS_ALL(_COMM_DIAGS_COPY);
 #undef _COMM_DIAGS_COPY
 }
@@ -182,8 +182,8 @@ int chpl_comm_diags_is_enabled(void) {
 #define chpl_comm_diags_incr(_ctr)                                           \
   do {                                                                       \
     if (chpl_comm_diagnostics && chpl_comm_diags_is_enabled()) {             \
-      atomic_uint_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
-      (void) atomic_fetch_add_explicit_uint_least64_t(ctrAddr, 1,            \
+      atomic_int_least64_t* ctrAddr = &chpl_comm_diags_counters._ctr;       \
+      (void) atomic_fetch_add_explicit_int_least64_t(ctrAddr, 1,            \
                                                       memory_order_relaxed); \
     }                                                                        \
   } while(0)
