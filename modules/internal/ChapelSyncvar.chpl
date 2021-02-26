@@ -397,10 +397,9 @@ module ChapelSyncvar {
 
   proc <=>(lhs : _syncvar, rhs : _syncvar) {
     compilerWarning("Swapping 'sync' variables is deprecated; perform the swap manually using explicit '.read??'/'.write??' methods");
-    const tmp = lhs;
-
-    lhs = rhs;
-    rhs = tmp;
+    const tmp = lhs.readFE();
+    lhs.writeEF(rhs.readFE());
+    rhs.writeEF(tmp);
   }
 
   /************************************ | *************************************
