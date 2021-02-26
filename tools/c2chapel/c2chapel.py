@@ -346,7 +346,8 @@ def genStructOrUnion(structOrUnion, name=""):
         name = structOrUnion.name
 
     if name in chapelKeywords:
-        genComment("Unable to generate struct or union '" + name + "' because its name is a Chapel keyword")
+        isStructOrIsUnion = ("struct" if isinstance(structOrUnion, c_ast.Struct) else "union")
+        genComment("Unable to generate " + isStructOrIsUnion + " '" + name + "' " + "because its name is a Chapel keyword")
         print()
         return
 
@@ -451,13 +452,20 @@ def genTypeAlias(node):
         print("extern type " + alias + " = " + typeName + ";")
         print()
 
-def isPointerToStructOrUnion(node):
+def isPointerToStruct(node):
     if type(node) == c_ast.PtrDecl:
-        if type(node.type) == c_ast.TypeDecl and \
-            (type(node.type.type) == c_ast.Struct or type(node.type.type) == c_ast.Union):
+        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Struct:
             return node.type.type
         else:
-            return isPointerToStructOrUnion(node.type)
+            return isPointerToStruct(node.type)
+    return None
+
+def isPointerToUnion(node):
+    if type(node) == c_ast.PtrDecl:
+        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Union:
+            return node.type.type
+        else:
+            return isPointerToUnion(node.type)
     return None
 
 def genTypedefs(defs):
@@ -469,12 +477,16 @@ def genTypedefs(defs):
                 if sn.decls is not None:
                     genStructOrUnion(sn, name=node.name)
                 elif sn.name not in foundTypes:
-                    genComment("Opaque struct or union?")
+                    isStructOrIsUnion = ("struct" if type(node.type.type) == c_ast.Struct else "union")
+                    genComment("Opaque " + isStructOrIsUnion + "?")
                     print("extern record " + node.name + " {};\n")
                 else:
                     genTypeAlias(node)
-            elif isPointerToStructOrUnion(node.type):
-                genComment("Typedef'd pointer to struct or union")
+            elif isPointerToStruct(node.type):
+                genComment("Typedef'd pointer to struct")
+                print("extern type " + node.name + ";\n")
+            elif isPointerToUnion(node.type):
+                genComment("Typedef'd pointer to union")
                 print("extern type " + node.name + ";\n")
             elif type(node.type.type) == c_ast.Enum:
                 genComment(node.name + " enum")
