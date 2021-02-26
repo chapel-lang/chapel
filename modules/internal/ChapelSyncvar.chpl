@@ -349,7 +349,13 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(lhs.wrapped.readFE() << rhs);
   }
 
-  proc chpl__cloneSyncSingle(ref sv : _syncvar(?)) {
+  proc chpl__compilerGeneratedAssignSyncSingle(ref lhs: _syncvar(?),
+                                               ref rhs: _syncvar(?)) {
+    // TODO: Should this clone the value and the full/empty state instead?
+    lhs.writeEF(rhs.readFE());
+  }
+
+  proc chpl__compilerGeneratedCopySyncSingle(ref sv : _syncvar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFE();
     return ret;
@@ -826,7 +832,13 @@ module ChapelSyncvar {
     return new _singlevar(from);
   }
 
-  proc chpl__cloneSyncSingle(ref sv : _singlevar(?)) {
+  proc chpl__compilerGeneratedAssignSyncSingle(ref lhs : _singlevar(?),
+                                               ref rhs : _singlevar(?)) {
+    // TODO: Should this clone the value and the full/empty state instead?
+    lhs.writeEF(rhs.readFF());
+  }
+
+  proc chpl__compilerGeneratedCopySyncSingle(ref sv : _singlevar(?)) {
     // TODO: this should probably clone the value and full/empty state instead
     var ret: sv.type = sv.readFF();
     return ret;

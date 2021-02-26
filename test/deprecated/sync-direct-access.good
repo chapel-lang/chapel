@@ -64,3 +64,4 @@ in f arg = 1 : int(64)
 in f arg = 1 : int(64)
 test15
 foo
+1

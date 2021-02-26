@@ -182,3 +182,7 @@ record R {
   var s: sync int;
 }
 var myR = new R();
+myR.s.writeEF(1);
+var tmpR = myR; // reads myR.s and stores it in the new one
+myR = tmpR; // reads tmpR.s and stores it in myR
+writeln(myR.s.readFF());

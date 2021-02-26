@@ -3181,17 +3181,20 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
 }
 
 static
-void resolveNormalCallAdjustAssignType(CallExpr* call) {
+void resolveNormalCallAdjustAssign(CallExpr* call) {
   if (call->isNamedAstr(astrSassign)) {
     int i = 1;
     if (call->get(1)->typeInfo() == dtMethodToken) {
       i += 2; // pass method token and (type) this arg
     }
     if (i <= call->numActuals()) {
+      Expr* lhsExpr = call->get(i);
+      Expr* rhsExpr = call->get(i+1);
+      Type* targetType = lhsExpr->typeInfo();
+      Type* srcType = rhsExpr->getValType();
+
       // Adjust the type for formal_temp_out before trying to resolve '='
-      if (SymExpr* lhsSe = toSymExpr(call->get(i))) {
-        Type* targetType = lhsSe->symbol()->type;
-        Type* srcType = call->get(i+1)->getValType();
+      if (SymExpr* lhsSe = toSymExpr(lhsExpr)) {
         if (targetType == dtSplitInitType) {
           targetType = srcType;
         } else if (targetType->symbol->hasFlag(FLAG_GENERIC)) {
@@ -3202,6 +3205,27 @@ void resolveNormalCallAdjustAssignType(CallExpr* call) {
                                             /* inOrOtherValue */ true);
         }
         lhsSe->symbol()->type = targetType;
+      }
+
+      FnSymbol* inFn = call->getFunction();
+      if (isUnresolvedSymExpr(call->baseExpr) &&
+          inFn->name == astrSassign &&
+          inFn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          (isSyncType(srcType) || isSingleType(srcType)) &&
+          targetType->getValType() == srcType) {
+
+        // if we are in a compiler-generated assign, rewrite sync/single
+        // assignment to avoid deprecation warnings.
+
+        // remove this and method token if this was a method invocation of =
+        for (int j = 1; j < i; j++) {
+          call->get(1)->remove();
+        }
+        INT_ASSERT(call->numActuals() == 2);
+
+        Expr* newBase =
+          new UnresolvedSymExpr("chpl__compilerGeneratedAssignSyncSingle");
+        call->baseExpr->replace(newBase);
       }
     }
   }
@@ -3226,7 +3250,7 @@ FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState) {
 
   resolveGenericActuals(call);
 
-  resolveNormalCallAdjustAssignType(call);
+  resolveNormalCallAdjustAssign(call);
 
   if (isGenericRecordInit(call) == true) {
     retval = resolveInitializer(call);
@@ -6964,11 +6988,12 @@ void resolveInitVar(CallExpr* call) {
     // change
     //   PRIM_INIT_VAR lhsSync, rhsSync
     // to
-    //   PRIM_MOVE lhsSync, chpl__cloneSyncSingle(rhsSync)
+    //   PRIM_MOVE lhsSync, chpl__compilerGeneratedCopySyncSingle(rhsSync)
 
     call->primitive = primitives[PRIM_MOVE];
     srcExpr->remove();
-    CallExpr* clone = new CallExpr("chpl__cloneSyncSingle", srcExpr);
+    CallExpr* clone = new CallExpr("chpl__compilerGeneratedCopySyncSingle",
+                                   srcExpr);
     call->insertAtTail(clone);
     resolveExpr(clone);
     resolveMove(call);
