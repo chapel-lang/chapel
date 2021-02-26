@@ -22,6 +22,7 @@
 #include "AstVisitor.h"
 #include "DeferStmt.h"
 #include "driver.h"
+#include "forallOptimizations.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
 #include "iterator.h"
@@ -1151,6 +1152,8 @@ static void buildLeaderLoopBody(ForallStmt* pfs, Expr* iterExpr) {
     SymbolMap map;
     map.put(followIdx, fastFollowIdx);
     BlockStmt* userBodyForFast = userBody->copy(&map);
+
+    adjustPrimsInFastFollowerBody(userBodyForFast);
 
     fastFollowBlock = buildFollowLoop(iterRec,
                                       leadIdxCopy,

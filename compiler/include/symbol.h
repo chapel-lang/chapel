@@ -775,6 +775,8 @@ extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
 
+bool isAstrOpName(const char* name);
+
 void initAstrConsts();
 
 // Return true if the arg must use a C pointer whether or not

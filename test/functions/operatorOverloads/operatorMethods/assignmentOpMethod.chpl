@@ -6,8 +6,9 @@ record Foo {
     this.x = x;
   }
 }
-operator Foo.=(val: Foo) {
-  return new Foo(val.x);
+operator Foo.=(ref lhs: Foo, val: Foo) {
+  writeln("In user =");
+  lhs.x = val.x;
 }
 proc main() {
   var x: Foo = new Foo(7);
